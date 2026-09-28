@@ -15,7 +15,7 @@
 import { memo, useSyncExternalStore } from "react";
 import type { SheetUndoSource } from "@/features/data-tables/components/sheet-body-row";
 import { createPortal } from "react-dom";
-import { KeyRound, Redo2, Undo2 } from "lucide-react";
+import { KeyRound, Redo2, RotateCcw, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableHead } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -285,6 +285,8 @@ export function SheetViewControls(props: SheetViewProps) {
             onClick={resetView}
             title="Clear search, sort, filters and column choices"
           >
+            {/* An icon too, so the row's icons-alone fit (sheet-toolbar-fit.ts) keeps it a button. */}
+            <RotateCcw className="h-3.5 w-3.5" />
             Reset view
           </Button>
         )}

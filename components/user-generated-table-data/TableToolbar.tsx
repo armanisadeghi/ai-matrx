@@ -1,7 +1,8 @@
 "use client";
 
 import { effectiveRowLabel, rowLabelText } from "@/features/data-tables/row-label";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { nextSheetToolbarFit, type SheetToolbarFit } from "@/features/data-tables/sheet-toolbar-fit";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AddColumnModal from "./AddColumnModal";
@@ -278,12 +279,49 @@ export default function TableToolbar({
     setShowRowOrderingModal(true);
   };
 
+  // THE ROW FITS ITS WIDTH (DATA-V2-BASICS-2): when the tools' words run past the row, every tool
+  // shows its icon alone (`sheet-toolbar-fit.ts`) — its words stay its accessible name and title.
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const [fit, setFit] = useState<SheetToolbarFit>({ compact: false, wordsNeed: 0 });
+  const fitRef = useRef(fit);
+  fitRef.current = fit;
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar || typeof ResizeObserver !== "function") return;
+    const wide = typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 768px)") : null;
+    let frame = 0;
+    const read = () => {
+      frame = 0;
+      if (wide && !wide.matches) {
+        if (fitRef.current.compact) setFit({ compact: false, wordsNeed: 0 });
+        return;
+      }
+      const next = nextSheetToolbarFit(fitRef.current, { clientWidth: bar.clientWidth, scrollWidth: bar.scrollWidth });
+      if (next !== fitRef.current) setFit(next);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(read);
+    };
+    const sizes = new ResizeObserver(schedule);
+    sizes.observe(bar);
+    const content = new MutationObserver(schedule);
+    content.observe(bar, { childList: true, subtree: true });
+    schedule();
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      sizes.disconnect();
+      content.disconnect();
+    };
+  }, []);
+
   return (
     <>
       {/* Toolbar UI — dense, single-row on desktop. Below md, the Column/Row/
           Paste + reorder/clean/reference/export/settings clusters collapse
           into one drawer trigger so the row never overflows the viewport. */}
       <div
+        ref={barRef}
+        data-sheet-toolbar-compact={fit.compact ? "" : undefined}
         data-surface-value="is_read_only"
         // ONE ROW, ALWAYS. Below md the clusters collapse into the drawer; from
         // md up the row is nowrap and scrolls sideways when a laptop or tablet
@@ -292,11 +330,16 @@ export default function TableToolbar({
         className={cn(
           "mb-0 flex flex-col justify-between gap-0 md:flex-row md:flex-nowrap md:items-center md:gap-2 md:overflow-x-auto md:overflow-y-hidden md:[scrollbar-width:thin]",
           inPageRow ? "min-w-0 flex-1" : "md:mb-2",
+          // Icons alone: a tool's words are its text nodes, so they go to zero size and stay in the
+          // accessibility tree; the sort chip and saved-view names (no icon, or [data-keep-words]) keep theirs.
+          "data-[sheet-toolbar-compact]:[&_button:has(svg):not([data-keep-words]_button)]:text-[0px]",
+          "data-[sheet-toolbar-compact]:[&_button:has(svg):not([data-keep-words]_button)]:gap-0",
+          "data-[sheet-toolbar-compact]:[&_button:has(svg):not([data-keep-words]_button)_svg]:mr-0",
         )}
         data-sheet-toolbar={inPageRow ? "in-page-row" : "own-row"}
       >
         <div className="hidden md:flex shrink-0 items-center w-full md:w-auto gap-1">
-          {sortState}
+          {sortState ? <span data-keep-words="" className="flex shrink-0 items-center">{sortState}</span> : null}
           {isReadOnly ? (
             // Read-only mode: show disabled-style buttons with view icon
             <div className="flex items-center gap-1.5 px-1 text-xs font-medium text-purple-600 dark:text-purple-400">
@@ -311,6 +354,7 @@ export default function TableToolbar({
                 size="sm"
                 onClick={() => setShowAddColumnModal(true)}
                 className="whitespace-nowrap"
+                title="Add a column"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span className="hidden md:inline">Column</span>
@@ -319,6 +363,7 @@ export default function TableToolbar({
                 size="sm"
                 onClick={() => setShowAddRowModal(true)}
                 className="whitespace-nowrap"
+                title="Add a row"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span className="hidden md:inline">Row</span>
@@ -328,6 +373,7 @@ export default function TableToolbar({
                 size="sm"
                 onClick={() => setShowPasteRowsDialog(true)}
                 className="whitespace-nowrap"
+                title="Paste rows from a spreadsheet"
               >
                 <Clipboard className="h-3.5 w-3.5" />
                 <span className="hidden md:inline">Paste</span>

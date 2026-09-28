@@ -69,6 +69,20 @@ const shot = async (name) => {
   await page.screenshot({ path: join(SHOTS, `${name}.png`) });
 };
 
+/** The walk cap's explicit Resume, asked from the page itself (same origin), before signing in. */
+async function resumeWalk() {
+  await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 300000 }).catch(() => {});
+  const answer = await page
+    .evaluate(async () => {
+      const body = new FormData();
+      body.set("returnTo", "/login");
+      const r = await fetch("/__dev-walk", { method: "POST", body, redirect: "manual" });
+      return r.status;
+    })
+    .catch((e) => String(e));
+  console.log(`[walk] resume asked: ${answer}`);
+}
+
 /** The walk cap parks an idle preview host; a person presses Resume, and so does the walk. */
 async function unpark() {
   if (!page.url().includes("__dev-walk")) return;
@@ -127,6 +141,7 @@ try {
   const who = PHASE === "member" ? "member" : "admin";
   const email = who === "admin" ? env.AI_ADMIN_USERNAME : env.AI_MEMBER_USERNAME;
   const pw = who === "admin" ? env.AI_ADMIN_PASSWORD : env.AI_MEMBER_PASSWORD;
+  await resumeWalk();
   out.signed_in_as = await signIn(page, ORIGIN, email, pw, who);
   step("signed in", { as: out.signed_in_as });
 
@@ -152,14 +167,18 @@ try {
     await itemCell.dblclick();
     await sleep(500);
     await page.keyboard.press("Home");
-    await page.keyboard.type("A ", { delay: 20 });
+    await page.keyboard.type("Z ", { delay: 20 });
     await page.keyboard.press("Enter");
     await sleep(2500);
     const after = (await rowTexts()).slice(0, 3);
     await shot("o02-edit-resorts");
     step("sorted by Item, an edit re-sorts", { before, after, url: page.url().replace(ORIGIN, "") });
+    if (!after[after.length - 1]?.startsWith("Z Nitrile") && !(await rowTexts()).slice(0, 4).some((t, i, a) => i === a.length - 1 && t.startsWith("Z "))) {
+      const all = await rowTexts();
+      if (all.findIndex((t) => t.startsWith("Z Nitrile")) !== all.filter((t) => !/^Add row/.test(t)).length - 1) friction(`the edited row did not re-sort to the end: ${all.join(" | ")}`);
+    }
     // put it back
-    const back = await cellOf("A Nitrile gloves, medium", "Item");
+    const back = await cellOf("Z Nitrile gloves, medium", "Item");
     if (await back.count()) {
       await back.dblclick();
       await sleep(400);
@@ -227,21 +246,26 @@ try {
     step("a new row takes the default", { form_shows_default: /In stock/.test(prefilled), row: newRow });
     if (!newRow || !/In stock/.test(newRow)) friction(`the new row does not read In stock: ${newRow}`);
 
-    // ── 6 · add a column named after an old key (Arman) ─────────────────────────────────────────
-    let d = await columnSettings("Wing Code");
-    await d.locator("#col-name").fill("Wing");
+    // ── 6 · add a column named after an old key (Arman): add "Bin N", rename it, add "Bin N" again ──
+    const bin = `Bin ${String(Date.now()).slice(-4)}`;
+    const addColumn = async (name) => {
+      await page.getByRole("button", { name: /^Column$/ }).first().click();
+      const dlg = page.getByRole("dialog").filter({ hasText: "Add New Column" });
+      await dlg.waitFor({ timeout: 20000 });
+      await dlg.getByPlaceholder("e.g. Total Revenue").fill(name);
+      await dlg.getByRole("button", { name: "Add Column", exact: true }).click();
+      await sleep(4000);
+    };
+    await addColumn(bin);
+    let d = await columnSettings(bin);
+    await d.locator("#col-name").fill(`${bin} (old shelf)`);
     await d.getByRole("button", { name: "Save", exact: true }).click();
     await sleep(3000);
-    await page.getByRole("button", { name: /^Column$/ }).first().click();
-    const addCol = page.getByRole("dialog").filter({ hasText: "Add New Column" });
-    await addCol.waitFor({ timeout: 20000 });
-    await addCol.getByPlaceholder("e.g. Total Revenue").fill("Wing Code");
-    await addCol.getByRole("button", { name: "Add Column", exact: true }).click();
-    await sleep(4000);
+    await addColumn(bin);
     const hdrs = await headers();
     await shot("o07-column-after-old-key");
-    step("renamed Wing Code to Wing, then added Wing Code", { headers: hdrs, dialogs: await popups() });
-    if (!hdrs.includes("Wing Code") || !hdrs.includes("Wing")) friction(`headers after the add: ${hdrs.join(", ")}`);
+    step(`added "${bin}", renamed it, added "${bin}" again`, { headers: hdrs, dialogs: await popups() });
+    if (!hdrs.includes(bin) || !hdrs.includes(`${bin} (old shelf)`)) friction(`headers after the add: ${hdrs.join(", ")}`);
 
     // ── 7 · colours: colour by Stock Status, Cancel puts it back ───────────────────────────────
     await page.getByRole("button", { name: /^Colors/ }).first().click();
@@ -249,7 +273,8 @@ try {
     await colors.waitFor({ timeout: 20000 });
     await colors.getByRole("combobox", { name: "Column to color by" }).click();
     await sleep(500);
-    await page.getByRole("option", { name: "Stock Status", exact: true }).click();
+    // The first column the table can be coloured by (a choice or a tick box).
+    await page.getByRole("option").nth(1).click();
     await sleep(1500);
     const tinted = await page.evaluate(() => [...document.querySelectorAll("tbody tr")].filter((tr) => /(^|\s)bg-\w+-50(\s|$)/.test(tr.className)).length);
     await shot("o08-colour-preview");
@@ -450,6 +475,58 @@ try {
     step("B-F3 + Row form", { kind_words: kinds, choosers });
     if (kinds.some((k) => /^(string|number|datetime)$/.test(k))) friction("the + Row form prints storage words");
     await page.keyboard.press("Escape");
+  }
+  if (PHASE === "toolbar") {
+    // The Sheet's toolbar row: no control drawn over another, none cut off, at 1600 and 1280.
+    for (const width of [1600, 1280]) {
+      await open(T.supplies, "?view=sheet", { width });
+      if (!(await page.locator("[data-sheet-layout]").count())) {
+        await page.getByRole("button", { name: "Sheet", exact: true }).first().click();
+        await until("the Sheet", async () => (await page.locator("[data-sheet-layout]").count()) > 0, 60000);
+        await sleep(2500);
+      }
+      const report = await page.evaluate(() => {
+        const table = document.querySelector("thead");
+        const top = table ? table.getBoundingClientRect().top : 200;
+        const els = [...document.querySelectorAll("button, [role=combobox], input")]
+          .map((el) => ({ el, r: el.getBoundingClientRect() }))
+          .filter(({ r }) => r.width > 4 && r.height > 4 && r.bottom < top && r.top > 40)
+          // records-ui keeps an invisible place for the view's look controls so the row never jumps.
+          .filter(({ el }) => !el.closest("[aria-hidden=true]") && getComputedStyle(el).visibility !== "hidden");
+        const clipped = [];
+        for (const { el, r } of els) {
+          let p = el.parentElement;
+          while (p && p !== document.body) {
+            const s = getComputedStyle(p);
+            if (/(hidden|auto|scroll|clip)/.test(s.overflowX)) {
+              const pr = p.getBoundingClientRect();
+              if (r.left < pr.left - 1 || r.right > pr.right + 1) clipped.push({ what: (el.innerText || el.getAttribute("aria-label") || el.tagName).trim().slice(0, 30), left: Math.round(r.left), right: Math.round(r.right), box: [Math.round(pr.left), Math.round(pr.right)], scrollLeft: p.scrollLeft });
+              break;
+            }
+            p = p.parentElement;
+          }
+        }
+        const overlaps = [];
+        for (let i = 0; i < els.length; i++)
+          for (let j = i + 1; j < els.length; j++) {
+            const a = els[i], b = els[j];
+            if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+            const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+            const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+            if (w > 2 && h > 2) overlaps.push([(a.el.innerText || a.el.getAttribute("aria-label") || "").trim().slice(0, 24), (b.el.innerText || b.el.getAttribute("aria-label") || "").trim().slice(0, 24), Math.round(w)]);
+          }
+        // A control with no words, no name and nothing drawn is a dead one.
+        const nameless = els
+          .filter(({ el }) => el.tagName === "BUTTON" && !(el.innerText || "").trim() && !el.getAttribute("aria-label") && !el.getAttribute("title") && !el.querySelector("svg"))
+          .map(({ el }) => ({ html: el.outerHTML.slice(0, 400), parent: el.parentElement?.outerHTML.slice(0, 200) }));
+        return { controls: els.map(({ el, r }) => `${(el.innerText || el.getAttribute("aria-label") || el.tagName).trim().slice(0, 18)}@${Math.round(r.left)}-${Math.round(r.right)}`), overlaps, clipped, nameless };
+      });
+      await shot(`t01-sheet-toolbar-${width}`);
+      step(`the Sheet toolbar at ${width}`, report);
+      if (report.overlaps.length) friction(`${width}: toolbar controls drawn over each other: ${JSON.stringify(report.overlaps)}`);
+      if (report.clipped.length) friction(`${width}: toolbar controls cut off: ${JSON.stringify(report.clipped)}`);
+      if (report.nameless.length) friction(`${width}: a toolbar control with no words, name or icon: ${JSON.stringify(report.nameless)}`);
+    }
   }
 } catch (e) {
   out.error = String(e?.stack ?? e).slice(0, 1500);
