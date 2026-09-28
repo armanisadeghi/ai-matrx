@@ -36,10 +36,29 @@ describe("Google backend transport — organization gate", () => {
 
   it("reports when a sibling Google connection keeps the provider authorization active", async () => {
     selectOrganization(getState, CHOSEN_ORG);
-    mockFetchJson({ google_authorization_remains_active: true });
+    mockFetchJson({ google_authorization_status: "active_for_other_connection" });
     await expect(disconnectGoogle("youtube-connection")).resolves.toEqual({
-      googleAuthorizationRemainsActive: true,
+      googleAuthorizationStatus: "active_for_other_connection",
     });
+  });
+
+  it.each(["revoked", "revocation_unconfirmed"] as const)(
+    "preserves the provider's %s revocation outcome",
+    async (status) => {
+      selectOrganization(getState, CHOSEN_ORG);
+      mockFetchJson({ google_authorization_status: status });
+      await expect(disconnectGoogle("last-google-connection")).resolves.toEqual({
+        googleAuthorizationStatus: status,
+      });
+    },
+  );
+
+  it("does not invent a revocation result from the old response shape", async () => {
+    selectOrganization(getState, CHOSEN_ORG);
+    mockFetchJson({ google_authorization_remains_active: false });
+    await expect(disconnectGoogle("last-google-connection")).rejects.toThrow(
+      "authorization status could not be confirmed",
+    );
   });
 
   it("keeps the backend's mixed product result for the redirect notice", async () => {

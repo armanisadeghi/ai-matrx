@@ -647,19 +647,25 @@ export async function connectGoogle(
   };
 }
 
-export async function disconnectGoogle(connectionId: string): Promise<{ googleAuthorizationRemainsActive: boolean }> {
+export type GoogleDisconnectAuthorizationStatus =
+  | "active_for_other_connection"
+  | "revoked"
+  | "revocation_unconfirmed";
+
+export async function disconnectGoogle(connectionId: string): Promise<{ googleAuthorizationStatus: GoogleDisconnectAuthorizationStatus }> {
   const response = await postGoogleBackend(
     "/api/google-integrations/disconnect",
     { connection_id: connectionId },
     "Unable to disconnect Google.",
   );
   const body: unknown = await response.json();
-  if (!body || typeof body !== "object" || typeof (body as Record<string, unknown>).google_authorization_remains_active !== "boolean") {
+  const status = body && typeof body === "object"
+    ? (body as Record<string, unknown>).google_authorization_status
+    : undefined;
+  if (status !== "active_for_other_connection" && status !== "revoked" && status !== "revocation_unconfirmed") {
     throw new Error("Google disconnected, but its authorization status could not be confirmed. Refresh your connections.");
   }
-  return {
-    googleAuthorizationRemainsActive: (body as { google_authorization_remains_active: boolean }).google_authorization_remains_active,
-  };
+  return { googleAuthorizationStatus: status };
 }
 
 /** A fresh bounded Gmail read; queries and messages stay out of local storage. */

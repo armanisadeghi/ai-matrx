@@ -495,9 +495,13 @@ export function GoogleWorkspaceReviewWorkspace({
       }
       setActiveConnectionId(null);
       setSelectedResourceId(null);
-      toast.success(result.googleAuthorizationRemainsActive
-        ? "Google connection removed from AI Matrx. Google authorization remains active for your other connection to this account."
-        : "Google account disconnected. Google authorization revocation was requested.");
+      if (result.googleAuthorizationStatus === "active_for_other_connection") {
+        toast.success("Google connection removed from AI Matrx. Google authorization remains active for your other connection to this account.");
+      } else if (result.googleAuthorizationStatus === "revoked") {
+        toast.success("Google account disconnected and Google confirmed authorization revocation.");
+      } else {
+        toast.warning("Google connection removed from AI Matrx, but Google did not confirm authorization revocation. Review access in your Google Account.");
+      }
     });
   };
 
