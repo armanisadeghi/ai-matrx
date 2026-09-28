@@ -56,4 +56,11 @@ describe("global fixed alerts preserve reachable page actions", () => {
     const toast = readFileSync(join(__dirname, "..", "..", "components", "ui", "toast.tsx"), "utf8");
     expect(toast).toContain("bottom-[var(--shell-fixed-alert-clearance,0px)]");
   });
+
+  it("anchors the unpositioned dock above canonical table pagination", () => {
+    expect(SHELL_CSS).toContain(':root:has(.shell-main [data-matrx-table-footer])');
+    expect(SHELL_CSS).toContain('--admin-attention-anchor-bottom: calc(');
+    expect(SHELL_CSS).toContain('var(--matrx-table-control-size, 2rem)');
+    expect(BANNER_TSX).toContain('bottom: "var(--admin-attention-anchor-bottom, 1rem)"');
+  });
 });

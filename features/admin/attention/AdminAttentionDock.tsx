@@ -139,7 +139,7 @@ export default function AdminAttentionDock() {
     element: cardElement,
     // Bottom-right by default: out of the way of every page's own header and
     // primary controls.
-    anchor: { bottom: "1rem", right: "1rem" },
+    anchor: { bottom: "var(--admin-attention-anchor-bottom, 1rem)", right: "1rem" },
   });
 
   useEffect(() => {
