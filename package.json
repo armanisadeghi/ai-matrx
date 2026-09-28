@@ -230,6 +230,8 @@
     "refresh:ledger-snapshot": "tsx scripts/refresh-ledger-snapshot.ts",
     "install:githooks": "bash scripts/install_githooks.sh",
     "check:kernel-rerecord-pairing": "tsx scripts/check-kernel-rerecord-pairing.ts",
+    "check:one-person-share-writer": "tsx scripts/check-one-person-share-writer.ts",
+    "check:one-person-share-writer:self-test": "tsx scripts/check-one-person-share-writer.ts --self-test",
     "check:kernel-rerecord-pairing:self-test": "tsx scripts/check-kernel-rerecord-pairing.ts --self-test",
     "check:unpinned-security-columns": "tsx scripts/check-unpinned-security-columns.ts",
     "check:unpinned-security-columns:self-test": "tsx scripts/check-unpinned-security-columns.ts --self-test",
