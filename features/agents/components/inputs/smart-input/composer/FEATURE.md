@@ -44,7 +44,16 @@ context rail); only the chrome is arranged differently.
   that opens the three, because the phone top bar has no room for three segments) or `"panel"` (chat panel header).
 - `ComposerAgentPill` — Chat: ★ presets · Custom (+ its model) · Manage chat agents. Work: agent + Change ·
   Recent · Model. Advanced: + Overrides · Advanced.
-- `ComposerPlusMenu` — the 300px cascading + menu; `ComposerEnvironmentPanel` (also the Cloud chip's menu).
+- `ComposerPlusMenu` — the 300px cascading + menu, IDENTICAL in every mode: attach rows, Search your knowledge
+  (the classic ⌘K list), Tools, Skills, Connectors, Environment, Preview context, templates, Memory, Enter sends,
+  Working doc, Scratchpad, Auto-clear, and **All options** (always present — opens the Chat Options window until
+  every setting has a home in the new UI).
+- `ComposerConnectorsPanel` — the + menu's Connectors: search, "Active in this chat" / "Connected · off in this
+  chat" rows (per-chat switch = `addedMcpServers`; Reconnect; `Choose ›` = the ONE attach picker; an agent's own
+  connector is on and fixed), "Browse all connectors" = the live integrations window (connect anything new).
+- `ComposerEnvironmentPanel` — the Cloud chip's menu and the + menu's Environment: ONE flat list, one click chooses
+  (Cloud · your computers · sandboxes, via `useComputeTargetActions.applyBinding`), plus Persistent browser and
+  "Add a sandbox or computer". No nested pickers.
 - `ComposerMetaRow` / `ComposerPills` — Scope · Output | Agent · Effort · Auto (compact: Agent · Auto only).
 - `ComposerChipsRow` — Work+: Cloud chip + this chat's connections (`ChatConnectionsStrip variant="chips"`, the
   same data and doors as the + menu's rail at the composer's 28px chip size, `composer-chip.ts`). **Advanced**
@@ -105,6 +114,14 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 - **A size change remounts the textarea** (`key` includes the size): the paste listener binds to the element.
 - **THE ONE TABLE** (`composer-mode-visibility.ts`) decides what a mode shows; no control carries its own
   mode check. Hiding is chrome only — switching modes never turns anything off. Pinned by `__tests__/composer-modes.test.ts`.
+- **No mode has less capability** (Arman, 2026-09-27). Chat tucks things into the + menu; it never loses them.
+  Every mode gets every `plus.*` row and every phone tab; modes differ only in what sits OUTSIDE the + menu
+  (agent panel, chips row, effort, overrides, repo chips).
+- **The page is ONE chip** — the context rail (`ConversationContextRail` → `PageContextChip`) folds every value the
+  page's SURFACE contributed (`selectSurfaceContextKeys`) into one chip: click = the values listed + the switch;
+  off = an eye-off icon in the same spot (`setPageContextEnabled` — on re-reads the page via `refreshSurfaceScope`).
+  Hand-attached and other-source context keeps its own chips.
+- **No border lines** on headers or between panels — the design has none.
 - **Hidden, never faked** (brief Q5). Not shown because no capability exists yet: Manual (no approval
   gate client or server), per-chat Vault, team sandbox, Files/Media/Artifacts/The Matrx output families,
   Meta Ads accounts, a server token count on Preview context.
@@ -121,6 +138,9 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-09-27** — Round 4: no mode has less capability (identical + menu, all phone tabs); Connectors panel;
+  one-click Environment list; Search your knowledge; Auto-clear row; always-present All options; the page as ONE
+  context chip (replaces the workspace's page-context row); borders removed.
 - **2026-09-27** — Independent review fixes: "Enter sends" row in every mode; `useComposerMode` `enabled`; chips row
   at composer size with Advanced resource chips; "Auto effort"; `/chat` placeholder "How can I help you today?"
   until the conversation has messages.

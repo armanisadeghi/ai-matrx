@@ -31,8 +31,8 @@ such layout in the app.
   `properties?` (tabs; absent = no panel), `getCanvasContext?`, `contextChip?`, `initialLayout?`
   (`readCanvasWorkspaceLayout(id, { defaultChatOpen })` — nav, chat, properties, the three widths),
   `defaultChatOpen?` (default true; many pages start with the chat closed), `followPageSurface?` (the chat sees
-  the page on screen and follows the person from page to page — a hosted module; its "Sees <page>" row is the
-  visible switch, `PageContextRow`), `initialMode?`, `onClose?`. `title` is optional (a hosted module brings its
+  the page on screen and follows the person from page to page — a hosted module; the visible switch is the ONE
+  page chip in the composer's context rail, `PageContextChip`), `initialMode?`, `onClose?`. `title` is optional (a hosted module brings its
   own header).
 - **`CanvasChatColumn`** — the platform's ONE chat column (`AgentConversationColumn`) with the COMPACT
   composer; `buildCanvasSmartInputProps` is the single place its composer props are built.
@@ -116,6 +116,8 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 
 ## Change Log
 
+- **2026-09-27** — `PageContextRow` and its cookie removed: the page on/off lives in the composer's page chip
+  (`PageContextChip`, turning it back on re-reads the page). Every panel/header border line removed.
 - **2026-09-27** — Built: workspace, canvas nav + user row + org drop-up, shell canvas chrome, floating
   chat, properties panel, demos; the chat panel is the compact composer with agent switching;
   `contextKey` dedupes the canvas pill; `/demos/spatial` unlisted until it hosts the workspace.
