@@ -1,5 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": { "noEmit": true, "incremental": false },
-  "include": ["next-env.d.ts", "types/**/*.d.ts", "features/trash/cmsKinds.ts", "features/trash/sources.ts", "features/trash/components/TrashList.tsx", "app/api/cms/_lib/cmsTrash.ts", "app/api/cms/trash/route.ts", "app/api/cms/trash/cmsTrash.test.ts", "features/trash/__tests__/cms-is-a-trash-source.test.tsx", "app/(core)/trash/page.tsx", "features/trash/components/OrgTrashSection.tsx"]
-}
