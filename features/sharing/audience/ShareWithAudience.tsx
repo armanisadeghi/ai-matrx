@@ -50,6 +50,13 @@ const LEVELS: { value: AudienceLevel; label: string }[] = [
   { value: "editor", label: "Editor" },
 ];
 
+/** "notes, summary, transcript and recording" — the assets as one phrase. */
+function listOf(assets: { label: string }[]): string {
+  return new Intl.ListFormat("en", { type: "conjunction" }).format(
+    assets.map((a) => a.label.toLowerCase()),
+  );
+}
+
 /** People this click can still reach: share or email. */
 function reachable(p: AudiencePerson): boolean {
   return p.state === "will_share" || p.state === "invite_by_email";
@@ -58,7 +65,7 @@ function reachable(p: AudiencePerson): boolean {
 function stateLine(p: AudiencePerson): string {
   switch (p.state) {
     case "will_share":
-      return `Gets ${p.missing.map((a) => a.label.toLowerCase()).join(" and ")}`;
+      return `Gets ${listOf(p.missing)}`;
     case "invite_by_email":
       return "No account yet — gets an email link";
     case "invited":
@@ -215,7 +222,7 @@ export function ShareWithAudienceDialog({
           <DialogTitle>{label}</DialogTitle>
           <DialogDescription>
             {plan
-              ? `${plan.title}: ${plan.assets.map((a) => a.label.toLowerCase()).join(" and ")}. Each person gets their own share and a notice with the link.`
+              ? `${plan.title}: ${listOf(plan.assets)}. Each person gets their own share and a notice with the link.`
               : "Finding everyone who was invited or attended."}
           </DialogDescription>
         </DialogHeader>
