@@ -5,7 +5,8 @@
  * Uses server-side auth — the calling user must be authenticated.
  *
  * POST body: { action, ...params }
- *   action: 'create' | 'update' | 'archive' | 'delete' | 'get' | 'list' | 'listForMessage'
+ *   action: 'create' | 'update' | 'archive' | 'get' | 'list' | 'listForMessage'
+ *   ('archive' moves the artifact to Trash — delete means archive; there is no hard delete)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -268,34 +269,11 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .update({ status: "archived", deleted_at: new Date().toISOString() })
-          .eq("id", id);
+          .eq("id", id)
+          .is("deleted_at", null);
 
         if (error) {
           console.error("[artifacts API] archive error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
-        }
-
-        return NextResponse.json({ success: true });
-      }
-
-      // ── delete (hard) ─────────────────────────────────────────────────
-      case "delete": {
-        const { id } = params;
-        if (!id) {
-          return NextResponse.json(
-            { error: "id is required" },
-            { status: 400 },
-          );
-        }
-
-        const { error } = await supabase
-          .schema("chat")
-          .from("artifact")
-          .delete()
-          .eq("id", id);
-
-        if (error) {
-          console.error("[artifacts API] delete error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 

@@ -282,28 +282,6 @@ export const fetchUserArtifactsThunk = createAsyncThunk<
   return artifacts;
 });
 
-// ── deleteArtifactThunk ───────────────────────────────────────────────────────
-
-/**
- * Hard-delete an artifact. Removes from Redux and calls the API.
- */
-export const deleteArtifactThunk = createAsyncThunk<
-  void,
-  string,
-  { state: RootState; dispatch: AppDispatch }
->("artifacts/delete", async (artifactId, { dispatch }) => {
-  dispatch(setOperationStatus({ id: artifactId, status: "loading" }));
-
-  const { error } = await callArtifactsApi("delete", { id: artifactId });
-
-  if (error) {
-    dispatch(setOperationStatus({ id: artifactId, status: "failed" }));
-    throw new Error(error);
-  }
-
-  dispatch(removeArtifact(artifactId));
-});
-
 // ── updateArtifactStatusThunk ─────────────────────────────────────────────────
 
 /**

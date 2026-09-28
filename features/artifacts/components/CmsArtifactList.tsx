@@ -8,7 +8,6 @@ import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
 import { useCanvasArtifactUrlState } from "@/features/canvas/hooks/useCanvasArtifactUrlState";
 import {
   fetchUserArtifactsThunk,
-  deleteArtifactThunk,
   archiveArtifactThunk,
 } from "@/lib/redux/thunks/artifactThunks";
 import {
@@ -41,7 +40,6 @@ import {
   Loader2,
   ExternalLink,
   Pencil,
-  Trash2,
   ArchiveIcon,
   Search,
   X,
@@ -58,7 +56,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
@@ -236,33 +233,13 @@ export function CmsArtifactList() {
     startTransition(() => router.push(`/artifacts/${id}`));
   };
 
-  const handleDelete = async (artifact: CxArtifactRecord) => {
-    const title = artifact.title?.trim() || "Untitled";
-    const liveNote = artifact.externalUrl
-      ? " Any live URL for this item will stop working."
-      : "";
-    const ok = await confirm({
-      title: `Permanently delete ${title}?`,
-      description: `This removes it from the Content Library.${liveNote} This cannot be undone.`,
-      confirmLabel: "Delete",
-      variant: "destructive",
-    });
-    if (!ok) return;
-    try {
-      await dispatch(deleteArtifactThunk(artifact.id)).unwrap();
-      toast.success(`${title} deleted`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Delete failed");
-    }
-  };
-
   const handleArchive = async (artifact: CxArtifactRecord) => {
     const title = artifact.title?.trim() || "Untitled";
     try {
       await dispatch(archiveArtifactThunk(artifact.id)).unwrap();
-      toast.success(`${title} archived`);
+      toast.success(`${title} moved to Trash — restore it from Trash any time`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Archive failed");
+      toast.error(error instanceof Error ? error.message : "Move to Trash failed");
     }
   };
 
@@ -506,7 +483,7 @@ export function CmsArtifactList() {
           onRowOpen={(artifact) => { if (!navigationPending) handleOpen(artifact); }}
           rowClassName={() => navigationPending ? "pointer-events-none opacity-60" : undefined}
           // new-tab-icon: row disables ALL row actions together while a navigation is pending (transient busy-state, not "nothing to open" — the row's <a target="_blank"> itself is correct)
-          rowActions={(artifact) => <div className="flex items-center gap-0.5">{navigatingId === artifact.id && <Loader2 className="size-4 animate-spin text-primary" />}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>{artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Archive"><ArchiveIcon className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7 text-destructive" disabled={navigationPending} onClick={() => handleDelete(artifact)} title="Delete"><Trash2 className="size-3.5" /></Button></div>}
+          rowActions={(artifact) => <div className="flex items-center gap-0.5">{navigatingId === artifact.id && <Loader2 className="size-4 animate-spin text-primary" />}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>{artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Move to Trash"><ArchiveIcon className="size-3.5" /></Button></div>}
         />
       )}
 

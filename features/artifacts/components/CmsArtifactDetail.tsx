@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectArtifactByEitherId } from "@/lib/redux/selectors/artifactSelectors";
 import { fetchUserArtifactsThunk } from "@/lib/redux/thunks/artifactThunks";
-import { deleteArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
+import { archiveArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
 import {
   ARTIFACT_TYPE_LABELS,
   ARTIFACT_STATUS_LABELS,
@@ -289,7 +289,8 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
     if (!artifact) return;
     setIsDeleting(true);
     try {
-      await dispatch(deleteArtifactThunk(artifact.id)).unwrap();
+      // Delete means archive: the artifact moves to Trash and stays restorable.
+      await dispatch(archiveArtifactThunk(artifact.id)).unwrap();
       router.push("/artifacts");
     } catch {
       setIsDeleting(false);
@@ -389,7 +390,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
       disabled: isRefreshing,
     },
     {
-      label: "Delete",
+      label: "Move to Trash",
       icon: Trash2,
       onPress: () => void handleDelete(),
       destructive: true,
