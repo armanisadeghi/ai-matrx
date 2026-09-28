@@ -203,8 +203,9 @@ describe("the agenda's refresh-on-open, and a detached event", () => {
   it("holds the calendar in its loading state while a newly selected window is still reading", async () => {
     state.events = [calendarEventRow({ id: "old-window-event" })];
     const mounted = await mount();
-    let resolveRead: ((rows: CalendarEventRow[]) => void) | null = null;
-    state.readOverride = () => new Promise((resolve) => { resolveRead = resolve; });
+    // A holder object, so the resolver assigned inside the promise executor is still seen as set below.
+    const pendingRead: { resolve?: (rows: CalendarEventRow[]) => void } = {};
+    state.readOverride = () => new Promise((resolve) => { pendingRead.resolve = resolve; });
 
     await mounted.rerender(new Date("2026-10-01T12:00:00Z"));
     expect(seen?.isLoading).toBe(true);
@@ -212,7 +213,8 @@ describe("the agenda's refresh-on-open, and a detached event", () => {
     // render them as the answer for the new date window.
     expect(seen?.events.map((event) => event.id)).toEqual(["old-window-event"]);
 
-    resolveRead?.([]);
+    if (!pendingRead.resolve) throw new Error("the agenda never started its read for the new window");
+    pendingRead.resolve([]);
     for (let i = 0; i < 8; i += 1) {
       await act(async () => { await Promise.resolve(); });
     }

@@ -29,7 +29,7 @@ import {
   dateForCalendarDay,
   positionTimedSegments,
   type CalendarViewMode,
-} from "./calendarView";
+} from "./calendarLayout";
 import { useAgenda } from "./useAgenda";
 import type { CalendarEventRow } from "./types";
 

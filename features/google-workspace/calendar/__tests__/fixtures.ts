@@ -57,6 +57,9 @@ export function calendarEventRow(
     source_connection_owner_id: null,
     source_connection_owner_type: null,
     source_provider_subject: null,
+    calendar_time_zone: null,
+    source_original_start_time: null,
+    source_recurring_event_id: null,
     external_updated_at: fromNow(-DAY),
     // FRESH, so refresh-on-open does NOT fire unless a suite asks for it.
     synced_at: fromNow(-MINUTE),

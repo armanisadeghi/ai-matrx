@@ -6,7 +6,7 @@ import {
   calendarSegments,
   calendarTimelineAxes,
   positionTimedSegments,
-} from "./calendarView";
+} from "./calendarLayout";
 import { CALENDAR_EVENT_ATTENDEES_KIND, type CalendarEventRow } from "./types";
 
 function event(overrides: Partial<CalendarEventRow> & { id: string }): CalendarEventRow {
@@ -21,7 +21,6 @@ function event(overrides: Partial<CalendarEventRow> & { id: string }): CalendarE
     ends_at: null,
     external_id: `google-${overrides.id}`,
     external_updated_at: null,
-    id: overrides.id,
     location: null,
     meeting_url: null,
     metadata: {},
@@ -32,6 +31,9 @@ function event(overrides: Partial<CalendarEventRow> & { id: string }): CalendarE
     source_connection_owner_id: null,
     source_connection_owner_type: null,
     source_provider_subject: null,
+    calendar_time_zone: null,
+    source_original_start_time: null,
+    source_recurring_event_id: null,
     starts_at: "2026-09-18T13:00:00Z",
     sync_status: "available",
     sync_status_reason: null,
