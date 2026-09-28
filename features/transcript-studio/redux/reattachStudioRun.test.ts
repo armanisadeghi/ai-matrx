@@ -166,9 +166,19 @@ describe("cleanup execution answer boundary", () => {
 
 describe("recoveredAssistantAnswerText", () => {
   it("returns only persisted answer text without mutating typed reasoning or structured parts", () => {
+    // A real `decision_answers` message part — the generated MessagePart contract requires
+    // __kind/model/method/usage/cost_usd (see packages/matrx-ai/matrx_ai/decisions/kinds.py in
+    // aidream), so a fixture missing them is not a valid persisted part.
     const structuredResult = {
       type: "decision_answers",
-      answers: { preserve: { answer: "structured" } },
+      __kind: "decision_answers",
+      model: "test-model",
+      method: "native",
+      answers: {
+        preserve: { type: "noul", answer: "structured", confidence: 0.9 },
+      },
+      usage: { input_tokens: 10, output_tokens: 5 },
+      cost_usd: 0.001,
     };
     const persistedParts = [
       { type: "thinking", text: "private scratch work" },
@@ -208,7 +218,13 @@ describe("recoveredAssistantAnswerText", () => {
     const structuredResult = {
       type: "decision_answers",
       __kind: "decision_answers",
-      answers: { preserve: { answer: "structured" } },
+      model: "payload-model",
+      method: "native",
+      answers: {
+        preserve: { type: "noul", answer: "structured", confidence: 0.9 },
+      },
+      usage: { input_tokens: 10, output_tokens: 5 },
+      cost_usd: 0.001,
     };
     const state = {
       messages: {
