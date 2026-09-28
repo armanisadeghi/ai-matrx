@@ -33,6 +33,7 @@ import {
   type EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import { scopeOrgId, withTeamScope } from "@/lib/list-scope/types";
 import { visibilityWords } from "@/lib/record-words";
 import { PlayTapButton, ZapTapButton } from "@ai-matrx/tap-target/buttons";
 import { Archive } from "lucide-react";
@@ -84,10 +85,10 @@ export function visibilityLabel(value: string): string {
 function toDeckQuery(query: EntityListQuery): DeckListQuery {
   const scope = query.scope;
   return {
-    lane: (FLASHCARD_SET_SCOPES.includes(scope.kind)
+    lane: (withTeamScope(FLASHCARD_SET_SCOPES).includes(scope.kind)
       ? scope.kind
       : "mine") as DeckLane,
-    orgId: scope.kind === "orgs" ? scope.organizationId : null,
+    orgId: scopeOrgId(scope),
     search: query.search.trim(),
     filters: query.filters,
     archived: query.archived,
@@ -137,12 +138,14 @@ function StudyCell({ row }: { row: FlashcardSetListRow }) {
         <PlayTapButton
           href={flashcardStudyHref(row)}
           variant="transparent"
+          className="min-h-11"
           label="Study"
           ariaLabel={`Study ${row.name}`}
         />
         <ZapTapButton
           href={flashcardFastFireHref(row)}
           variant="transparent"
+          className="min-h-11"
           label="Fast Fire"
           ariaLabel={`Fast Fire ${row.name}`}
         />
