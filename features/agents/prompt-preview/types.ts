@@ -16,6 +16,9 @@ export interface PromptPreview {
   system_prompt: string | null;
   messages: Array<Record<string, unknown>>;
   tools: string[];
+  /** One sentence, set when this page's default tools were not sent because the
+   *  run's model is refused a tool loop (aidream tool_merge tool-loop gate). */
+  tool_notice?: string | null;
   params: Record<string, unknown>;
   loop_bounds: { max_iterations: number; max_retries_per_iteration: number };
   conversation_id: string | null;
