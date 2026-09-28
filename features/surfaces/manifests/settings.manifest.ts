@@ -146,7 +146,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Agent-writable preferences",
     sortOrder: 400,
     description:
-      "The subset of the user's preferences an agent may read and change here. Read from Redux regardless of which tab is open — these are NOT limited to the active tab.",
+      "The person's own preferences an agent may read and change from any settings tab (color mode, writing style, languages, assistant name, voice persona). They belong to the person, not to an organization, so they are real values even when no organization is selected; each is shown to the person on its own tab (Theme, Text generation, Language & Region, Assistants, Voices), not on the landing page.",
   },
 ];
 
@@ -157,7 +157,7 @@ const surfaceSpecific: SurfaceValue[] = [
     label: "Active tab id",
     description:
       // access-errors: ok — agent-facing value doc; "does not exist" is a verified static tab-registry lookup, not a record-read guess shown to a user
-      'Registry id of the open settings tab (dot-notation, e.g. "ai.textGeneration"). Empty on the /user-settings index landing (no tab selected) or when the URL names a tab that does not exist.',
+      'Registry id of the open settings tab (dot-notation, e.g. "ai.textGeneration"). On the /user-settings landing page it is "firstScreen" (the landing is its own tab). Absent when the URL names a tab that does not exist.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 26,
@@ -168,7 +168,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab_label",
     label: "Active tab label",
     description:
-      "Display label of the open settings tab as shown in the tree and breadcrumb. Empty when no tab is open.",
+      "Display label of the open settings tab (\"Settings\" on the landing page). Absent when the URL names a tab that does not exist.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 24,
@@ -179,7 +179,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab_description",
     label: "Active tab description",
     description:
-      "Short registry description of what the open tab configures. Empty when no tab is open or the tab has no description.",
+      "Short registry description of what the open tab configures. Absent when the URL names a tab that does not exist or the tab has no description.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 90,
@@ -190,7 +190,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab_path",
     label: "Active tab URL",
     description:
-      'Site-relative URL of the open tab (e.g. "/user-settings/ai/text-generation"). Empty when no tab is open.',
+      'Site-relative URL of the open tab (e.g. "/user-settings/ai/text-generation"; "/user-settings" on the landing page). Absent when the URL names a tab that does not exist.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 44,
@@ -201,7 +201,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab_persistence",
     label: "Active tab persistence",
     description:
-      'Where the open tab\'s settings are persisted: "synced" (saved to the user\'s account across devices), "local-only", or "session". Empty when no tab is open. Lets an agent tell the user whether changes here survive a refresh.',
+      'Where the open tab\'s settings are persisted: "synced" (saved to the user\'s account across devices), "local-only", or "session". Absent when the URL names a tab that does not exist. Lets an agent tell the user whether changes here survive a refresh.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
@@ -212,7 +212,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab",
     label: "Active tab",
     description:
-      "Composite of the open tab as one object: { id, label, description, path, persistence, requires_admin }. Mirrors the individual active-section values (completeness law). Absent when no tab is open.",
+      "Composite of the open tab as one object: { id, label, description, path, persistence, requires_admin }. Mirrors the individual active-section values (completeness law). Absent when the URL names a tab that does not exist.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 250,
