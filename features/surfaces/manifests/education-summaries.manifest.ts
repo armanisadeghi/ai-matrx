@@ -248,7 +248,7 @@ export const educationSummariesManifest: SurfaceManifest = {
   description: "View grounded study summaries (/education/summaries).",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitters shipped for both views (list / detail), no write targets by design (a summary is produced by the ingest converter, never authored here). Not yet stamped verified: the DB sync has not been run; no `data-surface-value` Locate anchors are tagged; not yet proven with a live agent probe.",
+    "Manifest + emitters for both views (list / detail), no write targets by design (a summary is produced by the ingest converter, never authored here). DB mirror synced and read-probed on both views 2026-09-27 (every declared value present, none undeclared). Not yet stamped verified: no `data-surface-value` Locate anchors; not yet proven with a live agent run (the clone backend failed every agent run that day, and production preview walks were at their cap).",
   label: "Study Summaries",
   urlPattern: "/education/summaries",
   intro: `<surface_intro>
