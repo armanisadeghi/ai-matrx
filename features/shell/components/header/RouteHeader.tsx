@@ -379,9 +379,19 @@ export default function RouteHeader({
         style={
           hasCenter
             ? {
-                // The title takes its natural width up to the cap that keeps
-                // the nav's smallest trigger on screen; the center takes the rest.
-                gridTemplateColumns: `${leftMax != null ? `fit-content(${leftMax}px)` : "auto"} minmax(0, 1fr) auto`,
+                // Before the first measurement (the server HTML, and the
+                // pre-hydration ghost) the center is centered by CSS alone:
+                // equal side tracks that never drop below their content, so
+                // the nav sits on the header's true center exactly where the
+                // measured inset puts it — nothing jumps when the client takes
+                // over (2026-09-27, /education/flashcards moved 270px).
+                // After it: the title takes its natural width up to the cap
+                // that keeps the nav's smallest trigger on screen; the center
+                // takes the rest.
+                gridTemplateColumns:
+                  centerPad == null
+                    ? "minmax(max-content, 1fr) auto minmax(max-content, 1fr)"
+                    : `${leftMax != null ? `fit-content(${leftMax}px)` : "auto"} minmax(0, 1fr) auto`,
               }
             : undefined
         }
