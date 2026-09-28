@@ -19,6 +19,7 @@ import type {
   CollectionBasic as UnsplashBasicCollection,
   TopicBasic as UnsplashBasicTopic,
 } from "unsplash-js";
+import { extractErrorMessage } from "@/utils/errors";
 
 // Unsplash still returns alt_description, but its v8 generated schema omits it.
 type UnsplashBasicPhoto = AssetBasic & { alt_description?: string | null };
@@ -68,7 +69,7 @@ async function call<TResponse>(
   } catch (err) {
     return {
       type: "error",
-      errors: [err instanceof Error ? err.message : "Unknown error"],
+      errors: [extractErrorMessage(err, "Unknown error")],
     };
   }
 }

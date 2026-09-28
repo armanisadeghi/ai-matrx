@@ -23,6 +23,7 @@ import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organ
 import { requestSandboxExtension } from "@/lib/sandbox/extension-response";
 import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
 import { useSandboxLifecycleTerminalInvalidation } from "@/lib/sandbox/useSandboxLifecycleTerminalInvalidation";
+import { extractErrorMessage } from "@/utils/errors";
 
 /** The sandbox list's page size is the `infrastructure.sandbox list_page_size` knob. */
 const SANDBOX_KNOB_FEATURE = "infrastructure.sandbox";
@@ -226,7 +227,7 @@ export function useSandboxInstances(projectId?: string) {
         if (err instanceof DOMException && err.name === "AbortError") {
           return null;
         }
-        const msg = err instanceof Error ? err.message : "Unknown error";
+        const msg = extractErrorMessage(err, "Unknown error");
         if (listProjectIdRef.current !== projectId) {
           setInstances([]);
           setTotal(0);
@@ -325,7 +326,7 @@ export function useSandboxInstances(projectId?: string) {
         setTotal((prev) => prev + 1);
         return { instance, error: null };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
+        const msg = extractErrorMessage(err, "Unknown error");
         console.error("[useSandboxInstances] createInstance: Error", msg);
         setError(msg);
         return { instance: null, error: msg };
@@ -361,7 +362,7 @@ export function useSandboxInstances(projectId?: string) {
       notifyComputeTargetsChanged();
       return instance;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
+      const msg = extractErrorMessage(err, "Unknown error");
       setError(msg);
       return null;
     }
@@ -469,7 +470,7 @@ export function useSandboxInstances(projectId?: string) {
 
         return (await resp.json()) as SandboxExecResponse;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
+        const msg = extractErrorMessage(err, "Unknown error");
         setError(msg);
         return null;
       }
@@ -493,7 +494,7 @@ export function useSandboxInstances(projectId?: string) {
 
         return (await resp.json()) as SandboxAccessResponse;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
+        const msg = extractErrorMessage(err, "Unknown error");
         setError(msg);
         return null;
       }

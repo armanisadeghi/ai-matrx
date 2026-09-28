@@ -10,6 +10,7 @@ import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { extractErrorMessage } from "@/utils/errors";
 
 interface UseUserPersistenceState {
   info: UserPersistenceResponse | null;
@@ -99,7 +100,7 @@ export function useUserPersistence(
         setState({
           info: null,
           loading: false,
-          error: err instanceof Error ? err.message : "Unknown error",
+          error: extractErrorMessage(err, "Unknown error"),
         });
       }
     },
@@ -146,7 +147,7 @@ export function useUserPersistence(
         return { ok: true };
       } catch (err) {
         if (isOrganizationSelectionCancelled(err)) return { ok: false, cancelled: true };
-        const message = err instanceof Error ? err.message : "Unknown error";
+        const message = extractErrorMessage(err, "Unknown error");
         setState((s) => ({ ...s, error: message }));
         return { ok: false, error: message };
       }

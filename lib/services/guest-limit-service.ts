@@ -8,6 +8,7 @@
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { extractErrorMessage } from "@/utils/errors";
 
 export interface GuestLimitStatus {
   allowed: boolean;
@@ -164,7 +165,7 @@ export async function recordGuestExecution(
     return {
       success: false,
       log_id: null,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: extractErrorMessage(error, "Unknown error"),
     };
   }
 }

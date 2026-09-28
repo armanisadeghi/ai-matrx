@@ -15,6 +15,7 @@ import {
   lookupSandboxAndOrchestrator,
   type OrchestratorTarget,
 } from "@/lib/sandbox/orchestrator-routing";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * Node's undici fetch implementation requires `duplex: "half"` on the init
@@ -101,7 +102,7 @@ export async function forwardToOrchestrator(
       headers: responseHeaders,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = extractErrorMessage(err, "Unknown error");
     return NextResponse.json(
       { error: "Sandbox orchestrator is not reachable", details: message },
       { status: 502 },
