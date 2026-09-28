@@ -27,6 +27,7 @@ import type {
   EntityListSort,
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
+import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { scopeOrgId } from "@/lib/list-scope/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { WorkflowBrowseRow, WorkflowRowEdit } from "./types";
@@ -102,25 +103,7 @@ export async function fetchWorkflowScopeCounts(
 
   if (error) throw pgError(error);
 
-  const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-  for (const row of data ?? []) {
-    const total = Number(row.total ?? 0);
-    const kind = row.scope;
-    if (kind !== "mine" && kind !== "orgs" && kind !== "shared" && kind !== "public") {
-      continue;
-    }
-    // A narrow_id means "one org inside this scope"; no id means the scope's
-    // own blended total.
-    if (row.narrow_id) {
-      (counts.narrow[kind] ??= []).push({
-        id: row.narrow_id,
-        label: row.label ?? "Unnamed",
-        count: total,
-      });
-      continue;
-    }
-    counts.byKind[kind] = total;
-  }
+  const counts = scopeCountsFromRows(data ?? [], "Unnamed");
   return counts;
 }
 

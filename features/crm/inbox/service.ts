@@ -17,6 +17,7 @@ import type {
   EntityListSort,
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
+import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { scopeOrgId } from "@/lib/list-scope/types";
 import type { InteractionRow } from "@/features/crm/types";
 import type { InboxRow } from "./types";
@@ -63,20 +64,7 @@ export async function fetchInboxScopeCounts(
 
   if (error) throw pgError(error);
 
-  const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-  for (const row of data ?? []) {
-    const total = Number(row.total ?? 0);
-    if (row.scope !== "mine" && row.scope !== "orgs") continue;
-    if (row.narrow_id) {
-      (counts.narrow[row.scope] ??= []).push({
-        id: row.narrow_id,
-        label: row.label ?? "Unnamed org",
-        count: total,
-      });
-      continue;
-    }
-    counts.byKind[row.scope] = total;
-  }
+  const counts = scopeCountsFromRows(data ?? [], "Unnamed org");
   return counts;
 }
 

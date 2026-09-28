@@ -28,6 +28,7 @@
 
 import {
   User,
+  UsersRound,
   Building2,
   Users2,
   Globe,
@@ -48,6 +49,7 @@ import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import {
   makeScope,
+  withTeamScope,
   scopeIndustryId,
   scopeNarrowId,
   type ListScope,
@@ -82,10 +84,15 @@ const SCOPE_META: Record<
   { label: string; icon: typeof User; title?: string }
 > = {
   mine: { label: "Mine", icon: User, title: "Records you created" },
+  team: {
+    label: "My team",
+    icon: UsersRound,
+    title: "Made by you and the people you share a team with",
+  },
   orgs: {
     label: "My Orgs",
     icon: Building2,
-    title: "Created by teammates in organizations you belong to",
+    title: "In the organizations you belong to",
   },
   shared: {
     label: "Shared",
@@ -189,7 +196,8 @@ export function EntityScopeTabs({
       role="tablist"
       aria-label="List scope"
     >
-      {scopes.map((kind) => {
+      {/* "My team" joins every tab bar that offers "My Orgs" — here, once. */}
+      {withTeamScope(scopes).map((kind) => {
         const meta = SCOPE_META[kind];
         const Icon = meta.icon;
         // The server decides what a scope narrows to; personal orgs are

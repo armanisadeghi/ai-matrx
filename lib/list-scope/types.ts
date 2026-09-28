@@ -12,7 +12,9 @@
 // other page. See lib/list-scope/FEATURE.md.
 //
 //   mine     → what did I make?
-//   orgs     → what does my team have?      (blended, or narrowed to one org)
+//   team     → what did my team make?       (people I share a team with, per org;
+//                                            blended, or narrowed to one org)
+//   orgs     → what does my organization have? (blended, or narrowed to one org)
 //   shared   → what did someone hand me?    (explicit iam.permissions grant)
 //   industry → what does my field publish?  (see below)
 //   public   → what has a tenant published platform-wide?
@@ -57,6 +59,7 @@
 
 export type ListScopeKind =
   | "mine"
+  | "team"
   | "orgs"
   | "shared"
   | "industry"
@@ -68,6 +71,15 @@ export type ListScopeKind =
 
 export type ListScope =
   | { kind: "mine" }
+  /**
+   * MY TEAM (access ladder: "my team or department"). Rows in an organization I
+   * belong to, made by someone who shares a live team with me THERE — me always
+   * included, so a person on no team sees exactly their own items. A team is a
+   * list filter, never an access boundary: every row here is one "orgs" would
+   * also show. Server reach: `iam.my_team_reach(p_org_id)` (teams FEATURE.md).
+   * `organizationId: null` = blended across every organization I belong to.
+   */
+  | { kind: "team"; organizationId: string | null }
   /** `organizationId: null` = blended across all my non-personal orgs. */
   | { kind: "orgs"; organizationId: string | null }
   | { kind: "shared" }
@@ -94,7 +106,7 @@ export const ADMIN_SUPPORT_LIST_SCOPES: ListScopeKind[] = [
 ];
 
 /** The personal-seat scopes: legal on user pages, banned on admin pages. */
-export const PERSONAL_SEAT_SCOPES: readonly ListScopeKind[] = ["mine", "orgs", "shared"];
+export const PERSONAL_SEAT_SCOPES: readonly ListScopeKind[] = ["mine", "team", "orgs", "shared"];
 
 export const DEFAULT_LIST_SCOPE: ListScope = { kind: "mine" };
 
@@ -108,6 +120,7 @@ export const DEFAULT_LIST_SCOPE: ListScope = { kind: "mine" };
  */
 export const LIST_SCOPE_KINDS: readonly ListScopeKind[] = [
   "mine",
+  "team",
   "orgs",
   "shared",
   "industry",
@@ -124,6 +137,31 @@ export function isMineScope(
   scope: ListScope,
 ): scope is Extract<ListScope, { kind: "mine" }> {
   return scope.kind === "mine";
+}
+
+export function isTeamScope(
+  scope: ListScope,
+): scope is Extract<ListScope, { kind: "team" }> {
+  return scope.kind === "team";
+}
+
+/**
+ * THE ONE PLACE "My team" joins a list (T-29, 2026-09-27). Every surface that
+ * offers "My Orgs" offers "My team" beside it — never declared per page. Its
+ * `*_list_scoped` RPC answers `p_scope = 'team'` through `iam.my_team_reach`,
+ * and its counts RPC returns a `team` row; a surface whose RPC cannot is a
+ * defect in that RPC, not a reason to hide the tab here.
+ *
+ * Inserted directly after "mine" (the ladder reads narrow → wide: only me, my
+ * team, my organization). Idempotent; a list without "orgs" is untouched —
+ * an admin page, or a Private type, has no team question to answer.
+ */
+export function withTeamScope(scopes: readonly ListScopeKind[]): ListScopeKind[] {
+  if (!scopes.includes("orgs") || scopes.includes("team")) return [...scopes];
+  const out = [...scopes];
+  const at = out.indexOf("mine");
+  out.splice(at >= 0 ? at + 1 : out.indexOf("orgs"), 0, "team");
+  return out;
 }
 
 export function isOrgsScope(
@@ -161,7 +199,7 @@ export function isPublicScope(
  * the union just to read an optional id.
  */
 export function scopeOrgId(scope: ListScope): string | null {
-  return scope.kind === "orgs" ? scope.organizationId : null;
+  return scope.kind === "orgs" || scope.kind === "team" ? scope.organizationId : null;
 }
 
 /** The industry this scope narrows to, or null. */
@@ -177,7 +215,7 @@ export function scopeIndustryId(scope: ListScope): string | null {
  * knowing which axis it belongs to.
  */
 export function scopeNarrowId(scope: ListScope): string | null {
-  if (scope.kind === "orgs") return scope.organizationId;
+  if (scope.kind === "orgs" || scope.kind === "team") return scope.organizationId;
   if (scope.kind === "platform_orgs" || scope.kind === "platform_users")
     return scope.organizationId;
   if (scope.kind === "industry") return scope.industryId;
@@ -186,8 +224,8 @@ export function scopeNarrowId(scope: ListScope): string | null {
 
 /** Stable identity for tab selection / React keys. */
 export function scopeKey(scope: ListScope): string {
-  if (scope.kind === "orgs")
-    return scope.organizationId ? `orgs:${scope.organizationId}` : "orgs";
+  if (scope.kind === "orgs" || scope.kind === "team")
+    return scope.organizationId ? `${scope.kind}:${scope.organizationId}` : scope.kind;
   if (scope.kind === "industry")
     return scope.industryId ? `industry:${scope.industryId}` : "industry";
   if (scope.kind === "platform_orgs" || scope.kind === "platform_users")
@@ -203,6 +241,8 @@ export function makeScope(
   switch (kind) {
     case "orgs":
       return { kind: "orgs", organizationId: narrowToId };
+    case "team":
+      return { kind: "team", organizationId: narrowToId };
     case "industry":
       return { kind: "industry", industryId: narrowToId };
     case "mine":

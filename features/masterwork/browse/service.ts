@@ -1,4 +1,9 @@
 import { supabase } from "@/utils/supabase/client";
+import {
+  fetchMyTeamReach,
+  teamReachOrFilter,
+  type TeamReachPair,
+} from "@/lib/list-scope/teamReach";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { applyListScope } from "@/lib/list-scope/applyListScope";
 import type {
@@ -127,8 +132,14 @@ function applyScope<Q extends RulebookFilterable>(
   userId: string,
   blendedOrgIds: string[],
   sharedIds: string[],
+  teamReach: TeamReachPair[] = [],
 ): Q | null {
   if (scope.kind === "public") return q.eq("visibility", "public");
+  // MY TEAM: what I and the people I share a team with made, per organization.
+  if (scope.kind === "team") {
+    const filter = teamReachOrFilter(teamReach, userId);
+    return filter === null ? null : q.or(filter);
+  }
   if (scope.kind === "shared") {
     if (sharedIds.length === 0) return null;
     return q.in("id", sharedIds);
@@ -284,11 +295,21 @@ export async function fetchRulebookPage(
   sort: EntityListSort,
 ): Promise<EntityListPage<RulebookListRow>> {
   const userId = requireUserId();
-  const [{ ids: blendedOrgIds }, sharedIds] = await Promise.all([
+  const [{ ids: blendedOrgIds }, sharedIds, teamReach] = await Promise.all([
     myOrgs(),
     mySharedRulebookIds(),
+    query.scope.kind === "team"
+      ? fetchMyTeamReach(query.scope.organizationId)
+      : Promise.resolve([]),
   ]);
-  let q = applyScope(basePage(), query.scope, userId, blendedOrgIds, sharedIds);
+  let q = applyScope(
+    basePage(),
+    query.scope,
+    userId,
+    blendedOrgIds,
+    sharedIds,
+    teamReach,
+  );
   if (q === null) return { rows: [], total: 0 };
   q = applyFilters(q, query);
 
@@ -318,28 +339,35 @@ export async function fetchRulebookCounts(
     narrow: {},
   };
 
-  const [{ ids, names }, sharedIds] = await Promise.all([
+  const [{ ids, names }, sharedIds, teamReach] = await Promise.all([
     myOrgs(),
     mySharedRulebookIds(),
+    fetchMyTeamReach(null),
   ]);
 
   const countFor = async (
     scope: EntityListQuery["scope"],
   ): Promise<number> => {
-    let q = applyScope(baseCount(), scope, userId, ids, sharedIds);
+    const reach =
+      scope.kind === "team" && scope.organizationId
+        ? teamReach.filter((p) => p.organizationId === scope.organizationId)
+        : teamReach;
+    let q = applyScope(baseCount(), scope, userId, ids, sharedIds, reach);
     if (q === null) return 0;
     q = applyFilters(q, query);
     const { count, error } = await q;
     if (error) throw new Error(`${error.message} (${error.code})`);
     return count ?? 0;
   };
-  const [mine, orgsBlended, shared, pub] = await Promise.all([
+  const [mine, team, orgsBlended, shared, pub] = await Promise.all([
     countFor({ kind: "mine" }),
+    countFor({ kind: "team", organizationId: null }),
     countFor({ kind: "orgs", organizationId: null }),
     countFor({ kind: "shared" }),
     countFor({ kind: "public" }),
   ]);
   counts.byKind.mine = mine;
+  counts.byKind.team = team;
   counts.byKind.orgs = orgsBlended;
   counts.byKind.shared = shared;
   counts.byKind.public = pub;

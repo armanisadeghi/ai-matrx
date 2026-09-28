@@ -26,7 +26,7 @@ type RpcResult = PromiseLike<{
 const rpc = (fn: string, args: Record<string, unknown>): RpcResult =>
   (EDU() as unknown as { rpc: (f: string, a: Record<string, unknown>) => RpcResult }).rpc(fn, args);
 
-export type AssessmentLane = "mine" | "orgs" | "shared" | "public";
+export type AssessmentLane = "mine" | "team" | "orgs" | "shared" | "public";
 export type AssessmentArchive = "active" | "archived" | "all";
 
 /** One row of the library as the list RPC returns it (titles in display form). */
@@ -127,7 +127,7 @@ export async function fetchAssessmentLaneCounts(
     p_archived: query.archived,
   });
   if (error) fail("counted", error);
-  const out: Record<AssessmentLane, number> = { mine: 0, orgs: 0, shared: 0, public: 0 };
+  const out: Record<AssessmentLane, number> = { mine: 0, team: 0, orgs: 0, shared: 0, public: 0 };
   for (const row of (data ?? []) as { scope: string; total: number }[]) {
     if (row.scope in out) out[row.scope as AssessmentLane] = Number(row.total);
   }

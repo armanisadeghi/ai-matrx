@@ -17,7 +17,7 @@
 
 import type { ArchiveFilterValue } from "@ai-matrx/design-system";
 import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
-import { DEFAULT_LIST_SCOPE } from "@/lib/list-scope/types";
+import { DEFAULT_LIST_SCOPE, LIST_SCOPE_KINDS } from "@/lib/list-scope/types";
 
 /** Sentinel for "has no value" (uncategorized / untagged). Matches the SQL. */
 export const NONE_VALUE = "__none__";
@@ -176,6 +176,46 @@ export const EMPTY_SCOPE_COUNTS: EntityScopeCounts = {
   byKind: {},
   narrow: {},
 };
+
+/** One row of any `*_list_scope_counts` RPC. */
+export interface ScopeCountRow {
+  scope: string;
+  narrow_id?: string | null;
+  label?: string | null;
+  total: number | string | null;
+}
+
+/**
+ * THE ONE READER of a `*_list_scope_counts` result. Every surface converts
+ * through here, so a scope the server learns (System, then My team) reaches its
+ * tab everywhere at once. A hand-listed `kind !== "mine" && kind !== "orgs"…`
+ * filter per service is how `system` came back with a real total and was
+ * silently dropped on the way to its tab — the vocabulary check reads
+ * LIST_SCOPE_KINDS and nothing else. A row with `narrow_id` is one
+ * organization (or industry) inside its scope; without one it is the scope's
+ * blended total.
+ */
+export function scopeCountsFromRows(
+  rows: readonly ScopeCountRow[] | null | undefined,
+  unnamed = "Unnamed",
+): EntityScopeCounts {
+  const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
+  for (const row of rows ?? []) {
+    const kind = LIST_SCOPE_KINDS.find((k) => k === row.scope);
+    if (!kind) continue;
+    const total = Number(row.total ?? 0);
+    if (row.narrow_id) {
+      (counts.narrow[kind] ??= []).push({
+        id: row.narrow_id,
+        label: row.label ?? unnamed,
+        count: total,
+      });
+      continue;
+    }
+    counts.byKind[kind] = total;
+  }
+  return counts;
+}
 
 /**
  * Server-computed filter OPTIONS with counts, keyed by facet name.

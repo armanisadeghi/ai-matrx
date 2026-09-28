@@ -6,6 +6,8 @@ import {
   type EntityListSort,
   type EntityScopeCounts,
 } from "@/lib/entity-list/types";
+import { fetchMyTeamReach, type TeamReachPair } from "@/lib/list-scope/teamReach";
+import { makeScope } from "@/lib/list-scope/types";
 import { listEncoreShelves } from "../service";
 import { operationFailed } from "@/utils/errors";
 import type { EncoreListRow } from "./types";
@@ -121,12 +123,34 @@ function compareRows(
   return result === 0 ? left.id.localeCompare(right.id) : result * direction;
 }
 
+/**
+ * MY TEAM is not a shelf of its own: it is the Mine and organization shelves'
+ * Masterworks built by me or someone I share a team with, in that organization.
+ */
+function inScope(
+  row: EncoreListRow,
+  scope: EntityListQuery["scope"],
+  reach: readonly TeamReachPair[],
+): boolean {
+  if (scope.kind !== "team") return row.scope === scope.kind;
+  if (row.scope !== "mine" && row.scope !== "orgs") return false;
+  if (scope.organizationId && row.organization_id !== scope.organizationId) return false;
+  return reach.some(
+    (p) => p.organizationId === row.organization_id && p.userId === row.created_by,
+  );
+}
+
+async function reachFor(scope: EntityListQuery["scope"]): Promise<TeamReachPair[]> {
+  return scope.kind === "team" ? fetchMyTeamReach(scope.organizationId) : [];
+}
+
 function rowsForQuery(
   rows: EncoreListRow[],
   query: EntityListQuery,
+  reach: readonly TeamReachPair[],
 ): EncoreListRow[] {
   return rows.filter(
-    (row) => row.scope === query.scope.kind && matches(row, query),
+    (row) => inScope(row, query.scope, reach) && matches(row, query),
   );
 }
 
@@ -134,7 +158,8 @@ export async function fetchEncorePage(
   query: EntityListQuery,
   sort: EntityListSort,
 ): Promise<EntityListPage<EncoreListRow>> {
-  const rows = rowsForQuery(await loadRows(), query).sort((left, right) =>
+  const [all, reach] = await Promise.all([loadRows(), reachFor(query.scope)]);
+  const rows = rowsForQuery(all, query, reach).sort((left, right) =>
     compareRows(left, right, sort),
   );
   const from = (query.page - 1) * sort.pageSize;
@@ -144,11 +169,12 @@ export async function fetchEncorePage(
 export async function fetchEncoreCounts(
   query: EntityListQuery,
 ): Promise<EntityScopeCounts> {
-  const rows = await loadRows();
+  const [rows, reach] = await Promise.all([loadRows(), fetchMyTeamReach(null)]);
   const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-  for (const scope of ["mine", "orgs", "public"] as const) {
-    counts.byKind[scope] = rows.filter(
-      (row) => row.scope === scope && matches(row, query),
+  for (const kind of ["mine", "team", "orgs", "public"] as const) {
+    const scope = makeScope(kind);
+    counts.byKind[kind] = rows.filter(
+      (row) => inScope(row, scope, reach) && matches(row, query),
     ).length;
   }
   return counts;

@@ -16,6 +16,7 @@ import type {
   EntityListSort,
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
+import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { scopeOrgId } from "@/lib/list-scope/types";
 import { getGscKeywordValueForMulti } from "@/features/marketing/search-console/data-insights";
 
@@ -138,28 +139,7 @@ export async function fetchCrossSiteRankCounts(
     p_filters: query.filters,
   });
   const data = assertData(response.data, response.error);
-  const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-
-  for (const row of data) {
-    if (
-      row.scope !== "mine" &&
-      row.scope !== "orgs" &&
-      row.scope !== "shared" &&
-      row.scope !== "public"
-    ) {
-      continue;
-    }
-    const total = Number(row.total ?? 0);
-    if (row.narrow_id) {
-      (counts.narrow[row.scope] ??= []).push({
-        id: row.narrow_id,
-        label: row.label ?? "Organization",
-        count: total,
-      });
-    } else {
-      counts.byKind[row.scope] = total;
-    }
-  }
+  const counts = scopeCountsFromRows(data, "Organization");
   return counts;
 }
 

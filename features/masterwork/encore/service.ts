@@ -64,6 +64,9 @@ export interface EncoreMasterwork extends Masterwork {
   auditionVerdict: string | null;
   /** When that audition ran — a score with no date is not evidence. */
   auditionedAt: string | null;
+  /** Who built it, and where — the "My team" tab's narrowing input. */
+  created_by: string | null;
+  organization_id: string | null;
 }
 
 export interface EncoreShelf {
@@ -82,7 +85,7 @@ function builtBase() {
   return supabase
     .schema("workflow")
     .from("definition")
-    .select(MASTERWORK_SELECT_COLUMNS)
+    .select(`${MASTERWORK_SELECT_COLUMNS},created_by,organization_id`)
     .is("deleted_at", null)
     .eq("is_archived", false)
     .not("metadata->>built_from_rulebook", "is", null)
@@ -147,6 +150,8 @@ async function withRulebooks(
       auditionScore: audition?.qualityScore ?? null,
       auditionVerdict: audition?.verdictSentence ?? null,
       auditionedAt: audition?.createdAt ?? null,
+      created_by: null,
+      organization_id: null,
     };
   });
 }
@@ -174,9 +179,17 @@ export async function listEncoreShelves(): Promise<EncoreShelf[]> {
   }
 
   const seen = new Set<string>();
+  const owners = new Map<string, { created_by: string | null; organization_id: string | null }>();
   const shelf = (rows: unknown[]): Masterwork[] => {
     const out: Masterwork[] = [];
     for (const raw of rows) {
+      const owned = raw as { id?: string; created_by?: string | null; organization_id?: string | null };
+      if (owned.id) {
+        owners.set(owned.id, {
+          created_by: owned.created_by ?? null,
+          organization_id: owned.organization_id ?? null,
+        });
+      }
       const m = parseMasterworkRow(
         raw as Parameters<typeof parseMasterworkRow>[0],
       );
@@ -196,7 +209,14 @@ export async function listEncoreShelves(): Promise<EncoreShelf[]> {
   const all = await withRulebooks([...mine, ...fromOrgs, ...pub]);
   const byId = new Map(all.map((m) => [m.id, m]));
   const pick = (list: Masterwork[]) =>
-    list.map((m) => byId.get(m.id)).filter((m): m is EncoreMasterwork => !!m);
+    list
+      .map((m) => byId.get(m.id))
+      .filter((m): m is EncoreMasterwork => !!m)
+      .map((m) => ({
+        ...m,
+        created_by: owners.get(m.id)?.created_by ?? null,
+        organization_id: owners.get(m.id)?.organization_id ?? null,
+      }));
   return [
     { scope: "mine" as const, masterworks: pick(mine) },
     { scope: "orgs" as const, masterworks: pick(fromOrgs) },

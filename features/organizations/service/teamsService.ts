@@ -206,3 +206,33 @@ export async function removeTeamMember(
   });
   if (error) throw pgErrorToError(error);
 }
+
+/** One of the signed-in person's own teams (the "My team" list scope's input). */
+export interface MyTeam {
+  organizationId: string;
+  organizationName: string;
+  teamId: string;
+  teamName: string;
+  memberCount: number;
+}
+
+/**
+ * The signed-in person's live teams — in one organization, or (null) in every
+ * organization they belong to. Read by the "My team" list scope to say whose
+ * items it is showing, and to say so plainly when the person is on no team.
+ */
+export async function listMyTeams(
+  organizationId: string | null,
+): Promise<MyTeam[]> {
+  const { data, error } = await runWithSessionRetry(() =>
+    supabase.rpc("my_teams", { p_organization_id: organizationId ?? undefined }),
+  );
+  if (error) throw pgErrorToError(error);
+  return (data ?? []).map((row) => ({
+    organizationId: row.organization_id,
+    organizationName: row.organization_name,
+    teamId: row.team_id,
+    teamName: row.team_name,
+    memberCount: row.member_count ?? 0,
+  }));
+}

@@ -24,6 +24,7 @@ import type {
   EntityListSort,
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
+import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { scopeOrgId } from "@/lib/list-scope/types";
 import type { ResearchTopicListRow } from "./types";
 
@@ -79,20 +80,7 @@ export const researchTopicListService: EntityListService<ResearchTopicListRow> =
       p_archived: query.archived,
     });
     if (error) throw pgError(error);
-    const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-    for (const row of data ?? []) {
-      const kind = row.scope;
-      if (kind !== "mine" && kind !== "orgs") continue;
-      if (row.narrow_id) {
-        (counts.narrow[kind] ??= []).push({
-          id: row.narrow_id,
-          label: row.label ?? "Organization",
-          count: Number(row.total ?? 0),
-        });
-        continue;
-      }
-      counts.byKind[kind] = Number(row.total ?? 0);
-    }
+    const counts = scopeCountsFromRows(data ?? [], "Organization");
     counts.narrow.orgs?.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
     return counts;
   },

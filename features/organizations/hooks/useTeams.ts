@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import {
   listHrDepartmentOptions,
   listTeamMembers,
+  listMyTeams,
   listTeams,
   type HrDepartmentOption,
+  type MyTeam,
   type Team,
   type TeamMember,
 } from "@/features/organizations/service/teamsService";
@@ -110,4 +112,43 @@ export function useHrDepartmentOptions(
   }, [organizationId, enabled, tick]);
 
   return { data, loading, error, refresh: () => setTick((t) => t + 1) };
+}
+
+/**
+ * The signed-in person's own teams in one organization, or in all of them
+ * (null). `enabled: false` reads nothing — a list asks only while its
+ * "My team" tab is the one on screen.
+ */
+export function useMyTeams(
+  organizationId: string | null,
+  enabled = true,
+): Loaded<MyTeam[]> & { settled: boolean } {
+  const key = organizationId ?? "*";
+  const [loaded, setLoaded] = useState<{ key: string; rows: MyTeam[] } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    setLoading(true);
+    setError(null);
+    listMyTeams(organizationId)
+      .then((rows) => live && setLoaded({ key, rows }))
+      .catch((e: unknown) => live && setError(messageOf(e)))
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [organizationId, key, enabled, tick]);
+
+  const current = loaded?.key === key ? loaded.rows : null;
+  return {
+    data: current ?? [],
+    loading,
+    error,
+    settled: current !== null,
+    refresh: () => setTick((t) => t + 1),
+  };
 }

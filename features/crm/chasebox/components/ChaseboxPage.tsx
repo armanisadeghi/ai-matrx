@@ -110,17 +110,18 @@ export function ChaseboxPage() {
     setError(null);
     void Promise.all([
       fetchChaseboxCounts(makeScope("mine")),
+      fetchChaseboxCounts(makeScope("team")),
       fetchChaseboxCounts(makeScope("orgs")),
     ])
-      .then(([mine, orgs]) => {
+      .then(([mine, team, orgs]) => {
         if (cancelled) return;
         const sum = (c: ChaseboxCounts) =>
           CHASEBOX_QUEUES.reduce((n, q) => n + c[q], 0);
         setScopeTotals({
-          byKind: { mine: sum(mine), orgs: sum(orgs) },
+          byKind: { mine: sum(mine), team: sum(team), orgs: sum(orgs) },
           narrow: {},
         });
-        setCounts(scope.kind === "orgs" ? orgs : mine);
+        setCounts(scope.kind === "orgs" ? orgs : scope.kind === "team" ? team : mine);
       })
       .catch((loadError: unknown) => {
         if (cancelled) return;

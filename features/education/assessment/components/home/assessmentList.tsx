@@ -31,6 +31,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import { scopeOrgId, withTeamScope } from "@/lib/list-scope/types";
 import { visibilityWords } from "@/lib/record-words";
 import Link from "next/link";
 import { Play } from "lucide-react";
@@ -97,8 +98,8 @@ function toQuery(kind: KindConfig["kind"], query: EntityListQuery): AssessmentLi
   const scope = query.scope;
   return {
     kind,
-    lane: (ASSESSMENT_SCOPES.includes(scope.kind) ? scope.kind : "mine") as AssessmentLane,
-    orgId: scope.kind === "orgs" ? scope.organizationId : null,
+    lane: (withTeamScope(ASSESSMENT_SCOPES).includes(scope.kind) ? scope.kind : "mine") as AssessmentLane,
+    orgId: scopeOrgId(scope),
     search: query.search.trim(),
     filters: query.filters,
     archived: query.archived,

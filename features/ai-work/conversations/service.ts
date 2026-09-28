@@ -24,6 +24,7 @@ import type {
   EntityListSort,
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
+import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { scopeOrgId } from "@/lib/list-scope/types";
 import type { ConversationBrowseRow } from "./types";
 
@@ -78,21 +79,7 @@ export async function fetchConversationScopeCounts(
 
   if (error) throw pgError(error);
 
-  const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-  for (const row of data ?? []) {
-    const kind = row.scope;
-    if (kind !== "mine" && kind !== "orgs" && kind !== "shared") continue;
-    const total = Number(row.total ?? 0);
-    if (row.narrow_id) {
-      (counts.narrow[kind] ??= []).push({
-        id: row.narrow_id,
-        label: row.label ?? "Unnamed",
-        count: total,
-      });
-      continue;
-    }
-    counts.byKind[kind] = total;
-  }
+  const counts = scopeCountsFromRows(data ?? [], "Unnamed");
   return counts;
 }
 

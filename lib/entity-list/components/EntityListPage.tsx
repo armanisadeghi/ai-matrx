@@ -36,7 +36,13 @@ import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { useListSearchParams } from "../useListSearchParams";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
-import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
+import {
+  withTeamScope,
+  type ListScope,
+  type ListScopeKind,
+} from "@/lib/list-scope/types";
+import Link from "next/link";
+import { useMyTeams } from "@/features/organizations/hooks/useTeams";
 import type { EntityListConfig, EntityListController } from "../config";
 import { useEntityList } from "../useEntityList";
 import {
@@ -171,7 +177,8 @@ export function EntityListPage<TRow>({
   clearsShellHeader = true,
   scopeTabs = true,
 }: EntityListPageProps<TRow>) {
-  const visibleScopes = scopes ?? config.scopes;
+  // "My team" joins every list that offers "My Orgs" here, once — never per page.
+  const visibleScopes = withTeamScope(scopes ?? config.scopes);
   // 🚨 THE URL IS THE QUERY ON EVERY LIST PAGE (default ON since 2026-09-26).
   // It used to be opt-in, and `/agents/all` and `/workflows/all` never opted
   // in: `?scope=mine&q=seo` was ignored, the late registry default flipped
@@ -404,6 +411,53 @@ export function EntityListPage<TRow>({
   const configuredEmptyAction =
     typeof emptyAction === "function" ? emptyAction(list) : emptyAction;
 
+  // "MY TEAM" SAYS WHOSE ITEMS IT SHOWS (T-29). An empty My team tab is either
+  // "you are on no team here, so this is only your own items" or "nobody on
+  // your teams has made one yet" — two different facts, and the first has a
+  // door: teams are set up in the organization's settings. Asked only while
+  // the My team tab is the one on screen.
+  const teamScope = list.query.scope.kind === "team" ? list.query.scope : null;
+  const teamOrgId = teamScope?.organizationId ?? null;
+  const myTeams = useMyTeams(teamOrgId, teamScope !== null);
+  const teamOrgName = teamOrgId
+    ? ((list.counts.narrow.team ?? list.counts.narrow.orgs ?? []).find(
+        (o) => o.id === teamOrgId,
+      )?.label ?? null)
+    : null;
+  const teamNames = Array.from(new Set(myTeams.data.map((t) => t.teamName)));
+  const teamNamesSentence =
+    teamNames.length <= 3
+      ? teamNames.join(", ").replace(/, ([^,]*)$/, " or $1")
+      : `${teamNames.slice(0, 3).join(", ")} or ${teamNames.length - 3} more`;
+  const teamEmptyState =
+    teamScope && myTeams.settled
+      ? myTeams.data.length === 0
+        ? {
+            title: `No ${plural} from your team`,
+            description: teamOrgName
+              ? `You are not on a team in ${teamOrgName}, so My team shows only the ${plural} you made there, and you have none. Owners and admins of ${teamOrgName} set up teams in its settings.`
+              : `You are not on a team in any of your organizations, so My team shows only the ${plural} you made, and you have none. An organization's owners and admins set up teams in its settings.`,
+            action: (
+              <Button size="sm" variant="outline" asChild>
+                <Link
+                  href={
+                    teamOrgId
+                      ? `/organizations/${teamOrgId}/settings#teams`
+                      : "/organizations"
+                  }
+                >
+                  {teamOrgId ? "Open Teams" : "Open organizations"}
+                </Link>
+              </Button>
+            ),
+          }
+        : {
+            title: `No ${plural} from your team yet`,
+            description: `Nobody on ${teamNamesSentence} has made ${singular.match(/^[aeiou]/i) ? "an" : "a"} ${singular} here yet, and neither have you.`,
+            action: configuredEmptyAction,
+          }
+      : null;
+
   const searchMissAction =
     list.query.search.trim() && configuredEmptyAction ? (
       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -466,12 +520,12 @@ export function EntityListPage<TRow>({
               // 2026-09-27, /research/topics: the offer never showed).
               action: searchMissAction,
             }
-          : {
+          : (teamEmptyState ?? {
               // Reached only when the archive axis is off for this surface, or
               // it answered `total: 0` — i.e. live + archived really is zero.
               ...config.emptyState,
               action: configuredEmptyAction,
-            });
+            }));
 
   const cardsView = config.views?.cards;
   const rowsView = config.views?.rows;
