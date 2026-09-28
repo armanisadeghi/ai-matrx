@@ -243,10 +243,16 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
-- 2026-09-28 — Chat tile: mounts `matrx-user/chat` for its conversation (`ChatConversationSurface`, shared
-  with `/chat`); reopening resumes through `resumeConversation` (reattaches a mid-run turn); its launch opts
-  out of surface adoption like /chat's own. `startNew` may list several entries; chat adds "Chat with an
-  agent". Bring-in is "Conversation".
+- 2026-09-28 — Custom data: Table tile (`data-table`) renders `/data-v2`'s own table (`UnifiedTable`, shared
+  with the route) and carries `matrx-user/data-tables` via `RecordStoreTableSurface`; Record tile renders
+  `Peek` and carries `matrx-user/data-tables` scoped to that one row (`RecordStoreRecordSurface`). The table
+  surface mounts only under the merged grid (`data_tables.merged_grid` knob, default off until merge step 8).
+  Board-item surfaces declare `briefValues` for `board_items` basics.
+
+- 2026-09-28 — The bridge: every tile registers its surface into a per-tile capture (live or dormant);
+  `board_items` replaces `board_tiles` (every item + a dormant item's basics); `board_open_item` /
+  `board_item_act` read and act on ANY item in the same turn through the canonical writeback and
+  client-tool runtimes (approval flow included). `board_focus` no longer says "act next turn".
 
 - 2026-09-28 — Feature tiles carry their feature's full surface: Task (`matrx-user/tasks`, already in
   `TaskEditorBody`), War Room (`WarRoomSurfaceHost`, body now the room's `StageView`; the tile hydrates
@@ -254,11 +260,6 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   (`ProjectRecordWorkspace` — the whole workspace, not just its task list), Meeting (NEW
   `matrx-user/meeting`, body now `MeetingDetail` embedded) and Workflow run (NEW
   `matrx-user/workflow-run`). Each host is shared with the feature's own page.
-
-- 2026-09-28 — The bridge: every tile registers its surface into a per-tile capture (live or dormant);
-  `board_items` replaces `board_tiles` (every item + a dormant item's basics); `board_open_item` /
-  `board_item_act` read and act on ANY item in the same turn through the canonical writeback and
-  client-tool runtimes (approval flow included). `board_focus` no longer says "act next turn".
 
 - 2026-09-28 — Note tile is the real notes core (`NoteWorkspace`) instead of a plain-text `NoteEditorCore`;
   `tiles/NoteTileBody.tsx` deleted (label body moved to `tiles/TextTileBody.tsx`); "Note" starts a note
@@ -268,6 +269,11 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - 2026-09-28 — File tile: the body is the single-file page's own working area (`SingleFileWorkspace`: name menu,
   Copy link / Download / More, per-tab rail, all seven tabs) and its surface is `matrx-user/file` through the
   page's own host (`SingleFileSurfaceHost` as `surface.Host`). Default size 800×600.
+
+- 2026-09-28 — Chat tile: mounts `matrx-user/chat` for its conversation (`ChatConversationSurface`, shared
+  with `/chat`); reopening resumes through `resumeConversation` (reattaches a mid-run turn); its launch opts
+  out of surface adoption like /chat's own. `startNew` may list several entries; chat adds "Chat with an
+  agent". Bring-in is "Conversation".
 
 - 2026-09-27 — Frame fly-to includes its title band in the fit target; War Room’s board-only down throw uses the reversible 'remove' action, distinct from destructive 'delete'.
 
