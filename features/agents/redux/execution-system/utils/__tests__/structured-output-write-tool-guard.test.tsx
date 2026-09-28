@@ -43,6 +43,12 @@ jest.mock(
   () => ({}),
 );
 
+// A signed-in person: signed out, no agent's schema is readable at all
+// (`fetchAgentOutputSchemas` skips the read), which is not what this pins.
+jest.mock("@/lib/supabase/hasBrowserSession", () => ({
+  hasBrowserSession: async () => true,
+}));
+
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({

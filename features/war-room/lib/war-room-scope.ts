@@ -52,6 +52,7 @@ import {
   selectThreadIdsForRoom,
   selectThreadIsPinned,
   selectThreadTaskId,
+  selectRoomIdForThread,
 } from "@/features/war-room/redux/selectors";
 import { entityToSource } from "@/features/war-room/service/associations";
 import { normalizeThreadTab } from "@/features/war-room/hooks/useThreadTabs";
@@ -231,7 +232,7 @@ export function buildWarRoomThreadScope(
   extras: WarRoomThreadScopeExtras = {},
 ): SurfaceScopePayload {
   const thread = selectThreadById(threadId)(state);
-  const roomId = state.warRoom.activeSessionId ?? null;
+  const roomId = selectRoomIdForThread(threadId)(state);
   const room = roomId ? selectSessionById(roomId)(state) : null;
 
   const taskId = selectThreadTaskId(threadId)(state);

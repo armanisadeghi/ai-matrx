@@ -25,7 +25,7 @@ import { toast } from "@/lib/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { type Camera, type Rect, screenToWorld } from "../engine/camera";
 import { useEditingTile, useFocusedTile, useSelectedTile } from "../engine/react";
-import { SurfaceActivity } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceActivity, createSurfaceCapture } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SpatialStore } from "../engine/spatial-store";
 import type { ThrowAction, ThrowDirection } from "../engine/throw";
 import { DEFAULT_THROW_ACTIONS } from "../engine/throw";
@@ -47,9 +47,11 @@ import { LayersPanel } from "../components/LayersPanel";
 import { ParkedShelf } from "../components/ParkedShelf";
 import { Minimap, ZoomHud } from "../components/SpatialChrome";
 import type { AddTileInput, BoardToolHost, EditTileInput } from "../tools/useBoardAgentTools";
+import { createItemSurfaceIndex, type ItemSurfaceIndex } from "../tools/item-surfaces";
 import { BOARD_ITEM_TYPES, itemTypeFor } from "../items/catalog";
 import type { BoardItemType, PlacedItem } from "../items/types";
 import { filesToBoardItems } from "../items/file-drop";
+import { noteSeedEdit } from "../items/work-sources";
 import { intakeText } from "./board-intake";
 import { AddMenu, StartPanel } from "./AddMenu";
 import { UnavailableItemBody } from "./UnavailableItemBody";
@@ -86,6 +88,9 @@ export function UserBoard({
   const [store, setStore] = useState<SpatialStore | null>(null);
   const [wheelMode, setWheelMode] = useWheelModePreference();
   const [layersOpen, setLayersOpen] = useState(false);
+  // Every tile's own surface capture, live or dormant: how an agent reaches
+  // any item on the board (board_items, board_open_item, board_item_act).
+  const [itemSurfaces] = useState(createItemSurfaceIndex);
   const [picking, setPicking] = useState<BoardItemType | null>(null);
   const [dropping, setDropping] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -186,7 +191,7 @@ export function UserBoard({
           id,
           title: "Note",
           source: { kind: "entity", entity: "note", id: null },
-          rect: { x: c.at.x - 190, y: c.at.y - 20, w: 380, h: 300 },
+          rect: { x: c.at.x - 280, y: c.at.y - 20, w: 560, h: 620 },
         });
         break;
       case "text":
@@ -317,6 +322,7 @@ export function UserBoard({
     board,
     store,
     boardTitle: title,
+    itemSurfaces,
     createTile: (id, input, size) => agentTile(id, input, size),
     editTile: (tile, input) => agentEdit(tile, input),
     describe: (tile) => {
@@ -433,6 +439,7 @@ export function UserBoard({
               <BoardItemTile
                 key={t.id}
                 tile={t}
+                itemSurfaces={itemSurfaces}
                 onMove={board.moveTile}
                 onThrow={onThrow}
                 onSource={(source, nextTitle) =>
@@ -466,11 +473,13 @@ export function UserBoard({
 /** One tile: the item type's canonical body, or an honest stand-in. */
 function BoardItemTile({
   tile,
+  itemSurfaces,
   onMove,
   onThrow,
   onSource,
 }: {
   tile: UserBoardTile;
+  itemSurfaces: ItemSurfaceIndex;
   onMove: (id: string, x: number, y: number) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
   onSource: (source: NodeSource, title?: string) => void;
@@ -482,6 +491,10 @@ function BoardItemTile({
   const selected = useSelectedTile() === tile.id;
   const focused = useFocusedTile() === tile.id;
   const live = interacting || selected || focused;
+  // The tile's own copy of its surface, registered live or dormant, so an
+  // agent can read and act on it without the person switching to it.
+  const [capture] = useState(createSurfaceCapture);
+  useEffect(() => itemSurfaces.set(tile.id, capture), [itemSurfaces, tile.id, capture]);
   const Host = type && "name" in type.surface ? type.surface.Host : undefined;
   const href = type?.href?.(tile.source) ?? null;
   return (
@@ -511,7 +524,7 @@ function BoardItemTile({
     >
       {(tier) =>
         type ? (
-          <SurfaceActivity active={live}>
+          <SurfaceActivity active={live} capture={capture}>
             {Host ? (
               <Host source={tile.source}>
                 <type.Body tileId={tile.id} source={tile.source} title={tile.title} tier={tier} interacting={interacting} onSource={onSource} />
@@ -564,8 +577,15 @@ function agentEdit(tile: UserBoardTile, input: EditTileInput): Partial<UserBoard
   if (s.kind === "text" && input.text !== undefined) return { source: { kind: "text", markdown: input.text } };
   if (s.kind === "label" && input.text !== undefined) return { source: { kind: "label", text: input.text } };
   if (s.kind === "html" && input.html !== undefined) return { source: { kind: "html", html: input.html } };
-  if (s.kind === "entity" && s.entity === "note" && s.id === null && input.text !== undefined) {
-    return { source: { ...s, meta: { ...s.meta, seed: input.text } } };
+  if (s.kind === "entity" && s.entity === "note" && input.text !== undefined) {
+    // Text for a note that does not exist yet becomes its content; a real
+    // note's text changes through the notes surface (`note_content`).
+    const seeded = noteSeedEdit(s, input.text);
+    if (seeded) return { source: seeded };
+    return {
+      ok: false,
+      error: `"${tile.title}" is a real note in Notes. Change its text through the note itself: make the tile live (board_focus) and use its note_content write target.`,
+    };
   }
   return {
     ok: false,

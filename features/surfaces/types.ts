@@ -633,6 +633,16 @@ export interface SurfaceManifest extends SurfaceDeclaration {
    */
   clientTools?: readonly SurfaceClientTool[];
   /**
+   * THE BRIEF — the few declared values (at most `SURFACE_BRIEF_MAX_VALUES`,
+   * in this order) that say WHICH record this is and its state at a glance:
+   * a note's title, word count and first line; a task's status and due date.
+   * A host listing many copies of surfaces (the board's item list) shows each
+   * one's brief so an agent knows what every item is before it opens one
+   * (`runtime/surface-brief.ts`). Omitted = the first non-empty declared
+   * values. Code-only (not mirrored to the DB).
+   */
+  briefValues?: readonly string[];
+  /**
    * Opt out of the automatic generic-baseline injection (`selection`,
    * `text_before`, `text_after`, `content`, `context`) performed in
    * `registry.ts`. Set ONLY for a surface that genuinely has no

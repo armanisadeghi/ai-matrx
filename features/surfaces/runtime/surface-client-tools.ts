@@ -35,8 +35,9 @@ import { toast } from "@/lib/toast";
 
 import type { SurfaceClientTool } from "../types";
 import {
-  getRegisteredSurfaceClientTools,
-  getSurfaceRuntimeStack,
+  getGlobalSurfaceRegistry,
+  type SurfaceRegistry,
+  type SurfaceToolCall,
 } from "./SurfaceRuntimeContext";
 
 /** The envelope every execution returns. A skip/failure is never silent. */
@@ -56,6 +57,14 @@ export interface ExecuteSurfaceClientToolOptions {
    * mounted surface that DECLARES the tool wins.
    */
   surfaceName?: string;
+  /**
+   * The registry to resolve in. Omitted = the ONE global registry (what is
+   * live on screen). A CAPTURE — one board tile's copy of a surface — runs
+   * its tools through this same runtime.
+   */
+  source?: SurfaceRegistry;
+  /** The agent call behind this execution, handed to the handler. */
+  call?: SurfaceToolCall;
 }
 
 function findDeclaredClientTool(
@@ -105,7 +114,8 @@ export async function executeSurfaceClientTool(
   input: unknown,
   opts?: ExecuteSurfaceClientToolOptions,
 ): Promise<SurfaceClientToolResult> {
-  const stack = getSurfaceRuntimeStack().filter(
+  const registry = opts?.source ?? getGlobalSurfaceRegistry();
+  const stack = registry.stack().filter(
     (entry) => !opts?.surfaceName || entry.surfaceName === opts.surfaceName,
   );
 
@@ -123,9 +133,7 @@ export async function executeSurfaceClientTool(
     const tool = findDeclaredClientTool(runtime.surfaceName, toolName);
     if (!tool) continue;
 
-    const handler = getRegisteredSurfaceClientTools(runtime.surfaceName)[
-      toolName
-    ];
+    const handler = registry.clientTools(runtime.surfaceName)[toolName];
     if (!handler) {
       // Declared but not wired — a real defect on the page, not the caller.
       return fail(
@@ -135,7 +143,7 @@ export async function executeSurfaceClientTool(
     }
 
     try {
-      const output = await handler(input);
+      const output = await handler(input, opts?.call);
       return { ok: true, surfaceName: runtime.surfaceName, tool, output };
     } catch (error) {
       const message =
@@ -162,7 +170,9 @@ export async function executeSurfaceClientTool(
  * only `hasHandler: true` entries to the agent; authoring/debug chrome can
  * show the rest as declared-but-unwired.
  */
-export function listLiveSurfaceClientTools(): ReadonlyArray<{
+export function listLiveSurfaceClientTools(
+  source?: SurfaceRegistry,
+): ReadonlyArray<{
   surfaceName: string;
   tool: SurfaceClientTool;
   hasHandler: boolean;
@@ -172,11 +182,12 @@ export function listLiveSurfaceClientTools(): ReadonlyArray<{
     tool: SurfaceClientTool;
     hasHandler: boolean;
   }> = [];
+  const registry = source ?? getGlobalSurfaceRegistry();
   const seen = new Set<string>();
-  for (const runtime of getSurfaceRuntimeStack()) {
+  for (const runtime of registry.stack()) {
     const manifest = getManifest(runtime.surfaceName);
     if (!manifest?.clientTools) continue;
-    const handlers = getRegisteredSurfaceClientTools(runtime.surfaceName);
+    const handlers = registry.clientTools(runtime.surfaceName);
     for (const tool of manifest.clientTools) {
       const key = `${runtime.surfaceName}:${tool.name}`;
       if (seen.has(key)) continue;

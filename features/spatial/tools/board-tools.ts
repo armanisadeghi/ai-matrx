@@ -29,7 +29,7 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
     name: "board_read",
     label: "Read board",
     description:
-      "Returns what is on the spatial board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles, the selected and focused tile, which tiles are in the person's view, and `live_tile_id` — the tile whose feature is live for you. A tile with a `surface` publishes that feature's OWN values, write targets and tools (the same ones its page has) while it is live. Call this before arranging or editing so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
+      "Returns what is on the spatial board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles, the selected and focused tile, which tiles are in the person's view, and `live_tile_id` — the tile whose feature is live for you. A tile with a `surface` is a real feature record: read and change it with board_open_item and board_item_act. Call this before arranging so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
     inputSchema: {
       type: "object",
       properties: {
@@ -168,9 +168,9 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
   },
   {
     name: "board_focus",
-    label: "Show and open tile",
+    label: "Show tile",
     description:
-      "Shows a tile and makes it the LIVE tile: `fly` glides the camera to it and selects it (default); `focus` opens it full-size over the board (they press Esc to return). A live tile's feature publishes its own values, write targets and tools (a note's text, a task's fields…) — they reach you on your NEXT turn, so work inside a tile in two steps: board_focus it, then act on it. Changes nothing on the board.",
+      "Shows the person a tile and makes it the LIVE tile: `fly` glides the camera to it and selects it (default); `focus` opens it full-size over the board (they press Esc to return). Changes nothing on the board. To READ or CHANGE what is inside a tile, use board_open_item and board_item_act — they work in this same turn.",
     inputSchema: {
       type: "object",
       properties: {
@@ -180,6 +180,41 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
       required: ["id"],
     },
     mode: "ui",
+  },
+  {
+    name: "board_open_item",
+    label: "Open item",
+    description:
+      "Opens ANY item on the board for you, in this same turn — including ones the person is not working in. Returns the item's feature surface exactly as its own page gives it: `values` (each declared value with its description: a note's title and text, a table's rows, a task's fields…), `write_targets` (every change you may make, one line each: its name, the value's type, whether the person is asked first, and what it does), `patch_contract` when a target takes an anchored edit, and `client_tools` (the item's own actions, with their input schemas). It also selects the item so the person sees which one you are working in (an item parked on the shelf comes back onto the board). Use the ids from `board_items`. Then act with board_item_act. The live item's full surface is already in your context — you only need this for the others.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "The item's id, from board_items or board_read." },
+      },
+      required: ["id"],
+    },
+    mode: "ui",
+  },
+  {
+    name: "board_item_act",
+    label: "Act on item",
+    description:
+      "Applies ONE of an item's write targets, or runs ONE of its client tools, exactly as on the item's own page — in this same turn, whether or not the item is live. Pass `target` and `value` for a write (shaped as its line in board_open_item says: an object or array target takes the object or array itself; a [patchable] target also takes an anchored edit), or `tool` and `input` for a tool. The item's own rules apply: a value of the wrong type or shape is refused before the person is asked, a target marked 'the user is asked first' shows the person an approval card and waits for their answer (a decline is an answer — respect it, do not retry), and the result says what landed. Call board_open_item first so you use the item's real target and tool names.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "The item's id." },
+        target: { type: "string", description: "A write target from the item's write_targets." },
+        value: {
+          type: ["string", "number", "boolean", "array", "object", "null"],
+          description: "The value for `target`, shaped as that target's line says.",
+        },
+        tool: { type: "string", description: "Or: a tool from the item's client_tools." },
+        input: { type: "object", description: "The tool's input, matching its input_schema." },
+      },
+      required: ["id"],
+    },
+    mode: "draft",
   },
   {
     name: "board_park",

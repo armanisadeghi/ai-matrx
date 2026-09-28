@@ -233,8 +233,8 @@ export const refreshSurfaceScope = createAsyncThunk<
       }),
     );
     // A value the agent has no labelled slot for would show its raw key
-    // ("board_tiles") on the composer's context pill; the surface's manifest
-    // names every value it declares, so a person reads "Tiles on the board".
+    // ("board_items") on the composer's context pill; the surface's manifest
+    // names every value it declares, so a person reads "Items on the board".
     const valueLabels = new Map(
       (getManifest(surfaceName)?.values ?? []).map((v) => [v.name, v.label]),
     );

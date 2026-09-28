@@ -76,7 +76,11 @@ import { useRequestSource } from "@/features/spatial/streams/useRequestSource";
 import { StreamTileBody } from "@/features/spatial/tiles/StreamTileBody";
 import { MarkdownTileBody } from "@/features/spatial/tiles/MarkdownTileBody";
 import { HtmlTileBody, ImageTileBody } from "@/features/spatial/tiles/MediaTileBodies";
-import { NoteTileBody, TextTileBody } from "@/features/spatial/tiles/NoteTileBody";
+import { TextTileBody } from "@/features/spatial/tiles/TextTileBody";
+import { NoteItemBody } from "@/features/spatial/items/NoteItemBody";
+import { entityId, noteSeedEdit } from "@/features/spatial/items/work-sources";
+import type { NodeSource } from "@/features/spatial/board/document";
+import { SurfaceActivity } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useEditingTile } from "@/features/spatial/engine/react";
 import { SpatialBoardSurface } from "@/features/spatial/components/SpatialBoardSurface";
 import type {
@@ -129,7 +133,8 @@ type RunTileContent =
   | { type: "markdown"; text: string }
   | { type: "html"; src?: string; srcDoc?: string }
   | { type: "image"; src: string }
-  | { type: "note"; noteId: string | null; text?: string }
+  /** A real Note, in the notes core (the Board's note item body). */
+  | { type: "note"; source: NodeSource }
   | { type: "text"; text: string };
 
 interface RunTileSpec {
@@ -461,7 +466,15 @@ function createAgentTile(
         ...base,
         title: input.title ?? "Note",
         subtitle: "Note · by an agent",
-        content: { type: "note", noteId: null, text: input.text ?? "" },
+        content: {
+          type: "note",
+          source: {
+            kind: "entity",
+            entity: "note",
+            id: null,
+            ...(input.text ? { meta: { seed: input.text } } : {}),
+          },
+        },
       };
     case "markdown":
       if (!input.text) return { ok: false, error: "A markdown tile needs `text`." };
@@ -513,7 +526,14 @@ function editAgentTile(tile: RunTileSpec, input: EditTileInput): Partial<RunTile
       ok: false,
       error: `"${tile.title}" is a step of this run — its content is the run's live result, so only its title and size change. Add a markdown tile beside it instead.`,
     };
-  if (c.type === "note" && input.text !== undefined) return { content: { ...c, text: input.text } };
+  if (c.type === "note" && input.text !== undefined) {
+    const seeded = noteSeedEdit(c.source, input.text);
+    if (seeded) return { content: { type: "note", source: seeded } };
+    return {
+      ok: false,
+      error: `"${tile.title}" is a real note in Notes. Change its text through the note itself: make the tile live (board_focus) and use its note_content write target.`,
+    };
+  }
   if (c.type === "markdown" && input.text !== undefined) return { content: { type: "markdown", text: input.text } };
   if (c.type === "text" && input.text !== undefined) return { content: { type: "text", text: input.text } };
   if (c.type === "html" && input.html !== undefined) return { content: { type: "html", srcDoc: input.html } };
@@ -547,7 +567,7 @@ function AddedTile({
       title={spec.title}
       subtitle={spec.subtitle}
       icon={spec.icon}
-      statusFrom={c.type === "note" && !c.noteId ? ADDED_IDLE : ADDED_DONE}
+      statusFrom={c.type === "note" && !entityId(c.source) ? ADDED_IDLE : ADDED_DONE}
       onMove={onMove}
       onThrow={onThrow}
       throwActions={RUN_THROWS}
@@ -564,11 +584,17 @@ function AddedTile({
             return <ImageTileBody src={c.src} alt={spec.title} />;
           case "note":
             return (
-              <NoteTileBody
-                noteId={c.noteId}
-                text={c.text}
-                onCreated={(noteId, label) => onContent(spec.id, { type: "note", noteId, text: c.text }, label)}
-              />
+              // Only the tile being worked in registers the notes surface.
+              <SurfaceActivity active={interacting}>
+                <NoteItemBody
+                  tileId={spec.id}
+                  source={c.source}
+                  title={spec.title}
+                  tier={tier}
+                  interacting={interacting}
+                  onSource={(source, label) => onContent(spec.id, { type: "note", source }, label)}
+                />
+              </SurfaceActivity>
             );
           case "text":
             return <TextTileBody text={c.text} onChange={(text) => onContent(spec.id, { type: "text", text })} />;

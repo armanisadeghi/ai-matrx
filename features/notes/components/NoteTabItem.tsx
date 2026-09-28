@@ -83,12 +83,13 @@ import { noteIdentityContentSource } from "../richDocumentSource";
 interface NoteTabItemProps {
   noteId: string;
   instanceId: string;
+  standalone?: boolean;
 }
 
 const actionBtnClass =
   "flex items-center justify-center w-6 h-6 rounded cursor-pointer transition-colors text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5";
 
-export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
+export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabItemProps) {
   const dispatch = useAppDispatch();
 
   // ── Redux state ────────────────────────────────────────────────────
@@ -448,6 +449,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     dispatch(moveInstanceTab({ instanceId, noteId, direction }));
   };
   const menuItems: (TabMenuItem | null)[] = [
+    ...(standalone ? [] : [
     {
       id: "pin-tab",
       icon: isPinned ? PinOff : Pin,
@@ -478,6 +480,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       label: "Close all tabs",
       fn: handleCloseAllTabs,
     },
+    ]),
   ];
 
   const tabExtraSections: ContextMenuExtraSection[] = [
@@ -731,6 +734,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           )}
 
           {/* Close button */}
+          {!standalone && (
           <span
             className="notes-tab-close-btn flex items-center justify-center w-4 h-4 rounded-sm text-muted-foreground shrink-0 hover:bg-accent hover:text-foreground ml-1"
             role="button"
@@ -739,6 +743,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           >
             <X className="w-2.5 h-2.5" />
           </span>
+          )}
         </div>
       </NonEditableContextMenu>
 

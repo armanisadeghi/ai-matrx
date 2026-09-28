@@ -3,22 +3,27 @@
 /**
  * Feature items on a board: Task, War Room, Meeting, Workflow run, Research,
  * Project. Each Body is the feature's canonical component — the real task
- * editor, the room's own watchlist rows, the meeting record, the run stage,
- * the research report, the project's task list — never a board-only copy
- * (see ./types.ts). The pure rules (matching, ordering, pick batching) live in
- * ./feature-items.logic.ts.
+ * editor, the room's own Stage, the meeting's home (`MeetingDetail`), the run
+ * stage, the research report, the project's workspace — never a board-only
+ * copy (see ./types.ts). The pure rules (matching, ordering, pick batching)
+ * live in ./feature-items.logic.ts.
+ *
+ * Every Body mounts its feature's agent surface for the tile's record through
+ * the SAME host the feature's page uses (`TaskEditorBody`,
+ * `WarRoomSurfaceHost`, `MeetingDetail` → `MeetingSurfaceHost`,
+ * `WorkflowRunSurfaceHost`, `ResearchTopicSurfaceHost`,
+ * `ProjectRecordWorkspace`), so no item needs a separate `Host`; the board's
+ * `SurfaceActivity` keeps every tile but the live one dormant.
  *
  * Every body that reads a record says honestly when it cannot: the canonical
  * `<AccessGate token id/>` resolves denied / in Trash / missing / signed out.
  */
 
-import { createElement, useEffect, useState, useTransition, type ReactNode } from "react";
+import { createElement, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ExternalLink, FlaskConical, FolderKanban, ListTodo, Loader2, UsersRound, Video, Workflow } from "lucide-react";
 import { Input, Skeleton } from "@ai-matrx/design-system";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { MeetingRecordView, type MeetingRecord } from "@ai-matrx/meet/react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
@@ -34,18 +39,20 @@ import { TaskCreatePanel } from "@/features/tasks/widgets/quick-create/TaskCreat
 import { TasksResourcePicker } from "@/features/resource-manager/resource-picker/TasksResourcePicker";
 // War Room
 import { listSessions } from "@/features/war-room/service";
-import { createWarRoomSession, loadWarRoomSession } from "@/features/war-room/redux/thunks";
+import { createWarRoomSession, hydrateWarRoomSession } from "@/features/war-room/redux/thunks";
 import {
   selectOrderedGalleryThreadIds,
   selectSessionById,
   selectThreadsStatusForRoom,
 } from "@/features/war-room/redux/selectors";
-import { RailThread } from "@/features/war-room/components/room/RailThread";
+import { StageView } from "@/features/war-room/components/room/StageView";
+import { RoomViewProvider } from "@/features/war-room/components/room/roomViewContext";
+import { WarRoomSurfaceHost } from "@/features/war-room/components/room/WarRoomSurfaceHost";
 import { roomColorOf, roomIconOf } from "@/features/war-room/components/room/roomIdentity";
 import type { WarRoomSession } from "@/features/war-room/types";
 // Meeting
 import { useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
-import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";
+import { MeetingDetail } from "@/features/meet/components/manage/MeetingDetail";
 // Workflow run
 import { useRunsList } from "@/features/workflow-runtime/discovery/useRunsList";
 import { useWorkflowFacts } from "@/features/workflow-runtime/discovery/useWorkflowFacts";
@@ -59,14 +66,16 @@ import {
 import type { RunSurfaceConfig } from "@/features/workflow-runtime/surface/config";
 import type { WorkflowDefinitionLike } from "@/features/workflow-runtime/trigger-points";
 import { RunStage } from "@/features/workflow-runtime/components/run/RunStage";
+import { WorkflowRunSurfaceHost } from "@/features/workflow-runtime/agent-surface/WorkflowRunSurfaceHost";
 import { MasterworkRulesProvider } from "@/features/masterwork/rules-context/MasterworkRulesContext";
 // Research
 import { useAllTopics } from "@/features/research/hooks/useResearchState";
 import { TopicProvider, useTopicContext } from "@/features/research/context/ResearchContext";
 import DocumentViewer from "@/features/research/components/document/DocumentViewer";
+import { ResearchTopicSurfaceHost } from "@/features/research/components/shell/ResearchTopicSurfaceHost";
 // Project
 import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
-import { ProjectTaskList } from "@/features/projects/components/ProjectTaskList";
+import { ProjectRecordWorkspace } from "@/features/projects/components/ProjectWorkspace";
 import { useProject } from "@/features/projects/hooks";
 
 import type { NodeSource } from "../board/document";
@@ -153,7 +162,7 @@ function DoorButton({ href, children, primary }: { href: string; children: React
  * the read's outcome goes through the canonical `ReadGate` so a failed read is
  * never shown as "nothing here".
  */
-function RecordList<T>({
+export function RecordList<T>({
   rows,
   read,
   rowKey,
@@ -396,16 +405,21 @@ function WarRoomDraftBody({ onSource }: ItemBodyProps) {
   );
 }
 
+/**
+ * A room on the board: the room's own Stage (its thread watchlist, add / import
+ * / quick-task, drag to reorder, parked threads, and each thread's full surface
+ * on select) under the room's own agent surface (`WarRoomSurfaceHost`, the
+ * same host the room route mounts). The room is HYDRATED, never opened: a
+ * tile must not change which room is the active one.
+ */
 function WarRoomRecordBody({ id, source, title, onSource }: ItemBodyProps & { id: string }) {
   const dispatch = useAppDispatch();
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
   const session = useAppSelector(selectSessionById(id));
   const status = useAppSelector(selectThreadsStatusForRoom(id));
-  const threadIds = useAppSelector(selectOrderedGalleryThreadIds(id));
+  const threadCount = useAppSelector(selectOrderedGalleryThreadIds(id)).length;
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    void dispatch(loadWarRoomSession(id));
+    void dispatch(hydrateWarRoomSession(id));
   }, [dispatch, id, attempt]);
   useAdoptTitle(source, title, session?.title, onSource);
 
@@ -423,61 +437,48 @@ function WarRoomRecordBody({ id, source, title, onSource }: ItemBodyProps & { id
   }
   if (!session) return <BodySkeleton label="Opening the War Room" />;
 
-  const openThread = (threadId: string) => {
-    if (pending) return;
-    startTransition(() => router.push(`${roomHref}?thread=${encodeURIComponent(threadId)}`));
-  };
-
-  let list: ReactNode;
+  let stage: ReactNode;
   if (status === "error") {
-    list = (
+    stage = (
       <ReadFailure error={true} what="this room's threads" onRetry={() => setAttempt((n) => n + 1)} className="m-2" />
     );
-  } else if (status === "loading" && threadIds.length === 0) {
-    list = (
-      <div className="space-y-2" aria-busy="true" aria-label="Loading threads">
+  } else if (status !== "ready") {
+    stage = (
+      <div className="space-y-2 p-2.5" aria-busy="true" aria-label="Loading threads">
         <Skeleton className="h-14 w-full" />
         <Skeleton className="h-14 w-full" />
       </div>
     );
-  } else if (threadIds.length === 0) {
-    list = (
-      <p className="px-1 py-6 text-center text-sm text-muted-foreground">
-        No threads in this room yet. Open the room to start one.
-      </p>
-    );
   } else {
-    list = threadIds.map((threadId) => (
-      <RailThread
-        key={threadId}
-        threadId={threadId}
-        sessionId={id}
-        isStaged={false}
-        onStage={() => openThread(threadId)}
-      />
-    ));
+    stage = <StageView sessionId={id} />;
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <TileBar
-        actions={
-          <DoorButton href={roomHref} primary>
-            {pending ? <Loader2 className="size-3.5 animate-spin" /> : <ExternalLink className="size-3.5" />}
-            Open room
-          </DoorButton>
-        }
-      >
-        <RoomBadge session={session} size="md" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-foreground">{session.title}</p>
-          <p className="text-[11px] text-muted-foreground">
-            {threadIds.length === 1 ? "1 thread" : `${threadIds.length} threads`}
-          </p>
+    <RoomViewProvider>
+      <WarRoomSurfaceHost sessionId={id}>
+        {/* The Stage's thread surface sits under the shell's glass header on the
+            room route; a tile has no glass header, so the offset is zero here. */}
+        <div className="flex h-full min-h-0 flex-col [--shell-header-h:0px]">
+          <TileBar
+            actions={
+              <DoorButton href={roomHref} primary>
+                <ExternalLink className="size-3.5" />
+                Open room
+              </DoorButton>
+            }
+          >
+            <RoomBadge session={session} size="md" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">{session.title}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {threadCount === 1 ? "1 thread" : `${threadCount} threads`}
+              </p>
+            </div>
+          </TileBar>
+          <div className="min-h-0 flex-1">{stage}</div>
         </div>
-      </TileBar>
-      <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2.5">{list}</div>
-    </div>
+      </WarRoomSurfaceHost>
+    </RoomViewProvider>
   );
 }
 
@@ -548,96 +549,26 @@ function MeetingPicker({ onPick, onCancel }: PickerProps) {
   );
 }
 
+/**
+ * A meeting on the board: the meeting's own home (`MeetingDetail`, the body of
+ * /meetings/[id]) — details, guests, occurrences, settings and the record,
+ * with every action — in its embedded chrome, under the meeting's own agent
+ * surface (which `MeetingDetail` mounts itself).
+ */
 function MeetingBody({ source, title, onSource }: ItemBodyProps) {
   const id = entityIdOf(source);
-  const { repository } = useMeetingActions();
-  const [meeting, setMeeting] = useState<MeetingRecord | null>(null);
-  const [failure, setFailure] = useState<unknown>(null);
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    if (!id || repository === null) return undefined;
-    let live = true;
-    repository
-      .meeting(id as MeetingRecord["id"])
-      .then((m) => {
-        if (live) setMeeting(m);
-      })
-      .catch((err: unknown) => {
-        if (live) setFailure(err ?? new Error("The meeting could not be read."));
-      });
-    return () => {
-      live = false;
-    };
-  }, [id, repository, attempt]);
-  useAdoptTitle(source, title, meeting?.title, onSource);
-
+  const [recordTitle, setRecordTitle] = useState<string | null>(null);
+  useAdoptTitle(source, title, recordTitle, onSource);
   if (!id) return <NoRecordBody what="meeting" href="/meetings" label="Your meetings" />;
-  if (failure && !meeting) {
-    return (
-      <AccessGate
-        token="meet_meeting"
-        id={id}
-        error={failure}
-        onRetry={() => {
-          setFailure(null);
-          setAttempt((n) => n + 1);
-        }}
-        fallbackHref="/meetings"
-        fallbackLabel="Your meetings"
-      />
-    );
-  }
-  if (!meeting) return <BodySkeleton label="Opening the meeting" />;
-
-  const phase = meetingPhase(meeting);
-  const canJoin = phase !== "cancelled" && phase !== "archived";
-  const happened = meeting.startedAt !== null || meeting.endedAt !== null;
-  const when = formatWhen(meeting.scheduledFor ?? meeting.startedAt);
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <TileBar
-        actions={
-          <>
-            {canJoin ? (
-              <DoorButton href={`/meet/${encodeURIComponent(id)}`} primary>
-                <Video className="size-3.5" />
-                Join
-              </DoorButton>
-            ) : null}
-            <DoorButton href={`/meetings/${encodeURIComponent(id)}`}>
-              <ExternalLink className="size-3.5" />
-              Open
-            </DoorButton>
-          </>
-        }
-      >
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-foreground">{meeting.title}</p>
-          <p className="text-[11px] text-muted-foreground">
-            {MEETING_PHASE_LABEL[phase]}
-            {when ? ` · ${when}` : ""}
-          </p>
-        </div>
-      </TileBar>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {happened ? (
-          <MeetingRecordView meeting={meeting} />
-        ) : (
-          <div className="space-y-3 p-4 text-sm">
-            <p className="text-muted-foreground">
-              {phase === "cancelled"
-                ? "This meeting was cancelled, so it has no notes or summary."
-                : "This meeting has not happened yet. Its summary, notes and transcript appear here once it has."}
-            </p>
-            {meeting.agenda?.trim() ? (
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agenda</p>
-                <p className="whitespace-pre-wrap text-foreground">{meeting.agenda}</p>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </div>
+      <MeetingDetail
+        meetingId={id}
+        at={null}
+        section={null}
+        chrome="embedded"
+        onMeeting={(m) => setRecordTitle(m.title)}
+      />
     </div>
   );
 }
@@ -799,13 +730,21 @@ function WorkflowRunBody({ source, title, onSource }: ItemBodyProps) {
           <p className="truncate text-sm font-medium text-foreground">{loaded.name}</p>
         </TileBar>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <RunStage
+          {/* The run's own agent surface — the host the run page mounts. */}
+          <WorkflowRunSurfaceHost
             runId={runId}
-            definitionId={loaded.definitionId}
-            definition={loaded.definition}
+            workflowId={loaded.definitionId}
             workflowName={loaded.name}
-            config={loaded.config}
-          />
+            definition={loaded.definition}
+          >
+            <RunStage
+              runId={runId}
+              definitionId={loaded.definitionId}
+              definition={loaded.definition}
+              workflowName={loaded.name}
+              config={loaded.config}
+            />
+          </WorkflowRunSurfaceHost>
         </div>
       </div>
     </MasterworkRulesProvider>
@@ -895,7 +834,10 @@ function ResearchBody(props: ItemBodyProps) {
   if (!id) return <NoRecordBody what="research topic" href="/research/topics" label="Your research" />;
   return (
     <TopicProvider key={id} topicId={id}>
-      <ResearchReport id={id} {...props} />
+      {/* The topic's own agent surface — the host the topic workspace route mounts. */}
+      <ResearchTopicSurfaceHost activeView="document">
+        <ResearchReport id={id} {...props} />
+      </ResearchTopicSurfaceHost>
     </TopicProvider>
   );
 }
@@ -945,6 +887,9 @@ function ProjectRecordBody({ id, source, title, onSource }: ItemBodyProps & { id
       />
     );
   }
+  // The project's own workspace — hero with every inline editor, tasks,
+  // resources, scopes, references — and its agent surface, exactly as the
+  // project route renders it, without the route's shell chrome.
   return (
     <div className="flex h-full min-h-0 flex-col">
       <TileBar
@@ -956,15 +901,10 @@ function ProjectRecordBody({ id, source, title, onSource }: ItemBodyProps & { id
         }
       >
         <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-foreground">{project.name}</p>
-          {project.description ? (
-            <p className="truncate text-[11px] text-muted-foreground">{project.description}</p>
-          ) : null}
-        </div>
+        <p className="truncate text-sm font-medium text-foreground">{project.name}</p>
       </TileBar>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        <ProjectTaskList projectId={id} organizationId={project.organizationId} />
+      <div className="min-h-0 flex-1">
+        <ProjectRecordWorkspace key={project.id} initialProject={project} chrome="embedded" />
       </div>
     </div>
   );

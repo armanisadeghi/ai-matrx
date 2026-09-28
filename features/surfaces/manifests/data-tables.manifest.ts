@@ -418,6 +418,8 @@ is_read_only tells you whether you may write at all; on a shared table you can r
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  // Which table, at a glance: its name, how many rows, its columns.
+  briefValues: ["table_name", "row_count", "column_list"],
   writeTargets,
   // THE TWO FIXED AI JOBS this surface already runs — disclosed in the top
   // Agents menu only (agent-disclosure skill), never as page content. Both are

@@ -18,7 +18,10 @@
  *      wedges.
  *   3. A tool whose `mode` implies persistence should gate INSIDE its
  *      handler (or route through `applySurfaceWrite`, which carries the
- *      apply-policy machinery) — the dispatcher stays policy-free.
+ *      apply-policy machinery) — the dispatcher stays policy-free. The
+ *      handler receives the call (`SurfaceToolCall`): spreading its
+ *      `agentWrite` into `applySurfaceWrite` gives the write origin "agent"
+ *      and this call's inline approval card.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -27,6 +30,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
 import { executeSurfaceClientTool } from "@/features/surfaces/runtime/surface-client-tools";
+import { createSurfaceToolCall } from "./surface-tool-call";
 
 export interface DispatchSurfaceClientToolPayload {
   conversationId: string;
@@ -42,7 +46,10 @@ export const dispatchSurfaceClientTool = createAsyncThunk<
   { state: RootState }
 >(
   "surfaceClientTools/dispatch",
-  async ({ conversationId, requestId, callId, toolName, args }, { dispatch }) => {
+  async (
+    { conversationId, requestId, callId, toolName, args },
+    { dispatch, getState },
+  ) => {
     const startedAt = performance.now();
 
     const finish = (
@@ -80,7 +87,17 @@ export const dispatchSurfaceClientTool = createAsyncThunk<
     };
 
     try {
-      const result = await executeSurfaceClientTool(toolName, args);
+      // The handler gets the call, so a tool that writes on the agent's behalf
+      // (the board's `board_item_act`) carries origin "agent", the agent's
+      // name and THIS call's approval card through the ONE writeback seam.
+      const call = await createSurfaceToolCall({
+        conversationId,
+        callId,
+        toolName,
+        dispatch,
+        getState,
+      });
+      const result = await executeSurfaceClientTool(toolName, args, { call });
       if (result.ok) {
         finish({
           ok: true,

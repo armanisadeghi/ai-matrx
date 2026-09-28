@@ -460,6 +460,8 @@ List-level values (task_list, project_list, task_count, search_query) only appea
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  // Which task, at a glance: its title, state, due date and priority.
+  briefValues: ["active_task_title", "active_task_status", "active_task_due_date", "active_task_priority"],
   writeTargets,
 };
 

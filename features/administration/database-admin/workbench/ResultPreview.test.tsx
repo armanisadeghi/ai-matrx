@@ -103,6 +103,15 @@ describe("ResultPreview", () => {
     expect(host.textContent).not.toContain("Switch to JSON");
   });
 
+  it("does not add a coverage receipt when every result row is in the table", () => {
+    act(() => {
+      root.render(<ResultPreview data={[{ id: 1 }]} maxTableRows={100} />);
+    });
+
+    if (!tableProps) throw new Error("Result table was not rendered");
+    expect(tableProps.coverage).toBeUndefined();
+  });
+
   it("keeps the synthetic index distinct from arbitrary SQL aliases", () => {
     act(() => {
       root.render(<ResultPreview data={[{ "row-number": 42, "row-number:": 43 }]} />);

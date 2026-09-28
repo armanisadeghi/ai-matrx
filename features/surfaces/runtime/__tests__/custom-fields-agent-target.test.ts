@@ -26,6 +26,8 @@ import {
   __resetCustomFieldsDoors,
   customFieldsScopeValue,
   customFieldsProblems,
+  hasCustomFieldsDoors,
+  listCustomFieldsDoors,
   registerCustomFieldsDoor,
   type CustomFieldAddRequest,
   type CustomFieldsAgentDoor,
@@ -218,5 +220,19 @@ describe("custom_fields_set and the custom_fields value", () => {
     expect(requestApproval).toHaveBeenCalledTimes(1);
     expect(good.ok && good.outcome?.summary).toBe('Saved Tone = "Brisk".');
     expect(customFieldsScopeValue()[0]?.fields[0]?.value).toBe("Brisk");
+  });
+});
+
+describe("a dormant copy's custom-fields door", () => {
+  it("stays registered but is not offered while its copy is dormant", () => {
+    __resetCustomFieldsDoors();
+    let live = false;
+    const unregister = registerCustomFieldsDoor({ ...templatesDoor().door, isLive: () => live });
+    expect(listCustomFieldsDoors()).toHaveLength(0);
+    expect(hasCustomFieldsDoors()).toBe(false);
+    live = true;
+    expect(listCustomFieldsDoors()).toHaveLength(1);
+    expect(hasCustomFieldsDoors()).toBe(true);
+    unregister();
   });
 });

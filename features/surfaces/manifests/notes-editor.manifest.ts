@@ -563,6 +563,8 @@ You can also WRITE to this surface. On the open note: note_content (replace the 
     pickBaseline("selection", "text_before", "text_after", "content"),
     surfaceSpecific,
   ),
+  // Which note, at a glance: its title, first line and word count, folder.
+  briefValues: ["current_note_title", "content", "current_note_folder"],
   writeTargets,
 };
 

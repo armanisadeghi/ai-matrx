@@ -86,6 +86,25 @@ export const selectThreadIdsForRoom =
   (state: RootState): string[] =>
     roomId ? (state.warRoom.threadIdsByRoom[roomId] ?? EMPTY_IDS) : EMPTY_IDS;
 
+/**
+ * The room a thread belongs to, read from the loaded rooms — never from the
+ * ACTIVE room. Several rooms can be loaded at once (the room page, a board's
+ * War Room tiles, the master agent reaching into another room), so "the active
+ * room" is not "this thread's room". Falls back to the active room only when
+ * no loaded room lists the thread.
+ */
+export const selectRoomIdForThread =
+  (threadId: string) =>
+  (state: RootState): string | null => {
+    const active = state.warRoom.activeSessionId;
+    if (active && state.warRoom.threadIdsByRoom[active]?.includes(threadId))
+      return active;
+    for (const [roomId, ids] of Object.entries(state.warRoom.threadIdsByRoom)) {
+      if (ids.includes(threadId)) return roomId;
+    }
+    return active ?? null;
+  };
+
 export const selectThreadsStatusForRoom =
   (roomId: string | null) => (state: RootState) =>
     roomId ? (state.warRoom.threadsStatusByRoom[roomId] ?? "idle") : "idle";

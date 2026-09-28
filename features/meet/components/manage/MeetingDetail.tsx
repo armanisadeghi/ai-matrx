@@ -91,6 +91,7 @@ import { useMeetPrepStream } from "@/features/meet/hooks/useMeetPrepStream";
 import { useMeetingInviteesLive } from "@/features/meet/hooks/useMeetingInviteesLive";
 import { MoveOccurrenceDialog } from "@/features/meet/components/manage/MoveOccurrenceDialog";
 import { useMeetingActionHost } from "@/features/meet/components/manage/useMeetingActionHost";
+import { MeetingSurfaceHost } from "@/features/meet/agent-surface/MeetingSurfaceHost";
 import type { OccurrenceRef } from "@/features/meet/components/manage/MeetingFormDialog";
 import {
   errorSentence,
@@ -145,12 +146,26 @@ function StatusPill({
 export function MeetingDetail({
   meetingId,
   at,
-  section: requested,
+  section: routeSection,
+  chrome = "page",
+  onMeeting,
 }: {
   meetingId: string;
   at: string | null;
   section: string | null;
+  /**
+   * `page` — the route: sections are `?tab=` links in the shell header.
+   * `embedded` — the same meeting home inside a host that brings its own frame
+   * (a board tile): sections and actions sit in a strip at the top, the
+   * section is local state, and nothing is drawn under the shell header.
+   */
+  chrome?: "page" | "embedded";
+  /** Told the meeting each time it is (re)read or saved — a host's title. */
+  onMeeting?: (meeting: MeetingRecord) => void;
 }) {
+  const embedded = chrome === "embedded";
+  const [localSection, setLocalSection] = useState<string | null>(null);
+  const requested = embedded ? localSection : routeSection;
   const router = useRouter();
   const actions = useMeetingActions();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -221,14 +236,23 @@ export function MeetingDetail({
   }, [repository, meetingId, nonce]);
 
   useEffect(() => {
-    if (loaded) document.title = `${loaded.meeting.title} — Meetings`;
-  }, [loaded]);
+    if (!loaded) return;
+    if (!embedded) document.title = `${loaded.meeting.title} — Meetings`;
+    onMeeting?.(loaded.meeting);
+  }, [loaded, embedded, onMeeting]);
 
   if (failure !== null && loaded === null) {
     return (
       <>
-        <EntityModeHeader backHref="/meetings" entityLabel="Meeting" />
-        <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
+        {embedded ? null : (
+          <EntityModeHeader backHref="/meetings" entityLabel="Meeting" />
+        )}
+        <div
+          className={cn(
+            "h-full overflow-y-auto",
+            !embedded && "pt-[var(--shell-header-h)]",
+          )}
+        >
           <AccessGate
             token="meet_meeting"
             id={meetingId}
@@ -244,9 +268,14 @@ export function MeetingDetail({
   if (loaded === null) {
     return (
       <>
-        <EntityModeHeader backHref="/meetings" entityLabel="Meeting" />
+        {embedded ? null : (
+          <EntityModeHeader backHref="/meetings" entityLabel="Meeting" />
+        )}
         <div
-          className="mx-auto max-w-3xl space-y-3 px-4 pt-[calc(var(--shell-header-h)+1rem)]"
+          className={cn(
+            "mx-auto max-w-3xl space-y-3 px-4",
+            embedded ? "pt-4" : "pt-[calc(var(--shell-header-h)+1rem)]",
+          )}
           aria-busy="true"
           aria-label="Loading the meeting"
         >
@@ -437,21 +466,42 @@ export function MeetingDetail({
     ) : null;
 
   return (
-    <>
-      <EntityModeHeader
-        backHref="/meetings"
-        entityLabel={meeting.title}
-        entityStatus={<StatusPill meeting={meeting} live={live} />}
-        modes={sections.map((s) => ({
-          name: s.name,
-          href: hrefFor(s.key),
-          icon: s.icon,
-        }))}
-        activeModeHref={hrefFor(section)}
-        actions={headerActions}
-        right={moreMenu}
-      />
-      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+    <MeetingSurfaceHost
+      meeting={meeting}
+      invitees={invitees}
+      occurrences={occurrences}
+      onSaved={(m) => setLoaded({ ...loaded, meeting: m })}
+    >
+      {embedded ? (
+        <EmbeddedMeetingBar
+          meeting={meeting}
+          live={live}
+          sections={sections}
+          section={section}
+          onSection={setLocalSection}
+          actions={[...primaryActions, ...moreActions]}
+        />
+      ) : (
+        <EntityModeHeader
+          backHref="/meetings"
+          entityLabel={meeting.title}
+          entityStatus={<StatusPill meeting={meeting} live={live} />}
+          modes={sections.map((s) => ({
+            name: s.name,
+            href: hrefFor(s.key),
+            icon: s.icon,
+          }))}
+          activeModeHref={hrefFor(section)}
+          actions={headerActions}
+          right={moreMenu}
+        />
+      )}
+      <div
+        className={cn(
+          "overflow-y-auto bg-textured",
+          embedded ? "min-h-0 flex-1" : "h-full pt-[var(--shell-header-h)]",
+        )}
+      >
         <div
           className={cn(
             "mx-auto px-4 pb-12 pt-4",
@@ -557,7 +607,69 @@ export function MeetingDetail({
         />
       ) : null}
       {dialogs}
-    </>
+    </MeetingSurfaceHost>
+  );
+}
+
+/**
+ * The embedded meeting's own strip — the same title, state, sections and
+ * actions the route puts in the shell header, for a host with no shell header
+ * (a board tile). Every action is the page's own `onPress`.
+ */
+function EmbeddedMeetingBar({
+  meeting,
+  live,
+  sections,
+  section,
+  onSection,
+  actions,
+}: {
+  meeting: MeetingRecord;
+  live: boolean;
+  sections: { key: Section; name: string; icon: typeof FileText }[];
+  section: Section;
+  onSection: (key: Section) => void;
+  actions: EntityHeaderAction[];
+}) {
+  return (
+    <div className="shrink-0 space-y-1.5 border-b border-border bg-card/60 px-3 py-2">
+      <div className="flex min-w-0 items-center gap-2">
+        <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+          {meeting.title}
+        </p>
+        <StatusPill meeting={meeting} live={live} />
+      </div>
+      <div className="flex flex-wrap items-center gap-1">
+        {sections.map((s) => (
+          <Button
+            key={s.key}
+            type="button"
+            size="sm"
+            variant={s.key === section ? "secondary" : "ghost"}
+            className="h-7 gap-1 px-2 text-xs"
+            aria-pressed={s.key === section}
+            onClick={() => onSection(s.key)}
+          >
+            <s.icon className="h-3.5 w-3.5" aria-hidden="true" />
+            {s.name}
+          </Button>
+        ))}
+        <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
+        {actions.map((a) => (
+          <Button
+            key={a.label}
+            type="button"
+            size="sm"
+            variant={a.primary ? "default" : "outline"}
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => a.onPress?.()}
+          >
+            <a.icon className="h-3.5 w-3.5" aria-hidden="true" />
+            {a.label}
+          </Button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -611,6 +723,7 @@ function BriefBlock({
       {error ? (
         <p role="alert" className="mt-1 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} size="xs" />
         </p>
       ) : null}
       {text ? (
@@ -1044,6 +1157,7 @@ function CrmLogLine({ metadata }: { metadata: unknown }) {
     return (
       <p className="mt-2 text-xs text-destructive">
         CRM log failed: {crm.error}
+        <ErrorAlchemyMenu error={crm.error} size="xs" />
       </p>
     );
   if (crm.skipped)
