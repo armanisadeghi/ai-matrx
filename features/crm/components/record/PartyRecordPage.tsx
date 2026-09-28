@@ -49,6 +49,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createTask } from "@/features/tasks/services/taskService";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 import { parseTaskDraft } from "../../agent-context/crmRecordSurfaceWrite";
 import type { DealRow } from "../../deals/types";
@@ -274,6 +275,48 @@ export function PartyRecordPage({ partyId }: Props) {
   // surface uses, in THIS record's organization, then attached to the record
   // through the one association write the tile itself uses.
   useSurfaceWriteHandlers(CRM_RECORD_SURFACE_NAME, {
+    // The agent twin of "Move to trash…". The approval card IS the confirm;
+    // the record is soft-deleted (restorable from Trash), exactly like the
+    // header action.
+    move_to_trash: {
+      validate: (raw: unknown) => {
+        if (raw !== true) throw new Error("move_to_trash expects true.");
+      },
+      apply: async () => {
+        if (!party) throw new Error("The record has not loaded yet.");
+        await deleteParty(party.id);
+        toast.success(`${party.display_name} moved to trash`);
+        router.push("/crm");
+        return { summary: `Moved ${party.display_name} to trash (restorable from Trash).` };
+      },
+    },
+    // The agent twin of the Files tile's "+": files a file the person can see
+    // INTO this record (file -> party, the registered direction).
+    attach_file: {
+      validate: (raw: unknown) => {
+        if (!isUuidShape(raw)) {
+          throw new Error("attach_file expects the file's id (a UUID).");
+        }
+      },
+      apply: async (raw: unknown) => {
+        if (!party || typeof raw !== "string") {
+          throw new Error("The record has not loaded yet.");
+        }
+        const linked = await getAssociationsStore().add({
+          sourceType: "file",
+          sourceId: raw,
+          targetType: "party",
+          targetId: party.id,
+          orgId: party.organization_id,
+        });
+        if (!linked.ok) {
+          throw new Error(
+            `The file could not be attached to ${party.display_name}: ${linked.error ?? "unknown error"}.`,
+          );
+        }
+        return { summary: `Attached the file to ${party.display_name}.`, data: { file_id: raw } };
+      },
+    },
     create_task: {
       // Refused before the approval card when the value is malformed.
       validate: (raw: unknown) => {
@@ -345,96 +388,113 @@ export function PartyRecordPage({ partyId }: Props) {
         }
         right={
           party ? (
-            <>
-              {/* A destructive action lives in the record's "…" menu (Linear,
-                  HubSpot) — never bare red text in the header. It confirms,
-                  and the record goes to trash (restorable). */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <MoreHorizontalTapButton ariaLabel="More actions" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {/* On a phone the header keeps only "…", so the record's
-                      name reads in full; Send email lives here instead. */}
-                  {isMobile && emailAction === "send" && (
-                    <DropdownMenuItem onSelect={openCompose}>
-                      <Send className="mr-2 h-3.5 w-3.5" />
-                      Send email
-                    </DropdownMenuItem>
-                  )}
-                  {isMobile && emailAction === "add" && (
-                    <DropdownMenuItem onSelect={requestAddEmail}>
-                      <Plus className="mr-2 h-3.5 w-3.5" />
-                      Add email
-                    </DropdownMenuItem>
-                  )}
-                  {/* The record's own actions, so the menu is never a lone trash
-                      item: copy its link, jump to the activity log — then the
-                      destructive one, set apart. */}
-                  <DropdownMenuItem onSelect={() => void copyLink()}>
-                    <Link2 className="mr-2 h-3.5 w-3.5" />
-                    Copy link
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={jumpToActivity}>
-                    <History className="mr-2 h-3.5 w-3.5" />
-                    Log an activity
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onSelect={() => void onDelete()}
+            isMobile ? (
+              // PHONE: plain named actions, no menu of our own — RouteHeader
+              // lists each one as a row under "This page" in the shell's ⋮
+              // sheet (one tap, never a dropdown inside a sheet).
+              <>
+                {emailAction === "send" && (
+                  <Button variant="ghost" size="sm" onClick={openCompose}>
+                    <Send className="mr-1 h-3.5 w-3.5" />
+                    Send email
+                  </Button>
+                )}
+                {emailAction === "add" && (
+                  <Button variant="ghost" size="sm" onClick={requestAddEmail}>
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Add email
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => void copyLink()}>
+                  <Link2 className="mr-1 h-3.5 w-3.5" />
+                  Copy link
+                </Button>
+                <Button variant="ghost" size="sm" onClick={jumpToActivity}>
+                  <History className="mr-1 h-3.5 w-3.5" />
+                  Log an activity
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => void onDelete()}
+                >
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                  Move to trash…
+                </Button>
+              </>
+            ) : (
+              // DESKTOP: the primary action first, then the record's one "…"
+              // menu (secondary actions, destructive set apart). The email
+              // action is icon-only below lg so the title keeps the row, which
+              // leaves nothing for RouteHeader to fold — so there is never a
+              // second "…" beside ours.
+              <>
+                {/* 🚨 EMAILING A PERSON IS A FIRST-CLASS ACTION ON THE RECORD
+                    (VERIFY-B1-B2 A1): it opens the compose window over the
+                    record, which stays readable behind it. */}
+                {emailAction === "send" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={openCompose}
+                    aria-label="Send email"
+                    title="Send email"
+                    className="h-7 px-2 text-xs"
                   >
-                    <Trash2 className="mr-2 h-3.5 w-3.5" />
-                    Move to trash…
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {/* 🚨 EMAILING A PERSON IS A FIRST-CLASS ACTION ON THE RECORD.
-                  Until 2026-09-17 the only door to the Gmail compose window was
-                  hidden behind the "Email" chip of the log-a-past-activity strip
-                  further down the page, so arriving on a Person showed no way to
-                  write to them (VERIFY-B1-B2 A1). It opens the window over the
-                  record; the record stays readable behind it. */}
-              {!isMobile && emailAction === "send" && (
-                // THE TITLE ALWAYS WINS: below lg the words fold away and the
-                // icon keeps its accessible name and tooltip.
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={openCompose}
-                  aria-label="Send email"
-                  title="Send email"
-                  className="h-7 px-2 text-xs"
-                >
-                  <Send className="h-3.5 w-3.5 lg:mr-1" />
-                  <span className="max-lg:sr-only">Send email</span>
-                </Button>
-              )}
-              {!isMobile && emailAction === "add" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={requestAddEmail}
-                  aria-label="Add email"
-                  title="Add email"
-                  className="h-7 px-2 text-xs"
-                >
-                  <Plus className="h-3.5 w-3.5 lg:mr-1" />
-                  <span className="max-lg:sr-only">Add email</span>
-                </Button>
-              )}
-              {!isMobile && emailAction === "blocked" && (
-                // Not a disabled-looking button: the sentence IS the state,
-                // and the Contact points card below names each block.
-                <span
-                  className="inline-flex items-center gap-1 px-2 text-xs text-muted-foreground"
-                  title="Email blocked for this record"
-                >
-                  <MailX className="h-3.5 w-3.5" />
-                  <span className="max-lg:sr-only">Email blocked for this record</span>
-                </span>
-              )}
-            </>
+                    <Send className="h-3.5 w-3.5 lg:mr-1" />
+                    <span className="max-lg:sr-only">Send email</span>
+                  </Button>
+                )}
+                {emailAction === "add" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={requestAddEmail}
+                    aria-label="Add email"
+                    title="Add email"
+                    className="h-7 px-2 text-xs"
+                  >
+                    <Plus className="h-3.5 w-3.5 lg:mr-1" />
+                    <span className="max-lg:sr-only">Add email</span>
+                  </Button>
+                )}
+                {emailAction === "blocked" && (
+                  // Not a disabled-looking button: the sentence IS the state,
+                  // and the Contact points card names each block.
+                  <span
+                    className="inline-flex items-center gap-1 px-2 text-xs text-muted-foreground"
+                    title="Email blocked for this record"
+                  >
+                    <MailX className="h-3.5 w-3.5" />
+                    <span className="max-lg:sr-only">Email blocked for this record</span>
+                  </span>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <MoreHorizontalTapButton ariaLabel="More actions" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => void copyLink()}>
+                      <Link2 className="mr-2 h-3.5 w-3.5" />
+                      Copy link
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={jumpToActivity}>
+                      <History className="mr-2 h-3.5 w-3.5" />
+                      Log an activity
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onSelect={() => void onDelete()}
+                    >
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      Move to trash…
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )
           ) : undefined
         }
       />

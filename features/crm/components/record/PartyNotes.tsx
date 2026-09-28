@@ -143,6 +143,21 @@ export function PartyNotes({
   // `PartyRecordPage` (CRM_RECORD_SURFACE_NAME).
   // surface-write-handlers-surface: matrx-user/crm-record
   useSurfaceWriteHandlers(writeSurfaceName ?? null, {
+    // Agent twin of a note's trash — the same commentsService.remove.
+    delete_note: {
+      validate: (raw: unknown) => {
+        if (!comments.some((comment) => comment.id === raw)) {
+          throw new Error("delete_note expects an id from notes on this record.");
+        }
+      },
+      apply: async (raw: unknown) => {
+        if (typeof raw !== "string") throw new Error("delete_note expects a note id.");
+        const result = await commentsService.remove(raw);
+        if (!result.ok) throw new Error(result.error.message);
+        setReloadNonce((current) => current + 1);
+        return { summary: "Deleted the note." };
+      },
+    },
     add_note: async (value: unknown) => {
       if (typeof value !== "string" || !value.trim()) {
         throw new Error("add_note expects a non-empty string.");

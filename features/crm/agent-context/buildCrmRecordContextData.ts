@@ -188,7 +188,7 @@ export function buildCrmRecordContextData(
     assigned_to: party.assigned_to ?? "",
     primary_employer: party.employer
       ? { id: party.employer.id, name: party.employer.display_name }
-      : undefined,
+      : null,
     aliases: party.aka,
     pronouns: party.pronouns ?? "",
     locale: party.locale ?? "",
@@ -244,9 +244,10 @@ export function buildCrmRecordContextData(
     deals_load_error: args.dealsLoadError ?? undefined,
     attached_task_ids: args.attachedTaskIds,
     attached_file_ids: args.attachedFileIds,
+    // Loaded-and-canonical is a value too: null says "not merged".
     merge_state: party.canonical_id
       ? { merged_into_party_id: party.canonical_id, is_canonical: false }
-      : undefined,
+      : null,
     is_loading: isLoading,
     load_error: loadError,
   });

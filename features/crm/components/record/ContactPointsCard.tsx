@@ -277,6 +277,24 @@ export function ContactPointsCard({
   };
 
   useSurfaceWriteHandlers(CRM_RECORD_SURFACE_NAME, {
+    // Agent twin of the row's trash: the same removeContactPoint; the
+    // approval card is the confirm. The value itself stays on the org.
+    remove_contact_point: {
+      validate: (raw: unknown) => {
+        if (!points.some((point) => point.id === raw)) {
+          throw new Error(
+            "remove_contact_point expects an id from contact_points on this record.",
+          );
+        }
+      },
+      apply: async (raw: unknown) => {
+        const point = points.find((candidate) => candidate.id === raw);
+        if (!point) throw new Error("That contact point is no longer on this record.");
+        await removeContactPoint(point.id);
+        await onChanged();
+        return { summary: `Removed ${mediumDisplay(point.medium).text} from this record.` };
+      },
+    },
     add_contact_point: async (raw: unknown) => {
       const parsed = parseContactPoint(raw);
       const hasPrimaryForChannel = points.some(

@@ -252,6 +252,23 @@ export function InteractionTimeline({
   // `PartyRecordPage` (CRM_RECORD_SURFACE_NAME).
   // surface-write-handlers-surface: matrx-user/crm-record
   useSurfaceWriteHandlers(writeSurfaceName ?? null, {
+    // Agent twin of a timeline row's trash — same removeInteraction.
+    delete_interaction: {
+      validate: (raw: unknown) => {
+        if (!interactions.some((row) => row.id === raw)) {
+          throw new Error(
+            "delete_interaction expects an id from interactions on this record.",
+          );
+        }
+      },
+      apply: async (raw: unknown) => {
+        const row = interactions.find((candidate) => candidate.id === raw);
+        if (!row) throw new Error("That entry is no longer on this record.");
+        await removeInteraction(row);
+        await onChanged();
+        return { summary: "Deleted the timeline entry." };
+      },
+    },
     log_interaction: async (raw: unknown) => {
       const parsed = parseInteraction(raw);
       await logInteraction({

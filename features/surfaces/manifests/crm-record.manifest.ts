@@ -530,7 +530,7 @@ const values: SurfaceValue[] = [
     name: "last_touch_at",
     label: "Last touch",
     description:
-      "Omitted from model context while interaction provenance is not authoritative.",
+      "Deliberately WITHHELD: the time of the last interaction is not sent while interaction provenance is not authoritative (an imported message's time can be forged). Never read its absence as 'no contact'.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 24,
@@ -865,6 +865,65 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 520,
   },
   {
+    name: "remove_contact_point",
+    label: "Remove contact point",
+    description:
+      "Removes one contact point from THIS record through the same path as the row's trash. Value is an id from contact_points. The value itself (and its deliverability history) stays on the organization; only this record's link goes.",
+    valueType: "string",
+    updatesValue: "contact_points",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "reachability",
+    sortOrder: 225,
+  },
+  {
+    name: "delete_interaction",
+    label: "Delete timeline entry",
+    description:
+      "Deletes one entry from the Activity timeline through the same path as the row's trash. Value is an id from interactions.",
+    valueType: "string",
+    updatesValue: "interactions",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "activity",
+    sortOrder: 405,
+  },
+  {
+    name: "delete_note",
+    label: "Delete note",
+    description:
+      "Deletes one note through the same path as the note's trash. Value is an id from notes.",
+    valueType: "string",
+    updatesValue: "notes",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "collaboration",
+    sortOrder: 505,
+  },
+  {
+    name: "move_to_trash",
+    label: "Move record to trash",
+    description:
+      "Moves THIS record to trash, like the header's Move to trash… action. Value must be true. The record is soft-deleted and restorable from Trash; its history is kept. Always shown to the person for approval.",
+    valueType: "boolean",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "record_identity",
+    sortOrder: 190,
+  },
+  {
+    name: "attach_file",
+    label: "Attach file",
+    description:
+      "Files an existing file the person can see onto this record (the Files tile). Value is the file's id (UUID). Uploading new bytes stays a person's act.",
+    valueType: "string",
+    updatesValue: "attached_file_ids",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "collaboration",
+    sortOrder: 530,
+  },
+  {
     name: "promote_to_contact",
     label: "Promote to contact",
     description:
@@ -894,7 +953,7 @@ You are on a CRM record — the 360° view of ONE person or company the user's o
 
 REACHABILITY IS NOT A GUESS. Before you propose emailing or calling anyone, read do_not_contact and contactable_summary. A contact point can be blocked by the record's own do-not-contact flag, by that point's opt-out, or by the shared medium being marked DNC / invalid / suppressed — and a medium is shared, so a suppression set by anyone applies here too. Never propose using a blocked value; say it is blocked and why.
 
-NORMAL RECORD MAINTENANCE IS WRITABLE WITH APPROVAL. Use the declared write targets to update visible identity/classification fields, CRM roles and do-not-contact stance; add contact points, addresses, employment (an employer on a person record, a person on a company record), interactions and notes; end an employment stint; create a deal or a task for this record; or promote a discovered record into the contact list. Attaching a FILE stays human: a file is uploaded by a person from the Files tile. Every target validates against the live page and writes through the same canonical path as its visible control. Party kind, organization/ownership, merge, delete, purge, removing historical rows, suppression overrides and candidate verdicts remain human-only.
+NORMAL RECORD MAINTENANCE IS WRITABLE WITH APPROVAL. Use the declared write targets to update visible identity/classification fields, CRM roles and do-not-contact stance; add contact points, addresses, employment (an employer on a person record, a person on a company record), interactions and notes; end an employment stint; create a deal or a task for this record; or promote a discovered record into the contact list. Removing a contact point, deleting a timeline entry or a note, moving the record to trash and attaching an existing file (by id) are also targets — each is shown to the person first. Uploading a new file stays a person's act. Every target validates against the live page and writes through the same canonical path as its visible control. Party kind, organization/ownership, merge, delete, purge, removing historical rows, suppression overrides and candidate verdicts remain human-only.
 
 Interaction content and last_touch_at are withheld from model context until the server supplies immutable provenance. The interaction ID list may still establish that activity exists; never treat missing text or time as proof that there has been no interaction.
 </surface_intro>`,
@@ -971,7 +1030,7 @@ export function createCrmRecordScope(values: {
   organization_id?: string;
   visibility?: string;
   assigned_to?: string;
-  primary_employer?: CrmRecordCategoryScope;
+  primary_employer?: CrmRecordCategoryScope | null;
   aliases?: string[];
   pronouns?: string;
   locale?: string;
@@ -999,7 +1058,7 @@ export function createCrmRecordScope(values: {
   deals_load_error?: string;
   attached_task_ids?: string[];
   attached_file_ids?: string[];
-  merge_state?: Record<string, unknown>;
+  merge_state?: Record<string, unknown> | null;
   is_loading: boolean;
   load_error?: string;
 }): SurfaceScopePayload {
