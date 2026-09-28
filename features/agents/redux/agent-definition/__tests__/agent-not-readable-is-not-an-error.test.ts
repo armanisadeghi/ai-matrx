@@ -5,11 +5,8 @@
  * The refusal keeps its code through a thunk's `.unwrap()` serialization.
  */
 import { miniSerializeError } from "@reduxjs/toolkit";
-import {
-  agentNotReadableError,
-  isAgentNotReadable,
-  logAgentLoadFailure,
-} from "../agent-not-readable";
+import { logFailure } from "@/lib/errors/expectedRefusal";
+import { agentNotReadableError, isAgentNotReadable } from "../agent-not-readable";
 
 it("the refusal is recognized as thrown and as serialized by unwrap()", () => {
   const refusal = agentNotReadableError("a-1");
@@ -21,10 +18,10 @@ it("the refusal is recognized as thrown and as serialized by unwrap()", () => {
 it("logs the refusal as info and any other failure as an error", () => {
   const info = jest.spyOn(console, "info").mockImplementation(() => {});
   const error = jest.spyOn(console, "error").mockImplementation(() => {});
-  logAgentLoadFailure("[t]", miniSerializeError(agentNotReadableError("a-1")));
+  logFailure("[t]", miniSerializeError(agentNotReadableError("a-1")));
   expect(error).not.toHaveBeenCalled();
   expect(info).toHaveBeenCalledTimes(1);
-  logAgentLoadFailure("[t]", new Error("network down"));
+  logFailure("[t]", new Error("network down"));
   expect(error).toHaveBeenCalledTimes(1);
   info.mockRestore();
   error.mockRestore();

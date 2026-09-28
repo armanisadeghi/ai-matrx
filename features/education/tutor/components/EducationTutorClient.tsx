@@ -18,7 +18,7 @@
 // mints one, injects grounding, promotes the URL after first submit) and
 // existing (conversationId prop → load the transcript, launcher gated off).
 
-import { logAgentLoadFailure } from "@/features/agents/redux/agent-definition/agent-not-readable";
+import { logFailure } from "@/lib/errors/expectedRefusal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createSelector } from "@reduxjs/toolkit";
@@ -260,7 +260,7 @@ function EducationTutorClientInner({
           await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
         }
       } catch (err) {
-        logAgentLoadFailure("[EducationTutorClient] fetchAgentExecutionMinimal failed", err);
+        logFailure("[EducationTutorClient] fetchAgentExecutionMinimal failed", err);
       } finally {
         if (!cancelled) setIsInitializing(false);
       }

@@ -211,6 +211,8 @@ import {
   type BulkOp,
   type FieldDataType,
 } from "@/features/data-tables/types";
+import { throwRowWriteError } from "@/features/data-tables/rowInTrash";
+import { logFailure } from "@/lib/errors/expectedRefusal";
 import {
   buildDuplicateOps,
   buildFillDownOps,
@@ -988,7 +990,7 @@ const UserTableViewer = ({
         fieldName,
         value: cleanedText,
       });
-      if (isServiceFailure(result)) failWith(result.error);
+      if (isServiceFailure(result)) throwRowWriteError(result);
 
       // Clear sorted data cache when data is modified
       setAllSortedData(null);
@@ -996,7 +998,7 @@ const UserTableViewer = ({
       // Reload the table data to reflect changes
       loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
     } catch (err) {
-      console.error("Error cleaning up text:", err);
+      logFailure("Error cleaning up text:", err);
       setError(err instanceof Error ? err.message : "Failed to cleanup text");
     }
   };
@@ -1948,7 +1950,7 @@ const UserTableViewer = ({
         fieldName: expandedFieldKey,
         value: expandedText,
       });
-      if (isServiceFailure(result)) failWith(result.error);
+      if (isServiceFailure(result)) throwRowWriteError(result);
 
       // Clear sorted data cache when data is modified
       setAllSortedData(null);
@@ -1971,7 +1973,7 @@ const UserTableViewer = ({
       setExpandedRowId(null);
       setExpandedFieldKey(null);
     } catch (err) {
-      console.error("Error saving expanded text:", err);
+      logFailure("Error saving expanded text:", err);
       setError(
         err instanceof Error ? err.message : "Failed to save text changes",
       );

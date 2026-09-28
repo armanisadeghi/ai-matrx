@@ -12,7 +12,7 @@
  * a display mode is clicked.
  */
 
-import { logAgentLoadFailure } from "@/features/agents/redux/agent-definition/agent-not-readable";
+import { logFailure } from "@/lib/errors/expectedRefusal";
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import Link from "next/link";
 import { DynamicIcon } from "@ai-matrx/icons";
@@ -112,7 +112,7 @@ export function AgentWidgetsPage({
   useEffect(() => {
     if (!executionPayload.isReady) {
       dispatch(fetchAgentExecutionMinimal(agentId)).catch((err) =>
-        logAgentLoadFailure("[AgentWidgetsPage] Failed to load agent execution payload:", err),
+        logFailure("[AgentWidgetsPage] Failed to load agent execution payload:", err),
       );
     }
   }, [agentId, executionPayload.isReady, dispatch]);

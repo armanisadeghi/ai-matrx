@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { upsertRow } from "@/features/data-tables/service";
 import { offerToAddChoiceOption } from "@/features/data-tables/choice-option-nudge";
 import { isServiceFailure } from "@/features/data-tables/types";
+import { rowWriteError } from "@/features/data-tables/rowInTrash";
+import { logFailure } from "@/lib/errors/expectedRefusal";
 import {
   Dialog,
   DialogContent,
@@ -244,7 +246,7 @@ export default function EditRowModal({
       // gate — replaces the legacy update_data_row_in_user_table RPC.
       const result = await upsertRow({ tableId, rowId, data: rowData });
       if (isServiceFailure(result)) {
-        throw new Error(result.error);
+        throw rowWriteError(result);
       }
 
       // An off-list value on a choice column: offer to make it an option.
@@ -257,7 +259,8 @@ export default function EditRowModal({
       onSuccess();
       onClose();
     } catch (err) {
-      console.error("Error updating row:", err);
+      // A row in Trash is an expected refusal: the notice below says so; it is not an error.
+      logFailure("Error updating row:", err);
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred",
       );

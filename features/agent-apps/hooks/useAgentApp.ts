@@ -28,7 +28,7 @@
  * responsibility is rendering and binding to UI.
  */
 
-import { logAgentLoadFailure } from "@/features/agents/redux/agent-definition/agent-not-readable";
+import { logFailure } from "@/lib/errors/expectedRefusal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -439,7 +439,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     load
       .catch((err: unknown) => {
         if (cancelled) return;
-        logAgentLoadFailure(`[useAgentApp] agent ${agentId} setup could not be read:`, err);
+        logFailure(`[useAgentApp] agent ${agentId} setup could not be read:`, err);
         setPayloadError({
           agentId,
           message:
