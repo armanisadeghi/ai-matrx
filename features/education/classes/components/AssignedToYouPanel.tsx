@@ -10,7 +10,7 @@
 // Reuses the shared assignment display primitives + the education entityRoutes map.
 
 import { ClipboardList, ArrowUpRight } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useClassAssignments } from "../hooks/useClassAssignments";
 import { useMyClassProgress } from "../hooks/useClassProgress";
@@ -23,7 +23,6 @@ import type { AssignmentProgress } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AssignedToYouPanel({ classId }: { classId: string }) {
-  const router = useRouter();
   const assignments = useClassAssignments(classId);
   const { progress, loading: progressLoading } = useMyClassProgress(classId);
 
@@ -79,16 +78,13 @@ export function AssignedToYouPanel({ classId }: { classId: string }) {
                   </div>
                 </div>
                 {a.studyHref && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      a.studyHref && router.push(a.studyHref)
-                    }
+                  <Link
+                    href={a.studyHref}
                     className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
                   >
                     {status === "completed" ? "Review" : "Study"}
                     <ArrowUpRight className="h-3 w-3" />
-                  </button>
+                  </Link>
                 )}
               </li>
             );

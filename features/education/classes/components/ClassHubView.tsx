@@ -12,12 +12,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   GraduationCap,
   Plus,
   ChevronLeft,
   Pencil,
-  Trash2,
+  Archive,
   CalendarClock,
   User,
   ArrowUpRight,
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -60,8 +62,7 @@ interface ClassHubViewProps {
 
 export function ClassHubView({ classParam }: ClassHubViewProps) {
   const router = useRouter();
-  const { classes, archived, loading, updateClass, deleteClass, orgId } =
-    useClasses();
+  const { classes, archived, loading, updateClass, orgId } = useClasses();
 
   const cls: StudyClass | undefined = [...classes, ...archived].find(
     (c) => c.id === classParam || c.slug === classParam,
@@ -93,11 +94,14 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
 
   if (stillLoading) {
     return (
-      <div className="mx-auto w-full max-w-3xl space-y-4 p-4">
-        <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-40 w-full" />
-      </div>
+      <>
+        <EducationToolHeader title="Class" />
+        <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      </>
     );
   }
 
@@ -109,7 +113,6 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
         orgId={orgId}
         access={access}
         onUpdate={updateClass}
-        onDelete={deleteClass}
       />
     );
   }
@@ -120,27 +123,33 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
 
   if (!orgReady) {
     return (
-      <div className="mx-auto w-full max-w-3xl space-y-4 p-4">
-        <BackToClasses />
-        <OrganizationContextNotice state={organizationState} what="This class" />
-      </div>
+      <>
+        <EducationToolHeader title="Class" />
+        <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
+          <BackToClasses />
+          <OrganizationContextNotice state={organizationState} what="This class" />
+        </div>
+      </>
     );
   }
 
   // Denied / deleted / never existed / signed-out all land here — a class is a
   // context scope, so the gate asks the platform which one it is.
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 p-4">
-      <BackToClasses />
-      <AccessGate
-        token="scope"
-        id={resolvedId ?? classParam}
-        error={access.error}
-        onRetry={() => void access.refresh()}
-        fallbackHref="/education/classes"
-        fallbackLabel="Classes"
-      />
-    </div>
+    <>
+      <EducationToolHeader title="Class" />
+      <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
+        <BackToClasses />
+        <AccessGate
+          token="scope"
+          id={resolvedId ?? classParam}
+          error={access.error}
+          onRetry={() => void access.refresh()}
+          fallbackHref="/education/classes"
+          fallbackLabel="Classes"
+        />
+      </div>
+    </>
   );
 }
 
@@ -165,7 +174,6 @@ function ClassHubBody({
   orgId,
   access,
   onUpdate,
-  onDelete,
 }: {
   cls: StudyClass;
   orgId: string | null;
@@ -174,7 +182,6 @@ function ClassHubBody({
     id: string,
     patch: { name?: string; description?: string; settings?: ClassFormValue["settings"] },
   ) => Promise<unknown>;
-  onDelete: (id: string) => Promise<void>;
 }) {
   const router = useRouter();
   const content = useClassContent(cls.id, orgId);
@@ -203,22 +210,31 @@ function ClassHubBody({
     toast.success("Class updated.");
   }
 
-  async function handleDelete() {
+  // Archive, never a hard delete from this page — the platform rule (a
+  // person's records are archived and restorable, never permanently removed
+  // from a page they're looking at). `settings.archived` is the sanctioned
+  // soft-hide (see ClassesHome's "Archived classes" section for the restore
+  // path); the DB's own `delete_scope` RPC (a deeper soft-delete with no
+  // restore surface anywhere in the app) stays reserved for the agent write
+  // targets that already document this same choice (classAgentWrites.ts).
+  async function handleArchive() {
     const ok = await confirm({
-      title: `Delete ${cls.name}?`,
+      title: `Archive ${cls.name}?`,
       description:
-        "This removes the class and its tags. Your decks, quizzes, notes, and media are NOT deleted — they just stop being grouped here.",
-      confirmLabel: "Delete class",
+        "It moves out of My Classes into Archived classes. Your decks, quizzes, notes, and media are NOT affected — you can restore this class anytime.",
+      confirmLabel: "Archive class",
       variant: "destructive",
     });
     if (!ok) return;
-    await onDelete(cls.id);
-    toast.success("Class deleted.");
+    await onUpdate(cls.id, { settings: { ...cls.settings, archived: true } });
+    toast.success("Class archived.");
     router.push("/education/classes");
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
+    <>
+      <EducationToolHeader title={cls.name} />
+      <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 p-4">
       <div className="space-y-3">
         <BackToClasses />
 
@@ -256,10 +272,10 @@ function ClassHubBody({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              onClick={handleDelete}
-              aria-label="Delete class"
+              onClick={handleArchive}
+              aria-label="Archive class"
             >
-              <Trash2 className="h-4 w-4" />
+              <Archive className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -400,7 +416,8 @@ function ClassHubBody({
         className={cls.name}
         content={content}
       />
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -418,7 +435,9 @@ function MemberClassView({
   );
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
+    <>
+      <EducationToolHeader title={state.name} />
+      <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 p-4">
       <BackToClasses />
 
       <div className="flex min-w-0 items-start gap-3">
@@ -476,7 +495,8 @@ function MemberClassView({
           </section>
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -486,7 +506,6 @@ function ContentGroups({
 }: {
   content: ReturnType<typeof useClassContent>;
 }) {
-  const router = useRouter();
   return (
     <div className="space-y-4">
       {content.groups.map((group) => (
@@ -512,13 +531,15 @@ function ContentGroups({
               return (
                 <li key={item.edgeId}>
                   {href ? (
-                    <button
-                      type="button"
-                      onClick={() => router.push(href)}
+                    // A real record opens through a real link — new tab,
+                    // middle-click and crawl all keep working (core rule 5:
+                    // "a link is a link", never a button calling router.push).
+                    <Link
+                      href={href}
                       className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-accent"
                     >
                       {inner}
-                    </button>
+                    </Link>
                   ) : (
                     <div className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2">
                       {inner}

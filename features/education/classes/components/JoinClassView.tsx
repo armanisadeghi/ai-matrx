@@ -18,6 +18,7 @@ import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { getClassByCode, joinClassByCode } from "../service";
 import type { ClassCodePreview } from "../types";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 
 export function JoinClassView() {
   const router = useRouter();
@@ -78,10 +79,11 @@ export function JoinClassView() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-4 p-4 pt-10">
+    <>
+      <EducationToolHeader title="Join a class" />
+      <div className="matrx-touch-targets mx-auto w-full max-w-md space-y-4 p-4 pt-10">
       <div className="space-y-1 text-center">
         <GraduationCap className="mx-auto h-8 w-8 text-primary" />
-        <h1 className="text-lg font-semibold text-foreground">Join a class</h1>
         <p className="text-sm text-muted-foreground">
           Enter the code your teacher shared with you.
         </p>
@@ -146,6 +148,7 @@ export function JoinClassView() {
           </Button>
         </Card>
       )}
-    </div>
+      </div>
+    </>
   );
 }

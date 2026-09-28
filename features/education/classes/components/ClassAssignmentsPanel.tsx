@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { ClipboardList, Plus, Trash2, ArrowUpRight } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -29,7 +29,6 @@ export function ClassAssignmentsPanel({
   /** Shared instance so the progress panel refreshes off the same source. */
   assignments: ReturnType<typeof useClassAssignments>;
 }) {
-  const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
   const [pendingDue, setPendingDue] = useState("");
 
@@ -102,14 +101,13 @@ export function ClassAssignmentsPanel({
                       {a.title}
                     </span>
                     {a.href && (
-                      <button
-                        type="button"
-                        onClick={() => a.href && router.push(a.href)}
+                      <Link
+                        href={a.href}
                         className="shrink-0 text-muted-foreground hover:text-foreground"
                         aria-label="Open resource"
                       >
                         <ArrowUpRight className="h-3.5 w-3.5" />
-                      </button>
+                      </Link>
                     )}
                   </div>
                   <DueDateLabel dueDate={a.dueDate} />

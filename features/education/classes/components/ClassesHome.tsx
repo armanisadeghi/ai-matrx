@@ -11,9 +11,10 @@ import { useRef, useState, type ReactNode } from "react";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { GraduationCap, Plus, CalendarClock, User } from "lucide-react";
+import { GraduationCap, Plus, CalendarClock, User, ArchiveRestore } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@ai-matrx/design-system";
+import { Skeleton, ArchivedDisclosure } from "@ai-matrx/design-system";
+import { toast } from "@/lib/toast";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { useClasses } from "../hooks/useClasses";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -130,6 +131,24 @@ export function ClassesHome() {
   } = useMyClasses();
   const { organizationState } = useOrganizationRequired();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+
+  // The archived-items-law reveal half: an archived class is hidden by
+  // default and restorable in one click, never gone for good from this page
+  // (settings.archived is the sanctioned soft-hide the class hub's Archive
+  // action writes — see ClassHubView.tsx).
+  async function handleRestore(cls: StudyClass) {
+    setRestoringId(cls.id);
+    try {
+      await updateClass(cls.id, { settings: { ...cls.settings, archived: false } });
+      toast.success(`${cls.name} restored.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not restore that class.");
+    } finally {
+      setRestoringId(null);
+    }
+  }
   // The dialog's live values, published by ClassFormDialog on every render —
   // read synchronously by getScope (polled every 400ms; it must never fetch).
   const draftRef = useRef<NewClassDraftScope | null>(null);
@@ -235,7 +254,7 @@ export function ClassesHome() {
     >
     <div className="contents">
     <EducationToolHeader title="My Classes" />
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
+    <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex items-center justify-end">
         <Button size="sm" className="gap-1.5" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" />
@@ -278,6 +297,42 @@ export function ClassesHome() {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Archived classes — hidden by default, restorable in one click
+          (never gone for good: the archived-items-law reveal half). */}
+      {organizationState === "ready" && archived.length > 0 && (
+        <ArchivedDisclosure
+          count={archived.length}
+          open={showArchived}
+          onOpenChange={setShowArchived}
+        >
+          <ul className="space-y-2">
+            {archived.map((cls) => (
+              <li
+                key={cls.id}
+                className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <GraduationCap className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                  {cls.name}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 shrink-0 gap-1.5 text-xs"
+                  disabled={restoringId === cls.id}
+                  onClick={() => void handleRestore(cls)}
+                >
+                  <ArchiveRestore className="h-3.5 w-3.5" />
+                  Restore
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </ArchivedDisclosure>
       )}
 
       {/* Classes the user has joined (owned by someone else). */}
