@@ -224,6 +224,23 @@ export function NoteEditorDock({
     measurePill();
   }, [measurePill]);
 
+  // Publish the dock's height so floating launchers (the assists button)
+  // sit above it rather than over its last button.
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const root = document.documentElement;
+    const publish = () =>
+      root.style.setProperty("--page-bottom-dock-h", `${Math.round(nav.getBoundingClientRect().height) + 8}px`);
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(nav);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--page-bottom-dock-h");
+    };
+  }, []);
+
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <>

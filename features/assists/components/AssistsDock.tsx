@@ -165,7 +165,11 @@ export default function AssistsDock() {
   // moves this ambient control out of the visible viewport while the user is
   // typing instead of parking it above the keyboard and over the composer.
   const mobileLauncherStyle = {
-    bottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))",
+    // A page with its own bottom dock (the phone note editor's toolbar)
+    // publishes its height as --page-bottom-dock-h; the launcher sits above it
+    // instead of covering the dock's last button.
+    bottom:
+      "calc(max(0.75rem, env(safe-area-inset-bottom, 0px)) + var(--page-bottom-dock-h, 0px))",
     transform: "translateY(var(--keyboard-inset-height, 0px))",
   };
 
