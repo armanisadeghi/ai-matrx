@@ -55,10 +55,10 @@ export function RecordingCardList({
   const handleDelete = async () => {
     const ids = [...selected];
     const ok = await confirm({
-      title: `Delete ${ids.length} recording${ids.length === 1 ? "" : "s"}?`,
+      title: `Move ${ids.length} recording${ids.length === 1 ? "" : "s"} to Trash?`,
       description:
-        "This permanently removes the audio and transcript. To keep them, use Archive or Unsort instead.",
-      confirmLabel: "Delete",
+        "The audio and transcript move to Trash, where you can restore them. To keep them here, use Archive or Unsort instead.",
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -81,7 +81,7 @@ export function RecordingCardList({
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
         <p className="text-sm text-muted-foreground">
           No recordings yet. Tap the record button to capture audio. Each
-          recording becomes a card — swipe it to archive, unsort, or delete.
+          recording becomes a card — swipe it to archive, unsort, or move it to Trash.
         </p>
       </div>
     );
@@ -113,7 +113,7 @@ export function RecordingCardList({
             className="flex items-center gap-1.5 rounded-full bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-foreground active:bg-destructive/80"
           >
             <Trash2 className="h-4 w-4" />
-            Delete
+            Move to Trash
           </button>
         </div>
       )}

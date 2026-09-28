@@ -157,8 +157,8 @@ export function EditableTextSegmentRow({
                 e.stopPropagation();
                 setConfirmOpen(true);
               }}
-              aria-label={`Delete ${itemKind}`}
-              title="Delete"
+              aria-label={`Move ${itemKind} to Trash`}
+              title="Move to Trash"
               className="inline-flex h-6 w-6 items-center justify-center rounded-sm bg-background/80 text-muted-foreground shadow-sm hover:bg-destructive hover:text-destructive-foreground"
             >
               <Trash2 className="h-3 w-3" />
@@ -170,9 +170,9 @@ export function EditableTextSegmentRow({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={`Delete ${itemKind}?`}
-        description={`This permanently removes the ${itemKind} from the session. This cannot be undone.`}
-        confirmLabel="Delete"
+        title={`Move ${itemKind} to Trash?`}
+        description={`The ${itemKind} leaves this session and moves to Trash, where you can restore it.`}
+        confirmLabel="Move to Trash"
         variant="destructive"
         onConfirm={() => {
           setConfirmOpen(false);

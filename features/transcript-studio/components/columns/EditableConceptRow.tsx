@@ -181,8 +181,8 @@ export function EditableConceptRow({
             e.stopPropagation();
             setConfirmOpen(true);
           }}
-          aria-label="Delete concept"
-          title="Delete"
+          aria-label="Move concept to Trash"
+          title="Move to Trash"
           className="inline-flex h-6 w-6 items-center justify-center rounded-sm bg-background/80 text-muted-foreground shadow-sm hover:bg-destructive hover:text-destructive-foreground"
         >
           <Trash2 className="h-3 w-3" />
@@ -191,9 +191,9 @@ export function EditableConceptRow({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Delete concept?"
-        description={`This permanently removes "${item.label}" from the session.`}
-        confirmLabel="Delete"
+        title="Move concept to Trash?"
+        description={`"${item.label}" leaves this session and moves to Trash, where you can restore it.`}
+        confirmLabel="Move to Trash"
         variant="destructive"
         onConfirm={() => {
           setConfirmOpen(false);

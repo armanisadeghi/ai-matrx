@@ -227,15 +227,15 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
     },
     {
       key: "delete",
-      label: "Delete session",
+      label: "Move session to Trash",
       icon: <Trash2 className="h-4 w-4" />,
       destructive: true,
       onSelect: async () => {
         const ok = await confirm({
-          title: `Delete "${session?.title || "Session"}"?`,
+          title: `Move "${session?.title || "Session"}" to Trash?`,
           description:
-            "This removes the session and its recordings from your list.",
-          confirmLabel: "Delete",
+            "The session and its recordings move to Trash, where you can restore them.",
+          confirmLabel: "Move to Trash",
           variant: "destructive",
         });
         if (ok) {

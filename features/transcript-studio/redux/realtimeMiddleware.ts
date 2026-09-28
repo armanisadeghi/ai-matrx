@@ -207,6 +207,11 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
               typeof row.id === "string" ? row.id : undefined,
           }) as const;
 
+        // Delete means archive: a row moved to Trash arrives as an UPDATE
+        // stamping deleted_at, and must leave the live registry.
+        const isTrashed = (row: Record<string, unknown>): boolean =>
+          row.deleted_at !== null && row.deleted_at !== undefined;
+
         const deletedId = (payload: { old?: unknown }): string | undefined => {
           const old = payload.old as { id?: string } | undefined;
           return old?.id;
@@ -232,6 +237,13 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
               ...scoped("studio_raw_segments", "UPDATE"),
               onChange: ({ row }) => {
                 if (!row) return;
+                // Moved to Trash (soft delete) — drop it like a DELETE.
+                if (isTrashed(row)) {
+                  storeApi.dispatch(
+                    rawSegmentRemoved({ sessionId: sid, segmentId: String(row.id) }),
+                  );
+                  return;
+                }
                 storeApi.dispatch(
                   rawSegmentUpdated({
                     sessionId: sid,
@@ -280,7 +292,10 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
               onChange: ({ row }) => {
                 const cleaned = row as unknown as CleanedSegmentRow | null;
                 if (!cleaned) return;
-                if (cleaned.superseded_at !== null) {
+                if (
+                  cleaned.superseded_at !== null ||
+                  isTrashed(cleaned as unknown as Record<string, unknown>)
+                ) {
                   // The row got superseded by a later cleanup pass — drop it
                   // from the active registry so we never render two
                   // overlapping rows after a cross-tab cleanup.
@@ -328,6 +343,12 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
               ...scoped("studio_concept_items", "UPDATE"),
               onChange: ({ row }) => {
                 if (!row) return;
+                if (isTrashed(row)) {
+                  storeApi.dispatch(
+                    conceptItemRemoved({ sessionId: sid, itemId: String(row.id) }),
+                  );
+                  return;
+                }
                 storeApi.dispatch(
                   conceptItemUpdated({
                     sessionId: sid,
@@ -366,6 +387,12 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
               ...scoped("studio_module_segments", "UPDATE"),
               onChange: ({ row }) => {
                 if (!row) return;
+                if (isTrashed(row)) {
+                  storeApi.dispatch(
+                    moduleSegmentRemoved({ sessionId: sid, segmentId: String(row.id) }),
+                  );
+                  return;
+                }
                 storeApi.dispatch(
                   moduleSegmentUpdated({
                     sessionId: sid,
@@ -399,6 +426,15 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
                   return;
                 }
                 if (!row) return;
+                if (isTrashed(row)) {
+                  storeApi.dispatch(
+                    recordingSegmentRemoved({
+                      sessionId: sid,
+                      segmentId: String(row.id),
+                    }),
+                  );
+                  return;
+                }
                 storeApi.dispatch(
                   recordingSegmentUpserted({
                     sessionId: sid,

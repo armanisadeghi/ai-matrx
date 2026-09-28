@@ -175,7 +175,7 @@ export function RecordingCard({
 
   const deleteAction: SwipeAction = {
     key: "delete",
-    label: "Delete",
+    label: "Trash",
     icon: <Trash2 className="h-5 w-5" />,
     className: "bg-destructive text-destructive-foreground",
     onAction: doDelete,
@@ -281,8 +281,8 @@ export function RecordingCard({
 
   sheetItems.push({
     key: "delete",
-    label: "Delete",
-    description: "Permanently remove audio and transcript",
+    label: "Move to Trash",
+    description: "Audio and transcript go to Trash — restore them from there",
     icon: <Trash2 className="h-4 w-4" />,
     destructive: true,
     onSelect: doDelete,

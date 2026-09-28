@@ -197,8 +197,8 @@ export function ActiveSessionView({
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
-            aria-label="Delete session"
-            title="Delete session"
+            aria-label="Move session to Trash"
+            title="Move session to Trash"
             className={cn(
               "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors",
               "text-muted-foreground hover:bg-destructive/15 hover:text-destructive",
@@ -218,14 +218,14 @@ export function ActiveSessionView({
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title="Delete session?"
+        title="Move session to Trash?"
         description={
           <>
-            Permanently remove <b>{session.title}</b> and all of its raw,
-            cleaned, concept, and module data. This cannot be undone.
+            <b>{session.title}</b> and all of its raw, cleaned, concept, and
+            module data move to Trash, where you can restore them.
           </>
         }
-        confirmLabel="Delete"
+        confirmLabel="Move to Trash"
         variant="destructive"
         onConfirm={() => {
           setConfirmDelete(false);

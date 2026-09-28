@@ -159,9 +159,10 @@ async function uploadAndJournalOnce(
       ),
   );
   if (error) {
-    // The uploaded file would be orphaned without its row — remove it so a
-    // retry starts clean (best-effort; staging is ephemeral either way).
-    void fileHandler.remove(normalized.fileId, { hard: true }).catch(() => {});
+    // The uploaded file would be orphaned without its row — move it to Trash
+    // so a retry starts clean (best-effort; staging is ephemeral either way).
+    // Delete means archive: never destroy the bytes here.
+    void fileHandler.remove(normalized.fileId).catch(() => {});
     throw new JournalUpsertError(error, status);
   }
 }
@@ -241,6 +242,7 @@ export async function listJournaledChunks(
     .from("studio_recording_chunks")
     .select("safety_id, chunk_index, file_id, mime_type, size_bytes")
     .eq("safety_id", safetyId)
+    .is("deleted_at", null)
     .order("chunk_index", { ascending: true });
   if (error) {
     throw new Error(`${LOG_PREFIX} list failed: ${error.message}`);
@@ -297,10 +299,12 @@ export async function assembleJournaledAudio(
 }
 
 /**
- * Delete a cycle's journal — rows AND staging chunk files. Called once the
- * recording's durable full-audio upload has landed (or the recording was
- * explicitly discarded). Best-effort: a failure leaves ephemeral staging
- * files behind, never breaks the caller.
+ * Retire a cycle's journal — rows AND staging chunk files move to Trash
+ * (soft delete: rows get deleted_at, files go through the soft file delete),
+ * so a recording moved to Trash stays restorable with its staged audio.
+ * Called once the recording's durable full-audio upload has landed (or the
+ * recording was moved to Trash). Recovery readers exclude trashed rows.
+ * Best-effort: a failure leaves staging behind, never breaks the caller.
  */
 export async function discardChunkJournal(safetyId: string): Promise<void> {
   if (!safetyId) return;
@@ -314,7 +318,7 @@ export async function discardChunkJournal(safetyId: string): Promise<void> {
     const rows = await listJournaledChunks(safetyId);
     for (const row of rows) {
       try {
-        await fileHandler.remove(row.file_id, { hard: true });
+        await fileHandler.remove(row.file_id);
       } catch {
         // Staging file cleanup is best-effort; backend retention prunes tmp.
       }
@@ -322,8 +326,9 @@ export async function discardChunkJournal(safetyId: string): Promise<void> {
     const { error } = await supabase
       .schema("transcripts")
       .from("studio_recording_chunks")
-      .delete()
-      .eq("safety_id", safetyId);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("safety_id", safetyId)
+      .is("deleted_at", null);
     if (error) throw operationFailed("discard this recording's staged chunks", error);
   } catch (err) {
     console.warn(`${LOG_PREFIX} discard for ${safetyId} failed:`, err);

@@ -75,10 +75,10 @@ export function ScribeSessionsList({
 
   const confirmDelete = async (sessionId: string, title: string) => {
     const ok = await confirm({
-      title: `Delete "${title || "Session"}"?`,
+      title: `Move "${title || "Session"}" to Trash?`,
       description:
-        "This removes the session and its recordings from your list.",
-      confirmLabel: "Delete",
+        "The session and its recordings move to Trash, where you can restore them.",
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (ok) void dispatch(deleteSessionThunk(sessionId));

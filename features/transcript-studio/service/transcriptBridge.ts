@@ -338,6 +338,7 @@ async function fetchActiveCleanedSegments(
     .from("studio_cleaned_segments")
     .select("t_start, t_end, text")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .is("superseded_at", null)
     .order("t_start", { ascending: true });
   if (error) {

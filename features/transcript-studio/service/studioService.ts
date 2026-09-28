@@ -414,6 +414,7 @@ export async function listRawSegments(
     .from("studio_raw_segments")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .order("t_start", { ascending: true });
   if (error) {
     throw new Error(`[studio] listRawSegments failed: ${error.message}`);
@@ -431,6 +432,7 @@ export async function listRawSegmentsServer(
     .from("studio_raw_segments")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .order("t_start", { ascending: true });
   if (error) {
     throw new Error(`[studio] listRawSegmentsServer failed: ${error.message}`);
@@ -458,12 +460,12 @@ export async function updateRawSegmentText(
   return rowToRawSegment(data as RawSegmentRow);
 }
 
-/** Hard-delete a raw segment. Use case: corrective edits on noisy chunks. */
+/** Move a raw segment to Trash (stamps deleted_at; restorable). Use case: corrective edits on noisy chunks. */
 export async function deleteRawSegment(id: string): Promise<void> {
   const { error } = await db
     .schema("transcripts")
     .from("studio_raw_segments")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteRawSegment failed: ${error.message}`);
@@ -555,6 +557,7 @@ export async function listUnsortedRecordingSegments(
     .from("studio_recording_segments")
     .select("*")
     .eq("user_id", userId)
+    .is("deleted_at", null)
     .not("detached_at", "is", null)
     .order("detached_at", { ascending: false });
   if (error) {
@@ -623,6 +626,7 @@ export async function listRecordingSegments(
     .from("studio_recording_segments")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .order("segment_index", { ascending: true });
   if (error) {
     throw new Error(`[studio] listRecordingSegments failed: ${error.message}`);
@@ -640,6 +644,7 @@ export async function listRecordingSegmentsServer(
     .from("studio_recording_segments")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .order("segment_index", { ascending: true });
   if (error) {
     throw new Error(
@@ -650,26 +655,17 @@ export async function listRecordingSegmentsServer(
 }
 
 /**
- * Delete a recording segment and every raw chunk that belongs to it. We delete
- * the raw rows explicitly (the FK is ON DELETE SET NULL, which would orphan the
- * transcript text rather than remove it). The mobile "card delete" is meant to
- * throw away the whole recording — audio + transcript — so we remove both.
+ * Move a recording segment to Trash — the whole recording, audio + transcript.
+ * One soft delete of the recording row: the platform soft-delete cascade edges
+ * (studio_recording_segments -> studio_raw_segments / studio_cleaned_segments)
+ * stamp its raw and cleaned text with it, and restoring the recording from
+ * Trash restores exactly those rows.
  */
 export async function deleteRecordingSegment(id: string): Promise<void> {
-  const { error: rawError } = await db
-    .schema("transcripts")
-    .from("studio_raw_segments")
-    .delete()
-    .eq("recording_segment_id", id);
-  if (rawError) {
-    throw new Error(
-      `[studio] deleteRecordingSegment (raw) failed: ${rawError.message}`,
-    );
-  }
   const { error } = await db
     .schema("transcripts")
     .from("studio_recording_segments")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteRecordingSegment failed: ${error.message}`);
@@ -1099,6 +1095,7 @@ export async function listCleanedSegments(
     .from("studio_cleaned_segments")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .is("superseded_at", null)
     .order("t_start", { ascending: true });
   if (error) {
@@ -1117,6 +1114,7 @@ export async function listCleanedSegmentsServer(
     .from("studio_cleaned_segments")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .is("superseded_at", null)
     .order("t_start", { ascending: true });
   if (error) {
@@ -1238,12 +1236,12 @@ export async function updateCleanedSegmentText(
   return rowToCleanedSegment(data as CleanedSegmentRow);
 }
 
-/** Hard-delete a cleaned segment. Audit trail (`studio_runs`) is unaffected. */
+/** Move a cleaned segment to Trash (stamps deleted_at; restorable). Audit trail (`studio_runs`) is unaffected. */
 export async function deleteCleanedSegment(id: string): Promise<void> {
   const { error } = await db
     .schema("transcripts")
     .from("studio_cleaned_segments")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteCleanedSegment failed: ${error.message}`);
@@ -1340,6 +1338,7 @@ export async function listConceptItems(
     .from("studio_concept_items")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) {
     throw new Error(`[studio] listConceptItems failed: ${error.message}`);
@@ -1357,6 +1356,7 @@ export async function listConceptItemsServer(
     .from("studio_concept_items")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) {
     throw new Error(`[studio] listConceptItemsServer failed: ${error.message}`);
@@ -1397,11 +1397,12 @@ export async function updateConceptItem(
   return rowToConceptItem(data as ConceptItemRow);
 }
 
+/** Move a concept item to Trash (stamps deleted_at; restorable). */
 export async function deleteConceptItem(id: string): Promise<void> {
   const { error } = await db
     .schema("transcripts")
     .from("studio_concept_items")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteConceptItem failed: ${error.message}`);
@@ -1494,6 +1495,7 @@ export async function listModuleSegments(
     .from("studio_module_segments")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) {
     throw new Error(`[studio] listModuleSegments failed: ${error.message}`);
@@ -1511,6 +1513,7 @@ export async function listModuleSegmentsServer(
     .from("studio_module_segments")
     .select("*")
     .eq("session_id", sessionId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) {
     throw new Error(
@@ -1540,11 +1543,12 @@ export async function updateModuleSegmentPayload(
   return rowToModuleSegment(data as ModuleSegmentRow);
 }
 
+/** Move a module segment to Trash (stamps deleted_at; restorable). */
 export async function deleteModuleSegment(id: string): Promise<void> {
   const { error } = await db
     .schema("transcripts")
     .from("studio_module_segments")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteModuleSegment failed: ${error.message}`);

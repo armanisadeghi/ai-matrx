@@ -368,8 +368,8 @@ function SidebarItem({
                   e.stopPropagation();
                   setConfirmDelete(true);
                 }}
-                aria-label="Delete session"
-                title="Delete"
+                aria-label="Move session to Trash"
+                title="Move to Trash"
                 className="inline-flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity hover:bg-destructive hover:text-destructive-foreground group-hover:opacity-100"
               >
                 <Trash2 className="h-3 w-3" />
@@ -386,14 +386,14 @@ function SidebarItem({
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title="Delete session?"
+        title="Move session to Trash?"
         description={
           <>
-            Permanently remove <b>{session.title}</b> and all of its raw,
-            cleaned, concept, and module data. This cannot be undone.
+            <b>{session.title}</b> and all of its raw, cleaned, concept, and
+            module data move to Trash, where you can restore them.
           </>
         }
-        confirmLabel="Delete"
+        confirmLabel="Move to Trash"
         variant="destructive"
         onConfirm={() => {
           setConfirmDelete(false);
