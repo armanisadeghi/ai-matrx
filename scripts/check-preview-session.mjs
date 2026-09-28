@@ -124,14 +124,47 @@ await check("a session hostname really resolves to loopback", async () => {
 });
 
 await check("the harness and the route name the SAME nonce file", () => {
-  const fromShell = sessionShell('preview_nonce_file "abc.localhost"');
-  assert.equal(fromShell, ".dev-login-nonce.abc.localhost");
+  const fromShell = sessionShell('preview_nonce_file "abc.localhost" "deadbeefdeadbeef"');
+  assert.equal(fromShell, ".dev-login-nonce.abc.localhost.deadbeefdeadbeef");
   const route = readFileSync(ROUTE_TS, "utf8");
-  // The route builds it from the request hostname; if that template ever moves,
-  // the harness mints a file nothing reads and every sign-in 401s.
+  // The route builds it from the request hostname AND the presented nonce
+  // (2026-09-26 — a file per host alone still let a second mint for the same
+  // host overwrite the first's file); if that template ever moves, the
+  // harness mints a file nothing reads and every sign-in 401s.
   assert.ok(
-    route.includes("`.dev-login-nonce.${safe}`"),
-    "app/api/dev-login/route.ts no longer derives the nonce file from the host",
+    route.includes("`.dev-login-nonce.${safeHost}.${safeNonce}`"),
+    "app/api/dev-login/route.ts no longer derives the nonce file from the host and nonce",
+  );
+});
+
+await check("two mints for the SAME host do not overwrite each other's file", () => {
+  // THE ACTUAL INCIDENT (2026-09-26): a file per host meant a second
+  // `pnpm dev-login` for that host — another subagent, or a re-run — clobbered
+  // the first mint's pending nonce before its URL was ever opened.
+  const first = sessionShell('preview_nonce_file "shared.localhost" "1111111111111111"');
+  const second = sessionShell('preview_nonce_file "shared.localhost" "2222222222222222"');
+  assert.notEqual(first, second, "two mints for one host collapsed to the same file");
+});
+
+await check("subagents under ONE parent session get DISTINCT hosts (root cause)", () => {
+  // THE ROOT CAUSE: CLAUDE_CODE_HOST_SESSION_ID names the top-level Claude
+  // Desktop session and is IDENTICAL for every subagent a parent dispatches in
+  // parallel. Checking it before CLAUDE_CODE_SESSION_ID (which IS unique per
+  // dispatched agent) meant every subagent under one session landed on the
+  // same hostname, shared one cookie jar, and evicted each other's sign-ins.
+  const sharedHostSession = "local_shared-parent-session-0001";
+  const a = sessionShell("preview_session_host", {
+    CLAUDE_CODE_HOST_SESSION_ID: sharedHostSession,
+    CLAUDE_CODE_SESSION_ID: "subagent-aaaa",
+  });
+  const b = sessionShell("preview_session_host", {
+    CLAUDE_CODE_HOST_SESSION_ID: sharedHostSession,
+    CLAUDE_CODE_SESSION_ID: "subagent-bbbb",
+  });
+  assert.notEqual(
+    a,
+    b,
+    `both subagents landed on ${a} under one shared host session — the parallel-subagent clobber defect`,
   );
 });
 

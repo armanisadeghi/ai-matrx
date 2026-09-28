@@ -26,13 +26,19 @@ import type { NextRequest } from "next/server";
 // consume (the route deletes it) a real .dev-login-nonce another agent is
 // mid-handshake with in this shared checkout.
 const FAKE_CWD = mkdtempSync(join(tmpdir(), "dev-login-guard-"));
-// A nonce belongs to a HOST (W56c). One shared `.dev-login-nonce` meant any
-// agent's failed navigation consumed the nonce another agent had just minted.
+// A nonce belongs to a HOST *and* to its own MINT (W56c, extended 2026-09-26).
+// One shared `.dev-login-nonce` meant any agent's failed navigation consumed
+// the nonce another agent had just minted; one file PER HOST still meant a
+// second mint for that same host (another subagent under one parent session,
+// or a re-run) overwrote the first mint's file before its URL was opened.
 // Keyed by HOSTNAME, not host:port — ports never separate cookie jars either,
-// so the nonce boundary is deliberately the same boundary as the session's.
-const nonceFile = (hostname: string) =>
-  join(FAKE_CWD, `.dev-login-nonce.${hostname}`);
-const NONCE_FILE = nonceFile("localhost");
+// so the nonce boundary is deliberately the same boundary as the session's —
+// and by the nonce itself, so two mints for one host are two independent
+// files.
+const nonceFile = (hostname: string, nonce: string) =>
+  join(FAKE_CWD, `.dev-login-nonce.${hostname}.${nonce}`);
+const A_NONCE = "0123456789abcdef0123456789abcdef";
+const NONCE_FILE = nonceFile("localhost", A_NONCE);
 
 // `error: unknown`, not `null` — the transport suite below hands it a real
 // AuthRetryableFetchError, which is the whole point of that guard.
@@ -107,11 +113,45 @@ describe("dev-login accepts ONLY the nonce handshake", () => {
     expect(existsSync(NONCE_FILE)).toBe(false);
   });
 
-  it("refuses a wrong ?nonce= and burns the file anyway", async () => {
-    writeFileSync(NONCE_FILE, "0123456789abcdef0123456789abcdef\n");
+  it("refuses a wrong ?nonce=, and does NOT burn a different pending mint", async () => {
+    // 2026-09-26: the nonce is now part of the filename, so a wrong guess
+    // resolves to a file nothing wrote — it can no longer touch the REAL
+    // pending mint for this host. That is what lets a second `pnpm dev-login`
+    // for the same host mint independently of the first (see the describe
+    // block below) instead of clobbering it.
+    writeFileSync(NONCE_FILE, A_NONCE + "\n");
     const response = await GET(get("?nonce=ffffffffffffffffffffffffffffffff"));
     expect(response.status).toBe(401);
+    expect(existsSync(NONCE_FILE)).toBe(true);
+
+    // The real mint is still good afterwards.
+    const owner = await GET(get(`?nonce=${A_NONCE}&next=/tasks`));
+    expect(owner.status).toBeGreaterThanOrEqual(300);
+    expect(owner.status).toBeLessThan(400);
     expect(existsSync(NONCE_FILE)).toBe(false);
+  });
+
+  it("two mints for the SAME host are independent — neither burns the other", async () => {
+    // This is the regression for the actual incident: several subagents
+    // dispatched from one parent session landed on the same host and their
+    // back-to-back `pnpm dev-login` calls overwrote each other's nonce file.
+    const first = "aa11aa11aa11aa11aa11aa11aa11aa11";
+    const second = "bb22bb22bb22bb22bb22bb22bb22bb22";
+    writeFileSync(nonceFile("localhost", first), first + "\n");
+    writeFileSync(nonceFile("localhost", second), second + "\n");
+
+    const firstResponse = await GET(get(`?nonce=${first}&next=/tasks`));
+    expect(firstResponse.status).toBeGreaterThanOrEqual(300);
+    expect(firstResponse.status).toBeLessThan(400);
+
+    // The SECOND mint's URL still works — it was never touched by the first.
+    const secondResponse = await GET(get(`?nonce=${second}&next=/dashboard`));
+    expect(secondResponse.status).toBeGreaterThanOrEqual(300);
+    expect(secondResponse.status).toBeLessThan(400);
+
+    // And a reused URL (either one) now fails.
+    const reused = await GET(get(`?nonce=${first}&next=/tasks`));
+    expect(reused.status).toBe(401);
   });
 
   it("refuses a non-loopback host before anything else", async () => {
@@ -145,7 +185,7 @@ describe("each agent session gets its own hostname and its own nonce", () => {
   const PORT = ":3001";
 
   it("accepts a *.localhost session host", async () => {
-    writeFileSync(nonceFile(HOST_A), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
+    writeFileSync(nonceFile(HOST_A, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
     const response = await GET(
       get("?nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&next=/tasks", HOST_A + PORT),
     );
@@ -154,7 +194,7 @@ describe("each agent session gets its own hostname and its own nonce", () => {
   });
 
   it("redirects back to the SAME host, never rewritten to localhost", async () => {
-    writeFileSync(nonceFile(HOST_A), "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n");
+    writeFileSync(nonceFile(HOST_A, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"), "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n");
     const response = await GET(
       get("?nonce=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb&next=/dashboard", HOST_A + PORT),
     );
@@ -165,20 +205,20 @@ describe("each agent session gets its own hostname and its own nonce", () => {
   });
 
   it("host B cannot spend host A's nonce, and cannot burn its file", async () => {
-    writeFileSync(nonceFile(HOST_A), "cccccccccccccccccccccccccccccccc\n");
+    writeFileSync(nonceFile(HOST_A, "cccccccccccccccccccccccccccccccc"), "cccccccccccccccccccccccccccccccc\n");
     const stolen = await GET(
       get("?nonce=cccccccccccccccccccccccccccccccc&next=/tasks", HOST_B + PORT),
     );
     expect(stolen.status).toBe(401);
     // THE ACTUAL DEFECT: A's handshake must still be live afterwards.
-    expect(existsSync(nonceFile(HOST_A))).toBe(true);
+    expect(existsSync(nonceFile(HOST_A, "cccccccccccccccccccccccccccccccc"))).toBe(true);
 
     const owner = await GET(
       get("?nonce=cccccccccccccccccccccccccccccccc&next=/tasks", HOST_A + PORT),
     );
     expect(owner.status).toBeGreaterThanOrEqual(300);
     expect(owner.status).toBeLessThan(400);
-    expect(existsSync(nonceFile(HOST_A))).toBe(false);
+    expect(existsSync(nonceFile(HOST_A, "cccccccccccccccccccccccccccccccc"))).toBe(false);
   });
 
   it("names the host and the per-host file when a nonce is missing", async () => {
@@ -248,7 +288,7 @@ describe("a transport failure is retried, and never called a bad credential", ()
     signInWithPassword
       .mockImplementationOnce(async () => ({ error: retryableFetchError() }))
       .mockImplementationOnce(async () => ({ error: null }));
-    writeFileSync(nonceFile(HOST), "11111111111111111111111111111111\n");
+    writeFileSync(nonceFile(HOST, "11111111111111111111111111111111"), "11111111111111111111111111111111\n");
 
     const response = await GET(
       get("?nonce=11111111111111111111111111111111&next=/tasks", HOST + PORT),
@@ -274,7 +314,7 @@ describe("a transport failure is retried, and never called a bad credential", ()
     // logged every one as "AI_ADMIN_PASSWORD is stale" and then burned a
     // SECOND request from the same exhausted bucket on the fallback.
     signInWithPassword.mockImplementation(async () => ({ error: rateLimitError() }));
-    writeFileSync(nonceFile(HOST), "33333333333333333333333333333333\n");
+    writeFileSync(nonceFile(HOST, "33333333333333333333333333333333"), "33333333333333333333333333333333\n");
 
     const response = await GET(
       get("?nonce=33333333333333333333333333333333&next=/tasks", HOST + PORT),
@@ -296,7 +336,7 @@ describe("a transport failure is retried, and never called a bad credential", ()
     signInWithPassword.mockImplementation(async () => ({
       error: retryableFetchError(),
     }));
-    writeFileSync(nonceFile(HOST), "22222222222222222222222222222222\n");
+    writeFileSync(nonceFile(HOST, "22222222222222222222222222222222"), "22222222222222222222222222222222\n");
 
     const response = await GET(
       get("?nonce=22222222222222222222222222222222&next=/tasks", HOST + PORT),

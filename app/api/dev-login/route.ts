@@ -232,12 +232,12 @@ export async function GET(request: NextRequest) {
       {
         error:
           `Expired, missing, or mismatched nonce for host '${hostname}'. Nonces are ` +
-          `PER HOST now (the file is .dev-login-nonce.${hostname}), so that one ` +
-          "agent's failed navigation can no longer burn another's. Run `pnpm dev-login` " +
-          "in a shell in this checkout — it mints the nonce for YOUR session's hostname " +
-          "and prints the URL to open. Each nonce is good for exactly one request; a " +
-          "wrong guess burns the file too. If you wrote `.dev-login-nonce` by hand, that " +
-          "is the old shared file and no host reads it any more.",
+          `PER HOST AND PER MINT now (the file is .dev-login-nonce.${hostname}.<nonce>), ` +
+          "so neither another agent's failed navigation nor a second mint for this same " +
+          "host can burn this one's. Run `pnpm dev-login` in a shell in this checkout — " +
+          "it mints a fresh nonce for YOUR session's hostname and prints the URL to open. " +
+          "Each nonce is good for exactly one request. If you wrote `.dev-login-nonce` by " +
+          "hand, that is the old shared file and no host reads it any more.",
       },
       { status: 401 },
     );
