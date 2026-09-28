@@ -163,8 +163,11 @@ export interface CurrentStudyGuide {
   version: number;
 }
 
-export interface UpdateStudyGuidePlan extends CurrentStudyGuide {
-  title?: string;
+export interface UpdateStudyGuidePlan {
+  id: string;
+  /** The effective title after this write, used for messages and name stability. */
+  title: string;
+  version: number;
   content?: string;
   changed: string[];
 }
