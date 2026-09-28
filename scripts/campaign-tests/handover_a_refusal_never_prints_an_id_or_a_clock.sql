@@ -16,6 +16,10 @@
 --   2  THE USE CASE, through the door as the person: an approval admin decided is decided again;
 --      the refusal names who, carries no clock, and its DETAIL says state, decided_at, decided_by
 --      and decided_by_name. RED before the lane ("…, on 2026-…").
+--      Widened again 2026-09-28 after VERIFIER-29: a trigger's NEW.<col> / OLD.<col> is typed by the
+--      column on the table it is attached to (NEW.id, OLD.id and their kin were invisible). RED on
+--      the clone before the third file (73 replaceable sentences in 40 functions, the verifier's
+--      seo._topical_map_cascade_topics among them).
 --   3  The read door names the decider (decided_by_name). RED before the lane.
 \i scripts/campaign-tests/_preamble.sql
 
@@ -98,6 +102,16 @@ begin
       from scope s join fns f on f.oid = s.oid,
            regexp_matches(f.body, '\m([a-z_][a-z0-9_]*)\s+(uuid|timestamptz|timestamp(\s+with(out)?\s+time\s+zone)?)\s*(:=|;|default|not\s+null)', 'gi') d
   ),
+  -- A trigger's NEW.<col> / OLD.<col> carries the type of that column on the table the trigger is
+  -- attached to (every table it is attached to): a uuid or a timestamp there is printed just the same.
+  row_fields as (
+    select distinct t.tgfoid as oid, lower(r.rec || '.' || a.attname) as name
+      from pg_trigger t
+      join pg_attribute a on a.attrelid = t.tgrelid and a.attnum > 0 and not a.attisdropped
+      cross join (values ('new'), ('old')) r(rec)
+     where not t.tgisinternal
+       and format_type(a.atttypid, null) in ('uuid','timestamp with time zone','timestamp without time zone')
+  ),
   pieces as (
     select r.oid, r.fn, r.said, btrim(x, E' \t\r\n') as piece
       from raises r, regexp_split_to_table(r.args, ',') x
@@ -110,12 +124,14 @@ begin
         or p.piece ~* 'decided_at|v_parent::text|^to_char\('
         or exists (select 1 from typed t where t.oid = p.oid
                     and regexp_replace(lower(p.piece), '::text$', '') = t.name)
+        or exists (select 1 from row_fields rf where rf.oid = p.oid
+                    and regexp_replace(regexp_replace(lower(p.piece), '::text$', ''), '\s+', '', 'g') = rf.name)
   )
     -- TWO KINDS THIS LANE MAY NOT REPLACE, exempt by RULE (never by a list of names), and printed so
   -- the count stays honest:
   --   (a) a function that assigns NEW.organization_id — the ddl_guard refuses ANY replacement of
   --       such a function (writers must supply organization_id);
-  --   (b) a SECURITY DEFINER function with no access decision declared in
+  --   (b) a SECURITY DEFINER function (not a trigger: provision_shape_guard exempts triggers) with no access decision declared in
   --       platform.client_callable_door — replacing it demands that decision (provision_shape_guard)
   --       and revokes client EXECUTE; who may call it is its owner's access decision.
   -- Neither kind can be born any more (both guards refuse new ones), so this set only shrinks.
@@ -125,7 +141,8 @@ begin
     into v_hits, v_frozen
     from (select h.*,
                  (f.body ~* 'new\s*\.\s*organization_id\s*:?=')
-                 or (p.prosecdef and not exists (select 1 from platform.client_callable_door d
+                 or (p.prosecdef and p.prorettype <> 'trigger'::regtype
+                     and not exists (select 1 from platform.client_callable_door d
                                                   where d.schema_name = f.nspname and d.function_name = f.proname)) as frozen
             from hits h join fns f on f.qname = h.fn join pg_proc p on p.oid = f.oid) h;
   if v_hits is not null then
