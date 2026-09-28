@@ -97,8 +97,9 @@ export interface BoardToolHost<T extends BoardTileBase & { title: string }> {
   /** A patch for a tile's content, or a failure saying why it cannot change. An
    * empty patch means the host applied the content itself (e.g. into a record). */
   editTile?: (tile: T, input: EditTileInput) => Partial<T> | Failure;
-  /** "note", "markdown", a kind label… and a status word, for board_read. */
-  describe: (tile: T) => { kind: string; status?: string | null };
+  /** "note", "markdown", a kind label… a status word, and the agent surface
+   * the tile's feature publishes while the tile is live, for board_read. */
+  describe: (tile: T) => { kind: string; status?: string | null; surface?: string | null };
 }
 
 const DEFAULT_SIZE: Record<BoardTileKindInput, { w: number; h: number }> = {
@@ -167,14 +168,21 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
       };
     });
     const bounded = boundBoardContext(host.boardTitle, raw);
+    const surfaces = new Map(allTiles().map((t) => [t.id, host.describe(t).surface ?? null]));
+    const surfaceOf = (id: string) => {
+      const name = surfaces.get(id);
+      return name ? { surface: name } : {};
+    };
     const round = (r: Rect) => ({ x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) });
     const rectOf = new Map(allTiles().map((t) => [t.id, t.rect]));
     return {
       ok: true,
       board: {
         ...bounded,
+        live_tile_id: selected ?? focused,
         tiles: bounded.tiles.map((t) => ({
           ...t,
+          ...surfaceOf(t.id),
           rect: round(rectOf.get(t.id) ?? { x: 0, y: 0, w: 0, h: 0 }),
           parked: parkedIds.has(t.id),
           ...(removedIds.has(t.id) ? { removed: true } : {}),
@@ -360,7 +368,10 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const tile = find(a.id);
     if (!tile) return missing(a.id);
     if (!store) return fail("The board is not ready yet.");
+    // Selecting makes the tile LIVE: its feature's own surface (values,
+    // write targets, tools) registers, and reaches the agent next turn.
     const show = () => {
+      store.select(tile.id);
       if (a.mode === "focus") store.focus(tile.id);
       else store.fitItem(tile.id);
     };

@@ -18,7 +18,7 @@
  * copy of its state. Opening a board re-mounts each source.
  */
 
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { NodeSource } from "../board/document";
 import type { PaceTier } from "../engine/lod";
@@ -56,6 +56,31 @@ export interface PickerProps {
 
 export type BoardItemGroup = "work" | "content" | "media" | "features";
 
+/**
+ * The feature's OWN agent surface for the record in a tile — the same values,
+ * write targets and client tools its page has, so an agent can do on the board
+ * exactly what it can do on the feature's page. The board keeps every tile's
+ * surface DORMANT (`SurfaceActivity`) except the LIVE tile — the one selected,
+ * being worked in, or focused — so exactly one copy of a surface registers.
+ */
+export type ItemSurface =
+  | {
+      /** A registered manifest's `surfaceName` (features/surfaces/manifests). */
+      name: string;
+      /**
+       * Mounts that surface for this record — the SAME host component the
+       * feature's page uses. Omit when `Body` (the canonical component)
+       * already mounts the provider itself (e.g. `NoteContentEditor`).
+       */
+      Host?: ComponentType<{ source: NodeSource; children: ReactNode }>;
+    }
+  | {
+      /** Board-only content with no feature behind it (a label, a web page):
+       * why it has no surface. The board's own tools edit it. Never for a
+       * record — a record item without its surface is a defect. */
+      none: string;
+    };
+
 export interface BoardItemType {
   /** Registry key. For entity sources it equals `source.entity`. */
   key: string;
@@ -68,6 +93,8 @@ export interface BoardItemType {
   matches: (source: NodeSource) => boolean;
   /** The tile body — the feature's canonical component. */
   Body: ComponentType<ItemBodyProps>;
+  /** The feature's agent surface for the tile's record (see `ItemSurface`). */
+  surface: ItemSurface;
   /**
    * "Start something new". Synchronous and cheap: return the item to place
    * NOW (a draft note, a new chat that opens its conversation when mounted),

@@ -24,7 +24,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { type Camera, type Rect, screenToWorld } from "../engine/camera";
-import { useEditingTile } from "../engine/react";
+import { useEditingTile, useFocusedTile, useSelectedTile } from "../engine/react";
+import { SurfaceActivity } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SpatialStore } from "../engine/spatial-store";
 import type { ThrowAction, ThrowDirection } from "../engine/throw";
 import { DEFAULT_THROW_ACTIONS } from "../engine/throw";
@@ -318,7 +319,13 @@ export function UserBoard({
     boardTitle: title,
     createTile: (id, input, size) => agentTile(id, input, size),
     editTile: (tile, input) => agentEdit(tile, input),
-    describe: (tile) => ({ kind: itemTypeFor(tile.source)?.kindLabel ?? itemTypeFor(tile.source)?.key ?? "item" }),
+    describe: (tile) => {
+      const type = itemTypeFor(tile.source);
+      return {
+        kind: type?.kindLabel ?? type?.key ?? "item",
+        surface: type && "name" in type.surface ? type.surface.name : null,
+      };
+    },
   };
 
   const byId = new Map(board.tiles.map((t) => [t.id, t]));
@@ -470,6 +477,12 @@ function BoardItemTile({
 }) {
   const type = itemTypeFor(tile.source);
   const interacting = useEditingTile() === tile.id;
+  // The LIVE tile — selected, worked in or focused — is the only one whose
+  // feature surface registers; every other copy stays dormant.
+  const selected = useSelectedTile() === tile.id;
+  const focused = useFocusedTile() === tile.id;
+  const live = interacting || selected || focused;
+  const Host = type && "name" in type.surface ? type.surface.Host : undefined;
   const href = type?.href?.(tile.source) ?? null;
   return (
     <SpatialTile
@@ -498,14 +511,15 @@ function BoardItemTile({
     >
       {(tier) =>
         type ? (
-          <type.Body
-            tileId={tile.id}
-            source={tile.source}
-            title={tile.title}
-            tier={tier}
-            interacting={interacting}
-            onSource={onSource}
-          />
+          <SurfaceActivity active={live}>
+            {Host ? (
+              <Host source={tile.source}>
+                <type.Body tileId={tile.id} source={tile.source} title={tile.title} tier={tier} interacting={interacting} onSource={onSource} />
+              </Host>
+            ) : (
+              <type.Body tileId={tile.id} source={tile.source} title={tile.title} tier={tier} interacting={interacting} onSource={onSource} />
+            )}
+          </SurfaceActivity>
         ) : (
           <UnavailableItemBody source={tile.source} />
         )

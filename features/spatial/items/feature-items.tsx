@@ -986,6 +986,7 @@ const newDraft = (entity: typeof FEATURE_ENTITY.task | typeof FEATURE_ENTITY.war
 export const FEATURE_ITEMS: BoardItemType[] = [
   {
     key: FEATURE_ENTITY.task,
+    surface: { name: "matrx-user/tasks" },
     label: "Task",
     icon: ListTodo,
     group: "work",
@@ -1002,6 +1003,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   },
   {
     key: FEATURE_ENTITY.warRoom,
+    surface: { name: "matrx-user/war-room" },
     label: "War Room",
     icon: UsersRound,
     group: "features",
@@ -1018,6 +1020,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   },
   {
     key: FEATURE_ENTITY.meeting,
+    surface: { name: "matrx-user/meeting" },
     label: "Meeting",
     icon: Video,
     group: "features",
@@ -1031,6 +1034,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   },
   {
     key: FEATURE_ENTITY.workflowRun,
+    surface: { name: "matrx-user/workflow-run" },
     label: "Workflow run",
     icon: Workflow,
     group: "features",
@@ -1043,6 +1047,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   },
   {
     key: FEATURE_ENTITY.research,
+    surface: { name: "matrx-user/research" },
     label: "Research",
     icon: FlaskConical,
     group: "features",
@@ -1055,6 +1060,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   },
   {
     key: FEATURE_ENTITY.project,
+    surface: { name: "matrx-user/projects" },
     label: "Project",
     icon: FolderKanban,
     group: "features",
