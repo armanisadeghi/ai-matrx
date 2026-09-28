@@ -1,6 +1,13 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   PencilTapButton,
   TrashTapButton,
@@ -14,7 +21,9 @@ import {
   Power,
   PowerOff,
   Trash2,
+  MoreVertical,
 } from "lucide-react";
+import type { ComponentType } from "react";
 import {
   buildDefaultTableRowMenuDescriptor,
   createTableRowMenuDescriptor,
@@ -51,6 +60,15 @@ const READINESS_SORT_WEIGHT: Record<string, number> = {
   unregistered: 3,
 };
 
+export interface RegistryAction {
+  key: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  badge: number;
+  disabled?: boolean;
+  onClick: () => void;
+}
+
 interface Props {
   rows: SurfaceWithStats[];
   isLoading: boolean;
@@ -72,6 +90,10 @@ interface Props {
   onAdd: () => void | Promise<void>;
   /** Peek side panel is open (desktop): keep only the columns that fit whole. */
   peeking?: boolean;
+  /** Phone: the registry total shown on the toolbar row. */
+  totalCount?: number;
+  /** Phone: the registry actions, listed in the toolbar's one "…" menu. */
+  registryActions?: RegistryAction[];
   /** The surfaces read these rows answer (the container owns it). */
   read?: ReadOutcome | undefined;
 }
@@ -155,10 +177,13 @@ function NameCell({
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <div className="min-w-0">
-        <div className="truncate font-medium text-foreground">
+        <div className="truncate font-medium text-foreground" title={surfaceRowTitle(row)}>
           {surfaceRowTitle(row)}
         </div>
-        <div className="truncate font-mono text-xs text-muted-foreground">
+        <div
+          className="truncate font-mono text-xs text-muted-foreground"
+          title={row.name}
+        >
           {row.name}
         </div>
       </div>
@@ -306,6 +331,8 @@ function allSurfaceColumns(
       accessorKey: "parent_surface_name",
       header: "Parent",
       width: 160,
+      // Off by default (column picker): at 1280 the triage columns come first.
+      hidden: true,
       filterValue: (row) =>
         row.parent_surface_name
           ? `${getSurfaceDisplayLabel(row.parent_surface_name)} ${row.parent_surface_name}`
@@ -325,14 +352,15 @@ function allSurfaceColumns(
     {
       accessorKey: "sort_order",
       header: "Tier",
-      width: 100,
+      width: 120,
+      hidden: true,
       filterValue: (row) => tierFor(row.sort_order).label,
       cell: (row) => {
         const tier = tierFor(row.sort_order);
         return (
           <Badge
             variant="outline"
-            className="text-xs"
+            className="whitespace-nowrap text-xs"
             title={`${tier.description} · position ${row.sort_order}`}
           >
             {tier.label}
@@ -375,6 +403,8 @@ export function SurfacesTable({
   onAdd,
   read,
   peeking = false,
+  totalCount,
+  registryActions = [],
 }: Props) {
   const isMobile = useIsMobile();
   const roomForValues = useMediaQuery("(min-width: 1200px)");
@@ -436,16 +466,57 @@ export function SurfacesTable({
             render: () => null,
           },
         ],
-        leading: (
-          <SurfacesFilterBar
-            state={filters}
-            onChange={onFilterChange}
-            clientNames={clientNames}
-            parentNames={parentNames}
-            compact={isMobile}
-            onClear={onClearFilters}
-          />
-        ),
+        ...(isMobile
+          ? {
+              // Phone: ONE row — count, saved view, Filters, one "…" holding
+              // the table's tools and the registry actions; search below.
+              ...(totalCount !== undefined
+                ? { titleCount: { value: totalCount, label: "surfaces" } }
+                : {}),
+              columns: false,
+              overflow: {
+                mode: "menu" as const,
+                pinned: (
+                  <SurfacesFilterBar
+                    state={filters}
+                    onChange={onFilterChange}
+                    clientNames={clientNames}
+                    parentNames={parentNames}
+                    compact
+                    onClear={onClearFilters}
+                  />
+                ),
+                sheetExtras: registryActions.map((a) => (
+                  <Button
+                    key={a.key}
+                    variant="ghost"
+                    size="sm"
+                    disabled={a.disabled}
+                    onClick={a.onClick}
+                    className="h-9 w-full justify-start gap-2 px-2 font-normal"
+                  >
+                    <a.icon className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left">{a.label}</span>
+                    {a.badge > 0 && (
+                      <span className="pl-3 tabular-nums text-muted-foreground">
+                        {a.badge}
+                      </span>
+                    )}
+                  </Button>
+                )),
+              },
+            }
+          : {
+              leading: (
+                <SurfacesFilterBar
+                  state={filters}
+                  onChange={onFilterChange}
+                  clientNames={clientNames}
+                  parentNames={parentNames}
+                  onClear={onClearFilters}
+                />
+              ),
+            }),
         refresh: { onRefresh },
         add: { onAdd },
       }}
@@ -465,7 +536,9 @@ export function SurfacesTable({
             extraSections: [
               {
                 id: "surface-row",
-                label: surfaceRowTitle(row),
+                // The menu's heading already names the row; the section is
+                // just "Surface" so the row is named once.
+                label: "Surface",
                 primary: true,
                 anchor: "after-clipboard",
                 items: [
@@ -525,10 +598,10 @@ export function SurfacesTable({
           />
         </>
       )}
-      mobileCards={(row, _index, controls) => (
+      mobileCards={(row) => (
         <article
           className={cn(
-            "space-y-1.5 rounded-md border p-2.5",
+            "space-y-1 rounded-md border p-2.5",
             row.name === selectedName
               ? "border-primary/40 bg-primary/5"
               : "border-border",
@@ -538,14 +611,42 @@ export function SurfacesTable({
           <div className="flex items-start justify-between gap-2">
             <button
               type="button"
-              className="min-w-0 text-left"
+              className="min-w-0 flex-1 text-left"
               onClick={() => onSelect(row)}
             >
               <NameCell row={row} navigating={row.name === navigatingName} />
             </button>
-            <SurfaceReadinessBadge row={row} className="shrink-0" />
+            <SurfaceReadinessBadge row={row} className="mt-0.5 shrink-0" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="-mr-1 h-8 w-8 shrink-0"
+                  aria-label={`Actions for ${surfaceRowTitle(row)}`}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="gap-2" onSelect={() => onPeek(row)}>
+                  <Eye className="h-4 w-4" /> Peek
+                </DropdownMenuItem>
+                <DropdownMenuItem className="gap-2" onSelect={() => onEdit(row)}>
+                  <Pencil className="h-4 w-4" /> Open editor
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2 text-destructive"
+                  onSelect={() => onDelete(row)}
+                >
+                  <Trash2 className="h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span>{row.client_name}</span>
+            <span>{tierFor(row.sort_order).label}</span>
             <span>
               Agents <span className="tabular-nums text-foreground">{row.agentCount}</span>
             </span>
@@ -558,7 +659,6 @@ export function SurfacesTable({
             <span>Checked {checkedBadge(row)}</span>
             {row.is_active === false && <ActiveBadge active={false} />}
           </div>
-          <div className="flex justify-end">{controls.actions}</div>
         </article>
       )}
       emptyState={{ title: "No surfaces match these filters" }}

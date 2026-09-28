@@ -658,7 +658,7 @@ export async function listAgentBindings(surfaceName: string) {
     .schema("agent")
     .from("menu_surface")
     .select(
-      "id, agent_id, user_id, organization_id, project_id, task_id, value_mappings",
+      "id, agent_id, agent_name, user_id, organization_id, project_id, task_id, value_mappings",
     )
     .eq("surface_name", surfaceName)
     .order("created_at", { ascending: false });

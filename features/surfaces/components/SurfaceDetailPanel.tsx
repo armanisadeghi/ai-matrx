@@ -48,6 +48,8 @@ interface Props {
   onClose: () => void;
   onChanged: () => void;
   onDeleted: (name: string) => void;
+  /** Opens Sync manifests set to remove left-over values. */
+  onCleanUp?: () => void;
 }
 
 export function SurfaceDetailPanel({
@@ -55,6 +57,7 @@ export function SurfaceDetailPanel({
   onClose,
   onChanged,
   onDeleted,
+  onCleanUp,
 }: Props) {
   const [tab, setTab] = useState<"overview" | "values" | "agents" | "tools">(
     "overview",
@@ -416,6 +419,7 @@ export function SurfaceDetailPanel({
           className="flex-1 min-h-0 overflow-auto px-3 py-2"
         >
           <SurfaceValuesTable
+            onCleanUp={onCleanUp}
             manifest={manifest}
             dbValues={dbValues}
             loading={loadingTab}
@@ -467,10 +471,10 @@ export function SurfaceDetailPanel({
                       <EntityRef
                         token="agent"
                         id={b.agent_id}
+                        name={b.agent_name}
                         wrap
-                        openInNewTab
                         className="min-w-0 flex-1"
-                        nameClassName="font-mono text-xs"
+                        nameClassName="text-xs"
                       />
                     ) : (
                       <span className="min-w-0 flex-1 text-xs text-muted-foreground">

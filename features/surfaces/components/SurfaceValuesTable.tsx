@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { SurfaceManifest, SurfaceValue } from "@/features/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -67,37 +68,40 @@ export function ValueSyncStatusBadge({ status }: { status: ValueSyncStatus }) {
       return (
         <Badge
           variant="outline"
-          className="text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+          className="text-xs border-success/40 text-success"
         >
           <CheckCircle2 className="h-3 w-3 mr-1" />
-          in sync
+          Saved
         </Badge>
       );
     case "manifest_only":
       return (
         <Badge
           variant="outline"
-          className="text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+          className="text-xs border-warning/40 text-warning"
+          title="Declared in code, not saved to the database yet — Sync manifests saves it"
         >
-          manifest only
+          Not saved yet
         </Badge>
       );
     case "db_only":
       return (
         <Badge
           variant="outline"
-          className="text-[10px] bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+          className="text-xs border-destructive/40 text-destructive"
+          title="Saved in the database but no longer declared in code"
         >
-          stale (db only)
+          Left over
         </Badge>
       );
     case "diff":
       return (
         <Badge
           variant="outline"
-          className="text-[10px] bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800"
+          className="text-xs border-warning/40 text-warning"
+          title="The database copy differs from the code — Sync manifests updates it"
         >
-          diff
+          Out of date
         </Badge>
       );
   }
@@ -110,29 +114,46 @@ interface Props {
   dbValues: SurfaceValue[] | null;
   loading: boolean;
   error: string | null;
+  /** Opens Sync manifests with "Delete stale rows" chosen (left-over values). */
+  onCleanUp?: () => void;
 }
 
-export function SurfaceValuesTable({ manifest, dbValues, loading, error }: Props) {
+export function SurfaceValuesTable({
+  manifest,
+  dbValues,
+  loading,
+  error,
+  onCleanUp,
+}: Props) {
   const manifestValues = manifest?.values ?? null;
-  const mergedValues = useMemo(
-    () => mergeValuesForUi(manifestValues, dbValues ?? []),
-    [manifestValues, dbValues],
-  );
+  const mergedValues = mergeValuesForUi(manifestValues, dbValues ?? []);
+  const leftOver = dbValues?.length ?? 0;
 
   return (
     <>
       {!manifest && (
-        <div className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">
-          No manifest registered in code. Add one at
-          <code className="ml-1 font-mono">features/surfaces/manifests/</code>
-          {dbValues && dbValues.length > 0 && (
-            <span>
-              {" "}
-              {dbValues.length} stale DB row
-              {dbValues.length === 1 ? "" : "s"} present — clean up via Sync
-              Manifests with{" "}
-              <code className="font-mono">deleteStale: true</code>.
-            </span>
+        <div className="space-y-2 rounded-md border border-dashed border-border px-3 py-3 text-xs text-muted-foreground">
+          <p>
+            No code declares the values of this surface, so agents on it get
+            only the platform&apos;s standard values.
+          </p>
+          {leftOver > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span>
+                {leftOver} value{leftOver === 1 ? " is" : "s are"} still saved
+                in the database from an earlier version.
+              </span>
+              {onCleanUp && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={onCleanUp}
+                >
+                  Clean up
+                </Button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -155,31 +176,28 @@ export function SurfaceValuesTable({ manifest, dbValues, loading, error }: Props
               <div key={v.name} className="px-2 py-1.5">
                 <div className="flex items-center justify-between gap-2 mb-0.5">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-mono text-xs text-foreground truncate">
+                    <span className="text-xs font-medium text-foreground truncate">
+                      {display.label || v.name}
+                    </span>
+                    <span className="font-mono text-xs text-muted-foreground truncate">
                       {v.name}
                     </span>
-                    <Badge variant="outline" className="text-[10px] font-mono">
-                      {display.valueType}
-                    </Badge>
                     {display.alwaysAvailable && (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
-                      >
-                        always
+                      <Badge variant="outline" className="text-xs">
+                        Always sent
                       </Badge>
                     )}
                   </div>
                   <ValueSyncStatusBadge status={v.status} />
                 </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {display.label}
-                  {display.label && display.description && " — "}
-                  {display.description}
-                </p>
-                <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
-                  ~{display.typicalCharCount} chars · sort{" "}
-                  {display.sortOrder ?? 1000}
+                {display.description && (
+                  <p className="text-xs text-muted-foreground">
+                    {display.description}
+                  </p>
+                )}
+                <div className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+                  {display.valueType} · about {display.typicalCharCount}{" "}
+                  characters
                 </div>
               </div>
             );
@@ -188,7 +206,7 @@ export function SurfaceValuesTable({ manifest, dbValues, loading, error }: Props
       )}
       {!loading && !error && mergedValues.length === 0 && manifest && (
         <div className="text-xs text-muted-foreground">
-          Manifest declares no values yet.
+          Its code manifest declares no values yet.
         </div>
       )}
     </>

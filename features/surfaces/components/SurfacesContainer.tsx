@@ -49,6 +49,7 @@ import { surfaceDeleteConsequence } from "@/features/surfaces/utils/surface-dele
 import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Toggle } from "@/components/ui/toggle";
 import {
   Dialog,
   DialogContent,
@@ -129,6 +130,8 @@ export function SurfacesContainer() {
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [candidatesOpen, setCandidatesOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
+  // Sync opened from a Peek's "Clean up": removing left-over rows is the intent.
+  const [syncCleanUp, setSyncCleanUp] = useState(false);
   // ?drift=1 deep-links straight into the drift dialog (one-shot, read at mount).
   const [driftOpen, setDriftOpen] = useState(
     () => searchParams.get("drift") === "1",
@@ -190,9 +193,9 @@ export function SurfacesContainer() {
     if (!isPending) setNavigatingName(null);
   }, [isPending]);
 
-  const clientNames = clients
-    .map((c) => c.name)
-    .sort((a, b) => a.localeCompare(b));
+  // In the clients' own order (sort_order) — what the New client dialog's
+  // "Order in client lists" sets.
+  const clientNames = clients.map((c) => c.name);
 
   const parentNames = listParentFilterOptions(surfaces);
 
@@ -404,6 +407,10 @@ export function SurfacesContainer() {
         if (selectedName === name) setSelectedName(null);
         void load();
       }}
+      onCleanUp={() => {
+        setSyncCleanUp(true);
+        setSyncOpen(true);
+      }}
     />
   );
 
@@ -460,10 +467,11 @@ export function SurfacesContainer() {
       contentSource={{ type: "raw" }}
     >
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-background matrx-touch-targets">
-      {/* Summary row — the page title lives in the shell header. One line of
-          counts, the readiness filter toggles (desktop) and the actions. On a
-          phone it is ONE line: counts + one Actions menu; readiness moves into
-          the table's Filters sheet. */}
+      {/* Summary row (desktop) — the page title lives in the shell header.
+          One line of counts, the readiness filter toggles and the actions.
+          On a phone the count, Filters and these actions ride the table's
+          own toolbar row instead (one row, search below). */}
+      {!isMobile && (
       <div
         data-matrx-table-page
         className="shrink-0 py-1.5 border-b border-border flex items-center gap-1.5 flex-wrap"
@@ -495,26 +503,25 @@ export function SurfacesContainer() {
               const meta = READINESS_META[bucket];
               const active = filters.readiness === bucket;
               return (
-                <Button
+                <Toggle
                   key={bucket}
                   size="sm"
-                  variant={active ? "secondary" : "ghost"}
-                  aria-pressed={active}
+                  pressed={active}
                   title={`${meta.description} — ${active ? "clear the" : "filter by this"} readiness`}
-                  onClick={() =>
+                  onPressedChange={(on) =>
                     setFilters((f) => ({
                       ...f,
-                      readiness: active ? "all" : bucket,
+                      readiness: on ? bucket : "all",
                     }))
                   }
-                  className={`h-7 gap-1.5 px-2 text-xs ${active ? "ring-1 ring-primary" : ""}`}
+                  className="h-7 gap-1.5 px-2 text-xs"
                 >
                   <Icon className={`h-3.5 w-3.5 ${meta.iconClassName}`} />
                   <span className="capitalize">{meta.label}</span>
                   <span className="font-semibold tabular-nums">
                     {readinessCounts[bucket]}
                   </span>
-                </Button>
+                </Toggle>
               );
             })}
           </div>
@@ -580,6 +587,7 @@ export function SurfacesContainer() {
           </DropdownMenu>
         </div>
       </div>
+      )}
 
       {/* Body: table + optional detail panel */}
       <div className="flex-1 min-h-0 flex">
@@ -608,6 +616,8 @@ export function SurfacesContainer() {
             onRefresh={load}
             onAdd={() => setCreating(true)}
             peeking={selected !== null && !isMobile}
+            totalCount={surfaces.length}
+            registryActions={actions}
           />
         </div>
 
@@ -624,13 +634,13 @@ export function SurfacesContainer() {
           open={selected !== null}
           onOpenChange={(open) => !open && setSelectedName(null)}
         >
-          <DrawerContent className="h-[92dvh] pb-safe">
+          <DrawerContent className="max-h-[92dvh] pb-safe">
             <DrawerHeader className="sr-only">
               <DrawerTitle>
                 {selected ? (selected.label ?? selected.name) : "Surface"}
               </DrawerTitle>
             </DrawerHeader>
-            <div className="min-h-0 flex-1">
+            <div className="flex min-h-0 flex-col">
               {selected && peekPanel(selected)}
             </div>
           </DrawerContent>
@@ -681,9 +691,14 @@ export function SurfacesContainer() {
       )}
       {syncOpen && (
         <ManifestSyncDialog
-          onClose={() => setSyncOpen(false)}
+          cleanUp={syncCleanUp}
+          onClose={() => {
+            setSyncOpen(false);
+            setSyncCleanUp(false);
+          }}
           onSynced={() => {
             setSyncOpen(false);
+            setSyncCleanUp(false);
             void load();
           }}
         />
@@ -787,7 +802,7 @@ function NewClientDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Position in the client tabs</Label>
+            <Label className="text-xs">Order in client lists (lower comes first)</Label>
             <Input
               type="number"
               value={sortOrder}

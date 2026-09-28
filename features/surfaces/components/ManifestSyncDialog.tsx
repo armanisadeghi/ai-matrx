@@ -31,12 +31,19 @@ type SyncResult = Awaited<ReturnType<typeof syncManifests>>;
 interface Props {
   onClose: () => void;
   onSynced: () => void;
+  /**
+   * The person opened this from a "Clean up" action, so removing left-over
+   * rows IS their intent: the option starts ticked. Nothing runs until they
+   * press the sync button, and the preview says how many rows go.
+   */
+  cleanUp?: boolean;
 }
 
-export function ManifestSyncDialog({ onClose, onSynced }: Props) {
-  // A destructive option is never pre-checked: stale rows are deleted only
-  // when the operator ticks it, after seeing how many there are.
-  const [deleteStale, setDeleteStale] = useState(false);
+export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props) {
+  // A destructive option is never pre-checked on a plain open: stale rows are
+  // deleted only when the operator ticks it (or came here to clean up), after
+  // seeing how many there are.
+  const [deleteStale, setDeleteStale] = useState(cleanUp);
   // The dialog previews the SAME drift report the Drift report dialog shows,
   // counted by the same helper, so the two never disagree about what is out
   // of sync.

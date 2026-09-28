@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import {
   AlertCircle,
   AlertTriangle,
@@ -408,8 +410,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                     key={`url-${d.surfaceName}`}
                     className="px-2 py-1.5 text-[11px] space-y-0.5"
                   >
-                    <div className="font-mono text-foreground">
-                      {d.surfaceName}
+                    <div>
+                      <SurfaceLink name={d.surfaceName} />
                     </div>
                     <div className="text-[10px] text-muted-foreground">
                       code=<code className="font-mono">{d.manifest}</code>
@@ -437,8 +439,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                     key={`label-${d.surfaceName}`}
                     className="px-2 py-1.5 text-[11px] space-y-0.5"
                   >
-                    <div className="font-mono text-foreground">
-                      {d.surfaceName}
+                    <div>
+                      <SurfaceLink name={d.surfaceName} />
                     </div>
                     <div className="text-[10px] text-muted-foreground">
                       code=<code className="font-mono">{d.manifest}</code>
@@ -466,8 +468,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                     key={`groups-${d.surfaceName}`}
                     className="px-2 py-1.5 text-[11px] space-y-0.5"
                   >
-                    <div className="font-mono text-foreground">
-                      {d.surfaceName}
+                    <div>
+                      <SurfaceLink name={d.surfaceName} />
                     </div>
                     {/* State the verdict, not just "they differ": name the group
                         keys on each side so the operator knows what changed
@@ -598,6 +600,23 @@ function Section({
   );
 }
 
+/** A surface a drift item names — a real link to its editor (new tab works). */
+function SurfaceLink({ name }: { name: string }) {
+  const href = `/administration/ui/surfaces/${name
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/")}`;
+  return (
+    <Link
+      href={href}
+      className="font-mono text-foreground underline-offset-2 hover:underline"
+      title={`Open ${getSurfaceDisplayLabel(name)}`}
+    >
+      {name}
+    </Link>
+  );
+}
+
 function DriftRow({
   surfaceName,
   name,
@@ -616,9 +635,9 @@ function DriftRow({
   updatedAt?: string;
 }) {
   return (
-    <div className="px-2 py-1.5 text-[11px] space-y-0.5">
+    <div className="px-2 py-1.5 text-xs space-y-0.5">
       <div className="flex items-center gap-2">
-        <span className="font-mono text-foreground">{surfaceName}</span>
+        <SurfaceLink name={surfaceName} />
         <span className="text-muted-foreground">·</span>
         <span className="font-mono">{name}</span>
         <RowAge updatedAt={updatedAt} />
