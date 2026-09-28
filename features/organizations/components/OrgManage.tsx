@@ -400,7 +400,7 @@ export function OrgManage({
               id="members"
               icon={Users}
               title="Members"
-              description="Who's on the team and what they can do."
+              description="Who is in this organization and what they can do. Put people who work together on a team, below, and their lists gain a My team view."
             >
               <MemberManagement
                 organizationId={displayOrganization.id}

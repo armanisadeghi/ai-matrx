@@ -18,11 +18,13 @@
  */
 
 import React from "react";
+import { useOrganizationTeams } from "@/features/organizations/hooks/useTeams";
 import { useParams, useRouter } from "next/navigation";
 import {
   Loader2,
   ExternalLink,
   Users,
+  UsersRound,
   Calendar,
   FolderTree,
   Plus,
@@ -100,6 +102,8 @@ export function OrgWorkspace() {
 
   const [organization, setOrganization] = React.useState<Organization | null>(null);
   const [userRole, setUserRole] = React.useState<string | null>(null);
+  // Teams are Organization-level: every member sees every team (teams FEATURE.md).
+  const teams = useOrganizationTeams(organization?.id, false);
   const [members, setMembers] = React.useState<OrganizationMemberWithUser[]>(
     [],
   );
@@ -441,6 +445,14 @@ export function OrgWorkspace() {
                       ? `/organizations/${slug}/settings#members`
                       : undefined
                   }
+                />
+                {/* Teams feed every list's "My team" tab; every member may
+                    open the Teams section, so this door reaches for all. */}
+                <Stat
+                  icon={<UsersRound className="h-4 w-4" />}
+                  value={teams.loading && teams.data.length === 0 ? "…" : teams.data.length}
+                  label={teams.data.length === 1 ? "team" : "teams"}
+                  href={`/organizations/${slug}/settings#teams`}
                 />
                 <Stat
                   icon={<Layers3 className="h-4 w-4" />}

@@ -136,8 +136,8 @@ export function TeamManagement({
         <p className="text-sm text-muted-foreground flex-1">
           {liveCount === 0
             ? canManageTeams
-              ? "No teams yet. A team groups people so lists can show what their team made."
-              : "No teams yet. An owner or admin of this organization creates them."
+              ? "No teams yet. Put the people who work together on a team — a crew, a department, a practice group — and every list's My team view shows what they made."
+              : "No teams yet. An owner or admin of this organization creates them; once you are on one, every list's My team view shows what your team made."
             : `${liveCount} team${liveCount === 1 ? "" : "s"}`}
         </p>
         {canManageTeams && (
