@@ -17,7 +17,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { getUserId, requireUserId } from "@/utils/auth/getUserId";
 import type { Json } from "@/types/database.types";
-import { asJsonObject, mergeJsonColumn } from "@ai-matrx/data/db";
+import { asJsonObject, guardedUpdate, mergeJsonColumn } from "@ai-matrx/data/db";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { FsrsState } from "@/lib/srs/fsrs";
@@ -361,9 +361,43 @@ export const studyService = {
   },
 
   /** Soft-delete a session (sets deleted_at; attempts/mastery are untouched). */
-  async deleteSession(sessionId: string): Promise<StudyResult<{ id: string }>> {
+  async deleteSession(
+    sessionId: string,
+    agentGuard?: { expectedVersion: number },
+  ): Promise<StudyResult<{ id: string }>> {
     try {
       const userId = requireUserId();
+      if (agentGuard) {
+        const result = await guardedUpdate<StudySessionRow>({
+          expectedVersion: agentGuard.expectedVersion,
+          applyUpdate: ({ expectedVersion, nextVersion }) =>
+            EDU()
+              .from("study_session")
+              .update({ deleted_at: new Date().toISOString(), version: nextVersion })
+              .eq("id", sessionId)
+              .eq("created_by", userId)
+              .eq("version", expectedVersion)
+              .in("status", ["completed", "abandoned"])
+              .is("deleted_at", null)
+              .select("*")
+              .maybeSingle(),
+          fetchCurrent: () =>
+            EDU()
+              .from("study_session")
+              .select("*")
+              .eq("id", sessionId)
+              .eq("created_by", userId)
+              .is("deleted_at", null)
+              .maybeSingle(),
+        });
+        if (result.status === "saved") return { data: { id: sessionId }, error: null };
+        return fail(
+          "deleteSession",
+          result.status === "not_found"
+            ? "This session is no longer available."
+            : "This session changed or is still in progress. Reload the history before deleting it.",
+        );
+      }
       const { data, error } = await EDU()
         .from("study_session")
         .update({ deleted_at: new Date().toISOString() } as never)

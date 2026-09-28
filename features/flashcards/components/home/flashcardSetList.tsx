@@ -63,6 +63,11 @@ export interface FlashcardSetListRow extends DeckListRow {
   archived: boolean;
 }
 
+/** Pinned name column width (px) — decks are named after chapters and run long. */
+const FLASHCARD_NAME_WIDTH = 480;
+/** About how many characters of a name fit in that column before "…". */
+const FLASHCARD_NAME_VISIBLE_CHARS = 58;
+
 export const FLASHCARD_SET_SCOPES: ListScopeKind[] = [
   "mine",
   "orgs",
@@ -180,8 +185,11 @@ export function buildFlashcardSetColumns(
       column: {
         id: "name",
         // The name is what people scan for: give it the room, cap the rest.
-        width: 420,
-        className: "max-w-[26rem] overflow-hidden",
+        // Its width is pinned up to FLASHCARD_NAME_WIDTH (config
+        // nameColumnMaxWidth) — the old 26rem cell cap cut it off while
+        // mostly-empty columns held the space.
+        width: FLASHCARD_NAME_WIDTH,
+        className: "overflow-hidden",
         accessorKey: "name",
         header: "Name",
         filter: "text",
@@ -355,6 +363,14 @@ export function buildFlashcardSetListConfig(input: {
     service: flashcardSetListService,
     serviceKey: `${input.userId}:${input.foldersKey}`,
     columns: buildFlashcardSetColumns(input.folderName),
+    // Page-pass 2026-09-28: Topic, Difficulty and Folders were "—" on almost
+    // every row. A column empty (or identical) on every loaded row hides by
+    // default; it stays in the column picker, and one a person shows stays.
+    autoHideUniformColumns: true,
+    nameColumnMaxWidth: FLASHCARD_NAME_WIDTH,
+    // Names that read the same once cut off ("AP Chemistry Nomenclature: the
+    // Absolute Core -…") get the "Created …" note too, not only identical ones.
+    lookalike: { visibleChars: FLASHCARD_NAME_VISIBLE_CHARS },
     prefsVersion: 1,
     prefsDefaults: { sort: "updated", direction: "desc" },
     getRowId: (row) => row.id,

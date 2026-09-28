@@ -156,6 +156,7 @@ export function AssessmentDetail({
         ? { assessment_description: assessment.description }
         : {}),
       assessment_status: assessment.status,
+      assessment_version: assessment.version,
       ...(assessment.topic ? { assessment_topic: assessment.topic } : {}),
       ...(assessment.exam_type
         ? { assessment_exam_type: assessment.exam_type }
@@ -167,6 +168,7 @@ export function AssessmentDetail({
       item_count: items.length,
       items: items.map((it) => ({
         id: it.id,
+        version: it.version,
         question_type: it.question_type,
         prompt: it.prompt,
         options: Array.isArray(it.options)
@@ -188,22 +190,26 @@ export function AssessmentDetail({
           .filter((r) => r.status === "completed" && r.score_value != null)
           .reduce<number | null>(
             (b, r) =>
-              b === null || Number(r.score_value) > b ? Number(r.score_value) : b,
+              b === null || Number(r.score_value) > b
+                ? Number(r.score_value)
+                : b,
             null,
           );
-        return best !== null
-          ? { best_score_pct: Math.round(best * 100) }
-          : {};
+        return best !== null ? { best_score_pct: Math.round(best * 100) } : {};
       })(),
-      ...(resultsError == null ? { results: results.map((r) => ({
-        id: r.id,
-        status: r.status,
-        phase: r.phase,
-        score_value: r.score_value != null ? Number(r.score_value) : null,
-        correct_count: r.correct_count,
-        total_count: r.total_count,
-        created_at: r.created_at,
-      })) } : {}),
+      ...(resultsError == null
+        ? {
+            results: results.map((r) => ({
+              id: r.id,
+              status: r.status,
+              phase: r.phase,
+              score_value: r.score_value != null ? Number(r.score_value) : null,
+              correct_count: r.correct_count,
+              total_count: r.total_count,
+              created_at: r.created_at,
+            })),
+          }
+        : {}),
       is_taking: start,
     });
 
@@ -254,7 +260,8 @@ export function AssessmentDetail({
     startTransition(() => router.push(base));
   };
 
-  const canEdit = access.level === "edit" || access.level === "admin" || access.isOwner;
+  const canEdit =
+    access.level === "edit" || access.level === "admin" || access.isOwner;
   // Collapsed onto the kit formatter (2026-09-12). Coarse voice: a time limit
   // is a glanceable figure, and coarse already speaks the " min" this printed
   // by hand — plus it stops a 90-minute limit reading as "90 min".
@@ -278,88 +285,107 @@ export function AssessmentDetail({
       surfaceName="matrx-user/education-assessment"
       getScope={getScope}
     >
-    <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
-        {/* Header */}
-        <div className="flex items-start gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            onClick={() => router.back()}
-            aria-label="Back"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Icon className="h-6 w-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              {assessment.title}
-            </h1>
-            {assessment.description && (
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                {assessment.description}
-              </p>
-            )}
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-              <span>{items.length} questions</span>
-              {assessment.depth && (
-                <span className="capitalize">· {assessment.depth} depth</span>
+      <div className="min-h-full w-full bg-textured">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
+          {/* Header */}
+          <div className="flex items-start gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              onClick={() => router.back()}
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Icon className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                {assessment.title}
+              </h1>
+              {assessment.description && (
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {assessment.description}
+                </p>
               )}
-              {assessment.exam_type && <span>· {assessment.exam_type}</span>}
-              {timeLabel && (
-                <span className="inline-flex items-center gap-1">
-                  · <Clock className="h-3 w-3" /> {timeLabel}
-                </span>
-              )}
-              {!access.isOwner && access.level === "view" && (
-                <span className="rounded-full border border-border bg-muted px-1.5 py-0 uppercase tracking-wider">
-                  View only
-                </span>
-              )}
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                <span>{items.length} questions</span>
+                {assessment.depth && (
+                  <span className="capitalize">· {assessment.depth} depth</span>
+                )}
+                {assessment.exam_type && <span>· {assessment.exam_type}</span>}
+                {timeLabel && (
+                  <span className="inline-flex items-center gap-1">
+                    · <Clock className="h-3 w-3" /> {timeLabel}
+                  </span>
+                )}
+                {!access.isOwner && access.level === "view" && (
+                  <span className="rounded-full border border-border bg-muted px-1.5 py-0 uppercase tracking-wider">
+                    View only
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Primary actions */}
-        <div className="mt-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5">
-          <Button
-            size="lg"
-            onClick={() => startTake("standalone", null)}
-            disabled={isPending || items.length === 0}
-          >
-            <Play className="mr-1.5 h-4 w-4" />
-            {config.timed ? "Start test" : `Take ${config.noun}`}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={startLearningGain}
-            disabled={isPending || items.length === 0}
-          >
-            <TrendingUp className="mr-1.5 h-4 w-4" />
-            Measure my learning gain (baseline → post)
-          </Button>
-          <p className="text-[11px] text-muted-foreground">
-            Learning gain takes this as a baseline now; after you study, take it
-            again as the post-test to see your measured improvement.
-          </p>
-        </div>
+          {/* Primary actions */}
+          <div className="mt-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5">
+            <Button
+              size="lg"
+              onClick={() => startTake("standalone", null)}
+              disabled={isPending || items.length === 0}
+            >
+              <Play className="mr-1.5 h-4 w-4" />
+              {config.timed ? "Start test" : `Take ${config.noun}`}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={startLearningGain}
+              disabled={isPending || items.length === 0}
+            >
+              <TrendingUp className="mr-1.5 h-4 w-4" />
+              Measure my learning gain (baseline → post)
+            </Button>
+            <p className="text-[11px] text-muted-foreground">
+              Learning gain takes this as a baseline now; after you study, take
+              it again as the post-test to see your measured improvement.
+            </p>
+          </div>
 
-        {/* Owner / editor actions */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {canEdit ? (
-            <>
-              {/* Edit is another UI for THIS record, so it is an anchor —
+          {/* Owner / editor actions */}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {canEdit ? (
+              <>
+                {/* Edit is another UI for THIS record, so it is an anchor —
                   cmd-click opens the editor in a new tab without losing this
                   page. */}
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`${base}/${assessmentId}/edit`}>
-                  <Pencil className="mr-1.5 h-4 w-4" />
-                  Edit
-                </Link>
-              </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`${base}/${assessmentId}/edit`}>
+                    <Pencil className="mr-1.5 h-4 w-4" />
+                    Edit
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleDuplicate()}
+                  disabled={duplicating}
+                >
+                  <Copy className="mr-1.5 h-4 w-4" />
+                  Duplicate
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  Delete
+                </Button>
+              </>
+            ) : (
               <Button
                 variant="outline"
                 size="sm"
@@ -367,144 +393,129 @@ export function AssessmentDetail({
                 disabled={duplicating}
               >
                 <Copy className="mr-1.5 h-4 w-4" />
-                Duplicate
+                Make a copy to edit
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConfirmDelete(true)}
-              >
-                <Trash2 className="mr-1.5 h-4 w-4" />
-                Delete
-              </Button>
-            </>
-          ) : (
+            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => void handleDuplicate()}
-              disabled={duplicating}
+              onClick={() => setConvertOpen(true)}
+              disabled={items.length === 0}
             >
-              <Copy className="mr-1.5 h-4 w-4" />
-              Make a copy to edit
+              <Boxes className="mr-1.5 h-4 w-4" />
+              Convert
             </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setConvertOpen(true)}
-            disabled={items.length === 0}
-          >
-            <Boxes className="mr-1.5 h-4 w-4" />
-            Convert
-          </Button>
-        </div>
+          </div>
 
-        {/* The material this assessment was made from, and its kit siblings. */}
-        <div className="mt-3">
-          <MadeFromSource entityType="assessment" entityId={assessmentId} />
-        </div>
+          {/* The material this assessment was made from, and its kit siblings. */}
+          <div className="mt-3">
+            <MadeFromSource entityType="assessment" entityId={assessmentId} />
+          </div>
 
-        {/* Reverse lineage — study artifacts made from this assessment. */}
-        <div className="mt-3">
-          <GeneratedFromChips
-            entityType="assessment"
-            entityId={assessmentId}
-            refreshKey={lineageKey}
-          />
-        </div>
-
-        {/* Results history */}
-        {resultsError != null ? (
-          <div className="mt-8">
-            <ReadFailure
-              error={resultsError}
-              what="your attempts"
-              onRetry={() => setReloadKey((k) => k + 1)}
+          {/* Reverse lineage — study artifacts made from this assessment. */}
+          <div className="mt-3">
+            <GeneratedFromChips
+              entityType="assessment"
+              entityId={assessmentId}
+              refreshKey={lineageKey}
             />
           </div>
-        ) : results.length > 0 && (
-          <div className="mt-8">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
-              <History className="h-4 w-4 text-muted-foreground" />
-              Your attempts
-              {/* ONE definition, shared with the list's "Completed" column:
-                  an attempt counts once it is finished. */}
-              <span className="text-xs font-normal text-muted-foreground">
-                {completedCount} completed
-              </span>
-              {bestResult && (
-                <span className="ml-auto text-xs font-normal text-muted-foreground">
-                  Best: {Math.round(Number(bestResult.score_value) * 100)}%
-                </span>
-              )}
+
+          {/* Results history */}
+          {resultsError != null ? (
+            <div className="mt-8">
+              <ReadFailure
+                error={resultsError}
+                what="your attempts"
+                onRetry={() => setReloadKey((k) => k + 1)}
+              />
             </div>
-            <div className="flex flex-col gap-1.5">
-              {/* Each row IS an attempt record with its own results page, so
+          ) : (
+            results.length > 0 && (
+              <div className="mt-8">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
+                  <History className="h-4 w-4 text-muted-foreground" />
+                  Your attempts
+                  {/* ONE definition, shared with the list's "Completed" column:
+                  an attempt counts once it is finished. */}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {completedCount} completed
+                  </span>
+                  {bestResult && (
+                    <span className="ml-auto text-xs font-normal text-muted-foreground">
+                      Best: {Math.round(Number(bestResult.score_value) * 100)}%
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {/* Each row IS an attempt record with its own results page, so
                   it is an ANCHOR. As a <button> it navigated on click and did
                   nothing else — no cmd-click, no middle-click, no "open in new
                   tab", no destination on hover. Same classes, same layout. */}
-              {results.map((r) => (
-                <Link
-                  key={r.id}
-                  href={`${base}/${assessmentId}/results?r=${r.id}`}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/40 hover:bg-accent/40",
-                    r.status !== "completed" && "opacity-70",
-                  )}
-                >
-                  <span className="font-medium tabular-nums text-foreground">
-                    {r.score_value != null
-                      ? `${Math.round(Number(r.score_value) * 100)}%`
-                      : "—"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {r.correct_count}/{r.total_count} correct
-                  </span>
-                  {r.status !== "completed" && (
-                    <span className="text-xs text-muted-foreground">Unfinished</span>
-                  )}
-                  {r.phase !== "standalone" && (
-                    <span className="rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {r.phase}
-                    </span>
-                  )}
-                  <span className="ml-auto text-[11px] text-muted-foreground">
-                    {new Date(r.created_at).toLocaleDateString()}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+                  {results.map((r) => (
+                    <Link
+                      key={r.id}
+                      href={`${base}/${assessmentId}/results?r=${r.id}`}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/40 hover:bg-accent/40",
+                        r.status !== "completed" && "opacity-70",
+                      )}
+                    >
+                      <span className="font-medium tabular-nums text-foreground">
+                        {r.score_value != null
+                          ? `${Math.round(Number(r.score_value) * 100)}%`
+                          : "—"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {r.correct_count}/{r.total_count} correct
+                      </span>
+                      {r.status !== "completed" && (
+                        <span className="text-xs text-muted-foreground">
+                          Unfinished
+                        </span>
+                      )}
+                      {r.phase !== "standalone" && (
+                        <span className="rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {r.phase}
+                        </span>
+                      )}
+                      <span className="ml-auto text-[11px] text-muted-foreground">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )
+          )}
+        </div>
+
+        <ConfirmDialog
+          open={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title={`Delete this ${config.noun}?`}
+          description={`${archiveConfirmSentence(`this ${config.noun}`)} Your past attempts are kept.`}
+          confirmLabel="Delete"
+          variant="destructive"
+          onConfirm={handleDelete}
+        />
+
+        {/* Convert this assessment into other study artifacts (shared primitive). */}
+        <ConvertContentDialog
+          open={convertOpen}
+          onOpenChange={setConvertOpen}
+          origin={{
+            kind: "assessment",
+            entityType: "assessment",
+            entityId: assessmentId,
+            title: assessment.title,
+          }}
+          text={serializeAssessment(assessment, items).markdown}
+          orgId={assessment.organization_id ?? undefined}
+          excludeKinds={[assessment.assessment_kind as TargetKind]}
+          onConverted={() => setLineageKey((k) => k + 1)}
+        />
       </div>
-
-      <ConfirmDialog
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        title={`Delete this ${config.noun}?`}
-        description={`${archiveConfirmSentence(`this ${config.noun}`)} Your past attempts are kept.`}
-        confirmLabel="Delete"
-        variant="destructive"
-        onConfirm={handleDelete}
-      />
-
-      {/* Convert this assessment into other study artifacts (shared primitive). */}
-      <ConvertContentDialog
-        open={convertOpen}
-        onOpenChange={setConvertOpen}
-        origin={{
-          kind: "assessment",
-          entityType: "assessment",
-          entityId: assessmentId,
-          title: assessment.title,
-        }}
-        text={serializeAssessment(assessment, items).markdown}
-        orgId={assessment.organization_id ?? undefined}
-        excludeKinds={[assessment.assessment_kind as TargetKind]}
-        onConverted={() => setLineageKey((k) => k + 1)}
-      />
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

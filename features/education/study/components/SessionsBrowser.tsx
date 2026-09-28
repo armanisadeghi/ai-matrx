@@ -39,11 +39,19 @@ import {
   sessionListScorePct,
   sessionModeLabel,
 } from "../utils/sessionListDisplay";
-import {
-  ScoreRing,
-  scoreAccentBgClasses,
-} from "@ai-matrx/design-system";
+import { ScoreRing, scoreAccentBgClasses } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  collectionWriteHandlers,
+  collectProblems,
+  readCollectionList,
+  repeatsProblem,
+} from "@/features/surfaces/runtime/collection-write-targets";
+import {
+  createEducationSessionsScope,
+  EDUCATION_SESSIONS_SURFACE_NAME,
+} from "@/features/surfaces/manifests/education-sessions.manifest";
 
 const STATUS_META: Record<
   string,
@@ -149,9 +157,81 @@ export function SessionsBrowser({
 
   const shown = hideEmpty
     ? sessions.filter(
-        (s) => s.status === "active" || (attemptSummaries[s.id]?.total ?? 0) > 0,
+        (s) =>
+          s.status === "active" || (attemptSummaries[s.id]?.total ?? 0) > 0,
       )
     : sessions;
+
+  const getScope = () =>
+    createEducationSessionsScope({
+      sessions_loading: loading,
+      history_filters: {
+        set_id: setId ?? null,
+        mode: mode ?? null,
+        hide_empty: hideEmpty,
+        detail_base_path: detailBasePath,
+      },
+      ...(!loading && !error
+        ? { session_list: shown, session_count: shown.length }
+        : {}),
+      ...(error ? { sessions_error: error } : {}),
+    });
+
+  const getWriteHandlers = () => {
+    const visibleById = new Map(shown.map((session) => [session.id, session]));
+    const parseDeletes = (value: unknown): Array<{ id: string; version: number }> => {
+      const rows = readCollectionList("delete_sessions", "sessions", value);
+      return collectProblems(
+        "delete_sessions",
+        rows,
+        (raw) => {
+          if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+            throw new Error("must be { id, version } from session_list.");
+          }
+          const item = raw as Record<string, unknown>;
+          if (typeof item.id !== "string" || !item.id.trim() || !Number.isSafeInteger(item.version)) {
+            throw new Error("must be { id, version } from session_list.");
+          }
+          const session = visibleById.get(item.id);
+          if (!session) throw new Error("session is not currently visible. Refresh the history.");
+          if (session.status !== "completed" && session.status !== "abandoned") {
+            throw new Error("an in-progress session cannot be deleted by the agent.");
+          }
+          if (session.version !== item.version) throw new Error("session changed. Reload the history.");
+          return { id: session.id, version: session.version };
+        },
+        {
+          listChecks: (items) => [
+            repeatsProblem(
+              "delete_sessions",
+              items.map((item) => item.value?.id),
+              "session ID",
+            ),
+          ],
+        },
+      );
+    };
+
+    return collectionWriteHandlers(
+      {
+        plural: "sessions",
+        singular: "session",
+        delete: {
+          parse: parseDeletes,
+          nameOf: (session) => session.id,
+          run: async (session) => {
+            const result = await studyService.deleteSession(session.id, { expectedVersion: session.version });
+            if (result.error) throw new Error(result.error);
+            setReloadKey((key) => key + 1);
+            return { id: session.id, name: `Session ${session.id}` };
+          },
+        },
+      },
+      (message) => {
+        throw new Error(message);
+      },
+    );
+  };
 
   const open = (id: string) => {
     if (isPending) return;
@@ -197,82 +277,90 @@ export function SessionsBrowser({
   };
 
   return (
-    <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-4 h-8 px-2 text-xs text-muted-foreground"
-          onClick={() => (backHref ? router.push(backHref) : router.back())}
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Back
-        </Button>
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_SESSIONS_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
+      <div className="min-h-full w-full bg-textured">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-4 h-8 px-2 text-xs text-muted-foreground"
+            onClick={() => (backHref ? router.push(backHref) : router.back())}
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
 
-        <div className="mb-5 flex items-center gap-2">
-          <History className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+          <div className="mb-5 flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+          </div>
+
+          {loading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
+              <AlertCircle className="h-6 w-6 text-muted-foreground" />
+              <p className="text-sm text-foreground">
+                Couldn&apos;t load sessions
+                <ErrorAlchemyMenu />
+              </p>
+              <p className="max-w-md text-xs text-muted-foreground">
+                {error} <ErrorAlchemyMenu error={error} />
+              </p>
+            </div>
+          ) : shown.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center">
+              <History className="h-6 w-6 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground">
+                No sessions yet
+              </p>
+              <p className="max-w-sm text-xs text-muted-foreground">
+                Study or run a Fast Fire drill and your sessions will show up
+                here with your results and progress over time.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-2.5">
+              {shown.map((s) => (
+                <SessionRow
+                  key={s.id}
+                  session={s}
+                  setName={
+                    s.source_set_id ? setNames[s.source_set_id] : undefined
+                  }
+                  attempts={attemptSummaries[s.id]}
+                  detailHref={`${detailBasePath}/${s.id}`}
+                  isNavigating={navigatingId === s.id && isPending}
+                  disabled={isPending || deletingId !== null}
+                  onOpen={() => open(s.id)}
+                  onDelete={() => requestDelete(s)}
+                  isDeleting={deletingId === s.id}
+                />
+              ))}
+            </ul>
+          )}
         </div>
 
-        {loading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-lg" />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
-            <AlertCircle className="h-6 w-6 text-muted-foreground" />
-            <p className="text-sm text-foreground">
-              Couldn&apos;t load sessions
-              <ErrorAlchemyMenu />
-            </p>
-            <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
-          </div>
-        ) : shown.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center">
-            <History className="h-6 w-6 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">
-              No sessions yet
-            </p>
-            <p className="max-w-sm text-xs text-muted-foreground">
-              Study or run a Fast Fire drill and your sessions will show up here
-              with your results and progress over time.
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-2.5">
-            {shown.map((s) => (
-              <SessionRow
-                key={s.id}
-                session={s}
-                setName={
-                  s.source_set_id ? setNames[s.source_set_id] : undefined
-                }
-                attempts={attemptSummaries[s.id]}
-                detailHref={`${detailBasePath}/${s.id}`}
-                isNavigating={navigatingId === s.id && isPending}
-                disabled={isPending || deletingId !== null}
-                onOpen={() => open(s.id)}
-                onDelete={() => requestDelete(s)}
-                isDeleting={deletingId === s.id}
-              />
-            ))}
-          </ul>
-        )}
+        <ConfirmDialog
+          open={confirmId !== null}
+          onOpenChange={(o) => !o && setConfirmId(null)}
+          title="Delete this session?"
+          description="This removes the session and its results from your history. Your card mastery is not affected."
+          confirmLabel="Delete"
+          variant="destructive"
+          busy={deleting}
+          onConfirm={doDelete}
+        />
       </div>
-
-      <ConfirmDialog
-        open={confirmId !== null}
-        onOpenChange={(o) => !o && setConfirmId(null)}
-        title="Delete this session?"
-        description="This removes the session and its results from your history. Your card mastery is not affected."
-        confirmLabel="Delete"
-        variant="destructive"
-        busy={deleting}
-        onConfirm={doDelete}
-      />
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

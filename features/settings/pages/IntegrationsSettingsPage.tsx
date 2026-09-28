@@ -2,7 +2,7 @@
 
 import { readOf } from "@/components/read-state/ReadGate";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchCatalog,
@@ -57,7 +57,7 @@ import {
   Plus,
   Trash2,
   Settings2,
-  PlugZap,
+  Search,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,9 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ensureOrganizationForRequest, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toolCheckFailure } from "./integration-tool-check";
+import { MicrosoftConnectPanel } from "@/features/microsoft-integration/MicrosoftConnectPanel";
+import { StorageConnectionsPanel } from "@/features/storage-connections/StorageConnectionsPanel";
+import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -187,13 +190,14 @@ export function connectionsSummaryLabel(
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
-export default function IntegrationsPage({
+export function IntegrationsWorkspace({
   search = "",
   activeCategory: controlledCategory,
   onCategoryChange,
   viewFilter: controlledViewFilter,
   onViewFilterChange,
   googleProductFocus,
+  embedded = false,
 }: {
   search?: string;
   activeCategory?: string;
@@ -201,6 +205,8 @@ export default function IntegrationsPage({
   viewFilter?: ViewFilter;
   onViewFilterChange?: (filter: ViewFilter) => void;
   googleProductFocus?: { productKey: string; request: number } | null;
+  /** The chat window uses the same workspace; it must not launch itself. */
+  embedded?: boolean;
 } = {}) {
   const organizationId = useAppSelector(selectOrganizationId);
   const dispatch = useAppDispatch();
@@ -228,6 +234,12 @@ export default function IntegrationsPage({
   const changeViewFilter = onViewFilterChange ?? setLocalViewFilter;
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [checkingServerId, setCheckingServerId] = useState<string | null>(null);
+  const [workspaceView, setWorkspaceView] = useState<"discover" | "yours">("discover");
+  const [workspaceSearch, setWorkspaceSearch] = useState(search);
+  const effectiveSearch = search || workspaceSearch;
+  const openLiveIntegrationsWindow = useOpenLiveIntegrationsWindow();
+
+  useEffect(() => setWorkspaceSearch(search), [search]);
 
   useEffect(() => {
     if (status === "idle") {
@@ -256,10 +268,10 @@ export default function IntegrationsPage({
     filtered = filtered.filter((entry) => entry.serverStatus === "coming_soon");
   }
 
-  if (search.trim()) {
+  if (effectiveSearch.trim()) {
     filtered = filtered.filter((entry) =>
       matchesIntegrationSearch(
-        search,
+        effectiveSearch,
         `${entry.name} ${entry.vendor} ${entry.description} ${entry.category}`,
       ),
     );
@@ -481,22 +493,14 @@ export default function IntegrationsPage({
 
   return (
     <TooltipProvider>
-      <div className="mx-auto max-w-6xl space-y-5 px-1 pb-12 pt-3 sm:px-4 md:space-y-6 md:p-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-              <PlugZap className="h-3.5 w-3.5" />
-              Tools for your agents
+      <div className="mx-auto max-w-6xl space-y-4 px-1 pb-12 pt-3 sm:px-4 md:p-6">
+        <div className="sticky top-0 z-10 -mx-1 space-y-3 border-b border-border bg-background/95 px-1 pb-3 pt-1 backdrop-blur sm:mx-0 sm:px-0">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="Integrations view">
+              <Button type="button" size="sm" variant={workspaceView === "discover" ? "secondary" : "ghost"} onClick={() => setWorkspaceView("discover")} aria-selected={workspaceView === "discover"} role="tab">Discover</Button>
+              <Button type="button" size="sm" variant={workspaceView === "yours" ? "secondary" : "ghost"} onClick={() => setWorkspaceView("yours")} aria-selected={workspaceView === "yours"} role="tab">Yours</Button>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-              Connect the services you already use
-            </h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Give your agents useful context and actions. Connect once, then
-              manage access and check available tools whenever you need.
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
             <div className="rounded-lg border border-border bg-card px-3 py-2 text-right">
               <p className="text-lg font-semibold leading-none text-foreground">
                 <UntrustedCount
@@ -522,6 +526,14 @@ export default function IntegrationsPage({
               />
               Refresh
             </Button>
+            {!embedded && <Button variant="outline" size="sm" className="h-10" onClick={() => openLiveIntegrationsWindow()}>
+              Open in window
+            </Button>}
+            </div>
+          </div>
+          <div className="relative max-w-xl">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <Input type="search" value={workspaceSearch} onChange={(event) => setWorkspaceSearch(event.target.value)} placeholder="Search integrations" aria-label="Search integrations" className="h-10 pl-9" />
           </div>
         </div>
 
@@ -534,7 +546,7 @@ export default function IntegrationsPage({
           </div>
         )}
 
-        <section className="space-y-3" id="integration-connections">
+        {workspaceView === "yours" && <section className="space-y-3" id="integration-connections" role="tabpanel">
           <div className="flex items-end justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold text-foreground">Your connections</h2>
@@ -554,9 +566,13 @@ export default function IntegrationsPage({
           <div id="integration-google" className="scroll-mt-20">
             <ConnectorsSettingsPanel searchFocus={googleProductFocus} />
           </div>
+          <div className="grid gap-3 @container xl:grid-cols-2">
+            <Suspense fallback={null}><MicrosoftConnectPanel /></Suspense>
+            <Suspense fallback={null}><StorageConnectionsPanel /></Suspense>
+          </div>
         </section>
 
-        <section id="integration-catalog" className="scroll-mt-20 space-y-4">
+        {workspaceView === "discover" && <section id="integration-catalog" className="scroll-mt-20 space-y-4" role="tabpanel">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 className="text-base font-semibold text-foreground">Discover integrations</h2>
@@ -580,7 +596,7 @@ export default function IntegrationsPage({
                       filters: {
                         view: viewFilter,
                         category: activeCategory,
-                        search: search || null,
+                        search: effectiveSearch || null,
                       },
                       counts: mcpConnectionCounts(sorted),
                       integrations: sorted.map(mcpEntryMeta),
@@ -605,7 +621,7 @@ export default function IntegrationsPage({
                       query: {
                         view: viewFilter,
                         category: activeCategory,
-                        search: search || null,
+                        search: effectiveSearch || null,
                       },
                       attributes: {
                         ...mcpConnectionCounts(sorted),
@@ -630,7 +646,7 @@ export default function IntegrationsPage({
               )}
             </div>
           </div>
-          {!search.trim() && <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {!effectiveSearch.trim() && <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             {(
               [
                 ["all", "All"],
@@ -650,9 +666,9 @@ export default function IntegrationsPage({
               </Button>
             ))}
           </div>}
-        </section>
+        </section>}
 
-        {!search.trim() ? <div className="flex flex-wrap gap-1.5">
+        {workspaceView === "discover" && !effectiveSearch.trim() ? <div className="flex flex-wrap gap-1.5">
           <Button
             variant={activeCategory === "all" ? "default" : "outline"}
             size="sm"
@@ -674,6 +690,7 @@ export default function IntegrationsPage({
           ))}
         </div> : null}
 
+        {workspaceView === "discover" && <>
         {/* Server Grid */}
         {status === "loading" && catalog.length === 0 ? (
           <div className="py-8">
@@ -685,8 +702,8 @@ export default function IntegrationsPage({
           null
         ) : sorted.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
-            {search.trim()
-              ? "No hosted integrations match this search."
+            {effectiveSearch.trim()
+              ? "No integrations match this search."
               : "No integrations match your filters."}
           </div>
         ) : (
@@ -719,11 +736,13 @@ export default function IntegrationsPage({
               />
             ))}
           </div>
-        )}
+        )}</>}
       </div>
     </TooltipProvider>
   );
 }
+
+export default IntegrationsWorkspace;
 
 // ─── Server Card ─────────────────────────────────────────────────────────────
 

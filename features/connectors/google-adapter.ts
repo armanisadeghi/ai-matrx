@@ -372,10 +372,9 @@ export const MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE =
   "Connecting several Google products in one step needs the newest AI Matrx server, which is still rolling out. Nothing was changed and nothing was sent to Google — try again shortly.";
 
 /**
- * Run a consent request: ONE provider window, ONE exchange, carrying every
- * scope the account already holds so no existing grant and no picked file is
- * lost (the hub refuses a request that would drop one — that refusal is a
- * contract, and this is the client half of it).
+ * Run a consent request: ONE provider window, ONE exchange. Normal product
+ * additions carry existing scopes; the focused YouTube request uses its own
+ * canonical connection so existing grants and picked files remain untouched.
  *
  * A cancelled window is control flow, not a failure.
  */
@@ -431,7 +430,7 @@ export function useGoogleConsentRunner() {
                   organizationId: options.owner.organizationId,
                 }
               : { type: "user" },
-          connectionPurpose: "google_products",
+          connectionPurpose: request.connectionPurpose,
           options: {
             organizationContextId: workspace.organizationId,
             expectedUserId: userId ?? undefined,
@@ -473,7 +472,7 @@ export function useGoogleConsentRunner() {
                 ? { type: "organization", organizationId: options.owner.organizationId }
                 : { type: "user" },
             organizationContextId: workspace.organizationId,
-            connectionPurpose: "google_products",
+            connectionPurpose: request.connectionPurpose,
             loginHint: options.loginHint ?? undefined,
             targetConnectionId: request.targetAccountId ?? undefined,
             capabilityKeys: request.capabilityKeys,
