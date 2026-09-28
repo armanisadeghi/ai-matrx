@@ -27,6 +27,7 @@ export function SettingsSubHeader({
   const { variant } = useSettingsDesign();
   return (
     <div
+      data-settings-subheader=""
       className={cn(
         "px-4",
         variant === "compact" ? "pb-3 mb-3" : "pb-4 mb-4",

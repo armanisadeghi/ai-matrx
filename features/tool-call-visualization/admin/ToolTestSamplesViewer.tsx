@@ -32,6 +32,7 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { type Tables, type TablesUpdate } from "@/types/database.types";
 import { isJsonArray, isJsonObject, type JsonObject } from "@/types/json";
 import { readOf } from "@/components/read-state/ReadGate";
@@ -348,6 +349,7 @@ function sampleStatus(sample: ToolTestSample): "Success" | "Failure" | "Unset" {
 }
 
 function CostEstimatePanel({ cost }: { cost: CostEstimate }) {
+    const { format: formatCostDisplay } = useCostDisplay();
     return (
         <div className="space-y-2">
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -373,7 +375,7 @@ function CostEstimatePanel({ cost }: { cost: CostEstimate }) {
                                 <td className="px-3 py-1.5 font-mono text-foreground">{m.model}</td>
                                 <td className="px-3 py-1.5 text-muted-foreground">{m.api}</td>
                                 <td className="px-3 py-1.5 text-right font-mono text-muted-foreground">${m.input_price_per_million.toFixed(2)}</td>
-                                <td className="px-3 py-1.5 text-right font-mono text-foreground font-medium">${m.estimated_cost_usd.toFixed(6)}</td>
+                                <td className="px-3 py-1.5 text-right font-mono text-foreground font-medium">{formatCostDisplay(m.estimated_cost_usd)}</td>
                             </tr>
                         ))}
                     </tbody>

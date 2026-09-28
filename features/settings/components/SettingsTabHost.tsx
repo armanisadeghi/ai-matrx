@@ -9,6 +9,7 @@ import {
 } from "react";
 import { AlertTriangle, Settings as SettingsIcon } from "lucide-react";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { cn } from "@/lib/utils";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsBreadcrumb } from "@/components/official/settings/tree/SettingsBreadcrumb";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
@@ -72,9 +73,12 @@ export function SettingsTabHost({
         </div>
       )}
       <div
-        className={
-          scrollOwner === "host" ? "min-h-0 flex-1 overflow-y-auto" : undefined
-        }
+        className={cn(
+          scrollOwner === "host" && "min-h-0 flex-1 overflow-y-auto",
+          // On the route, a phone's header already names the section, so the
+          // section's own heading would say it twice.
+          scrollOwner === "shell" && "max-lg:[&_[data-settings-subheader]]:hidden",
+        )}
       >
         <SettingsPage>
           <TabErrorBoundary key={activeTab.id} tabLabel={activeTab.label}>

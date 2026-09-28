@@ -388,7 +388,7 @@ export function formatComparison(comparison: PairedComparison): string {
   return `${scope}: ${points(comparison.change)} points${interval}`;
 }
 
-export function formatUsd(
+export function formatWaveCost(
   value: number | null | undefined,
   unit: CostUnit = "points",
 ): string | null {

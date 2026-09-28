@@ -29,18 +29,10 @@ import {
 import { toast } from "@/lib/toast";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ClipboardFallbackDialog } from "@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog";
 import { useClassInvites, extractEmails } from "../hooks/useClassInvites";
 import { classJoinUrl, classInviteAcceptUrl } from "../service";
 import { Textarea } from "@/components/ui/textarea";
-
-async function copyText(value: string, what: string) {
-  try {
-    await navigator.clipboard.writeText(value);
-    toast.success(`${what} copied.`);
-  } catch {
-    toast.error(`Could not copy the ${what.toLowerCase()}.`);
-  }
-}
 
 export function InviteStudentsSheet({
   open,
@@ -59,6 +51,22 @@ export function InviteStudentsSheet({
   const inv = useClassInvites(classId, open);
   const [emailText, setEmailText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Browser clipboard write failures (blocked permission, non-HTTPS iframe,
+  // older browser) never dead-end on a toast — the platform's fallback dialog
+  // shows the value in a selectable field instead.
+  const [clipboardFallback, setClipboardFallback] = useState<{
+    value: string;
+    what: string;
+  } | null>(null);
+
+  async function copyText(value: string, what: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${what} copied.`);
+    } catch {
+      setClipboardFallback({ value, what });
+    }
+  }
 
   const parsedEmails = extractEmails(emailText);
   const pending = inv.invites.filter((i) => i.status === "pending");
@@ -98,6 +106,7 @@ export function InviteStudentsSheet({
   }
 
   return (
+    <>
     <MatrxDynamicPanelHost
       open={open}
       onOpenChange={onOpenChange}
@@ -320,5 +329,14 @@ export function InviteStudentsSheet({
           )}
         </div>
     </MatrxDynamicPanelHost>
+    <ClipboardFallbackDialog
+      open={clipboardFallback !== null}
+      onOpenChange={(o) => {
+        if (!o) setClipboardFallback(null);
+      }}
+      url={clipboardFallback?.value ?? ""}
+      title={`Copy ${clipboardFallback?.what.toLowerCase() ?? "link"}`}
+    />
+    </>
   );
 }

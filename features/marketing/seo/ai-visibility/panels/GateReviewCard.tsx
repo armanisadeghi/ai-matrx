@@ -33,7 +33,7 @@ import {
   aidedStatusName,
   bandName,
   engineName,
-  formatUsd,
+  formatWaveCost,
   laneName,
   partitionName,
   qaDecisionName,
@@ -464,7 +464,7 @@ function Gate4Body({
   setEdits: (next: Record<string, unknown>) => void;
 }) {
   const { unit } = useCostDisplay();
-  const cost = formatUsd(payload.wave_cost_usd, unit);
+  const cost = formatWaveCost(payload.wave_cost_usd, unit);
   const limitations = editing
     ? arr<string>(edits.limitations)
     : arr<string>(payload.limitations);

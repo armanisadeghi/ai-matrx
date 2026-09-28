@@ -17,6 +17,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 
 import { RunStatusChip } from "../../run-status";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { runIsOver } from "../../types";
 import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import {
@@ -58,6 +59,7 @@ export function SharpStatusBand({
   const startedAt = useAppSelector(selectRunStartedAt(runId));
   const statusTs = useAppSelector(selectRunStatusTs(runId));
   const cost = useAppSelector(selectRunCostTotal(runId));
+  const { format: formatCostDisplay } = useCostDisplay();
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
   const { pause, resumePaused, cancel } = useWorkflowRunControls();
 
@@ -81,7 +83,7 @@ export function SharpStatusBand({
       </span>
       {cost > 0 ? (
         <span className="hidden text-xs tabular-nums text-muted-foreground sm:inline">
-          ${cost.toFixed(2)}
+          {formatCostDisplay(cost)}
         </span>
       ) : null}
 

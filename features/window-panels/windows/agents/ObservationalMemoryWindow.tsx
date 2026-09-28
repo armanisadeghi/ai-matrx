@@ -47,6 +47,7 @@ import { selectAgentById } from "@/features/agents/redux/agent-definition/select
 import type { RootState } from "@/lib/redux/store";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   OBSERVATIONAL_MEMORY_SURFACE_NAME,
   createObservationalMemoryScope,
@@ -89,6 +90,7 @@ function SidebarRow({
   onSelect: () => void;
 }) {
   const { copied, copy } = useCopyText(row.conversationId);
+  const { format: formatCostDisplay } = useCostDisplay();
 
   return (
     <div
@@ -187,7 +189,7 @@ function SidebarRow({
           </span>
           {row.totalCost > 0 && (
             <span className="text-[10px] font-mono text-muted-foreground">
-              ${row.totalCost.toFixed(4)}
+              {formatCostDisplay(row.totalCost)}
             </span>
           )}
           {row.degraded && (

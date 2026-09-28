@@ -7,8 +7,7 @@
 
 import * as React from "react";
 import type { ClickTarget } from "@ai-matrx/alchemy/actions";
-import { useAlchemyActions } from "@ai-matrx/alchemy/react/host";
-import { ensureRichDocumentProvider } from "../actions/provider";
+import { useRichDocumentProvider } from "../actions/useRichDocumentProvider";
 import { cn } from "@/lib/utils";
 import { OpenOneMenuButton, useOneMenuFor } from "./shared/OpenOneMenuButton";
 import { StandaloneOneMenu } from "./shared/StandaloneOneMenu";
@@ -27,7 +26,8 @@ export interface MenuVariantProps {
  */
 export function MenuVariant(props: MenuVariantProps): React.ReactElement {
   const { getCtx, target, className } = props;
-  ensureRichDocumentProvider(useAlchemyActions().registry);
+  // Idempotent: the one registry gets the rich-document provider once (after commit).
+  useRichDocumentProvider();
   const oneMenu = useOneMenuFor(getCtx().source);
   return (
     <div className={cn("inline-flex items-center", className)}>

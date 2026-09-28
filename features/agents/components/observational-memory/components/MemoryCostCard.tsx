@@ -26,6 +26,7 @@ import {
 } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
 import { fetchMemoryCost } from "@/features/agents/redux/execution-system/observational-memory/fetch-memory-cost.thunk";
 import { formatCostUsd, formatTokens } from "./format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type { components } from "@/types/python-generated/api-types";
 import {
   MOBILE_TABLE,
@@ -57,6 +58,7 @@ export function MemoryCostCard({
   className,
 }: MemoryCostCardProps) {
   const dispatch = useAppDispatch();
+  const { unit } = useCostDisplay();
   const summary = useAppSelector(selectMemoryCostSummary(conversationId));
   const fetchState = useAppSelector(selectMemoryCostFetchState(conversationId));
   const counters = useAppSelector(selectMemoryCounters(conversationId));
@@ -124,7 +126,7 @@ export function MemoryCostCard({
         <div className="grid grid-cols-4 gap-2">
           <CostStat
             label="Total"
-            value={formatCostUsd(summary?.total_cost)}
+            value={formatCostUsd(summary?.total_cost, unit)}
             tone="emerald"
           />
           <CostStat
@@ -155,7 +157,7 @@ export function MemoryCostCard({
           <div className="grid grid-cols-4 gap-2">
             <CostStat
               label="Total"
-              value={formatCostUsd(counters.totalCost)}
+              value={formatCostUsd(counters.totalCost, unit)}
               tone="blue"
             />
             <CostStat label="Events" value={String(counters.totalEvents)} />
@@ -207,7 +209,7 @@ export function MemoryCostCard({
                         {count ?? "—"}
                       </td>
                       <td className={cn("px-2 py-1 text-right font-mono text-foreground", MOBILE_TABLE_CELL)}>
-                        {formatCostUsd(cost, 5)}
+                        {formatCostUsd(cost, unit)}
                       </td>
                       <td className={cn("px-2 py-1 text-right font-mono text-muted-foreground", MOBILE_TABLE_CELL)}>
                         {formatTokens(inTokens)}

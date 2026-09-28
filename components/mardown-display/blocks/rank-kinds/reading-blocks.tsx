@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@/features/marketing/components/ranks/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   num,
   readSearchKindValue,
@@ -154,16 +155,15 @@ export function SeoRankReadingBlock({
  * nothing against every ceiling. The component says "not reported" and means
  * it.
  */
-function costLabel(cost: number | null): {
+function costLabel(
+  cost: number | null,
+  formatCostDisplay: (usd: number) => string,
+): {
   text: string;
   unmeasured: boolean;
 } {
   if (cost === null) return { text: "not reported", unmeasured: true };
-  if (cost === 0) return { text: "$0.00", unmeasured: false };
-  return {
-    text: cost < 0.01 ? `$${cost.toFixed(6)}` : `$${cost.toFixed(4)}`,
-    unmeasured: false,
-  };
+  return { text: formatCostDisplay(cost), unmeasured: false };
 }
 
 export function ProviderRunReceiptBlock({
@@ -171,9 +171,10 @@ export function ProviderRunReceiptBlock({
   className,
 }: RankKindBlockProps) {
   const { value } = readSearchKindValue<"provider_run_receipt">(serverData);
+  const { format: formatCostDisplay } = useCostDisplay();
 
   const provider = text(value.provider);
-  const cost = costLabel(num(value.cost_usd));
+  const cost = costLabel(num(value.cost_usd), formatCostDisplay);
   const latency = num(value.latency_seconds);
   const created = num(value.created_observations);
   const existing = num(value.existing_observations);

@@ -51,6 +51,7 @@ import {
 } from "../../redux/workflow-runs.selectors";
 import { runIsOver } from "../../types";
 import { RunStatusChip } from "../../run-status";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { RunOutcomeBanner } from "./RunOutcomeBanner";
 import {
   deliverableSteps,
@@ -269,6 +270,7 @@ function ReadyPage({
   const startedAt = useAppSelector(selectRunStartedAt(runId ?? "__none__"));
   const statusTs = useAppSelector(selectRunStatusTs(runId ?? "__none__"));
   const cost = useAppSelector(selectRunCostTotal(runId ?? "__none__"));
+  const { format: formatCostDisplay } = useCostDisplay();
   const interrupt = useAppSelector(selectRunInterrupt(runId ?? "__none__"));
   const durations = useAppSelector(
     makeSelectDurations(runId ?? "__none__"),
@@ -386,7 +388,7 @@ function ReadyPage({
           ) : null}
           {runId && cost > 0 ? (
             <span className="ml-auto shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
-              ${cost.toFixed(2)}
+              {formatCostDisplay(cost)}
             </span>
           ) : null}
         </div>

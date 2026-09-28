@@ -2,7 +2,7 @@
 
 import { ListChecks, Loader2, Play, RefreshCw, Scale } from "lucide-react";
 import Link from "next/link";
-import { formatUsd } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -339,6 +339,7 @@ function DecisionResultCard({
   readError: string | null;
   onRetry: () => void;
 }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   if (loading)
     return (
       <section className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
@@ -387,10 +388,7 @@ function DecisionResultCard({
         <Fact label="Output tokens" value={String(result.outputTokens)} />
         <Fact
           label="Cost"
-          value={formatUsd(result.costUsd, {
-            digits: "adaptive",
-            unknown: "Unavailable",
-          })}
+          value={formatCostDisplay(result.costUsd, { unknown: "Unavailable" })}
         />
         <Fact label="Route" value={result.route ?? "Unavailable"} />
         <Fact label="Execution ID" value={result.executionId} />

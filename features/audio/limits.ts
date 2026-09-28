@@ -33,7 +33,7 @@
  */
 
 import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCost, formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
 
 /** The one feature namespace these rows live under. */
 export const AUDIO_LIMITS_FEATURE = "media.transcription";
@@ -236,6 +236,7 @@ function humanDuration(totalSeconds: number): string {
  */
 export async function estimateTranscription(
   durationSeconds: number,
+  unit: CostUnit = "points",
 ): Promise<TranscriptionEstimate> {
   const [rate, speed] = await Promise.all([
     resolveNumber(AUDIO_LIMIT_KNOBS.ESTIMATED_COST_PER_AUDIO_HOUR_USD),
@@ -250,9 +251,7 @@ export async function estimateTranscription(
     durationLabel: formatClock(durationSeconds),
     costUsd,
     costLabel: rate.resolved
-      ? costUsd < 0.01
-        ? "under $0.01"
-        : `about $${costUsd.toFixed(2)}`
+      ? `about ${formatCost(costUsd, { unit })}`
       : "could not be priced — the transcription rate could not be read",
     processingSeconds,
     processingLabel: speed.resolved

@@ -4,7 +4,7 @@ import { parseTimestamp } from "@/utils/datetime";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
-import { formatCount, formatDurationMs, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs, formatCost as formatCostInUnit, type CostUnit } from "@ai-matrx/kit/format";
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
 export { formatRelativeTime } from "@ai-matrx/kit/format";
@@ -17,8 +17,11 @@ export { formatRelativeTime } from "@ai-matrx/kit/format";
  * because "we never measured this" and "this cost nothing" are not the same
  * sentence.
  */
-export function formatCost(cost: number | null | undefined): string {
-  return formatUsd(cost, { digits: "adaptive" });
+export function formatCost(
+  cost: number | null | undefined,
+  unit: CostUnit = "points",
+): string {
+  return formatCostInUnit(cost, { unit });
 }
 
 export function formatTokens(tokens: number | null | undefined): string {

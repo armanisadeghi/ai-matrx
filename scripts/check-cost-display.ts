@@ -83,6 +83,7 @@ export const DOMAIN_MONEY: Record<string, string> = {
   "features/ai-models/components/ModelPricingEditor.tsx": "the provider's USD price list an admin edits",
   "features/ai-models/components/ProviderPriceCell.tsx": "the provider's USD price list an admin syncs",
   "features/ai-models/utils/providerSyncPricing.ts": "the provider's USD price list an admin syncs",
+  "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx": "the provider's per-million-token USD price list, shown to an admin debugging a tool-test sample's cost estimate",
 };
 
 const SKIP_PREFIXES = ["components/cost/", "scripts/", "node_modules/", ".next/"];

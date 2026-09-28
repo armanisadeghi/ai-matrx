@@ -21,11 +21,8 @@ import { useAlchemyActions } from "@ai-matrx/alchemy/react/host";
 import { ContextMenuPanel } from "@ai-matrx/alchemy/react/menu";
 import { ActionSheet } from "@ai-matrx/alchemy/react/sheet";
 import { ActionPalette } from "@ai-matrx/alchemy/react/palette";
-import {
-  SOURCE_WRITE_TARGET,
-  ensureRichDocumentProvider,
-  richDocumentTargetHost,
-} from "@/features/rich-document/actions/provider";
+import { SOURCE_WRITE_TARGET, richDocumentTargetHost } from "@/features/rich-document/actions/provider";
+import { useRichDocumentProvider } from "@/features/rich-document/actions/useRichDocumentProvider";
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import { buildMenuModel } from "../model/menu-model";
 import { namedHeader, contextMenuActionsFromModel, menuHeader, modelRevision } from "../alchemy-provider";
@@ -48,7 +45,7 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   // own sections come first by the primary-section law; every other row keeps its own name.
   const model = buildMenuModel(m, menuProps);
   const { registry } = useAlchemyActions();
-  ensureRichDocumentProvider(registry);
+  useRichDocumentProvider();
 
   // This menu instance's provider: registered while mounted, reads the latest
   // model through a ref (handlers rebind every render).

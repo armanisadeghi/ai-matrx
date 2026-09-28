@@ -22,6 +22,7 @@
  */
 
 import { useState } from "react";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useQuery } from "@tanstack/react-query";
 import {
   Ban,
@@ -410,6 +411,7 @@ function ImportListDialog({
   onOpenChange: (open: boolean) => void;
   prospects: SerpProspects;
 }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   const [text, setText] = useState("");
   const [label, setLabel] = useState("Imported list");
   const entries = text
@@ -466,7 +468,7 @@ function ImportListDialog({
               {state.preview.existing_domains} already yours ·{" "}
               {state.preview.skipped} skipped
               {Number(state.preview.estimated_cost_usd) > 0
-                ? ` · about $${Number(state.preview.estimated_cost_usd).toFixed(2)} to measure their authority`
+                ? ` · about ${formatCostDisplay(Number(state.preview.estimated_cost_usd))} to measure their authority`
                 : ""}
             </p>
             <ul className="max-h-56 divide-y divide-border overflow-y-auto rounded-md border border-border">
@@ -676,6 +678,7 @@ function OpportunityDetail({
 
 /** What the run WOULD search, grouped by search type, with the cost. */
 function PreviewCard({ prospects }: { prospects: SerpProspects }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   const { preview } = prospects;
   if (!preview) return null;
   const byVariant = new Map<string, string[]>();
@@ -693,7 +696,7 @@ function PreviewCard({ prospects }: { prospects: SerpProspects }) {
         </span>
         <span className="inline-flex items-center gap-1 text-xs tabular-nums text-foreground">
           <DollarSign className="h-3 w-3 text-muted-foreground" />
-          about ${preview.estimated_cost_usd} — nothing is spent until you
+          about {formatCostDisplay(preview.estimated_cost_usd)} — nothing is spent until you
           press Run
         </span>
       </div>

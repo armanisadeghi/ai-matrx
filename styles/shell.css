@@ -1171,11 +1171,11 @@ button.shell-nav-flyout-item {
 
 .settings-route-menu-tree { display: flex; flex-direction: column; gap: 0.375rem; }
 .settings-route-menu-empty { padding: 1rem 0.5rem; color: hsl(var(--muted-foreground)); font-size: 0.75rem; }
-.settings-route-menu-results { display: flex; flex-direction: column; gap: 0.125rem; }
-.settings-route-menu-result { align-items: flex-start; }
+.settings-route-menu-results { display: flex; flex-direction: column; gap: 0.375rem; }
+.settings-route-menu-result { align-items: flex-start; padding-block: 0.25rem; }
 .settings-route-menu-result-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; }
 .settings-route-menu-description,
-.settings-route-menu-location { overflow: hidden; color: hsl(var(--muted-foreground)); font-size: 0.6875rem; text-overflow: ellipsis; white-space: nowrap; }
+.settings-route-menu-location { overflow: hidden; color: hsl(var(--muted-foreground)); font-size: 0.75rem; line-height: 1rem; text-overflow: ellipsis; white-space: nowrap; }
 
 
 .shell-mobile-sheet .settings-route-menu {
@@ -3525,3 +3525,42 @@ body:has(.shell-root[data-pathname^="/administration"]) {
    button resolves identically in every layout — this file no longer duplicates
    it. To retune tap buttons, edit the block in app/globals.css.
    ============================================================================= */
+
+/* "MORE BELOW" — every sidebar scroll area fades out at its bottom edge while
+   more content sits below, and the fade disappears at the end (page-pass
+   shared defects, 2026-09-27: a list clipped flush at the account block read
+   as covered by it). Scroll-driven: the timeline is active only when the area
+   actually overflows, so a list that fits never fades. Browsers without
+   scroll-driven animations simply show no fade. */
+@property --shell-scroll-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes shell-scroll-fade-end {
+  0%,
+  96% {
+    --shell-scroll-fade: 2rem;
+  }
+  100% {
+    --shell-scroll-fade: 0px;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  .shell-sidebar-nav,
+  .settings-route-menu {
+    --shell-scroll-fade: 0px;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 calc(100% - var(--shell-scroll-fade)),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      #000 calc(100% - var(--shell-scroll-fade)),
+      transparent
+    );
+    animation: shell-scroll-fade-end linear both;
+    animation-timeline: scroll(self block);
+  }
+}

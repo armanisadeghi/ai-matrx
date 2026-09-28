@@ -78,7 +78,11 @@ export function EducationHub() {
           title: "Community Library",
           description:
             "Free public study decks from the community — study a copy, or find an editorially Certified one.",
-          href: eduHref("library"),
+          // NOT eduHref("library") — that route is the signed-in learner's OWN
+          // library (redirects a guest to login), the opposite of the "browse
+          // without an account" promise this card makes. The public browse
+          // surface described here lives at /education/library/community.
+          href: "/education/library/community",
         },
         {
           icon: BookOpen,

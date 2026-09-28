@@ -70,6 +70,11 @@ function formatResetIn(windowStart: string | null): string | null {
   return `Resets in ${formatDurationMs(remainingMs, { style: "coarse" })}`;
 }
 
+/** Two-decimal numeric text for an editable field — never a currency string. */
+function twoDecimalText(value: number): string {
+  return value.toFixed(2);
+}
+
 function percentToneClass(percent: number): string {
   if (!Number.isFinite(percent)) return "text-destructive";
   if (percent >= 80) return "text-destructive";
@@ -119,10 +124,11 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
   };
 
   const handleStartEditingBudget = () => {
+    const dailyBudget = pref.budgetUsd;
     setBudgetDraft(
       unit === "usd"
-        ? pref.budgetUsd.toFixed(2)
-        : String(usdToPoints(pref.budgetUsd) ?? 0),
+        ? twoDecimalText(dailyBudget)
+        : String(usdToPoints(dailyBudget) ?? 0),
     );
     setEditingBudget(true);
   };

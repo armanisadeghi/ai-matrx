@@ -70,6 +70,12 @@ const IDENTITY_ALLOWED = new Set([
   "components/matrx/PublicHeaderAuth.tsx",
   // Protects the person's session; grants nothing.
   "features/shell/auth/useSignOut.ts",
+  // The cost unit (Arman, 2026-09-27): "Everyone should see credits/points
+  // except for system admins who should always be able to toggle to see $."
+  // An admin sees points like everyone else until HE flips the switch; the
+  // identity decides only whether the switch exists and is honored.
+  "components/cost/useCostDisplay.ts",
+  "features/shell/components/header/header-right-menu/CostUnitMenuItem.tsx",
 ]);
 
 const SCAN_DIRS = ["app", "components", "features", "hooks", "lib", "utils", "providers", "actions"];

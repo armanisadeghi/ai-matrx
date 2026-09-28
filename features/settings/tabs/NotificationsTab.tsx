@@ -366,8 +366,10 @@ export default function NotificationsTab() {
           {orderedAreas.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">No notices match.</p>
           ) : (
-            <div className="matrx-touch-targets overflow-hidden rounded-lg border border-border bg-card">
-              <div className="grid grid-cols-[minmax(0,1fr)_repeat(3,3.5rem)_2.75rem] items-center border-b border-border px-3 py-1.5 text-xs font-medium text-muted-foreground sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_2.75rem]">
+            // overflow-clip (not hidden) keeps the rounded frame without making a
+            // scroll container, so the column header can stick.
+            <div className="matrx-touch-targets overflow-clip rounded-lg border border-border bg-card">
+              <div className="sticky top-[var(--shell-header-h)] z-10 hidden grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_2.75rem] items-center border-b border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:grid">
                 <span>Notice</span>
                 {channelColumns.map((c) => (
                   <span key={c.key} className="text-center">{c.short}</span>
@@ -398,7 +400,9 @@ export default function NotificationsTab() {
                         return (
                           <div
                             key={event.eventKey}
-                            className="grid grid-cols-[minmax(0,1fr)_repeat(3,3.5rem)_2.75rem] items-center border-b border-border/50 px-3 py-1.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_2.75rem]"
+                            // Phone: the notice on top, its channels in a row under it
+                            // (labelled). Wider: one grid row under the column header.
+                            className="border-b border-border/50 px-3 py-2 last:border-b-0 sm:grid sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_2.75rem] sm:items-center sm:py-1.5"
                           >
                             <div className="min-w-0 py-1">
                               <div className="flex flex-wrap items-center gap-1.5 text-sm text-foreground">
@@ -418,9 +422,10 @@ export default function NotificationsTab() {
                               </div>
                               {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
                             </div>
-                            {channelColumns.map(({ key, label }) => {
+                            <div className="mt-1.5 flex items-center gap-5 sm:contents">
+                            {channelColumns.map(({ key, label, short }) => {
                               if (!event.availableChannels[key]) {
-                                return <span key={key} className="text-center text-xs text-muted-foreground" aria-label={`${label}: not available for this notice`}>—</span>;
+                                return <span key={key} className="hidden text-center text-xs text-muted-foreground sm:block" aria-label={`${label}: not available for this notice`}>—</span>;
                               }
                               const checked = Boolean(event.channels[key]);
                               const lastRequired = event.mandatory && checked && onChannels.length === 1;
@@ -429,7 +434,7 @@ export default function NotificationsTab() {
                                 <label
                                   key={key}
                                   htmlFor={id}
-                                  className="matrx-tap-area flex justify-center"
+                                  className="matrx-tap-area flex items-center justify-center gap-1.5"
                                   title={
                                     !scopeId
                                       ? "Choose an organization above to change this."
@@ -446,10 +451,11 @@ export default function NotificationsTab() {
                                     onCheckedChange={(enabled: boolean) => handleToggle(event.eventKey, key, enabled)}
                                     aria-label={`${event.label}: ${label}`}
                                   />
+                                  <span className="text-xs text-muted-foreground sm:hidden">{short}</span>
                                 </label>
                               );
                             })}
-                            <div className="flex justify-center">
+                            <div className="ml-auto flex justify-center sm:ml-0">
                               {scopeId && hasOwnRow ? (
                                 <ResetTapButton
                                   variant="transparent"
@@ -466,6 +472,7 @@ export default function NotificationsTab() {
                                   }
                                 />
                               ) : null}
+                            </div>
                             </div>
                           </div>
                         );

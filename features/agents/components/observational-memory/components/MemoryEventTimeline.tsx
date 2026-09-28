@@ -38,6 +38,7 @@ import type {
   MemoryEventKind,
 } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.slice";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   formatCostUsd,
   formatRelativeTime,
@@ -143,6 +144,7 @@ export function MemoryEventTimeline({
 }
 
 function MemoryEventRow({ event }: { event: MemoryEventEntry }) {
+  const { unit } = useCostDisplay();
   const meta = EVENT_META[event.kind];
   const Icon = meta.icon;
 
@@ -188,7 +190,7 @@ function MemoryEventRow({ event }: { event: MemoryEventEntry }) {
             {typeof event.cost === "number" && (
               <Stat
                 label="cost"
-                value={formatCostUsd(event.cost, 5)}
+                value={formatCostUsd(event.cost, unit)}
                 mono
                 tone="emerald"
               />

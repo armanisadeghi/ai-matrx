@@ -10,8 +10,11 @@
  * credits/points except for system admins who should always be able to toggle
  * to see $." So:
  *   - every viewer sees POINTS (20,000 points = $1, `@ai-matrx/kit/format`);
- *   - a system admin (`selectIsAdmin`, any `admins.level`) who flipped the
- *     "Show costs in dollars" switch in the header menu's Admin group sees $;
+ *   - a system admin (ADMIN IDENTITY, `selectIsAdminPerson`, any
+ *     `admins.level`) who flipped the "Show costs in dollars" switch in the
+ *     header menu's Admin group sees $ — on every page, because the ruling says
+ *     "always"; until he flips it he sees exactly what everyone sees. Named in
+ *     `scripts/check-admin-lane.ts` IDENTITY_ALLOWED for that reason;
  *   - the switch is persisted per person (`userPreferences.system.showCostInUsd`,
  *     synced like every other preference) and is IGNORED for anyone who is not
  *     an admin, so a stale or hand-edited preference can never show a member
@@ -26,7 +29,7 @@
  */
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import {
   formatCost,
   usdToPoints,
@@ -34,13 +37,17 @@ import {
 } from "@ai-matrx/kit/format";
 import type { RootState } from "@/lib/redux/store";
 
+/** Admin identity, tolerant of a store without the auth slice (embeds, tests). */
+const selectCanToggleCostUnit = (state: RootState): boolean =>
+  state.userAuth != null && selectIsAdminPerson(state);
+
 /** The raw preference, whatever the viewer's role (admin-only in effect). */
 export const selectShowCostInUsdPreference = (state: RootState): boolean =>
   state.userPreferences?.system?.showCostInUsd === true;
 
 /** The unit THIS viewer sees: dollars only for an admin who asked for them. */
 export const selectCostUnit = (state: RootState): CostUnit =>
-  selectIsAdmin(state) && selectShowCostInUsdPreference(state)
+  selectCanToggleCostUnit(state) && selectShowCostInUsdPreference(state)
     ? "usd"
     : "points";
 
@@ -60,7 +67,7 @@ export interface CostDisplay {
 
 export function useCostDisplay(): CostDisplay {
   const unit = useAppSelector(selectCostUnit);
-  const canToggle = useAppSelector(selectIsAdmin);
+  const canToggle = useAppSelector(selectCanToggleCostUnit);
   return {
     unit,
     canToggle,

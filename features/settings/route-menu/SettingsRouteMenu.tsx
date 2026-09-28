@@ -138,11 +138,27 @@ function SettingsMenuLink({ node, label = node.label, active }: { node: Settings
   </Link>;
 }
 
+/**
+ * A long breadcrumb keeps its END (where the setting is), dropping the start:
+ * "… / Text generation / Style" rather than "Settings / AI & Mo…".
+ */
+function keepLastPart(location: string, max = 34): string {
+  if (location.length <= max) return location;
+  const parts = location.split(" / ");
+  let kept = parts[parts.length - 1] ?? location;
+  for (let i = parts.length - 2; i >= 0; i--) {
+    const next = `${parts[i]} / ${kept}`;
+    if (next.length + 2 > max) break;
+    kept = next;
+  }
+  return `… / ${kept}`;
+}
+
 function SettingsMenuLinkContent({ icon: Icon, label, description, location }: { icon?: SettingsTreeNode["icon"]; label: string; description?: string; location?: string }) {
   const { pending } = useLinkStatus();
   return <>
     <span className="shell-nav-icon">{Icon ? <Icon /> : <Settings />}</span>
-    <span className="settings-route-menu-result-copy"><span className="shell-nav-label settings-route-menu-label">{label}</span>{location ? <span className="settings-route-menu-location">{location}</span> : description ? <span className="settings-route-menu-description">{description}</span> : null}</span>
+    <span className="settings-route-menu-result-copy"><span className="shell-nav-label settings-route-menu-label">{label}</span>{location ? <span className="settings-route-menu-location" title={location}>{keepLastPart(location)}</span> : description ? <span className="settings-route-menu-description">{description}</span> : null}</span>
     {pending ? <Loader2 className="ml-auto h-4 w-4 shrink-0 animate-spin" aria-label={`Opening ${label}`} /> : null}
   </>;
 }

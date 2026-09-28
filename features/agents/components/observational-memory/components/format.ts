@@ -6,6 +6,7 @@
  */
 
 import { parseTimestamp } from "@/utils/datetime";
+import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
 // `formatDurationMs` used to be re-implemented here, under the package's own
 // name (census H1). It is now imported straight from `@ai-matrx/kit/format` by
 // its callers; the one display change is that seconds under ten keep one
@@ -16,12 +17,9 @@ export { formatRelativeTime } from "@ai-matrx/kit/format";
 
 export function formatCostUsd(
   cost: number | null | undefined,
-  fractionDigits = 4,
+  unit: CostUnit = "points",
 ): string {
-  if (cost == null || Number.isNaN(cost)) return "—";
-  if (cost === 0) return "$0.0000";
-  if (cost < 0.0001) return `$${cost.toExponential(2)}`;
-  return `$${cost.toFixed(fractionDigits)}`;
+  return formatCost(cost, { unit });
 }
 
 export function formatTokens(n: number | null | undefined): string {
