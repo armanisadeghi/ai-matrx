@@ -16574,7 +16574,7 @@ export type Database = {
           client_message_id: string | null
           content: string
           conversation_id: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -16599,7 +16599,7 @@ export type Database = {
           client_message_id?: string | null
           content: string
           conversation_id: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -16624,7 +16624,7 @@ export type Database = {
           client_message_id?: string | null
           content?: string
           conversation_id?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -18023,7 +18023,7 @@ export type Database = {
           file_size: number | null
           id: string
           message_id: string
-          metadata: Json | null
+          metadata: Json
           organization_id: string
           original_url: string
           storage_path: string | null
@@ -18043,7 +18043,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           message_id: string
-          metadata?: Json | null
+          metadata?: Json
           organization_id: string
           original_url: string
           storage_path?: string | null
@@ -18063,7 +18063,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           message_id?: string
-          metadata?: Json | null
+          metadata?: Json
           organization_id?: string
           original_url?: string
           storage_path?: string | null
@@ -18107,7 +18107,7 @@ export type Database = {
           lease_expires_at: string | null
           media_content_types: string[] | null
           media_urls: string[] | null
-          metadata: Json | null
+          metadata: Json
           next_attempt_at: string
           num_media: number
           num_segments: number | null
@@ -18154,7 +18154,7 @@ export type Database = {
           lease_expires_at?: string | null
           media_content_types?: string[] | null
           media_urls?: string[] | null
-          metadata?: Json | null
+          metadata?: Json
           next_attempt_at?: string
           num_media?: number
           num_segments?: number | null
@@ -18201,7 +18201,7 @@ export type Database = {
           lease_expires_at?: string | null
           media_content_types?: string[] | null
           media_urls?: string[] | null
-          metadata?: Json | null
+          metadata?: Json
           next_attempt_at?: string
           num_media?: number
           num_segments?: number | null
@@ -68678,8 +68678,10 @@ export type Database = {
           client_anonymous_excluded_columns: string[] | null
           client_anonymous_public_read: boolean
           client_anonymous_public_read_reason: string | null
+          client_deletes_refused: boolean
           client_excluded_columns: string[] | null
           client_read_only: boolean
+          client_read_only_columns: string[] | null
           component_anon_read_via_public_parent: boolean
           confirmation_enabled: boolean
           content_role: string | null
@@ -68740,8 +68742,10 @@ export type Database = {
           client_anonymous_excluded_columns?: string[] | null
           client_anonymous_public_read?: boolean
           client_anonymous_public_read_reason?: string | null
+          client_deletes_refused?: boolean
           client_excluded_columns?: string[] | null
           client_read_only?: boolean
+          client_read_only_columns?: string[] | null
           component_anon_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
@@ -68806,8 +68810,10 @@ export type Database = {
           client_anonymous_excluded_columns?: string[] | null
           client_anonymous_public_read?: boolean
           client_anonymous_public_read_reason?: string | null
+          client_deletes_refused?: boolean
           client_excluded_columns?: string[] | null
           client_read_only?: boolean
+          client_read_only_columns?: string[] | null
           component_anon_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
@@ -91651,7 +91657,7 @@ export type Database = {
           is_system: boolean
           metadata: Json
           name: string
-          organization_id: string | null
+          organization_id: string
           selectors: Json
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
@@ -91675,7 +91681,7 @@ export type Database = {
           is_system?: boolean
           metadata?: Json
           name: string
-          organization_id?: string | null
+          organization_id: string
           selectors?: Json
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
@@ -91699,7 +91705,7 @@ export type Database = {
           is_system?: boolean
           metadata?: Json
           name?: string
-          organization_id?: string | null
+          organization_id?: string
           selectors?: Json
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
