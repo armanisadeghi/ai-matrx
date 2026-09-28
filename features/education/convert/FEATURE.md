@@ -219,6 +219,7 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 
 ## Change log
 
+- **2026-09-28** — `generators/mindMap.ts` namespaces EDGE ids per section (it did only nodes, so every section's `e1..eN` collided), ids the synthesized root edges, and stores the spec through `withUniqueEdgeIds`. See `../media/FEATURE.md` change log.
 - **page-pass 2026-09-28 (wave 4c)** — `MadeFromSource` ("Open the kit"/"Open the source"/sibling pill links) and `GeneratedFromChips` ("Generated from this:" chips) rendered their labels at 11px and their link/chip controls under the 44px touch floor on phone — found via `/education/audio-study/[id]`, which mounts `MadeFromSource`, but these are shared components consumed across every education artifact detail page. Bumped `text-[11px]` → `text-xs`, added `matrx-touch-targets` to each component's own root (so every consumer gets the floor without opting in), and marked the Link elements `data-tap-target`. Commit `a4155f6755`.
 - **2026-08-25** — `reopenAnchor.ts` added (any lineage anchor → text, entity kinds included), and
   `ConvertContentDialog` gained `sourceRef` + `focusKind`. Both exist so a kit can generate a

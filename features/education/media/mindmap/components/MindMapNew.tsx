@@ -36,6 +36,7 @@ import {
 } from "../../types";
 import { useGenerateMindMap } from "../useGenerateMindMap";
 import { linkDiagramToCards, type LinkableCard } from "../linkCards";
+import { withUniqueEdgeIds } from "../mindMapWrites";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { EDU_MEDIA_MANDATES } from "../mandates";
@@ -136,7 +137,7 @@ export function MindMapNew() {
             linkedCards: linkedCount,
           },
           trust: resolved.trust,
-          irEnvelope: linkedSpec,
+          irEnvelope: withUniqueEdgeIds(linkedSpec),
           diagramKind: "diagram_spec",
           status: "ready",
         });

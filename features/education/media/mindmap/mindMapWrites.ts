@@ -84,6 +84,43 @@ export function parseMindMap(value: unknown, at = "mind map"): MindMapEnvelope {
   return { ...raw, __kind: "diagram_spec", title, type: typeof raw.type === "string" ? raw.type : "mindmap", nodes, edges } as MindMapEnvelope;
 }
 
+/**
+ * Every edge id in a stored map must be unique and present: `parseMindMap`
+ * refuses a repeat or a missing id (so the map could never be edited), and the
+ * diagram canvas keys edges by id. Agent output does not guarantee either —
+ * a section numbers its edges `e1..eN` and can repeat one, and grafting several
+ * sections restarts the sequence. Applied by every writer that stores
+ * generated diagram_spec output. A repeated id keeps its first holder and the
+ * rest get the next free `<id>_<n>`; a missing id is derived from its endpoints.
+ */
+export function withUniqueEdgeIds<T extends { edges: unknown[] }>(spec: T): T {
+  const taken = new Set<string>();
+  for (const edge of spec.edges) {
+    const id = rawField(edge, "id");
+    if (id) taken.add(id);
+  }
+  const used = new Set<string>();
+  const edges = spec.edges.map((edge) => {
+    if (!edge || typeof edge !== "object" || Array.isArray(edge)) return edge;
+    const current = rawField(edge, "id");
+    if (current && !used.has(current)) {
+      used.add(current);
+      return edge;
+    }
+    const base = current || `edge_${rawField(edge, "source") ?? "x"}_${rawField(edge, "target") ?? "x"}`;
+    // A new id may not collide with one already assigned, nor with an original
+    // id a later edge still holds.
+    let candidate = base;
+    for (let n = 2; used.has(candidate) || (candidate !== current && taken.has(candidate)); n += 1) {
+      candidate = `${base}_${n}`;
+    }
+    used.add(candidate);
+    taken.add(candidate);
+    return { ...(edge as JsonRecord), id: candidate };
+  });
+  return { ...spec, edges };
+}
+
 export function blankMindMap(): MindMapEnvelope {
   return { __kind: "diagram_spec", title: "", type: "mindmap", nodes: [], edges: [] };
 }

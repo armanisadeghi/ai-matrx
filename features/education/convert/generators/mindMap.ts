@@ -14,10 +14,14 @@
 // one node and rewires edges to the wrong place, which is worse than a small
 // map. So every node id is namespaced by its section before the merge, edges are
 // rewritten through the same map, and each section's own root is attached to a
-// synthesized document root.
+// synthesized document root. Edge ids get the same namespace (every section
+// numbers its edges e1..eN), and the stored spec passes `withUniqueEdgeIds`:
+// a repeated or missing edge id made the map un-editable and collided on the
+// canvas (2026-09-28).
 
 import { studyMediaService } from "@/features/education/media/service";
 import { EDU_MEDIA_MANDATES } from "@/features/education/media/mindmap/mandates";
+import { withUniqueEdgeIds } from "@/features/education/media/mindmap/mindMapWrites";
 import { recordSourceLineage } from "../recordSourceLineage";
 import { segmentedGenerate } from "../segmentedGenerate";
 import { buildSourceTrust } from "../sourceTrust";
@@ -108,6 +112,8 @@ function namespaceSection(
     if (!source || !target || !known.has(source) || !known.has(target)) continue;
     targeted.add(target);
     const next: DiagramEdge = { ...e, source, target };
+    const id = ns(e.id);
+    if (id) next.id = id;
     delete next.from;
     delete next.to;
     outEdges.push(next);
@@ -178,12 +184,12 @@ async function run(
   let spec: DiagramSpec;
   if (covered.plan.singlePass && singleSpec) {
     // A single-pass map is the agent's own spec, untouched — no namespacing, no
-    // synthesized root, exactly what shipped before.
-    spec = singleSpec;
+    // synthesized root; only a repeated or missing edge id is repaired.
+    spec = withUniqueEdgeIds(singleSpec);
   } else {
     const sections = [...covered.items].sort((a, b) => a.index - b.index);
     const ROOT = "kit_root";
-    spec = {
+    spec = withUniqueEdgeIds({
       __kind: "diagram_spec",
       title,
       type: "mindmap",
@@ -195,13 +201,14 @@ async function run(
       edges: [
         ...sections.map((s) => ({
           __kind: "diagram_edge",
+          id: `${ROOT}_${s.rootId}`,
           source: ROOT,
           target: s.rootId,
           label: s.label,
         })),
         ...sections.flatMap((s) => s.edges),
       ],
-    };
+    });
   }
 
   const trust = buildSourceTrust(source, title);
