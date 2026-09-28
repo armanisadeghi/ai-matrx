@@ -7,9 +7,9 @@
  * back. Found and flagged (not fixed) by data-doctrine-adoption v5 lane
  * UNDONE-COPY-CENSUS-2 (`spawn_task task_17844c5b`); fixed by lane
  * UNDONE-COPY-CENSUS-3: the confirm now calls `aiModelService.remove(id)`
- * (a real hard `.delete()` on `ai.model_definition`, already verified
- * correct elsewhere in this feature) and only then calls `onDelete`, with a
- * pending state and `toastWriteFailure` on error.
+ * (which moves the `ai.model_definition` row to Trash by setting
+ * `deleted_at` — delete means archive, 2026-09-27) and only then calls
+ * `onDelete`, with a pending state and `toastWriteFailure` on error.
  *
  * This test renders the exported `RowActions` row-menu component directly
  * (raw `react-dom/client`, matching this feature's existing
@@ -87,7 +87,7 @@ describe("AiModelTable row delete reaches the server", () => {
     });
 
     const deleteButton = container.querySelector<HTMLButtonElement>(
-      'button[title="Delete"]',
+      'button[title="Move to Trash"]',
     );
     expect(deleteButton).not.toBeNull();
     act(() => {
@@ -97,7 +97,7 @@ describe("AiModelTable row delete reaches the server", () => {
     // The AlertDialog portals to document.body.
     const confirmButton = Array.from(
       document.body.querySelectorAll<HTMLButtonElement>("button"),
-    ).find((b) => b.textContent?.includes("Delete Model"));
+    ).find((b) => b.textContent?.includes("Move to Trash"));
     expect(confirmButton).toBeDefined();
 
     act(() => {
