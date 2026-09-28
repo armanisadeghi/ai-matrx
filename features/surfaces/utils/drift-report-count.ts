@@ -34,7 +34,7 @@ export function countDriftIssues(
 }
 
 /**
- * How many database rows no manifest declares — what "Delete stale rows"
+ * How many database rows no manifest declares — what "Archive stale rows"
  * would remove. Every `db*NotInManifest` field, by construction, so a new
  * stale category is counted the moment the report returns it.
  */

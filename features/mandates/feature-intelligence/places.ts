@@ -60,6 +60,7 @@ export async function fetchRegisteredPlacesForFeature(
     .schema("ui")
     .from("ui_surface_agent_role")
     .select("surface_name,label,mandate_key")
+    .is("deleted_at", null)
     .or(prefixes.map((prefix) => `mandate_key.like."${prefix}.%"`).join(","));
   if (error) throw new Error(`Registered places: ${error.message}`);
   return placesFromRoles((roles ?? []) as RegisteredRoleRow[], context);

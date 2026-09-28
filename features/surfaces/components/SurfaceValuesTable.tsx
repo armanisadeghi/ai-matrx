@@ -114,7 +114,7 @@ interface Props {
   dbValues: SurfaceValue[] | null;
   loading: boolean;
   error: string | null;
-  /** Opens Sync manifests with "Delete stale rows" chosen (left-over values). */
+  /** Opens Sync manifests with "Archive stale rows" chosen (left-over values). */
   onCleanUp?: () => void;
 }
 

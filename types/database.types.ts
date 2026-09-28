@@ -838,7 +838,7 @@ export type Database = {
           last_scanned_at: string
           metadata: Json
           organization_id: string
-          recipient_id: string | null
+          recipient_id: string
           severity: string
           silent_count: number
           status: string
@@ -868,7 +868,7 @@ export type Database = {
           last_scanned_at?: string
           metadata?: Json
           organization_id: string
-          recipient_id?: string | null
+          recipient_id: string
           severity: string
           silent_count?: number
           status?: string
@@ -898,7 +898,7 @@ export type Database = {
           last_scanned_at?: string
           metadata?: Json
           organization_id?: string
-          recipient_id?: string | null
+          recipient_id?: string
           severity?: string
           silent_count?: number
           status?: string
@@ -108274,6 +108274,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           default_agent_id: string | null
+          deleted_at: string | null
           description: string
           id: string
           kind: string
@@ -108299,6 +108300,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           default_agent_id?: string | null
+          deleted_at?: string | null
           description?: string
           id?: string
           kind?: string
@@ -108324,6 +108326,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           default_agent_id?: string | null
+          deleted_at?: string | null
           description?: string
           id?: string
           kind?: string
@@ -108357,6 +108360,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string
           id: string
           input_schema: Json
@@ -108377,6 +108381,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           id?: string
           input_schema?: Json
@@ -108397,6 +108402,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           id?: string
           input_schema?: Json
@@ -108579,6 +108585,7 @@ export type Database = {
           classification: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string
           exportable: boolean
           group_key: string
@@ -108611,6 +108618,7 @@ export type Database = {
           classification?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           exportable?: boolean
           group_key?: string
@@ -108643,6 +108651,7 @@ export type Database = {
           classification?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           exportable?: boolean
           group_key?: string
@@ -108685,6 +108694,7 @@ export type Database = {
           approval_comparison: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string
           destination: boolean
           group_key: string
@@ -108715,6 +108725,7 @@ export type Database = {
           approval_comparison?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           destination?: boolean
           group_key?: string
@@ -108745,6 +108756,7 @@ export type Database = {
           approval_comparison?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           destination?: boolean
           group_key?: string

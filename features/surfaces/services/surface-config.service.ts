@@ -381,6 +381,7 @@ export async function fetchSurfaceConfigBundle(
       .select(
         "name, label, description, kind, default_agent_id, mandate_key, max_agents, allow_custom, auto_run, sort_order",
       )
+      .is("deleted_at", null)
       .eq("surface_name", surfaceName)
       .order("sort_order"),
     fetchPrefRows(client, surfaceName, uid),

@@ -127,6 +127,7 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
             .schema("ui")
             .from("ui_surface_value")
             .select("surface_name", { count: "exact" })
+            .is("deleted_at", null)
             .order("id", { ascending: true })
             .range(from, to),
         { label: "ui.ui_surface_value" },
@@ -489,12 +490,14 @@ export async function getSurfaceUsage(
       .schema("ui")
       .from("ui_surface_write_target")
       .select("*", { count: "exact", head: true })
+      .is("deleted_at", null)
       .eq("surface_name", surfaceName),
     // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
     c
       .schema("ui")
       .from("ui_surface_client_tool")
       .select("*", { count: "exact", head: true })
+      .is("deleted_at", null)
       .eq("surface_name", surfaceName),
   ]);
   if (defaultsRes.error) throw defaultsRes.error;
@@ -674,6 +677,7 @@ export async function listSurfaceValues(
     .schema("ui")
     .from("ui_surface_value")
     .select("*")
+    .is("deleted_at", null)
     .eq("surface_name", surfaceName)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });

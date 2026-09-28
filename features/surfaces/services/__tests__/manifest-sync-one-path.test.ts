@@ -150,7 +150,7 @@ describe("applyManifestSync writes only what the package plan declares", () => {
     expect(result.urlPatternsUpdated).toEqual([]);
   });
 
-  it("judges and deletes a stale row by its full key, never an item row's same-named screen twin", async () => {
+  it("judges and archives a stale row by its full key, never an item row's same-named screen twin", async () => {
     const old = new Date(Date.now() - 48 * 3_600_000).toISOString();
     const tables = baseTables();
     tables["ui.ui_surface_value"] = [
@@ -161,14 +161,40 @@ describe("applyManifestSync writes only what the package plan declares", () => {
     ];
     const { client, calls } = recordingClient(tables);
     const result = await applyManifestSync(client as any, { deleteStale: true });
-    const deletes = calls.filter((call) => call.op === "delete" && call.table === "ui.ui_surface_value");
-    expect(deletes.map((call) => call.filters)).toEqual([
+    // Delete means archive: the stale row gets deleted_at, it is never destroyed.
+    expect(calls.some((call) => call.op === "delete")).toBe(false);
+    const archives = calls.filter(
+      (call) =>
+        call.op === "update" &&
+        call.table === "ui.ui_surface_value" &&
+        typeof (call.payload as Row | undefined)?.deleted_at === "string",
+    );
+    expect(archives.map((call) => call.filters)).toEqual([
       [
         ["surface_name", DECLARED],
         ["item_type", "pickup"],
         ["name", "pickup_address"],
+        ["deleted_at", null],
       ],
     ]);
     expect(result.deleted).toEqual([{ surfaceName: DECLARED, valueName: "pickup_address" }]);
+  });
+
+  it("revives a declared row that sits in Trash instead of inserting a duplicate", async () => {
+    const old = new Date(Date.now() - 48 * 3_600_000).toISOString();
+    const tables = baseTables();
+    tables["ui.ui_surface_value"] = [
+      { surface_name: DECLARED, item_type: "", name: "pickup_address", updated_at: old, deleted_at: old },
+    ];
+    const { client, calls } = recordingClient(tables);
+    await applyManifestSync(client as any);
+    const valueWrites = calls.filter((call) => call.table === "ui.ui_surface_value" && call.op !== "select");
+    expect(valueWrites.some((call) => call.op === "upsert")).toBe(false);
+    expect(valueWrites).toEqual([
+      expect.objectContaining({
+        op: "update",
+        payload: expect.objectContaining({ deleted_at: null }),
+      }),
+    ]);
   });
 });

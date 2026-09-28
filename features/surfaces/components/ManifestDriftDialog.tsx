@@ -180,7 +180,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB values without a code manifest"
                 count={report.dbValuesNotInManifest.length}
                 tone="rose"
-                description={`Stale rows. Use "Delete this row" to remove ONE you have read and judged. ${GLOBAL_SWEEP_NOTE}`}
+                description={`Stale rows. Use "Archive this row" to move ONE you have read and judged to Trash. ${GLOBAL_SWEEP_NOTE}`}
               >
                 {report.dbValuesNotInManifest.map((d) => (
                   <DriftRow
@@ -236,7 +236,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB roles without a code manifest"
                 count={report.dbRolesNotInManifest.length}
                 tone="rose"
-                description={`Stale agent roles. Deleting one — here or by sweep — CASCADES its user/org agent prefs. ${GLOBAL_SWEEP_NOTE}`}
+                description={`Stale agent roles. Archiving one — here or by sweep — takes its user/org agent prefs to Trash with it. ${GLOBAL_SWEEP_NOTE}`}
               >
                 {report.dbRolesNotInManifest.map((d) => (
                   <DriftRow
@@ -292,7 +292,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB write targets without a code manifest"
                 count={report.dbWriteTargetsNotInManifest.length}
                 tone="rose"
-                description={`Stale write-target rows — a removed target, or a sync from a branch whose manifest never merged. READ THIS LIST BEFORE ACTING: "Delete stale rows" is a GLOBAL sweep and will delete rows belonging to work that is still in flight. ${GLOBAL_SWEEP_NOTE}`}
+                description={`Stale write-target rows — a removed target, or a sync from a branch whose manifest never merged. READ THIS LIST BEFORE ACTING: "Archive stale rows" is a GLOBAL sweep and will archive rows belonging to work that is still in flight (a later sync of that work restores them). ${GLOBAL_SWEEP_NOTE}`}
               >
                 {report.dbWriteTargetsNotInManifest.map((d) => (
                   <DriftRow
@@ -664,7 +664,7 @@ function DriftRow({
 }
 
 /**
- * Per-row "Delete this row" for a stale mirror row, following the `BrokenRow`
+ * Per-row "Archive this row" for a stale mirror row, following the `BrokenRow`
  * precedent above: an inline action on ONE drift row, resolved without leaving
  * the report, with the report re-run afterwards.
  *
@@ -717,13 +717,13 @@ function DeleteMirrorRowButton({
       });
       toast.success(
         result.sweptPrefCount > 0
-          ? `Deleted 1 row — ${surfaceName} · ${name}. ${result.sweptPrefCount} person's agent choice(s) for that role removed with it.`
-          : `Deleted 1 row — ${surfaceName} · ${name}.`,
+          ? `Archived 1 row — ${surfaceName} · ${name}. ${result.sweptPrefCount} person's agent choice(s) for that role moved to Trash with it.`
+          : `Archived 1 row — ${surfaceName} · ${name}.`,
       );
       reset();
       onDeleted();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Delete failed";
+      const message = e instanceof Error ? e.message : "Archive failed";
       if (message.startsWith(RECENT_ROW_REFUSAL_PREFIX)) {
         // Not a failure — the guard asking for a deliberate second press.
         setRecentWarning(message.slice(RECENT_ROW_REFUSAL_PREFIX.length).trim());
@@ -746,7 +746,7 @@ function DeleteMirrorRowButton({
           className="h-6 text-[11px] gap-1 text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-3 w-3" />
-          Delete this row
+          Archive this row
         </Button>
       </div>
     );
@@ -756,23 +756,23 @@ function DeleteMirrorRowButton({
     <div className="mt-1 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 space-y-1.5">
       <div className="text-[10px] text-foreground space-y-1">
         <p>
-          Delete{" "}
+          Archive{" "}
           <code className="font-mono text-destructive">
             {surfaceName} · {name}
           </code>{" "}
           from <code className="font-mono">ui.{table}</code>?
         </p>
         <p className="text-muted-foreground">
-          This deletes <strong>this one row and nothing else</strong> — no other
-          surface, no other row, and no global sweep. It cannot be undone from
-          here; the row comes back only if a manifest declaring it is synced.
+          This archives <strong>this one row and nothing else</strong> — no other
+          surface, no other row, and no global sweep. The row moves to Trash;
+          a sync of a manifest that declares it again restores it.
         </p>
         {cascades && (
           <p className="text-destructive flex items-start gap-1">
             <AlertTriangle className="h-3 w-3 mt-px shrink-0" />
             <span>
-              Deleting an agent role also removes every person&apos;s and
-              organization&apos;s agent choice for this role.
+              Archiving an agent role also moves every person&apos;s and
+              organization&apos;s agent choice for this role to Trash.
             </span>
           </p>
         )}
@@ -796,7 +796,7 @@ function DeleteMirrorRowButton({
           ) : (
             <Trash2 className="h-3 w-3" />
           )}
-          {recentWarning ? "Delete anyway" : "Delete row"}
+          {recentWarning ? "Archive anyway" : "Archive row"}
         </Button>
         <Button
           variant="ghost"

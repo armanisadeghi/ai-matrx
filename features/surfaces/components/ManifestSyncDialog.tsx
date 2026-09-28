@@ -40,8 +40,8 @@ interface Props {
 }
 
 export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props) {
-  // A destructive option is never pre-checked on a plain open: stale rows are
-  // deleted only when the operator ticks it (or came here to clean up), after
+  // The archive option is never pre-checked on a plain open: stale rows are
+  // archived only when the operator ticks it (or came here to clean up), after
   // seeing how many there are.
   const [deleteStale, setDeleteStale] = useState(cleanUp);
   // The dialog previews the SAME drift report the Drift report dialog shows,
@@ -103,7 +103,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
             ? `, ${res.urlPatternsUpdated.length} URL pattern${res.urlPatternsUpdated.length === 1 ? "" : "s"} updated`
             : "";
         toast.success(
-          `Sync applied: ${upsertedCount} saved, ${deletedCount} removed${urlPatternSuffix}`,
+          `Sync applied: ${upsertedCount} saved, ${deletedCount} archived${urlPatternSuffix}`,
         );
       }
       if (res.skippedRecentRows.length > 0) {
@@ -163,14 +163,16 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
               />
               <div>
                 <div className="font-medium">
-                  Delete stale rows
+                  Archive stale rows
                   {previewStale !== null && ` (${previewStale})`}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Remove saved values and agent roles that no code manifest
-                  declares any more. Removing a role also removes every
-                  person&apos;s agent choice for it; the count is shown after
-                  the sync.
+                  Move saved values, agent roles, write targets and client
+                  tools that no code manifest declares any more to Trash. An
+                  archived role takes every person&apos;s agent choice for it
+                  along; the count is shown after the sync. Nothing is
+                  destroyed, and a later sync that finds a row declared again
+                  restores it.
                 </p>
               </div>
             </label>
@@ -203,7 +205,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
               <span className="tabular-nums font-mono">
                 {result.upserted.length}
               </span>
-              <span className="text-muted-foreground">Values removed:</span>
+              <span className="text-muted-foreground">Values archived:</span>
               <span className="tabular-nums font-mono">
                 {result.deleted.length}
               </span>
@@ -211,7 +213,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
               <span className="tabular-nums font-mono">
                 {result.roleUpserted.length}
               </span>
-              <span className="text-muted-foreground">Roles removed:</span>
+              <span className="text-muted-foreground">Roles archived:</span>
               <span className="tabular-nums font-mono">
                 {result.roleDeleted.length}
               </span>
@@ -222,7 +224,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
                 {result.writeTargetUpserted.length}
               </span>
               <span className="text-muted-foreground">
-                Write targets removed:
+                Write targets archived:
               </span>
               <span className="tabular-nums font-mono">
                 {result.writeTargetDeleted.length}
@@ -234,12 +236,12 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
                 {result.clientToolUpserted.length}
               </span>
               <span className="text-muted-foreground">
-                Client tools removed:
+                Client tools archived:
               </span>
               <span className="tabular-nums font-mono">
                 {result.clientToolDeleted.length}
               </span>
-              <span className="text-muted-foreground">Agent choices removed:</span>
+              <span className="text-muted-foreground">Agent choices archived:</span>
               <span className="tabular-nums font-mono">
                 {result.sweptPrefCount}
               </span>

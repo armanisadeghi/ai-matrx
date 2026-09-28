@@ -14,6 +14,11 @@
  *     every key column.
  * Unchanged rows are not written. Provenance (`synced_by`/`synced_from`) is
  * written with a change but never counts as one.
+ *
+ * DELETE MEANS ARCHIVE (Arman, 2026-09-27): a stale row is archived
+ * (deleted_at), never destroyed, and the tables' keys still cover it. A row
+ * the plan declares that sits in Trash is therefore REVIVED — written like a
+ * changed row with `deleted_at: null` — never inserted as a duplicate.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readAllRows } from "@ai-matrx/data/db";
@@ -94,7 +99,7 @@ function canonical(value: unknown): string {
 async function executeTable(sb: Sb, plan: SyncTablePlan): Promise<ExecutedTable> {
   const updateColumns = conflictUpdateColumns(plan);
   const compared = updateColumns.filter((column) => !PROVENANCE.has(column));
-  const readColumns = [...new Set([...plan.conflict, ...compared])].join(", ");
+  const readColumns = [...new Set([...plan.conflict, ...compared, "deleted_at"])].join(", ");
   const existing = await readAllRows(
     ({ from, to }) =>
       // VIEW LAW: completeness audit of the system catalog — every row is the job.
@@ -107,10 +112,14 @@ async function executeTable(sb: Sb, plan: SyncTablePlan): Promise<ExecutedTable>
   const current = new Map(existing.map((row) => [keyOf(row as Row, plan.conflict), row as Row]));
   const fresh: Row[] = [];
   const changed: Row[] = [];
+  const revived = new Set<Row>();
   for (const row of plan.rows) {
     const present = current.get(keyOf(row, plan.conflict));
     if (!present) fresh.push(row);
-    else if (compared.some((column) => canonical(present[column]) !== canonical(row[column]))) changed.push(row);
+    else if (present.deleted_at !== null && present.deleted_at !== undefined) {
+      revived.add(row);
+      changed.push(row);
+    } else if (compared.some((column) => canonical(present[column]) !== canonical(row[column]))) changed.push(row);
   }
 
   const written: Row[] = [];
@@ -127,6 +136,7 @@ async function executeTable(sb: Sb, plan: SyncTablePlan): Promise<ExecutedTable>
       batch.map((row) => {
         const values: Row = {};
         for (const column of updateColumns) if (column in row) values[column] = row[column]!;
+        if (revived.has(row)) values.deleted_at = null;
         let query = table(sb, plan.table).update(values);
         for (const column of plan.conflict) query = query.eq(column, row[column] ?? "");
         return query.select(plan.conflict.join(", "));

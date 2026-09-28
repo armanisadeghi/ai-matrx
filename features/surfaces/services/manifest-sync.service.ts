@@ -419,6 +419,7 @@ export async function listSurfaceValues(
     .schema("ui")
     .from("ui_surface_value")
     .select("*")
+    .is("deleted_at", null)
     .eq("surface_name", surfaceName)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
@@ -453,6 +454,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
           .schema("ui")
           .from("ui_surface_value")
           .select("*", { count: "exact" })
+          .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -465,6 +467,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
           .schema("ui")
           .from("ui_surface_agent_role")
           .select("*", { count: "exact" })
+          .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -477,6 +480,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
           .schema("ui")
           .from("ui_surface_write_target")
           .select("*", { count: "exact" })
+          .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -489,6 +493,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
           .schema("ui")
           .from("ui_surface_client_tool")
           .select("*", { count: "exact" })
+          .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -1294,7 +1299,10 @@ function manifestKeysForTable(table: MirrorTable): Set<string> {
 }
 
 /**
- * Delete ONE stale mirror row. Super-admin only (gated at the route).
+ * Archive ONE stale mirror row (delete means archive — Arman, 2026-09-27: the
+ * row gets deleted_at, drops out of every reader, and is restorable; a later
+ * sync that finds it declared again revives it). Super-admin only (gated at
+ * the route). The exported name stays `deleteMirrorRow` for its callers.
  *
  * Throws — rather than returning an error envelope — so the route's
  * `errorResponse` reports the reason verbatim to the admin who clicked.
@@ -1319,7 +1327,9 @@ export async function deleteMirrorRow(
   //    `updated_at` the recency guard and the result report need.
   const read = await byKey(
     sb.schema("ui").from(table).select("surface_name, name, updated_at"),
-  ).maybeSingle();
+  )
+    .is("deleted_at", null)
+    .maybeSingle();
   if (read.error) throw read.error;
   if (!read.data) {
     throw new Error(
@@ -1332,12 +1342,12 @@ export async function deleteMirrorRow(
   //    drift the next sync re-fixes, and this button is not the tool for it.
   if (itemType) {
     throw new Error(
-      `${STILL_DECLARED_REFUSAL_PREFIX} ${surfaceName} · ${itemType}.${name} is an item row; this action removes screen rows only. Run the manifest sync with Delete stale rows to remove stale item rows.`,
+      `${STILL_DECLARED_REFUSAL_PREFIX} ${surfaceName} · ${itemType}.${name} is an item row; this action removes screen rows only. Run the manifest sync with Archive stale rows to archive stale item rows.`,
     );
   }
   if (manifestKeysForTable(table).has(`${surfaceName}::${name}`)) {
     throw new Error(
-      `${STILL_DECLARED_REFUSAL_PREFIX} ${surfaceName} · ${name} is still declared in a code manifest, so it is not stale. This action only removes rows the drift report lists as DB-only.`,
+      `${STILL_DECLARED_REFUSAL_PREFIX} ${surfaceName} · ${name} is still declared in a code manifest, so it is not stale. This action only archives rows the drift report lists as DB-only.`,
     );
   }
 
@@ -1349,36 +1359,30 @@ export async function deleteMirrorRow(
       style: "coarse",
     });
     throw new Error(
-      `${RECENT_ROW_REFUSAL_PREFIX} ${surfaceName} · ${name} was written ${rounded} ago, which usually means a branch that has not merged yet is still using it. Confirm again to delete it anyway.`,
+      `${RECENT_ROW_REFUSAL_PREFIX} ${surfaceName} · ${name} was written ${rounded} ago, which usually means a branch that has not merged yet is still using it. Confirm again to archive it anyway.`,
     );
   }
 
-  // 4. An agent role CASCADES its `ui_surface_agent_pref` rows (user/org agent
-  //    picks). Count them BEFORE the delete so the result can say what went
-  //    with it — the same contract `applyManifestSync` honours.
+  // 4. An agent role's `ui_surface_agent_pref` rows (user/org agent picks)
+  //    move to Trash with it — see archivePrefsForRole.
   let sweptPrefCount = 0;
   if (table === "ui_surface_agent_role") {
-    const prefCount = await sb
-      .schema("ui")
-      .from("ui_surface_agent_pref")
-      .select("*", { count: "exact", head: true })
-      .eq("surface_name", surfaceName)
-      .eq("role_name", name);
-    if (prefCount.error) throw prefCount.error;
-    sweptPrefCount = prefCount.count ?? 0;
+    sweptPrefCount = await archivePrefsForRole(sb, surfaceName, name);
   }
 
-  // 5. The delete, addressed by the full composite PK, and asserted to have
+  // 5. The archive, addressed by the full composite PK, and asserted to have
   //    hit exactly one row. `.select()` makes the affected set observable —
   //    without it a filter that matched two rows would succeed silently.
-  const del = await byKey(sb.schema("ui").from(table).delete()).select(
-    "surface_name, name",
-  );
+  const del = await byKey(
+    sb.schema("ui").from(table).update({ deleted_at: new Date().toISOString() }),
+  )
+    .is("deleted_at", null)
+    .select("surface_name, name");
   if (del.error) throw del.error;
   const affected = del.data ?? [];
   if (affected.length !== 1) {
     throw new Error(
-      `Refusing to report success: expected to delete exactly 1 ${table} row for ${surfaceName} · ${name}, but the database reported ${affected.length}.`,
+      `Refusing to report success: expected to archive exactly 1 ${table} row for ${surfaceName} · ${name}, but the database reported ${affected.length}.`,
     );
   }
 
@@ -1393,9 +1397,34 @@ export async function deleteMirrorRow(
 }
 
 /**
- * Delete ONE stale mirror row filtered by EVERY column of its table's plan key
+ * An agent role's picks (`ui_surface_agent_pref`, keyed by surface + role
+ * name) used to go with it through the FK's ON DELETE CASCADE. A role now
+ * moves to Trash instead, and no single-column soft-delete edge can express
+ * that composite key, so its live picks are archived here, explicitly.
+ * Returns how many picks moved, so the result can say what went with it.
+ */
+async function archivePrefsForRole(
+  sb: Sb,
+  surfaceName: string,
+  roleName: string,
+): Promise<number> {
+  const archived = await sb
+    .schema("ui")
+    .from("ui_surface_agent_pref")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("surface_name", surfaceName)
+    .eq("role_name", roleName)
+    .is("deleted_at", null)
+    .select("id");
+  if (archived.error) throw archived.error;
+  return (archived.data ?? []).length;
+}
+
+/**
+ * Archive ONE stale mirror row filtered by EVERY column of its table's plan key
  * (`plan.keys`) — never by (surface_name, name) alone, which would also hit an
- * item row that shares a screen row's name.
+ * item row that shares a screen row's name. Delete means archive: the row gets
+ * deleted_at; a later sync that finds it declared again revives it.
  */
 async function deleteByPlanKey(
   sb: Sb,
@@ -1405,11 +1434,17 @@ async function deleteByPlanKey(
 ): Promise<void> {
   const key = plan.keys[`ui.${table}`];
   if (!key) throw new Error(`Sync plan declares no key for ui.${table}`);
-  type Filterable = PromiseLike<{ error: unknown }> & { eq(column: string, value: unknown): Filterable };
-  let query = (sb.schema("ui").from(table).delete() as unknown as Filterable);
+  type Filterable = PromiseLike<{ error: unknown }> & {
+    eq(column: string, value: unknown): Filterable;
+    is(column: string, value: null): Filterable;
+  };
+  let query = sb
+    .schema("ui")
+    .from(table)
+    .update({ deleted_at: new Date().toISOString() }) as unknown as Filterable;
   for (const column of key) query = query.eq(column, row[column] ?? "");
-  const del = await query;
-  if (del.error) throw del.error;
+  const archived = await query.is("deleted_at", null);
+  if (archived.error) throw archived.error;
 }
 
 /**
@@ -1561,7 +1596,8 @@ export async function applyManifestSync(
   // (No write outside the plan: a surface row no manifest declares is an
   //  orphan — archived or given a manifest, never edited by this sync. ALC-14.)
 
-  // 4. Delete stale rows (db_only) for surfaces we manage in manifests.
+  // 4. Archive stale rows (db_only) for surfaces we manage in manifests
+  //    (delete means archive: deleted_at, restorable; a later sync revives).
   const deleted: ApplyManifestSyncResult["deleted"] = [];
   if (deleteStale) {
     // Set-subtraction read that decides what gets DELETED. ui.ui_surface_value is
@@ -1574,6 +1610,7 @@ export async function applyManifestSync(
           .schema("ui")
           .from("ui_surface_value")
           .select("surface_name, item_type, name, updated_at", { count: "exact" })
+          .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -1596,9 +1633,9 @@ export async function applyManifestSync(
     }
   }
 
-  // 4b. Delete stale agent roles (db_only) for surfaces we manage in
-  //     manifests. Deleting a role CASCADES its `ui_surface_agent_pref` rows
-  //     via FK — count them first so the result reports what got swept.
+  // 4b. Archive stale agent roles (db_only) for surfaces we manage in
+  //     manifests. A role's `ui_surface_agent_pref` picks move to Trash with
+  //     it; the result reports how many.
   const roleDeleted: ApplyManifestSyncResult["roleDeleted"] = [];
   let sweptPrefCount = 0;
   if (deleteStale) {
@@ -1609,6 +1646,7 @@ export async function applyManifestSync(
           .schema("ui")
           .from("ui_surface_agent_role")
           .select("surface_name, name, updated_at", { count: "exact" })
+          .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -1624,22 +1662,14 @@ export async function applyManifestSync(
       );
     skippedRecentRows.push(...skippedRoles);
     for (const row of rolesToDelete) {
-      const prefCount = await sb
-        .schema("ui")
-        .from("ui_surface_agent_pref")
-        .select("*", { count: "exact", head: true })
-        .eq("surface_name", row.surface_name)
-        .eq("role_name", row.name);
-      if (prefCount.error) throw prefCount.error;
-      sweptPrefCount += prefCount.count ?? 0;
-
+      sweptPrefCount += await archivePrefsForRole(sb, row.surface_name, row.name);
       await deleteByPlanKey(sb, plan, "ui_surface_agent_role", row);
       roleDeleted.push({ surfaceName: row.surface_name, roleName: row.name });
     }
   }
 
   // 5. Re-run drift for the post-sync report.
-  // 4c. Delete stale write targets — a target removed from a manifest must
+  // 4c. Archive stale write targets — a target removed from a manifest must
   //     stop being advertised to agents, or the server keeps offering a write
   //     nothing can service.
   const writeTargetDeleted: ApplyManifestSyncResult["writeTargetDeleted"] = [];
@@ -1651,6 +1681,7 @@ export async function applyManifestSync(
           .schema("ui")
           .from("ui_surface_write_target")
           .select("surface_name, item_type, name, updated_at", { count: "exact" })
+          .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -1674,7 +1705,7 @@ export async function applyManifestSync(
     }
   }
 
-  // 4d. Delete stale client tools — a tool removed from a manifest must stop
+  // 4d. Archive stale client tools — a tool removed from a manifest must stop
   //     being advertised, or a server-side agent plans a call into a page that
   //     can no longer service it.
   const clientToolDeleted: ApplyManifestSyncResult["clientToolDeleted"] = [];
@@ -1686,6 +1717,7 @@ export async function applyManifestSync(
           .schema("ui")
           .from("ui_surface_client_tool")
           .select("surface_name, name, updated_at", { count: "exact" })
+          .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
