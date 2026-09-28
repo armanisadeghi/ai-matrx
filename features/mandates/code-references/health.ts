@@ -21,7 +21,7 @@ import {
   fetchMandateCodeTruthReport,
   type MandateCodeTruth,
 } from "@/features/mandates/admin/service";
-import { adminMandateRecordHref as adminMandateHref } from "@/features/mandates/admin-routes";
+import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import {
   FLAG_WORDS,
@@ -161,7 +161,7 @@ function driftFindings(
     repo: src ? "aidream" : "",
     location,
     codeUrl: src ? githubLineUrl(aidreamGithub, "main", file, src.line) : null,
-    fixHref: definition ? adminMandateHref(key) : null,
+    fixHref: definition ? adminMandateRecordHref(key) : null,
   };
   const out: HealthFinding[] = [];
   if (truth.resolution === "code_exists_but_import_failed") {
@@ -254,7 +254,7 @@ export async function fetchMandateHealth(dispatch: AppDispatch): Promise<HealthL
       const kind: HealthKind = row.flag === "conversion_pending"
         ? "outside_mandate"
         : ((row.flag in FLAG_WORDS ? row.flag : "broken") as HealthKind);
-      const mandateFix = row.mandateKey && defs.has(row.mandateKey) ? adminMandateHref(row.mandateKey) : null;
+      const mandateFix = row.mandateKey && defs.has(row.mandateKey) ? adminMandateRecordHref(row.mandateKey) : null;
       findings.push({
         id: `scan:${row.id}`,
         severity: words.severity,

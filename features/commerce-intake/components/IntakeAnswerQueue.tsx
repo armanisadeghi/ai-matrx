@@ -66,7 +66,7 @@ export function IntakeAnswerQueue() {
   // selected the queue answered the OWN organization's questions.
   const organizationId = useAppSelector(selectOrganizationId);
   const [queue, setQueue] = useState<QueueEntry[] | null>(null);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class the original mandates console and
   // useMandateInputSurface already fixed. `queue` starts null and null renders the
   // spinner, so with no organization the load effect's early return left it
   // spinning FOREVER with no remedy. Before the bootstrap resolves, loading is

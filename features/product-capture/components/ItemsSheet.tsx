@@ -53,7 +53,7 @@ export function ItemsSheet({
 }: ItemsSheetProps) {
   const router = useRouter();
   const [items, setItems] = useState<CaptureItem[] | null>(null);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class the original mandates console and
   // useMandateInputSurface already fixed. `items` starts null and null paints
   // the spinner, so a sheet opened with no organization spun FOREVER with no
   // remedy. Before the bootstrap resolves, loading is the truth; once it has

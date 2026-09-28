@@ -77,7 +77,7 @@ export function useMandateCoverageStates(
   // A list can mount before app-context hydration finishes, and firing at null
   // froze the admin console's coverage on a local pre-flight error even though
   // the shell showed the organization moments later (the same fix as
-  // MandatesConsole). Wait for the authority the transport itself reads.
+  // the original mandates console). Wait for the authority the transport itself reads.
   const activeOrganizationId = useAppSelector(selectOrganizationId);
   const [report, setReport] = useState<MandateCoverageStatesResponse | null>(
     null,

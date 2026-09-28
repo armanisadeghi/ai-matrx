@@ -92,7 +92,7 @@ export function AllItemsTable() {
 
   const isMobile = useIsMobile();
   const [rows, setRows] = useState<ItemTableRow[] | null>(null);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class the original mandates console and
   // useMandateInputSurface already fixed. `rows` starts null and null renders
   // the spinner (and the footer spun on its own while the org was null), so with
   // no organization the load's early return left the table spinning FOREVER

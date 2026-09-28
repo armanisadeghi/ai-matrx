@@ -83,14 +83,14 @@ describe("every mandate door is censused, not just the one that was reported", (
     "utf8",
   );
   const adminPage = readFileSync(
-    join(process.cwd(), "features/mandates/admin/AdminMandateWorkspacePage.tsx"),
+    join(process.cwd(), "features/mandates/record-next/RecordAdminPanels.tsx"),
     "utf8",
   );
 
   it("is reading the doors it means to guard", () => {
     expect(loader).toContain("useMandateWorkspaceData");
     expect(workspace).toContain("export function MandateWorkspace");
-    expect(adminPage).toContain("AdminControls");
+    expect(adminPage).toContain("export function RecordAdminPanels");
   });
 
   it("the loader classifies the address instead of throwing one sentence", () => {
@@ -103,7 +103,7 @@ describe("every mandate door is censused, not just the one that was reported", (
     for (const [name, source] of [
       ["useMandateWorkspaceData.ts", loader],
       ["MandateWorkspace.tsx", workspace],
-      ["AdminMandateWorkspacePage.tsx", adminPage],
+      ["RecordAdminPanels.tsx", adminPage],
     ] as const) {
       expect(`${name}: ${source.includes("it may have been retired")}`).toBe(
         `${name}: false`,
@@ -117,9 +117,10 @@ describe("every mandate door is censused, not just the one that was reported", (
     expect((workspace.match(/>\s*Retry\s*</g) ?? []).length).toBe(1);
   });
 
-  it("the admin controls fold uses the same two sentences", () => {
-    expect(adminPage).toContain("notAnAddressFailure");
-    expect(adminPage).toContain("noSuchMandateFailure");
+  it("the record page's admin panels classify the address, never the old sentence", () => {
+    // The page itself loads through the loader above; its admin panels only
+    // widen the read when the address is a row id.
+    expect(adminPage).toContain('readMandateAddress(mandateKey) === "id"');
     expect(adminPage).not.toContain("No mandate row matches");
   });
 });

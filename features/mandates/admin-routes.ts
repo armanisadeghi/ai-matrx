@@ -3,7 +3,7 @@
 // THE admin addresses of the mandate pages. Mandates are a Feature of the
 // Intelligence Domain (Arman, 2026-09-25 — never under Agents), so every
 // admin mandate page lives at /administration/intelligence/mandates/**. The
-// retired /administration/mandates/** addresses only redirect here
+// retired original admin mandate addresses only redirect here
 // (next.config.js); `pnpm check:retired-admin-mandate-links` keeps anything
 // from linking to them again.
 //

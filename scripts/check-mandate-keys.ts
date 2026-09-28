@@ -22,7 +22,7 @@
  *   (a) the initializer of an identifier / property / JSX attribute whose name
  *       contains "mandate" (`mandateKey`, `FC_MANDATES`, `p_mandate_key`, …), or
  *   (b) the mandate-key argument of a mandate entry point (`resolveMandate`,
- *       `useMandate`, `useMandateSet`, `launchMandate`, `adminMandateHref`, …).
+ *       `useMandate`, `useMandateSet`, `launchMandate`, `adminMandateRecordHref`, …).
  * Position, not spelling, is the test: `education.spoken_practice` is BOTH a
  * mandate key and an entitlement meter id (features/entitlements/registry.ts),
  * and only one of those is this guard's business. The two TYPED DOORS
@@ -123,7 +123,7 @@ const POSITIONAL_ENTRY_POINTS: Readonly<Record<string, number>> = {
   splitMandateKey: 0,
   fetchMandatePins: 0,
   fetchMandateNotesFor: 0,
-  adminMandateHref: 0,
+  adminMandateRecordHref: 0,
   mandateHref: 0,
   launchMandate: 0,
   runMandate: 0,

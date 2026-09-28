@@ -479,7 +479,7 @@ export function TriadGoalSection({
   // the admin route — everywhere else the goal is read-only and a target
   // nothing can land in would be a declared lie.
   const surfaceName = authoring ? MANDATE_WORKSPACE_SURFACE_NAME : null;
-  // `mandate_key` is the PROVIDER's (AdminMandateWorkspacePage owns identity);
+  // `mandate_key` is the PROVIDER's (the record page owns identity);
   // a descendant may never re-emit a provider-owned value.
   useSurfaceScopeContribution(surfaceName, "TriadGoalSection", () =>
     goalSectionScope({

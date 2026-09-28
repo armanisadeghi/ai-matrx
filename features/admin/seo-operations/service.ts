@@ -75,7 +75,7 @@ export async function fetchSeoMandates(): Promise<SeoMandateRow[]> {
     .is("deleted_at", null)
     .order("mandate_key");
   if (error) throw error;
-  // Filter client-side — the proven MandatesConsole reads unfiltered and RLS
+  // Filter client-side — the proven original mandates console read unfiltered and RLS
   // narrows; a PostgREST `like` pattern containing a dot returned zero rows
   // in production while the same rows load unfiltered (measured 2026-08-26).
   return (data ?? [])

@@ -246,7 +246,7 @@ export function ImpactBatchPanel({
   const writeContext: WriteContext = adminDoorOpen()
     ? ADMIN_WRITE_CONTEXT
     : { posture: isSuperAdmin ? "admin" : "mine", actorUserId: actorUserId ?? null };
-  // THE ORG GATE (D2) — the same one MandatesConsole has. A window restored on
+  // THE ORG GATE (D2) — the same one the original mandates console had. A window restored on
   // a full page load mounts before app-context and auth hydrate; `callApi`
   // then fails its own preflight ("Select an organization…") and the panel
   // sat on that error until a manual Re-grade. Wait for the same Redux

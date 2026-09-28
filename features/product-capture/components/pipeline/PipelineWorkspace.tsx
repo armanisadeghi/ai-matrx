@@ -49,7 +49,7 @@ export function PipelineWorkspace({
   const [entries, setEntries] = useState<StageListEntry[] | null>(null);
   // The stage-list read's failure — the list says it instead of "No items".
   const [listError, setListError] = useState<unknown>(null);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class the original mandates console and
   // useMandateInputSurface already fixed. `entries` starts null and null is the
   // list's loading state, so with no organization the load effect's early
   // return left the stage list loading FOREVER with no remedy. Before the

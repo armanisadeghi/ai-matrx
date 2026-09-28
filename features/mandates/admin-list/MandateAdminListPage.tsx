@@ -3,7 +3,7 @@
 // features/mandates/admin-list/MandateAdminListPage.tsx
 //
 // /administration/intelligence/mandates — the NEW admin mandate list, built
-// beside the old console (features/mandates/admin/MandatesConsole.tsx, left
+// beside the original console (since removed, its capabilities carried over
 // untouched) on the canonical `EntityListPage`.
 //
 // TWO PAGES, ONE COMPONENT (Arman, 2026-09-26 — asked five times):
@@ -369,7 +369,7 @@ export function MandateAdminListPage({
                   variant="outline"
                   className="h-8 gap-1"
                   disabled={writes.busy !== null}
-                  title="Move every mandate whose own pin is behind its holder's newest version and graded safe"
+                  title="Move every mandate whose own pin is behind its Mandate Holder's newest version and graded safe"
                   onClick={() => void writes.advance(safeDefaults, "Mandate list: all safe")}
                 >
                   {writes.busy === "advance" ? (

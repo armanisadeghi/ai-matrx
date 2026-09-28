@@ -1,6 +1,5 @@
 {
   "features/mandates/admin-list/MandateAdminListPage.tsx": 1,
   "features/mandates/admin/impact-cells.tsx": 1,
-  "features/mandates/admin/MandatesConsole.tsx": 1,
   "features/mandates/authoring/AutomationButton.tsx": 1
 }

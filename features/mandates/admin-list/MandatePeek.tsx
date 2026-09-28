@@ -18,7 +18,7 @@ import {
 } from "@/features/organizations/peek/useTransientPeek";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { adminMandateRecordHref as adminMandateHref } from "@/features/mandates/admin-routes";
+import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import { agentHref } from "@/features/mandates/admin/mandate-health";
 import {
   MandateInputsCell,
@@ -102,7 +102,7 @@ export function MandatePeek({
   rowId,
   rows,
   onClose,
-  hrefFor = (row) => adminMandateHref(row.mandateKey),
+  hrefFor = (row) => adminMandateRecordHref(row.mandateKey),
 }: {
   rowId: string;
   /** The rows on screen, for ← → navigation. */

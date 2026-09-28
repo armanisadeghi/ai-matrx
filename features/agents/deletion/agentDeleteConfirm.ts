@@ -12,7 +12,7 @@
  * A screen is absent or honest, never lying (law 4), so both now read from
  * here and any third delete surface must too.
  *
- * The shape of the copy is the one `features/mandates/admin/MandatesConsole.tsx`
+ * The shape of the copy is the one `features/mandates/admin-list/listConfig.tsx`
  * already uses for removing a mandate: name what STOPS, name what SURVIVES,
  * say plainly that it is a soft removal an admin can undo. "Are you sure?"
  * tells a person nothing they did not already know.

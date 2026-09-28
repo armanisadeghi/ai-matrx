@@ -437,7 +437,7 @@ export function MandateReferenceBoardView() {
   // the id is the honest fix; the screen says it is waiting rather than
   // reporting a failure that is really a timing artefact.
   const organizationId = useServerOrganizationId();
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the same class MandatesConsole and
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the same class the original mandates console and
   // useMandateInputSurface already fixed. `loading` starts `true`, so a bare
   // early return on a missing organization left "Waiting for your organization
   // to load" spinning FOREVER on a session that has none, with no remedy.

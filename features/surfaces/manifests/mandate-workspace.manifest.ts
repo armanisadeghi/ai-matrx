@@ -4,7 +4,7 @@
  * ADMIN SURFACE. Drives `/administration/intelligence/mandates/[mandateKey]` — the page
  * that shows ONE job in the mandate's own order, INPUT → GOAL → OUTPUT, plus
  * the system rung's holder and the admin's platform tools. Backed by
- * `features/mandates/admin/AdminMandateWorkspacePage.tsx` (mounts the
+ * `features/mandates/record-next/MandateRecordPage.tsx` (mounts the
  * provider) with the goal fields published upward from
  * `features/mandates/workspace/TriadSections.tsx` through
  * `useSurfaceScopeContribution`. Cross-repo system-of-record:

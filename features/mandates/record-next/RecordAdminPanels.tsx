@@ -4,7 +4,7 @@
 //
 // The admin-only tab bodies of the NEW mandate record (Test, Access's context
 // gate, Usage, Health) — a COPY of `AdminControls` in
-// features/mandates/admin/AdminMandateWorkspacePage.tsx, which stays untouched.
+// the original admin mandate page (since removed).
 //
 // WHAT THESE BODIES ARE (register item 5, "two systems mixed"): each is a
 // `section` of the OLD console drawer, `MandateDetailView`

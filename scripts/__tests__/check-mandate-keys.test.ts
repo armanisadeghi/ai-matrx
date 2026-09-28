@@ -48,7 +48,7 @@ describe("check:mandate-keys — RED: a hand-typed key in a mandate-key position
       `resolveMandateServer("${REAL_KEY}")`,
       `useMandate("${REAL_KEY}")`,
       `launchMandate("${REAL_KEY}")`,
-      `adminMandateHref("${REAL_KEY}")`,
+      `adminMandateRecordHref("${REAL_KEY}")`,
       `useMandateSet({ keys: ["${REAL_KEY}"] })`,
     ]) {
       expect(keysFound(`${call};`)).toEqual([REAL_KEY]);
@@ -207,7 +207,7 @@ describe("check:mandate-keys RULE 2 — GREEN: the fix, and what is honestly a s
     // An admin console row and a `[mandateKey]` route param are honestly
     // unknown strings; they are counted and listable, and they never fail.
     const src = `interface MandateSearchRow { mandateKey: string; }`;
-    const sites = all(src, "features/mandates/admin/mandate-console-discovery.ts");
+    const sites = all(src, "features/mandates/admin-list/rows.ts");
     expect(sites).toHaveLength(1);
     expect(sites[0]).toMatchObject({ enforced: false, member: "mandateKey" });
   });

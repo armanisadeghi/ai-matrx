@@ -1935,7 +1935,7 @@ function unwrap(expr: ts.Expression): ts.Node {
 /**
  * True when this expression sits in the FALSE arm of a conditional whose test
  * is THE VERY FIELD being rendered — the honest "we have no id, so there is no
- * door" fallback. The reference implementation (`MandatesConsole`) writes
+ * door" fallback. The reference implementation (the original mandates console) wrote
  * exactly this shape, and flagging it would teach agents to delete a correct
  * guard.
  *

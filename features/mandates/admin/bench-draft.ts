@@ -4,7 +4,7 @@
  * The test bench's exemplar-draft snapshot, published upward for the surface
  * scope.
  *
- * `MandatesConsole` mounts the `matrx-admin/mandates` runtime and builds
+ * The admin surface (`matrx-admin/mandates`) builds
  * the scope at Run time, but the exemplar composer (label + variables JSON +
  * user message) and the mandate's stored exemplars live in `MandateTestBench`, a
  * grandchild that only mounts once a mandate is open in the workbench. The

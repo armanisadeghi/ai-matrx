@@ -289,6 +289,7 @@
     "check:cost-display": "tsx scripts/check-cost-display.ts",
     "check:cost-display:self-test": "tsx scripts/check-cost-display.ts --self-test",
     "check:reserved-icons": "tsx scripts/check-reserved-icons.ts",
+    "check:retired-admin-mandate-links": "tsx scripts/check-retired-admin-mandate-links.ts",
     "check:reserved-icons:write": "tsx scripts/check-reserved-icons.ts --write",
     "check:reserved-icons:self-test": "tsx scripts/check-reserved-icons.ts --self-test",
     "check:error-message-fallback": "tsx scripts/check-error-message-fallback.ts",
