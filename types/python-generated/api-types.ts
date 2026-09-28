@@ -257,6 +257,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health/database-identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Database Identity
+         * @description Read-only: the project ref this process's database pool and token verification use.
+         *
+         *     No I/O and no secret — the ref is part of the pooler USER name, not the password.
+         */
+        get: operations["database_identity_health_database_identity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -9624,7 +9646,8 @@ export interface paths {
          *
          *     Mounted beside the Lulu receiver (outside the auth gate) because Stripe
          *     calls it, not a signed-in human. A handler failure answers 500 so Stripe
-         *     redelivers — that retry IS the fulfilment durability story.
+         *     redelivers the durable reconciliation; an existing paid claim is never a
+         *     reason to replay the Lulu create.
          */
         post: operations["stripe_webhook_lulu_webhooks_stripe_post"];
         delete?: never;
@@ -28972,7 +28995,8 @@ export interface paths {
         put?: never;
         /**
          * Run One Tracker
-         * @description Run ONE tracker now, ignoring its cadence. Same pass the scheduler runs.
+         * @description Run ONE monitor now, both lenses: the platform's "News monitor run" workflow, streamed step
+         *     by step (NEWS-ENGINE-SPEC §7.1, §12 Lane C). The same template a saved schedule fires.
          */
         post: operations["run_one_tracker_coverage_trackers__tracker_id__run_post"];
         delete?: never;
@@ -29043,6 +29067,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pr-calendar/brands/{brand_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Brand Calendar
+         * @description Refresh one brand's PR calendar: holidays, catalog, regulatory dates, verified researched
+         *     events, then the two-pass plan. The caller must be able to edit the brand.
+         */
+        post: operations["run_brand_calendar_pr_calendar_brands__brand_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/news/setup/facts": {
         parameters: {
             query?: never;
@@ -29075,6 +29120,23 @@ export interface paths {
          *     source. Items whose source is not in the input are dropped by code and listed, never silently.
          */
         post: operations["propose_setup_news_setup_propose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news/cost/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Cost Pause */
+        post: operations["resume_cost_pause_news_cost_resume_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -29168,9 +29230,110 @@ export interface paths {
         };
         /**
          * Get Trend
-         * @description Brand and key-message presence over time — a rollup, never a stored series.
+         * @description Where each question and key message stands — no pooled rate (see /metrics).
          */
         get: operations["get_trend_ai_visibility_panels__panel_id__trend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels/{panel_id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Metrics
+         * @description The six named metrics per stratum (T12), each with its denominator,
+         *     interval and what it does not prove.
+         */
+        get: operations["get_metrics_ai_visibility_panels__panel_id__metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels/design": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Design Panel Route
+         * @description Create a draft panel and start its design run (queued; the gates pause it).
+         */
+        post: operations["design_panel_route_ai_visibility_panels_design_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels/{panel_id}/design": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Panel Design
+         * @description The design run's steps, gates, open review card, documents and notices.
+         */
+        get: operations["get_panel_design_ai_visibility_panels__panel_id__design_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels/{panel_id}/design/gates/{gate}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide Panel Design Gate
+         * @description Approve, edit, or continue without approving; recorded with who and when.
+         */
+        post: operations["decide_panel_design_gate_ai_visibility_panels__panel_id__design_gates__gate__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels/{panel_id}/design/artifacts/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Panel Design Artifact
+         * @description One design document (latest version), by contract name or file name.
+         */
+        get: operations["get_panel_design_artifact_ai_visibility_panels__panel_id__design_artifacts__name__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -31381,6 +31544,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/crm/pitch-advisories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Pitch Advisories Door
+         * @description Warnings and offers for one pitch action. Never a refusal.
+         */
+        post: operations["check_pitch_advisories_door_crm_pitch_advisories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pitch-advisories/one-per-outlet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * One Per Outlet Door
+         * @description `crm.one_per_outlet` alone: who at each outlet already holds this pitch, org-wide.
+         */
+        post: operations["one_per_outlet_door_crm_pitch_advisories_one_per_outlet_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-processing/{cld_file_id}": {
         parameters: {
             query?: never;
@@ -32395,14 +32598,12 @@ export interface paths {
         put?: never;
         /**
          * Add Items
-         * @description Add one or many items.
-         *
-         *     A single object adds one item; an array triggers a batched insert.
+         * @description Add one or many items. The items table's INSERT policy (editor on the list) decides.
          */
         post: operations["add_items_picklists__list_id__items_post"];
         /**
          * Clear Items
-         * @description Remove every item in a picklist while keeping the picklist itself.
+         * @description Archive every item in a picklist while keeping the picklist itself.
          */
         delete: operations["clear_items_picklists__list_id__items_delete"];
         options?: never;
@@ -37223,11 +37424,12 @@ export interface paths {
         post?: never;
         /**
          * Delete Message
-         * @description Delete a single ``cx_message`` row.
+         * @description Move a single ``cx_message`` row to Trash.
          *
-         *     Hard delete — the caller is responsible for understanding that this
-         *     removes the row from history permanently. After the write, both
-         *     cache layers are busted.
+         *     Delete means archive: sets ``deleted_at`` on the message and its tool
+         *     calls, artifacts, and media (``archive_messages``). The model never sees
+         *     it again; it stays restorable. After the write, both cache layers are
+         *     busted.
          */
         delete: operations["delete_message_cx_conversations__conversation_id__messages__message_id__delete"];
         options?: never;
@@ -37256,10 +37458,11 @@ export interface paths {
         post?: never;
         /**
          * Delete All Messages
-         * @description Hard-delete every message in a conversation ("clear history").
+         * @description Move every live message in a conversation to Trash ("clear history").
          *
-         *     The ``cx_conversation`` row itself is left alone — only its messages
-         *     go away. Both cache layers are busted after the writes finish.
+         *     The ``cx_conversation`` row itself is left alone — its messages are
+         *     archived (``deleted_at``), never destroyed. Both cache layers are busted
+         *     after the writes finish.
          */
         delete: operations["delete_all_messages_cx_conversations__conversation_id__messages_delete"];
         options?: never;
@@ -37304,7 +37507,7 @@ export interface paths {
         put?: never;
         /**
          * Batch Delete Messages
-         * @description Hard-delete a set of messages with optional tool-pair cascading.
+         * @description Move a set of messages to Trash with optional tool-pair cascading.
          *
          *     Mirrors the existing single-row ``DELETE`` endpoint but takes a
          *     flexible selector so the client can pass an explicit list of IDs, a
@@ -38483,6 +38686,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sources/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sources Manifest
+         * @description Sizes, states, forms and Segments for each Source — never a body.
+         */
+        post: operations["sources_manifest_sources_manifest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sources Resolve
+         * @description The full grounded text of each Source (``### Chunk <id> (page N)`` blocks).
+         */
+        post: operations["sources_resolve_sources_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sources/internal/land": {
         parameters: {
             query?: never;
@@ -38813,7 +39056,13 @@ export interface paths {
         get: operations["get_file_files__file_id__get"];
         put?: never;
         post?: never;
-        /** Delete File */
+        /**
+         * Delete File
+         * @description Move a file to Trash (soft delete — restorable via ``/restore``).
+         *
+         *     There is no hard delete: delete means archive (Arman, 2026-09-27). The
+         *     storage bytes stay with the trashed row; retention is a lifecycle policy.
+         */
         delete: operations["delete_file_files__file_id__delete"];
         options?: never;
         head?: never;
@@ -39000,7 +39249,11 @@ export interface paths {
         get: operations["get_folder_folders__folder_id__get"];
         put?: never;
         post?: never;
-        /** Delete Folder */
+        /**
+         * Delete Folder
+         * @description Move a folder and its subtree to Trash (soft delete — restorable).
+         *     There is no hard delete: delete means archive (Arman, 2026-09-27).
+         */
         delete: operations["delete_folder_folders__folder_id__delete"];
         options?: never;
         head?: never;
@@ -39439,6 +39692,31 @@ export interface paths {
          *     links continue to work unchanged.
          */
         get: operations["download_shared_file_share__token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/share/{token}/files/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Shared Child File
+         * @description Access ladder T-19b — a shared chat's attachments ride the chat's token.
+         *
+         *     Authorized by ``public.share_link_child_file`` (token live + the file is a
+         *     media part of a visible message of the conversation the token shares). No
+         *     other file is reachable, and a refusal never confirms the file exists.
+         *     Does not consume a use. Mirrors ``matrx_files.api.router_share``.
+         */
+        get: operations["download_shared_child_file_share__token__files__file_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -43895,11 +44173,8 @@ export interface components {
              * @enum {string}
              */
             status?: "active" | "moved" | "stale" | "unknown";
-            /**
-             * Window Days
-             * @default 30
-             */
-            window_days?: number;
+            /** Window Days */
+            window_days?: number | null;
             /** Last Seen At */
             last_seen_at?: string | null;
             /** Checked At */
@@ -44502,6 +44777,22 @@ export interface components {
             advice_id: number;
             /** Advice */
             advice: string;
+        };
+        /** AdvisoryOffer */
+        AdvisoryOffer: {
+            /** Label */
+            label: string;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "flatten_attachments" | "hold_until" | "label_cold" | "limit_to" | "mandate" | "rewrite_line" | "schedule_at" | "strip_tracking";
+            /** Mandate Key */
+            mandate_key?: string | null;
+            /** Detail */
+            detail?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
         };
         /**
          * AffinityServiceStatus
@@ -46004,6 +46295,21 @@ export interface components {
              * @default 0
              */
             citation_count?: number;
+            /**
+             * Lane
+             * @default retrieval
+             */
+            lane?: string;
+            /** Validity Status */
+            validity_status?: ("invalid" | "retry" | "valid") | null;
+            /** Entities Mentioned */
+            entities_mentioned?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Response Payload Hash */
+            response_payload_hash?: string | null;
+            /** Citation Payload Hash */
+            citation_payload_hash?: string | null;
             /** Analysis */
             analysis?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -47612,6 +47918,17 @@ export interface components {
             packaging: string;
             /** Version Count */
             version_count: number;
+        };
+        /** ArtifactRecord */
+        ArtifactRecord: {
+            /** Name */
+            name: string;
+            /** Version */
+            version: number;
+            /** Content Hash */
+            content_hash: string;
+            /** Created At */
+            created_at: string;
         };
         /**
          * ArxivPublicPublication
@@ -50351,8 +50668,12 @@ export interface components {
             campaign_fit?: ("moderate" | "none" | "strong" | "weak") | null;
             /** Campaign Fit Reason */
             campaign_fit_reason?: string | null;
-            /** Campaign Context */
-            campaign_context?: string | null;
+            /** Pitch */
+            pitch?: string | null;
+            /** Journalist Fit */
+            journalist_fit?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
             /**
              * Insufficient Evidence
              * @default false
@@ -54530,7 +54851,10 @@ export interface components {
              */
             use_paid_providers?: boolean;
         };
-        /** BulkFileDeleteRequest */
+        /**
+         * BulkFileDeleteRequest
+         * @description Move many files to Trash. There is no hard delete (delete means archive).
+         */
         BulkFileDeleteRequest: {
             /** File Ids */
             file_ids: string[];
@@ -64735,10 +65059,21 @@ export interface components {
              */
             model_guidance?: string;
             /**
+             * Grading Rubric
+             * @description How a run of this agent is judged: the automatic checks and the owner's pass bar from the mandate brief. The builder writes the prompt against it.
+             * @default
+             */
+            grading_rubric?: string;
+            /**
              * Model Profile
              * @description Optional database-owned model class. 'balanced' selects a primary, non-premium mid-cost text model; 'strongest' selects a primary premium text model.
              */
             model_profile?: ("balanced" | "strongest") | null;
+            /**
+             * Model Id
+             * @description Optional EXPLICIT model pin (an id from agent_catalog list_models). A pin always wins over model_profile; it is validated by the live runnable-model gate and refused by name if unknown — never replaced.
+             */
+            model_id?: string | null;
             /**
              * Tools
              * @description Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry — unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads.
@@ -66514,6 +66849,22 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * DatabaseIdentity
+         * @description Which Supabase project this process is wired to — identities only, never a secret.
+         */
+        DatabaseIdentity: {
+            /** Database Project Ref */
+            database_project_ref: string | null;
+            /** Database Ref Source */
+            database_ref_source: string;
+            /** Auth Project Ref */
+            auth_project_ref: string | null;
+            /** Auth Url Host */
+            auth_url_host: string | null;
+            /** Paired */
+            paired: boolean;
+        };
         /** DataboxServiceStatus */
         DataboxServiceStatus: {
             /**
@@ -67197,6 +67548,12 @@ export interface components {
             declared_ref?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            /** Tier */
+            tier?: string | null;
+            /** Repeats */
+            repeats?: number | null;
+            /** Lanes */
+            lanes?: string[] | null;
         };
         /**
          * DeclareTrackerBody
@@ -67777,7 +68134,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("user" | "auto") | null;
+            initiation?: ("auto" | "user") | null;
         };
         /** DemioServiceStatus */
         DemioServiceStatus: {
@@ -68250,6 +68607,129 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.descript.com/";
+        };
+        /** DesignArtifactView */
+        DesignArtifactView: {
+            /** Name */
+            name: string;
+            /** Version */
+            version: number;
+            content: components["schemas"]["JsonValue"];
+            /** Content Hash */
+            content_hash: string;
+        };
+        /** DesignNotice */
+        DesignNotice: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Remedy */
+            remedy?: string | null;
+        };
+        /** DesignPanelBody */
+        DesignPanelBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /** Site Id */
+            site_id: string;
+            /** Url */
+            url: string;
+            /** Description */
+            description: string;
+            /** Name */
+            name?: string | null;
+        };
+        /** DesignRunGate */
+        DesignRunGate: {
+            /** Gate */
+            gate: number;
+            /** Title */
+            title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "approved" | "continued_pending" | "edited" | "not_reached" | "open";
+            /** Decided By */
+            decided_by?: string | null;
+            /** Decided At */
+            decided_at?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** DesignRunStep */
+        DesignRunStep: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * Performer
+             * @enum {string}
+             */
+            performer: "agent" | "code" | "human";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "done" | "failed" | "pending" | "running" | "skipped";
+            /** Detail */
+            detail?: string | null;
+        };
+        /**
+         * DesignRunView
+         * @description BUILD-CONTRACT ``DesignRunView``.
+         */
+        DesignRunView: {
+            /** Panel Id */
+            panel_id: string;
+            /** Run Id */
+            run_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "completed" | "failed" | "running" | "waiting_for_gate";
+            /** Panel Status */
+            panel_status: string;
+            /** Steps */
+            steps: components["schemas"]["DesignRunStep"][];
+            open_gate?: components["schemas"]["GateCard"] | null;
+            /** Gates */
+            gates: components["schemas"]["DesignRunGate"][];
+            /** Artifacts */
+            artifacts: components["schemas"]["ArtifactRecord"][];
+            /** Notices */
+            notices: components["schemas"]["DesignNotice"][];
         };
         /**
          * DeskproServiceStatus
@@ -70780,6 +71260,17 @@ export interface components {
             holder_id?: string | null;
             /** Reason */
             reason: string;
+        };
+        /** DroppedSource */
+        DroppedSource: {
+            ref: components["schemas"]["SourceRef"];
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "failed" | "missing" | "no_access" | "not_ready" | "over_budget";
+            /** Detail */
+            detail?: string | null;
         };
         /** DrugLabelIdentity */
         DrugLabelIdentity: {
@@ -77411,6 +77902,67 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.fullstory.com";
+        };
+        /** GateCard */
+        GateCard: {
+            /** Gate */
+            gate: number;
+            /** Title */
+            title: string;
+            /** Blind */
+            blind: boolean;
+            /** Wait Until */
+            wait_until: string;
+            /** Summary */
+            summary: string;
+            /** Payload */
+            payload: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** GateDecisionBody */
+        GateDecisionBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approve" | "continue" | "edit";
+            /** Edits */
+            edits?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Note */
+            note?: string | null;
         };
         /**
          * GatherStatusResult
@@ -84208,6 +84760,17 @@ export interface components {
             height?: number;
             bbox?: components["schemas"]["BboxInput"] | null;
         };
+        /** Interval */
+        Interval: {
+            /** Low */
+            low: number;
+            /** High */
+            high: number;
+            /** Method */
+            method: string;
+            /** Level */
+            level: number;
+        };
         /**
          * InvalidateAgentCacheResponse
          * @description Result of evicting one agent definition from the server caches.
@@ -84894,11 +85457,8 @@ export interface components {
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
             initiation?: ("auto" | "user") | null;
-            /**
-             * Window Days
-             * @default 30
-             */
-            window_days?: number;
+            /** Window Days */
+            window_days?: number | null;
             /**
              * Use Search
              * @default true
@@ -84937,8 +85497,12 @@ export interface components {
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
             initiation?: ("auto" | "user") | null;
-            /** Campaign Context */
-            campaign_context?: string | null;
+            /** Pitch */
+            pitch?: string | null;
+            /** Client Or Subject */
+            client_or_subject?: string | null;
+            /** Decay Stage */
+            decay_stage?: string | null;
         };
         /** JsonRpcResponse */
         JsonRpcResponse: {
@@ -91125,6 +91689,27 @@ export interface components {
             /** Facts */
             facts: components["schemas"]["ManifestFact"][];
         };
+        /** ManifestSource */
+        ManifestSource: {
+            ref: components["schemas"]["SourceRef"];
+            /** Label */
+            label: string;
+            /** Resource Type */
+            resource_type: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "failed" | "processing" | "ready" | "unavailable";
+            /** State Detail */
+            state_detail?: string | null;
+            /** Forms */
+            forms?: components["schemas"]["SourceForm"][];
+            /** Default Form */
+            default_form: string;
+            /** Segments */
+            segments?: components["schemas"]["SourceSegment"][] | null;
+        };
         /** ManifestToolEntry */
         ManifestToolEntry: {
             /** Name */
@@ -92385,11 +92970,8 @@ export interface components {
              * @default 14
              */
             cadence_days?: number;
-            /**
-             * Window Days
-             * @default 30
-             */
-            window_days?: number;
+            /** Window Days */
+            window_days?: number | null;
             /**
              * Use Search
              * @default true
@@ -93472,6 +94054,39 @@ export interface components {
             /** Is Public Domain */
             is_public_domain: boolean;
         };
+        /** MetricEstimate */
+        MetricEstimate: {
+            /**
+             * Metric
+             * @enum {string}
+             */
+            metric: "aided_brand_knowledge" | "answer_framing" | "campaign_response" | "citation_presence" | "competitive_mention_share" | "unaided_brand_presence";
+            /** Display Name */
+            display_name: string;
+            /** Does Not Prove */
+            does_not_prove: string;
+            stratum: components["schemas"]["Stratum"];
+            /** Numerator */
+            numerator: number | null;
+            /** Denominator */
+            denominator: number | null;
+            /** Distinct Slots */
+            distinct_slots: number;
+            /** Valid Observations */
+            valid_observations: number;
+            /** Invalid Observations */
+            invalid_observations: number;
+            /** Rate */
+            rate?: number | null;
+            interval?: components["schemas"]["Interval"] | null;
+            /**
+             * Shown As
+             * @enum {string}
+             */
+            shown_as: "counts" | "not_set_up" | "rate" | "unmeasured";
+            /** Effective Sample Size */
+            effective_sample_size?: number | null;
+        };
         /** MicrosoftAuthorizationRequest */
         MicrosoftAuthorizationRequest: {
             /** Campaigns */
@@ -94116,7 +94731,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            output_type?: "audio" | "decision" | "extraction" | "image" | "realtime" | "text" | "video";
+            output_type?: "agent" | "audio" | "decision" | "extraction" | "image" | "realtime" | "text" | "video";
             /**
              * Interaction
              * @default turn
@@ -94244,7 +94859,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            output_type?: "audio" | "decision" | "extraction" | "image" | "realtime" | "text" | "video";
+            output_type?: "agent" | "audio" | "decision" | "extraction" | "image" | "realtime" | "text" | "video";
             capabilities?: components["schemas"]["ModelCapabilitySummary"] | null;
             authoring?: components["schemas"]["ModelAuthoringFacts"] | null;
         };
@@ -100040,6 +100655,24 @@ export interface components {
             /** Request Id */
             request_id?: string | null;
         };
+        /** PairedComparison */
+        PairedComparison: {
+            /**
+             * Metric
+             * @enum {string}
+             */
+            metric: "aided_brand_knowledge" | "answer_framing" | "campaign_response" | "citation_presence" | "competitive_mention_share" | "unaided_brand_presence";
+            stratum: components["schemas"]["Stratum"];
+            /** From Wave */
+            from_wave: string;
+            /** To Wave */
+            to_wave: string;
+            /** Overlap Slots */
+            overlap_slots: number;
+            /** Change */
+            change?: number | null;
+            interval?: components["schemas"]["Interval"] | null;
+        };
         /**
          * PairwiseCandidate
          * @description ONE arm of a blind pairwise Audition, and where its text comes from.
@@ -100190,28 +100823,87 @@ export interface components {
         };
         /**
          * PanelCostEstimate
-         * @description What a pass will cost, and how confident that number is.
+         * @description What one wave will cost, and how confident that number is.
          */
         PanelCostEstimate: {
             /** Prompts */
             prompts: number;
             /** Engines */
             engines: number;
+            /** Lanes */
+            lanes?: string[];
+            /**
+             * Repeats
+             * @default 1
+             */
+            repeats?: number;
             /** Calls */
             calls: number;
+            /** Calls By Lane */
+            calls_by_lane?: {
+                [key: string]: number;
+            };
+            /** Calls By Engine */
+            calls_by_engine?: {
+                [key: string]: number;
+            };
+            /**
+             * Analyst Calls
+             * @default 0
+             */
+            analyst_calls?: number;
             /** Cost Per Call Usd */
             cost_per_call_usd: string;
+            /**
+             * Answer Cost Usd
+             * @default 0
+             */
+            answer_cost_usd?: string;
+            /**
+             * Analyst Cost Usd
+             * @default 0
+             */
+            analyst_cost_usd?: string;
             /** Estimated Cost Usd */
             estimated_cost_usd: string;
             /** Measured */
             measured: boolean;
             /** Basis */
             basis: string;
+            /** Notices */
+            notices?: string[];
         };
         /** PanelListResponse */
         PanelListResponse: {
             /** Panels */
             panels: components["schemas"]["PanelView"][];
+        };
+        /** PanelMetrics */
+        PanelMetrics: {
+            /** Panel Id */
+            panel_id: string;
+            /** Panel Status */
+            panel_status: string;
+            /** Panel Version */
+            panel_version?: string | null;
+            /**
+             * Conditional Note
+             * @default Every number here is conditional on this panel: its questions, engines, lanes, locales and dates. It is not a probability sample of real buyers, and a panel mention is rung 1 of 5 on the evidence ladder, never attribution.
+             */
+            conditional_note?: string;
+            /** Evidence Ladder */
+            evidence_ladder?: string[];
+            /**
+             * Unclassified Questions
+             * @default 0
+             */
+            unclassified_questions?: number;
+            /** Min Cells For Rate */
+            min_cells_for_rate: number;
+            /** Metrics */
+            metrics: components["schemas"]["MetricEstimate"][];
+            /** Comparisons */
+            comparisons?: components["schemas"]["PairedComparison"][];
         };
         /**
          * PanelPreview
@@ -100228,13 +100920,39 @@ export interface components {
             prompts_deferred?: components["schemas"]["PanelPrompt"][];
             /** Engines */
             engines?: string[];
+            /** Lanes */
+            lanes?: string[];
+            /**
+             * Repeats
+             * @default 1
+             */
+            repeats?: number;
+            /**
+             * Wave Partial
+             * @default false
+             */
+            wave_partial?: boolean;
+            /**
+             * Shortfall
+             * @default 0
+             */
+            shortfall?: number;
             estimate: components["schemas"]["PanelCostEstimate"];
+            /** Notices */
+            notices?: string[];
             /** Summary */
             summary: string;
         };
         /**
          * PanelPrompt
-         * @description One buyer question, in the user's words. Never inferred from a keyword.
+         * @description One buyer question, in the user's words or a design run's. Never inferred
+         *     from a keyword.
+         *
+         *     Every cell field is optional: a legacy hand-typed prompt (``key``, ``text``,
+         *     ``intent`` only) stays valid and reads as an unclassified question
+         *     (:attr:`is_classified` False, :attr:`effective_transformation`
+         *     ``'human_written'``). Enum-valued fields are checked against the design
+         *     module's ``ENUMS`` so the codes have one home.
          */
         PanelPrompt: {
             /** Key */
@@ -100243,8 +100961,38 @@ export interface components {
             text: string;
             /** Intent */
             intent?: string | null;
+            /** Candidate Id */
+            candidate_id?: string | null;
+            /** Canonical Cell Id */
+            canonical_cell_id?: string | null;
+            /** Proximity Band */
+            proximity_band?: string | null;
+            /** Aided Status */
+            aided_status?: string | null;
+            /** Campaign Exposed */
+            campaign_exposed?: boolean | null;
+            /** Partition */
+            partition?: string | null;
+            /** Lane Eligibility */
+            lane_eligibility?: string[] | null;
+            /** Variant Role */
+            variant_role?: string | null;
+            /** Locale */
+            locale?: string | null;
+            /** Persona Id */
+            persona_id?: string | null;
+            /** Job Id */
+            job_id?: string | null;
+            /** Evidence Grade */
+            evidence_grade?: string | null;
+            /** Transformation */
+            transformation?: string | null;
         };
-        /** PanelTrend */
+        /**
+         * PanelTrend
+         * @description Where each question and key message stands. Deliberately NO pooled rate:
+         *     the panel's numbers are :func:`panel_metrics`.
+         */
         PanelTrend: {
             /** Panel Id */
             panel_id: string;
@@ -100252,11 +101000,6 @@ export interface components {
             name: string;
             /** Site Id */
             site_id: string;
-            /**
-             * Grain
-             * @enum {string}
-             */
-            grain: "day" | "week";
             /**
              * Since
              * Format: date-time
@@ -100267,21 +101010,10 @@ export interface components {
              * @default 0
              */
             answers?: number;
-            /** Mention Rate */
-            mention_rate?: number | null;
-            /** Citation Rate */
-            citation_rate?: number | null;
-            /** Points */
-            points?: components["schemas"]["PresencePoint"][];
             /** Prompts */
             prompts?: components["schemas"]["PromptStanding"][];
             /** Messages */
             messages?: components["schemas"]["MessageStanding"][];
-            /**
-             * Headline
-             * @default
-             */
-            headline?: string;
         };
         /** PanelView */
         PanelView: {
@@ -100324,6 +101056,23 @@ export interface components {
              * @default 0
              */
             run_count?: number;
+            /**
+             * Status
+             * @default draft
+             */
+            status?: string;
+            /**
+             * Tier
+             * @default diagnostic
+             */
+            tier?: string;
+            /**
+             * Repeats
+             * @default 1
+             */
+            repeats?: number;
+            /** Lanes */
+            lanes?: string[];
         };
         /** PantheonServiceStatus */
         PantheonServiceStatus: {
@@ -102109,6 +102858,130 @@ export interface components {
              * @default 0
              */
             total_documents?: number;
+        };
+        /** PitchAdvisory */
+        PitchAdvisory: {
+            /**
+             * Rule
+             * @enum {string}
+             */
+            rule: "E1" | "E10" | "E11" | "E12" | "E13" | "E14" | "E15" | "E16" | "E17" | "E2" | "E3" | "E4" | "E5" | "E6" | "E7" | "E8" | "E9";
+            /** Code */
+            code: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "strong" | "warn";
+            /** Message */
+            message: string;
+            offer?: components["schemas"]["AdvisoryOffer"] | null;
+            /** Other Offers */
+            other_offers?: components["schemas"]["AdvisoryOffer"][];
+            /** Knob */
+            knob?: string | null;
+            /** Evidence */
+            evidence?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** PitchAdvisoryReport */
+        PitchAdvisoryReport: {
+            /**
+             * Surface
+             * @enum {string}
+             */
+            surface: "chasebox_review" | "crisis_publish" | "followup_runner" | "list_save" | "list_send" | "single_send" | "source_request";
+            /** Advisories */
+            advisories?: components["schemas"]["PitchAdvisory"][];
+            /**
+             * Action May Proceed
+             * @default true
+             * @constant
+             */
+            action_may_proceed?: true;
+            /**
+             * Wants Person
+             * @default false
+             */
+            wants_person?: boolean;
+        };
+        /**
+         * PitchAdvisoryRequest
+         * @description `PitchContext` minus the principal, which comes from the request context.
+         */
+        PitchAdvisoryRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /**
+             * Surface
+             * @enum {string}
+             */
+            surface: "chasebox_review" | "crisis_publish" | "followup_runner" | "list_save" | "list_send" | "single_send" | "source_request";
+            /** Draft Id */
+            draft_id?: string | null;
+            /** Outreach List Id */
+            outreach_list_id?: string | null;
+            /** Source Request Id */
+            source_request_id?: string | null;
+            /** Reputation Case Id */
+            reputation_case_id?: string | null;
+            /** Recipient Party Ids */
+            recipient_party_ids?: string[];
+            /** Subject */
+            subject?: string | null;
+            /** Body */
+            body?: string | null;
+            /** Recipient Count */
+            recipient_count?: number | null;
+            /** Adding Recipients */
+            adding_recipients?: number | null;
+            /**
+             * Attachment Count
+             * @default 0
+             */
+            attachment_count?: number;
+            /**
+             * Is Exclusive
+             * @default false
+             */
+            is_exclusive?: boolean;
+            /** Exclusive Expires At */
+            exclusive_expires_at?: string | null;
+            /** Embargo Until */
+            embargo_until?: string | null;
+            /** Has New Information */
+            has_new_information?: boolean | null;
+            /** Has Direct Standing */
+            has_direct_standing?: boolean | null;
         };
         /**
          * PixelcutServiceStatus
@@ -104087,31 +104960,6 @@ export interface components {
              * @default false
              */
             cohost?: boolean;
-        };
-        /**
-         * PresencePoint
-         * @description One bucket of the trend. Rates are None when nothing was measured.
-         */
-        PresencePoint: {
-            /**
-             * Bucket
-             * Format: date
-             */
-            bucket: string;
-            /** Answers */
-            answers: number;
-            /** Mentioned */
-            mentioned: number;
-            /** Cited */
-            cited: number;
-            /** Mention Rate */
-            mention_rate?: number | null;
-            /** Citation Rate */
-            citation_rate?: number | null;
-            /** Message Rates */
-            message_rates?: {
-                [key: string]: number;
-            };
         };
         /** PresentationResponse */
         PresentationResponse: {
@@ -106574,7 +107422,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("user" | "auto") | null;
+            initiation?: ("auto" | "user") | null;
             /** Brand Id */
             brand_id: string;
             /** Tracker Id */
@@ -111907,6 +112755,64 @@ export interface components {
             /** Field Id */
             field_id?: string | null;
         };
+        /** ResolvedSegment */
+        ResolvedSegment: {
+            /** Id */
+            id: string;
+            /** Page */
+            page?: number | null;
+            /** Chars */
+            chars: number;
+        };
+        /** ResolvedSource */
+        ResolvedSource: {
+            ref: components["schemas"]["SourceRef"];
+            /** Label */
+            label: string;
+            /** Form Used */
+            form_used: string;
+            /** Text */
+            text: string;
+            /** Segments */
+            segments?: components["schemas"]["ResolvedSegment"][];
+            /** File Id */
+            file_id?: string | null;
+            /** Processed Document Id */
+            processed_document_id?: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "processing" | "ready";
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /** Notes */
+            notes?: string[];
+        };
+        /**
+         * ResolvedSourceSet
+         * @description ``POST /sources/resolve`` — grounded text for generators.
+         */
+        ResolvedSourceSet: {
+            /**
+             * Kind
+             * @default resolved_source_set
+             * @constant
+             */
+            __kind?: "resolved_source_set";
+            /** Sources */
+            sources?: components["schemas"]["ResolvedSource"][];
+            /** Dropped */
+            dropped?: components["schemas"]["DroppedSource"][];
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+        };
         /** ResourceContextPolicy */
         ResourceContextPolicy: {
             /** Promote */
@@ -112092,6 +112998,50 @@ export interface components {
             /** Note */
             note?: string | null;
             caption_track?: components["schemas"]["CaptionTrackBody"] | null;
+        };
+        /** ResumeBody */
+        ResumeBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+        };
+        /** ResumeResponse */
+        ResumeResponse: {
+            /** Organization Id */
+            organization_id: string;
+            /** Resumed Tracker Ids */
+            resumed_tracker_ids?: string[];
+            /** Month */
+            month: string;
+            /** By */
+            by: string;
         };
         /** ResumeRunRequest */
         ResumeRunRequest: {
@@ -113436,6 +114386,53 @@ export interface components {
             allowed_aliases?: string[];
             /** Input Rules */
             input_rules?: components["schemas"]["LeakRule"][] | null;
+        };
+        /** RunCalendarBody */
+        RunCalendarBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /** Tracker Id */
+            tracker_id?: string | null;
+            /** Country Codes */
+            country_codes?: string[] | null;
+            /**
+             * Research
+             * @default true
+             */
+            research?: boolean;
+            /**
+             * Plan
+             * @default true
+             */
+            plan?: boolean;
         };
         /**
          * RunCostSummary
@@ -114842,7 +115839,7 @@ export interface components {
              * Preset
              * @enum {string}
              */
-            preset: "daily" | "twice_daily" | "hourly" | "custom" | "off";
+            preset: "custom" | "daily" | "hourly" | "off" | "twice_daily";
             /**
              * Cron Expression
              * @description Required for preset 'custom'.
@@ -114882,7 +115879,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("user" | "auto") | null;
+            initiation?: ("auto" | "user") | null;
         };
         /** ScheduleView */
         ScheduleView: {
@@ -114901,7 +115898,7 @@ export interface components {
             /** Trigger Id */
             trigger_id?: string | null;
             /** Preset */
-            preset?: ("daily" | "twice_daily" | "hourly" | "custom" | "off") | null;
+            preset?: ("custom" | "daily" | "hourly" | "off" | "twice_daily") | null;
             /** Cron Expression */
             cron_expression?: string | null;
             /** Timezone */
@@ -117384,24 +118381,15 @@ export interface components {
             }[];
             /** X Key On File */
             x_key_on_file: boolean;
-            /**
-             * X Trends Locations
-             * @description ``news.setup.x_trends_locations`` — where X trends are watched when the person turns them on.
-             */
+            /** X Trends Locations */
             x_trends_locations?: {
                 [key: string]: unknown;
             }[];
-            /**
-             * Schedule Presets
-             * @description ``news.setup.schedule_presets`` — the choices, their hours and runs a month (the cost multiplier).
-             */
+            /** Schedule Presets */
             schedule_presets?: {
                 [key: string]: unknown;
             }[];
-            /**
-             * Schedule Default
-             * @description ``news.setup.schedule_default`` — ``{opportunity, coverage_only}`` → preset id.
-             */
+            /** Schedule Default */
             schedule_default?: {
                 [key: string]: string;
             };
@@ -120266,6 +121254,17 @@ export interface components {
             /** Ids */
             ids?: string[];
         };
+        /** SourceForm */
+        SourceForm: {
+            /** Form */
+            form: string;
+            /** Label */
+            label: string;
+            /** Chars */
+            chars: number;
+            /** Available */
+            available: boolean;
+        };
         /**
          * SourceLanding
          * @description Everything the door needs to land one acquisition as a Source.
@@ -120310,6 +121309,32 @@ export interface components {
             /** Organization Id */
             organization_id: string;
         };
+        /**
+         * SourceManifest
+         * @description ``POST /sources/manifest`` — sizes and states, never bodies.
+         */
+        SourceManifest: {
+            /**
+             * Kind
+             * @default source_manifest
+             * @constant
+             */
+            __kind?: "source_manifest";
+            /** Sources */
+            sources?: components["schemas"]["ManifestSource"][];
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+            /**
+             * Estimated Tokens
+             * @default 0
+             */
+            estimated_tokens?: number;
+            /** Model Context Tokens */
+            model_context_tokens?: number | null;
+        };
         /** SourcePackageMetadata */
         SourcePackageMetadata: {
             /**
@@ -120332,6 +121357,34 @@ export interface components {
             title: string;
             /** Web Url */
             web_url: string;
+        };
+        /**
+         * SourceRef
+         * @description The pointer — the existing ``resource_ref`` envelope, extended.
+         */
+        SourceRef: {
+            /**
+             * Kind
+             * @default resource_ref
+             * @constant
+             */
+            __kind?: "resource_ref";
+            /** Resource Type */
+            resource_type: string;
+            /** Resource Id */
+            resource_id: string;
+            /** Representation */
+            representation?: string | null;
+            /** Include Segments */
+            include_segments?: string[] | null;
+            /** Delivery */
+            delivery?: ("context" | "direct") | null;
+            /** Max Chars */
+            max_chars?: number | null;
+            /** Promote */
+            promote?: components["schemas"]["ResourcePromotion"] | components["schemas"]["ResourcePromotion"][] | null;
+            /** Exclude */
+            exclude?: string[] | null;
         };
         /**
          * SourceRequestEvaluateResult
@@ -120612,6 +121665,54 @@ export interface components {
             attributes: {
                 [key: string]: unknown;
             };
+        };
+        /** SourceSegment */
+        SourceSegment: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Page */
+            page?: number | null;
+            /** Chars */
+            chars: number;
+        };
+        /**
+         * SourceSet
+         * @description The one payload that carries a person's chosen Sources.
+         */
+        SourceSet: {
+            /**
+             * Kind
+             * @default source_set
+             * @constant
+             */
+            __kind?: "source_set";
+            /**
+             * Version
+             * @default 1
+             * @constant
+             */
+            version?: 1;
+            /** Sources */
+            sources?: components["schemas"]["SourceRef"][];
+            /** Topic */
+            topic?: string | null;
+            /**
+             * Grounding
+             * @default whole
+             * @enum {string}
+             */
+            grounding?: "retrieve" | "selected" | "whole";
+            /** Retrieve Query */
+            retrieve_query?: string | null;
+            /** Target Model Id */
+            target_model_id?: string | null;
+        };
+        /** SourceSetRequest */
+        SourceSetRequest: {
+            /** @description The Sources to measure or resolve. */
+            source_set: components["schemas"]["SourceSet"];
         };
         /** SourceSummary */
         SourceSummary: {
@@ -122963,6 +124064,23 @@ export interface components {
             service_lines_served?: string[] | null;
             /** Brief Markdown */
             brief_markdown?: string | null;
+        };
+        /** Stratum */
+        Stratum: {
+            /** Partition */
+            partition?: string | null;
+            /** Lane */
+            lane?: string | null;
+            /** Aided Status */
+            aided_status?: string | null;
+            /** Engine */
+            engine?: string | null;
+            /** Locale */
+            locale?: string | null;
+            /** Market Side */
+            market_side?: string | null;
+            /** Wave Id */
+            wave_id?: string | null;
         };
         /** StreamServiceStatus */
         StreamServiceStatus: {
@@ -140045,6 +141163,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VersionHealth"];
+                };
+            };
+        };
+    };
+    database_identity_health_database_identity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatabaseIdentity"];
                 };
             };
         };
@@ -183577,6 +184715,41 @@ export interface operations {
             };
         };
     };
+    run_brand_calendar_pr_calendar_brands__brand_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunCalendarBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_setup_facts_news_setup_facts_get: {
         parameters: {
             query: {
@@ -183628,6 +184801,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_cost_pause_news_cost_resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResumeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -183809,8 +185015,7 @@ export interface operations {
     get_trend_ai_visibility_panels__panel_id__trend_get: {
         parameters: {
             query?: {
-                days?: number;
-                grain?: string;
+                days?: number | null;
             };
             header?: never;
             path: {
@@ -183827,6 +185032,169 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PanelTrend"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metrics_ai_visibility_panels__panel_id__metrics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanelMetrics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    design_panel_route_ai_visibility_panels_design_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DesignPanelBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesignRunView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_panel_design_ai_visibility_panels__panel_id__design_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesignRunView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_panel_design_gate_ai_visibility_panels__panel_id__design_gates__gate__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panel_id: string;
+                gate: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GateDecisionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesignRunView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_panel_design_artifact_ai_visibility_panels__panel_id__design_artifacts__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panel_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesignArtifactView"];
                 };
             };
             /** @description Validation Error */
@@ -187820,6 +189188,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KindSubmitSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_pitch_advisories_door_crm_pitch_advisories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PitchAdvisoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PitchAdvisoryReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    one_per_outlet_door_crm_pitch_advisories_one_per_outlet_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PitchAdvisoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PitchAdvisory"][];
                 };
             };
             /** @description Validation Error */
@@ -199896,6 +201330,72 @@ export interface operations {
             };
         };
     };
+    sources_manifest_sources_manifest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceSetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceManifest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sources_resolve_sources_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceSetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolvedSourceSet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     internal_land_sources_internal_land_post: {
         parameters: {
             query?: never;
@@ -201847,6 +203347,46 @@ export interface operations {
             };
         };
     };
+    download_shared_child_file_share__token__files__file_id__get: {
+        parameters: {
+            query?: {
+                /** @description Render safe media inline. Set false to force a browser download. */
+                inline?: boolean;
+            };
+            header?: never;
+            path: {
+                token: string;
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bytes of one file attached to the shared record. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The token is dead, or the file is not a child of the record the token shares. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     tus_create_files_upload_tus_post: {
         parameters: {
             query?: never;
@@ -202540,9 +204080,7 @@ export interface operations {
     };
     delete_node_virtual__adapter_id___vid__delete: {
         parameters: {
-            query?: {
-                hard?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 adapter_id: string;

@@ -118,10 +118,12 @@ export async function fetchJournalistBeat(
 /** Work out what they cover, from pages we already crawled. */
 export async function deriveJournalistBeat(
   partyId: string,
-  campaignContext?: string,
+  pitch?: string,
 ): Promise<BeatProfile> {
+  // The server's field is `pitch` (aidream 90ea9a2874 renamed it from
+  // campaign_context; the old name is only an input alias).
   const { data } = await apiPost(buildPath(BEAT, { party_id: partyId }), {
-    campaign_context: campaignContext?.trim() ? campaignContext.trim() : null,
+    pitch: pitch?.trim() ? pitch.trim() : null,
   });
   return data;
 }

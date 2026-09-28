@@ -169,7 +169,6 @@ export const SOURCE_FEATURES = [
   "coding_session_bridge.backfill",
   "context_summary",
   "crm.media_list_refresh",
-  "crm.media_lists.refresh",
   "conversation",
   "conversation_crash_recovery",
   "conversation_fork",

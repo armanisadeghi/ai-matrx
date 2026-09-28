@@ -400,6 +400,28 @@
         }
       }
     },
+    "/health/database-identity": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Database Identity",
+        "description": "Read-only: the project ref this process's database pool and token verification use.\n\nNo I/O and no secret — the ref is part of the pooler USER name, not the password.",
+        "operationId": "database_identity_health_database_identity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabaseIdentity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "tags": [
@@ -24014,7 +24036,7 @@
           "Lulu Print"
         ],
         "summary": "Stripe Webhook",
-        "description": "Stripe → the print lane. Signature-authenticated; only print_order events act.\n\nMounted beside the Lulu receiver (outside the auth gate) because Stripe\ncalls it, not a signed-in human. A handler failure answers 500 so Stripe\nredelivers — that retry IS the fulfilment durability story.",
+        "description": "Stripe → the print lane. Signature-authenticated; only print_order events act.\n\nMounted beside the Lulu receiver (outside the auth gate) because Stripe\ncalls it, not a signed-in human. A handler failure answers 500 so Stripe\nredelivers the durable reconciliation; an existing paid claim is never a\nreason to replay the Lulu create.",
         "operationId": "stripe_webhook_lulu_webhooks_stripe_post",
         "parameters": [
           {
@@ -59494,7 +59516,7 @@
           "SEO / Coverage"
         ],
         "summary": "Run One Tracker",
-        "description": "Run ONE tracker now, ignoring its cadence. Same pass the scheduler runs.",
+        "description": "Run ONE monitor now, both lenses: the platform's \"News monitor run\" workflow, streamed step\nby step (NEWS-ENGINE-SPEC §7.1, §12 Lane C). The same template a saved schedule fires.",
         "operationId": "run_one_tracker_coverage_trackers__tracker_id__run_post",
         "parameters": [
           {
@@ -59523,6 +59545,156 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coverage/trackers/{tracker_id}/schedule": {
+      "get": {
+        "tags": [
+          "SEO / Coverage"
+        ],
+        "summary": "Get Tracker Schedule",
+        "description": "The monitor's schedule, or \"No schedule — set one\".",
+        "operationId": "get_tracker_schedule_coverage_trackers__tracker_id__schedule_get",
+        "parameters": [
+          {
+            "name": "tracker_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tracker Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "SEO / Coverage"
+        ],
+        "summary": "Save Tracker Schedule",
+        "description": "Save the monitor's schedule — the ONLY way a cadence reaches a trigger. A person saves it;\nan agent may only propose one (ruling R1).",
+        "operationId": "save_tracker_schedule_coverage_trackers__tracker_id__schedule_post",
+        "parameters": [
+          {
+            "name": "tracker_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tracker Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coverage/trackers/{tracker_id}/delivery": {
+      "post": {
+        "tags": [
+          "SEO / Coverage"
+        ],
+        "summary": "Save Tracker Delivery",
+        "operationId": "save_tracker_delivery_coverage_trackers__tracker_id__delivery_post",
+        "parameters": [
+          {
+            "name": "tracker_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tracker Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "title": "Response Save Tracker Delivery Coverage Trackers  Tracker Id  Delivery Post"
+                }
               }
             }
           },
@@ -59612,6 +59784,180 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CoverageFeed"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pr-calendar/brands/{brand_id}/run": {
+      "post": {
+        "tags": [
+          "SEO / PR Calendar"
+        ],
+        "summary": "Run Brand Calendar",
+        "description": "Refresh one brand's PR calendar: holidays, catalog, regulatory dates, verified researched\nevents, then the two-pass plan. The caller must be able to edit the brand.",
+        "operationId": "run_brand_calendar_pr_calendar_brands__brand_id__run_post",
+        "parameters": [
+          {
+            "name": "brand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Brand Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCalendarBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/news/setup/facts": {
+      "get": {
+        "tags": [
+          "News / Monitor setup"
+        ],
+        "summary": "Get Setup Facts",
+        "operationId": "get_setup_facts_news_setup_facts_get",
+        "parameters": [
+          {
+            "name": "brand_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Brand Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupFacts"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/news/setup/propose": {
+      "post": {
+        "tags": [
+          "News / Monitor setup"
+        ],
+        "summary": "Propose Setup",
+        "description": "Propose beats, competitors, search terms, standing, feeds and coverage means lines — each with its\nsource. Items whose source is not in the input are dropped by code and listed, never silently.",
+        "operationId": "propose_setup_news_setup_propose_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposeSetupBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/news/cost/resume": {
+      "post": {
+        "tags": [
+          "News / Monitor"
+        ],
+        "summary": "Resume Cost Pause",
+        "operationId": "resume_cost_pause_news_cost_resume_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeResponse"
                 }
               }
             }
@@ -59870,7 +60216,7 @@
           "SEO / AI Visibility"
         ],
         "summary": "Get Trend",
-        "description": "Brand and key-message presence over time — a rollup, never a stored series.",
+        "description": "Where each question and key message stands — no pooled rate (see /metrics).",
         "operationId": "get_trend_ai_visibility_panels__panel_id__trend_get",
         "parameters": [
           {
@@ -59887,22 +60233,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "maximum": 730,
-              "minimum": 1,
-              "default": 90,
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 730,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Days"
-            }
-          },
-          {
-            "name": "grain",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "pattern": "^(day|week)$",
-              "default": "week",
-              "title": "Grain"
             }
           }
         ],
@@ -59913,6 +60254,250 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PanelTrend"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels/{panel_id}/metrics": {
+      "get": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Get Metrics",
+        "description": "The six named metrics per stratum (T12), each with its denominator,\ninterval and what it does not prove.",
+        "operationId": "get_metrics_ai_visibility_panels__panel_id__metrics_get",
+        "parameters": [
+          {
+            "name": "panel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Panel Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PanelMetrics"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels/design": {
+      "post": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Design Panel Route",
+        "description": "Create a draft panel and start its design run (queued; the gates pause it).",
+        "operationId": "design_panel_route_ai_visibility_panels_design_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DesignPanelBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignRunView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels/{panel_id}/design": {
+      "get": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Get Panel Design",
+        "description": "The design run's steps, gates, open review card, documents and notices.",
+        "operationId": "get_panel_design_ai_visibility_panels__panel_id__design_get",
+        "parameters": [
+          {
+            "name": "panel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Panel Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignRunView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels/{panel_id}/design/gates/{gate}": {
+      "post": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Decide Panel Design Gate",
+        "description": "Approve, edit, or continue without approving; recorded with who and when.",
+        "operationId": "decide_panel_design_gate_ai_visibility_panels__panel_id__design_gates__gate__post",
+        "parameters": [
+          {
+            "name": "panel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Panel Id"
+            }
+          },
+          {
+            "name": "gate",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 4,
+              "minimum": 1,
+              "title": "Gate"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GateDecisionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignRunView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels/{panel_id}/design/artifacts/{name}": {
+      "get": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Get Panel Design Artifact",
+        "description": "One design document (latest version), by contract name or file name.",
+        "operationId": "get_panel_design_artifact_ai_visibility_panels__panel_id__design_artifacts__name__get",
+        "parameters": [
+          {
+            "name": "panel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Panel Id"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignArtifactView"
                 }
               }
             }
@@ -66077,6 +66662,94 @@
         }
       }
     },
+    "/crm/pitch-advisories": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Check Pitch Advisories Door",
+        "description": "Warnings and offers for one pitch action. Never a refusal.",
+        "operationId": "check_pitch_advisories_door_crm_pitch_advisories_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PitchAdvisoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PitchAdvisoryReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/pitch-advisories/one-per-outlet": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "One Per Outlet Door",
+        "description": "`crm.one_per_outlet` alone: who at each outlet already holds this pitch, org-wide.",
+        "operationId": "one_per_outlet_door_crm_pitch_advisories_one_per_outlet_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PitchAdvisoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PitchAdvisory"
+                  },
+                  "type": "array",
+                  "title": "Response One Per Outlet Door Crm Pitch Advisories One Per Outlet Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/content-processing/{cld_file_id}": {
       "post": {
         "tags": [
@@ -68829,7 +69502,7 @@
           "Picklists"
         ],
         "summary": "Add Items",
-        "description": "Add one or many items.\n\nA single object adds one item; an array triggers a batched insert.",
+        "description": "Add one or many items. The items table's INSERT policy (editor on the list) decides.",
         "operationId": "add_items_picklists__list_id__items_post",
         "parameters": [
           {
@@ -68892,7 +69565,7 @@
           "Picklists"
         ],
         "summary": "Clear Items",
-        "description": "Remove every item in a picklist while keeping the picklist itself.",
+        "description": "Archive every item in a picklist while keeping the picklist itself.",
         "operationId": "clear_items_picklists__list_id__items_delete",
         "parameters": [
           {
@@ -81629,7 +82302,7 @@
           "Conversations"
         ],
         "summary": "Delete Message",
-        "description": "Delete a single ``cx_message`` row.\n\nHard delete — the caller is responsible for understanding that this\nremoves the row from history permanently. After the write, both\ncache layers are busted.",
+        "description": "Move a single ``cx_message`` row to Trash.\n\nDelete means archive: sets ``deleted_at`` on the message and its tool\ncalls, artifacts, and media (``archive_messages``). The model never sees\nit again; it stays restorable. After the write, both cache layers are\nbusted.",
         "operationId": "delete_message_cx_conversations__conversation_id__messages__message_id__delete",
         "parameters": [
           {
@@ -81681,7 +82354,7 @@
           "Conversations"
         ],
         "summary": "Delete All Messages",
-        "description": "Hard-delete every message in a conversation (\"clear history\").\n\nThe ``cx_conversation`` row itself is left alone — only its messages\ngo away. Both cache layers are busted after the writes finish.",
+        "description": "Move every live message in a conversation to Trash (\"clear history\").\n\nThe ``cx_conversation`` row itself is left alone — its messages are\narchived (``deleted_at``), never destroyed. Both cache layers are busted\nafter the writes finish.",
         "operationId": "delete_all_messages_cx_conversations__conversation_id__messages_delete",
         "parameters": [
           {
@@ -81784,7 +82457,7 @@
           "Conversations"
         ],
         "summary": "Batch Delete Messages",
-        "description": "Hard-delete a set of messages with optional tool-pair cascading.\n\nMirrors the existing single-row ``DELETE`` endpoint but takes a\nflexible selector so the client can pass an explicit list of IDs, a\nposition range, or a \"truncate after X\" anchor. When\n``cascade_tool_pairs=True`` (default) the operation is \"smart\" — it\nextends the resolved set to keep ``tool_use ↔ tool_result`` adjacent\nrows together, so the next provider call never sees an orphan tool\nblock. ``dry_run=true`` resolves the set and returns it without\ndeleting anything.",
+        "description": "Move a set of messages to Trash with optional tool-pair cascading.\n\nMirrors the existing single-row ``DELETE`` endpoint but takes a\nflexible selector so the client can pass an explicit list of IDs, a\nposition range, or a \"truncate after X\" anchor. When\n``cascade_tool_pairs=True`` (default) the operation is \"smart\" — it\nextends the resolved set to keep ``tool_use ↔ tool_result`` adjacent\nrows together, so the next provider call never sees an orphan tool\nblock. ``dry_run=true`` resolves the set and returns it without\ndeleting anything.",
         "operationId": "batch_delete_messages_cx_conversations__conversation_id__messages_delete_post",
         "parameters": [
           {
@@ -85245,6 +85918,90 @@
         }
       }
     },
+    "/sources/manifest": {
+      "post": {
+        "tags": [
+          "Sources"
+        ],
+        "summary": "Sources Manifest",
+        "description": "Sizes, states, forms and Segments for each Source — never a body.",
+        "operationId": "sources_manifest_sources_manifest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceSetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceManifest"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/resolve": {
+      "post": {
+        "tags": [
+          "Sources"
+        ],
+        "summary": "Sources Resolve",
+        "description": "The full grounded text of each Source (``### Chunk <id> (page N)`` blocks).",
+        "operationId": "sources_resolve_sources_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceSetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolvedSourceSet"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sources/internal/land": {
       "post": {
         "tags": [
@@ -86337,6 +87094,7 @@
           "Files"
         ],
         "summary": "Delete File",
+        "description": "Move a file to Trash (soft delete — restorable via ``/restore``).\n\nThere is no hard delete: delete means archive (Arman, 2026-09-27). The\nstorage bytes stay with the trashed row; retention is a lifecycle policy.",
         "operationId": "delete_file_files__file_id__delete",
         "parameters": [
           {
@@ -86346,16 +87104,6 @@
             "schema": {
               "type": "string",
               "title": "File Id"
-            }
-          },
-          {
-            "name": "hard_delete",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Hard Delete"
             }
           }
         ],
@@ -86910,6 +87658,7 @@
           "Files"
         ],
         "summary": "Delete Folder",
+        "description": "Move a folder and its subtree to Trash (soft delete — restorable).\nThere is no hard delete: delete means archive (Arman, 2026-09-27).",
         "operationId": "delete_folder_folders__folder_id__delete",
         "parameters": [
           {
@@ -86919,16 +87668,6 @@
             "schema": {
               "type": "string",
               "title": "Folder Id"
-            }
-          },
-          {
-            "name": "hard_delete",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Hard Delete"
             }
           }
         ],
@@ -88292,6 +89031,66 @@
         }
       }
     },
+    "/share/{token}/files/{file_id}": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Download Shared Child File",
+        "description": "Access ladder T-19b — a shared chat's attachments ride the chat's token.\n\nAuthorized by ``public.share_link_child_file`` (token live + the file is a\nmedia part of a visible message of the conversation the token shares). No\nother file is reachable, and a refusal never confirms the file exists.\nDoes not consume a use. Mirrors ``matrx_files.api.router_share``.",
+        "operationId": "download_shared_child_file_share__token__files__file_id__get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          },
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "inline",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Render safe media inline. Set false to force a browser download.",
+              "default": true,
+              "title": "Inline"
+            },
+            "description": "Render safe media inline. Set false to force a browser download."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bytes of one file attached to the shared record."
+          },
+          "404": {
+            "description": "The token is dead, or the file is not a child of the record the token shares."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files/upload/tus": {
       "options": {
         "tags": [
@@ -89393,16 +90192,6 @@
             "schema": {
               "type": "string",
               "title": "Vid"
-            }
-          },
-          {
-            "name": "hard",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Hard"
             }
           }
         ],
@@ -99957,9 +100746,15 @@
             "default": "unknown"
           },
           "window_days": {
-            "type": "integer",
-            "title": "Window Days",
-            "default": 30
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
           },
           "last_seen_at": {
             "anyOf": [
@@ -101424,6 +102219,53 @@
           "advice"
         ],
         "title": "AdviceSlipRecord"
+      },
+      "AdvisoryOffer": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "flatten_attachments",
+              "hold_until",
+              "label_cold",
+              "limit_to",
+              "mandate",
+              "rewrite_line",
+              "schedule_at",
+              "strip_tracking"
+            ],
+            "title": "Action"
+          },
+          "mandate_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandate Key"
+          },
+          "detail": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "action"
+        ],
+        "title": "AdvisoryOffer"
       },
       "AffinityServiceStatus": {
         "properties": {
@@ -105222,6 +106064,59 @@
             "title": "Citation Count",
             "default": 0
           },
+          "lane": {
+            "type": "string",
+            "title": "Lane",
+            "default": "retrieval"
+          },
+          "validity_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "invalid",
+                  "retry",
+                  "valid"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validity Status"
+          },
+          "entities_mentioned": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Entities Mentioned"
+          },
+          "response_payload_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Payload Hash"
+          },
+          "citation_payload_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation Payload Hash"
+          },
           "analysis": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
@@ -108667,6 +109562,35 @@
           "version_count"
         ],
         "title": "ArtifactMetadata"
+      },
+      "ArtifactRecord": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "content_hash": {
+            "type": "string",
+            "title": "Content Hash"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "content_hash",
+          "created_at"
+        ],
+        "title": "ArtifactRecord"
       },
       "ArxivPublicPublication": {
         "properties": {
@@ -114196,7 +115120,7 @@
             ],
             "title": "Campaign Fit Reason"
           },
-          "campaign_context": {
+          "pitch": {
             "anyOf": [
               {
                 "type": "string"
@@ -114205,7 +115129,21 @@
                 "type": "null"
               }
             ],
-            "title": "Campaign Context"
+            "title": "Pitch"
+          },
+          "journalist_fit": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journalist Fit"
           },
           "insufficient_evidence": {
             "type": "boolean",
@@ -123517,18 +124455,14 @@
             "maxItems": 500,
             "minItems": 1,
             "title": "File Ids"
-          },
-          "hard_delete": {
-            "type": "boolean",
-            "title": "Hard Delete",
-            "default": false
           }
         },
         "type": "object",
         "required": [
           "file_ids"
         ],
-        "title": "BulkFileDeleteRequest"
+        "title": "BulkFileDeleteRequest",
+        "description": "Move many files to Trash. There is no hard delete (delete means archive)."
       },
       "BulkFileMoveRequest": {
         "properties": {
@@ -140833,6 +141767,18 @@
             },
             "type": "array",
             "title": "Terms"
+          },
+          "means": {
+            "type": "string",
+            "title": "Means",
+            "default": ""
+          },
+          "exclude_hints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Exclude Hints"
           }
         },
         "additionalProperties": false,
@@ -148413,6 +149359,12 @@
             "description": "Model preference/guidance, e.g. cost vs speed vs intelligence.",
             "default": ""
           },
+          "grading_rubric": {
+            "type": "string",
+            "title": "Grading Rubric",
+            "description": "How a run of this agent is judged: the automatic checks and the owner's pass bar from the mandate brief. The builder writes the prompt against it.",
+            "default": ""
+          },
           "model_profile": {
             "anyOf": [
               {
@@ -148428,6 +149380,18 @@
             ],
             "title": "Model Profile",
             "description": "Optional database-owned model class. 'balanced' selects a primary, non-premium mid-cost text model; 'strongest' selects a primary premium text model."
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id",
+            "description": "Optional EXPLICIT model pin (an id from agent_catalog list_models). A pin always wins over model_profile; it is validated by the live runnable-model gate and refused by name if unknown — never replaced."
           },
           "tools": {
             "items": {
@@ -152949,6 +153913,61 @@
         "type": "object",
         "title": "DataStorePatch"
       },
+      "DatabaseIdentity": {
+        "properties": {
+          "database_project_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Database Project Ref"
+          },
+          "database_ref_source": {
+            "type": "string",
+            "title": "Database Ref Source"
+          },
+          "auth_project_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Project Ref"
+          },
+          "auth_url_host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Url Host"
+          },
+          "paired": {
+            "type": "boolean",
+            "title": "Paired"
+          }
+        },
+        "type": "object",
+        "required": [
+          "database_project_ref",
+          "database_ref_source",
+          "auth_project_ref",
+          "auth_url_host",
+          "paired"
+        ],
+        "title": "DatabaseIdentity",
+        "description": "Which Supabase project this process is wired to — identities only, never a secret."
+      },
       "DataboxServiceStatus": {
         "properties": {
           "__kind": {
@@ -154567,6 +155586,44 @@
             },
             "type": "object",
             "title": "Declared Ref"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "repeats": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeats"
+          },
+          "lanes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lanes"
           }
         },
         "type": "object",
@@ -154855,6 +155912,13 @@
               }
             ],
             "title": "Brief Source Id"
+          },
+          "term_meanings": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TermMeaning"
+            },
+            "type": "object",
+            "title": "Term Meanings"
           }
         },
         "type": "object",
@@ -155967,6 +157031,108 @@
         "type": "object",
         "title": "DeliveredField"
       },
+      "DeliveryBody": {
+        "properties": {
+          "alert_recipient_user_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alert Recipient User Ids"
+          },
+          "slack_credential_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slack Credential Item Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DeliveryBody",
+        "description": "Who a monitor's alerts reach: people (each must be able to open the monitor) and one Slack\ncredential (org use rights, and a real Slack incoming webhook)."
+      },
       "DemioServiceStatus": {
         "properties": {
           "__kind": {
@@ -157047,6 +158213,368 @@
         ],
         "title": "DescriptServiceStatus",
         "description": "Safe aggregate status projection for Descript's fixed status page."
+      },
+      "DesignArtifactView": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "content": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "content_hash": {
+            "type": "string",
+            "title": "Content Hash"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "content",
+          "content_hash"
+        ],
+        "title": "DesignArtifactView"
+      },
+      "DesignNotice": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "remedy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remedy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "DesignNotice"
+      },
+      "DesignPanelBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "url",
+          "description"
+        ],
+        "title": "DesignPanelBody"
+      },
+      "DesignRunGate": {
+        "properties": {
+          "gate": {
+            "type": "integer",
+            "title": "Gate"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "continued_pending",
+              "edited",
+              "not_reached",
+              "open"
+            ],
+            "title": "Status"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "gate",
+          "title",
+          "status"
+        ],
+        "title": "DesignRunGate"
+      },
+      "DesignRunStep": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "performer": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "code",
+              "human"
+            ],
+            "title": "Performer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "failed",
+              "pending",
+              "running",
+              "skipped"
+            ],
+            "title": "Status"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "performer",
+          "status"
+        ],
+        "title": "DesignRunStep"
+      },
+      "DesignRunView": {
+        "properties": {
+          "panel_id": {
+            "type": "string",
+            "title": "Panel Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "running",
+              "waiting_for_gate"
+            ],
+            "title": "Status"
+          },
+          "panel_status": {
+            "type": "string",
+            "title": "Panel Status"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/DesignRunStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "open_gate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GateCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gates": {
+            "items": {
+              "$ref": "#/components/schemas/DesignRunGate"
+            },
+            "type": "array",
+            "title": "Gates"
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactRecord"
+            },
+            "type": "array",
+            "title": "Artifacts"
+          },
+          "notices": {
+            "items": {
+              "$ref": "#/components/schemas/DesignNotice"
+            },
+            "type": "array",
+            "title": "Notices"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "panel_id",
+          "run_id",
+          "status",
+          "panel_status",
+          "steps",
+          "gates",
+          "artifacts",
+          "notices"
+        ],
+        "title": "DesignRunView",
+        "description": "BUILD-CONTRACT ``DesignRunView``."
       },
       "DeskproServiceStatus": {
         "properties": {
@@ -163004,6 +164532,41 @@
         ],
         "title": "DroppedRungResponse",
         "description": "One rung that named a Holder and was not used, with the reason.\n\nThe wire mirror of ``service.DroppedRung``. `reason` is a finished sentence\nmeant to be shown to a person as-is — it names what was set aside and what\nto do about it."
+      },
+      "DroppedSource": {
+        "properties": {
+          "ref": {
+            "$ref": "#/components/schemas/SourceRef"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "failed",
+              "missing",
+              "no_access",
+              "not_ready",
+              "over_budget"
+            ],
+            "title": "Reason"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "reason"
+        ],
+        "title": "DroppedSource"
       },
       "DrugLabelIdentity": {
         "properties": {
@@ -178096,6 +179659,167 @@
         "title": "FullstoryServiceStatus",
         "description": "Safe aggregate status projection for Fullstory's fixed status page."
       },
+      "GateCard": {
+        "properties": {
+          "gate": {
+            "type": "integer",
+            "title": "Gate"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "blind": {
+            "type": "boolean",
+            "title": "Blind"
+          },
+          "wait_until": {
+            "type": "string",
+            "title": "Wait Until"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "payload": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "gate",
+          "title",
+          "blind",
+          "wait_until",
+          "summary",
+          "payload"
+        ],
+        "title": "GateCard"
+      },
+      "GateDecisionBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "continue",
+              "edit"
+            ],
+            "title": "Decision"
+          },
+          "edits": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edits"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "GateDecisionBody"
+      },
       "GatherStatusResult": {
         "properties": {
           "__kind": {
@@ -192151,6 +193875,35 @@
         ],
         "title": "IntersectingImageOut"
       },
+      "Interval": {
+        "properties": {
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "level": {
+            "type": "number",
+            "title": "Level"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "low",
+          "high",
+          "method",
+          "level"
+        ],
+        "title": "Interval"
+      },
       "InvalidateAgentCacheResponse": {
         "properties": {
           "cleared": {
@@ -193643,11 +195396,17 @@
             "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "window_days": {
-            "type": "integer",
-            "maximum": 365.0,
-            "minimum": 1.0,
-            "title": "Window Days",
-            "default": 30
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 730.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
           },
           "use_search": {
             "type": "boolean",
@@ -193736,7 +195495,7 @@
             "title": "Initiation",
             "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
-          "campaign_context": {
+          "pitch": {
             "anyOf": [
               {
                 "type": "string"
@@ -193745,7 +195504,29 @@
                 "type": "null"
               }
             ],
-            "title": "Campaign Context"
+            "title": "Pitch"
+          },
+          "client_or_subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Or Subject"
+          },
+          "decay_stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decay Stage"
           }
         },
         "type": "object",
@@ -208950,6 +210731,76 @@
         ],
         "title": "ManifestResponse"
       },
+      "ManifestSource": {
+        "properties": {
+          "ref": {
+            "$ref": "#/components/schemas/SourceRef"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "resource_type": {
+            "type": "string",
+            "title": "Resource Type"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "failed",
+              "processing",
+              "ready",
+              "unavailable"
+            ],
+            "title": "State"
+          },
+          "state_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Detail"
+          },
+          "forms": {
+            "items": {
+              "$ref": "#/components/schemas/SourceForm"
+            },
+            "type": "array",
+            "title": "Forms"
+          },
+          "default_form": {
+            "type": "string",
+            "title": "Default Form"
+          },
+          "segments": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SourceSegment"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "label",
+          "resource_type",
+          "state",
+          "default_form"
+        ],
+        "title": "ManifestSource"
+      },
       "ManifestToolEntry": {
         "properties": {
           "name": {
@@ -211148,11 +212999,17 @@
             "default": 14
           },
           "window_days": {
-            "type": "integer",
-            "maximum": 365.0,
-            "minimum": 1.0,
-            "title": "Window Days",
-            "default": 30
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 730.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
           },
           "use_search": {
             "type": "boolean",
@@ -213622,6 +215479,126 @@
         "title": "MetMuseumPublicObject",
         "description": "Safe CC0 projection of one public Met collection record."
       },
+      "MetricEstimate": {
+        "properties": {
+          "metric": {
+            "type": "string",
+            "enum": [
+              "aided_brand_knowledge",
+              "answer_framing",
+              "campaign_response",
+              "citation_presence",
+              "competitive_mention_share",
+              "unaided_brand_presence"
+            ],
+            "title": "Metric"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "does_not_prove": {
+            "type": "string",
+            "title": "Does Not Prove"
+          },
+          "stratum": {
+            "$ref": "#/components/schemas/Stratum"
+          },
+          "numerator": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numerator"
+          },
+          "denominator": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Denominator"
+          },
+          "distinct_slots": {
+            "type": "integer",
+            "title": "Distinct Slots"
+          },
+          "valid_observations": {
+            "type": "integer",
+            "title": "Valid Observations"
+          },
+          "invalid_observations": {
+            "type": "integer",
+            "title": "Invalid Observations"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shown_as": {
+            "type": "string",
+            "enum": [
+              "counts",
+              "not_set_up",
+              "rate",
+              "unmeasured"
+            ],
+            "title": "Shown As"
+          },
+          "effective_sample_size": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Sample Size"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metric",
+          "display_name",
+          "does_not_prove",
+          "stratum",
+          "numerator",
+          "denominator",
+          "distinct_slots",
+          "valid_observations",
+          "invalid_observations",
+          "shown_as"
+        ],
+        "title": "MetricEstimate"
+      },
       "MicrosoftAuthorizationRequest": {
         "properties": {
           "campaigns": {
@@ -214737,6 +216714,7 @@
           "output_type": {
             "type": "string",
             "enum": [
+              "agent",
               "audio",
               "decision",
               "extraction",
@@ -214956,6 +216934,7 @@
           "output_type": {
             "type": "string",
             "enum": [
+              "agent",
               "audio",
               "decision",
               "extraction",
@@ -219369,6 +221348,37 @@
           "published_at"
         ],
         "title": "NotesnookPublicRelease"
+      },
+      "Notice": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "news_notice",
+            "title": "Kind",
+            "default": "news_notice"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "remedy": {
+            "type": "string",
+            "title": "Remedy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "remedy"
+        ],
+        "title": "Notice",
+        "description": "A stand-in, fallback or automatic intervention, announced with its remedy."
       },
       "NotificationChannelReceipt": {
         "properties": {
@@ -227899,6 +229909,68 @@
         "type": "object",
         "title": "PagespeedSyncBody"
       },
+      "PairedComparison": {
+        "properties": {
+          "metric": {
+            "type": "string",
+            "enum": [
+              "aided_brand_knowledge",
+              "answer_framing",
+              "campaign_response",
+              "citation_presence",
+              "competitive_mention_share",
+              "unaided_brand_presence"
+            ],
+            "title": "Metric"
+          },
+          "stratum": {
+            "$ref": "#/components/schemas/Stratum"
+          },
+          "from_wave": {
+            "type": "string",
+            "title": "From Wave"
+          },
+          "to_wave": {
+            "type": "string",
+            "title": "To Wave"
+          },
+          "overlap_slots": {
+            "type": "integer",
+            "title": "Overlap Slots"
+          },
+          "change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metric",
+          "stratum",
+          "from_wave",
+          "to_wave",
+          "overlap_slots"
+        ],
+        "title": "PairedComparison"
+      },
       "PairwiseCandidate": {
         "properties": {
           "label": {
@@ -228157,14 +230229,57 @@
             "type": "integer",
             "title": "Engines"
           },
+          "lanes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lanes"
+          },
+          "repeats": {
+            "type": "integer",
+            "title": "Repeats",
+            "default": 1
+          },
           "calls": {
             "type": "integer",
             "title": "Calls"
+          },
+          "calls_by_lane": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Calls By Lane"
+          },
+          "calls_by_engine": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Calls By Engine"
+          },
+          "analyst_calls": {
+            "type": "integer",
+            "title": "Analyst Calls",
+            "default": 0
           },
           "cost_per_call_usd": {
             "type": "string",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Cost Per Call Usd"
+          },
+          "answer_cost_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Answer Cost Usd",
+            "default": "0"
+          },
+          "analyst_cost_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Analyst Cost Usd",
+            "default": "0"
           },
           "estimated_cost_usd": {
             "type": "string",
@@ -228178,6 +230293,13 @@
           "basis": {
             "type": "string",
             "title": "Basis"
+          },
+          "notices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notices"
           }
         },
         "additionalProperties": false,
@@ -228192,7 +230314,7 @@
           "basis"
         ],
         "title": "PanelCostEstimate",
-        "description": "What a pass will cost, and how confident that number is."
+        "description": "What one wave will cost, and how confident that number is."
       },
       "PanelListResponse": {
         "properties": {
@@ -228209,6 +230331,73 @@
           "panels"
         ],
         "title": "PanelListResponse"
+      },
+      "PanelMetrics": {
+        "properties": {
+          "panel_id": {
+            "type": "string",
+            "title": "Panel Id"
+          },
+          "panel_status": {
+            "type": "string",
+            "title": "Panel Status"
+          },
+          "panel_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Panel Version"
+          },
+          "conditional_note": {
+            "type": "string",
+            "title": "Conditional Note",
+            "default": "Every number here is conditional on this panel: its questions, engines, lanes, locales and dates. It is not a probability sample of real buyers, and a panel mention is rung 1 of 5 on the evidence ladder, never attribution."
+          },
+          "evidence_ladder": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Ladder"
+          },
+          "unclassified_questions": {
+            "type": "integer",
+            "title": "Unclassified Questions",
+            "default": 0
+          },
+          "min_cells_for_rate": {
+            "type": "integer",
+            "title": "Min Cells For Rate"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricEstimate"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "comparisons": {
+            "items": {
+              "$ref": "#/components/schemas/PairedComparison"
+            },
+            "type": "array",
+            "title": "Comparisons"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "panel_id",
+          "panel_status",
+          "min_cells_for_rate",
+          "metrics"
+        ],
+        "title": "PanelMetrics"
       },
       "PanelPreview": {
         "properties": {
@@ -228241,8 +230430,37 @@
             "type": "array",
             "title": "Engines"
           },
+          "lanes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lanes"
+          },
+          "repeats": {
+            "type": "integer",
+            "title": "Repeats",
+            "default": 1
+          },
+          "wave_partial": {
+            "type": "boolean",
+            "title": "Wave Partial",
+            "default": false
+          },
+          "shortfall": {
+            "type": "integer",
+            "title": "Shortfall",
+            "default": 0
+          },
           "estimate": {
             "$ref": "#/components/schemas/PanelCostEstimate"
+          },
+          "notices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notices"
           },
           "summary": {
             "type": "string",
@@ -228281,6 +230499,152 @@
               }
             ],
             "title": "Intent"
+          },
+          "candidate_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Id"
+          },
+          "canonical_cell_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Cell Id"
+          },
+          "proximity_band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proximity Band"
+          },
+          "aided_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aided Status"
+          },
+          "campaign_exposed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Exposed"
+          },
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition"
+          },
+          "lane_eligibility": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lane Eligibility"
+          },
+          "variant_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Role"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "persona_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Id"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "evidence_grade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Grade"
+          },
+          "transformation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transformation"
           }
         },
         "additionalProperties": false,
@@ -228290,7 +230654,7 @@
           "text"
         ],
         "title": "PanelPrompt",
-        "description": "One buyer question, in the user's words. Never inferred from a keyword."
+        "description": "One buyer question, in the user's words or a design run's. Never inferred\nfrom a keyword.\n\nEvery cell field is optional: a legacy hand-typed prompt (``key``, ``text``,\n``intent`` only) stays valid and reads as an unclassified question\n(:attr:`is_classified` False, :attr:`effective_transformation`\n``'human_written'``). Enum-valued fields are checked against the design\nmodule's ``ENUMS`` so the codes have one home."
       },
       "PanelTrend": {
         "properties": {
@@ -228306,14 +230670,6 @@
             "type": "string",
             "title": "Site Id"
           },
-          "grain": {
-            "type": "string",
-            "enum": [
-              "day",
-              "week"
-            ],
-            "title": "Grain"
-          },
           "since": {
             "type": "string",
             "format": "date-time",
@@ -228323,35 +230679,6 @@
             "type": "integer",
             "title": "Answers",
             "default": 0
-          },
-          "mention_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Mention Rate"
-          },
-          "citation_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Citation Rate"
-          },
-          "points": {
-            "items": {
-              "$ref": "#/components/schemas/PresencePoint"
-            },
-            "type": "array",
-            "title": "Points"
           },
           "prompts": {
             "items": {
@@ -228366,11 +230693,6 @@
             },
             "type": "array",
             "title": "Messages"
-          },
-          "headline": {
-            "type": "string",
-            "title": "Headline",
-            "default": ""
           }
         },
         "additionalProperties": false,
@@ -228379,10 +230701,10 @@
           "panel_id",
           "name",
           "site_id",
-          "grain",
           "since"
         ],
-        "title": "PanelTrend"
+        "title": "PanelTrend",
+        "description": "Where each question and key message stands. Deliberately NO pooled rate:\nthe panel's numbers are :func:`panel_metrics`."
       },
       "PanelView": {
         "properties": {
@@ -228511,6 +230833,28 @@
             "type": "integer",
             "title": "Run Count",
             "default": 0
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "draft"
+          },
+          "tier": {
+            "type": "string",
+            "title": "Tier",
+            "default": "diagnostic"
+          },
+          "repeats": {
+            "type": "integer",
+            "title": "Repeats",
+            "default": 1
+          },
+          "lanes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lanes"
           }
         },
         "additionalProperties": false,
@@ -232482,6 +234826,383 @@
         "type": "object",
         "title": "PipelineProgress"
       },
+      "PitchAdvisory": {
+        "properties": {
+          "rule": {
+            "type": "string",
+            "enum": [
+              "E1",
+              "E10",
+              "E11",
+              "E12",
+              "E13",
+              "E14",
+              "E15",
+              "E16",
+              "E17",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9"
+            ],
+            "title": "Rule"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "strong",
+              "warn"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "offer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdvisoryOffer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "other_offers": {
+            "items": {
+              "$ref": "#/components/schemas/AdvisoryOffer"
+            },
+            "type": "array",
+            "title": "Other Offers"
+          },
+          "knob": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knob"
+          },
+          "evidence": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rule",
+          "code",
+          "severity",
+          "message"
+        ],
+        "title": "PitchAdvisory"
+      },
+      "PitchAdvisoryReport": {
+        "properties": {
+          "surface": {
+            "type": "string",
+            "enum": [
+              "chasebox_review",
+              "crisis_publish",
+              "followup_runner",
+              "list_save",
+              "list_send",
+              "single_send",
+              "source_request"
+            ],
+            "title": "Surface"
+          },
+          "advisories": {
+            "items": {
+              "$ref": "#/components/schemas/PitchAdvisory"
+            },
+            "type": "array",
+            "title": "Advisories"
+          },
+          "action_may_proceed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Action May Proceed",
+            "default": true
+          },
+          "wants_person": {
+            "type": "boolean",
+            "title": "Wants Person",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "surface"
+        ],
+        "title": "PitchAdvisoryReport"
+      },
+      "PitchAdvisoryRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "chasebox_review",
+              "crisis_publish",
+              "followup_runner",
+              "list_save",
+              "list_send",
+              "single_send",
+              "source_request"
+            ],
+            "title": "Surface"
+          },
+          "draft_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Id"
+          },
+          "outreach_list_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outreach List Id"
+          },
+          "source_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Request Id"
+          },
+          "reputation_case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reputation Case Id"
+          },
+          "recipient_party_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recipient Party Ids"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "recipient_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Count"
+          },
+          "adding_recipients": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adding Recipients"
+          },
+          "attachment_count": {
+            "type": "integer",
+            "title": "Attachment Count",
+            "default": 0
+          },
+          "is_exclusive": {
+            "type": "boolean",
+            "title": "Is Exclusive",
+            "default": false
+          },
+          "exclusive_expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclusive Expires At"
+          },
+          "embargo_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embargo Until"
+          },
+          "has_new_information": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has New Information"
+          },
+          "has_direct_standing": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Direct Standing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "surface"
+        ],
+        "title": "PitchAdvisoryRequest",
+        "description": "`PitchContext` minus the principal, which comes from the request context."
+      },
       "PixelcutServiceStatus": {
         "properties": {
           "__kind": {
@@ -235997,66 +238718,6 @@
         },
         "type": "object",
         "title": "PrepGuest"
-      },
-      "PresencePoint": {
-        "properties": {
-          "bucket": {
-            "type": "string",
-            "format": "date",
-            "title": "Bucket"
-          },
-          "answers": {
-            "type": "integer",
-            "title": "Answers"
-          },
-          "mentioned": {
-            "type": "integer",
-            "title": "Mentioned"
-          },
-          "cited": {
-            "type": "integer",
-            "title": "Cited"
-          },
-          "mention_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Mention Rate"
-          },
-          "citation_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Citation Rate"
-          },
-          "message_rates": {
-            "additionalProperties": {
-              "type": "number"
-            },
-            "type": "object",
-            "title": "Message Rates"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "bucket",
-          "answers",
-          "mentioned",
-          "cited"
-        ],
-        "title": "PresencePoint",
-        "description": "One bucket of the trend. Rates are None when nothing was measured."
       },
       "PresentationResponse": {
         "properties": {
@@ -241653,6 +244314,106 @@
         ],
         "title": "ProposeIntentsResult",
         "description": "What one pass actually did. Every field is measured, never assumed."
+      },
+      "ProposeSetupBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "brand_id": {
+            "type": "string",
+            "title": "Brand Id"
+          },
+          "tracker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracker Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "brand_id"
+        ],
+        "title": "ProposeSetupBody"
       },
       "ProposedWriteResponse": {
         "properties": {
@@ -254392,6 +257153,144 @@
         ],
         "title": "ResolvedPath"
       },
+      "ResolvedSegment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "chars"
+        ],
+        "title": "ResolvedSegment"
+      },
+      "ResolvedSource": {
+        "properties": {
+          "ref": {
+            "$ref": "#/components/schemas/SourceRef"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "form_used": {
+            "type": "string",
+            "title": "Form Used"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/ResolvedSegment"
+            },
+            "type": "array",
+            "title": "Segments"
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "processed_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Document Id"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "processing",
+              "ready"
+            ],
+            "title": "State"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "label",
+          "form_used",
+          "text",
+          "state"
+        ],
+        "title": "ResolvedSource"
+      },
+      "ResolvedSourceSet": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "resolved_source_set",
+            "title": "Kind",
+            "default": "resolved_source_set"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ResolvedSource"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "dropped": {
+            "items": {
+              "$ref": "#/components/schemas/DroppedSource"
+            },
+            "type": "array",
+            "title": "Dropped"
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ResolvedSourceSet",
+        "description": "``POST /sources/resolve`` — grounded text for generators."
+      },
       "ResourceContextPolicy": {
         "properties": {
           "promote": {
@@ -254964,6 +257863,118 @@
           "captured_by_rung"
         ],
         "title": "ResultBody"
+      },
+      "ResumeBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          }
+        },
+        "type": "object",
+        "title": "ResumeBody"
+      },
+      "ResumeResponse": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "resumed_tracker_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Resumed Tracker Ids"
+          },
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "by": {
+            "type": "string",
+            "title": "By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "month",
+          "by"
+        ],
+        "title": "ResumeResponse"
       },
       "ResumeRunRequest": {
         "properties": {
@@ -257995,6 +261006,123 @@
         ],
         "title": "Ruleset",
         "description": "The conformance rules in force. Versioned, additive-only."
+      },
+      "RunCalendarBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "tracker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracker Id"
+          },
+          "country_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country Codes"
+          },
+          "research": {
+            "type": "boolean",
+            "title": "Research",
+            "default": true
+          },
+          "plan": {
+            "type": "boolean",
+            "title": "Plan",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "RunCalendarBody"
       },
       "RunCostSummary": {
         "properties": {
@@ -261134,6 +264262,271 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ScenariosResponse"
+      },
+      "ScheduleBody": {
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [
+              "custom",
+              "daily",
+              "hourly",
+              "off",
+              "twice_daily"
+            ],
+            "title": "Preset"
+          },
+          "cron_expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cron Expression",
+            "description": "Required for preset 'custom'."
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone",
+            "description": "IANA zone; default: the person's own timezone."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "preset"
+        ],
+        "title": "ScheduleBody",
+        "description": "A schedule preset (daily 7am, 7am and 2pm, hourly, custom cron, or off) in the saver's timezone."
+      },
+      "ScheduleView": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "news_monitor_schedule",
+            "title": "Kind",
+            "default": "news_monitor_schedule"
+          },
+          "tracker_id": {
+            "type": "string",
+            "title": "Tracker Id"
+          },
+          "has_schedule": {
+            "type": "boolean",
+            "title": "Has Schedule"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "trigger_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Id"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "custom",
+                  "daily",
+                  "hourly",
+                  "off",
+                  "twice_daily"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "cron_expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cron Expression"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "jitter_minute": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jitter Minute"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": false
+          },
+          "next_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Run At"
+          },
+          "saved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved By"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          },
+          "notices": {
+            "items": {
+              "$ref": "#/components/schemas/Notice"
+            },
+            "type": "array",
+            "title": "Notices"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tracker_id",
+          "has_schedule"
+        ],
+        "title": "ScheduleView"
       },
       "SchemaAllResponse": {
         "additionalProperties": {
@@ -267134,6 +270527,113 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SetupAgentBody"
+      },
+      "SetupCost": {
+        "properties": {
+          "monthly_ceiling_usd": {
+            "type": "number",
+            "title": "Monthly Ceiling Usd"
+          },
+          "month_to_date_usd": {
+            "type": "number",
+            "title": "Month To Date Usd"
+          },
+          "average_run_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Run Usd"
+          },
+          "runs_measured": {
+            "type": "integer",
+            "title": "Runs Measured",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "monthly_ceiling_usd",
+          "month_to_date_usd"
+        ],
+        "title": "SetupCost"
+      },
+      "SetupFacts": {
+        "properties": {
+          "brand_id": {
+            "type": "string",
+            "title": "Brand Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "counts": {
+            "additionalProperties": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Counts"
+          },
+          "feed_catalog": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Feed Catalog"
+          },
+          "x_key_on_file": {
+            "type": "boolean",
+            "title": "X Key On File"
+          },
+          "x_trends_locations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "X Trends Locations"
+          },
+          "schedule_presets": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Schedule Presets"
+          },
+          "schedule_default": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Schedule Default"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/SetupCost"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "brand_id",
+          "organization_id",
+          "counts",
+          "feed_catalog",
+          "x_key_on_file",
+          "cost"
+        ],
+        "title": "SetupFacts",
+        "description": "What the editor needs besides the proposal: the knob ranges, the catalog, X, and cost."
       },
       "SevenShiftsServiceStatus": {
         "properties": {
@@ -273381,6 +276881,34 @@
         "type": "object",
         "title": "SourceFilterModel"
       },
+      "SourceForm": {
+        "properties": {
+          "form": {
+            "type": "string",
+            "title": "Form"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          }
+        },
+        "type": "object",
+        "required": [
+          "form",
+          "label",
+          "chars",
+          "available"
+        ],
+        "title": "SourceForm"
+      },
       "SourceLanding": {
         "properties": {
           "source_kind": {
@@ -273487,6 +277015,47 @@
         "title": "SourceLanding",
         "description": "Everything the door needs to land one acquisition as a Source."
       },
+      "SourceManifest": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "source_manifest",
+            "title": "Kind",
+            "default": "source_manifest"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestSource"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          },
+          "estimated_tokens": {
+            "type": "integer",
+            "title": "Estimated Tokens",
+            "default": 0
+          },
+          "model_context_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Context Tokens"
+          }
+        },
+        "type": "object",
+        "title": "SourceManifest",
+        "description": "``POST /sources/manifest`` — sizes and states, never bodies."
+      },
       "SourcePackageMetadata": {
         "properties": {
           "__kind": {
@@ -273527,6 +277096,116 @@
           "web_url"
         ],
         "title": "SourcePackageMetadata"
+      },
+      "SourceRef": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "resource_ref",
+            "title": "Kind",
+            "default": "resource_ref"
+          },
+          "resource_type": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Resource Type"
+          },
+          "resource_id": {
+            "type": "string",
+            "title": "Resource Id"
+          },
+          "representation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Representation"
+          },
+          "include_segments": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Segments"
+          },
+          "delivery": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "context",
+                  "direct"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery"
+          },
+          "max_chars": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Chars"
+          },
+          "promote": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResourcePromotion"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResourcePromotion"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promote"
+          },
+          "exclude": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resource_type",
+          "resource_id"
+        ],
+        "title": "SourceRef",
+        "description": "The pointer — the existing ``resource_ref`` envelope, extended."
       },
       "SourceRequestEvaluateResult": {
         "properties": {
@@ -274217,6 +277896,123 @@
           "attributes"
         ],
         "title": "SourceRow"
+      },
+      "SourceSegment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "chars"
+        ],
+        "title": "SourceSegment"
+      },
+      "SourceSet": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "source_set",
+            "title": "Kind",
+            "default": "source_set"
+          },
+          "version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Version",
+            "default": 1
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceRef"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Sources"
+          },
+          "topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topic"
+          },
+          "grounding": {
+            "type": "string",
+            "enum": [
+              "retrieve",
+              "selected",
+              "whole"
+            ],
+            "title": "Grounding",
+            "default": "whole"
+          },
+          "retrieve_query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieve Query"
+          },
+          "target_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Model Id"
+          }
+        },
+        "type": "object",
+        "title": "SourceSet",
+        "description": "The one payload that carries a person's chosen Sources."
+      },
+      "SourceSetRequest": {
+        "properties": {
+          "source_set": {
+            "$ref": "#/components/schemas/SourceSet",
+            "description": "The Sources to measure or resolve."
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_set"
+        ],
+        "title": "SourceSetRequest"
       },
       "SourceSummary": {
         "properties": {
@@ -279122,6 +282918,90 @@
         "additionalProperties": false,
         "type": "object",
         "title": "StrategyRulingBody"
+      },
+      "Stratum": {
+        "properties": {
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition"
+          },
+          "lane": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lane"
+          },
+          "aided_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aided Status"
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "market_side": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Side"
+          },
+          "wave_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wave Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Stratum"
       },
       "StreamServiceStatus": {
         "properties": {
@@ -286064,6 +289944,26 @@
         "type": "object",
         "title": "TermListWrite"
       },
+      "TermMeaning": {
+        "properties": {
+          "means": {
+            "type": "string",
+            "title": "Means",
+            "default": ""
+          },
+          "exclude_hints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Exclude Hints"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TermMeaning",
+        "description": "One brand keyword's \"means\" line (``seo.coverage_tracker.term_meanings``, brief §4). An empty means\nnever blocks a save; the editor says \"wrong-company matches will get through\"."
+      },
       "TerraformRegistryPublicModuleVersion": {
         "properties": {
           "__kind": {
@@ -290225,6 +294125,13 @@
               }
             ],
             "title": "Brief Source Id"
+          },
+          "term_meanings": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TermMeaning"
+            },
+            "type": "object",
+            "title": "Term Meanings"
           },
           "alert_recipient_user_ids": {
             "items": {
