@@ -156,7 +156,14 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
   }
 
   // Owner / personal class → full editable hub. Joined class → member hub.
-  if (cls) {
+  // `cls` only proves the scope is VISIBLE in this org's Class-type scope list
+  // (e.g. a co-member of the same organization can read another member's
+  // class row) — it is never proof of OWNERSHIP. The access layer's
+  // `edu_class_state` RPC is the one authority on who owns a class; gate the
+  // full editable hub (Edit/Archive/Invite/Assign/Add-content/roster
+  // management) on it explicitly, or a non-owner org-mate sees and can
+  // attempt every owner control on a class that isn't theirs (D-2026-09-28).
+  if (cls && access.state?.isOwner) {
     return (
       <ClassHubBody
         classParam={classParam}

@@ -150,6 +150,28 @@ These filled genuine open product questions. **Flagged for Arman** — reasonabl
 
 ## Change log
 
+- **2026-09-28 (teacher↔student journey adversarial test)** — Full two-account journey run live
+  (admin@admin.com teacher, test@test.com student, two isolated browser sessions): create class
+  (open) → attach deck → assign with due date → invite via join code → student joins → studies →
+  teacher sees roster + completion → student leaves → teacher sees them gone; closed access
+  (request → approve) also run end to end. Found and fixed a real permission-gating defect in
+  `ClassHubView.tsx`: `if (cls)` treated ANY class visible in `useClasses()`'s org-wide Class-type
+  scope list as proof of ownership and rendered the full owner hub (Edit/Archive/Invite/Assign/Add
+  content/Class progress) for it — but `useClasses()` returns every "Class" scope readable in the
+  active organization, not just the caller's own, so a co-member of the SAME organization (a
+  student who happens to share an org with the teacher, e.g. by picking that org to study under)
+  got the owner's full management controls on a class they don't own, and simultaneously lost their
+  own `ClassAccessPanel`/"Leave" control entirely (fell into the owner branch, which has none).
+  Fixed by gating on `access.state?.isOwner` (the `edu_class_state` RPC's own answer) in addition to
+  `cls`'s presence; a non-owner now correctly falls through to `MemberClassView`. Verified live:
+  before the fix the student's class page showed `Assign`/`Add content` buttons and an erroring
+  "Class progress" panel with no way to leave; after the fix (server picked it up on save, no
+  restart needed) the same URL renders the proper member view (roster read-only, "Assigned to you",
+  Leave). Also hit and worked around (not a `ClassHubView` bug): a deck attached from a DIFFERENT
+  organization than the class's own org showed "No cards to study" for the student — the
+  assignment-confers-read branch makes the SET readable, but the student's active study org must
+  match the deck's owning org for the study session to load the cards; noted as a narrow gap, not
+  fixed (normal usage — teacher assigns their own org's content — is unaffected).
 - **wave 4b adversarial proof, 2026-09-28** — Both agent surfaces on `agent-test-chemistry` proven
   live on production with real agent runs: a read ("What is assigned in this class and what study
   content is attached?" → correctly named "AP Chemistry Nomenclature: the Absolute Core" and
