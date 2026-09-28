@@ -134,18 +134,16 @@ function StudyCell({ row }: { row: FlashcardSetListRow }) {
       onClick={(e) => e.stopPropagation()}
     >
       {/* Phone card: labelled one-tap buttons; the grid: icons + tooltips. */}
-      <span className="contents sm:hidden">
+      <span className="contents sm:hidden [&_a]:min-h-11 [&_a]:items-center">
         <PlayTapButton
           href={flashcardStudyHref(row)}
           variant="transparent"
-          className="min-h-11"
           label="Study"
           ariaLabel={`Study ${row.name}`}
         />
         <ZapTapButton
           href={flashcardFastFireHref(row)}
           variant="transparent"
-          className="min-h-11"
           label="Fast Fire"
           ariaLabel={`Fast Fire ${row.name}`}
         />
