@@ -10,6 +10,7 @@
 // Dense two-column layout on desktop (identity rail + activity main), single
 // stacked scroll on mobile. One scroll area per view.
 
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -192,9 +193,9 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
   const copyLink = async () => {
     if (!party) return;
     try {
-      await navigator.clipboard.writeText(
-        `${window.location.origin}/crm/${party.id}`,
-      );
+      const href = resolveEntityDoors("party", party.id).href;
+      if (!href) throw new Error("This record has no link.");
+      await navigator.clipboard.writeText(`${window.location.origin}${href}`);
       toast.success("Link copied");
     } catch {
       toast.error("Could not copy the link — your browser blocked the clipboard.");

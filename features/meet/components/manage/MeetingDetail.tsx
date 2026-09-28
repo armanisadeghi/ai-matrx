@@ -18,6 +18,7 @@
 // `?at=<original start>` names the occurrence the person came from, so Edit and
 // Cancel can ask "this occurrence or the whole series".
 
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -1066,7 +1067,7 @@ function CrmLogLine({ metadata }: { metadata: unknown }) {
             <span key={l.party_id}>
               {i > 0 ? ", " : ""}
               <a
-                href={`/crm/${l.party_id}`}
+                href={resolveEntityDoors("party", l.party_id).href ?? undefined}
                 className="text-primary hover:underline"
               >
                 {l.as === "company" ? "their company" : "a contact"}
