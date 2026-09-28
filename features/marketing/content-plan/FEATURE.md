@@ -894,6 +894,13 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-09-27 — **The commit is never drawer-only on a phone.** "Create N pages"
+  lived only in the "Pages that will exist" drawer below `md`. The commit bar is
+  now `SetupCommitBar` (exported from `setup/components/SetupPreviewColumn.tsx`),
+  rendered at the foot of the preview column AND as a sticky bar at the foot of
+  the phone's main column — one component, same `handleCommit`, same disabled
+  reason and count. Desktop unchanged.
+
 - 2026-09-10 — **Every site-pipeline chip now lands on its owning work.** The
   chosen stage is URL-backed, remains visibly selected on Tree/Table/Map, and
   Setup stages scroll to Research, SEO strategy, Design, or the build/publish

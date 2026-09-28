@@ -89,6 +89,8 @@ features/rag/
 
 ## Change log
 
+- 2026-09-27 — **The empty data-store pane carries real actions.** It said "Pick or create a store in the Stores panel" — on a phone that panel is a hidden drawer. It now shows "New store" (the same `?new=1` create flow) and, only where the list is behind a drawer, "Browse stores" (opens it via the new `useOpenMobilePanel()` from `MobilePanelShell`, null on desktop so no dead button). Reached after deleting a store or on `?new=0`; the bare address still redirects to the hub.
+
 - 2026-09-27 — **H6b: the Data Stores and Library catalog LISTS retired into the Knowledge hub's container groups.** `/knowledge/data-stores` is a store's record page (`?store_id=`) or its create form (`?new=1`, the hub's "New data store"); `/knowledge/library-catalog` is an item's record page (`?id=&type=`); either bare address redirects to the hub group with its filters. Both pages keep their master rail as a switcher. Parity walk: `common-docs/projects/knowledge-system/HUB-PARITY-CHECKLISTS.md`.
 
 - 2026-09-27 — **H6a: the Sources page, the Knowledge home and the Search Lab retired into the Knowledge hub.** Deleted `RagHomePage`, `LibraryCatalogPane`, `LibraryTrashSheet` (its doors live on in `components/library/libraryTrash.ts`, rendered by `LibraryTrashList` in the hub's Trash view) and the `/rag/*` route files. `rag.fn_restore_library_document` now revives the document before its chunks — the soft-delete edge guard had refused every restore from the trash (23514). Parity walk: `common-docs/projects/knowledge-system/HUB-PARITY-CHECKLISTS.md`.
