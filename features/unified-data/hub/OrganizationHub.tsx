@@ -569,7 +569,10 @@ export function OrganizationHub({
           state={filtered[capability.id] ?? { phase: "reading" }}
           scope={scope}
           kind={capability.id === "tables" ? kind : ALL_KINDS}
-          sharedOnly={sharedOnly}
+          /* THE TABLES LISTING IS EVERY ORGANIZATION'S (DATA-HOME-1): "this organization shows
+             each member only what is shared" is one organization's setting and would be false
+             over a list of eleven. It still speaks on the listings that ARE that organization's. */
+          sharedOnly={capability.id === "tables" ? false : sharedOnly}
           open={open[capability.id] ?? false}
           onOpenChange={(next) => setOpen((prev) => ({ ...prev, [capability.id]: next }))}
         />

@@ -158,10 +158,14 @@ describe("UI-FIX-19 · the Tables sentence speaks to its reader", () => {
     expect(heading).not.toMatch(/only what is shared/);
   });
 
-  it("tells a member who is not an owner that she sees only what is shared with her", async () => {
+  it("never tells a member that a list across every organization is one organization's shared-only view", async () => {
+    // DATA-HOME-1: the Tables listing spans every organization she belongs to, so the one
+    // organization's shared-only sentence would be false there (measured: test@test.com's home
+    // read it over 361 tables in 11 organizations). It speaks on that organization's own listings.
     role = "member";
     await mount();
     const heading = container.querySelector('[data-hub-listing-toggle="tables"]')?.textContent ?? "";
-    expect(heading).toMatch(/only what is shared with them/);
+    expect(heading).toMatch(/Every table you can open, in every organization you belong to/);
+    expect(heading).not.toMatch(/only what is shared with them/);
   });
 });

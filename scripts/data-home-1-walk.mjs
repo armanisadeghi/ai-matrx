@@ -143,10 +143,12 @@ if (PHASE === "before") {
   step("tables under the default", await tablesListing());
   await shot("01-home-default-all");
 
-  await page.locator("[data-hub-kind]").selectOption("list");
-  await until("?kind=list", async () => path().includes("kind=list"), 20000);
+  const kindValues = await page.locator("[data-hub-kind] option").evaluateAll((os) => os.map((o) => o.value));
+  const pick = kindValues.includes("list") ? "list" : (kindValues.find((v) => v !== "all" && v !== "table") ?? "table");
+  await page.locator("[data-hub-kind]").selectOption(pick);
+  await until(`?kind=${pick}`, async () => path().includes(`kind=${pick}`), 20000);
   await sleep(1500);
-  step("kind list", { path: path(), ...(await tablesListing()) });
+  step(`kind ${pick}`, { path: path(), ...(await tablesListing()) });
   await shot("02-kind-lists");
   await page.goBack({ timeout: 30000 });
   await until("back from kind", async () => !path().includes("kind="), 20000);
