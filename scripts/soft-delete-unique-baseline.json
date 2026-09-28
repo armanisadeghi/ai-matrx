@@ -220,7 +220,6 @@
     "users.invitation_codes:invitation_codes_code_key",
     "users.invitation_requests:invitation_requests_email_key",
     "users.user_achievements:user_achievements_created_by_achievement_type_key",
-    "users.user_bookmarks:user_bookmarks_user_id_canvas_id_key",
     "users.user_email_preferences:user_email_preferences_user_id_key",
     "users.user_memory:user_memory_created_by_path_key",
     "users.user_surface_state:user_surface_state_uniq",
@@ -335,6 +334,16 @@
       "index": "ui.ui_surface_item_type:ui_surface_item_type_key",
       "reason": "(surface_name, name) is the SYSTEM SURFACE SCHEMA IDENTITY used by the manifest sync upsert, not a reusable person-created label. The defining migration explicitly sets p_soft_delete=false and the parent surface FK cascades deletion; retaining uniqueness prevents an archived ghost from becoming a second item type for the same manifest identity.",
       "ruled": "CI-FIX integration intake, 2026-09-28 — alchemy_declare_columns_and_item_key.sql defines the sync identity and non-soft-delete contract"
+    },
+    {
+      "index": "browser.authenticator_window:authenticator_window_item_step_uq",
+      "reason": "(credential_item_id, time_step) is a SINGLE-USE AUTHENTICATOR WINDOW, not a reusable name. A one-time code may claim its credential window once; releasing a removed row's same time step would permit a replay to manufacture another authentication claim for a code already consumed.",
+      "ruled": "CI-FIX intake, 2026-09-28 — browser.authenticator_window has credential identity plus time_step and is a restricted authentication record"
+    },
+    {
+      "index": "education.guardian_link:guardian_link_unique",
+      "reason": "(guardian_user_id, student_user_id) is the durable GUARDIAN CONSENT RELATIONSHIP. guardian_grant and guardian_request_student both INSERT ... ON CONFLICT to reactivate or reopen the same link after revocation; a partial index would break that lifecycle and permit duplicate consent histories for one pair.",
+      "ruled": "CI-FIX intake, 2026-09-28 — edu_guardian_link.sql proves the conflict-revive consent lifecycle"
     }
   ]
 }
