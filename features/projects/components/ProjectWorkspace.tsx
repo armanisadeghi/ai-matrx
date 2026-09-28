@@ -492,10 +492,13 @@ export function ProjectWorkspace() {
             }}
           >
             <div className="space-y-5">
-              <div className="flex items-center gap-2">
-                <Boxes className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-lg font-semibold">Associated resources</h2>
-                <span className="text-xs text-muted-foreground">
+              {/* Wraps on a phone: the title keeps its words whole and the
+                  explainer drops to its own line (it used to squeeze the
+                  heading into "Associate / d / resources" at 390px). */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <Boxes className="h-5 w-5 shrink-0 text-muted-foreground" />
+                <h2 className="whitespace-nowrap text-lg font-semibold">Associated resources</h2>
+                <span className="basis-full text-xs text-muted-foreground sm:basis-auto">
                   Attach files, documents, data stores and more — project
                   members get access automatically
                 </span>
