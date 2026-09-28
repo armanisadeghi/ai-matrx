@@ -26,6 +26,7 @@
 
 import { Cost } from "@/components/cost/Cost";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   CircleCheck,
   CircleX,
@@ -757,34 +758,44 @@ function HistoryPanel({
   onPick: (row: ComparisonRow) => void;
 }) {
   const [rows, setRows] = useState<ComparisonRow[] | null>(null);
+  const [historyError, setHistoryError] = useState<unknown>(null);
+  const [historyAttempt, setHistoryAttempt] = useState(0);
 
   useEffect(() => {
     let live = true;
     void (async () => {
       try {
         const result = await listComparisons();
-        if (live) setRows(result);
+        if (!live) return;
+        setRows(result);
+        setHistoryError(null);
       } catch (err) {
-        if (live) {
-          toast.error(err instanceof Error ? err.message : String(err));
-          setRows([]);
-        }
+        // Said in the panel (with a retry) — never "None yet".
+        if (live) setHistoryError(err ?? new Error("Listing past comparisons failed"));
       }
     })();
     return () => {
       live = false;
     };
-  }, []);
+  }, [historyAttempt]);
 
   return (
     <div className="w-72 shrink-0 overflow-y-auto border-l border-border bg-card/40 p-2">
       <h2 className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Past comparisons
       </h2>
-      {rows === null && (
+      {historyError ? (
+        <ReadFailure
+          className="m-1"
+          error={historyError}
+          what="past comparisons"
+          onRetry={() => setHistoryAttempt((n) => n + 1)}
+        />
+      ) : null}
+      {!historyError && rows === null && (
         <div className="px-1 py-2 text-xs text-muted-foreground">Loading…</div>
       )}
-      {rows?.length === 0 && (
+      {!historyError && rows?.length === 0 && (
         <div className="px-1 py-2 text-xs text-muted-foreground">
           None yet — run your first comparison.
         </div>

@@ -403,6 +403,7 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
         ) : null}
         {read.problems.length ? (
           <Notice tone="error">
+            {/* read-gate-exempt: counts the Library reads that FAILED, inside the failure notice itself */}
             {plural(read.problems.length, "Library", "Libraries")} could not be read and {read.problems.length === 1 ? "is" : "are"} left out: {read.problems[0]}
             <ErrorAlchemyMenu error={read.problems[0]} size="xs" />
           </Notice>

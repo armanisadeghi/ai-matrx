@@ -13,6 +13,7 @@
 // first paint); until then the block shows its own built-in menu.
 
 import React, { useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 import { Loader2, TerminalSquare, X } from "lucide-react";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -23,6 +24,9 @@ import type { CodeRunState } from "./code-block-context";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Bridge = typeof import("./code-block-registry-bridge");
+
+/** The tools chunk failed to load and the person was told (once per page). */
+let answerToolsFailureAnnounced = false;
 
 export function useCodeBlockAnswerTools(args: {
   code: string;
@@ -53,7 +57,14 @@ export function useCodeBlockAnswerTools(args: {
       .then((m) => {
         if (live) setBridge(m);
       })
-      .catch((err: unknown) => console.error("[code-block] answer tools failed to load", err));
+      .catch((err: unknown) => {
+        console.error("[code-block] answer tools failed to load", err);
+        // Every code block on the page shares this chunk: say it once, not per block.
+        if (!answerToolsFailureAnnounced) {
+          answerToolsFailureAnnounced = true;
+          toast.error("Code block tools (run, chart, copy for AI) couldn't load — reload the page to get them back.");
+        }
+      });
     return () => {
       live = false;
     };

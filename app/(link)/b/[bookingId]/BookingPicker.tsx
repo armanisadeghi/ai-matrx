@@ -350,6 +350,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
       ) : null}
 
       {days.length === 0 ? (
+        // read-gate-exempt: slots arrive with the server-rendered booking page (a failed read never renders this picker); the copy says the window is over
         <p className="rounded border border-dashed px-3 py-2 text-sm text-muted-foreground">
           There is no time left inside the hours this is offered in. More appear here as the days
           move forward — this is empty because the window is over, not because something failed.

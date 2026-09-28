@@ -481,6 +481,7 @@ export function ManipulationPanel({
   const [redactReason, setRedactReason] = useState("");
   const [redactCatalog, setRedactCatalog] =
     useState<PdfRedactionPatternCatalog | null>(null);
+  const [redactCatalogFailed, setRedactCatalogFailed] = useState(false);
 
   // Load redact pattern catalog once
   useEffect(() => {
@@ -491,7 +492,8 @@ export function ManipulationPanel({
           await api.getJson<PdfRedactionPatternCatalog>("redactPatterns");
         if (!cancelled) setRedactCatalog(c);
       } catch {
-        // Non-fatal; user can type a custom pattern
+        // Non-fatal; user can type a custom pattern — and is told why there is no list.
+        if (!cancelled) setRedactCatalogFailed(true);
       }
     })();
     return () => {
@@ -1044,6 +1046,12 @@ export function ManipulationPanel({
       >
         <Row label="Pattern">
           <div className="space-y-1">
+            {redactCatalogFailed ? (
+              <p className="text-[11px] text-muted-foreground">
+                Couldn&apos;t load the built-in patterns — type your own below.
+                <ErrorAlchemyMenu operation="Load the redaction patterns" />
+              </p>
+            ) : null}
             {redactCatalog && redactCatalog.patterns.length > 0 && (
               <select
                 value={

@@ -21,6 +21,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@ai-matrx/design-system';
 import { fetchNews } from '@/actions/ai-actions/news-api';
 import NewsCard from './NewsCard';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
 
 interface Article {
     title: string;
@@ -37,6 +39,8 @@ interface Article {
 const NewsPage = () => {
     const [news, setNews] = useState<Article[]>([]);
     const [loading, setLoading] = useState(false);
+    // A failed read is said — never "Click Refresh to load news".
+    const [newsError, setNewsError] = useState<unknown>(null);
     const [category, setCategory] = useState('general');
     const [country, setCountry] = useState('us');
 
@@ -65,9 +69,15 @@ const NewsPage = () => {
             const result = await fetchNews(category, country);
             if ('data' in result && result.data.articles) {
                 setNews(result.data.articles);
+                setNewsError(null);
+            } else {
+                setNewsError(
+                    'error' in result && result.error ? result.error : new Error('The news service returned no articles list'),
+                );
             }
         } catch (error) {
             console.error('Error fetching news:', error);
+            setNewsError(error ?? new Error('Fetching news failed'));
         }
         setLoading(false);
     };
@@ -155,6 +165,14 @@ const NewsPage = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4">
+                {newsError && news.length > 0 && !loading ? (
+                    <StaleDataNotice
+                        className="mb-4"
+                        hasData
+                        what="the news"
+                        onRetry={() => void handleFetchNews()}
+                    />
+                ) : null}
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[...Array(6)].map((_, i) => (
@@ -172,6 +190,8 @@ const NewsPage = () => {
                             </Card>
                         ))}
                     </div>
+                ) : newsError && news.length === 0 ? (
+                    <ReadFailure error={newsError} what="the news" onRetry={() => void handleFetchNews()} />
                 ) : news.length > 0 ? (
                     <motion.div
                         variants={container}

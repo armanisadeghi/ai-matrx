@@ -329,7 +329,7 @@ function SharedChatsSection({
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider select-none">
           Shared with Me
         </span>
-        {hasFetched && sharedChats.length > 0 && (
+        {hasFetched && loadError == null && sharedChats.length > 0 && (
           <span className="text-[9px] px-1 py-0.5 rounded-full bg-secondary/10 text-secondary font-medium">
             {sharedChats.length}
           </span>

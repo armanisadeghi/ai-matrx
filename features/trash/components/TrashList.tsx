@@ -316,6 +316,7 @@ export function TrashList({
               .map((m) => m.containerId),
           ),
         );
+        // read-gate-exempt: this read only adds a manage link; without it the row still names where the table went, so nothing on screen is wrong
       } catch {
         // No link is the safe answer; the row still says where the table went.
       }

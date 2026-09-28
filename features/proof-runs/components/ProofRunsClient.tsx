@@ -551,7 +551,7 @@ export default function ProofRunsClient() {
               }}
               onCancel={() => setEditing(null)}
             />
-          ) : scenarios.length === 0 ? (
+          ) : !loadError && scenarios.length === 0 ? (
             <p className="py-4 text-sm text-muted-foreground">
               No saved scenarios yet. A scenario names a mandate, hands it facts
               you wrote, and lists what a correct answer must look like — then

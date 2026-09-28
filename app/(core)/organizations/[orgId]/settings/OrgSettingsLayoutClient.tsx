@@ -34,6 +34,7 @@ export default function OrgSettingsLayoutClient({
       try {
         const org = await getOrganizationBySlugOrId(orgId);
         if (!cancelled && org) setResolvedOrgId(org.id);
+        // read-gate-exempt: this only wires a refresh callback for the settings pages below, each of which reads the organization itself and says its own failure
       } catch {
         /* ignore */
       }

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { toast } from '@/lib/toast';
 
 export default function FlashcardChat() {
     // State to hold the conversation history
@@ -40,6 +41,7 @@ export default function FlashcardChat() {
                 }),
             });
 
+            if (!response.ok) throw new Error(`The assistant did not answer (${response.status})`);
             const data = await response.json();
 
             const aiResponse = {
@@ -49,11 +51,13 @@ export default function FlashcardChat() {
 
             // Update conversation with AI response
             setConversation((prevConversation) => [...prevConversation, aiResponse]);
+            setInputMessage(''); // Clear input only once the answer arrived
         } catch (error) {
             console.error('Error fetching AI response:', error);
+            // Said, and the typed message stays in the box to send again.
+            toast.error(`Couldn't get an answer: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setLoading(false);
-            setInputMessage(''); // Clear input after sending
         }
     };
 

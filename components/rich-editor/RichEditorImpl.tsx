@@ -506,7 +506,8 @@ export default function RichEditorImpl({
     ? "Unsaved changes"
     : saveState
       ? `Saved ${saveState.at.toLocaleTimeString()}${saveState.verified ? " · verified byte-for-byte" : ""}`
-      : "No changes";
+      : // read-gate-exempt: save status of the document in this editor (nothing edited), not an empty read
+        "No changes";
 
   const viewEditor =
     view === "visual" ? (

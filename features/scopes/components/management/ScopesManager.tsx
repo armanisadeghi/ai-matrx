@@ -91,6 +91,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   // are read on demand; the boot tree stays the live working set (F6).
   const [showArchived, setShowArchived] = useState(false);
   const [archivedTypes, setArchivedTypes] = useState<ArchivedScopeTypeRow[]>([]);
+  const [archiveReadFailed, setArchiveReadFailed] = useState(false);
   const [restoreTarget, setRestoreTarget] =
     useState<ArchivedScopeTypeRow | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -111,9 +112,11 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
       // Nothing fails silently: an archive we could not read says so instead
       // of rendering as "Archived (0)".
       toast.error(`Could not read the archive: ${res.error.message}`);
+      setArchiveReadFailed(true);
       return;
     }
     setArchivedTypes(res.data.types);
+    setArchiveReadFailed(false);
   }, [organization.id]);
 
   useEffect(() => {
@@ -317,7 +320,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
       )}
 
       <ArchivedDisclosure
-        count={archivedTypes.length}
+        count={archiveReadFailed ? undefined : archivedTypes.length}
         open={showArchived}
         onOpenChange={setShowArchived}
         className="mt-2"

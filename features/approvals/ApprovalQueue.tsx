@@ -698,6 +698,7 @@ export function ApprovalQueue({
                     disabled={busy}
                   />
                   <span className="text-xs text-muted-foreground">
+                    {/* read-gate-exempt: the select-all label counts the proposals on screen and the person's own ticks, not a read's total */}
                     {selectedItems.length > 0
                       ? `${selectedItems.length} of ${allItems.length} shown selected`
                       : `Select all ${selectable.length} shown`}
