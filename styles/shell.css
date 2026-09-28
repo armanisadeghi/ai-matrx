@@ -1581,8 +1581,9 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
   z-index: 41;
   pointer-events: none;
 }
-/* On a phone, RouteHeader moves its actions and section nav into the shell's
-   ⋮ sheet once the client knows it is a phone. The server cannot know, so the
+/* On a phone, RouteHeader moves its secondary actions and section nav into the
+   shell's ⋮ sheet once the client knows it is a phone; the primary (marked
+   `data-route-header-phone-primary` in the server HTML) stays in the row. The server cannot know, so the
    ghost (and the node, until its client snapshots land) draws the phone row. */
 /* A right-slot node is on a phone only for the frame before the client moves
    it into the ⋮ sheet; never draw it there. */
@@ -1592,10 +1593,10 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
   }
 }
 @media (max-width: 767px) {
-  .page-header-ghost [data-route-header-right] > [data-route-header-action],
+  .page-header-ghost [data-route-header-right] > [data-route-header-action]:not([data-route-header-phone-primary]),
   .page-header-ghost [data-route-header-right] > [data-route-header-overflow],
   .page-header-ghost [data-route-header-center],
-  [data-page-header-settling] [data-route-header-right] > [data-route-header-action],
+  [data-page-header-settling] [data-route-header-right] > [data-route-header-action]:not([data-route-header-phone-primary]),
   [data-page-header-settling] [data-route-header-right] > [data-route-header-overflow],
   [data-page-header-settling] [data-route-header-center] {
     display: none;

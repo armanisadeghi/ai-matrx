@@ -375,8 +375,13 @@ export default function RouteHeader({
   // menu kept in the row sat beside the shell's ⋮ — two overflow buttons. It
   // goes to the sheet; the primary is the last action that is NOT a menu.
   const toSheet = isPhone && !yielded && phoneHost != null && actions.length > 0;
+  // The action a phone keeps in the row — known without knowing it IS a
+  // phone, so the server HTML can mark it (`data-route-header-phone-primary`)
+  // and the pre-hydration header draws the phone row exactly.
+  const phonePrimaryCandidate =
+    [...actions].reverse().find((a) => !isMenuAction(a.node) && !isDestructiveAction(a.node)) ?? null;
   const phonePrimary = toSheet
-    ? ([...actions].reverse().find((a) => !isMenuAction(a.node) && !isDestructiveAction(a.node)) ?? null)
+    ? phonePrimaryCandidate
     : null;
   // A destructive action goes LAST in the sheet, after a divider.
   const sheetActions = toSheet
@@ -538,6 +543,7 @@ export default function RouteHeader({
               <div
                 key={a.key}
                 data-route-header-action={a.key}
+                data-route-header-phone-primary={a === phonePrimaryCandidate ? "" : undefined}
                 data-route-header-compact={iconOnly ? "" : undefined}
                 className="flex shrink-0 items-center"
               >
