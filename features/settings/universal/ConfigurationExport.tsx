@@ -182,6 +182,7 @@ export function ConfigurationExport(props: {
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50 text-left">
                     <tr>
+                      {/* read-gate-exempt: rows of the comparison the person just ran; result is cleared when it starts and set only when both reads returned */}
                       <th className="px-3 py-1.5 font-medium">Setting ({result.rows.length} differ)</th>
                       <th className="px-3 py-1.5 font-medium">{result.leftName}</th>
                       <th className="px-3 py-1.5 font-medium">{result.rightName}</th>

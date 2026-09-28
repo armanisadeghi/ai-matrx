@@ -44,6 +44,7 @@ import {
   personFacingEventDescription,
 } from "../notification-display";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 // The canonical Notification System preferences tab: every event the platform
 // can tell you about, with your per-channel choice. Absence of a choice means
@@ -59,6 +60,9 @@ export default function NotificationsTab() {
   const [scopes, setScopes] = useState<NotificationScope[] | null>(null);
   const [scopeId, setScopeId] = useState<string | null>(null);
   const [settings, setSettings] = useState<NotificationEventSetting[] | null>(null);
+  // A failed re-read after a failed save: the switches on screen may not match
+  // what is saved, and that is said over them.
+  const [reloadError, setReloadError] = useState<unknown>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   // The screen opens on the organization the person is working in. With none
@@ -135,9 +139,14 @@ export default function NotificationsTab() {
   const reload = useCallback(() => {
     if (!scopeId) return;
     loadNotificationSettings(scopeId)
-      .then(setSettings)
-      .catch(() => {
-        /* the toast on the failing action already said what went wrong */
+      .then((rows) => {
+        setSettings(rows);
+        setReloadError(null);
+      })
+      .catch((error: unknown) => {
+        // The failing action's toast said the save failed; this says the
+        // switches could not be re-read either.
+        setReloadError(error);
       });
   }, [scopeId]);
 
@@ -330,6 +339,14 @@ export default function NotificationsTab() {
         </SettingsCallout>
       ) : (
         <div className="space-y-3">
+          {reloadError != null && (
+            <StaleDataNotice
+              hasData
+              what="your notification settings"
+              onRetry={reload}
+              detail={reloadError instanceof Error ? reloadError.message : null}
+            />
+          )}
           <div className="flex flex-wrap items-center gap-2">
             <SearchInput
               value={query}

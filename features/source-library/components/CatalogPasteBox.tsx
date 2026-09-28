@@ -231,11 +231,13 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                         </span>
                         {stage.resolved.item_count != null && (
                             <span>
+                                {/* read-gate-exempt: figures of the channel the person just pasted, from a resolve call that returned (stage is resolved only on success) */}
                                 about {formatCompactNumber(stage.resolved.item_count)} videos
                             </span>
                         )}
                         {stage.resolved.subscriber_count != null && (
                             <span>
+                                {/* read-gate-exempt: figures of the channel the person just pasted, from a resolve call that returned (stage is resolved only on success) */}
                                 · {formatCompactNumber(stage.resolved.subscriber_count)}{" "}
                                 subscribers
                             </span>
