@@ -8,8 +8,7 @@ import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Database } from "@/types/database.types";
 import { createProject as createProjectCanonical } from "@/features/projects/service";
-import { membershipsService } from "@/features/organizations/service/membershipsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
+import { getUserOrganizations } from "@/features/organizations/service";
 import { generateProjectSlug } from "@/features/projects/types";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
@@ -104,31 +103,24 @@ export const hierarchyService = {
   async fetchUserOrganizations(): Promise<HierarchyOrg[]> {
     requireUserId();
 
-    // Canonical membership read (iam.memberships via mbr_* RPCs); org identity
-    // resolved from the public organizations table (no cross-schema embed).
-    const membersResult = await membershipsService.forUser("organization");
-    if (isScopesRpcErr(membersResult)) {
-      throw new Error(membersResult.error.message);
-    }
-    const roleByOrgId = new Map<string, string>();
-    for (const m of membersResult.data.memberships) {
-      roleByOrgId.set(m.containerId, m.role);
-    }
-    const orgIds = [...roleByOrgId.keys()];
-    if (orgIds.length === 0) return [];
-
-    const { data, error } = await supabase
-      .schema("iam")
-      .from("organizations")
-      .select(
-        "id, name, abbreviation, slug, description, logo_url, settings, created_at",
-      )
-      .in("id", orgIds);
-    if (error) throw error;
-
-    return (data ?? []).map((org: any) => ({
-      ...org,
-      role: roleByOrgId.get(org.id) ?? "member",
+    // Reuse the canonical org-list read (features/organizations/service.ts)
+    // instead of re-querying `iam.organizations` here — this used to be a
+    // second independent implementation, doubling both the `mbr_for_user`
+    // RPC and the `organizations` table read on every page load (the nav
+    // hierarchy tree and the org switcher both mount on the shell).
+    // `membershipsService.forUser`/`counts` are already deduped/cached at
+    // the chokepoint, so this now shares those round-trips too.
+    const orgs = await getUserOrganizations();
+    return orgs.map((org) => ({
+      id: org.id,
+      name: org.name,
+      abbreviation: org.abbreviation,
+      slug: org.slug,
+      description: org.description ?? null,
+      logo_url: org.logoUrl ?? null,
+      settings: org.settings ?? null,
+      role: org.role,
+      created_at: org.createdAt ?? null,
     }));
   },
 

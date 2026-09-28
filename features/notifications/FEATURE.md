@@ -87,9 +87,29 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 5. **Preferences link** — the empty state names Settings › Notifications
    (`features/settings/tabs/NotificationsTab.tsx`); a direct control in the
    panel header is the next affordance.
+6. **`custom.inbox_counts` is an N+1 loop over every organization the caller
+   belongs to** (one `custom._inbox_items(org, user, false)` call per org,
+   each re-walking `custom.record` plus per-row `custom.has_visibility` /
+   `custom.work_approval_approvers` / `auth.users` lookups). Measured live
+   via Supabase MCP `EXPLAIN (ANALYZE, BUFFERS)` for `admin@admin.com` (46
+   organizations): **981ms**, ~72k buffer hits, ~15.6ms average per org even
+   for orgs answering zero rows. `useInboxCounts` (this file) now defers that
+   query to `requestIdleCallback` so it never competes with the shell's first
+   paint, but the query itself is still slow for any account in many
+   organizations. Real fix is a rewrite of `custom.inbox_counts` /
+   `custom._inbox_items` to a single set-based query across the caller's
+   whole organization set instead of a per-org loop — out of scope here
+   because it is a security-definer function touching approvals/assignment
+   visibility across the whole platform and needs its own dedicated
+   correctness pass, not a same-session drive-by.
 
 ## Change log
 
+- **2026-09-28** — Platform-performance pass: `useInboxCounts`'s work-waiting
+  read (`custom.inbox_counts`) now waits for `requestIdleCallback` (the house
+  pattern from `useWarmAgent`) instead of firing on mount, so it never
+  competes with the shell's boot reads. See follow-up 6 above for the
+  underlying N+1 the DB call still has.
 - **2026-09-24** — Lane S5-PRIME-2: the badge counts what waits on the person in the record
   store (`custom.inbox_counts`, every organization of theirs) and the panel pins one row per
   organization that opens its inbox. Snoozed and cleared items are not counted — the same door the

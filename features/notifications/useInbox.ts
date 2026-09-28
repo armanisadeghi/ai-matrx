@@ -17,7 +17,7 @@
  * until then a notice can be up to one interval late, and nothing is lost.
  */
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useConversations } from "@ai-matrx/messaging/react";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -65,15 +65,41 @@ export interface InboxCounts {
   partial: boolean;
 }
 
+/**
+ * `custom.inbox_counts` loops once per organization the caller belongs to
+ * (measured on production: ~1.0-1.5s for an account in 40+ orgs — see
+ * FEATURE.md). It is real, cheap-per-org data (not a duplicate call), so it
+ * is deferred to idle rather than skipped: the header, which mounts this
+ * hook on EVERY page, must never let it compete with first paint or with the
+ * shell's own boot reads (membership, organizations, claims).
+ */
+function useIdleReady(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const ric =
+      typeof window !== "undefined" ? window.requestIdleCallback : undefined;
+    const cancelRic =
+      typeof window !== "undefined" ? window.cancelIdleCallback : undefined;
+    if (ric) {
+      const handle = ric(() => setReady(true), { timeout: 2000 });
+      return () => cancelRic?.(handle);
+    }
+    const handle = window.setTimeout(() => setReady(true), 500);
+    return () => window.clearTimeout(handle);
+  }, []);
+  return ready;
+}
+
 /** The badge only — cheap enough for the header to mount everywhere. */
 export function useInboxCounts(): InboxCounts {
   const userId = useAppSelector(selectUserId);
   const { totalUnreadConversations } = useConversations();
   const approvals = usePendingApprovalCount();
+  const idleReady = useIdleReady();
   const workWaiting = useQuery({
     queryKey: [...INBOX_QUERY_KEY, "work-waiting", userId] as const,
     queryFn: fetchMyWorkWaiting,
-    enabled: userId !== null,
+    enabled: userId !== null && idleReady,
     refetchInterval: INBOX_POLL_INTERVAL_MS,
     refetchOnWindowFocus: true,
     staleTime: 15_000,
