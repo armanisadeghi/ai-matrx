@@ -31,6 +31,34 @@ Guests redirect through `loginHref` with the requested destination intact. Set d
 also gates with `getServerAuth` before mounting `SetDetailView`. Public decks use the
 separate `/p/e/fc_set/[id]` lane and its purpose-built RPC.
 
+## Creating a deck — one page (USI-5, 2026-09-28)
+
+`/education/flashcards/new` is THE way to make a deck ([components/create/CreateDeckPage.tsx](./components/create/CreateDeckPage.tsx)):
+**Sources** (the one Source input, `features/resource-manager/source-input/`, surfaceKey
+`flashcards:new`, with "Just a topic" as a tile) → **Style and details** (count, difficulty,
+depth, grade, deck name, focus — one set of controls) → **Make the deck** (live stream, then the
+deck). The "Import a deck file" start tile opens [DeckFileImport](./components/create/DeckFileImport.tsx)
+(Quizlet / CSV / TSV / pasted pairs with preview, Anki `.apkg`, Matrx JSON, library zip — all
+through `persistImportedDeck`, no AI).
+
+- Sources → `useSourceSet().resolve()` (`POST /sources/resolve`) → [data/generateDeckFromSources.ts](./data/generateDeckFromSources.ts):
+  the grounded `### Chunk <real id> (page N)` text goes through `education/convert/segmentedGenerate.ts`
+  with `flashcards__generate_from_source` (unchanged variables; grade rides `focus`, a topic next to
+  Sources becomes "Focus on: …"). Every citation is backfilled from ITS OWN Source (file id read from
+  the document row, page from the segment; a note or pasted text opens its own page). A `source`
+  lineage edge per Source through `recordSourceLineage`; `MadeFromSource` shows every origin.
+- A topic alone → `useGenerateCards` with `flashcards__generate_cards` (live preview via Redux envelope).
+- "Wait for the clean version" holds the run with a visible banner, re-reads the manifest every 5 s,
+  and starts itself when ready ("Start now with what is ready" / "Stop waiting").
+- The picks persist (wizardDraft) and are cleared once the deck is made.
+- Old doors are gone: the header's "New deck from a document" / "Import decks" and the
+  `/education/flashcards-2` concept. `/new/from-source` and `/new/import` redirect here keeping the
+  query (`?document=` / `?source=` / `?file=` / `?topic=` / `?name=` preselect; import → `?start=import`)
+  via [createDeckHref.ts](./components/create/createDeckHref.ts).
+- Every generation here claims its conversation (`features/canvas/materialization/surfaceOwnedConversations.ts`),
+  so the stream's commit never materializes a twin deck — neither one per section of a segmented
+  run (a 6-section deck used to land as 7 decks) nor the race-lost twin of a topic run.
+
 ## Agent-generated decks — the single-writer contract (D-WP3-4)
 
 A headless generation run has TWO potential fc_set writers: the surface's explicit
@@ -167,6 +195,8 @@ own fresh conversation):
   print) carry the URL and alt text but not the credit caption.
 
 ## Change log
+
+- `2026-09-28` — USI-5 (one Source input, Flashcards first): `/education/flashcards/new` is one Create deck page (Sources → Style and details → Make the deck, or Import a deck file); `CreateFromTopic`, `CreateFromSource`, `ImportSetView` deleted; `/new/from-source`, `/new/import` redirect with the query kept; `/education/flashcards-2` retired; header's secret doors removed. Sources resolve server-side and run through the segmented generator; citations open the right file and page per Source; lineage for every Source; `MadeFromSource` lists all origins. Fixed on the way: resolver text is never re-chunked (`markForGrounding`), and generation runs no longer materialize twin decks. Verified headless as admin@admin.com: PDF (2 of 73 parts) + note → 5 cards citing pages 22/25 that open the PDF at that page; topic → 6 cards with live stream; CSV → 5 cards; redirects; 375px.
 
 - `2026-09-27` — desktop regression reverted (Arman: "a mobile fix was applied on desktop as well, so many features are now missing on desktop"): the deck page's desktop action row again shows History, Export, Print, Download for offline, Enrich all cards, Illustrate this set and Convert; Select cards and the audio buttons are back on the page on desktop (`AudioOverviewSection statusOnly={isPhone}`). Deck tools is the PHONE's sheet only. The tool header (EducationToolHeader) no longer puts secondary actions in a fixed "More" menu on desktop — every action stays on the header and RouteHeader folds by real width.
 - `2026-09-27` — page-pass round 4, part 2 (pp4-flashcards): the row menu gains Rename, Duplicate (Make a copy on others' decks), Move to folder and Who can see it, with agent twins `update_decks` (+ `visibility`, `folder_ids`) and a new `duplicate_decks`, all through `data/deckOperations.ts`; ticked rows (bulk Archive) reach agents as `selected_deck_ids`, `search_query` is always supplied and `selection` carries selected text; the deck page is one action row (Study, Fast Fire, Edit / Make a copy, Add more cards, Deck tools) with everything else in the Deck tools dialog (a bottom sheet on phones), Fast Fire one color; FastFire gains a typed-answer mode (`answerMode`, graded on meaning by `flashcards.grade_typed_answer`, no microphone — the Speaking choice is absent when the mic is missing or blocked), a standard Start button, the standard error alert, no camera controls, a two-column setup, and the ambient chat dock is held away for the whole surface (`ambientAssistantSuppression.ts`); list skeletons keep the last fitted column widths across visits.
