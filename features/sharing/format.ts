@@ -172,7 +172,7 @@ export function granteeSecondaryLabel(
  * same value, so this doubles as the level label in both modes.
  */
 export function grantLevelLabel(permission: PermissionWithDetails): string {
-  if (permission.isPublic) return "Public";
+  if (permission.isPublic) return "Published to the web";
   const level = permission.permissionLevel;
   return level.charAt(0).toUpperCase() + level.slice(1);
 }
@@ -279,7 +279,7 @@ export function humanGrantList(
 export function visibilityLabel(visibility: string): string {
   switch (visibility) {
     case "public":
-      return "Public — anyone with the link";
+      return "Published to the web — anyone can open it at its address";
     case "shared":
       return "Shared — specific grantees and share links";
     case "internal":
@@ -500,7 +500,7 @@ export function humanPublicState(view: PublicAccessView): string {
     ["Heading", view.heading],
     [
       "State",
-      view.is_public ? "Public — open to everyone" : "Not open to everyone",
+      view.is_public ? "Published to the web" : "Not published to the web",
     ],
     ["Explanation", view.state_sentence],
     ["Warning", view.warning_sentence],

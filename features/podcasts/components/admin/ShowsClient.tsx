@@ -51,7 +51,7 @@ function CopyLinkButton({ slug }: { slug: string }) {
           });
       }}
       className={`p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground ${PODCAST_TABLE_ROW_ACTION_REVEAL_CLASS}`}
-      title={copied ? "Copied!" : "Copy public link"}
+      title={copied ? "Copied!" : "Copy the link to its page on the web"}
     >
       <Link className="h-3.5 w-3.5" />
     </button>

@@ -70,7 +70,7 @@ export function ShareButton({
   const getButtonContent = () => {
     if (loading || error) return { icon: Share2, label: "Share" };
     if (isPublic)
-      return { icon: Globe, label: showStatus ? "Public" : "Share" };
+      return { icon: Globe, label: showStatus ? "Published to the web" : "Share" };
     return { icon: Lock, label: showStatus ? "Private" : "Share" };
   };
 

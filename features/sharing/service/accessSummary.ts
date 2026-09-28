@@ -208,7 +208,7 @@ export async function fetchEntityTitles(
  * Shared by the info panel and anywhere else that must not overstate privacy.
  */
 export function describeAccessSummary(summary: AccessSummary): string {
-  if (summary.isPublic) return "Public — anyone with the link";
+  if (summary.isPublic) return "Published to the web — anyone can open it at its address";
 
   const reasons: string[] = [];
   if (summary.orgReadable && summary.organizationName) {

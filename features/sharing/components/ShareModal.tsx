@@ -407,7 +407,7 @@ export function ShareModal({
               </TabsTrigger>
               <TabsTrigger value="public" className="gap-2">
                 <Globe className="w-4 h-4" />
-                <span className="hidden sm:inline">Public</span>
+                <span className="hidden sm:inline">Anyone link</span>
                 {publicPermission && (
                   <span className="ml-1 px-1.5 py-0.5 text-xs bg-green-500/10 rounded-full">
                     •

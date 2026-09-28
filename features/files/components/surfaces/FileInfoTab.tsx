@@ -380,7 +380,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
 function visibilityLabel(visibility: Visibility): string {
   switch (visibility) {
     case "public":
-      return "Public — anyone with a link";
+      return "Published to the web — anyone can open it at its address";
     case "link":
       return "Anyone with the link";
     case "internal":

@@ -19,7 +19,7 @@ const VISIBILITY_WORDS: Record<string, string> = {
   personal: "Personal",
   internal: "Everyone in this organization can see it",
   link: "Anyone with the link can see it",
-  public: "Public — anyone can see it",
+  public: "Published to the web — anyone can open it at its address",
 };
 
 /**

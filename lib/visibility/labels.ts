@@ -19,7 +19,7 @@ export type Visibility = Database["platform"]["Enums"]["visibility"];
 const LABELS: Record<Visibility, { short: string; long: string }> = {
   public: {
     short: "Public",
-    long: "Public — anyone with the link",
+    long: "Published to the web — anyone can open it at its address",
   },
   link: {
     short: "Link",

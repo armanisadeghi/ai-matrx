@@ -455,7 +455,7 @@ export function StudioRunView({ runId }: { runId: string }) {
                   {publicLink && (
                     <p>
                       <span className="font-medium text-foreground/70">
-                        Public link:
+                        Published to the web:
                       </span>{" "}
                       <Link
                         href={publicLink}

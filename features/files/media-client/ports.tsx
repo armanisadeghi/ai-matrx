@@ -97,10 +97,10 @@ const actions: MediaHostPorts["actions"] = {
     // files (wave M-SHARE) — same click semantics as the share popover.
     const shareable = await mediaClient.shareableUrl(ctx.ref);
     if (!shareable) {
-      toast.error("This file can't be shared publicly");
+      toast.error("This file can't be shared by Anyone link");
       return;
     }
-    if (await copyText(shareable)) toast.success("Public link copied");
+    if (await copyText(shareable)) toast.success("Anyone link copied");
     else toast.error("Couldn't copy the link");
   },
   async open(ctx) {

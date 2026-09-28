@@ -56,7 +56,7 @@ registerAction({
         /* clipboard can be blocked; the toast still links the page */
       }
       toast.success(
-        copied ? "Public link copied to clipboard" : "Webpage published",
+        copied ? "Published to the web — link copied" : "Published to the web",
         {
           id: toastId,
           description: url,

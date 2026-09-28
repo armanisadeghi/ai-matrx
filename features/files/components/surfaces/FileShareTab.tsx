@@ -204,8 +204,8 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
             />
             <VisibilityOption
               icon={<Globe className="h-3.5 w-3.5" />}
-              label="Public"
-              description="Anyone with a link"
+              label="Published to the web"
+              description="Anyone can open it at its address"
               active={file.visibility === "public"}
               busy={busyVisibility === "public"}
               disabled={!isOwner || busyVisibility !== null}
@@ -227,7 +227,7 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
           <div className="flex items-center justify-between gap-3 p-3">
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-foreground">
-                Public file URL
+                Anyone link to the file
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
                 One click — copied to clipboard.
@@ -361,7 +361,7 @@ function VisibilityChip({ visibility }: { visibility: Visibility }) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
         <Globe className="h-3 w-3" />
-        Public — anyone with a link
+        Published to the web
       </span>
     );
   }

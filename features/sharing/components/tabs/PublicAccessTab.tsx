@@ -207,16 +207,16 @@ export function PublicAccessTab({
       const result = checked ? await onMakePublic() : await onRevokePublic();
       if (result?.success !== false) {
         toast({
-          title: checked ? "Made public" : "Made private",
+          title: checked ? "Published to the web" : "No longer published to the web",
           description: checked
-            ? "Anyone with the link can now access this resource"
-            : "Public access has been removed",
+            ? "Anyone can now open it at its address."
+            : "It is no longer published to the web.",
         });
       } else {
         toast({
           title: checked
-            ? "Failed to make public"
-            : "Failed to remove public access",
+            ? "Couldn't publish it to the web"
+            : "Couldn't stop publishing it to the web",
           description: result?.error || "Please try again",
           variant: "destructive",
         });
@@ -278,8 +278,8 @@ export function PublicAccessTab({
    * drop the answer the user is reading.
    */
   const UNSUPPORTED_SENTENCE =
-    "Public visibility isn’t available for this item type. Use a share link or invite specific people.";
-  const heading = isPublic ? "Public — Anyone" : "Public Access";
+    "This item type can’t be published to the web. Use an Anyone link or invite specific people.";
+  const heading = isPublic ? "Published to the web" : "Publish to the web";
   const stateSentence = isPublic
     ? publicUrl
       ? "Open to everyone — anyone can view the public page below, no sign-in required"
