@@ -1,5 +1,5 @@
 /**
- * A segmented (background) generation run's conversation is claimed by the
+ * Every converter run's conversation (segmented background or single live) is claimed by the
  * surface before its stream commits, so the commit step never materializes a
  * per-section twin (live 2026-09-28: a 6-section deck landed as 7 decks).
  */
@@ -43,9 +43,13 @@ describe("segment runs never materialize", () => {
     expect(isConversationSurfaceOwned("conv-background")).toBe(true);
   });
 
-  it("leaves a live run's conversation to the normal single-writer path", async () => {
+  it("claims a live single-pass run's conversation too (the surface saves it)", async () => {
     fakeRun("conv-live");
     await run(true);
-    expect(isConversationSurfaceOwned("conv-live")).toBe(false);
+    expect(isConversationSurfaceOwned("conv-live")).toBe(true);
+  });
+
+  it("an unclaimed conversation is not surface-owned", () => {
+    expect(isConversationSurfaceOwned("conv-never-claimed")).toBe(false);
   });
 });
