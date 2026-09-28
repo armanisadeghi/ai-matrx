@@ -1834,7 +1834,9 @@ export function ContextAssignmentField({
           )}
         </div>
 
-        {/* footer */}
+        {/* footer — an autosaving field with nothing chosen and nothing to
+            report draws none (an empty ruled band read as a missing button) */}
+        {autosaving && totalSelected === 0 && !busy && autoStatus === "idle" ? null : (
         <div className="flex shrink-0 items-start justify-between gap-3 border-t border-border pt-3">
           <div
             className={cn(
@@ -2005,6 +2007,7 @@ export function ContextAssignmentField({
             />
           )}
         </div>
+        )}
       </div>
     </div>
   );
