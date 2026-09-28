@@ -420,8 +420,12 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/fastfire")).toBe(
       "matrx-user/education-fastfire",
     );
+    // The lists are their own surfaces (ee7824a80); one assessment keeps the shared one.
     expect(surfaceFromPathname("/education/quizzes")).toBe(
-      "matrx-user/education-assessment",
+      "matrx-user/education-quizzes",
+    );
+    expect(surfaceFromPathname("/education/practice-tests")).toBe(
+      "matrx-user/education-practice-tests",
     );
     expect(surfaceFromPathname(`/education/quizzes/${ID}/results`)).toBe(
       "matrx-user/education-assessment",
