@@ -1,3 +1,4 @@
+-- based-on: communication.claim_pending_sms_agent_turns(text, integer, integer) 165d70adf5b29fe96e809c77b96b4833a765f0bbd3b0a36dba3217394bbb40ac
 -- A text that is only a picture, a video, a voice memo, a contact or a file is a
 -- message the person's agent must answer.
 --
