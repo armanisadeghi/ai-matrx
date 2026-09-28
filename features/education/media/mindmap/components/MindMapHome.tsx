@@ -108,6 +108,7 @@ export function MindMapHome() {
               source_title: row.source_title,
               status: row.status,
               updated_at: row.updated_at,
+              version: row.version,
             })),
           }),
     });

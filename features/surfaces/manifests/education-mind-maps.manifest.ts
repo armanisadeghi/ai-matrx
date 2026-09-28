@@ -282,6 +282,16 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "record",
   },
   {
+    name: "mind_map_version",
+    label: "Mind map version",
+    description: "The revision number of the open map. Every update_mind_maps item must include it as expected_version so approval is bound to exactly this revision.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 2,
+    sortOrder: 645,
+    group: "record",
+  },
+  {
     name: "mind_map_status",
     label: "Mind map status",
     description:
@@ -481,7 +491,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "update_mind_maps", label: "Update mind maps",
-    description: 'Changes saved mind maps. Value is an ARRAY of { id: string, title?: string, nodes?: [{ id, label, description?, details? }], edges?: [{ id, source, target, label? }] }. The id comes from mind_maps or mind_map_id. Only supplied fields change. Supplying nodes or edges replaces that complete collection; retain every node or connection you want to keep. Existing envelope metadata, source identity, and trust evidence stay intact, while edits no longer claim the generated diagram itself was unchanged. The person approves before saving.',
+    description: 'Changes saved mind maps. Value is an ARRAY of { id: string, expected_version: integer, title?: string, nodes?: [{ id, label, description?, details? }], edges?: [{ id, source, target, label? }] }. expected_version must equal the map version shown on this page; a changed version is refused so a prior approval cannot be reapplied onto newer content. Only supplied fields change. Supplying nodes or edges replaces that complete collection; retain every node or connection you want to keep. Existing envelope metadata, source identity, and trust evidence stay intact, while edits no longer claim the generated diagram itself was unchanged. The person approves before saving.',
     valueType: "array", updatesValue: "mind_maps", mode: "entity", applyPolicy: "ask", group: "record", sortOrder: 110,
   },
   {
@@ -554,6 +564,7 @@ export interface MindMapListSummary {
   source_title: string | null;
   status: string;
   updated_at: string;
+  version: number;
 }
 
 /** One entry of `available_decks`, and the shape of `selected_deck`. */
@@ -607,6 +618,7 @@ export function createEducationMindMapsScope(values: {
   map_not_found?: boolean;
   mind_map_id?: string;
   mind_map_title?: string;
+  mind_map_version?: number;
   mind_map_description?: string;
   mind_map_status?: string;
   map_source_kind?: string;

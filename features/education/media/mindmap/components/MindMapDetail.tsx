@@ -174,6 +174,7 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
               map_not_found: false,
               mind_map_id: media.id,
               mind_map_title: media.title,
+              mind_map_version: media.version,
               ...(media.description
                 ? { mind_map_description: media.description }
                 : {}),
@@ -257,7 +258,7 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
     );
   }
 
-  if (edit) return <MindMapEditor media={media} />;
+  if (edit) return <MindMapEditor media={media} isOwner={isOwner} />;
 
   return (
     <SurfaceRuntimeProvider

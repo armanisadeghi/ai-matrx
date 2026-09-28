@@ -120,9 +120,13 @@ export function parseUpdateMindMaps(value: unknown, available: readonly StudyMed
     const id = text(raw.id, `${target}[${index}].id`);
     const row = available.find((candidate) => candidate.id === id);
     if (!row) throw new Error(`${target}: ${id} is not an editable mind map on this page.`);
-    const changed = Object.keys(raw).filter((key) => key !== "id");
+    if (typeof raw.expected_version !== "number" || !Number.isInteger(raw.expected_version))
+      throw new Error(`${target}[${index}].expected_version must be the integer version shown for this mind map.`);
+    if (raw.expected_version !== row.version)
+      throw new Error(`${target}[${index}] was approved for version ${raw.expected_version}, but this map is now version ${row.version}. Reload it and ask again.`);
+    const changed = Object.keys(raw).filter((key) => key !== "id" && key !== "expected_version");
     if (!changed.length) throw new Error(`${target}[${index}] needs at least one field to change.`);
-    const allowed = ["title", "nodes", "edges"];
+    const allowed = ["title", "nodes", "edges", "expected_version"];
     const unknown = changed.filter((key) => !allowed.includes(key));
     if (unknown.length) throw new Error(`${target}[${index}] does not accept ${unknown.join(", ")}.`);
     const previous = currentEnvelope(row);

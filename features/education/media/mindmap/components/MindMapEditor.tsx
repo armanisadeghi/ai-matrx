@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,16 +11,43 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
-import { blankMindMap, parseMindMap, trustAfterMindMapEdit, type MindMapEnvelope } from "../mindMapWrites";
+import { blankMindMap, parseCreateMindMaps, parseMindMap, parseMindMapIds, parseUpdateMindMaps, trustAfterMindMapEdit, type MindMapEnvelope } from "../mindMapWrites";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
 
 const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 
-export function MindMapEditor({ media }: { media?: StudyMediaRow }) {
+export function MindMapEditor({ media, isOwner = false }: { media?: StudyMediaRow; isOwner?: boolean }) {
   const router = useRouter();
-  const [draft, setDraft] = useState<MindMapEnvelope>(() => media ? parseMindMap(media.ir_envelope) : blankMindMap());
+  const [currentMedia, setCurrentMedia] = useState(media);
+  const [base, setBase] = useState<MindMapEnvelope>(() => media ? parseMindMap(media.ir_envelope) : blankMindMap());
+  const [draft, setDraft] = useState<MindMapEnvelope>(() => recoverDraft(media));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const update = (patch: Partial<MindMapEnvelope>) => setDraft((current) => ({ ...current, ...patch }));
+  const dirty = JSON.stringify(draft) !== JSON.stringify(base);
+  const recoveryKey = `mind-map-editor:${currentMedia?.id ?? "new"}`;
+  useEffect(() => {
+    if (!dirty) { sessionStorage.removeItem(recoveryKey); return; }
+    sessionStorage.setItem(recoveryKey, JSON.stringify({ draft, baseVersion: currentMedia?.version ?? null }));
+  }, [base, currentMedia?.version, dirty, draft, recoveryKey]);
+  const getScope = () => createEducationMindMapsScope({ view: "detail", ...(currentMedia ? { mind_map_id: currentMedia.id, mind_map_title: currentMedia.title, mind_map_version: currentMedia.version } : {}) });
+  const getWriteHandlers = () => collectionWriteHandlers({
+    plural: "mind_maps", singular: "mind map",
+    create: { parse: parseCreateMindMaps, run: async (map) => {
+      if (dirty) throw new Error("Finish, save, or discard the open mind-map draft before an agent changes saved maps.");
+      const result = await studyMediaService.create({ mediaKind: "mind_map", title: map.title, irEnvelope: map, diagramKind: "diagram_spec", status: "ready" });
+      if (result.error || !result.data) throw new Error(result.error ?? "Could not create mind map."); return { id: result.data.id, name: result.data.title };
+    }, nameOf: (map) => map.title },
+    update: { parse: (value) => { if (dirty) throw new Error("Finish, save, or discard the open mind-map draft before an agent changes it."); return parseUpdateMindMaps(value, currentMedia ? [currentMedia] : []); }, run: async (plan) => {
+      const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.map.title, ir_envelope: plan.map, trust: trustAfterMindMapEdit(currentMedia?.trust) });
+      if (result.error || !result.data) throw new Error(result.error ?? "Could not update mind map.");
+      setCurrentMedia(result.data); const next = parseMindMap(result.data.ir_envelope); setBase(next); setDraft(next); return { id: result.data.id, name: result.data.title };
+    }, nameOf: (plan) => plan.map.title, changedOf: (plan) => plan.changed },
+    delete: { parse: (value) => { if (dirty) throw new Error("Finish, save, or discard the open mind-map draft before deleting it."); return parseMindMapIds(value, "delete_mind_maps", isOwner && currentMedia ? [currentMedia] : []); }, run: async () => { if (!currentMedia) throw new Error("The mind map is no longer available."); const result = await studyMediaService.softDelete(currentMedia.id); if (result.error) throw new Error(result.error); router.push("/education/mind-maps"); return { id: currentMedia.id, name: currentMedia.title }; }, nameOf: () => currentMedia?.title ?? "mind map" },
+  }, refuseSurfaceWrite);
 
   function updateNode(index: number, patch: Record<string, unknown>) {
     update({ nodes: draft.nodes.map((node, position) => position === index ? { ...node, ...patch } : node) });
@@ -36,19 +63,20 @@ export function MindMapEditor({ media }: { media?: StudyMediaRow }) {
       setError(message); toast.error(message); return;
     }
     setSaving(true); setError(null);
-    const result = media
-      ? await studyMediaService.updateVersioned(media.id, media.version, { title: clean.title, ir_envelope: clean, trust: trustAfterMindMapEdit(media.trust) })
+    const result = currentMedia
+      ? await studyMediaService.updateVersioned(currentMedia.id, currentMedia.version, { title: clean.title, ir_envelope: clean, trust: trustAfterMindMapEdit(currentMedia.trust) })
       : await studyMediaService.create({ mediaKind: "mind_map", title: clean.title, irEnvelope: clean, diagramKind: "diagram_spec", status: "ready" });
     setSaving(false);
     if (result.error || !result.data) {
       const message = result.error ?? "Could not save the mind map.";
       setError(message); toast.error(message); return;
     }
-    toast.success(media ? "Mind map saved" : "Mind map created");
+    sessionStorage.removeItem(recoveryKey);
+    toast.success(currentMedia ? "Mind map saved" : "Mind map created");
     router.push(`/education/mind-maps/${result.data.id}`); router.refresh();
   }
-  return <>
-    <EducationToolHeader title={media ? "Edit mind map" : "Write a mind map"} />
+  return <SurfaceRuntimeProvider surfaceName="matrx-user/education-mind-maps" getScope={getScope} getWriteHandlers={getWriteHandlers}><>
+    <EducationToolHeader title={currentMedia ? "Edit mind map" : "Write a mind map"} />
     <main className="mx-auto w-full max-w-4xl space-y-6 px-4 pb-20 pt-4">
       <section className="space-y-2"><Label htmlFor="mind-map-title">Title</Label><Input id="mind-map-title" value={draft.title} onChange={(event) => update({ title: event.target.value })} /></section>
       <section className="space-y-3">
@@ -72,12 +100,21 @@ export function MindMapEditor({ media }: { media?: StudyMediaRow }) {
         </div>)}
       </section>
       {error && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>}
-      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button><Button type="button" disabled={saving} onClick={() => void save()}>{saving ? "Saving…" : media ? "Save changes" : "Create mind map"}</Button></div>
+      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(recoveryKey); router.back(); }}>Cancel</Button><Button type="button" disabled={saving || !dirty} onClick={() => void save()}>{saving ? "Saving…" : currentMedia ? "Save changes" : "Create mind map"}</Button></div>
     </main>
-  </>;
+  </></SurfaceRuntimeProvider>;
 }
 
 function stringValue(value: unknown): string { return typeof value === "string" ? value : ""; }
+function recoverDraft(media?: StudyMediaRow): MindMapEnvelope {
+  const fallback = media ? parseMindMap(media.ir_envelope) : blankMindMap();
+  if (typeof window === "undefined") return fallback;
+  const key = `mind-map-editor:${media?.id ?? "new"}`;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(key) ?? "null") as { draft?: unknown; baseVersion?: unknown } | null;
+    return saved?.baseVersion === (media?.version ?? null) && saved.draft ? parseMindMap(saved.draft) : fallback;
+  } catch { sessionStorage.removeItem(key); return fallback; }
+}
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <Label className="space-y-1"><span>{label}</span><Input value={value} onChange={(event) => onChange(event.target.value)} /></Label>; }
 function NodeChoice({ label, value, nodes, onChange }: { label: string; value: string; nodes: JsonRecord[]; onChange: (value: string) => void }) { return <Label className="space-y-1"><span>{label}</span><select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={value} onChange={(event) => onChange(event.target.value)}>{nodes.map((node) => <option key={String(node.id)} value={stringValue(node.id)}>{stringValue(node.label) || stringValue(node.id)}</option>)}</select></Label>; }
 type JsonRecord = Record<string, unknown>;
