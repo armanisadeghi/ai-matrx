@@ -94,6 +94,26 @@ const MENU_ICONS: ReadonlySet<unknown> = new Set<unknown>([Ellipsis, EllipsisVer
  * `icon` — never from DOM text. A host element wrapping exactly one control is
  * that control (`<span aria-label=…><ExportMenu/></span>`).
  */
+/**
+ * A DESTRUCTIVE action (Move to trash, Delete, Remove): a control styled or
+ * declared destructive (`variant="destructive"`, a `text-destructive` class,
+ * or `data-destructive`). On a phone it is never the row's primary — one tap
+ * beside the title is too close to a slip — and it sits LAST in the ⋮ sheet,
+ * after a divider (page-pass 2026-09-27, /crm/<id>: "Move to trash…" in red in
+ * the phone header row).
+ */
+export function isDestructiveAction(node: ReactNode): boolean {
+  if (!isValidElement(node)) return false;
+  const props = node.props as { variant?: unknown; className?: unknown; children?: ReactNode; "data-destructive"?: unknown };
+  if (props.variant === "destructive" || props["data-destructive"] !== undefined) return true;
+  if (typeof props.className === "string" && /(^|\s)text-destructive(\s|$)/.test(props.className)) return true;
+  if (typeof node.type === "string") {
+    const kids = Children.toArray(props.children);
+    return kids.length === 1 && isDestructiveAction(kids[0]);
+  }
+  return false;
+}
+
 export function isMenuAction(node: ReactNode): boolean {
   if (!isValidElement(node)) return false;
   const type = node.type as unknown;

@@ -54,7 +54,7 @@
 
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -77,6 +77,7 @@ import {
   fitActions,
   flattenActions,
   iconOnlyLabel,
+  isDestructiveAction,
   isMenuAction,
   OverflowMenuItem,
   overflowItemLabel,
@@ -342,9 +343,15 @@ export default function RouteHeader({
   // goes to the sheet; the primary is the last action that is NOT a menu.
   const toSheet = isPhone && !yielded && phoneHost != null && actions.length > 0;
   const phonePrimary = toSheet
-    ? ([...actions].reverse().find((a) => !isMenuAction(a.node)) ?? null)
+    ? ([...actions].reverse().find((a) => !isMenuAction(a.node) && !isDestructiveAction(a.node)) ?? null)
     : null;
-  const sheetActions = toSheet ? actions.filter((a) => a !== phonePrimary) : [];
+  // A destructive action goes LAST in the sheet, after a divider.
+  const sheetActions = toSheet
+    ? [
+        ...actions.filter((a) => a !== phonePrimary && !isDestructiveAction(a.node)),
+        ...actions.filter((a) => a !== phonePrimary && isDestructiveAction(a.node)),
+      ]
+    : [];
   const owner = useId();
   useEffect(() => {
     setPhonePageActionCount(owner, sheetActions.length + (centerToSheet ? 1 : 0));
@@ -440,8 +447,13 @@ export default function RouteHeader({
           {sheetActions.length > 0 && phoneHost
             ? createPortal(
                 <div data-route-header-phone-actions className="flex flex-col gap-0.5">
-                  {sheetActions.map((a) => (
-                    <PhoneSheetAction key={a.key} action={a} />
+                  {sheetActions.map((a, i) => (
+                    <Fragment key={a.key}>
+                      {isDestructiveAction(a.node) && (i === 0 || !isDestructiveAction(sheetActions[i - 1]!.node)) && i > 0 ? (
+                        <div role="separator" data-phone-sheet-divider className="my-1 h-px bg-border" />
+                      ) : null}
+                      <PhoneSheetAction action={a} />
+                    </Fragment>
                   ))}
                 </div>,
                 phoneHost,
