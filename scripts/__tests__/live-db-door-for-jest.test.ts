@@ -107,4 +107,57 @@ describe("the live-database door for jest", () => {
       expect({ suite, ownLoader: /SUPABASE_MATRIX_\[A-Z_\]\+/.test(text) }).toEqual({ suite, ownLoader: false });
     }
   });
+
+  // THE TARGET FOLLOWS CLONE-REF (list-shell fix D, 2026-09-28). A MATRX_TEST_DATABASE_URL saved in
+  // .env.local named a clone deleted nights earlier ("tenant/user postgres.hykobnqyuxspbcijrodb not
+  // found"). RED on the old resolver: it returned the stale saved URL.
+  describe("the test target follows CLONE-REF", () => {
+    const STALE = "postgresql://postgres.hykobnqyuxspbcijrodb:old@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
+    function cloneRef(root: string, withPassword: boolean): string {
+      const pw = join(root, "clone-password.txt");
+      if (withPassword) writeFileSync(pw, "tonights-password\n");
+      const path = join(root, "CLONE-REF");
+      writeFileSync(
+        path,
+        [
+          "# test fixture",
+          "clone_ref         = nsqbptxiyqtzayboafaj",
+          "clone_name        = clone-20260928",
+          "pooler_host       = aws-0-us-east-1.pooler.supabase.com",
+          "pooler_port       = 6543",
+          "pooler_user       = postgres.nsqbptxiyqtzayboafaj",
+          "database          = postgres",
+          "password_env_var  = CLONE_DATABASE_URL",
+          `password_file     = ${pw}`,
+          "promoted          = 2026-09-28T08:55:41Z",
+        ].join("\n"),
+      );
+      return path;
+    }
+
+    it("tonight's clone beats a stale target saved in the env files", () => {
+      const root = liveRoot(`MATRX_TEST_DATABASE_URL=${STALE}`);
+      const got = testDbEnvFrom(root, { env: noEnv, now: AT_NOON, cloneRefPath: cloneRef(root, true) });
+      expect(got.user).toBe("postgres.nsqbptxiyqtzayboafaj");
+      expect(got.password).toBe("tonights-password");
+      expect(got.from).toMatch(/CLONE-REF clone-20260928/);
+    });
+
+    it("an explicit per-run override still wins", () => {
+      const root = liveRoot();
+      const got = testDbEnvFrom(root, {
+        env: { NODE_ENV: "test", MATRX_TEST_DATABASE_URL: CLONE_URL },
+        now: AT_NOON,
+        cloneRefPath: cloneRef(root, true),
+      });
+      expect(got.user).toBe("postgres.jxhgzalwckuarngvsdyq");
+    });
+
+    it("a stale saved target with no clone password is refused by name, never connected to", () => {
+      const root = liveRoot(`MATRX_TEST_DATABASE_URL=${STALE}`);
+      expect(() => testDbEnvFrom(root, { env: noEnv, now: AT_NOON, cloneRefPath: cloneRef(root, false) })).toThrow(
+        /stale.*hykobnqyuxspbcijrodb.*nsqbptxiyqtzayboafaj/,
+      );
+    });
+  });
 });
