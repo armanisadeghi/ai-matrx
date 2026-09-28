@@ -1,5 +1,8 @@
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
-import { catalogConnectionPresentation } from "./integration-catalog-state";
+import {
+  catalogActionPresentation,
+  catalogConnectionPresentation,
+} from "./integration-catalog-state";
 
 const githubEntry = {
   serverId: "github-server",
@@ -44,8 +47,66 @@ describe("catalogConnectionPresentation", () => {
   });
 
   it("holds GitHub at checking until its canonical connection has loaded", () => {
-    expect(
-      catalogConnectionPresentation(githubEntry, undefined, true),
-    ).toEqual({ state: "checking", connected: false, reason: null });
+    expect(catalogConnectionPresentation(githubEntry, undefined, true)).toEqual(
+      { state: "checking", connected: false, reason: null },
+    );
+  });
+
+  it("turns an expired catalog token into the shared re-auth state", () => {
+    const presentation = catalogConnectionPresentation(
+      {
+        ...githubEntry,
+        slug: "supabase",
+        connectionId: "supabase-connection",
+        connectionStatus: "connected",
+        tokenExpiresAt: "2026-08-27T00:00:00.000Z",
+      },
+      null,
+      false,
+    );
+
+    expect(presentation).toMatchObject({
+      state: "needs_reauth",
+      connected: false,
+    });
+  });
+});
+
+describe("catalogActionPresentation", () => {
+  it("does not offer OAuth for an active provider whose web connection path is not ready", () => {
+    const presentation = catalogActionPresentation(
+      {
+        ...githubEntry,
+        slug: "vercel",
+        connectionReady: false,
+        connectionId: null,
+        connectionStatus: null,
+      },
+      { connected: false },
+    );
+
+    expect(presentation).toMatchObject({
+      isComingSoon: true,
+      canStartConnection: false,
+      needsRecovery: false,
+    });
+  });
+
+  it("keeps reconnect and disconnect recovery available for a saved failed connection", () => {
+    const presentation = catalogActionPresentation(
+      {
+        ...githubEntry,
+        slug: "supabase",
+        connectionId: "saved-supabase-connection",
+        connectionStatus: "refresh_failed",
+      },
+      { connected: false },
+    );
+
+    expect(presentation).toMatchObject({
+      isComingSoon: false,
+      canStartConnection: true,
+      needsRecovery: true,
+    });
   });
 });

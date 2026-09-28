@@ -79,7 +79,10 @@ import { ConnectorsSettingsPanel } from "@/features/connectors/ConnectorsSetting
 import { providerArtworkUrls } from "@/features/connectors/live-connectors";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { catalogConnectionPresentation } from "./integration-catalog-state";
+import {
+  catalogActionPresentation,
+  catalogConnectionPresentation,
+} from "./integration-catalog-state";
 import {
   buildManualMcpCredentials,
   type ManualHeaderInput,
@@ -141,6 +144,12 @@ const STATUS_CONFIG: Record<
   },
   refresh_failed: {
     label: "Refresh Failed",
+    className:
+      "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+    icon: <AlertCircle className="h-3 w-3" />,
+  },
+  needs_reauth: {
+    label: "Needs re-auth",
     className:
       "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
     icon: <AlertCircle className="h-3 w-3" />,
@@ -784,18 +793,19 @@ function ServerCard({
   onDisconnect,
   onTest,
 }: ServerCardProps) {
-  const isComingSoon = entry.serverStatus === "coming_soon";
+  const actionPresentation = catalogActionPresentation(
+    entry,
+    connectionPresentation,
+  );
+  const isComingSoon = actionPresentation.isComingSoon;
   const isCommunity = entry.serverStatus === "community";
   const isConnected = connectionPresentation.connected;
-  const isActive =
-    entry.serverStatus === "active" || entry.serverStatus === "beta";
   const hasEndpoint = !!entry.endpointUrl;
   const isStdioOnly = entry.transport === "stdio" && !hasEndpoint;
   const canConnect =
-    (isActive || isCommunity) &&
-    hasEndpoint &&
-    !isConnected &&
+    actionPresentation.canStartConnection &&
     connectionPresentation.state !== "checking";
+  const needsRecovery = actionPresentation.needsRecovery;
   const needsOAuth = entry.authStrategy === "oauth_discovery";
   const needsToken =
     entry.authStrategy === "bearer" || entry.authStrategy === "api_key";
@@ -973,6 +983,11 @@ function ServerCard({
             {entry.description}
           </p>
         )}
+        {connectionPresentation.reason && !isConnected && (
+          <p role="status" className="mt-3 text-xs leading-5 text-muted-foreground">
+            {connectionPresentation.reason}
+          </p>
+        )}
 
         {/* Actions */}
         <div className="mt-4 flex items-center gap-2">
@@ -993,10 +1008,20 @@ function ServerCard({
                 size="sm"
                 className="h-10 gap-1.5 px-3 text-sm"
                 onClick={onToggleExpand}
-                aria-label={isExpanded ? `Hide ${entry.name} settings` : `Open ${entry.name} settings`}
+                aria-label={isExpanded ? `Hide ${entry.name} connection management` : `Manage ${entry.name} connection`}
               >
                 <Settings2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Settings</span>
+                <span className="hidden sm:inline">Manage</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 shrink-0 px-3 text-sm text-destructive"
+                onClick={onDisconnect}
+                disabled={isChecking || isConnecting}
+                aria-label={`Disconnect ${entry.name}`}
+              >
+                Disconnect
               </Button>
             </>
           ) : canConnect && needsOAuth && !isSupabase ? (
@@ -1013,7 +1038,7 @@ function ServerCard({
                 ) : (
                   <Lock className="h-3 w-3 mr-1" />
                 )}
-                Connect
+                {needsRecovery ? "Reconnect" : "Connect"}
               </Button>
               <Button
                 variant="outline"
@@ -1024,6 +1049,18 @@ function ServerCard({
               >
                 {showManualForm ? "Cancel" : "Use token"}
               </Button>
+              {needsRecovery && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-11 shrink-0 px-2 text-sm text-destructive sm:h-7 sm:px-3 sm:text-xs"
+                  onClick={onDisconnect}
+                  disabled={isConnecting}
+                  aria-label={`Disconnect ${entry.name}`}
+                >
+                  Disconnect
+                </Button>
+              )}
             </div>
           ) : canConnect && needsOAuth && isSupabase ? (
             <Button
@@ -1038,8 +1075,8 @@ function ServerCard({
               ) : (
                 <Lock className="h-3 w-3 mr-1" />
               )}
-              <span className="sm:hidden">Connect project</span>
-              <span className="hidden sm:inline">Connect read-only project</span>
+              <span className="sm:hidden">{needsRecovery ? "Reconnect project" : "Connect project"}</span>
+              <span className="hidden sm:inline">{needsRecovery ? "Reconnect project" : "Connect read-only project"}</span>
             </Button>
           ) : canConnect && needsToken ? (
             <Button
@@ -1049,7 +1086,7 @@ function ServerCard({
               disabled={isConnecting}
             >
               <Key className="h-3 w-3 mr-1" />
-              {showTokenForm ? "Cancel" : "Enter Token"}
+              {showTokenForm ? "Cancel" : needsRecovery ? "Reconnect" : "Enter Token"}
             </Button>
           ) : canConnect && noAuth ? (
             <Button
@@ -1063,7 +1100,7 @@ function ServerCard({
               ) : (
                 <Zap className="h-3 w-3 mr-1" />
               )}
-              Connect
+              {needsRecovery ? "Reconnect" : "Connect"}
             </Button>
           ) : isComingSoon ? (
             <Button
@@ -1094,6 +1131,31 @@ function ServerCard({
               </TooltipContent>
             </Tooltip>
           ) : null}
+
+          {needsRecovery && canConnect && !needsOAuth && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 shrink-0 px-3 text-sm text-destructive sm:h-7 sm:text-xs"
+              onClick={onDisconnect}
+              disabled={isConnecting}
+              aria-label={`Disconnect ${entry.name}`}
+            >
+              Disconnect
+            </Button>
+          )}
+
+          {needsRecovery && !canConnect && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 flex-1 text-sm text-destructive sm:h-7 sm:text-xs"
+              onClick={onDisconnect}
+              aria-label={`Disconnect ${entry.name}`}
+            >
+              Disconnect
+            </Button>
+          )}
 
           {!isConnected && (
             <Button
@@ -1143,6 +1205,19 @@ function ServerCard({
               <ErrorNotice size="inline" className="text-[11px]" message={supabaseError} />
             )}
           </div>
+        )}
+
+        {needsRecovery && canConnect && isSupabase && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 h-10 w-full text-sm text-destructive sm:h-7 sm:text-xs"
+            onClick={onDisconnect}
+            disabled={isConnecting}
+            aria-label={`Disconnect ${entry.name}`}
+          >
+            Disconnect
+          </Button>
         )}
 
         {/* Inline token form */}
