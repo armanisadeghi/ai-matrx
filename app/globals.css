@@ -1860,18 +1860,21 @@
   initial-value: 0px;
 }
 
-.pointer-events-none {
-  pointer-events: none !important;
-}
-
+/* `.pointer-events-auto` stays unlayered + !important: it is the escape hatch that re-asserts a
+   floating layer over the `pointer-events: none` Radix writes inline on <body>. There is NO
+   unlayered `.pointer-events-none`: Tailwind's own (layered) utility covers it, and an unlayered
+   !important copy outranked every `hover:` / `group-hover:` / `focus-within:pointer-events-auto`
+   variant in the app — a hover-revealed control showed but a click fell through (the chat dataset
+   card's "Open in window", merged-grid review 2). Guard:
+   a-hover-revealed-control-can-be-clicked.test.ts. */
 .pointer-events-auto {
   pointer-events: auto !important;
 }
 
 /* EntityRef keeps secondary doors compact on a fine pointer, but an invisible
-   control must never capture a row click. These are explicit rules rather than
-   Tailwind hover utilities because the global pointer utility above is
-   intentionally `!important`. The data attribute lets keyboard focus expose
+   control must never capture a row click. These are explicit rules (kept from
+   when an unlayered !important `.pointer-events-none` defeated Tailwind's hover
+   variants; that rule is gone). The data attribute lets keyboard focus expose
    every door before activation, while coarse-pointer devices always see them. */
 .entity-ref-controls[data-reveal-on-hover="true"] {
   opacity: 0;
