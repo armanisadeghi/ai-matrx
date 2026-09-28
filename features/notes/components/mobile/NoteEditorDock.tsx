@@ -132,11 +132,11 @@ export function NoteEditorDock({
             // Folder and tags live in ONE sheet, so they are ONE dock button
             // (two buttons opened the same sheet).
             key: "folder",
-            label: "Folder & tags",
+            label: "Folder",
             tooltip:
               tags.length > 0
-                ? `Folder: ${folder} · ${tags.length} tag${tags.length !== 1 ? "s" : ""}`
-                : `Folder: ${folder}`,
+                ? `Folder & tags — ${folder} · ${tags.length} tag${tags.length !== 1 ? "s" : ""}`
+                : `Folder & tags — ${folder}`,
             Icon: FolderOpen,
             onPress: (index: number) => {
               setActiveIndex(index);
