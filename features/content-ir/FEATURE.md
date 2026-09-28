@@ -373,13 +373,17 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
   and neither can drift — the streaming host also cannot know the root key up
   front, so wiring this into `normalizeJsonRegion`'s `expectedRootKind` would
   have CREATED the divergence it was meant to remove. Precedence: real `__kind` >
-  explicit `expectedRootKind` > surface. It never claims a kind it cannot
-  validate — a non-conforming payload still degrades to raw, now with
-  `Kind "quiz_set" is missing required field "title".` **The frontend does NOT
-  port the server's `adapt_block_data` legacy field mapping** (that would be a
-  second copy of the one mapping the platform is centralizing), so these payloads
-  still render through their legacy block route; what changed is that the
-  envelope and its notice now NAME the registered kind. Pinned by
+  explicit `expectedRootKind` > surface. **A missing field never degrades a
+  block (Arman, 2026-09-28; content-ir 0.19.21)** — the kind resolves, the
+  missing field renders blank, and only a PRESENT value of the wrong type is
+  refused. Before this, `{"quiz_title": …}` showed `Kind "quiz_set" is missing
+  required field "title"` while streaming and in /markdown-studio, and rendered
+  only after the server's adapted copy arrived. Each wrapped/renamed legacy
+  shape is read by its kind BRIDGE (`unwrapLegacyRoot` in
+  `kinds/legacy-bridge-utils.ts`; the quiz bridge reads `quiz_title` /
+  `multiple_choice`), so live and saved render identically. Pinned by
+  `__tests__/legacy-root-key-blocks-render-live.test.ts` (the failing reply's
+  payloads, verbatim). Pinned by
   `__tests__/stream-splitter-parity.test.ts` (legacy quiz / presentation /
   item_presentation fixtures asserted identical across both hosts at randomized
   chunk boundaries). Fixed in passing: a stale assertion in

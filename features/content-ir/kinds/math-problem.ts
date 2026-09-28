@@ -17,7 +17,11 @@
  * parse — so the wrap is the whole bridge.
  */
 
-import { makeCompleteEnvelopeBridge, isRecord } from "./legacy-bridge-utils";
+import {
+  makeCompleteEnvelopeBridge,
+  isRecord,
+  unwrapLegacyRoot,
+} from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,
   collectExtras,
@@ -30,7 +34,8 @@ import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const mathProblemServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "math_problem",
-  (value) => {
+  (raw) => {
+    const value = unwrapLegacyRoot(raw, "math_problem");
     if (!isRecord(value.problem_statement) || !Array.isArray(value.solutions)) {
       return undefined;
     }

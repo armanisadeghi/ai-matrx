@@ -40,6 +40,24 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * THE LEGACY ROOT-KEY UNWRAP. A block written in an old wrapped shape —
+ * `{"comparison": {...}}`, `{"diagram": {...}}` — is recognized by its root
+ * key (the `json_root_key` surface) and arrives here with the real payload
+ * one level down. Streaming and /markdown-studio parse in the browser, where
+ * the server's adapter never runs, so every wrapped-kind bridge unwraps here
+ * — one place, identical in the live and the saved path.
+ */
+export function unwrapLegacyRoot(
+  value: Record<string, unknown>,
+  rootKey: string,
+): Record<string, unknown> {
+  const inner = value[rootKey];
+  if (!isRecord(inner)) return value;
+  const { [rootKey]: _wrapper, ...rest } = value;
+  return { ...rest, ...inner };
+}
+
+/**
  * The discriminator key, re-exported for the extras collectors: identity is
  * never an "unknown extra field" to copy into a component's serverData.
  */

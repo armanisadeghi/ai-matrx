@@ -16,7 +16,7 @@
  */
 
 import type { KindSchema } from "@ai-matrx/content-ir";
-import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
+import { makeCompleteEnvelopeBridge, unwrapLegacyRoot } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,
   collectExtras,
@@ -122,7 +122,8 @@ export const PRESENTATION_KIND_SCHEMAS: KindSchema[] = [
 
 export const presentationServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "presentation_deck",
-  (value) => {
+  (raw) => {
+    const value = unwrapLegacyRoot(raw, "presentation");
     if (!Array.isArray(value.slides) || value.slides.length === 0) {
       return undefined;
     }

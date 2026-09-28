@@ -16,7 +16,7 @@
  */
 
 import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
-import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
+import { makeCompleteEnvelopeBridge, unwrapLegacyRoot } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,
   collectExtras,
@@ -28,10 +28,10 @@ import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const diagramServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "diagram_spec",
-  (value) => {
-    if (typeof value.title !== "string" || !Array.isArray(value.nodes)) {
-      return undefined;
-    }
+  (raw) => {
+    const value = unwrapLegacyRoot(raw, "diagram");
+    if (!Array.isArray(value.nodes)) return undefined;
+    if (typeof value.title !== "string") value.title = "";
     return parseDiagramJSON(
       JSON.stringify({ diagram: value }),
     ) as unknown as Record<string, unknown>;

@@ -55,9 +55,18 @@ const MAPPED_QUESTION_KEYS = new Set([
   "prompt",
   "options",
   "explanation",
+  "correctAnswer",
   KIND_KEY,
 ]);
-const MAPPED_SET_KEYS = new Set(["title", "questions", KIND_KEY]);
+const MAPPED_SET_KEYS = new Set([
+  "title",
+  "questions",
+  "quiz_title",
+  "quizTitle",
+  "multiple_choice",
+  "multipleChoice",
+  KIND_KEY,
+]);
 
 function resolveCorrectIndex(options: string[], correct: unknown): number {
   if (
@@ -158,13 +167,37 @@ function mapQuestion(
 export const quizServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "quiz_set",
   (value) => {
-    const title = typeof value.title === "string" ? value.title : "";
-    if (!title || !Array.isArray(value.questions)) return undefined;
+    // Legacy `{quiz_title, multiple_choice:[{question, options,
+    // correctAnswer}]}` (the `quiz_title` json_root_key surface) reads here
+    // too — the browser parses it live, where the server adapter never runs.
+    const legacyQuestions = value.multiple_choice ?? value.multipleChoice;
+    const title =
+      typeof value.title === "string" && value.title !== ""
+        ? value.title
+        : typeof value.quiz_title === "string"
+          ? value.quiz_title
+          : typeof value.quizTitle === "string"
+            ? value.quizTitle
+            : "";
+    // A blank-filled `questions: []` (a missing required field renders blank)
+    // must not hide the legacy list.
+    const questions =
+      Array.isArray(value.questions) && value.questions.length > 0
+        ? value.questions
+      : Array.isArray(legacyQuestions)
+        ? legacyQuestions
+        : null;
+    if (!questions) return undefined;
 
     const multipleChoice: Record<string, unknown>[] = [];
-    for (const question of value.questions) {
+    for (const question of questions) {
       if (!isRecord(question)) continue;
-      const mapped = mapQuestion(question, multipleChoice.length);
+      const normalized =
+        question.correct_answer === undefined &&
+        question.correctAnswer !== undefined
+          ? { ...question, correct_answer: question.correctAnswer }
+          : question;
+      const mapped = mapQuestion(normalized, multipleChoice.length);
       if (mapped) multipleChoice.push(mapped);
     }
     if (multipleChoice.length === 0) return undefined;

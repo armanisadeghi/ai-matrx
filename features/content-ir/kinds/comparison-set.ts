@@ -17,7 +17,7 @@
  */
 
 import { parseComparisonJSON } from "@/components/mardown-display/blocks/comparison/parseComparisonJSON";
-import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
+import { makeCompleteEnvelopeBridge, unwrapLegacyRoot } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,
   collectExtras,
@@ -30,14 +30,12 @@ import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const comparisonServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "comparison_set",
-  (value) => {
-    if (
-      typeof value.title !== "string" ||
-      !Array.isArray(value.items) ||
-      !Array.isArray(value.criteria)
-    ) {
+  (raw) => {
+    const value = unwrapLegacyRoot(raw, "comparison");
+    if (!Array.isArray(value.items) || !Array.isArray(value.criteria)) {
       return undefined;
     }
+    if (typeof value.title !== "string") value.title = "";
     return parseComparisonJSON(
       JSON.stringify({ comparison: value }),
     ) as unknown as Record<string, unknown>;

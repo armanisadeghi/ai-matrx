@@ -15,7 +15,11 @@
  */
 
 import { parseDecisionTreeJSON } from "@/components/mardown-display/blocks/decision-tree/parseDecisionTreeJSON";
-import { makeCompleteEnvelopeBridge, isRecord } from "./legacy-bridge-utils";
+import {
+  makeCompleteEnvelopeBridge,
+  isRecord,
+  unwrapLegacyRoot,
+} from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,
   collectExtras,
@@ -27,10 +31,10 @@ import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const decisionTreeServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "decision_tree",
-  (value) => {
-    if (typeof value.title !== "string" || !isRecord(value.root)) {
-      return undefined;
-    }
+  (raw) => {
+    const value = unwrapLegacyRoot(raw, "decision_tree");
+    if (!isRecord(value.root)) return undefined;
+    if (typeof value.title !== "string") value.title = "";
     return parseDecisionTreeJSON(
       JSON.stringify({ decision_tree: value }),
     ) as unknown as Record<string, unknown>;

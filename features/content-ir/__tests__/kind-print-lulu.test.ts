@@ -167,8 +167,15 @@ describe("lulu print mirrors accept the canonical Lulu payloads", () => {
     );
   });
 
-  it("still refuses a job whose status object lacks its required name", () => {
+  // A MISSING FIELD NEVER DEGRADES A BLOCK (2026-09-28): the status renders
+  // with its name blank instead of turning the whole job into raw data.
+  it("renders a job whose status object lacks its name — never degrades", () => {
     const events = parse({ ...NEW_JOB, status: { changed: null } });
+    expect(events.find((event) => event.type === "raw_object")).toBeUndefined();
+  });
+
+  it("still refuses a job whose status name is the wrong type", () => {
+    const events = parse({ ...NEW_JOB, status: { name: 42, changed: null } });
     expect(events.find((event) => event.type === "raw_object")).toMatchObject({
       cause: "invalid",
     });
