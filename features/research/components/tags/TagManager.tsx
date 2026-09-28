@@ -359,7 +359,7 @@ export default function TagManager() {
         </Dialog>
       )}
 
-      {/* Delete Confirmation */}
+      {/* Move-to-Trash Confirmation */}
       <AlertDialog
         open={!!tagToDelete}
         onOpenChange={(open) => !open && setTagToDelete(null)}
@@ -367,14 +367,14 @@ export default function TagManager() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete &ldquo;{tagToDelete?.name}&rdquo;?
+              Move &ldquo;{tagToDelete?.name}&rdquo; to Trash?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Removes the tag from {tagToDelete?.source_count ?? 0} source
-              {(tagToDelete?.source_count ?? 0) === 1 ? "" : "s"} and cannot be
-              undone. The sources themselves stay, but this grouping is gone —
-              rebuilding it means re-assigning every source and re-running its
-              paid AI consolidation.
+              The tag leaves this topic along with its grouping of{" "}
+              {tagToDelete?.source_count ?? 0} source
+              {(tagToDelete?.source_count ?? 0) === 1 ? "" : "s"}. The sources
+              themselves stay. You can restore the tag, its assignments, and its
+              consolidation from Trash.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -383,7 +383,7 @@ export default function TagManager() {
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Move to Trash
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

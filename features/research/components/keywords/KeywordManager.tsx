@@ -305,15 +305,15 @@ export default function KeywordManager() {
     await commitAdd(kw);
   };
 
-  // DESTRUCTIVE: deleting a keyword row cascades — its search results and its
-  // per-keyword synthesis go with it, and none of it comes back. Name the
-  // keyword and the exact count before the row disappears.
+  // Moving a keyword to Trash is a soft delete: its search results and
+  // per-keyword synthesis stay put, and restoring it from Trash brings them
+  // all back. Name the keyword and the exact count before it leaves the list.
   const handleDelete = async (keyword: ResearchKeyword) => {
     const resultCount = keyword.result_count ?? 0;
     const ok = await confirm({
-      title: `Delete “${keyword.keyword}”?`,
-      description: `This permanently deletes the keyword along with its ${resultCount} search result${resultCount === 1 ? "" : "s"} and any synthesis already written for it. The research already paid for on this keyword is gone — re-adding it means searching, reading, and analyzing all over again.`,
-      confirmLabel: "Delete keyword",
+      title: `Move “${keyword.keyword}” to Trash?`,
+      description: `The keyword and its ${resultCount} search result${resultCount === 1 ? "" : "s"} leave this topic. Nothing is lost: restore it from Trash to bring the keyword, its results, and any synthesis back.`,
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -323,7 +323,7 @@ export default function KeywordManager() {
       refresh();
       refreshProgress();
     } catch (err) {
-      toast.error((err as Error).message ?? "Could not delete the keyword");
+      toast.error((err as Error).message ?? "Could not move the keyword to Trash");
     } finally {
       setDeletingId(null);
     }

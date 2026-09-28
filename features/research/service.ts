@@ -441,6 +441,7 @@ export async function getKeywords(topicId: string): Promise<ResearchKeyword[]> {
     .from("rs_keyword")
     .select("*")
     .eq("topic_id", topicId)
+    .is("deleted_at", null)
     .order("position", { ascending: true })
     .order("created_at", { ascending: true });
   if (error) throw error;
@@ -523,15 +524,19 @@ export async function reorderKeywords(
   if (error) throw error;
 }
 
+/**
+ * Move a keyword to Trash (soft delete). Its search results, analyses and
+ * synthesis stay in place, so restoring it from Trash brings everything back.
+ */
 export async function deleteKeyword(keywordId: string): Promise<void> {
   await writeOne(
     supabase
       .schema("research")
       .from("rs_keyword")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", keywordId)
       .select("id"),
-    { action: "delete", noun: "keyword" },
+    { action: "archive", noun: "keyword" },
   );
 }
 
@@ -1062,6 +1067,7 @@ export async function getTags(topicId: string): Promise<ResearchTag[]> {
     .from("rs_tag")
     .select("*")
     .eq("topic_id", topicId)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true });
   if (error) throw error;
   return data ?? [];
@@ -1080,7 +1086,8 @@ export async function getTopicSourceTags(
     .schema("research")
     .from("rs_tag")
     .select("id, name")
-    .eq("topic_id", topicId);
+    .eq("topic_id", topicId)
+    .is("deleted_at", null);
   if (tagErr) throw tagErr;
   const tags = (tagRows ?? []) as { id: string; name: string }[];
   if (tags.length === 0) return {};
@@ -1155,15 +1162,16 @@ export async function updateTag(
   return data;
 }
 
+/** Move a tag to Trash (soft delete); restorable from Trash. */
 export async function deleteTag(tagId: string): Promise<void> {
   await writeOne(
     supabase
       .schema("research")
       .from("rs_tag")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", tagId)
       .select("id"),
-    { action: "delete", noun: "tag" },
+    { action: "archive", noun: "tag" },
   );
 }
 
@@ -1254,7 +1262,8 @@ export async function getSourceImportance(
     .schema("research")
     .from("rs_keyword")
     .select("id, keyword")
-    .eq("topic_id", topicId);
+    .eq("topic_id", topicId)
+    .is("deleted_at", null);
   if (kwErr) throw kwErr;
   const kwText = new Map<string, string>(
     (kws ?? []).map((k) => [k.id, k.keyword]),
@@ -1335,6 +1344,7 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
           .from("rs_keyword")
           .select("id, keyword", { count: "exact" })
           .eq("topic_id", topicId)
+          .is("deleted_at", null)
           .order("id", { ascending: true })
           .range(from, to),
       { label: "research.rs_keyword curation" },
@@ -1357,6 +1367,7 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
           .from("rs_tag")
           .select("id, name", { count: "exact" })
           .eq("topic_id", topicId)
+          .is("deleted_at", null)
           .order("id", { ascending: true })
           .range(from, to),
       { label: "research.rs_tag curation" },
