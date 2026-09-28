@@ -523,8 +523,12 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   }
   // The tab's "…": the Tab rows first (primary), and the whole note menu —
   // the same rows a right-click on the note shows — under one "Note ▸".
+  // Inside "Note ▸" the note's own rows need no second "Note" heading (a
+  // labelled section folds under its label — it would read Note ▸ Note ▸).
   const tabButtonSections: ContextMenuExtraSection[] = [
-    ...tabExtraSections.filter((section) => section.id !== "note-tab"),
+    ...tabExtraSections
+      .filter((section) => section.id !== "note-tab")
+      .map((section) => (section.id === "note-actions" ? { ...section, label: undefined } : section)),
     tabSection(true),
   ];
 
