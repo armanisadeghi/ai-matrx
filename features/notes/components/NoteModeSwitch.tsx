@@ -20,8 +20,6 @@ import { NOTE_VIEW_MODES } from "./NoteViewControls";
 
 export interface NoteModeSwitchProps {
   noteId: string;
-  /** Kept for host compatibility; a mode click never changes a default. */
-  rememberAsDefault?: boolean;
   /**
    * `always` (default) shows every label. `container` shows labels only when
    * the nearest `@container` ancestor is at least 26rem wide — for hosts that
@@ -33,7 +31,6 @@ export interface NoteModeSwitchProps {
 
 export function NoteModeSwitch({
   noteId,
-  rememberAsDefault: _rememberAsDefault,
   labels = "always",
   className,
 }: NoteModeSwitchProps) {

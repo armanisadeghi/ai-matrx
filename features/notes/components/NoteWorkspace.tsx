@@ -24,6 +24,7 @@
  */
 
 import { useEffect, type KeyboardEvent } from "react";
+import dynamic from "next/dynamic";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -53,7 +54,10 @@ import { NotePresenceBanner } from "./NotePresenceBanner";
 import { NoteRecordTools } from "./NoteRecordTools";
 import { NoteStatsFooter } from "./NoteStatsFooter";
 import { NoteTabItem } from "./NoteTabItem";
-import { NoteVersionHistory } from "./NoteVersionHistory";
+const NoteVersionHistory = dynamic(
+  () => import("./NoteVersionHistory").then((mod) => ({ default: mod.NoteVersionHistory })),
+  { ssr: false },
+);
 
 export interface NoteWorkspaceProps {
   /** The notes instance this host shows the note in — unique per host. */
@@ -115,7 +119,7 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
       >
         <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border/40 px-1">
           <div className="flex min-w-0 flex-1 items-center justify-center">
-            <NoteModeSwitch noteId={noteId} rememberAsDefault labels="container" />
+            <NoteModeSwitch noteId={noteId} labels="container" />
           </div>
           <TapTargetButtonGroup className="shrink-0">
             <NoteRecordTools
@@ -143,12 +147,14 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
         <NoteMetadataBar noteId={noteId} />
         <NoteStatsFooter noteId={noteId} standalone />
       </div>
-      <NoteVersionHistory
-        noteId={noteId}
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        onVersionRestored={() => void dispatch(refetchNoteContent(noteId))}
-      />
+      {historyOpen ? (
+        <NoteVersionHistory
+          noteId={noteId}
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          onVersionRestored={() => void dispatch(refetchNoteContent(noteId))}
+        />
+      ) : null}
     </NotesInstanceProvider>
   );
 }
