@@ -794,8 +794,10 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   // A Holder that will not resolve outranks a run error: there is no run.
   // Surfacing it here is what lets every shell refuse loudly through the
   // error path it already renders, instead of sitting on a dead submit button.
+  // No organization chosen is not an error on screen: reading a run needs
+  // none, and a new run asks for one at Submit (ask-then-continue).
   const error =
-    holder.error ??
+    (holder.organizationPending ? null : holder.error) ??
     payloadRefusal ??
     restoreFailed ??
     requestFailure(request);
