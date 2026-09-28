@@ -266,7 +266,8 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
 
       {everywhere ? null : (
         <section className="rounded-lg border border-border bg-card p-3" data-picklists-archive>
-          <ArchivedDisclosure noun="picklists" count={archived?.length}>
+          {/* read-gate-exempt: count stays absent (ArchivedDisclosure then draws no number) until the archive read succeeds, and while it is in trouble */}
+          <ArchivedDisclosure noun="picklists" count={archiveTrouble ? undefined : archived?.length}>
             <ArchivedTablesList tables={archived} readTrouble={archiveTrouble} note={null} onBringBack={bringBack} />
           </ArchivedDisclosure>
         </section>

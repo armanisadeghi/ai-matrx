@@ -209,6 +209,7 @@ export function SourceInput({
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         <span className="text-xs text-muted-foreground" aria-live="polite">
+          {/* read-gate-exempt: count of sources the person picked in this draft (local draft state); set.restoring covers the draft's read-back */}
           {set.restoring ? (
             <span className="inline-flex items-center gap-1.5">
               <Loader2 className="h-3 w-3 animate-spin" />

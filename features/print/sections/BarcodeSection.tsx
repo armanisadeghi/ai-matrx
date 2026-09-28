@@ -227,7 +227,8 @@ export function BarcodeSection() {
                                     <img src={svgToImgSrc(shownSvg)} alt={LABELS.preview_svg} className="max-h-32 w-full object-contain" />
                                 ) : (
                                     <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
-                                        No symbol
+                                        {/* A failed render is said by the chip above; here it is only a dash. */}
+                                        {error ? "—" : "No symbol"}
                                     </div>
                                 )}
                             </div>

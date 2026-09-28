@@ -1250,9 +1250,10 @@ export function StructuredListManagerV1({
             <AlertDialogTitle>Delete this picklist?</AlertDialogTitle>
             <AlertDialogDescription>
               "{activeList?.list_name || "Untitled list"}" and all{" "}
-              {items.length} item
-              {items.length === 1 ? "" : "s"} will be deleted. You'll have a few
-              seconds to undo.
+              {itemsError != null
+                ? "of its items"
+                : `${items.length} item${items.length === 1 ? "" : "s"}`}{" "}
+              will be deleted. You'll have a few seconds to undo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
