@@ -36,7 +36,7 @@ describe("smartExecute stale conversation admission", () => {
     consoleError.mockRestore();
   });
 
-  it("quietly drops a submit whose browser-local conversation was removed", async () => {
+  it("drops a submit whose browser-local conversation was removed — telling the person, reporting no incident", async () => {
     const conversationId = "removed-before-submit";
     const dispatch = jest.fn() as unknown as AppDispatch;
     const getState = () =>
@@ -47,10 +47,22 @@ describe("smartExecute stale conversation admission", () => {
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
 
+    const consoleWarn = jest
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+    (toast.info as jest.Mock).mockClear();
+
     await smartExecute({ conversationId })(dispatch, getState, undefined);
     await smartExecute({ conversationId })(dispatch, getState, undefined);
 
     expect(consoleError).not.toHaveBeenCalled();
+    // Send never silently does nothing: each dropped send says so.
+    expect(toast.info).toHaveBeenCalledTimes(2);
+    expect(toast.info).toHaveBeenCalledWith(
+      "Message not sent",
+      expect.objectContaining({ description: expect.any(String) }),
+    );
+    consoleWarn.mockRestore();
     consoleError.mockRestore();
   });
 

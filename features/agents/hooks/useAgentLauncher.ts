@@ -141,6 +141,31 @@ interface ManagedReturn extends ImperativeMethods {
 }
 
 // =============================================================================
+// Managed launch bookkeeping
+// =============================================================================
+
+/**
+ * One launch the managed lifecycle dispatched. `wanted` flips false when the
+ * effect run that started it is torn down and back to true if the next run
+ * adopts it (same id, same identity); a launch that settles unwanted reaps
+ * its own id and nothing else.
+ */
+interface ManagedLaunch {
+  id: string;
+  /** agentId + mandateKey — what the conversation was created to run. */
+  identity: string;
+  settled: boolean;
+  wanted: boolean;
+}
+
+function managedLaunchIdentity(
+  agentId: string | undefined,
+  mandateKey: AnyMandateKey | null | undefined,
+): string {
+  return `${agentId ?? ""}\u0000${mandateKey ?? ""}`;
+}
+
+// =============================================================================
 // Overloads
 // =============================================================================
 
@@ -185,23 +210,55 @@ export function useAgentLauncher(
   const mintedIdRef = useRef<string | null>(null);
   const mintedForKeyRef = useRef<string | undefined>(undefined);
   const mintedFreshKeyRef = useRef<number>(-1);
+  // The launch currently in flight (or last settled) for this hook. See
+  // `ManagedLaunch` — it is what keeps a superseded launch from reaping the id
+  // the composer is bound to.
+  const launchRef = useRef<ManagedLaunch | null>(null);
+  // Set when a key change mid-launch forced a fresh id: the surface's focus
+  // still names the superseded launch's id until the new launch lands, so the
+  // minted id wins until focus catches up.
+  const followMintedRef = useRef(false);
+  const launchIdentity = managedLaunchIdentity(agentId, options?.mandateKey);
   if (isManagedHook) {
+    const inFlight = launchRef.current;
+    // THE KEY-CHANGE-MID-LAUNCH CLASS. A page/module override that finishes
+    // loading while the launch is still in flight changes the answering agent
+    // or mandate key. Relaunching under the SAME id raced two creates onto one
+    // conversation, and the superseded launch's late reap took the new
+    // instance with it — Send then targeted a conversation that no longer
+    // existed. A different identity gets a different conversation.
+    const keyChangedMidLaunch =
+      inFlight != null &&
+      !inFlight.settled &&
+      inFlight.id === mintedIdRef.current &&
+      inFlight.identity !== launchIdentity;
     const shouldRemint =
       mintedForKeyRef.current !== surfaceKey ||
-      (preferFresh && mintedFreshKeyRef.current !== freshSessionKey);
+      (preferFresh && mintedFreshKeyRef.current !== freshSessionKey) ||
+      keyChangedMidLaunch;
     if (shouldRemint) {
-      // First run, surface change, or an explicit fresh-session bump (+).
-      // Fresh routes must never inherit stale surface focus — that is how
-      // clicking + from an existing conversation revives the old transcript.
+      // First run, surface change, an explicit fresh-session bump (+), or a
+      // key change mid-launch. Fresh routes must never inherit stale surface
+      // focus — that is how clicking + from an existing conversation revives
+      // the old transcript — and neither may a key change (focus may already
+      // name the superseded launch's conversation).
       mintedForKeyRef.current = surfaceKey;
       mintedFreshKeyRef.current = freshSessionKey;
-      mintedIdRef.current = preferFresh
-        ? generateConversationId()
-        : (focusedConversationId ?? generateConversationId());
+      mintedIdRef.current =
+        preferFresh || keyChangedMidLaunch
+          ? generateConversationId()
+          : (focusedConversationId ?? generateConversationId());
+      followMintedRef.current = keyChangedMidLaunch;
+    }
+    if (
+      followMintedRef.current &&
+      focusedConversationId === mintedIdRef.current
+    ) {
+      followMintedRef.current = false;
     }
   }
   const conversationId = isManagedHook
-    ? preferFresh && mintedIdRef.current
+    ? (preferFresh || followMintedRef.current) && mintedIdRef.current
       ? mintedIdRef.current
       : (focusedConversationId ?? mintedIdRef.current)
     : focusedConversationId;
@@ -355,7 +412,29 @@ export function useAgentLauncher(
     // so the surface never re-keys.
     const targetId = mintedIdRef.current;
     if (!targetId) return undefined;
-    let cancelled = false;
+    const reap = () => {
+      if (retainOnUnmount) dispatch(destroyInstanceIfAbandoned(targetId));
+      else dispatch(destroyInstanceIfAllowed(targetId));
+    };
+
+    // Adopt branch: the previous run of this effect already launched THIS id
+    // with THIS identity and it has not landed yet (readiness flickered, the
+    // effect re-ran for an unrelated dep). Launching again would race a second
+    // create onto the same id; instead take ownership of the in-flight launch
+    // so its settle does not reap what this run now wants.
+    const previous = launchRef.current;
+    if (
+      previous &&
+      !previous.settled &&
+      previous.id === targetId &&
+      previous.identity === launchIdentity
+    ) {
+      previous.wanted = true;
+      return () => {
+        previous.wanted = false;
+        if (previous.settled) reap();
+      };
+    }
 
     // Reuse branch: a live instance already exists for this surface's id (e.g.
     // a remount where the conversation was retained). Re-point focus if needed
@@ -391,6 +470,14 @@ export function useAgentLauncher(
       );
     }
 
+    const launch: ManagedLaunch = {
+      id: targetId,
+      identity: launchIdentity,
+      settled: false,
+      wanted: true,
+    };
+    launchRef.current = launch;
+
     launchAgent(agentId, {
       surfaceKey,
       conversationId: targetId,
@@ -421,15 +508,25 @@ export function useAgentLauncher(
             },
           );
         }
-        // Torn down before the create resolved (close / route change): the
-        // instance just landed under targetId but nothing is mounted on it —
-        // reap it per the unmount policy so we don't orphan a Redux record.
-        if (cancelled) {
-          if (retainOnUnmount) dispatch(destroyInstanceIfAbandoned(targetId));
-          else dispatch(destroyInstanceIfAllowed(targetId));
-        }
+        launch.settled = true;
+        // Torn down before the create resolved (close / route change / a key
+        // change) and no later run adopted it: the instance just landed under
+        // targetId but nothing wants it — reap it per the unmount policy so we
+        // don't orphan a Redux record. A key change always moved the surface
+        // to a fresh id, so this can never reap the conversation Send targets.
+        if (!launch.wanted) reap();
       })
       .catch((err) => {
+        launch.settled = true;
+        if (!launch.wanted) {
+          // Superseded before it failed — nobody is looking at this launch,
+          // so its failure is not the person's problem. Leave a trace only.
+          console.warn(
+            `[useAgentLauncher] a superseded launch for "${surfaceKey}" failed:`,
+            err,
+          );
+          return;
+        }
         if (isProjectCreateFlow(sourceFeature, agentId)) {
           warnProjectCreateAi(
             "useAgentLauncher → launchAgentExecution FAILED",
@@ -455,15 +552,13 @@ export function useAgentLauncher(
       });
 
     return () => {
-      cancelled = true;
+      launch.wanted = false;
       // retainOnUnmount surfaces (chat route) keep started conversations alive
       // across the route change that promotes /chat/new → /chat/[id]; only
       // abandoned (empty) instances are reaped. Everyone else destroys.
-      if (retainOnUnmount) {
-        dispatch(destroyInstanceIfAbandoned(targetId));
-      } else {
-        dispatch(destroyInstanceIfAllowed(targetId));
-      }
+      // A launch still in flight is reaped when it settles (above) — unless
+      // the next run adopts it first.
+      if (launch.settled) reap();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [

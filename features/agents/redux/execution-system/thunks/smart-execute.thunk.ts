@@ -63,6 +63,24 @@ export function hasConversationAtExecutionBoundary(
 }
 
 /**
+ * SEND NEVER SILENTLY DOES NOTHING. A submit whose conversation is gone (a
+ * superseded launch reaped it, navigation or fresh-chat cleanup removed it
+ * while a gate was pending) is not an incident — nothing is reported to the
+ * error lane — but the person pressed Send, so they are told it did not go
+ * and what to do. This used to be a bare `return`: the button simply did
+ * nothing (the page guide, 2026-09-28).
+ */
+function announceMissingConversation(conversationId: string): void {
+  console.warn(
+    `[smart-execute] send dropped: conversation "${conversationId}" no longer exists in this tab.`,
+  );
+  toast.info("Message not sent", {
+    description:
+      "This conversation closed before your message could go. Your text was not sent — reopen the assistant and send it again.",
+  });
+}
+
+/**
  * The single submit entrypoint. Handles two flavours:
  *
  *   • Normal:         execute on `conversationId`.
@@ -111,10 +129,14 @@ export const smartExecute = createAsyncThunk<
 
       // A queued click/keypress can outlive the conversation it targeted when
       // navigation or fresh-chat cleanup removes the browser-local instance.
-      // That is a cancelled UI intent, not an organization failure and not a
-      // product error: drop it before the organization guard emits a toast or
-      // console error. The finally block still releases the admission claim.
-      if (!hasConversationAtExecutionBoundary(state, conversationId)) return;
+      // That is not an organization failure and not a product incident: stop
+      // before the organization guard emits its toast or a console error, but
+      // tell the person the send did not go (never a silent no-op). The
+      // finally block still releases the admission claim.
+      if (!hasConversationAtExecutionBoundary(state, conversationId)) {
+        announceMissingConversation(conversationId);
+        return;
+      }
 
       // Organization is a hard execution boundary. A personal organization is
       // still not an implicit substitute for an empty picker — but "no
@@ -319,7 +341,10 @@ export const smartExecute = createAsyncThunk<
       // UI intent, and markInputSubmitted would mutate state for a conversation
       // that no longer exists.
       state = getState();
-      if (!hasConversationAtExecutionBoundary(state, conversationId)) return;
+      if (!hasConversationAtExecutionBoundary(state, conversationId)) {
+        announceMissingConversation(conversationId);
+        return;
+      }
 
       const autoClear = selectAutoClearConversation(conversationId)(state);
 
