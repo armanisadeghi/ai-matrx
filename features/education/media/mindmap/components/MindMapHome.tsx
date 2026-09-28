@@ -26,6 +26,9 @@ import {
 import { authenticatedStudyMediaLoadKey } from "../../authLoad";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { parseCreateMindMaps, parseMindMapIds, parseUpdateMindMaps, trustAfterMindMapEdit } from "../mindMapWrites";
 import {
   distinctSourceTitle,
   EducationCollectionNoResults,
@@ -54,6 +57,7 @@ export function MindMapHome() {
     { enabled: loadKey !== null, initialData: [] as StudyMediaRow[] },
   );
   const rows = read.data ?? [];
+  const owned = rows.filter((row) => row.created_by === userId);
   const loading = read.isLoading || loadKey === null;
   const [search, setSearch] = useState("");
   const filteredRows = filterEducationCollection(
@@ -67,6 +71,22 @@ export function MindMapHome() {
       row.description,
     ],
   );
+  const getWriteHandlers = () => collectionWriteHandlers({
+    plural: "mind_maps", singular: "mind map",
+    create: { parse: parseCreateMindMaps, run: async (map) => {
+      const result = await studyMediaService.create({ mediaKind: "mind_map", title: map.title, irEnvelope: map, diagramKind: "diagram_spec", status: "ready" });
+      if (result.error || !result.data) throw new Error(result.error ?? "Could not create mind map.");
+      void read.retry(); return { id: result.data.id, name: result.data.title };
+    }, nameOf: (map) => map.title },
+    update: { parse: (value) => parseUpdateMindMaps(value, owned), run: async (plan) => {
+      const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.map.title, ir_envelope: plan.map, trust: trustAfterMindMapEdit(owned.find((row) => row.id === plan.id)?.trust) });
+      if (result.error || !result.data) throw new Error(result.error ?? "Could not update mind map.");
+      void read.retry(); return { id: result.data.id, name: result.data.title };
+    }, nameOf: (plan) => plan.map.title, changedOf: (plan) => plan.changed },
+    delete: { parse: (value) => parseMindMapIds(value, "delete_mind_maps", owned).map((id) => {
+      const row = owned.find((candidate) => candidate.id === id); if (!row) throw new Error(`${id} is no longer available.`); return row;
+    }), run: async (row) => { const result = await studyMediaService.softDelete(row.id); if (result.error) throw new Error(result.error); void read.retry(); return { id: row.id, name: row.title }; }, nameOf: (row) => row.title },
+  }, refuseSurfaceWrite);
 
   // Live surface scope for the Agents chrome (matrx-user/education-mind-maps,
   // list view). Synchronous over live render state — no fetch; the Surface
@@ -96,6 +116,7 @@ export function MindMapHome() {
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/education-mind-maps"
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
     <EducationToolHeader title="Mind Maps" />
     <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
@@ -105,10 +126,15 @@ export function MindMapHome() {
           onValueChange={setSearch}
           label="mind maps"
         />
+        <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={() => router.push("/education/mind-maps/new/manual")}>
+          <Plus className="mr-1 h-4 w-4" /> Write my own
+        </Button>
         <Button size="sm" className="gap-1.5" onClick={() => router.push("/education/mind-maps/new")}>
           <Plus className="h-4 w-4" />
           New mind map
         </Button>
+        </div>
       </div>
 
       {loading ? (

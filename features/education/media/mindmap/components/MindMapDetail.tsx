@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -21,6 +21,7 @@ import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAccess } from "@/utils/permissions/access";
+import { canEditAccess } from "@/utils/permissions/access-core";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
 import { useStudyMediaAuthReady } from "../../authLoad";
@@ -29,6 +30,10 @@ import type { StudyMediaRow } from "../../types";
 import { MindMapNodeSearch, MindMapView } from "./MindMapView";
 import { distinctSourceTitle } from "@/features/education/components/EducationCollectionSearch";
 import type { DiagramNode } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { parseCreateMindMaps, parseMindMapIds, parseUpdateMindMaps, trustAfterMindMapEdit } from "../mindMapWrites";
+import { MindMapEditor } from "./MindMapEditor";
 
 /**
  * Read the stored diagram's size + node labels for the surface scope. Pure and
@@ -70,7 +75,7 @@ function readMapConfig(config: unknown): {
   };
 }
 
-export function MindMapDetail({ mediaId }: { mediaId: string }) {
+export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit?: boolean }) {
   const router = useRouter();
   const [media, setMedia] = useState<StudyMediaRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +84,9 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<DiagramNode | null>(null);
-  const { isOwner } = useAccess("study_media", mediaId);
+  const access = useAccess("study_media", mediaId);
+  const { isOwner } = access;
+  const canEdit = !access.loading && canEditAccess(access.level);
   // A persisted Redux identity can briefly precede Supabase's restored
   // browser session; firing getById before all three signals are ready sends
   // it as `anon`, which a private study_media row refuses with 42501 —
@@ -127,6 +134,22 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
   const trust = media ? coerceTrustEnvelope({ trust: media.trust }) : null;
   const diagram = media ? readDiagramShape(media.ir_envelope) : null;
   const mapConfig = media ? readMapConfig(media.config) : {};
+  const getWriteHandlers = () => collectionWriteHandlers({
+    plural: "mind_maps", singular: "mind map",
+    create: { parse: parseCreateMindMaps, run: async (map) => {
+      const result = await studyMediaService.create({ mediaKind: "mind_map", title: map.title, irEnvelope: map, diagramKind: "diagram_spec", status: "ready" });
+      if (result.error || !result.data) throw new Error(result.error ?? "Could not create mind map.");
+      return { id: result.data.id, name: result.data.title };
+    }, nameOf: (map) => map.title },
+    update: { parse: (value) => parseUpdateMindMaps(value, canEdit && media ? [media] : []), run: async (plan) => {
+      const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.map.title, ir_envelope: plan.map, trust: trustAfterMindMapEdit(media?.trust) });
+      if (result.error || !result.data) throw new Error(result.error ?? "Could not update mind map.");
+      setMedia(result.data); return { id: result.data.id, name: result.data.title };
+    }, nameOf: (plan) => plan.map.title, changedOf: (plan) => plan.changed },
+    delete: { parse: (value) => parseMindMapIds(value, "delete_mind_maps", isOwner && media ? [media] : []).map(() => {
+      if (!media) throw new Error("The mind map is no longer available."); return media;
+    }), run: async (row) => { const result = await studyMediaService.softDelete(row.id); if (result.error) throw new Error(result.error); router.push("/education/mind-maps"); return { id: row.id, name: row.title }; }, nameOf: (row) => row.title },
+  }, refuseSurfaceWrite);
 
   // Live surface scope for the Agents chrome (matrx-user/education-mind-maps,
   // detail view). Synchronous over live render state — no fetch; the Surface
@@ -201,6 +224,7 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
       <SurfaceRuntimeProvider
         surfaceName="matrx-user/education-mind-maps"
         getScope={getScope}
+        getWriteHandlers={getWriteHandlers}
       >
         <div className="relative h-full min-h-0 w-full overflow-hidden bg-textured">
           <div className="absolute left-3 top-3 z-20 flex items-center gap-3 rounded-xl border border-border/70 bg-card/90 p-2 shadow-lg backdrop-blur-xl">
@@ -218,6 +242,7 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
       <SurfaceRuntimeProvider
         surfaceName="matrx-user/education-mind-maps"
         getScope={getScope}
+        getWriteHandlers={getWriteHandlers}
       >
         {/* Denied / deleted / never existed / signed-out all read as zero rows here. */}
         <AccessGate
@@ -232,10 +257,13 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
     );
   }
 
+  if (edit) return <MindMapEditor media={media} />;
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/education-mind-maps"
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
       <div className="relative h-full min-h-0 w-full overflow-hidden bg-textured">
         <MindMapView
@@ -270,6 +298,11 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
           </div>
           <MindMapNodeSearch envelope={media.ir_envelope} selectedNode={selectedNode} onSelectNode={setSelectedNode} />
           <div className="flex w-full flex-wrap items-center gap-1 lg:w-auto lg:flex-nowrap">
+            {canEdit && (
+              <Button variant="outline" size="sm" onClick={() => router.push(`/education/mind-maps/${media.id}/edit`)}>
+                <Pencil className="mr-1 h-4 w-4" /> Edit
+              </Button>
+            )}
             {isOwner && (
               <div className="flex items-center gap-1">
                 <ShareButton

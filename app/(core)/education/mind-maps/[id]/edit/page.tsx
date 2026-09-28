@@ -19,5 +19,5 @@ export default async function MindMapEditPage({
   await requireAccess("study_media", id, "edit", {
     redirectTo: `/education/mind-maps/${id}`,
   });
-  return <MindMapDetail mediaId={id} />;
+  return <MindMapDetail mediaId={id} edit />;
 }
