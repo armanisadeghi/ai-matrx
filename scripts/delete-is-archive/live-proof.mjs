@@ -52,7 +52,11 @@ async function mintSession() {
 function cookieValue(s) {
   return "base64-" + Buffer.from(JSON.stringify({
     access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at,
-    expires_in: s.expires_in, token_type: s.token_type, user: s.user,
+    expires_in: s.expires_in, token_type: s.token_type,
+    // The full user object pushes the cookie past one chunk; a chunked session
+    // beside matrx-active-org reads as signed out on the live proxy (observed
+    // 2026-09-28). The JWT carries the identity; the id is enough here.
+    user: { id: s.user.id, email: s.user.email, aud: s.user.aud, role: s.user.role },
   })).toString("base64");
 }
 
@@ -103,8 +107,23 @@ async function main() {
   })));
   await ctx.addCookies([{ name: "matrx-active-org", value: `${userId}:${ORG}`, domain: `.${host}`, path: "/", sameSite: "Lax", secure: true }]);
   const page = await ctx.newPage();
-  await page.goto(`${ORIGIN}/notes`, { waitUntil: "domcontentloaded", timeout: 120000 });
-  const who = await page.evaluate(async () => (await fetch("/api/whoami")).json()).catch(() => null);
+  // Identity first, on a server route with no client JS (no second refresher racing the proxy).
+  await page.goto(`${ORIGIN}/api/whoami`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  let who = null;
+  for (let i = 0; i < 5 && who?.email !== EMAIL; i++) {
+    await page.waitForTimeout(3000);
+    who = await page.evaluate(async () => (await fetch("/api/whoami", { cache: "no-store" })).json()).catch(() => null);
+    if (who?.email !== EMAIL) {
+      const again = await mintSession();
+      await ctx.addCookies(chunked("sb-matrx-auth-v2", cookieValue(again)).map((c) => ({
+        ...c, domain: `.${host}`, path: "/", sameSite: "Lax", secure: true,
+      })));
+    }
+  }
+  if (who?.email !== EMAIL) {
+    const names = (await ctx.cookies()).map((c) => `${c.name}@${c.domain}:${c.value.length}`);
+    console.log("debug cookies:", JSON.stringify(names), "who:", JSON.stringify(who));
+  }
   record("signed in as", who?.email === EMAIL, { email: who?.email ?? null });
   if (who?.email !== EMAIL) throw new Error("wrong identity — stopping before any write");
 
@@ -113,7 +132,17 @@ async function main() {
   await page.waitForTimeout(8000);
   const row = page.getByText(single.label, { exact: false }).first();
   await row.click({ button: "right", timeout: 30000 });
-  await page.getByRole("menuitem", { name: /Move to Trash|Delete Note/i }).first().click({ timeout: 15000 });
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${OUT}/0-note-menu.png` });
+  const items = await page.locator('[role="menuitem"], [role="menu"] button, [data-radix-collection-item]').allInnerTexts().catch(() => []);
+  console.log("menu items:", JSON.stringify(items.slice(0, 40)));
+  // The v3 menu nests the note's own actions under a submenu named for the note.
+  await page.locator('[role="menuitem"]', { hasText: single.label }).first().hover();
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: `${OUT}/0b-note-submenu.png` });
+  const sub = await page.locator('[role="menuitem"]').allInnerTexts().catch(() => []);
+  console.log("submenu items:", JSON.stringify(sub.filter((t) => /trash|delete|archive/i.test(t))));
+  await page.locator('[role="menuitem"]', { hasText: /^(Move to Trash|Delete Note|Delete)$/ }).first().click({ timeout: 15000 });
   const confirmBtn = page.getByRole("button", { name: /Move to Trash|Delete/i }).last();
   if (await confirmBtn.isVisible().catch(() => false)) await confirmBtn.click();
   await page.waitForTimeout(4000);
@@ -146,12 +175,14 @@ async function main() {
   await page.getByText(folder.name, { exact: false }).first().click({ button: "right", timeout: 30000 });
   await page.getByRole("menuitem", { name: /Move all notes to Trash/i }).first().click({ timeout: 15000 });
   await page.screenshot({ path: `${OUT}/4-folder-confirm.png` });
-  await page.getByRole("button", { name: /Move 2 to Trash/i }).click({ timeout: 15000 });
+  const { data: inFolder } = await wb().from("notes").select("id").eq("folder_id", folder.id).is("deleted_at", null);
+  const folderNoteIds = (inFolder ?? []).map((r) => r.id);
+  await page.getByRole("button", { name: new RegExp(`Move ${folderNoteIds.length} to Trash`, "i") }).click({ timeout: 15000 });
   await page.waitForTimeout(4000);
-  const { data: fRows } = await wb().from("notes").select("id, deleted_at").in("id", [f1.id, f2.id]);
+  const { data: fRows } = await wb().from("notes").select("id, deleted_at").in("id", folderNoteIds);
   const { data: fFolder } = await wb().from("note_folders").select("id, deleted_at").eq("id", folder.id).maybeSingle();
   const stamps = new Set((fRows ?? []).map((r) => r.deleted_at));
-  record("folder: both notes in Trash", (fRows ?? []).length === 2 && (fRows ?? []).every((r) => r.deleted_at), fRows);
+  record(`folder: all ${folderNoteIds.length} notes in Trash`, (fRows ?? []).length === folderNoteIds.length && folderNoteIds.length >= 2 && (fRows ?? []).every((r) => r.deleted_at), fRows);
   record("folder: folder row archived, not destroyed, same timestamp", !!fFolder?.deleted_at && stamps.has(fFolder.deleted_at), fFolder);
   await page.getByText(/^Trash$/).first().click({ timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(3000);
