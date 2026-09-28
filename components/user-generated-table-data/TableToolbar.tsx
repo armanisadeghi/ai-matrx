@@ -283,8 +283,6 @@ export default function TableToolbar({
   // shows its icon alone (`sheet-toolbar-fit.ts`) — its words stay its accessible name and title.
   const barRef = useRef<HTMLDivElement | null>(null);
   const [fit, setFit] = useState<SheetToolbarFit>({ compact: false, wordsNeed: 0 });
-  const fitRef = useRef(fit);
-  fitRef.current = fit;
   useEffect(() => {
     const bar = barRef.current;
     if (!bar || typeof ResizeObserver !== "function") return;
@@ -293,11 +291,12 @@ export default function TableToolbar({
     const read = () => {
       frame = 0;
       if (wide && !wide.matches) {
-        if (fitRef.current.compact) setFit({ compact: false, wordsNeed: 0 });
+        setFit((was) => (was.compact ? { compact: false, wordsNeed: 0 } : was));
         return;
       }
-      const next = nextSheetToolbarFit(fitRef.current, { clientWidth: bar.clientWidth, scrollWidth: bar.scrollWidth });
-      if (next !== fitRef.current) setFit(next);
+      const row = { clientWidth: bar.clientWidth, scrollWidth: bar.scrollWidth };
+      // The same object back when nothing changes, so React skips the render.
+      setFit((was) => nextSheetToolbarFit(was, row));
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(read);
