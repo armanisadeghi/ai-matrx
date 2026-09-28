@@ -350,7 +350,7 @@ await context.addInitScript(() => {
   const sample = () => {
     const slot = document.querySelector('[data-page-header-target="workspace"]') || document.getElementById("shell-header-center");
     if (slot) {
-      const ghost = document.querySelector("matrx-header-ghost");
+      const ghost = document.querySelector("matrx-header-ghost.shell-header-center");
       const src = slot.childElementCount ? slot : ghost;
       const text = src ? src.textContent.trim().replace(/\s+/g, " ").slice(0, 80) : "";
       probe.samples.push({ t: Math.round(performance.now()), text, from: slot.childElementCount ? "slot" : ghost ? "ghost" : "none", box: src ? titleBox(src) : null });
