@@ -56,7 +56,14 @@ export default function Header({ isAuthenticated }: HeaderProps) {
         <div className="shell-header-right-inject" id="shell-header-right" />
         {/* Renders nothing once an org is active. In header flow on purpose —
             it replaced a fixed drop-down card that covered route chrome. */}
-        {isAuthenticated && <HeaderChooseOrgButton />}
+        {/* A fixed-width slot from the first paint: the chip fills in after
+            boot (name, "Choose organization", or nothing) without moving the
+            title (page-pass, 2026-09-27: it pushed the title 98px). */}
+        {isAuthenticated && (
+          <div className="shell-header-org-slot">
+            <HeaderChooseOrgButton />
+          </div>
+        )}
         <div className="shell-header-secondary">
           <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
           <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />

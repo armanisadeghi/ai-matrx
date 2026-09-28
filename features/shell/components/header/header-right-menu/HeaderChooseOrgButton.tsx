@@ -68,7 +68,7 @@ export default function HeaderChooseOrgButton() {
           aria-label={says}
           title={says}
           onClick={() => dispatch(chooseActiveOrganization({ id: objectOrganization.organizationId, name }))}
-          className="inline-flex h-11 min-w-11 max-w-[14rem] items-center justify-center gap-1.5 rounded-md bg-primary/10 px-2 sm:min-w-0 text-xs font-medium text-primary transition-colors hover:bg-primary/15 sm:h-8"
+          className="inline-flex h-11 min-w-11 max-w-full min-w-0 items-center justify-center gap-1.5 rounded-md bg-primary/10 px-2 sm:min-w-0 text-xs font-medium text-primary transition-colors hover:bg-primary/15 sm:h-8"
         >
           <Building2 size={14} strokeWidth={2} aria-hidden="true" />
           <span data-header-compact-label className="hidden truncate sm:inline">{name}</span>
@@ -79,7 +79,7 @@ export default function HeaderChooseOrgButton() {
       <span
         data-page-object-organization={objectOrganization.organizationId}
         title={`This page shows something that lives in ${name}. It opens whatever organization you are working in.`}
-        className="hidden max-w-[14rem] items-center gap-1.5 truncate px-2 text-xs text-muted-foreground sm:inline-flex"
+        className="hidden max-w-full min-w-0 items-center gap-1.5 truncate px-2 text-xs text-muted-foreground sm:inline-flex"
       >
         <Building2 size={14} strokeWidth={2} aria-hidden="true" />
         <span data-header-compact-label className="truncate">Viewing in {name}</span>
@@ -140,7 +140,7 @@ export default function HeaderChooseOrgButton() {
       >
         <Building2 size={14} strokeWidth={2} aria-hidden="true" />
       </span>
-      <span data-header-compact-label className="hidden max-w-[10rem] truncate sm:inline">{label}</span>
+      <span data-header-compact-label className="hidden max-w-[8.5rem] truncate sm:inline">{label}</span>
     </button>
   );
 

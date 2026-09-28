@@ -3573,3 +3573,26 @@ body:has(.shell-root[data-pathname^="/administration"]) {
     animation-timeline: scroll(self block);
   }
 }
+
+
+/* THE ORGANIZATION SLOT holds its width from the first paint (page-pass shared
+   defects, 2026-09-27): the chip resolves after boot, and a slot that grew then
+   pushed the page title 98px on desktop and 22px on a phone. 44px on a phone
+   (the chip is an icon there), 11rem from sm up; the chip truncates inside it.
+   Absent on /administration/* — the admin seat never acts as itself. */
+.shell-header-org-slot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  width: 2.75rem;
+  overflow: hidden;
+}
+@media (min-width: 640px) {
+  .shell-header-org-slot {
+    width: 11rem;
+  }
+}
+.shell-root[data-pathname^="/administration"] .shell-header-org-slot {
+  display: none;
+}
