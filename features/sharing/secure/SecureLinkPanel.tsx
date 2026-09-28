@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { VaultRevealReauthDialog } from "@/features/secrets/components/SecretValue";
 
 import {
   fetchSecureDeliveryOptions,
@@ -71,6 +72,9 @@ export function SecureLinkPanel({ resourceType, resourceId, resourceName }: Secu
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ tone: "ok" | "warn" | "error"; text: string; remedy?: string | null } | null>(null);
   const [sent, setSent] = useState<SentSecureDelivery[] | null>(null);
+  // Sending a password is a reveal: it needs the SAME fresh sign-in the vault asks for, through
+  // the vault's own re-authentication dialog — never a second one.
+  const [reauthOpen, setReauthOpen] = useState(false);
 
   const refreshSent = useCallback(() => {
     listSentSecureDeliveries(resourceType, resourceId)
@@ -117,7 +121,13 @@ export function SecureLinkPanel({ resourceType, resourceId, resourceName }: Secu
       setFields([]);
       refreshSent();
     } catch (err: unknown) {
-      if (err instanceof SecureDeliveryRefusal) {
+      if (err instanceof SecureDeliveryRefusal && err.code === "recent_auth_required") {
+        setResult({
+          tone: "warn",
+          text: "Confirm it is you, then press Send secure link again.",
+        });
+        setReauthOpen(true);
+      } else if (err instanceof SecureDeliveryRefusal) {
         setResult({ tone: "error", text: err.message, remedy: err.remedy });
       } else {
         setResult({ tone: "error", text: "The secure link could not be sent. Try again." });
@@ -145,6 +155,7 @@ export function SecureLinkPanel({ resourceType, resourceId, resourceName }: Secu
 
   return (
     <div className="space-y-4">
+      <VaultRevealReauthDialog open={reauthOpen} onClose={() => setReauthOpen(false)} />
       <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3">
         <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
         <p className="text-xs text-muted-foreground">

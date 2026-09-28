@@ -151,7 +151,18 @@ async function recipientCall(
   token: string,
 ): Promise<SecureDeliveryPage> {
   return read<SecureDeliveryPage>(
-    await dispatch(callApi({ path, method: "POST", body: { token }, expectedErrorStatuses: [422] })),
+    await dispatch(
+      callApi({
+        path,
+        method: "POST",
+        body: { token },
+        expectedErrorStatuses: [422],
+        // The recipient belongs to no organization (aidream declares these routes
+        // `organization_free`): a visitor who happens to be signed in with none picked
+        // must never be asked to choose one to open a link somebody sent them.
+        organizationFreeRead: true,
+      }),
+    ),
   );
 }
 
@@ -173,6 +184,7 @@ export async function viewSecureDelivery(
         method: "POST",
         body: { token, code },
         expectedErrorStatuses: [422],
+        organizationFreeRead: true,
       }),
     ),
   );
