@@ -48,6 +48,13 @@ import {
   setIslandRendering,
 } from "./live-preview";
 
+const RAW_THEME = EditorView.theme({
+  ".cm-content, .cm-line": {
+    fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)",
+    fontSize: "13px",
+  },
+});
+
 const PASTE_SCHEMA = getSchema(createRichEditorExtensions());
 
 export interface SourceEditorProps {
@@ -68,6 +75,11 @@ export interface SourceEditorProps {
   layout?: "document" | "pane";
   /** The editor's scroll container scrolled (a host that syncs another pane). */
   onScroll?: () => void;
+  /**
+   * RAW: the bytes as plain monospace text — no live-preview decorations, no
+   * markdown styling. The same editor (history, keymap, paste), just undressed.
+   */
+  raw?: boolean;
 }
 
 type SourceVerb = (view: EditorView) => boolean;
@@ -107,6 +119,7 @@ export function SourceEditor({
   value,
   layout = "document",
   onScroll,
+  raw = false,
 }: SourceEditorProps) {
   const context = useRichEditorContext();
   const host = useRef<HTMLDivElement>(null);
@@ -208,15 +221,15 @@ export function SourceEditor({
             ...defaultKeymap,
             ...historyKeymap,
           ]),
-          markdownSourceLanguage,
-          richHighlight,
+          ...(raw ? [] : [markdownSourceLanguage, richHighlight]),
           richEditorTheme,
+          ...(raw ? [RAW_THEME] : []),
           EditorView.lineWrapping,
           cmPlaceholder(placeholder ?? "Write…"),
           EditorView.editable.of(!context.readOnly),
           EditorView.contentAttributes.of({ "aria-label": "Document source", spellcheck: "true" }),
           autocompletion({ override: [variableCompletion], activateOnTyping: true }),
-          livePreviewExtensions({ registry, getVariables: () => getVariables() }),
+          ...(raw ? [] : [livePreviewExtensions({ registry, getVariables: () => getVariables() })]),
           EditorView.domEventHandlers({
             paste: (event, v) => {
               const html = event.clipboardData?.getData("text/html");
@@ -264,7 +277,7 @@ export function SourceEditor({
       instance.destroy();
       view.current = null;
     };
-  }, [registry, context.readOnly, placeholder]);
+  }, [registry, context.readOnly, placeholder, raw]);
 
   useEffect(() => {
     view.current?.dispatch({ effects: setIslandRendering.of(renderIslands) });

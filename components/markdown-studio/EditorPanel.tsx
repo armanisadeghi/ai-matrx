@@ -6,7 +6,7 @@
 
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Eye, Hash, RotateCcw, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +56,8 @@ export function EditorPanel({
   getScope,
 }: EditorPanelProps) {
   const counted = statsContent ?? content;
+  // Raw (default): the exact bytes, plain monospace. Formatted: the live-preview source view.
+  const [sourceView, setSourceView] = useState<"raw" | "formatted">("raw");
   // The rich editor's shortcut verbs that belong to its own chrome (find,
   // outline, focus, views…) have no chrome here; each says where it lives.
   const notHere = (what: string) => () =>
@@ -102,6 +104,23 @@ export function EditorPanel({
         <div className="flex shrink-0 items-center gap-2">
           <Type className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-medium tracking-wide">Source</span>
+          <div role="tablist" aria-label="Source view" className="ml-1 inline-flex rounded-md border border-border p-0.5">
+            {(["raw", "formatted"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                role="tab"
+                aria-selected={sourceView === v}
+                onClick={() => setSourceView(v)}
+                className={
+                  "rounded px-2 py-0.5 text-[11px] font-medium transition-colors " +
+                  (sourceView === v ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")
+                }
+              >
+                {v === "raw" ? "Raw" : "Formatted"}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex min-w-0 items-center gap-1.5">
           <Badge
@@ -180,6 +199,7 @@ export function EditorPanel({
               handleRef={editorRef}
               layout="pane"
               onScroll={onScroll}
+              raw={sourceView === "raw"}
             />
           </div>
         </EditableContextMenu>
