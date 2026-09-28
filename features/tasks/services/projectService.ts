@@ -16,7 +16,7 @@ import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { DatabaseProject, ProjectWithTasks } from "../types";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 /**
  * Create a new project in the organization the person SELECTED.
@@ -115,12 +115,12 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
     const memberProjectIds = membersResult.data.memberships.map((m) => m.containerId);
 
     // Also fetch personal projects created by user that may not have members yet
-    const ownerOnly = await scopeToOwner("project");
+    const listScope = await defaultListFilter("project", { userId });
     let createdQuery = workspaceDb(supabase)
       .from("projects")
       .select("*")
       .is("deleted_at", null);
-    if (ownerOnly) createdQuery = createdQuery.eq("created_by", userId);
+    createdQuery = listScope.apply(createdQuery);
     const { data: createdProjects, error: createdError } = await createdQuery
       .order("created_at", { ascending: false });
 

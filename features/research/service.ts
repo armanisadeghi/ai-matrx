@@ -49,7 +49,7 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import type { CostLedgerInput, CostLedgerRow, SynthesisCostRow } from "./costs";
 
 import type { ScopesRpcResult } from "@/features/scopes/types";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 /** The landing door's wire types (generated contract, never a mirror). */
 type LandedSource = components["schemas"]["LandedSource"];
@@ -208,13 +208,13 @@ export async function getAllTopics(
   // What changed (DD-137c / §3.3) is WHERE the declaration comes from: `research_topic` is
   // registered `organization`, so research opens on the organization's topics instead of hiding
   // every colleague's work behind a literal.
-  const ownerOnly = await scopeToOwner("research_topic", scope);
+  const listScope = await defaultListFilter("research_topic", { userId, requested: scope });
   let topicQuery = supabase
     .schema("research")
     .from("rs_topic")
     .select("*")
     .is("deleted_at", null);
-  if (ownerOnly) topicQuery = topicQuery.eq("created_by", userId);
+  topicQuery = listScope.apply(topicQuery);
   const { data, error } = await topicQuery.order("created_at", {
     ascending: false,
   });

@@ -21,7 +21,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { scopeToOwner } from "@/lib/list-scope";
+import { defaultListFilter } from "@/lib/list-scope";
 import { hydrateNoteContextLinks } from "@/features/notes/service/noteContextAssociations";
 import type { NoteListItem } from "@/features/notes/types";
 import { STUDY_NOTES_FOLDER } from "./study-notes-folder";
@@ -54,7 +54,10 @@ export async function listEducationNotes(
   options: ListEducationNotesOptions = {},
 ): Promise<NoteListItem[]> {
   const userId = requireUserId();
-  const ownerOnly = options.owner === "mine" ? true : await scopeToOwner("note");
+  const listScope = await defaultListFilter("note", {
+    userId,
+    requested: options.owner === "mine" ? "mine" : undefined,
+  });
   const rows = await readAllRows(
     ({ from, to }) => {
       let query = supabase
@@ -63,7 +66,7 @@ export async function listEducationNotes(
         .select(EDUCATION_NOTE_LIST_COLUMNS, { count: "exact" })
         .is("deleted_at", null)
         .eq("folder_name", EDUCATION_NOTES_FOLDER);
-      if (ownerOnly) query = query.eq("created_by", userId);
+      query = listScope.apply(query);
       return query.order("updated_at", { ascending: false }).order("id").range(from, to);
     },
     { label: "workbench.notes education notes" },

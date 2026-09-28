@@ -18,7 +18,9 @@ jest.mock("../service/noteContextAssociations", () => ({
   syncNoteContextLinks: jest.fn(),
 }));
 
-jest.mock("@/lib/list-scope", () => ({ scopeToOwner: jest.fn(async () => false) }));
+jest.mock("@/lib/list-scope", () => ({
+  defaultListFilter: jest.fn(async () => ({ ownerOnly: false, apply: (q: unknown) => q })),
+}));
 
 function trashQuery(rows: unknown[]) {
   const chain = {

@@ -32,7 +32,7 @@ import {
   type NoteSaveReceipt,
   NoteUpdateConflictError,
 } from "./noteSaveErrors";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 /**
  * Fetch the notes this screen should open on (excluding deleted).
@@ -46,13 +46,13 @@ import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
  */
 export async function fetchNotes(scope?: ListScopeWord): Promise<Note[]> {
   const userId = requireUserId();
-  const ownerOnly = await scopeToOwner("note", scope);
+  const listScope = await defaultListFilter("note", { userId, requested: scope });
   let query = supabase
     .schema("workbench")
     .from("notes")
     .select("*")
     .is("deleted_at", null);
-  if (ownerOnly) query = query.eq("created_by", userId);
+  query = listScope.apply(query);
   const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
@@ -68,7 +68,7 @@ export async function fetchNotes(scope?: ListScopeWord): Promise<Note[]> {
  */
 export async function fetchNoteListItems(scope?: ListScopeWord): Promise<NoteListItem[]> {
   const userId = requireUserId();
-  const ownerOnly = await scopeToOwner("note", scope);
+  const listScope = await defaultListFilter("note", { userId, requested: scope });
   let query = supabase
     .schema("workbench")
     .from("notes")
@@ -76,7 +76,7 @@ export async function fetchNoteListItems(scope?: ListScopeWord): Promise<NoteLis
       "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
     )
     .is("deleted_at", null);
-  if (ownerOnly) query = query.eq("created_by", userId);
+  query = listScope.apply(query);
   const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
@@ -794,13 +794,13 @@ export async function copyNote(id: string): Promise<Note> {
  */
 export async function fetchFolderNames(scope?: ListScopeWord): Promise<string[]> {
   const userId = requireUserId();
-  const ownerOnly = await scopeToOwner("note", scope);
+  const listScope = await defaultListFilter("note", { userId, requested: scope });
   let folderQuery = supabase
     .schema("workbench")
     .from("notes")
     .select("folder_name")
     .is("deleted_at", null);
-  if (ownerOnly) folderQuery = folderQuery.eq("created_by", userId);
+  folderQuery = listScope.apply(folderQuery);
   const { data, error } = await folderQuery;
 
   if (error) {
@@ -823,13 +823,13 @@ export async function fetchFolderNames(scope?: ListScopeWord): Promise<string[]>
  */
 export async function fetchTags(scope?: ListScopeWord): Promise<string[]> {
   const userId = requireUserId();
-  const ownerOnly = await scopeToOwner("note", scope);
+  const listScope = await defaultListFilter("note", { userId, requested: scope });
   let tagQuery = supabase
     .schema("workbench")
     .from("notes")
     .select("tags")
     .is("deleted_at", null);
-  if (ownerOnly) tagQuery = tagQuery.eq("created_by", userId);
+  tagQuery = listScope.apply(tagQuery);
   const { data, error } = await tagQuery;
 
   if (error) {

@@ -643,7 +643,7 @@ export interface RecentRunsOptions {
   perMasterwork?: number;
   /**
    * Narrow to the caller's own runs. The SCOPE WORD is declared by the caller
-   * (`scopeToOwner`) and the answer passed in — this reader never decides a
+   * (`defaultListFilter`) and the answer passed in — this reader never decides a
    * surface's scope for it.
    */
   onlyCreatedBy?: string | null;

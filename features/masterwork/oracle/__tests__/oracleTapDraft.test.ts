@@ -24,7 +24,12 @@ jest.mock("@/utils/auth/getUserId", () => ({
   requireUserId: () => "u1",
   getUserId: () => "u1",
 }));
-jest.mock("@/lib/list-scope", () => ({ scopeToOwner: async () => true }));
+jest.mock("@/lib/list-scope", () => ({
+  defaultListFilter: async (_token: string, opts: { userId: string; ownerColumn?: string }) => ({
+    ownerOnly: true,
+    apply: (q: any) => q.eq(opts.ownerColumn ?? "created_by", opts.userId),
+  }),
+}));
 
 import {
   appendDraftRuleFromMessage,

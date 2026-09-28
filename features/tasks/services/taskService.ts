@@ -188,12 +188,12 @@ export async function getUserTasks(scope?: ListScopeWord): Promise<DatabaseTask[
   const userId = requireUserId();
   // DD-137c / §3.3: the `task` token is registered `organization`, so this opens on the
   // organization's tasks. RLS decides what is readable; this decides only where it starts.
-  const ownerOnly = await scopeToOwner("task", scope);
+  const listScope = await defaultListFilter("task", { userId, requested: scope });
   let taskQuery = workspaceDb(supabase)
     .from("tasks")
     .select("*")
     .is("deleted_at", null);
-  if (ownerOnly) taskQuery = taskQuery.eq("created_by", userId);
+  taskQuery = listScope.apply(taskQuery);
   const { data, error } = await taskQuery
     .order("created_at", { ascending: false });
 
@@ -473,7 +473,7 @@ export {
   type TaskLabel,
 } from "../constants/labels";
 import type { TaskLabel } from "../constants/labels";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 export async function updateTaskLabels(
   taskId: string,

@@ -26,7 +26,7 @@ import type {
 import type { Database } from "@/types/database.types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 const TAB_ID_PREFIX = "aga-app:";
 
@@ -85,12 +85,12 @@ const agaAppsAdapter: VirtualSourceAdapter = {
     if (args.parentId !== null) return []; // flat — no folders
     // DD-137c / §3.3: `app` is registered `organization`, so the apps source lists the
     // organization's apps. RLS is the ceiling; this is only where the tree opens.
-    const ownerOnly = await scopeToOwner("app");
+    const listScope = await defaultListFilter("app", { userId, ownerColumn: "user_id" });
     let appQuery = supabase
       .schema("app").from("definition")
       .select(COLUMNS)
       .is("deleted_at", null);
-    if (ownerOnly) appQuery = appQuery.eq("user_id", userId);
+    appQuery = listScope.apply(appQuery);
     const { data, error } = await appQuery
       .order("updated_at", { ascending: false })
       .limit(args.limit ?? 200);

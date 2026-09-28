@@ -238,7 +238,7 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
     ["GREEN — an organization filter alongside it answers the question already",
      `const q = supabase.schema("content_ir").from("kind_instance").select("id").eq("organization_id", orgId).eq("created_by", userId);`, 0],
     ["GREEN — asking the registry is the fix, and a fixed site stops being flagged",
-     `const ownerOnly = await scopeToOwner("content_ir_kind_instance", scope);\nlet q = supabase.schema("content_ir").from("kind_instance").select("id");\nif (ownerOnly) q = q.eq("created_by", userId);`, 0],
+     `const listScope = await defaultListFilter("content_ir_kind_instance", { userId, requested: scope });\nlet q = supabase.schema("content_ir").from("kind_instance").select("id");\nq = listScope.apply(q);`, 0],
     ["GREEN — a single-row read is not a list",
      `const q = await supabase.schema("content_ir").from("kind_instance").select("id").eq("created_by", userId).maybeSingle();`, 0],
     ["GREEN — nor is a single-row read that types its row",
@@ -338,7 +338,7 @@ async function main(): Promise<number> {
         console.log(`     ${C.d}${h.file}:${h.line}  ${h.table}  .eq("${h.column}", …)${C.x}`);
       }
       if (orgHits.length > 40) console.log(`     ${C.d}… and ${orgHits.length - 40} more${C.x}`);
-      console.log(`     ${C.d}Each one throws away the organization_id the row is carrying. Read the registry instead: \`const ownerOnly = await scopeToOwner("<token>", scope)\` from @/lib/list-scope, then apply the owner filter only when it says so.${C.x}`);
+      console.log(`     ${C.d}Each one throws away the organization_id the row is carrying. Read the registry instead: \`const listScope = await defaultListFilter("<token>", { userId, requested: scope })\` from @/lib/list-scope, then \`q = listScope.apply(q)\`.${C.x}`);
     } else {
       console.log(`  ${C.g}✓${C.x} no list query filters to its owner as the sole scope on an ${"`organization`"} token ${C.d}(${registryRows.length} tokens known)${C.x}`);
     }

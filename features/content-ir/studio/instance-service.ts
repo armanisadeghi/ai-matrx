@@ -43,7 +43,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 import {
   DEFAULT_ARCHIVE_FILTER,
   type ArchiveFilterValue,
@@ -433,7 +433,7 @@ export async function listKindInstances(
   const userId = auth.user?.id;
   if (!userId) throw new Error("Not signed in — cannot list instances.");
 
-  const ownerOnly = await scopeToOwner("content_ir_kind_instance", scope);
+  const listScope = await defaultListFilter("content_ir_kind_instance", { userId, requested: scope });
 
   const home = await whereKindRecordsLive(homeOrganizationId ?? activeOrganizationId, userId);
   if (home.store === "record") {
@@ -441,7 +441,7 @@ export async function listKindInstances(
       home,
       kindDefinitionId,
       archiveFilter,
-      !homeOrganizationId && ownerOnly ? userId : null,
+      !homeOrganizationId && listScope.ownerOnly ? userId : null,
     );
   }
 
@@ -452,7 +452,7 @@ export async function listKindInstances(
     .eq("kind_definition_id", kindDefinitionId)
     .is("deleted_at", null);
   if (homeOrganizationId) query = query.eq("organization_id", homeOrganizationId);
-  else if (ownerOnly) query = query.eq("created_by", userId);
+  else query = listScope.apply(query);
   // THE ARCHIVED-ITEMS LAW: a request the tab's own control sets, never a
   // literal — the default hides archived rows and one click reveals them.
   if (archiveFilter === "active") query = query.is("archived_at", null);

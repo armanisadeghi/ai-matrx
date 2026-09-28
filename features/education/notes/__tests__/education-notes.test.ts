@@ -12,12 +12,12 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 const mockReadAllRows = jest.fn();
-const mockScopeToOwner = jest.fn();
+const mockDefaultListFilter = jest.fn();
 const schema = jest.fn();
 
 jest.mock("@ai-matrx/data/db", () => ({ readAllRows: mockReadAllRows }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "learner-1" }));
-jest.mock("@/lib/list-scope", () => ({ scopeToOwner: mockScopeToOwner }));
+jest.mock("@/lib/list-scope", () => ({ defaultListFilter: mockDefaultListFilter }));
 jest.mock("@/features/notes/service/noteContextAssociations", () => ({
   hydrateNoteContextLinks: async (rows: unknown[]) => rows,
 }));
@@ -71,15 +71,22 @@ beforeEach(() => {
 
 describe("the one Education note selector", () => {
   it("never returns a plain note — only notes marked for Education", async () => {
-    mockScopeToOwner.mockResolvedValue(false);
+    mockDefaultListFilter.mockResolvedValue({ ownerOnly: false, apply: (q: unknown) => q });
     const ids = (await listEducationNotes()).map((n) => n.id);
     expect(ids.sort()).toEqual(["edu-mine", "edu-teammate"]);
   });
 
   it("the personal library narrows to my own Education notes", async () => {
+    mockDefaultListFilter.mockResolvedValue({
+      ownerOnly: true,
+      apply: (q: any) => q.eq("created_by", "learner-1"),
+    });
     const ids = (await listEducationNotes({ owner: "mine" })).map((n) => n.id);
     expect(ids).toEqual(["edu-mine"]);
-    expect(mockScopeToOwner).not.toHaveBeenCalled();
+    expect(mockDefaultListFilter).toHaveBeenCalledWith(
+      "note",
+      expect.objectContaining({ requested: "mine" }),
+    );
   });
 
   it("the predicate is exact — a lookalike folder is not Education", () => {

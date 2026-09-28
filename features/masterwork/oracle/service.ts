@@ -5,7 +5,7 @@ import { operationFailed } from "@/utils/errors";
 import { getRulebook, saveRules } from "../service";
 import { nextRuleId } from "../ruleIds";
 import type { Rulebook, RulebookRule } from "../types";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 /**
  * The Oracle tap — Approach #10's in-app half. Colleagues (and the Expert
@@ -71,13 +71,13 @@ export async function listMyRulebooks(): Promise<OracleRulebookOption[]> {
   // DECLARED `mine`, not hard-coded (DD-137c / §3.3). A draft lands where the Expert reviews it, so
   // this picker deliberately offers only Rulebooks they created — said in one word, through the
   // same helper every other list uses, and one word from being changed.
-  const ownerOnly = await scopeToOwner("rulebook", "mine");
+  const listScope = await defaultListFilter("rulebook", { userId, requested: "mine" });
   let q = supabase
     .schema("platform")
     .from("rulebook")
     .select("id,name,description,rules,updated_at")
     .is("deleted_at", null);
-  if (ownerOnly) q = q.eq("created_by", userId);
+  q = listScope.apply(q);
   const { data, error } = await q
     .order("updated_at", { ascending: false })
     .limit(50);
@@ -103,13 +103,13 @@ export function hasAnyRulebook(): Promise<boolean> {
   if (!userId) return Promise.resolve(false);
   if (hasRulebookCache?.userId === userId) return hasRulebookCache.promise;
   const promise = (async () => {
-    const ownerOnly = await scopeToOwner("rulebook", "mine");
+    const listScope = await defaultListFilter("rulebook", { userId, requested: "mine" });
     let countQuery = supabase
       .schema("platform")
       .from("rulebook")
       .select("id", { count: "exact", head: true })
       .is("deleted_at", null);
-    if (ownerOnly) countQuery = countQuery.eq("created_by", userId);
+    countQuery = listScope.apply(countQuery);
     const { count, error } = await countQuery;
     if (error) {
       hasRulebookCache = null; // don't cache a failure

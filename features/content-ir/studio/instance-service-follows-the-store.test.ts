@@ -77,7 +77,12 @@ jest.mock("@/utils/supabase/writeOne", () => ({
   tryWriteOne: async () => ({ error: null }),
 }));
 
-jest.mock("@/lib/list-scope", () => ({ scopeToOwner: async () => false }));
+jest.mock("@/lib/list-scope", () => ({
+  defaultListFilter: async (_token: string, opts: { ownerColumn?: string; userId: string }) => ({
+    ownerOnly: false,
+    apply: (q: unknown) => q,
+  }),
+}));
 
 jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
   UNIFIED_DATA_CAMPAIGN: {

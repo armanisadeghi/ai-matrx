@@ -13,7 +13,7 @@ import {
   listAuditionScores,
 } from "../audition/listAuditionScores";
 import type { Masterwork, RulebookSource } from "../types";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 import { MASTERWORK_RESULT_KIND } from "@/features/content-ir/kinds/masterwork-result";
 
 /**
@@ -271,10 +271,10 @@ export async function listMyEncoreRuns(
   const userId = requireUserId();
   // DECLARED `mine` (DD-137c / §3.3): this preview is THIS Operator's own history of one
   // Masterwork, never the whole ledger — said through the registry helper rather than assumed.
-  const ownerOnly = await scopeToOwner("workflow_run", "mine");
+  const listScope = await defaultListFilter("workflow_run", { userId, requested: "mine", shownTo: false });
   const byMasterwork = await listRecentRunsForMasterworks([masterworkId], {
     perMasterwork: ENCORE_RUN_LIMIT,
-    onlyCreatedBy: ownerOnly ? userId : null,
+    onlyCreatedBy: listScope.ownerOnly ? userId : null,
   });
   return byMasterwork[masterworkId] ?? [];
 }

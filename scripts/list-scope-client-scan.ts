@@ -24,7 +24,7 @@
  *
  * THE EXEMPTION, AND WHY IT IS NOT A LIST OF FILES. A query is not flagged when it already answers
  * the question some other way: it filters on `organization_id`, it filters on `visibility`, or it
- * asks `lib/list-scope` (`scopeToOwner` / `resolveListScope` / `shouldFilterToOwner`) and applies
+ * asks `lib/list-scope` (`defaultListFilter` / `resolveListScope` / `shouldFilterToOwner`) and applies
  * the owner filter only when the registry said `mine`. That last one is the shape the fix takes, so
  * a fixed site stops being flagged BECAUSE it is fixed — never because its path was added here.
  */
@@ -72,13 +72,15 @@ const EXEMPT_IN_CHAIN = [
 
 /**
  * Answered ABOVE the query. The fix's shape is
- *   `const ownerOnly = await scopeToOwner("note", scope);`  … then …  `if (ownerOnly) q = q.eq(…)`
- * and the `scopeToOwner` line sits BEFORE the `.from(`, so a window that starts at `.from(` cannot
- * see it and calls a fixed site broken. This set is matched against the surrounding code instead.
+ *   `const listScope = await defaultListFilter("note", { userId, requested: scope });`  … then …
+ *   `q = listScope.apply(q);`
+ * and the `defaultListFilter` line sits BEFORE the `.from(`, so a window that starts at `.from(`
+ * cannot see it and calls a fixed site broken. This set is matched against the surrounding code
+ * instead.
  */
 const EXEMPT_ABOVE = [
-  /\bscopeToOwner\b|\bresolveListScope\b|\bshouldFilterToOwner\b/, // asks the registry
-  /\b\w*[Oo]wnerOnly\b/,                                     // the local name the helper's answer takes
+  /\bdefaultListFilter\b|\bresolveListScope\b|\bshouldFilterToOwner\b/, // asks the registry
+  /\blistScope\b|\b\w*[Oo]wnerOnly\b/,                       // the local name the helper's answer takes
 ];
 
 /**

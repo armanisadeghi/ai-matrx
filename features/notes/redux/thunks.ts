@@ -89,7 +89,7 @@ import {
   markTabInteraction,
   setNoteField,
 } from "./slice";
-import { scopeToOwner } from "@/lib/list-scope";
+import { defaultListFilter } from "@/lib/list-scope";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -261,7 +261,7 @@ export const fetchNotesList = createAsyncThunk<void, void>(
       await awaitCurrentNotesUser(userId);
       if (superseded()) return;
       // DD-137c / §3.3: where this list lands is the `note` token's registry word, not a literal.
-      const ownerOnly = await scopeToOwner("note");
+      const listScope = await defaultListFilter("note", { userId });
       // THE COMPLETE LIST. PostgREST caps a bare select at 1000 rows and says
       // nothing; a sidebar is a list the user treats as complete, so it reads
       // through `readAllRows` (count-verified paging on a stable order).
@@ -282,7 +282,7 @@ export const fetchNotesList = createAsyncThunk<void, void>(
                   { count: "exact" },
                 )
                 .is("deleted_at", null);
-              if (ownerOnly) q = q.eq("created_by", userId);
+              q = listScope.apply(q);
               return q
                 .order("updated_at", { ascending: false })
                 .order("id", { ascending: true })
@@ -1660,7 +1660,7 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
 
     // The trash list lands where the notes list lands — a bin that hides the organization's
     // deleted notes while the list shows its live ones is two different screens wearing one name.
-    const ownerOnly = await scopeToOwner("note");
+    const listScope = await defaultListFilter("note", { userId });
     let trashQuery = supabase
       .schema("workbench")
       .from("notes")
@@ -1668,7 +1668,7 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
         "id, created_by, label, folder_name, folder_id, tags, content_preview, updated_at, position, organization_id, visibility, deleted_at, version",
       )
       .not("deleted_at", "is", null);
-    if (ownerOnly) trashQuery = trashQuery.eq("created_by", userId);
+    trashQuery = listScope.apply(trashQuery);
     const { data, error } = await trashQuery.order("updated_at", { ascending: false });
 
     if (error) throw error;

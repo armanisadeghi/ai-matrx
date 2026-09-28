@@ -23,7 +23,7 @@ import type {
   RulebookSource,
 } from "../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 /**
  * Reads for the Masterwork HOME (the authed landing at /masterwork) — a
@@ -88,7 +88,7 @@ export async function fetchMasterworkHome(
 
   // DD-137c / §3.3: `rulebook` is registered `organization`, so the home page opens on the
   // organization's Rulebooks — the viewer's own included, which is the half the old filter removed.
-  const ownerOnly = await scopeToOwner("rulebook", scope);
+  const listScope = await defaultListFilter("rulebook", { userId, requested: scope });
   let homeQuery = supabase
     .schema("platform")
     .from("rulebook")
@@ -97,7 +97,7 @@ export async function fetchMasterworkHome(
       { count: "exact" },
     )
     .is("deleted_at", null);
-  if (ownerOnly) homeQuery = homeQuery.eq("created_by", userId);
+  homeQuery = listScope.apply(homeQuery);
   const { data, error, count } = await homeQuery
     .order("updated_at", { ascending: false })
     .limit(RULEBOOK_LIMIT);

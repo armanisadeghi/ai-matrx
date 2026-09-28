@@ -8,7 +8,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 type CanvasItemDbRow = Database["canvas"]["Tables"]["canvas_items"]["Row"];
 
@@ -272,12 +272,12 @@ export const canvasItemsService = {
       const userId = requireUserId();
       // DD-137c / §3.3: `canvas_item` is registered `organization`, so this opens on the
       // organization's canvases unless the caller asks for its own.
-      const ownerOnly = await scopeToOwner("canvas_item", scope);
+      const listScope = await defaultListFilter("canvas_item", { userId, requested: scope, ownerColumn: "user_id" });
       let query = supabase
         .schema("canvas").from("canvas_items")
         .select("*")
         .is("deleted_at", null);
-      if (ownerOnly) query = query.eq("user_id", userId);
+      query = listScope.apply(query);
 
       // Apply filters
       if (filters?.type) {
@@ -487,12 +487,12 @@ export const canvasItemsService = {
     try {
       const userId = requireUserId();
       // Counts read the same scope the list reads, or the two disagree on screen.
-      const ownerOnly = await scopeToOwner("canvas_item", scope);
+      const listScope = await defaultListFilter("canvas_item", { userId, requested: scope, ownerColumn: "user_id" });
       let statsQuery = supabase
         .schema("canvas").from("canvas_items")
         .select("type, is_favorited, is_archived")
         .is("deleted_at", null);
-      if (ownerOnly) statsQuery = statsQuery.eq("user_id", userId);
+      statsQuery = listScope.apply(statsQuery);
       const { data, error } = await statsQuery;
 
       if (error || !data) {

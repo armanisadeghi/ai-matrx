@@ -11,7 +11,7 @@ import { createProject as createProjectCanonical } from "@/features/projects/ser
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { generateProjectSlug } from "@/features/projects/types";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 function toTaskPriority(
   p: string | undefined,
@@ -155,14 +155,14 @@ export const hierarchyService = {
 
     // DD-137c / §3.3: `project` is registered `organization`. An agent-context tree that shows the
     // viewer only their own projects hides the organization's work from the agent as well.
-    const ownerOnly = await scopeToOwner("project", scope);
+    const listScope = await defaultListFilter("project", { userId, requested: scope });
     let projectQuery = workspaceDb(supabase)
       .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
       .is("deleted_at", null);
-    if (ownerOnly) projectQuery = projectQuery.eq("created_by", userId);
+    projectQuery = listScope.apply(projectQuery);
     const { data, error } = await projectQuery.order("name");
 
     if (error) throw error;
@@ -186,7 +186,7 @@ export const hierarchyService = {
   async fetchOrphanTasks(scope?: ListScopeWord): Promise<HierarchyTask[]> {
     const userId = requireUserId();
 
-    const ownerOnly = await scopeToOwner("task", scope);
+    const listScope = await defaultListFilter("task", { userId, requested: scope });
     let orphanQuery = workspaceDb(supabase)
       .from("tasks")
       .select(
@@ -194,7 +194,7 @@ export const hierarchyService = {
       )
       .is("deleted_at", null)
       .is("project_id", null);
-    if (ownerOnly) orphanQuery = orphanQuery.eq("created_by", userId);
+    orphanQuery = listScope.apply(orphanQuery);
     const { data, error } = await orphanQuery
       .order("created_at", { ascending: false });
 

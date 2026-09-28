@@ -38,7 +38,7 @@ import type {
   VirtualNode,
   VirtualSourceAdapter,
 } from "@/features/files/virtual-sources/types";
-import { scopeToOwner } from "@/lib/list-scope";
+import { defaultListFilter } from "@/lib/list-scope";
 
 /** Sentinel id used in synthetic ids for the implicit "Unfiled" folder —
  *  notes whose `folder_name` column is null. */
@@ -101,17 +101,17 @@ const notesAdapter: VirtualSourceAdapter = {
       // that exist in either source.
       // DD-137c / §3.3: `note` and `note_folder` are both registered `organization`, so this tree
       // opens on the organization's folders. RLS is still the ceiling; this is only where it starts.
-      const ownerOnly = await scopeToOwner("note");
-      const foldersOwnerOnly = await scopeToOwner("note_folder");
+      const listScope = await defaultListFilter("note", { userId });
+      const foldersListScope = await defaultListFilter("note_folder", { userId });
       let folderQuery = supabase
         .schema("workbench").from("note_folders")
         .select("name");
-      if (foldersOwnerOnly) folderQuery = folderQuery.eq("created_by", userId);
+      folderQuery = foldersListScope.apply(folderQuery);
       let noteFolderQuery = supabase
         .schema("workbench").from("notes")
         .select("folder_name")
         .is("deleted_at", null);
-      if (ownerOnly) noteFolderQuery = noteFolderQuery.eq("created_by", userId);
+      noteFolderQuery = listScope.apply(noteFolderQuery);
       const [folderRows, noteFolders] = await Promise.all([folderQuery, noteFolderQuery]);
       const names = new Set<string>();
       let hasUnfiled = false;
@@ -142,11 +142,11 @@ const notesAdapter: VirtualSourceAdapter = {
     }
     // Inside a folder — list notes whose folder_name matches.
     const folderName = folderNameFromVid(args.parentId);
-    const listOwnerOnly = await scopeToOwner("note");
+    const listListScope = await defaultListFilter("note", { userId });
     let query = supabase
       .schema("workbench").from("notes")
       .select("id, label, updated_at, version, folder_name");
-    if (listOwnerOnly) query = query.eq("created_by", userId);
+    query = listListScope.apply(query);
     query = args.includeDeleted
       ? query.not("deleted_at", "is", null)
       : query.is("deleted_at", null);

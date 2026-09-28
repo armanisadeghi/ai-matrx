@@ -20,7 +20,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 export type FeedbackRating = "up" | "down" | null;
 
@@ -60,13 +60,13 @@ export async function fetchLatestFeedback(
   // DECLARED `mine` (DD-137c / §3.3): the caller is asking what ONE named person scored, which is
   // the contract of this function's `userId` parameter — not a default landing place that forgot
   // the organization. Said through the registry helper so it is greppable and one word from change.
-  const ownerOnly = await scopeToOwner("cmp_feedback", "mine");
+  const listScope = await defaultListFilter("cmp_feedback", { userId, requested: "mine" });
   let feedbackQuery = supabase()
     .schema("agent").from("cmp_response_feedback")
     .select("*")
     .is("deleted_at", null)
     .eq("conversation_id", conversationId);
-  if (ownerOnly) feedbackQuery = feedbackQuery.eq("created_by", userId);
+  feedbackQuery = listScope.apply(feedbackQuery);
   const { data, error } = await feedbackQuery
     .order("updated_at", { ascending: false });
 
