@@ -61,3 +61,10 @@ describe("useGridSelection — the side chat keeps the selection", () => {
     expect(handle.current.selected).toBeNull();
   });
 });
+
+describe("one companion attribute for both grids", () => {
+  it("the app's constant is the design-system grid's own (a rename there must fail here)", async () => {
+    const { GRID_COMPANION_ATTR: fromPackage } = await import("@ai-matrx/design-system/data-table");
+    expect(GRID_COMPANION_ATTR).toBe(fromPackage);
+  });
+});
