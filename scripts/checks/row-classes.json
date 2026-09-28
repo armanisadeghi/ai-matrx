@@ -6,8 +6,8 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 95,
-    "live-db": 56,
+    "repo-only": 100,
+    "live-db": 57,
     "clone-db": 3
   },
   "rows": {
@@ -236,6 +236,13 @@
       "class": "repo-only",
       "cmd": "pnpm check:hidden-alerts",
       "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "hidden-primary-actions-a-page-s-main-job-only-behind-a-drawe": {
+      "label": "Hidden primary actions (a page's main job only behind a drawer, sidebar, or menu)",
+      "class": "repo-only",
+      "cmd": "pnpm check:hidden-primary-actions",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "unpinned-identity-credential-columns-on-client-writable-tabl": {
@@ -469,7 +476,7 @@
       "label": "TypeScript type-check",
       "class": "repo-only",
       "cmd": "pnpm type-check",
-      "reason": "no database access in 1 file(s) reached",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "doctrine-check": {
@@ -715,12 +722,12 @@
           "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         },
         {
-          "file": "scripts/lib/gate-db.ts",
-          "signal": "gate-db helper (openGateDb/withGateDb)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         },
         {
-          "file": "scripts/lib/gate-db.ts",
-          "signal": "pg / postgres client"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
@@ -739,12 +746,12 @@
           "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         },
         {
-          "file": "scripts/lib/gate-db.ts",
-          "signal": "gate-db helper (openGateDb/withGateDb)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         },
         {
-          "file": "scripts/lib/gate-db.ts",
-          "signal": "pg / postgres client"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
@@ -804,19 +811,19 @@
       "evidence": [
         {
           "file": "scripts/check-door-rows.ts",
-          "signal": "direct-db loader (loadDbEnv)"
-        },
-        {
-          "file": "scripts/check-door-rows.ts",
-          "signal": "gate-db helper (openGateDb/withGateDb)"
-        },
-        {
-          "file": "scripts/check-door-rows.ts",
           "signal": "pg / postgres client"
         },
         {
-          "file": "scripts/check-door-rows.ts",
-          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
+          "file": "scripts/generate-entity-types.ts",
+          "signal": "service-role / secret key"
+        },
+        {
+          "file": "scripts/generate-entity-types.ts",
+          "signal": "supabase-js client"
+        },
+        {
+          "file": "scripts/lib/check-target.ts",
+          "signal": "gate-db helper (openGateDb/withGateDb)"
         }
       ]
     },
@@ -828,19 +835,19 @@
       "evidence": [
         {
           "file": "scripts/check-door-rows.ts",
-          "signal": "direct-db loader (loadDbEnv)"
-        },
-        {
-          "file": "scripts/check-door-rows.ts",
-          "signal": "gate-db helper (openGateDb/withGateDb)"
-        },
-        {
-          "file": "scripts/check-door-rows.ts",
           "signal": "pg / postgres client"
         },
         {
-          "file": "scripts/check-door-rows.ts",
-          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
+          "file": "scripts/generate-entity-types.ts",
+          "signal": "service-role / secret key"
+        },
+        {
+          "file": "scripts/generate-entity-types.ts",
+          "signal": "supabase-js client"
+        },
+        {
+          "file": "scripts/lib/check-target.ts",
+          "signal": "gate-db helper (openGateDb/withGateDb)"
         }
       ]
     },
@@ -1019,12 +1026,16 @@
           "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         },
         {
-          "file": "scripts/lib/gate-db.ts",
-          "signal": "gate-db helper (openGateDb/withGateDb)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
+        },
+        {
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         },
         {
           "file": "scripts/lib/gate-db.ts",
-          "signal": "pg / postgres client"
+          "signal": "gate-db helper (openGateDb/withGateDb)"
         }
       ]
     },
@@ -1349,6 +1360,30 @@
         }
       ]
     },
+    "every-default-is-organization": {
+      "label": "Every default is Organization",
+      "class": "live-db",
+      "cmd": "pnpm check:defaults-are-organization",
+      "reason": "reaches code that can open the live database",
+      "evidence": [
+        {
+          "file": "scripts/check-defaults-are-organization.ts",
+          "signal": "direct-db loader (loadDbEnv)"
+        },
+        {
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
+        },
+        {
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
+        },
+        {
+          "file": "scripts/lib/direct-db.ts",
+          "signal": "direct-db loader (loadDbEnv)"
+        }
+      ]
+    },
     "the-honest-state-guard-can-still-fail": {
       "label": "The honest-state guard can still fail",
       "class": "repo-only",
@@ -1447,6 +1482,13 @@
       "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },
+    "no-new-component-the-react-compiler-silently-skips-shrink-on": {
+      "label": "No new component the React Compiler silently skips (shrink-only baseline)",
+      "class": "repo-only",
+      "cmd": "pnpm check:compiler-skips",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
     "the-kind-marker-law-no-stripping": {
       "label": "The __kind marker law (no stripping)",
       "class": "repo-only",
@@ -1486,7 +1528,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 157 file(s) reached",
+      "reason": "no database access in 162 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -1633,6 +1675,27 @@
       "label": "Reserved icon used outside its domain (BrainCircuit = Intelligence)",
       "class": "repo-only",
       "cmd": "pnpm check:reserved-icons",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "hand-rolled-instanceof-error-fallback-use-extracterrormessag": {
+      "label": "Hand-rolled instanceof-Error fallback (use extractErrorMessage)",
+      "class": "repo-only",
+      "cmd": "pnpm check:error-message-fallback",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "new-reference-to-the-deprecated-organization-flag": {
+      "label": "New reference to the deprecated organization flag",
+      "class": "repo-only",
+      "cmd": "pnpm check:org-flag-readers",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "deprecated-organization-flag-guard-self-test": {
+      "label": "Deprecated organization flag guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:org-flag-readers:self-test",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },

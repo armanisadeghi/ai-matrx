@@ -34,8 +34,13 @@ const SELF_TEST = process.argv.includes("--self-test");
 /** `--ref=<git ref>` reads every gate file as it stood at that commit (the before-and-after proof). */
 const REF = process.argv.find((a) => a.startsWith("--ref="))?.slice("--ref=".length);
 
-/** The connection primitives themselves. They define sessions; they are not gates. */
-const PRIMITIVES = new Set(["scripts/lib/gate-db.ts", "scripts/lib/direct-db.ts"]);
+/**
+ * The connection primitives themselves. They define sessions; they are not gates. `check-target.ts`
+ * is one (2026-09-28): `openCheckDb` opens through `openGateDb`, and `connectCheckDirect` through
+ * `connectDirect`, which carries the production guard on live — a gate that imports it for the
+ * first is governed, and its `connectDirect` line is not that gate's raw session.
+ */
+const PRIMITIVES = new Set(["scripts/lib/gate-db.ts", "scripts/lib/direct-db.ts", "scripts/lib/check-target.ts"]);
 
 /**
  * Files a gate reaches that construct a connection the gate never opens. Each carries its reason;

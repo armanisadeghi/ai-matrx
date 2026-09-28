@@ -45,7 +45,28 @@
  *   pnpm check:door-names-resolve:self-test
  */
 
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { CheckTargetRefusal, connectCheckDirect } from "./lib/check-target";
+import type { connectDirect } from "./lib/direct-db";
+
+/**
+ * WHERE IT RUNS: THE NIGHTLY CLONE BY DEFAULT (2026-09-28). The census stages its candidates in a
+ * TEMP table and the self-test plants a function — both DDL, which the production guard refuses on
+ * live (`scripts/lib/production-guard.ts`, c251e1b39d). What it proves (a door's names resolve under
+ * its pinned search_path) is a property of the function bodies, which the clone carries from last
+ * night's restore, so it runs there unless the command says `--target production`.
+ */
+async function openDb(): Promise<Awaited<ReturnType<typeof connectDirect>> | null> {
+  try {
+    const { client } = await connectCheckDirect({ gate: "check:door-names-resolve", defaultTarget: "clone" });
+    return client;
+  } catch (err) {
+    if (!(err instanceof CheckTargetRefusal)) throw err;
+    console.error(
+      `${TAG.fail}UNMEASURED — ${err.message}\n  A guard that cannot reach the database is a FAILURE, never a silent green.`,
+    );
+    return null;
+  }
+}
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const TAG = { ok: "\x1b[32m[ OK ]\x1b[0m", fail: "\x1b[31m[FAIL]\x1b[0m", info: "\x1b[36m[INFO]\x1b[0m" };
@@ -227,15 +248,8 @@ async function resolveAll(
 }
 
 async function main(): Promise<number> {
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    console.error(
-      `${TAG.fail}UNMEASURED — no database credentials (${env.missing.join(", ")} missing; looked in ${env.looked.join(", ")}).\n` +
-        `  A guard that cannot reach the database is a FAILURE, never a silent green.`,
-    );
-    return 1;
-  }
-  const client = await connectDirect(env, "check:door-names-resolve");
+  const client = await openDb();
+  if (!client) return 1;
   try {
     const { rows } = await client.query<DoorRow>(`
       select d.schema_name, d.function_name, d.identity_args, p.oid::int as oid,
@@ -314,12 +328,8 @@ async function main(): Promise<number> {
  * reserved prefix, so nothing it creates can outlive it or be reached by anything.
  */
 async function selfTest(): Promise<number> {
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    console.error(`${TAG.fail}UNMEASURED — no database credentials for the self-test.`);
-    return 1;
-  }
-  const client = await connectDirect(env, "check:door-names-resolve");
+  const client = await openDb();
+  if (!client) return 1;
   try {
     await client.query("begin");
     await client.query(`

@@ -195,6 +195,14 @@ push — are the ship path.
 
 ## Change log
 
+- 2026-09-28 — Measured every gate-db gate on live under the 30 s cap (slowest statement 6 s,
+  door-rows' own probe ceiling). `check:door-rows[:wide]` (~23,800 statements, >20 min on live),
+  `check:door-names-resolve` (TEMP table + planted function) and `check-stamped-write-doors`
+  (`iam.apply_table_grants` + planted GRANTs, rolled back) default to the clone via check-target.
+  `scripts/gate-db-limits.ts` (the psql gates' limits) now applies the live ceiling when
+  PGUSER/PGHOST name production — it had kept handing live shell gates 60 s.
+  `check:gate-db-sessions` counts `lib/check-target.ts` as a primitive.
+
 - 2026-09-27 — Heavy checks run on the clone: `scripts/lib/check-target.ts` (`openCheckDb`,
   `connectCheckDirect`, `ceilingFor`, the `[TARGET]` line), `openGateDb` capped at 30 s on live,
   `guardIfProduction` for raw clients, `check:store-doors-decide` + five heavy checks (and three planting self-tests) default to

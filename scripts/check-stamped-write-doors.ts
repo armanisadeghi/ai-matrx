@@ -84,7 +84,7 @@
  *   pnpm check:stamped-write-doors --self-test  # RED then GREEN against the real database
  */
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { connectDirect, loadDbEnv, DB_VARS } from "./lib/direct-db";
+import { CheckTargetRefusal, connectCheckDirect } from "./lib/check-target";
 import type { Client } from "pg";
 
 const SELF_TEST = process.argv.includes("--self-test");
@@ -599,16 +599,27 @@ function report(findings: Finding[], tables: number, writers: number): void {
 }
 
 async function main(): Promise<number> {
-  const env = loadDbEnv();
-  if ("missing" in env) {
+  // WHERE IT RUNS: THE NIGHTLY CLONE BY DEFAULT (2026-09-28). Both halves run grant DDL: the census's
+  // forcing half calls `iam.apply_table_grants` per registered table inside a rolled-back
+  // transaction, and the self-test plants GRANTs. Measured on live that day: 704 statements, 98 s,
+  // grants issued and rolled back on production tables. The production guard refuses GRANT/REVOKE/
+  // CREATE on live (`scripts/lib/production-guard.ts`, c251e1b39d); a function call hides them from
+  // its text check, so this file keeps the rule itself. The grant set it judges is migration-made
+  // and the clone carries it from last night's restore. `--target production` still works; the
+  // [TARGET] line names which database answered.
+  let db: Awaited<ReturnType<typeof connectCheckDirect>>["client"];
+  try {
+    ({ client: db } = await connectCheckDirect({
+      gate: "check-stamped-write-doors",
+      defaultTarget: "clone",
+    }));
+  } catch (err) {
+    if (!(err instanceof CheckTargetRefusal)) throw err;
     console.error(
-      `${FAIL} the stamped-write surface could not be MEASURED — unmeasured is a failure, never a pass.\n` +
-        `  wanted: ${DB_VARS.join(", ")}\n  looked in: ${env.looked.join(", ") || "(no env files found)"}`,
+      `${FAIL} the stamped-write surface could not be MEASURED — unmeasured is a failure, never a pass.\n  ${err.message}`,
     );
     return 1;
   }
-  console.log(`${INFO} ${env.host}/${env.database} ${C.d}(credentials from ${env.from})${C.x}`);
-  const db = await connectDirect(env, "check-stamped-write-doors");
   try {
     if (!SELF_TEST) {
       const { findings, tables, writers } = await census(db);

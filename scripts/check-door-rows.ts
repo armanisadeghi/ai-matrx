@@ -128,7 +128,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import pg from "pg";
-import { gateSessionCap, openGateDb } from "./lib/gate-db";
+import { type CheckDb, CheckTargetRefusal, openCheckDb } from "./lib/check-target";
+import { GateDbRefusal, gateSessionCap } from "./lib/gate-db";
 
 const ROOT = process.cwd();
 
@@ -216,70 +217,33 @@ const BUDGET_WORD =
     ? formatDurationMs(BUDGET_MS, { style: "coarse" })
     : formatDurationMs(BUDGET_MS, { style: "compact" });
 
-// ─── credentials ─────────────────────────────────────────────────────────────
+// ─── where it runs ───────────────────────────────────────────────────────────
+//
+// THE NIGHTLY CLONE BY DEFAULT (2026-09-28). Measured on live that day: ~23,800 statements, still
+// running at 20 minutes, 3 statements cancelled at its own 6 s probe ceiling. A door-by-door sweep of
+// ~460 doors is a census, and the property it proves (a door returns only what its caller may read)
+// is a property of the function bodies and policies, which the clone carries from last night's
+// restore. So it runs through `scripts/lib/check-target.ts`: the clone unless the command says
+// `--target production`, where every statement is capped at 30 s (scripts/checks/FEATURE.md
+// "Heavy checks run on the clone"). The [TARGET] line names which database answered.
 
-const DB_VARS = [
-  "SUPABASE_MATRIX_USER",
-  "SUPABASE_MATRIX_PASSWORD",
-  "SUPABASE_MATRIX_HOST",
-  "SUPABASE_MATRIX_PORT",
-  "SUPABASE_MATRIX_DATABASE_NAME",
-] as const;
-
-function parseEnvFile(path: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const line of readFileSync(path, "utf8").split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (!m) continue;
-    out[m[1]] = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
-  }
-  return out;
-}
+let checkDb: CheckDb | null = null;
 
 /**
- * One governed session (scripts/lib/gate-db.ts): 60 s statements, 3 s locks, 60 s idle in a
- * transaction, all transaction-local — the `statement_timeout: 60_000` this used to pass in the
- * pg config was a startup parameter, which Supavisor drops, so it never applied.
+ * One governed session (scripts/lib/gate-db.ts) on the resolved target: the first call prints the
+ * [TARGET] line and, on the clone, proves the server is quarantined; every later call opens another
+ * session on the SAME target and re-proves it.
  */
-function openClient(env: DbEnv): Promise<pg.Client> {
-  return openGateDb(env, { gate: POPULATION === "signed-in" ? "check:door-rows:wide" : "check:door-rows" });
-}
-
-interface DbEnv {
-  user: string;
-  password: string;
-  host: string;
-  port: number;
-  database: string;
-  from: string;
-}
-
-function loadDbEnv(): DbEnv | null {
-  const tryBag = (bag: Record<string, string | undefined>, from: string): DbEnv | null => {
-    if (DB_VARS.some((k) => !bag[k])) return null;
-    return {
-      user: bag.SUPABASE_MATRIX_USER!,
-      password: bag.SUPABASE_MATRIX_PASSWORD!,
-      host: bag.SUPABASE_MATRIX_HOST!,
-      port: Number(bag.SUPABASE_MATRIX_PORT!),
-      database: bag.SUPABASE_MATRIX_DATABASE_NAME!,
-      from,
-    };
-  };
-  const fromProcess = tryBag(process.env, "the environment");
-  if (fromProcess) return fromProcess;
-  for (const f of [
-    resolve(ROOT, ".env.local"),
-    resolve(ROOT, ".env.production.local"),
-    resolve(ROOT, ".env.production"),
-    resolve(ROOT, ".env"),
-    resolve(process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream"), ".env"),
-  ]) {
-    if (!existsSync(f)) continue;
-    const hit = tryBag(parseEnvFile(f), f);
-    if (hit) return hit;
+async function openClient(): Promise<pg.Client> {
+  if (!checkDb) {
+    checkDb = await openCheckDb({
+      gate: POPULATION === "signed-in" ? "check:door-rows:wide" : "check:door-rows",
+      defaultTarget: "clone",
+      argv: ARGV,
+    });
+    return checkDb.client;
   }
-  return null;
+  return checkDb.reconnect();
 }
 
 // ─── the cast ────────────────────────────────────────────────────────────────
@@ -442,18 +406,17 @@ function entitiesFromFunctionName(fn: string): string[] {
 async function main(): Promise<number> {
   console.log(`${C.bold}DOOR ROWS — a door returns only what its caller may read (DD-192)${C.reset}`);
 
-  const env = loadDbEnv();
-  if (!env) {
+  let db: pg.Client;
+  try {
+    db = await openClient();
+  } catch (err) {
+    if (!(err instanceof CheckTargetRefusal) && !(err instanceof GateDbRefusal)) throw err;
+    console.log(`${TAG.warn}UNMEASURED: ${err.message}`);
     console.log(
-      `${TAG.warn}UNMEASURED: no database credentials (${DB_VARS.join(", ")}). This gate cannot measure anything without them.`,
-    );
-    console.log(
-      `${TAG.warn}Remedy: run from a checkout whose .env carries the five SUPABASE_MATRIX_* variables, or export them.`,
+      `${TAG.warn}Remedy: the clone needs CLONE-REF and its password file (scripts/lib/migration-target.ts); live needs the five SUPABASE_MATRIX_* variables and --target production.`,
     );
     return STRICT ? 1 : 0;
   }
-
-  const db = await openClient(env);
 
   try {
     const q = async <T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> =>
@@ -514,7 +477,7 @@ async function main(): Promise<number> {
     const deadline = BUDGET_MS > 0 ? Date.now() + BUDGET_MS : Infinity;
     let ranOutOfTime = false;
     const worker = async (w: number): Promise<void> => {
-      const c = w === 0 ? db : await openClient(env);
+      const c = w === 0 ? db : await openClient();
       try {
         const cq = async <T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> =>
           (await c.query(sql, params)).rows as T[];
