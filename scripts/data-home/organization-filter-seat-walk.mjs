@@ -129,6 +129,19 @@ try {
     const everything = await tableFacts(page);
     const barText = await page.evaluate(() => document.querySelector("[data-hub-scope]")?.innerText ?? "");
     pass("no single-organization sentence on the bar", !/Forms and pages/.test(barText), JSON.stringify(barText.replace(/\n/g, " · ").slice(-60)));
+    // EVERY OTHER LISTING, the same way (DATA-HOME-2, finish the class): no heading says one
+    // organization, and the rows come from every organization shown.
+    const OTHERS = ["portals", "dashboards", "digests", "checklists", "automations", "shared-outside"];
+    const allOthers = {};
+    for (const id of OTHERS) allOthers[id] = await listingOrgs(page, id);
+    const onlyHeading = await page.evaluate(() => document.querySelectorAll("[data-hub-listing-one-organization]").length);
+    pass("no listing heading says one organization", onlyHeading === 0, `${onlyHeading} "Only …'s." headings`);
+    const othersOrgs = new Set(Object.values(allOthers).flat());
+    pass(
+      "All Orgs: the other six listings come from every organization",
+      othersOrgs.size > 1,
+      OTHERS.map((id) => `${id} ${allOthers[id].length} in ${new Set(allOthers[id]).size}`).join(", "),
+    );
     const allForms = await listingOrgs(page, "forms");
     const allBookings = await listingOrgs(page, "bookings");
     pass(
@@ -136,6 +149,23 @@ try {
       new Set([...allForms, ...allBookings]).size > 1,
       `${allForms.length} forms in ${new Set(allForms).size} organizations, ${allBookings.length} booking pages in ${new Set(allBookings).size}`,
     );
+    const working = await page.evaluate(() => document.querySelector("header")?.innerText ?? "");
+    const named = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-hub-listing="dashboards"] li[data-hub-row], [data-hub-listing="tables"] li[data-hub-row]')]
+        .map((li) => ({
+          org: li.querySelector("[data-hub-row-organization]")?.textContent ?? "",
+          text: li.textContent ?? "",
+        })),
+    );
+    const elsewhere = named.filter((r) => r.org && !working.includes(r.org));
+    const withWho = elsewhere.filter((r) => /[A-Za-z]+, [A-Z][a-z]{2} \d+/.test(r.text));
+    pass(
+      "who changed it reads for organizations other than the working one",
+      elsewhere.length > 0 && withWho.length > 0,
+      `${withWho.length} of ${elsewhere.length} rows outside the working organization name who changed them`,
+    );
+    await page.evaluate(() => document.querySelector('[data-hub-listing="dashboards"]')?.scrollIntoView());
+    await shot(page, "after-all-orgs-dashboards");
     await page.evaluate(() => document.querySelector('[data-hub-listing="forms"]')?.scrollIntoView());
     await shot(page, "after-all-orgs-forms");
     await page.evaluate(() => window.scrollTo(0, 0));
@@ -163,6 +193,10 @@ try {
       if (t && t.getAttribute("aria-expanded") !== "true") t.click();
     });
     await shot(page, "after-picked");
+    for (const id of ["portals", "dashboards", "digests", "checklists", "automations", "shared-outside"]) {
+      const orgs = await listingOrgs(page, id);
+      pass(`${id} narrows to ${PICK}`, orgs.every((o) => o === PICK), `${orgs.length} rows, ${orgs.filter((o) => o !== PICK).length} from another organization`);
+    }
     const pickedForms = await listingOrgs(page, "forms");
     const pickedBookings = await listingOrgs(page, "bookings");
     pass(
