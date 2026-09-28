@@ -282,11 +282,25 @@ export function EntityListPage<TRow>({
 
   // UNIFORM COLUMNS hide by default where the surface opts in (they stay in
   // the picker; a column the person shows stays shown) — ../columnWidths.ts.
-  const autoHidden = config.autoHideUniformColumns
-    ? uniformColumnIds(config.columns, list.rows, [entityListDoorColumnId(config)], {
-        complete: list.query.page <= 1 && list.total <= list.rows.length,
-      })
-    : [];
+  // 🚨 ONE COLUMN SET IN EVERY LANE (list-shell fix D, 2026-09-28). Owner /
+  // organization columns used to be REMOVED in Mine, so the set — and, since
+  // the table remembers the order it first saw, the ORDER — depended on the
+  // lane a person opened first. They are now the uniform rule's case: in Mine
+  // every row has the same owner, so those columns are identical by
+  // construction and auto-hide like any other uniform column (the picker still
+  // offers them, and a column the person shows stays shown).
+  const laneUniform =
+    list.query.scope.kind === "mine"
+      ? config.columns.filter((c) => c.scopedToShared).map((c) => c.id)
+      : [];
+  const autoHidden = [
+    ...(config.autoHideUniformColumns
+      ? uniformColumnIds(config.columns, list.rows, [entityListDoorColumnId(config)], {
+          complete: list.query.page <= 1 && list.total <= list.rows.length,
+        })
+      : []),
+    ...laneUniform,
+  ];
   const hiddenColumns = effectiveHiddenColumns(
     prefs.hiddenColumns,
     autoHidden,
@@ -831,7 +845,8 @@ export function EntityListPage<TRow>({
             favoritesFirst: effectiveFavoritesFirst,
             hiddenColumns,
           }}
-          showSharedColumns={showSharedColumns}
+          // The picker offers the one column set of every lane (fix D).
+          showSharedColumns
           columns={config.columns}
           defaultHidden={defaultHidden}
           facetSections={config.facetSections}
@@ -986,8 +1001,11 @@ export function EntityListPage<TRow>({
             isLoading={list.isLoading}
             isFetching={list.isFetching}
             density={prefs.density}
-            showSharedColumns={showSharedColumns}
+            showSharedColumns
             hiddenColumns={hiddenColumns}
+            onHiddenColumnsChange={setHiddenColumns}
+            columnOrder={prefs.columnOrder}
+            onColumnOrderChange={(columnOrder) => setPrefs({ columnOrder })}
             onSaveEdits={saveEdits}
             emptyState={resolvedEmptyState}
             {...(config.tableToolbar

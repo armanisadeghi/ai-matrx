@@ -99,6 +99,11 @@ interface Props<TRow> {
   density: "compact" | "comfortable";
   showSharedColumns: boolean;
   hiddenColumns: string[];
+  /** The person hid or showed a column through the table (fix D). */
+  onHiddenColumnsChange?: (hidden: string[]) => void;
+  /** The person's stored column order; absent = the declared order. */
+  columnOrder?: readonly string[];
+  onColumnOrderChange?: (order: string[]) => void;
   onSaveEdits: (edits: Record<string, Partial<TRow>>) => Promise<void>;
   /**
    * BULK SELECTION, or nothing at all.
@@ -158,6 +163,26 @@ interface Props<TRow> {
     description: string;
     action?: React.ReactNode;
   };
+}
+
+/**
+ * The order the table draws: the person's stored order for the columns it
+ * still names, then every other declared column at its DECLARED place — never
+ * appended because a lane showed it later (list-shell fix D, 2026-09-28).
+ */
+export function resolveColumnOrder(
+  declared: readonly string[],
+  stored: readonly string[] | undefined,
+): string[] {
+  const known = (stored ?? []).filter((id, i, all) => declared.includes(id) && all.indexOf(id) === i);
+  if (known.length === 0) return [...declared];
+  const out = [...known];
+  declared.forEach((id, index) => {
+    if (out.includes(id)) return;
+    const before = declared.slice(0, index).reverse().find((prev) => out.includes(prev));
+    out.splice(before === undefined ? 0 : out.indexOf(before) + 1, 0, id);
+  });
+  return out;
 }
 
 /** Our filter bag → the table's controlled `columnFilters` shape. */
@@ -272,6 +297,9 @@ export function EntityListTable<TRow>({
   density,
   showSharedColumns,
   hiddenColumns,
+  onHiddenColumnsChange,
+  columnOrder,
+  onColumnOrderChange,
   onSaveEdits,
   onQueryChange,
   emptyAction,
@@ -379,10 +407,11 @@ export function EntityListTable<TRow>({
   const declaredColumns: MatrxColumnDef<TRow>[] = config.columns
     .filter(
       (spec) =>
-        (showSharedColumns || !spec.scopedToShared) &&
-        // In table-toolbar mode the table's own column picker hides columns
-        // (controlled `columnState` below), so every column is handed over.
-        (Boolean(tableToolbar) || !hiddenColumns.includes(spec.id)),
+        // Every column is handed over and HIDDEN through the controlled
+        // `columnState` below, in every mode (list-shell fix D, 2026-09-28):
+        // a column removed from the array came back APPENDED when a lane
+        // showed it again, so the order depended on the lane opened first.
+        showSharedColumns || !spec.scopedToShared,
     )
     .map((spec) => {
       const facetOptions = spec.facet ? facets.byKind[spec.facet] : undefined;
@@ -543,19 +572,23 @@ export function EntityListTable<TRow>({
               ...PAGE_OWNS_COLUMN_PICKER,
             }
       }
-      {...(tableToolbar
-        ? {
-            tableId: tableToolbar.tableId,
-            columnState: {
-              order: columns.map(
-                (column) => column.id ?? String(column.accessorKey ?? ""),
-              ),
-              hidden: hiddenColumns,
-              onChange: (next: { order: string[]; hidden: string[] }) =>
-                tableToolbar.onHiddenColumnsChange(next.hidden),
-            },
-          }
-        : {})}
+      {...(tableToolbar ? { tableId: tableToolbar.tableId } : {})}
+      // ONE ORDER IN EVERY LANE: the declared order (or the person's own
+      // drag order), never the order of the lane the table first mounted in.
+      columnState={{
+        order: resolveColumnOrder(
+          columns.map((column) => column.id ?? String(column.accessorKey ?? "")),
+          columnOrder,
+        ),
+        hidden: hiddenColumns,
+        onChange: (next: { order: string[]; hidden: string[] }) => {
+          if (JSON.stringify([...next.hidden].sort()) !== JSON.stringify([...hiddenColumns].sort()))
+            (tableToolbar?.onHiddenColumnsChange ?? onHiddenColumnsChange)?.(next.hidden);
+          const declared = columns.map((column) => column.id ?? String(column.accessorKey ?? ""));
+          if (JSON.stringify(next.order) !== JSON.stringify(resolveColumnOrder(declared, columnOrder)))
+            onColumnOrderChange?.(next.order);
+        },
+      }}
       // THE "+" VIEWS ARE KEPT (page-pass 2026-09-27): the table's view tabs
       // lived in memory, so a "View 2" was gone after a reload. They are stored
       // in this surface's view preferences — named on creation, synced like

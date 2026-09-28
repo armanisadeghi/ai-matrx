@@ -483,6 +483,13 @@ export interface ListViewPrefs {
    * (`EntityListConfig.autoHideUniformColumns`) never hides one of these again.
    */
   shownColumns?: string[];
+  /**
+   * The column order the person dragged into place. Absent = the surface's
+   * declared order — the same in every lane (list-shell fix D, 2026-09-28: the
+   * order used to be whatever the FIRST lane opened showed, with the rest
+   * appended).
+   */
+  columnOrder?: string[];
 }
 
 export interface SavedListView {
