@@ -1,3 +1,4 @@
+-- chair-step: replaces the policy generator body (iam._apply_rls_unchecked), whose text builds DROP, REVOKE and policies at run time; the only change is two named refusals for a missing or non-uuid entity id
 -- lane: access-ladder T-21
 -- based-on: iam._apply_rls_unchecked(text, text, text, text) fb708e3134ec178b485f5294f22bf92f9ade83d7ad35055874a85e126c1ad431
 -- Access ladder T-21 (2026-09-28): the policy generator refuses, by name and with the remedy, an entity table
