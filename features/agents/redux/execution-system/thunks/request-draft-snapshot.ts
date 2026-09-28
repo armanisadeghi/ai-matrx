@@ -49,7 +49,7 @@ import {
   setResourceStatus,
 } from "../instance-resources/instance-resources.slice";
 import {
-  clearInstanceContext,
+  removeContextEntry,
   setContextEntries,
 } from "../instance-context/instance-context.slice";
 import { setBuilderAdvancedSettings } from "../instance-ui-state/instance-ui-state.slice";
@@ -123,6 +123,14 @@ export function attachmentDurabilityProblem(resource: {
   source: unknown;
 }): string | null {
   if (resource.status === "error") return "it failed to attach";
+  // Only a ready attachment goes on the wire (`selectResourcePayloads`), so
+  // only a ready one belongs in the identical request.
+  if (resource.status !== "ready") {
+    for (const url of urlsIn(resource.source)) {
+      if (url.startsWith("blob:")) return "it was still uploading";
+    }
+    return "it had not finished loading";
+  }
   if (hasFileId(resource.source)) return null;
   for (const url of urlsIn(resource.source)) {
     if (url.startsWith("blob:")) return "it was still uploading";
@@ -159,6 +167,12 @@ export function captureRequestDraft(
   const resources =
     state.instanceResources.byConversationId[conversationId] ?? {};
   const context = state.instanceContext.byConversationId[conversationId] ?? {};
+  // Entries the mounted page supplies (`replaceSurfaceContextEntries`) are the
+  // page's, re-supplied wherever the request is restored; they are not part of
+  // what the person put in the request.
+  const surfaceKeys = new Set(
+    state.instanceContext.surfaceKeysByConversationId[conversationId] ?? [],
+  );
   const ui = state.instanceUIState.byConversationId[conversationId];
   const overrides =
     state.instanceModelOverrides.byConversationId[conversationId];
@@ -197,7 +211,9 @@ export function captureRequestDraft(
       scopeValues: plain(variables?.scopeValues ?? {}),
       resourcePolicies: plain(variables?.resourcePolicies ?? {}),
       resources: savedResources,
-      context: plain(Object.values(context)),
+      context: plain(
+        Object.values(context).filter((entry) => !surfaceKeys.has(entry.key)),
+      ),
       runSettings: plain(ui?.builderAdvancedSettings ?? null),
       modelChanges: overrides
         ? plain({
@@ -305,8 +321,8 @@ export function applyRequestDraft({
           }),
         );
       }
-      // Only attachments that were usable are saved, and each is restored by
-      // its durable identity, so it is sendable as soon as it is back.
+      // Only attachments that were ready (and so sent) are saved, each by its
+      // durable identity, so each comes back exactly as sendable as it was.
       dispatch(
         setResourceStatus({
           conversationId,
@@ -322,11 +338,25 @@ export function applyRequestDraft({
       }),
     );
 
-    dispatch(clearInstanceContext(conversationId));
+    // Replace the person's entries; leave the page's own entries (and the
+    // page's ownership of them) exactly as the target has them.
+    const targetSurfaceKeys = new Set(
+      getState().instanceContext.surfaceKeysByConversationId[conversationId] ??
+        [],
+    );
+    for (const key of Object.keys(
+      getState().instanceContext.byConversationId[conversationId] ?? {},
+    )) {
+      if (!targetSurfaceKeys.has(key)) {
+        dispatch(removeContextEntry({ conversationId, key }));
+      }
+    }
     dispatch(
       setContextEntries({
         conversationId,
-        entries: snapshot.context.map((entry) => ({ ...entry })),
+        entries: snapshot.context
+          .filter((entry) => !targetSurfaceKeys.has(entry.key))
+          .map((entry) => ({ ...entry })),
       }),
     );
 

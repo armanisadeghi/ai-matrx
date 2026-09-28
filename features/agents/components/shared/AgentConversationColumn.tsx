@@ -67,6 +67,8 @@ interface ChatVisibleGroupWindow {
 }
 
 interface SmartInputForwardProps {
+  /** See `SmartAgentInput`'s `draftAlias`: the per-record unsent-draft key. */
+  draftAlias?: string;
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
   placeholder?: string;

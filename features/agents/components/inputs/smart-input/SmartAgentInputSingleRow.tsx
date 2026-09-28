@@ -38,6 +38,14 @@ interface SmartAgentInputSingleRowProps {
   showSendButton?: boolean;
   showVariableIcon?: boolean;
   surfaceKey?: string;
+  /**
+   * The key an unsent draft is also kept under, so it survives a reload of a
+   * composer whose conversation id is re-minted. Defaults to `surfaceKey`. A
+   * page that shows several different records on one surface (each saved
+   * Agent Battle) passes one per record, so one record's draft never appears
+   * in another.
+   */
+  draftAlias?: string;
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
   contextRailPresentation?: "default" | "overflow-only";
@@ -56,6 +64,7 @@ export function SmartAgentInputSingleRow({
   showSendButton = true,
   showVariableIcon = true,
   surfaceKey,
+  draftAlias,
   disableSend = false,
   variablesPanelStyle,
   contextRailPresentation = "default",
@@ -140,6 +149,7 @@ export function SmartAgentInputSingleRow({
         {/* Textarea — flex-1 so it fills available width */}
         <div className="flex-1 min-w-0">
           <AgentTextarea
+            draftAlias={draftAlias}
             conversationId={conversationId}
             compact
             uploadRoot={uploadRoot}

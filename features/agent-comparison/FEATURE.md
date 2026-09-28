@@ -240,6 +240,11 @@ attributable to this page in analytics.
   keep an attachment warn by name. Also: reopening a battle no longer copies column 1's unsent text into
   every other column — the durable composer draft's surface alias is refused once two live composers
   share it (`composer-draft-store.ts`).
+  After independent review: the shared composer's unsent-draft key is per battle
+  (`<surfaceKey>:<setId|new>`, `SharedBattleInput`) and each column's is per conversation
+  (`BoundColumn`), so opening a saved battle no longer hands its text to the next new battle; only
+  attachments that were `ready` (the only ones sent) are saved — a still-loading one is named as
+  omitted; page-owned context entries are neither saved nor overwritten on restore.
 - 2026-09-26 — **Ratings and ranks survive a reload.** A reopened conversation now carries its run
   history (`fetchConversationBundle` reads `chat.request`/`user_request` when the bundle RPC omits
   them), so the feedback bar and run numbers come back; feedback is keyed by the server's run id

@@ -90,7 +90,8 @@ function makeStore() {
             uploading: resource("uploading", 2, { url: "blob:http://local/123" }, "pending", "blob:http://local/123"),
             signed: resource("signed", 3, { url: "https://x.s3.amazonaws.com/b.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=abc&X-Amz-Expires=60" }),
             failed: resource("failed", 4, { file_id: "file-2" }, "error"),
-            web: resource("web", 0, "https://example.com/page", "pending", null),
+            web: resource("web", 0, "https://example.com/page", "ready", null),
+            loading: resource("loading", 5, "https://example.com/slow", "pending", null),
           },
           [target]: {
             old: resource("old", 0, { file_id: "file-old" }),
@@ -110,10 +111,35 @@ function makeStore() {
               type: "text",
               label: "Brief",
             },
+            page_scope: {
+              key: "page_scope",
+              value: "source page",
+              slotMatched: false,
+              type: "text",
+              label: "Page",
+            },
           },
-          [target]: {},
+          [target]: {
+            page_scope: {
+              key: "page_scope",
+              value: "target page",
+              slotMatched: false,
+              type: "text",
+              label: "Page",
+            },
+            stale_user_entry: {
+              key: "stale_user_entry",
+              value: "gone",
+              slotMatched: false,
+              type: "text",
+              label: "Stale",
+            },
+          },
         },
-        surfaceKeysByConversationId: { [source]: [], [target]: [] },
+        surfaceKeysByConversationId: {
+          [source]: ["page_scope"],
+          [target]: ["page_scope"],
+        },
       },
       instanceUIState: {
         byConversationId: {
@@ -204,9 +230,20 @@ describe("request draft snapshot", () => {
     expect(restored.web.status).toBe("ready");
     expect(restored.web.sortOrder).toBeLessThan(restored.stored.sortOrder);
 
-    expect(Object.keys(state.instanceContext.byConversationId[target])).toEqual([
-      "brief",
-    ]);
+    // The person's entries are replaced; the page's own entry is neither
+    // saved from the source nor taken from the target.
+    expect(snapshot.context.map((e) => e.key)).toEqual(["brief"]);
+    const targetContext = state.instanceContext.byConversationId[target] as Record<
+      string,
+      { value: unknown }
+    >;
+    expect(Object.keys(targetContext).sort()).toEqual(["brief", "page_scope"]);
+    expect(targetContext.page_scope.value).toBe("target page");
+    expect(
+      (store.getState() as never as {
+        instanceContext: { surfaceKeysByConversationId: Record<string, string[]> };
+      }).instanceContext.surfaceKeysByConversationId[target],
+    ).toEqual(["page_scope"]);
     expect(
       state.instanceUIState.byConversationId[target].builderAdvancedSettings,
     ).toMatchObject({ addedMcpServers: ["github"] });
@@ -217,6 +254,7 @@ describe("request draft snapshot", () => {
 
     expect(omitted.map((o) => o.reason).sort()).toEqual([
       "it failed to attach",
+      "it had not finished loading",
       "it is a temporary link that expires",
       "it was still uploading",
     ]);

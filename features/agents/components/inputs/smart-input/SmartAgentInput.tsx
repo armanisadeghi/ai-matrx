@@ -51,6 +51,14 @@ interface SmartAgentInputProps {
   showSendButton?: boolean;
   showVariableIcon?: boolean;
   surfaceKey?: string;
+  /**
+   * The key an unsent draft is also kept under, so it survives a reload of a
+   * composer whose conversation id is re-minted. Defaults to `surfaceKey`. A
+   * page that shows several different records on one surface (each saved
+   * Agent Battle) passes one per record, so one record's draft never appears
+   * in another.
+   */
+  draftAlias?: string;
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
   contextRailPresentation?: "default" | "overflow-only";
@@ -81,6 +89,7 @@ export function SmartAgentInput({
   showSendButton = true,
   showVariableIcon = true,
   surfaceKey,
+  draftAlias,
   disableSend = false,
   variablesPanelStyle,
   contextRailPresentation = "default",
@@ -114,6 +123,7 @@ export function SmartAgentInput({
           showSendButton={showSendButton}
           showVariableIcon={showVariableIcon}
           surfaceKey={surfaceKey}
+          draftAlias={draftAlias}
           disableSend={disableSend}
           variablesPanelStyle={variablesPanelStyle}
           contextRailPresentation={contextRailPresentation}
@@ -141,6 +151,7 @@ export function SmartAgentInput({
         showSendButton={showSendButton}
         showVariableIcon={showVariableIcon}
         surfaceKey={surfaceKey}
+          draftAlias={draftAlias}
         disableSend={disableSend}
         variablesPanelStyle={variablesPanelStyle}
         contextRailPresentation={contextRailPresentation}

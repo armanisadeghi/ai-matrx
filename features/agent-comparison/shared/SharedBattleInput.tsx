@@ -9,6 +9,8 @@
 
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import type { SmartAgentInputSurfaceValueAnchors } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectMountedBattleSetId } from "./activeBattleColumns";
 
 interface SharedBattleInputProps {
   conversationId: string | null | undefined;
@@ -25,6 +27,11 @@ export function SharedBattleInput({
   showHeading = true,
   surfaceValueAnchors,
 }: SharedBattleInputProps) {
+  // The unsent draft belongs to THIS battle: a saved battle keeps its own key,
+  // an unsaved one the mode's "new" key. One surface key for every battle let
+  // a saved battle's request reappear in the next new battle as "your draft".
+  const setId = useAppSelector(selectMountedBattleSetId);
+  const draftAlias = `${surfaceKey}:${setId ?? "new"}`;
   return (
     <div className="space-y-1.5">
       {showHeading && (
@@ -40,6 +47,7 @@ export function SharedBattleInput({
       <SmartAgentInput
         conversationId={conversationId}
         surfaceKey={surfaceKey}
+        draftAlias={draftAlias}
         sendButtonVariant="blue"
         showSendButton={false}
         showSubmitOnEnterToggle={false}

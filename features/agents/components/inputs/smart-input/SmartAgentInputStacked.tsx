@@ -51,6 +51,14 @@ interface SmartAgentInputStackedProps {
   showSendButton?: boolean;
   showVariableIcon?: boolean;
   surfaceKey?: string;
+  /**
+   * The key an unsent draft is also kept under, so it survives a reload of a
+   * composer whose conversation id is re-minted. Defaults to `surfaceKey`. A
+   * page that shows several different records on one surface (each saved
+   * Agent Battle) passes one per record, so one record's draft never appears
+   * in another.
+   */
+  draftAlias?: string;
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
   contextRailPresentation?: "default" | "overflow-only";
@@ -73,6 +81,7 @@ export function SmartAgentInputStacked({
   showSendButton = true,
   showVariableIcon = true,
   surfaceKey,
+  draftAlias,
   disableSend = false,
   variablesPanelStyle,
   contextRailPresentation = "default",
@@ -144,6 +153,7 @@ export function SmartAgentInputStacked({
         data-ambient-input="multiline"
       >
         <AgentTextarea
+          draftAlias={draftAlias}
           conversationId={conversationId}
           compact
           uploadRoot={uploadRoot}
@@ -241,6 +251,7 @@ export function SmartAgentInputStacked({
     );
     const textarea = (
       <AgentTextarea
+        draftAlias={draftAlias}
         key={`composer-${composer.size}-${expandRequestKey}`}
         conversationId={conversationId}
         compact={compact}
@@ -363,6 +374,7 @@ export function SmartAgentInputStacked({
 
       {/* Textarea — owns its own height transition for smooth flow */}
       <AgentTextarea
+        draftAlias={draftAlias}
         key={`composer-${expandRequestKey}`}
         conversationId={conversationId}
         compact={compact}

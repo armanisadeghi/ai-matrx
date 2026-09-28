@@ -64,6 +64,14 @@ interface AgentTextareaProps {
   uploadPath?: string;
   enablePasteImages?: boolean;
   surfaceKey?: string;
+  /**
+   * The key an unsent draft is also kept under, so it survives a reload of a
+   * composer whose conversation id is re-minted. Defaults to `surfaceKey`. A
+   * page that shows several different records on one surface (each saved
+   * Agent Battle) passes one per record, so one record's draft never appears
+   * in another.
+   */
+  draftAlias?: string;
   disableSend?: boolean;
   initiallyExpanded?: boolean;
   /** Preserve the existing eager focus everywhere except ambient launchers. */
@@ -100,6 +108,7 @@ export function AgentTextarea({
   uploadPath = "agent-attachments",
   enablePasteImages = true,
   surfaceKey,
+  draftAlias,
   disableSend = false,
   initiallyExpanded = false,
   autoFocus = true,
@@ -398,7 +407,7 @@ export function AgentTextarea({
       <div className="relative flex flex-col min-w-0">
         <ComposerDraftNotice
           conversationId={conversationId}
-          surfaceKey={surfaceKey}
+          surfaceKey={draftAlias ?? surfaceKey}
           currentChars={charCount}
         />
         <div className="relative flex items-center min-w-0">
@@ -422,7 +431,7 @@ export function AgentTextarea({
     <div className="px-2 relative shrink-0">
       <ComposerDraftNotice
         conversationId={conversationId}
-        surfaceKey={surfaceKey}
+        surfaceKey={draftAlias ?? surfaceKey}
         currentChars={charCount}
       />
       <div className="relative">
