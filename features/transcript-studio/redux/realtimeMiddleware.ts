@@ -10,7 +10,9 @@
 //
 // Routing per event type matters:
 //   - INSERT → *Appended / cleanedSegmentApplied (supersede on new pass)
-//   - UPDATE → *Updated (in-place; never re-fire the supersede logic)
+//   - UPDATE → *Updated (in-place; never re-fire the supersede logic); a live
+//     row the store does not hold (restored from Trash) is re-added —
+//     realtimeRestore.ts; a row stamped deleted_at is removed
 //   - DELETE → *Removed (cross-tab delete propagation)
 //
 // Earlier versions used `event: "*"` for cleaned segments and routed every
@@ -76,16 +78,12 @@ import {
   sessionUpserted,
   sessionRemoved,
   rawSegmentsAppended,
-  rawSegmentUpdated,
   rawSegmentRemoved,
   cleanedSegmentApplied,
-  cleanedSegmentUpdated,
   cleanedSegmentRemoved,
   conceptsAppended,
-  conceptItemUpdated,
   conceptItemRemoved,
   moduleSegmentsAppended,
-  moduleSegmentUpdated,
   moduleSegmentRemoved,
   recordingSegmentUpserted,
   recordingSegmentRemoved,
@@ -99,6 +97,7 @@ import {
 // ./actionTypes is a leaf (constants only); the thunk definition reads the same
 // constant, so the two cannot drift apart.
 import { TRANSCRIPT_STUDIO_FETCH_SESSIONS_FULFILLED } from "./actionTypes";
+import { liveRowUpdateAction } from "./realtimeRestore";
 
 /** One place names each channel. A second, different declaration throws. */
 const studioSessionsChannel = defineChannelNamespace({
@@ -212,6 +211,10 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
         const isTrashed = (row: Record<string, unknown>): boolean =>
           row.deleted_at !== null && row.deleted_at !== undefined;
 
+        // Read at EVENT time (Rule 4), never captured at subscribe time.
+        const studioState = () =>
+          (storeApi.getState() as RootState).transcriptStudio;
+
         const deletedId = (payload: { old?: unknown }): string | undefined => {
           const old = payload.old as { id?: string } | undefined;
           return old?.id;
@@ -244,10 +247,12 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
                   );
                   return;
                 }
+                // Live: patch it, or bring it back if it was restored from
+                // Trash (the store dropped it) — see realtimeRestore.ts.
                 storeApi.dispatch(
-                  rawSegmentUpdated({
-                    sessionId: sid,
-                    segment: rowToRawSegment(row as unknown as RawSegmentRow),
+                  liveRowUpdateAction(studioState(), sid, {
+                    kind: "raw",
+                    item: rowToRawSegment(row as unknown as RawSegmentRow),
                   }),
                 );
               },
@@ -308,9 +313,9 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
                   return;
                 }
                 storeApi.dispatch(
-                  cleanedSegmentUpdated({
-                    sessionId: sid,
-                    segment: rowToCleanedSegment(cleaned),
+                  liveRowUpdateAction(studioState(), sid, {
+                    kind: "cleaned",
+                    item: rowToCleanedSegment(cleaned),
                   }),
                 );
               },
@@ -350,8 +355,8 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
                   return;
                 }
                 storeApi.dispatch(
-                  conceptItemUpdated({
-                    sessionId: sid,
+                  liveRowUpdateAction(studioState(), sid, {
+                    kind: "concept",
                     item: rowToConceptItem(row as unknown as ConceptItemRow),
                   }),
                 );
@@ -394,9 +399,9 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
                   return;
                 }
                 storeApi.dispatch(
-                  moduleSegmentUpdated({
-                    sessionId: sid,
-                    segment: rowToModuleSegment(row as unknown as ModuleSegmentRow),
+                  liveRowUpdateAction(studioState(), sid, {
+                    kind: "module",
+                    item: rowToModuleSegment(row as unknown as ModuleSegmentRow),
                   }),
                 );
               },

@@ -409,6 +409,26 @@ const slice = createSlice({
       const byId = state.cleanedById[sessionId];
       if (byId && byId[segment.id]) byId[segment.id] = segment;
     },
+    /**
+     * A cleaned row back from Trash (delete means archive). It re-enters the
+     * active registry at its `tStart` position WITHOUT the supersede pass —
+     * `cleanedSegmentApplied` would drop every same-processor row after it,
+     * which a restore must never do.
+     */
+    cleanedSegmentRestored(
+      state,
+      action: PayloadAction<{ sessionId: string; segment: CleanedSegment }>,
+    ) {
+      const { sessionId, segment } = action.payload;
+      if (!state.cleanedById[sessionId]) state.cleanedById[sessionId] = {};
+      if (!state.cleanedIdsBySession[sessionId])
+        state.cleanedIdsBySession[sessionId] = [];
+      const byId = state.cleanedById[sessionId]!;
+      const ids = state.cleanedIdsBySession[sessionId]!;
+      if (!byId[segment.id]) ids.push(segment.id);
+      byId[segment.id] = segment;
+      ids.sort((x, y) => byId[x]!.tStart - byId[y]!.tStart);
+    },
     cleanedSegmentRemoved(
       state,
       action: PayloadAction<{ sessionId: string; segmentId: string }>,
@@ -757,6 +777,7 @@ export const {
   cleanedSegmentsCleared,
   cleanedSegmentUpdated,
   cleanedSegmentRemoved,
+  cleanedSegmentRestored,
   runUpserted,
   runConversationBound,
   runsLoaded,
