@@ -387,7 +387,7 @@
     },
     {
       "index": "communication.notification_submission:notification_submission_actor_org_key_uq",
-      "reason": "(actor, organization, caller key) is one durable self-service submission receipt. aidream/services/notifications/self_service.py:116-179 takes the exact tuple lock, reads archived rows, fingerprint-compares, and returns the original receipt before enqueue; a duplicate never re-enqueues work.",
+      "reason": "(actor, organization, caller key) is one durable self-service submission receipt. aidream/services/notifications/self_service.py takes an advisory lock on actor plus organization, then looks up the exact tuple across archived rows, fingerprint-compares, and returns the original receipt before enqueue; a duplicate never re-enqueues work.",
       "ruled": "Owner lifetime-identity ruling, 2026-09-28 — server-unique-writer-proof.md records exact lookup, fingerprint, and no-reenqueue behavior"
     },
     {
@@ -409,6 +409,11 @@
       "index": "extend.extension_auth_codes:extension_auth_codes_code_key",
       "reason": "code is a generated 128-bit, short-lived extension credential rather than a reusable human name. The full key protects the same credential while its row is retained; it does not claim lifetime non-replay after a physical deletion.",
       "ruled": "CI-FIX extension exchange correction, 2026-09-28 — generate-code and fail-closed atomic exchange paths inspected"
+    },
+    {
+      "index": "workbench.product_capture_file:product_capture_file_item_file_uk",
+      "reason": "(item_id, file_id) is one permanent product-capture relationship, not a reusable label. The only client writer upserts that full key with deleted_at = NULL after an archive, deliberately restoring the same relation ID so its access history and unrelated properties remain attached rather than creating a second link.",
+      "ruled": "Workbenched identity closure, 2026-09-28 — production admin RLS archive-to-client-upsert rollback proof"
     }
   ]
 }
