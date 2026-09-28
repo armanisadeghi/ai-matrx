@@ -605,6 +605,7 @@ function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
       };
     }
     case "processed_document":
+    case "source_ref":
     case "editor_error":
     case "editor_code_snippet":
       return null;

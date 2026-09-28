@@ -170,6 +170,26 @@ const instanceResourcesSlice = createSlice({
     },
 
     /**
+     * Replace a resource's raw input. The one Source input keeps its
+     * `SourceDraft` here (the pointer changes as the person picks a form,
+     * parts or a cap, and when a new Source finishes landing).
+     */
+    setResourceSource(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        resourceId: string;
+        source: unknown;
+      }>,
+    ) {
+      const { conversationId, resourceId, source } = action.payload;
+      const resource = state.byConversationId[conversationId]?.[resourceId];
+      if (resource) {
+        resource.source = source;
+      }
+    },
+
+    /**
      * Mark a resource as user-edited and store the edited content.
      */
     setResourceEditedContent(
@@ -367,6 +387,7 @@ export const {
   addResource,
   setResourceStatus,
   setResourcePreview,
+  setResourceSource,
   setResourceEditedContent,
   setResourcePayload,
   updateResourceOptions,

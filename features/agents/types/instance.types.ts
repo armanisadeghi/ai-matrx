@@ -480,6 +480,12 @@ export type ResourceBlockType =
   // durability is the canonical file → conversation association edge described
   // in /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESOURCE-WIRE.md.
   | "processed_document"
+  // A Source picked in the one Source input (`features/resource-manager/
+  // source-input/`). Held here keyed by the surface instance (never a chat
+  // conversation); its `source` is a `SourceDraft` carrying the `SourceRef`
+  // pointer, its `preview` the server's manifest entry. It never becomes a
+  // user_input block — it travels as a `source_set`.
+  | "source_ref"
   | "editor_error"
   | "editor_code_snippet";
 
