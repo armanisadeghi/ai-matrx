@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { SourceInputDemo } from "./SourceInputDemo";
 
@@ -8,5 +9,9 @@ export const metadata = createRouteMetadata("/demos/source-input", {
 });
 
 export default function SourceInputDemoPage() {
-  return <SourceInputDemo />;
+  return (
+    <Suspense>
+      <SourceInputDemo />
+    </Suspense>
+  );
 }

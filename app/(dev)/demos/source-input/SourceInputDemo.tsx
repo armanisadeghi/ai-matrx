@@ -8,6 +8,7 @@
  */
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SourceInput } from "@/features/resource-manager/source-input/components/SourceInput";
@@ -85,14 +86,32 @@ function WhatGoesOut({ surfaceKey }: { surfaceKey: string }) {
   );
 }
 
+/**
+ * `?attach=<entity_type>:<id>[:label]` files every new Source (and every
+ * uploaded file) against that record — how a host passes `attachTo`.
+ */
+function attachFromQuery(value: string | null): SourceInputProps["attachTo"] {
+  if (!value) return undefined;
+  const [entityType, entityId, ...label] = value.split(":");
+  return entityType && entityId
+    ? { entityType, entityId, label: label.join(":") || undefined }
+    : undefined;
+}
+
 export function SourceInputDemo() {
+  const attachTo = attachFromQuery(useSearchParams().get("attach"));
   return (
     <div className="h-full overflow-y-auto bg-textured">
       <div className="mx-auto max-w-4xl space-y-10 px-4 py-6 pb-safe">
+        {attachTo ? (
+          <p className="text-xs text-muted-foreground">
+            New Sources are filed with {attachTo.label ?? `${attachTo.entityType} ${attachTo.entityId}`}.
+          </p>
+        ) : null}
         {CONFIGS.map((c) => (
           <div key={c.props.surfaceKey} className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{c.heading}</p>
-            <SourceInput {...c.props} />
+            <SourceInput {...c.props} attachTo={attachTo} />
             <WhatGoesOut surfaceKey={c.props.surfaceKey} />
           </div>
         ))}

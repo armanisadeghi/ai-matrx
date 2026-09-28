@@ -33,7 +33,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { visibleSourceKinds, type SourceKindDef } from "../sourceKinds";
 import { useSourceSet } from "../useSourceSet";
 import { useSourceIntake } from "../useSourceIntake";
-import { RELOADED_RESUMING } from "../interrupted";
+import { useSourceRecovery } from "../useSourceRecovery";
 import type { SourceInputProps, SourceKindId } from "../types";
 import { SourceCard, formatChars } from "./SourceCard";
 import { YourSources } from "./YourSources";
@@ -41,13 +41,6 @@ import { YourSources } from "./YourSources";
 const REVIEW_KNOB = { feature: "sources", key: "review_threshold_chars" } as const;
 const MEASURE_DEBOUNCE_MS = 400;
 
-/**
- * Cards already handed back to the door after a reload, and uploaded files
- * whose Source was already kept — module scope, so two inputs on one surface
- * (or a re-mount) never land the same thing twice.
- */
-const resumedCards = new Set<string>();
-const keptFileSources = new Set<string>();
 
 export function SourceInput({
   surfaceKey,
@@ -71,41 +64,8 @@ export function SourceInput({
   const [thresholdError, setThresholdError] = useState<string | null>(null);
   const autoOpened = useRef(false);
 
-  // ── Never lose input: land again what a reload cut off ─────────────────────
-  const resumeKey = set.sources
-    .filter((s) => s.status === "error" && s.error === RELOADED_RESUMING)
-    .map((s) => s.id)
-    .join(",");
-  const resumeInterrupted = useEffectEvent(() => {
-    for (const card of set.sources) {
-      if (card.status !== "error" || card.error !== RELOADED_RESUMING) continue;
-      if (resumedCards.has(card.id)) continue;
-      resumedCards.add(card.id);
-      intake.resume(card);
-    }
-  });
-  useEffect(() => {
-    if (resumeKey) resumeInterrupted();
-  }, [resumeKey]);
-
-  // ── An uploaded file's Source exists once reading makes it: keep + file it
-  const landedKey = runner.jobs
-    .filter((j) => j.processedDocumentId && j.cldFileId)
-    .map((j) => `${j.cldFileId}:${j.processedDocumentId}`)
-    .join(",");
-  const keepLandedFiles = useEffectEvent(() => {
-    for (const card of set.sources) {
-      const fileId = card.draft.fileId;
-      if (!fileId || card.draft.processedDocumentId || card.draft.ref?.resource_type !== "file") continue;
-      const job = runner.jobs.find((j) => j.cldFileId === fileId && j.processedDocumentId);
-      if (!job?.processedDocumentId || keptFileSources.has(`${card.id}:${fileId}`)) continue;
-      keptFileSources.add(`${card.id}:${fileId}`);
-      void intake.fileLanded(card, job.processedDocumentId);
-    }
-  });
-  useEffect(() => {
-    if (landedKey) keepLandedFiles();
-  }, [landedKey]);
+  // Never lose input + file uploads' Sources — UI-free, in the hook.
+  useSourceRecovery(set, intake, runner);
 
   const count = set.sources.length;
   const atMax = max !== undefined && count >= max;

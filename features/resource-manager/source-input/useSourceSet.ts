@@ -56,8 +56,6 @@ import { useSyncHydrated } from "@/lib/sync/useSyncHydrated";
 import { reloadedCard } from "./interrupted";
 import type { SourceCardModel, SourceDraft } from "./types";
 
-export { RELOADED_WHILE_ADDING } from "./interrupted";
-
 /** The instanceResources key for one surface's Source input. */
 export function sourceSurfaceKey(surfaceKey: string): string {
   return `source-input:${surfaceKey}`;
