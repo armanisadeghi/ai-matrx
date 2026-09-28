@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import {
   AlertTriangle,
   CheckCircle,
@@ -64,6 +66,8 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
   const [incidents, setIncidents] = useState<ToolUiIncidentRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  // A failed read is said in place of the list — never "No open incidents".
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showResolved, setShowResolved] = useState(false);
 
@@ -75,15 +79,13 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
       if (!showResolved) params.set("unresolved_only", "true");
 
       const res = await fetch(`/api/admin/tool-ui-incidents?${params}`);
+      if (!res.ok) throw new Error(`Loading incidents failed (${res.status} ${res.statusText})`);
       const data = await res.json();
       setIncidents(data.incidents || []);
       setTotalCount(data.count || 0);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load incidents",
-        variant: "destructive",
-      });
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(err ?? new Error("Failed to load incidents"));
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +166,7 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Incidents
           </span>
-          {unresolvedCount > 0 && (
+          {!loadError && unresolvedCount > 0 && (
             <Badge variant="destructive" className="text-[10px]">
               {unresolvedCount} open
             </Badge>
@@ -191,7 +193,20 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
       </div>
 
       {/* Incidents list */}
-      {incidents.length === 0 ? (
+      {loadError && incidents.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what="the incidents"
+          onRetry={() => void fetchIncidents()}
+        />
+      ) : null}
+      {loadError && incidents.length === 0 ? (
+        <ReadFailure
+          error={loadError}
+          what="the incidents"
+          onRetry={() => void fetchIncidents()}
+        />
+      ) : incidents.length === 0 ? (
         <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
           <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
           No {showResolved ? "" : "open "}incidents
@@ -213,7 +228,7 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
         </div>
       )}
 
-      {totalCount > incidents.length && (
+      {!loadError && totalCount > incidents.length && (
         <p className="text-xs text-center text-slate-500">
           Showing {incidents.length} of {totalCount} incidents
         </p>

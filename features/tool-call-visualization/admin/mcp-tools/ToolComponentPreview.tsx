@@ -233,6 +233,7 @@ function LivePreviewRenderer({
     return (
       <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground">
         <Eye className="h-6 w-6 opacity-40" />
+        {/* read-gate-exempt: parses the sample already loaded and selected by the parent (a failed samples read toasts there), not a read here */}
         <p className="text-xs">No usable output found in this sample</p>
       </div>
     );

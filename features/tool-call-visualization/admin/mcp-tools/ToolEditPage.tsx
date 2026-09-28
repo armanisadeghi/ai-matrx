@@ -59,12 +59,18 @@ export function ToolEditPage({ tool }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const [jsonErrors, setJsonErrors] = useState<Record<string, string>>({});
   const [mcpServers, setMcpServers] = useState<McpServerRow[]>([]);
+  const [serversFailed, setServersFailed] = useState(false);
 
   useEffect(() => {
     listServers()
-      .then(setMcpServers)
+      .then((rows) => {
+        setMcpServers(rows);
+        setServersFailed(false);
+      })
       .catch((err) => {
         console.error("Failed to load MCP servers", err);
+        // Said under the server picker — an empty picker is never "no servers".
+        setServersFailed(true);
       });
   }, []);
 
@@ -261,6 +267,12 @@ export function ToolEditPage({ tool }: Props) {
                 ))}
               </SelectContent>
             </Select>
+            {serversFailed ? (
+              <p className="text-xs text-muted-foreground">
+                Couldn&apos;t load the MCP servers, so none can be picked here.
+                <ErrorAlchemyMenu operation="Load the MCP servers" />
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>

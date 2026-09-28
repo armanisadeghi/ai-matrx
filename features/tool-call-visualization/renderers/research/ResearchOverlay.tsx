@@ -17,6 +17,7 @@
  */
 
 import React, { useMemo, useState } from "react";
+import { toast } from "@/lib/toast";
 import {
     BookOpen,
     Check,
@@ -209,7 +210,7 @@ export const ResearchSourcesTab: React.FC<ToolRendererProps> = ({ entry }) => {
             setCopied(index);
             setTimeout(() => setCopied(null), 2000);
         } catch {
-            // ignore
+            toast.error("Couldn't copy to the clipboard — select the text and copy it by hand.");
         }
     };
 
@@ -232,6 +233,7 @@ export const ResearchSourcesTab: React.FC<ToolRendererProps> = ({ entry }) => {
                     <div className="flex items-center justify-between border-b border-border bg-muted/40 px-3 py-2">
                         <span className="text-sm font-medium text-foreground">All sources</span>
                         <span className="text-xs tabular-nums text-muted-foreground">
+                            {/* read-gate-exempt: counts a pure parse of this tool call's own result already in memory, not a read */}
                             {parsed.sources.length} {parsed.sources.length === 1 ? "source" : "sources"}
                         </span>
                     </div>
