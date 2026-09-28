@@ -503,6 +503,8 @@
     "check:mandate-pin-names-agent": "tsx scripts/check-mandate-pin-names-agent.ts",
     "check:mandate-pin-names-agent:strict": "tsx scripts/check-mandate-pin-names-agent.ts --strict",
     "check:migration-slot-guard": "tsx scripts/check-migration-slot-guard.ts",
+    "check:list-counts": "tsx scripts/check-list-counts.ts",
+    "check:list-counts:strict": "tsx scripts/check-list-counts.ts --strict",
     "check:migration-slot-guard:strict": "tsx scripts/check-migration-slot-guard.ts --strict",
     "check:topic-placement-ceiling": "tsx scripts/check-topic-placement-ceiling-counter.ts",
     "check:topic-placement-ceiling:strict": "tsx scripts/check-topic-placement-ceiling-counter.ts --strict",

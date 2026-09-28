@@ -789,6 +789,10 @@ jobs:
       # they never pass.
       - name: The migration numeric-slot trigger is bound and enabled
         run: pnpm check:migration-slot-guard:strict
+      # list-shell fix D (2026-09-28): every list's tab count is its list query,
+      # and My team is empty for a person on no team (scripts/check-list-counts.ts).
+      - name: List counts are the list, and My team is honest
+        run: pnpm check:list-counts:strict
 
   # ---------------------------------------------------------------------------
   # soft-delete-cascade — liveness for platform.soft_delete_edge and the two
