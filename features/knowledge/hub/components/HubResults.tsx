@@ -429,7 +429,7 @@ export function hubTableColumns(
       id: "title",
       header: "Name",
       // The name takes the room; the rest are narrow facts.
-      width: "45%",
+      width: "40%",
       minWidth: 280,
       accessorFn: (h) => h.title,
       sortValue: (h) => h.title.toLowerCase(),
@@ -447,6 +447,7 @@ export function hubTableColumns(
           {
             id: "kind",
             header: "Kind",
+            width: 140,
             minWidth: 130,
             cell: (h: KnowledgeHit) => <span className="whitespace-nowrap">{kindLabel(h)}</span>,
             accessorFn: (h: KnowledgeHit) => kindLabel(h),
@@ -454,7 +455,16 @@ export function hubTableColumns(
           },
         ]),
     ...(any((h) => Boolean(h.captured_by?.name))
-      ? [{ id: "captured_by", header: "Captured by", accessorFn: (h: KnowledgeHit) => capturedByLabel(h), filter: "select" as const }]
+      ? [
+          {
+            id: "captured_by",
+            header: "Captured by",
+            minWidth: 200,
+            cell: (h: KnowledgeHit) => <span className="block truncate">{capturedByLabel(h)}</span>,
+            accessorFn: (h: KnowledgeHit) => capturedByLabel(h),
+            filter: "select" as const,
+          },
+        ]
       : []),
     ...(stage && any((h) => h.entity === "processed_document")
       ? [
