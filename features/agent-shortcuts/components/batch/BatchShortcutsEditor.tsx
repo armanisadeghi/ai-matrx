@@ -829,6 +829,7 @@ export function BatchShortcutsEditor({
             {doneCount > 0 && (
               <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-3.5 w-3.5" />
+                {/* read-gate-exempt: tally of rows this batch editor has applied in this session (an action's progress), not a read's rows */}
                 {doneCount} done
               </span>
             )}
@@ -842,6 +843,7 @@ export function BatchShortcutsEditor({
           <div className="ml-auto flex items-center gap-2">
             {progress && applying && (
               <span className="text-xs text-muted-foreground">
+                {/* read-gate-exempt: tally of rows this batch editor has applied in this session (an action's progress), not a read's rows */}
                 {progress.done}/{progress.total}
               </span>
             )}

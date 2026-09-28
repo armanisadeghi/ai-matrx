@@ -174,6 +174,7 @@ export function PunchCorrectionDialog({
         {result ? (
           <div className="space-y-2 text-sm">
             <p>
+              {/* read-gate-exempt: figures from the correction the person just submitted; result is set only when that write returned */}
               {pluralize(result.voidedPunchIds.length, "punch", "punches")} voided
               {result.replacementPunchIds.length > 0
                 ? `, ${pluralize(result.replacementPunchIds.length, "replacement")} written`
@@ -182,6 +183,7 @@ export function PunchCorrectionDialog({
             </p>
             {/* One reasoned action, N audit trails. The count is the proof. */}
             <p className="text-muted-foreground">
+              {/* read-gate-exempt: figures from the correction the person just submitted; result is set only when that write returned */}
               {pluralize(result.auditTrailCount, "audit record")} written — one for each punch, all
               carrying your single reason.
             </p>

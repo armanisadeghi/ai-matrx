@@ -408,6 +408,10 @@ export function AgentVersionPicker({
                   <> · {formatChangedAt(selectedVersion.changed_at)}</>
                 )}
               </>
+            ) : fetchError ? (
+              <span className="italic text-muted-foreground/60">
+                Pinned version unavailable.
+              </span>
             ) : (
               <span className="italic text-muted-foreground/60">
                 No version pinned.

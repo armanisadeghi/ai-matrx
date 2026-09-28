@@ -40,6 +40,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
 import type { AdminNonGlobalShortcutRow } from "@/features/agents/redux/agent-shortcuts/thunks";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 type ScopeFilter = "all" | "user" | "organization" | "project" | "task";
 
@@ -167,7 +168,7 @@ export function ImportShortcutsBrowserModal({
         >
           All
           <Badge variant="secondary" className="ml-1.5 text-xs">
-            {rows.length}
+            <UntrustedCount value={rows.length} trustworthy={!error || rows.length > 0} label="Shortcuts" />
           </Badge>
         </Button>
         {(Object.keys(SCOPE_META) as (keyof typeof SCOPE_META)[]).map((key) => {
@@ -184,7 +185,7 @@ export function ImportShortcutsBrowserModal({
               <Icon className="h-3 w-3 mr-1" />
               {meta.label}
               <Badge variant="secondary" className="ml-1.5 text-xs">
-                {stats[key] ?? 0}
+                <UntrustedCount value={stats[key] ?? 0} trustworthy={!error || rows.length > 0} label={meta.label} />
               </Badge>
             </Button>
           );

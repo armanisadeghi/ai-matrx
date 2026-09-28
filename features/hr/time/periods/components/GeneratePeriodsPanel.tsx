@@ -226,6 +226,7 @@ export function GeneratePeriodsPanel({
             <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2.5">
               <h3 className="flex items-center gap-2 text-[12px] font-semibold text-amber-800 dark:text-amber-300">
                 <AlertTriangle className="h-4 w-4" aria-hidden />
+                {/* read-gate-exempt: figures from the generate run the person just made; result is set only when that write returned */}
                 {result.conflictCount === 1
                   ? "1 existing period disagrees with this frequency"
                   : `${result.conflictCount} existing periods disagree with this frequency`}
@@ -265,6 +266,7 @@ export function GeneratePeriodsPanel({
             <h3 className="flex items-center gap-2 text-[12px] font-semibold text-foreground">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
               {/* The counts, in words — the whole point of not shipping a bare "Done". */}
+              {/* read-gate-exempt: figures from the generate run the person just made; result is set only when that write returned */}
               {result.createdCount === 0 && result.unchangedCount > 0
                 ? "Nothing to create — the calendar was already complete"
                 : `${result.createdCount} created, ${result.unchangedCount} already existed`}
