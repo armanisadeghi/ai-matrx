@@ -353,7 +353,7 @@ export function useScanSession(): UseScanSessionResult {
       // Best-effort: hidden system files — orphans are harmless if this fails.
       try {
         const { bulkDeleteFiles } = await import("@/features/files/api/files");
-        await bulkDeleteFiles({ file_ids: fileIds, hard_delete: true });
+        await bulkDeleteFiles({ file_ids: fileIds });
       } catch (err) {
         console.warn("[pdf-scanner] discard cleanup failed", err);
       }

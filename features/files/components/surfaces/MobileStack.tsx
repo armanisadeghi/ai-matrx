@@ -553,7 +553,7 @@ function MobileFileActionSheet({
           ) : null}
           <ActionRow
             icon={<Trash2 className="h-4 w-4 text-destructive" />}
-            label="Delete"
+            label="Move to Trash"
             destructive
             onPress={() => {
               void actions.delete();

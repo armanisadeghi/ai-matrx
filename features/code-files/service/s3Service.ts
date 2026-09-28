@@ -78,7 +78,7 @@ export async function deleteCodeFileFromS3(args: S3DeleteArgs): Promise<void> {
   // so the Redux slice is updated atomically with the REST DELETE. Calling
   // Files.deleteFile directly leaves the slice waiting on the realtime echo
   // and produces a race window where stale rows are visible.
-  await fileHandler.remove(args.s3_key, { hard: true }).catch((err) => {
+  await fileHandler.remove(args.s3_key).catch((err) => {
     // eslint-disable-next-line no-console
     console.warn("[s3Service] delete failed (non-fatal)", err);
   });

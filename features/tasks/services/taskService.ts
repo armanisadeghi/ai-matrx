@@ -384,7 +384,7 @@ export async function uploadTaskAttachment(
       console.error("Error linking attachment to task:", linked.error.message);
       // Best-effort cleanup of the orphaned cloud-files upload.
       try {
-        await fileHandler.remove(fileId, { hard: false });
+        await fileHandler.remove(fileId);
       } catch {
         /* best effort */
       }
@@ -449,7 +449,7 @@ export async function deleteTaskAttachment(
     }
     // Soft-delete the cloud-files row (best-effort; realtime reconciles).
     try {
-      await fileHandler.remove(fileId, { hard: false });
+      await fileHandler.remove(fileId);
     } catch (err) {
       console.error("cloud-files delete failed:", err);
     }

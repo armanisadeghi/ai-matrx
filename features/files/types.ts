@@ -819,7 +819,6 @@ export interface CreateFolderArg {
 
 export interface DeleteFolderArg {
   folderId: string;
-  hardDelete?: boolean;
 }
 
 export interface EnsureFolderPathArg {
@@ -913,7 +912,6 @@ export interface UpdateFileMetadataArg {
 
 export interface DeleteFileArg {
   fileId: string;
-  hardDelete?: boolean;
 }
 
 export interface RestoreVersionArg {
@@ -989,7 +987,6 @@ export type FolderPatchRequest = components["schemas"]["PatchFolderRequest"];
 /** Body for `DELETE /files/bulk`. */
 export interface BulkDeleteFilesRequest {
   file_ids: string[];
-  hard_delete?: boolean;
 }
 
 /** Body for `POST /files/bulk/move`. */
@@ -1133,7 +1130,6 @@ export interface CopyFileRequest {
 // Convenience thunk-arg variants (camelCase mirrors of the request bodies).
 export interface BulkDeleteFilesArg {
   fileIds: string[];
-  hardDelete?: boolean;
 }
 
 export interface BulkMoveFilesArg {

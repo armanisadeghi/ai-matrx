@@ -114,7 +114,8 @@ export const fileHandler = {
   },
 
   /**
-   * Imperatively soft- or hard-delete a file. Routes through the
+   * Imperatively move a file to Trash (soft delete — restorable; there is
+   * no hard delete). Routes through the
    * `deleteFile` thunk against the store singleton so the slice and
    * realtime channel stay in sync — identical to `useFileMutation().remove()`.
    *
@@ -122,7 +123,7 @@ export const fileHandler = {
    * upload). React components should prefer `useFileMutation` so they get
    * hook-lifecycle guarantees.
    */
-  async remove(fileId: string, options?: { hard?: boolean }): Promise<void> {
+  async remove(fileId: string): Promise<void> {
     const store = getStoreSingleton();
     if (!store) {
       throw new Error(
@@ -130,9 +131,7 @@ export const fileHandler = {
       );
     }
     const dispatch = store.dispatch as AppDispatch;
-    await dispatch(
-      deleteFileThunk({ fileId, hardDelete: options?.hard }),
-    ).unwrap();
+    await dispatch(deleteFileThunk({ fileId })).unwrap();
   },
 
   /**

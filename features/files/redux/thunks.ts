@@ -46,7 +46,6 @@ import {
   softDeleteFileDirect,
   softDeleteFolderDirect,
 } from "@/features/files/api/direct";
-import { ragDb } from "@/utils/supabase/ragDb";
 import { fileHandler } from "@/features/files/handler/handler";
 import { newRequestId } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
@@ -895,17 +894,9 @@ export const deleteFolder = createAsyncThunk<
   });
 
   try {
-    // Soft delete cascades the subtree in SQL (soft_delete_folder) → direct.
-    // Hard delete purges S3 bytes server-side, so it stays on the Python path.
-    if (arg.hardDelete) {
-      await Folders.deleteFolder(
-        arg.folderId,
-        { hardDelete: true },
-        { requestId },
-      );
-    } else {
-      await softDeleteFolderDirect(arg.folderId);
-    }
+    // Soft delete (Trash) cascades the subtree in SQL (soft_delete_folder) →
+    // direct. There is no hard delete.
+    await softDeleteFolderDirect(arg.folderId);
     dispatch(removeFolder({ id: arg.folderId }));
   } finally {
     releaseRequest(requestId);
@@ -1571,7 +1562,7 @@ export const updateFileMetadata = createAsyncThunk<
 
 export const deleteFile = createAsyncThunk<void, DeleteFileArg, ThunkApi>(
   "cloudFiles/delete",
-  async ({ fileId, hardDelete }, { dispatch, getState }) => {
+  async ({ fileId }, { dispatch, getState }) => {
     const record = getFileFromState(getState(), fileId);
     if (!record) return; // nothing to do
     const parentFolderId = record.parentFolderId;
@@ -1599,13 +1590,9 @@ export const deleteFile = createAsyncThunk<void, DeleteFileArg, ThunkApi>(
     });
 
     try {
-      // Soft delete is a pure metadata write → direct (canonical). Hard delete
-      // returns S3 URIs the server must purge, so it stays on the Python path.
-      if (hardDelete) {
-        await Files.deleteFile(fileId, { hardDelete: true }, { requestId });
-      } else {
-        await softDeleteFileDirect(fileId);
-      }
+      // Soft delete (Trash) is a pure metadata write → direct (canonical).
+      // There is no hard delete; the file stays restorable from Trash.
+      await softDeleteFileDirect(fileId);
     } catch (err) {
       // Rollback — reinsert the record and reattach to its parent.
       dispatch(upsertFile(toCloudFilePartial(record)));
@@ -1624,7 +1611,7 @@ export const deleteFile = createAsyncThunk<void, DeleteFileArg, ThunkApi>(
 );
 
 // ---------------------------------------------------------------------------
-// Trash — hydrate, restore, purge (Wave A: active → soft-deleted → deleted)
+// Trash — hydrate, restore (delete means archive: no purge from the client)
 // ---------------------------------------------------------------------------
 
 /**
@@ -1790,72 +1777,6 @@ export const restoreFolder = createAsyncThunk<
   const userId = folder.ownerId;
   await dispatch(loadUserFileTree({ userId }));
   await dispatch(loadTrash({ userId }));
-});
-
-/**
- * Delete forever (Wave A purge): callable only on an ALREADY-TRASHED file.
- * Two halves, both idempotent:
- *   1. `rag.fn_purge_library_file` — synchronously purges the document
- *      family (docs + chunks + pages + memberships) under the DB's
- *      trash-first guard.
- *   2. The Python hard-delete — removes the files row + S3 bytes
- *      (S3 knowledge is server-only; never purge bytes from the browser).
- */
-export const purgeFile = createAsyncThunk<void, { fileId: string }, ThunkApi>(
-  "cloudFiles/purgeFile",
-  async ({ fileId }, { dispatch, getState }) => {
-    const record = getFileFromState(getState(), fileId);
-    if (!record?.deletedAt) {
-      throw new Error("Only a trashed file can be permanently deleted.");
-    }
-    const requestId = newRequestId();
-    dispatch(removeFile({ id: fileId }));
-    invalidateBlobCache(fileId);
-    invalidateOfficeExtraction(fileId);
-    registerRequest({
-      requestId,
-      kind: "delete",
-      resourceId: fileId,
-      resourceType: "file",
-    });
-    try {
-      const { error } = await ragDb(supabase).rpc("fn_purge_library_file", {
-        p_file_id: fileId,
-      });
-      if (error) throw error;
-      await Files.deleteFile(fileId, { hardDelete: true }, { requestId });
-    } catch (err) {
-      dispatch(upsertFile(toCloudFilePartial(record))); // rollback — still in trash (clone — state objects are frozen)
-      throw err;
-    } finally {
-      releaseRequest(requestId);
-    }
-  },
-);
-
-/** Delete a trashed folder forever (server purges the subtree + S3). */
-export const purgeFolder = createAsyncThunk<
-  void,
-  { folderId: string },
-  ThunkApi
->("cloudFiles/purgeFolder", async ({ folderId }, { dispatch, getState }) => {
-  const folder = getState().cloudFiles.foldersById[folderId];
-  if (!folder?.deletedAt) {
-    throw new Error("Only a trashed folder can be permanently deleted.");
-  }
-  const requestId = newRequestId();
-  registerRequest({
-    requestId,
-    kind: "folder-delete",
-    resourceId: folderId,
-    resourceType: "folder",
-  });
-  try {
-    await Folders.deleteFolder(folderId, { hardDelete: true }, { requestId });
-    dispatch(removeFolder({ id: folderId }));
-  } finally {
-    releaseRequest(requestId);
-  }
 });
 
 // ---------------------------------------------------------------------------
@@ -2126,7 +2047,7 @@ export const getFileUrl = createAsyncThunk<
 // state from a snapshot taken before the optimistic update.
 
 /**
- * Soft-delete (or hard-delete) many files in one round-trip.
+ * Move many files to Trash (soft delete) in one round-trip.
  *
  * Returns the standard `BulkResponse` envelope so the caller can decide
  * how to surface partial failures (toast vs. row-level error chips).
@@ -2187,7 +2108,7 @@ export const bulkDeleteFiles = createAsyncThunk<
 
   try {
     const { data } = await Files.bulkDeleteFiles(
-      { file_ids: arg.fileIds, hard_delete: arg.hardDelete },
+      { file_ids: arg.fileIds },
       { requestId },
     );
     const result: BulkResponse = data ?? {

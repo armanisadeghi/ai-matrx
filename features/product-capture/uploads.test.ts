@@ -151,7 +151,7 @@ describe("removeItemFile", () => {
 
     expect(mockCountFileLinks).toHaveBeenCalledWith("sole-file");
     expect(calls).toEqual([
-      ["remove", "sole-file", { hard: true }],
+      ["remove", "sole-file"],
       ["unlink", "sole-link"],
     ]);
   });

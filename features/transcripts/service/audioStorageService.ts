@@ -251,7 +251,7 @@ export async function saveAudioToStorage(
  */
 export async function deleteAudioFromStorage(fileId: string): Promise<void> {
   try {
-    await fileHandler.remove(fileId, { hard: true });
+    await fileHandler.remove(fileId);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.warn("Error deleting audio file:", error);

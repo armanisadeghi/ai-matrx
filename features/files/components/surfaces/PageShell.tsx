@@ -1083,8 +1083,8 @@ function PageShellDesktop({
             {/* Bulk-actions toolbar — fixed-position pill at the bottom of the
              * viewport. Renders nothing unless one or more rows are selected.
              * Hidden in trash: its actions (move/visibility/soft-delete) are
-             * wrong for trashed rows — per-row Restore / Delete forever live on
-             * the row menu instead (bulk trash ops tracked as a follow-up). */}
+             * wrong for trashed rows — per-row Restore lives on the row menu
+             * instead (bulk trash ops tracked as a follow-up). */}
             {section !== "trash" && <BulkActionsBar />}
 
             {/* Confirm dialog for keyboard-shortcut deletes. Destructive ops
@@ -1101,13 +1101,13 @@ function PageShellDesktop({
                   <AlertDialogTitle>
                     {/* read-gate-exempt: ids the user just asked to delete via keyboard shortcut (pendingDelete), a local selection, not a read */}
                     {shortcuts.pendingDelete?.kind === "batch"
-                      ? `Delete ${shortcuts.pendingDelete.ids.length} files?`
-                      : "Delete file?"}
+                      ? `Move ${shortcuts.pendingDelete.ids.length} files to Trash?`
+                      : "Move file to Trash?"}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                     {shortcuts.pendingDelete?.kind === "batch"
-                      ? "These files will move to trash. You can restore them for 30 days before bytes are removed."
-                      : "This will move the file to trash. You can restore it from versions for 30 days before bytes are removed."}
+                      ? "These files will move to Trash. You can restore them from Trash at any time."
+                      : "This moves the file to Trash. You can restore it from Trash at any time."}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -1115,7 +1115,7 @@ function PageShellDesktop({
                   <AlertDialogAction
                     onClick={() => void shortcuts.confirmDelete()}
                   >
-                    Delete
+                    Move to Trash
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

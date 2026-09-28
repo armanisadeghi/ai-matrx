@@ -136,6 +136,6 @@ export async function removeItemFile(args: {
 
   // Delete first. The FK may cascade the link; the explicit unlink is safe
   // and keeps this correct in deployments where the relation does not cascade.
-  await fileHandler.remove(args.fileId, { hard: true });
+  await fileHandler.remove(args.fileId);
   await unlinkFile(linkId);
 }

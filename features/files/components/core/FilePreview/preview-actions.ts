@@ -174,7 +174,7 @@ export function buildPreviewActions(
     },
     {
       id: "delete",
-      label: "Delete",
+      label: "Move to Trash",
       icon: Trash2,
       onClick: onDelete,
       primary: false,

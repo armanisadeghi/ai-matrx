@@ -67,11 +67,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import {
-  purgeFile as purgeFileThunk,
-  restoreFile as restoreFileThunk,
-} from "@/features/files/redux/thunks";
+import { restoreFile as restoreFileThunk } from "@/features/files/redux/thunks";
 import * as Files from "@/features/files/api/files";
 import type { Visibility } from "@/features/files/types";
 import { clearSelection, setActiveFileId } from "@/features/files/redux/slice";
@@ -498,33 +494,14 @@ export function FileContextMenu({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
           {file?.deletedAt ? (
-            // Trash mode (Wave A lifecycle): exactly two actions — Restore,
-            // or the ONLY hard-delete path in the system (purge from trash).
-            <>
-              <DropdownMenuItem
-                onClick={() => void dispatch(restoreFileThunk({ fileId }))}
-              >
-                <ArchiveRestore className="mr-2 h-4 w-4" />
-                Restore
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() =>
-                  void (async () => {
-                    const ok = await confirmDialog({
-                      title: "Permanently delete file?",
-                      description: `"${file.fileName}" and all of its extracted data (pages, segments, embeddings) will be gone forever. This cannot be undone.`,
-                      confirmLabel: "Delete forever",
-                      variant: "destructive",
-                    });
-                    if (ok) void dispatch(purgeFileThunk({ fileId }));
-                  })()
-                }
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete forever
-              </DropdownMenuItem>
-            </>
+            // Trash mode: Restore is the only action (delete means archive —
+            // there is no purge from the client).
+            <DropdownMenuItem
+              onClick={() => void dispatch(restoreFileThunk({ fileId }))}
+            >
+              <ArchiveRestore className="mr-2 h-4 w-4" />
+              Restore
+            </DropdownMenuItem>
           ) : isInMulti ? (
             // Batch mode — operates on the whole selection. The single-file
             // items (Rename, Show versions, File info, Visibility) don't
@@ -566,7 +543,7 @@ export function FileContextMenu({
                 disabled={busy !== null}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete {batchFileIds.length}
+                Move {batchFileIds.length} to Trash
               </DropdownMenuItem>
             </>
           ) : (
@@ -799,7 +776,7 @@ export function FileContextMenu({
                 onClick={() => setConfirmOpen(true)}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                Move to Trash
                 <DropdownMenuShortcut>⌫</DropdownMenuShortcut>
               </DropdownMenuItem>
             </>
@@ -810,10 +787,10 @@ export function FileContextMenu({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete file?</AlertDialogTitle>
+            <AlertDialogTitle>Move file to Trash?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will move the file to trash. You can restore it from versions
-              for 30 days before bytes are removed.
+              This moves the file to Trash. You can restore it from Trash at
+              any time.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -826,7 +803,7 @@ export function FileContextMenu({
                 setConfirmOpen(false);
                 void (async () => {
                   try {
-                    await actions.delete({ hard: false });
+                    await actions.delete();
                     await onDeleted?.(fileId);
                   } catch (err) {
                     // eslint-disable-next-line no-console
@@ -835,7 +812,7 @@ export function FileContextMenu({
                 })();
               }}
             >
-              Delete
+              Move to Trash
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -846,12 +823,12 @@ export function FileContextMenu({
           <AlertDialogHeader>
             <AlertDialogTitle>
               {/* read-gate-exempt: size of the user's current multi-select (batchFileIds from the selection slice), not a read result */}
-              Delete {batchFileIds.length}{" "}
-              {batchFileIds.length === 1 ? "file" : "files"}?
+              Move {batchFileIds.length}{" "}
+              {batchFileIds.length === 1 ? "file" : "files"} to Trash?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              These files will move to trash. You can restore them for 30 days
-              before bytes are removed.
+              These files will move to Trash. You can restore them from Trash
+              at any time.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -862,7 +839,7 @@ export function FileContextMenu({
               className="max-lg:min-h-11"
               onClick={() => void handleBatchDelete()}
             >
-              Delete
+              Move to Trash
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

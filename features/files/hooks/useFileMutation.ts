@@ -61,8 +61,8 @@ export interface FileMutations {
   ): Promise<void>;
   /** Convenience over `updateMetadata` for the visibility-only case. */
   setVisibility(fileId: string, visibility: Visibility): Promise<void>;
-  /** Soft-delete (trash) by default; pass `hard: true` to bypass trash. */
-  remove(fileId: string, options?: { hard?: boolean }): Promise<void>;
+  /** Move to Trash (soft delete — restorable). There is no hard delete. */
+  remove(fileId: string): Promise<void>;
 }
 
 /**
@@ -85,8 +85,7 @@ export function useFileMutation(): FileMutations {
         dispatch(
           updateFileMetadata({ fileId, patch: { visibility } }),
         ).unwrap(),
-      remove: (fileId, options) =>
-        dispatch(deleteFile({ fileId, hardDelete: options?.hard })).unwrap(),
+      remove: (fileId) => dispatch(deleteFile({ fileId })).unwrap(),
     }),
     [dispatch],
   );
@@ -109,10 +108,10 @@ export interface FolderMutations {
   /** Convenience over `updateMetadata` for the visibility-only case. */
   setVisibility(folderId: string, visibility: Visibility): Promise<void>;
   /**
-   * Soft-delete by default; pass `hard: true` to bypass trash. Cascades
-   * to child files + folders server-side.
+   * Move to Trash (soft delete — restorable). Cascades to child files +
+   * folders. There is no hard delete.
    */
-  remove(folderId: string, options?: { hard?: boolean }): Promise<void>;
+  remove(folderId: string): Promise<void>;
 }
 
 /**
@@ -135,10 +134,7 @@ export function useFolderMutation(): FolderMutations {
         dispatch(updateFolder({ folderId, patch })).unwrap(),
       setVisibility: (folderId, visibility) =>
         dispatch(updateFolder({ folderId, patch: { visibility } })).unwrap(),
-      remove: (folderId, options) =>
-        dispatch(
-          deleteFolder({ folderId, hardDelete: options?.hard }),
-        ).unwrap(),
+      remove: (folderId) => dispatch(deleteFolder({ folderId })).unwrap(),
     }),
     [dispatch],
   );

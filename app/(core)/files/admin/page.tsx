@@ -92,7 +92,7 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/files/trash",
       label: "Trash",
-      description: "Soft-deleted files — restore or hard-delete.",
+      description: "Files moved to Trash — restore any of them.",
       filePath: "app/(core)/files/trash/page.tsx",
       status: "Live",
     },

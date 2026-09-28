@@ -74,10 +74,10 @@ export function FileRightClickMenu({
 
   const handleDelete = async () => {
     const ok = await confirm({
-      title: "Delete file?",
+      title: "Move file to Trash?",
       description:
-        "This will move the file to trash. You can restore it from versions for 30 days before bytes are removed.",
-      confirmLabel: "Delete",
+        "This moves the file to Trash. You can restore it from Trash at any time.",
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -169,7 +169,7 @@ export function FileRightClickMenu({
         {
           kind: "item",
           id: "file-delete",
-          label: "Delete",
+          label: "Move to Trash",
           icon: Trash2,
           destructive: true,
           hint: "⌫",

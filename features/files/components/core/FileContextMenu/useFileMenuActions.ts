@@ -88,7 +88,7 @@ export function useFileMenuActions(fileId: string): UseFileMenuActionsResult {
   );
 
   const deleteFile = useCallback(
-    () => actions.delete({ hard: false }),
+    () => actions.delete(),
     [actions],
   );
 

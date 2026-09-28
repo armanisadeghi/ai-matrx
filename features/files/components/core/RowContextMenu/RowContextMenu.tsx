@@ -63,8 +63,6 @@ import {
 } from "@/features/files/redux/slice";
 import {
   moveFile as moveFileThunk,
-  purgeFile as purgeFileThunk,
-  purgeFolder as purgeFolderThunk,
   restoreFile as restoreFileThunk,
   restoreFolder as restoreFolderThunk,
   updateFolder as updateFolderThunk,
@@ -199,12 +197,12 @@ export function FileRowContextMenu({
   const handleDelete = useCallback(async () => {
     if (!file) return;
     const ok = await confirm({
-      title: "Delete file?",
-      description: `This moves "${file.fileName}" to trash. You can restore it from versions for 30 days before bytes are removed.`,
-      confirmLabel: "Delete",
+      title: "Move file to Trash?",
+      description: `This moves "${file.fileName}" to Trash. You can restore it from Trash at any time.`,
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
-    if (ok) void actions.delete({ hard: false });
+    if (ok) void actions.delete();
   }, [actions, file]);
 
   if (!file) {
@@ -225,8 +223,8 @@ export function FileRowContextMenu({
     });
   };
 
-  // Trash mode (Wave A lifecycle): a trashed row offers exactly two actions —
-  // Restore, or the ONLY hard-delete path in the system (purge from trash).
+  // Trash mode: a trashed row offers Restore only (delete means archive —
+  // there is no purge from the client).
   if (file.deletedAt) {
     const trashItems: ContextMenuExtraItem[] = [
       {
@@ -235,23 +233,6 @@ export function FileRowContextMenu({
         label: "Restore",
         icon: ArchiveRestore,
         onSelect: () => void dispatch(restoreFileThunk({ fileId })),
-      },
-      {
-        kind: "item",
-        id: "file-purge",
-        label: "Delete forever",
-        icon: Trash2,
-        destructive: true,
-        onSelect: () =>
-          void (async () => {
-            const ok = await confirm({
-              title: "Permanently delete file?",
-              description: `"${file.fileName}" and all of its extracted data (pages, segments, embeddings) will be gone forever. This cannot be undone.`,
-              confirmLabel: "Delete forever",
-              variant: "destructive",
-            });
-            if (ok) void dispatch(purgeFileThunk({ fileId }));
-          })(),
       },
     ];
     return (
@@ -417,7 +398,7 @@ export function FileRowContextMenu({
   items.push({
     kind: "item",
     id: "file-delete",
-    label: "Delete",
+    label: "Move to Trash",
     icon: Trash2,
     destructive: true,
     hint: "⌫",
@@ -554,9 +535,9 @@ export function FolderRowContextMenu({
   const handleDelete = useCallback(async () => {
     if (!folder) return;
     const ok = await confirm({
-      title: "Delete folder?",
-      description: `Move "${folder.folderName}" and all of its contents to Trash. You can restore it later.`,
-      confirmLabel: "Delete",
+      title: "Move folder to Trash?",
+      description: `Move "${folder.folderName}" and all of its contents to Trash. You can restore it from Trash at any time.`,
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -610,23 +591,6 @@ export function FolderRowContextMenu({
         label: "Restore",
         icon: ArchiveRestore,
         onSelect: () => void dispatch(restoreFolderThunk({ folderId })),
-      },
-      {
-        kind: "item",
-        id: "folder-purge",
-        label: "Delete forever",
-        icon: Trash2,
-        destructive: true,
-        onSelect: () =>
-          void (async () => {
-            const ok = await confirm({
-              title: "Permanently delete folder?",
-              description: `"${folder.folderName}" and everything inside it will be gone forever. This cannot be undone.`,
-              confirmLabel: "Delete forever",
-              variant: "destructive",
-            });
-            if (ok) void dispatch(purgeFolderThunk({ folderId }));
-          })(),
       },
     ];
     return (
@@ -757,7 +721,7 @@ export function FolderRowContextMenu({
   items.push({
     kind: "item",
     id: "folder-delete",
-    label: "Delete folder",
+    label: "Move to Trash",
     icon: Trash2,
     destructive: true,
     hint: "⌫",

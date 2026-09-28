@@ -54534,11 +54534,6 @@ export interface components {
         BulkFileDeleteRequest: {
             /** File Ids */
             file_ids: string[];
-            /**
-             * Hard Delete
-             * @default false
-             */
-            hard_delete?: boolean;
         };
         /** BulkFileMoveRequest */
         BulkFileMoveRequest: {
@@ -200486,9 +200481,7 @@ export interface operations {
     };
     delete_file_files__file_id__delete: {
         parameters: {
-            query?: {
-                hard_delete?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 file_id: string;
@@ -200863,9 +200856,7 @@ export interface operations {
     };
     delete_folder_folders__folder_id__delete: {
         parameters: {
-            query?: {
-                hard_delete?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 folder_id: string;

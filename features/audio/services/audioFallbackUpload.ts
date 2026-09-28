@@ -200,10 +200,10 @@ export async function uploadAndTranscribeFull(
         // service path and the slice's deleteFile thunk isn't part of
         // the public surface. The realtime channel will reconcile the
         // slice state asynchronously.
-        await fileHandler.remove(handle.fileId, { hard: true });
+        await fileHandler.remove(handle.fileId);
       } catch {
         // Non-critical cleanup — the file will be auto-pruned by the
-        // backend's retention policy if the hard-delete fails.
+        // backend's retention policy if this cleanup fails.
       }
     }
   }

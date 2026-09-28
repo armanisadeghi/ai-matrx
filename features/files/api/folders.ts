@@ -16,7 +16,7 @@ import {
   type RequestOptions,
   type ResponseMeta,
 } from "@/lib/python-client";
-import { apiDelete, buildPath, withQuery } from "@/lib/api/typed-client";
+import { apiDelete, buildPath } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 import type {
   BulkMoveFoldersRequest,
@@ -117,22 +117,16 @@ export async function patchFolder(
 }
 
 /**
- * Soft-delete a folder. Pass `?hard_delete=true` to bypass the trash. The
- * backend cascades to all descendants.
+ * Move a folder to Trash (soft delete — restorable). The backend cascades to
+ * all descendants. There is no hard delete.
  */
 export async function deleteFolder(
   folderId: string,
-  params: { hardDelete?: boolean } = {},
   opts: RequestOptions = {},
 ): Promise<{ data: components["schemas"]["DeleteResponse"]; meta: ResponseMeta }> {
   // Contract-bound: response derived from `delete_folder_folders__folder_id__delete`.
-  // `hard_delete` is only sent when true (withQuery drops the absent key), matching
-  // the prior `?hard_delete=true`-only-when-true behavior.
   return apiDelete(
-    withQuery(
-      buildPath("/folders/{folder_id}", { folder_id: folderId }),
-      params.hardDelete ? { hard_delete: "true" } : undefined,
-    ),
+    buildPath("/folders/{folder_id}", { folder_id: folderId }),
     opts,
   );
 }

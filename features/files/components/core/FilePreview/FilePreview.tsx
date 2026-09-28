@@ -228,7 +228,7 @@ export function FilePreview({
       },
       onOpenFullView: () => router.push(`/files/f/${fileId}`),
       onRename: () => requestRename("file", fileId),
-      onDelete: () => void actions.delete({ hard: false }),
+      onDelete: () => void actions.delete(),
       onEdit:
         capability.previewKind === "pdf"
           ? () => router.push(`/files/f/${encodeURIComponent(fileId)}/studio`)

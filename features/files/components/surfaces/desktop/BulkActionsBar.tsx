@@ -399,7 +399,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
       />
       <BulkActionButton
         icon={<Trash2 className="h-3.5 w-3.5" />}
-        label="Delete"
+        label="Move to Trash"
         onClick={() => setConfirmDelete(true)}
         running={busyKind === "delete"}
         disabled={!hasAny || busyKind !== null}
@@ -428,14 +428,14 @@ export function BulkActionsBar({ className }: { className?: string }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete {totalCount} {totalCount === 1 ? "item" : "items"}?
+              Move {totalCount} {totalCount === 1 ? "item" : "items"} to Trash?
             </AlertDialogTitle>
             <AlertDialogDescription>
               {selectedFolderIds.length > 0 && selectedFileIds.length > 0
-                ? `${selectedFileIds.length} file${selectedFileIds.length === 1 ? "" : "s"} and ${selectedFolderIds.length} folder${selectedFolderIds.length === 1 ? "" : "s"} (with all contents) will move to Trash. You can restore them later.`
+                ? `${selectedFileIds.length} file${selectedFileIds.length === 1 ? "" : "s"} and ${selectedFolderIds.length} folder${selectedFolderIds.length === 1 ? "" : "s"} (with all contents) will move to Trash. You can restore them from Trash at any time.`
                 : selectedFolderIds.length > 0
-                  ? "Folders will be moved to Trash along with all of their contents. You can restore them later."
-                  : "These files will move to Trash. You can restore them for 30 days before bytes are removed."}
+                  ? "Folders will be moved to Trash along with all of their contents. You can restore them from Trash at any time."
+                  : "These files will move to Trash. You can restore them from Trash at any time."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -444,7 +444,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
               onClick={() => void handleDelete()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Move to Trash
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -40,10 +40,8 @@ export interface FileActionHandlers {
   move: (newParentFolderId: string | null) => Promise<void>;
   setVisibility: (visibility: Visibility) => Promise<void>;
   updateMetadata: (metadata: Record<string, unknown>) => Promise<void>;
-  /**
-   * Soft delete by default. Pass `{ hard: true }` to remove S3 bytes.
-   */
-  delete: (opts?: { hard?: boolean }) => Promise<void>;
+  /** Move to Trash (soft delete — restorable). There is no hard delete. */
+  delete: () => Promise<void>;
   restoreVersion: (versionNumber: number) => Promise<void>;
   /**
    * Fetches a fresh signed URL and triggers a download via a transient anchor.
@@ -134,20 +132,13 @@ export function useFileActions(fileId: string): FileActionHandlers {
     [dispatch, fileId, isVirtual],
   );
 
-  const deleteAction = useCallback(
-    async (opts?: { hard?: boolean }) => {
-      if (isVirtual) {
-        await dispatch(
-          deleteAny({ id: fileId, hard: opts?.hard ?? false }),
-        ).unwrap();
-        return;
-      }
-      await dispatch(
-        deleteFileThunk({ fileId, hardDelete: opts?.hard ?? false }),
-      ).unwrap();
-    },
-    [dispatch, fileId, isVirtual],
-  );
+  const deleteAction = useCallback(async () => {
+    if (isVirtual) {
+      await dispatch(deleteAny({ id: fileId })).unwrap();
+      return;
+    }
+    await dispatch(deleteFileThunk({ fileId })).unwrap();
+  }, [dispatch, fileId, isVirtual]);
 
   const restoreVersion = useCallback(
     async (versionNumber: number) => {

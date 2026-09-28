@@ -14,7 +14,7 @@ Every cloud-files RPC lives in the **`public`** schema (the tables are in `files
 | `soft_delete_file`, `restore_file`, `rename_folder`, `soft_delete_folder` | DIRECT — `api/direct.ts` |
 | `restore_folder` | DIRECT-capable, **unwired** — trash lists folders but only files restore. |
 | `bump_version`, `consume_share_link`→`resolve_share_token`, `check_upload_quota`, `check_file_rate_limit`, `apply_usage_delta`, `ensure_folder_chain` | SERVER |
-| `hard_delete_file` | **SERVER, never FE-direct.** It returns the S3 URIs to purge only to a service-role caller; a browser-direct hard delete drops the rows and strands the objects forever. **Do NOT adopt this RPC in the FE.** |
+| `hard_delete_file` | **SERVER lifecycle only — client EXECUTE revoked** (delete means archive, 2026-09-27; `migrations/delete_is_archive_revoke_client_hard_delete_file.sql`). There is no hard delete of a person's file from any client or route; only the server retention lifecycle may call it. |
 | `prune_old_versions` | SERVER, **no caller** — version retention never runs. |
 | `rename_file` | **DOES NOT EXIST.** This is what blocks direct rename/move. `rename_folder` is the model to mirror — it re-prefixes descendant paths in SQL, which the single-row Python path does not. |
 

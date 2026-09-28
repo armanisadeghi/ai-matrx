@@ -26,7 +26,6 @@ import {
   apiMultipart,
   apiPost,
   buildPath,
-  withQuery,
 } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 import {
@@ -282,18 +281,16 @@ export async function patchFileReplaceMetadata(
   );
 }
 
+/** Move a file to Trash (soft delete — restorable). There is no hard delete. */
 export async function deleteFile(
   fileId: string,
-  params: { hardDelete?: boolean } = {},
   opts: RequestOptions = {},
 ): Promise<{
   data: components["schemas"]["DeleteResponse"];
   meta: ResponseMeta;
 }> {
   return apiDelete(
-    withQuery(buildPath("/files/{file_id}", { file_id: fileId }), {
-      hard_delete: params.hardDelete ? true : undefined,
-    }),
+    buildPath("/files/{file_id}", { file_id: fileId }),
     withFileOrganization(fileId, opts),
   );
 }
@@ -350,7 +347,7 @@ export async function downloadFileWithProgress(
 // ---------------------------------------------------------------------------
 
 /**
- * Soft-delete (or hard-delete with `hard_delete: true`) many files in one
+ * Move many files to Trash (soft delete — restorable) in one
  * call. Returns the standard `BulkResponse` envelope:
  *
  *   { results: [{ id, ok, error }], succeeded: N, failed: M }

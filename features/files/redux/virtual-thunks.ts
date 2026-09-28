@@ -341,19 +341,16 @@ export const moveAny = createAsyncThunk<void, MoveAnyArg, ThunkApi>(
 
 interface DeleteAnyArg {
   id: string;
-  hard?: boolean;
 }
 
 export const deleteAny = createAsyncThunk<void, DeleteAnyArg, ThunkApi>(
   "cloudFiles/deleteAny",
-  async ({ id, hard }, { dispatch, getState }) => {
+  async ({ id }, { dispatch, getState }) => {
     if (!isSyntheticId(id)) {
       // Real records: default branch on file vs folder.
       const state = getState().cloudFiles;
       if (state.filesById[id]) {
-        await dispatch(
-          deleteFileThunk({ fileId: id, hardDelete: hard ?? false }),
-        ).unwrap();
+        await dispatch(deleteFileThunk({ fileId: id })).unwrap();
       } else if (state.foldersById[id]) {
         await dispatch(deleteFolderThunk({ folderId: id })).unwrap();
       }
@@ -361,7 +358,7 @@ export const deleteAny = createAsyncThunk<void, DeleteAnyArg, ThunkApi>(
     }
     const { adapter, virtualId } = resolveVirtual(id);
     const userId = getState().userAuth?.id ?? "";
-    await adapter.delete(supabase, userId, virtualId, hard ?? false);
+    await adapter.delete(supabase, userId, virtualId);
     const state = getState().cloudFiles;
     const fileRecord = state.filesById[id];
     const folderRecord = state.foldersById[id];

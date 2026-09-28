@@ -320,7 +320,7 @@ export function FolderContextMenu({
             onClick={() => setConfirmOpen(true)}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete folder
+            Move to Trash
             <DropdownMenuShortcut>⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -335,12 +335,12 @@ export function FolderContextMenu({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete folder?</AlertDialogTitle>
+            <AlertDialogTitle>Move folder to Trash?</AlertDialogTitle>
             <AlertDialogDescription>
               {folder ? (
                 <>
                   Move <strong>{folder.folderName}</strong> and all of its
-                  contents to Trash. You can restore it later.
+                  contents to Trash. You can restore it from Trash at any time.
                 </>
               ) : (
                 "Move this folder and all of its contents to Trash."
@@ -362,7 +362,7 @@ export function FolderContextMenu({
               disabled={deleting}
               className="max-lg:min-h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? "Moving to Trash…" : "Move to Trash"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

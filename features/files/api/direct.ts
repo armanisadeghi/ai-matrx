@@ -110,8 +110,8 @@ export async function getUsageStatusDirect(
 // Soft delete / restore (metadata-only — NO byte cleanup, so direct)
 // ---------------------------------------------------------------------------
 //
-// HARD delete + version prune must purge S3 objects (server-only knowledge),
-// so those stay on the Python path (see ./files `deleteFile({hardDelete})`).
+// There is no hard delete of a person's file or folder (delete means archive,
+// 2026-09-27); version prune purges S3 objects, so it stays on the Python path.
 // The mutation RPCs are hardened (auth.uid() + iam.has_access) — see
 // migrations/cld_files_mutation_rpc_auth_hardening.sql. The realtime middleware
 // applies a soft-delete echo idempotently (deletedAt → removeFile), so losing

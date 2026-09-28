@@ -46,8 +46,8 @@ export interface FolderActionHandlers {
   rename: (newName: string) => Promise<void>;
   move: (newParentId: string | null) => Promise<void>;
   setVisibility: (visibility: Visibility) => Promise<void>;
-  /** Soft delete by default. Pass `{ hard: true }` for permanent delete. */
-  delete: (opts?: { hard?: boolean }) => Promise<void>;
+  /** Move to Trash (soft delete — restorable). There is no hard delete. */
+  delete: () => Promise<void>;
   /**
    * Copies a public URL pointing at the folder's share page. If no active
    * read-only share link exists for this folder, a fresh one is created
@@ -109,20 +109,13 @@ export function useFolderActions(folderId: string): FolderActionHandlers {
     [dispatch, folderId, isVirtual],
   );
 
-  const deleteAction = useCallback(
-    async (opts?: { hard?: boolean }) => {
-      if (isVirtual) {
-        await dispatch(
-          deleteAny({ id: folderId, hard: opts?.hard ?? false }),
-        ).unwrap();
-        return;
-      }
-      await dispatch(
-        deleteFolderThunk({ folderId, hardDelete: opts?.hard ?? false }),
-      ).unwrap();
-    },
-    [dispatch, folderId, isVirtual],
-  );
+  const deleteAction = useCallback(async () => {
+    if (isVirtual) {
+      await dispatch(deleteAny({ id: folderId })).unwrap();
+      return;
+    }
+    await dispatch(deleteFolderThunk({ folderId })).unwrap();
+  }, [dispatch, folderId, isVirtual]);
 
   const copyShareUrl = useCallback(async () => {
     if (isVirtual) return null;
