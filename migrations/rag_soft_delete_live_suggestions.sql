@@ -1,15 +1,9 @@
--- chair-step: suggestion and acknowledgement rows with deleted_at are hidden from their owner, so
--- an identical live row must not remain blocked by an invisible one. An acknowledgement is a
--- dismissal only while it is live: after a deliberate soft delete, the next dismissal creates a
--- new live acknowledgement. Its client writer uses insert plus duplicate-as-success (not an
--- ON CONFLICT target), because PostgreSQL cannot infer this partial unique index from columns alone.
+-- chair-step: suggestion rows with deleted_at are hidden from their owner, so pending identities
+-- must be unique only while live. `rag.kg_suggestion_ack` is deliberately untouched: its existing
+-- composite primary key (user_id, suggestion_id) is a lifetime identity and the client explicitly
+-- revives that row with an upsert when the same person dismisses it again.
 -- rag_soft_delete_live_suggestions
 set local lock_timeout = '2s';
-
-drop index if exists rag.kg_suggestion_ack_created_by_suggestion_key;
-create unique index kg_suggestion_ack_created_by_suggestion_key
-  on rag.kg_suggestion_ack (created_by, suggestion_id)
-  where deleted_at is null;
 
 drop index if exists rag.scope_assoc_pending_uniq_created_by;
 create unique index scope_assoc_pending_uniq_created_by

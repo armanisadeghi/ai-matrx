@@ -38,10 +38,9 @@ export async function fetchAckedSuggestionIds(
 /**
  * Dismiss a batch of suggestion ids while their acknowledgement is live.
  *
- * `kg_suggestion_ack_created_by_suggestion_key` is deliberately partial:
- * a deleted acknowledgement is not a current dismissal. PostgreSQL cannot infer
- * that partial predicate from an `onConflict` column list, so insert each row and
- * treat only the live-row uniqueness race as the idempotent success case.
+ * `rag.kg_suggestion_ack` keeps one lifetime identity per (user_id,
+ * suggestion_id). A deliberate repeat dismissal explicitly revives that same
+ * identity from Trash; it does not attempt to mint a second acknowledgement.
  */
 export async function ackSuggestions(
   userId: string,
@@ -55,13 +54,18 @@ export async function ackSuggestions(
   const organizationId = await ensureOrgId(null);
   for (const suggestion_id of suggestionIds) {
     const row = {
-    created_by: userId,
-    suggestion_id,
-    organization_id: organizationId,
+      user_id: userId,
+      created_by: userId,
+      suggestion_id,
+      organization_id: organizationId,
+      deleted_at: null,
     };
-    const { error } = await supabase.schema("rag").from("kg_suggestion_ack").insert(row);
-    // A concurrent/repeated live dismissal is already the desired state. Do not
-    // swallow any other write failure: it may mean RLS, connectivity, or schema drift.
-    if (error && error.code !== "23505") throw operationFailed("dismiss these suggestions", error);
+    const { error } = await supabase
+      .schema("rag").from("kg_suggestion_ack")
+      .upsert(row, { onConflict: "user_id,suggestion_id" });
+    // The composite primary key makes concurrent/repeated dismissals one
+    // atomic write. Any failure is honest: swallowing it would promise a
+    // durable acknowledgement that was never persisted.
+    if (error) throw operationFailed("dismiss these suggestions", error);
   }
 }
