@@ -26,6 +26,7 @@ export interface OfferedValue {
   description?: string;
   label?: string;
   example?: string;
+  pass_by_name?: boolean;
 }
 
 export interface OfferedValueMapping {
@@ -72,6 +73,13 @@ export interface AlchemyPreparedContentOffer {
   content_label: string;
   coverage_description: string;
   omission_description: string;
+}
+
+/** Offered shape of provision `ambient.listen_summary_window` (kind `ambient.listen_summary_window.offer`). */
+export interface AmbientListenSummaryWindowOffer {
+  __kind?: "ambient.listen_summary_window.offer";
+  content?: string;
+  style?: string;
 }
 
 /** Offered shape of provision `ambient.page_guidance` (kind `ambient.page_guidance.offer`). */
@@ -181,6 +189,15 @@ export interface CodeEditorSessionOffer {
   __kind?: "code_editor.session.offer";
   current_code?: string;
   dynamic_context?: string;
+}
+
+/** Offered shape of provision `coding_session.reply_turn` (kind `coding_session.reply_turn.offer`). */
+export interface CodingSessionReplyTurnOffer {
+  __kind?: "coding_session.reply_turn.offer";
+  vsc_active_file?: string;
+  vsc_selected_text?: string;
+  vsc_diagnostics?: string;
+  vsc_git?: string;
 }
 
 /** Offered shape of provision `commerce_intake.asset_capture` (kind `commerce_intake.asset_capture.offer`). */
@@ -432,7 +449,7 @@ export interface ContentIrComponentTargetOffer {
 export interface ContentIrKindAuthoringOffer {
   __kind?: "content_ir.kind_authoring.offer";
   task_brief?: string;
-  kind_schema?: unknown;
+  kind_schema?: string;
   user_data_sample?: string;
 }
 
@@ -999,7 +1016,7 @@ export interface EducationPlanGenerateOffer {
   exam_date: string;
   daily_minutes: number;
   rest_days: string;
-  study_snapshot: unknown;
+  study_snapshot: string;
 }
 
 /** Offered shape of provision `education.quiz_deepen_item` (kind `education.quiz_deepen_item.offer`). */
@@ -1314,7 +1331,7 @@ export interface FlashcardsReviewBatchOffer {
   transcript: string;
   attempts: unknown;
   aggregate: unknown;
-  remaining_cards?: unknown;
+  remaining_cards?: string[];
 }
 
 /** Offered shape of provision `flashcards.tts_render` (kind `flashcards.tts_render.offer`). */
@@ -1678,8 +1695,8 @@ export interface MarketingPageImageAllInOneOffer {
 /** Offered shape of provision `marketing.video_metadata` (kind `marketing.video_metadata.offer`). */
 export interface MarketingVideoMetadataOffer {
   __kind?: "marketing.video_metadata.offer";
-  video_context: unknown;
-  site_context: unknown;
+  video_context: string;
+  site_context: string;
 }
 
 /** Offered shape of provision `masterwork.approach_select` (kind `masterwork.approach_select.offer`). */
@@ -2854,6 +2871,12 @@ export interface PodcastClientYoutubeSourceOffer {
   timestamp_instruction?: string;
 }
 
+/** Offered shape of provision `product_capture.instant_item` (kind `product_capture.instant_item.offer`). */
+export interface ProductCaptureInstantItemOffer {
+  __kind?: "product_capture.instant_item.offer";
+  dock_notes?: string;
+}
+
 /** Offered shape of provision `proof_runs.judge_case` (kind `proof_runs.judge_case.offer`). */
 export interface ProofRunsJudgeCaseOffer {
   __kind?: "proof_runs.judge_case.offer";
@@ -3167,7 +3190,7 @@ export interface SeoAiVisibilityBlindQuestionWriterOffer {
   blind_design_brief: unknown;
   prompt_architecture: unknown;
   style_requirements: unknown;
-  target_aliases?: unknown;
+  target_aliases?: string[];
 }
 
 /** Offered shape of provision `seo.ai_visibility_buyer_jobs` (kind `seo.ai_visibility_buyer_jobs.offer`). */
@@ -3223,8 +3246,8 @@ export interface SeoAiVisibilityQuestionArchitectOffer {
   icp_hypotheses: unknown;
   buyer_jobs: unknown;
   budget: unknown;
-  locales: unknown;
-  lanes: unknown;
+  locales: string[];
+  lanes: string[];
   campaign_set?: unknown;
   prior_panel_slots?: unknown;
 }
@@ -3305,7 +3328,7 @@ export interface SeoCompetitorOpportunityAutopsyOffer {
   page_autopsies: unknown;
   owned_page_analyses: unknown;
   page_keyword_maps: unknown;
-  limitations: unknown;
+  limitations: string[];
 }
 
 /** Offered shape of provision `seo.competitor_page_autopsy` (kind `seo.competitor_page_autopsy.offer`). */
@@ -3316,8 +3339,29 @@ export interface SeoCompetitorPageAutopsyOffer {
   competitor: unknown;
   competitor_page: unknown;
   owned_page?: unknown;
-  owned_page_analysis?: unknown;
-  page_keyword_map?: unknown;
+  owned_page_analysis?: {
+  gaps?: unknown[];
+  error?: string | null;
+  __kind: "page_keyword_analysis_v1";
+  page_url?: string;
+  content_role: "money_page" | "supporting_content" | "local_landing" | "faq_only" | "no_action";
+  funnel_position?: "problem_aware" | "solution_aware" | "vendor_evaluation" | "purchase_ready" | null;
+  analyzer_version?: string;
+  declared_vs_actual?: unknown | null;
+  supported_keywords?: unknown[];
+  discovered_keywords?: unknown[];
+  cannibalization_risk?: unknown[];
+  inferred_primary_keyword: unknown;
+};
+  page_keyword_map?: {
+  error?: string | null;
+  __kind: "page_keyword_map_v1";
+  skipped?: unknown[];
+  conflicts?: unknown[];
+  page_plans: unknown[];
+  topic_slug?: string;
+  mapper_version?: string;
+};
   owned_site: unknown;
 }
 
@@ -3616,9 +3660,9 @@ export interface SeoPressHeadlinesOffer {
 /** Offered shape of provision `seo.press_moment_researcher` (kind `seo.press_moment_researcher.offer`). */
 export interface SeoPressMomentResearcherOffer {
   __kind?: "seo.press_moment_researcher.offer";
-  topics: unknown;
+  topics: string[];
   competitors: unknown;
-  country_codes: unknown;
+  country_codes: string[];
   window_start: string;
   window_end: string;
   known_moments?: unknown;
@@ -3728,8 +3772,27 @@ export interface SeoReputationIntelligenceOffer {
   ai_claims: unknown;
   rag_hits: unknown;
   coverage: unknown;
-  limitations: unknown;
+  limitations: string[];
   quality_policy: unknown;
+}
+
+/** Offered shape of provision `seo.ruling_session_proposal` (kind `seo.ruling_session_proposal.offer`). */
+export interface SeoRulingSessionProposalOffer {
+  __kind?: "seo.ruling_session_proposal.offer";
+  keywords_json?: unknown;
+  human_examples_json?: unknown;
+  dimension_catalog_json?: unknown;
+  matcher_hits_json?: unknown;
+  site_context?: string;
+}
+
+/** Offered shape of provision `seo.ruling_session_teach` (kind `seo.ruling_session_teach.offer`). */
+export interface SeoRulingSessionTeachOffer {
+  __kind?: "seo.ruling_session_teach.offer";
+  corrections_json?: unknown;
+  confirmations_json?: unknown;
+  dimension_catalog_json?: unknown;
+  existing_matchers_json?: unknown;
 }
 
 /** Offered shape of provision `seo.serp_intent_analysis` (kind `seo.serp_intent_analysis.offer`). */
@@ -3824,7 +3887,7 @@ export interface SeoStarterPackProposalOffer {
   corpus_json: unknown;
   topic_tree_json: unknown;
   industry_hint: string;
-  expert_rulings: unknown;
+  expert_rulings: string;
   proposer_version: string;
 }
 
@@ -3896,6 +3959,27 @@ export interface TranscriptStudioSessionContextOffer {
   session_cleaned?: string;
   audio_citations?: string;
   working_document?: string;
+}
+
+/** Offered shape of provision `transcripts.cleanup_context_slot` (kind `transcripts.cleanup_context_slot.offer`). */
+export interface TranscriptsCleanupContextSlotOffer {
+  __kind?: "transcripts.cleanup_context_slot.offer";
+  transcribed_text?: string;
+  transcription_user_context?: string;
+}
+
+/** Offered shape of provision `transcripts.cleanup_context_variable` (kind `transcripts.cleanup_context_variable.offer`). */
+export interface TranscriptsCleanupContextVariableOffer {
+  __kind?: "transcripts.cleanup_context_variable.offer";
+  transcribed_text?: string;
+  context?: string;
+}
+
+/** Offered shape of provision `transcripts.cleanup_plain` (kind `transcripts.cleanup_plain.offer`). */
+export interface TranscriptsCleanupPlainOffer {
+  __kind?: "transcripts.cleanup_plain.offer";
+  transcript?: string;
+  user_context?: string;
 }
 
 /** Offered shape of provision `vision_interview.answer_tracking` (kind `vision_interview.answer_tracking.offer`). */
@@ -4031,6 +4115,7 @@ export interface ProvisionOffers {
   "agent_apps.metadata_request": AgentAppsMetadataRequestOffer;
   "agent_factory.build_request": AgentFactoryBuildRequestOffer;
   "alchemy.prepared_content": AlchemyPreparedContentOffer;
+  "ambient.listen_summary_window": AmbientListenSummaryWindowOffer;
   "ambient.page_guidance": AmbientPageGuidanceOffer;
   "audio.speech": AudioSpeechOffer;
   "brand.voice_rewrite": BrandVoiceRewriteOffer;
@@ -4039,6 +4124,7 @@ export interface ProvisionOffers {
   "checks.finding_disposition": ChecksFindingDispositionOffer;
   "checks.finding_disposition_review": ChecksFindingDispositionReviewOffer;
   "code_editor.session": CodeEditorSessionOffer;
+  "coding_session.reply_turn": CodingSessionReplyTurnOffer;
   "commerce_intake.asset_capture": CommerceIntakeAssetCaptureOffer;
   "commerce_intake.batch_capture": CommerceIntakeBatchCaptureOffer;
   "commerce_intake.bench_grading": CommerceIntakeBenchGradingOffer;
@@ -4248,6 +4334,7 @@ export interface ProvisionOffers {
   "podcast_client.topic_idea_request": PodcastClientTopicIdeaRequestOffer;
   "podcast_client.web_source": PodcastClientWebSourceOffer;
   "podcast_client.youtube_source": PodcastClientYoutubeSourceOffer;
+  "product_capture.instant_item": ProductCaptureInstantItemOffer;
   "proof_runs.judge_case": ProofRunsJudgeCaseOffer;
   "purpose.unit_config": PurposeUnitConfigOffer;
   "rag.chunk_context": RagChunkContextOffer;
@@ -4318,6 +4405,8 @@ export interface ProvisionOffers {
   "seo.press_story_analysis": SeoPressStoryAnalysisOffer;
   "seo.reputation_crisis_holding": SeoReputationCrisisHoldingOffer;
   "seo.reputation_intelligence": SeoReputationIntelligenceOffer;
+  "seo.ruling_session_proposal": SeoRulingSessionProposalOffer;
+  "seo.ruling_session_teach": SeoRulingSessionTeachOffer;
   "seo.serp_intent_analysis": SeoSerpIntentAnalysisOffer;
   "seo.site_evidence": SeoSiteEvidenceOffer;
   "seo.site_intake": SeoSiteIntakeOffer;
@@ -4330,6 +4419,9 @@ export interface ProvisionOffers {
   "tool_viz.component_generation": ToolVizComponentGenerationOffer;
   "tools.content_summarization": ToolsContentSummarizationOffer;
   "transcript_studio.session_context": TranscriptStudioSessionContextOffer;
+  "transcripts.cleanup_context_slot": TranscriptsCleanupContextSlotOffer;
+  "transcripts.cleanup_context_variable": TranscriptsCleanupContextVariableOffer;
+  "transcripts.cleanup_plain": TranscriptsCleanupPlainOffer;
   "vision_interview.answer_tracking": VisionInterviewAnswerTrackingOffer;
   "vision_interview.finalize_deliverable": VisionInterviewFinalizeDeliverableOffer;
   "vision_interview.room_activation": VisionInterviewRoomActivationOffer;
@@ -4356,6 +4448,7 @@ export const PROVISION_OFFER_KINDS = {
   "agent_apps.metadata_request": "agent_apps.metadata_request.offer",
   "agent_factory.build_request": "agent_factory.build_request.offer",
   "alchemy.prepared_content": "alchemy.prepared_content.offer",
+  "ambient.listen_summary_window": "ambient.listen_summary_window.offer",
   "ambient.page_guidance": "ambient.page_guidance.offer",
   "audio.speech": "audio.speech.offer",
   "brand.voice_rewrite": "brand.voice_rewrite.offer",
@@ -4364,6 +4457,7 @@ export const PROVISION_OFFER_KINDS = {
   "checks.finding_disposition": "checks.finding_disposition.offer",
   "checks.finding_disposition_review": "checks.finding_disposition_review.offer",
   "code_editor.session": "code_editor.session.offer",
+  "coding_session.reply_turn": "coding_session.reply_turn.offer",
   "commerce_intake.asset_capture": "commerce_intake.asset_capture.offer",
   "commerce_intake.batch_capture": "commerce_intake.batch_capture.offer",
   "commerce_intake.bench_grading": "commerce_intake.bench_grading.offer",
@@ -4573,6 +4667,7 @@ export const PROVISION_OFFER_KINDS = {
   "podcast_client.topic_idea_request": "podcast_client.topic_idea_request.offer",
   "podcast_client.web_source": "podcast_client.web_source.offer",
   "podcast_client.youtube_source": "podcast_client.youtube_source.offer",
+  "product_capture.instant_item": "product_capture.instant_item.offer",
   "proof_runs.judge_case": "proof_runs.judge_case.offer",
   "purpose.unit_config": "purpose.unit_config.offer",
   "rag.chunk_context": "rag.chunk_context.offer",
@@ -4643,6 +4738,8 @@ export const PROVISION_OFFER_KINDS = {
   "seo.press_story_analysis": "seo.press_story_analysis.offer",
   "seo.reputation_crisis_holding": "seo.reputation_crisis_holding.offer",
   "seo.reputation_intelligence": "seo.reputation_intelligence.offer",
+  "seo.ruling_session_proposal": "seo.ruling_session_proposal.offer",
+  "seo.ruling_session_teach": "seo.ruling_session_teach.offer",
   "seo.serp_intent_analysis": "seo.serp_intent_analysis.offer",
   "seo.site_evidence": "seo.site_evidence.offer",
   "seo.site_intake": "seo.site_intake.offer",
@@ -4655,6 +4752,9 @@ export const PROVISION_OFFER_KINDS = {
   "tool_viz.component_generation": "tool_viz.component_generation.offer",
   "tools.content_summarization": "tools.content_summarization.offer",
   "transcript_studio.session_context": "transcript_studio.session_context.offer",
+  "transcripts.cleanup_context_slot": "transcripts.cleanup_context_slot.offer",
+  "transcripts.cleanup_context_variable": "transcripts.cleanup_context_variable.offer",
+  "transcripts.cleanup_plain": "transcripts.cleanup_plain.offer",
   "vision_interview.answer_tracking": "vision_interview.answer_tracking.offer",
   "vision_interview.finalize_deliverable": "vision_interview.finalize_deliverable.offer",
   "vision_interview.room_activation": "vision_interview.room_activation.offer",
