@@ -532,7 +532,12 @@ export function KnowledgeHubPage({
   const resultNoun = transcriptsView ? "transcript" : "item";
   const plural = (n: number) => `${n.toLocaleString("en-US")} ${resultNoun}${n === 1 ? "" : "s"}`;
   const resultCount =
-    searching || triageView || state.view.kind === "favorites" || results.sections.some((s) => s.status === "loading")
+    searching ||
+    triageView ||
+    state.view.kind === "favorites" ||
+    results.sections.some((s) => s.status === "loading") ||
+    // A section whose read failed makes any total short: no count, the section says the failure (RC-B12).
+    results.sections.some((s) => s.status === "error")
       ? null
       : narrowed
         ? `${hits.length.toLocaleString("en-US")} matching`
@@ -1590,6 +1595,7 @@ export function KnowledgeHubPage({
               )}
               aria-live="polite"
             >
+              {/* read-gate-exempt: resultCount is null whenever any section's read is loading or failed — gated where it is derived */}
               {resultCount}
             </span>
           </>
