@@ -22,9 +22,9 @@
 //
 // SYSTEM (added 2026-08-26) is the platform's own corpus — builtin agents,
 // global shortcuts, platform content blocks: records AI Matrx publishes, not
-// records a tenant published. It is admin-only on both ends: the surface only
-// renders the tab for a Matrx admin, and the RPC behind it re-checks
-// `public.is_platform_admin()` so a hand-crafted request returns nothing.
+// records a tenant published. Which rows a viewer gets is the RPC's decision:
+// on /agents/all every signed-in person reads the PUBLISHED built-ins and a
+// platform admin reads the whole corpus (2026-09-27, agx_list_scoped).
 //
 // It is a SCOPE and not a separate admin page because that separation is what
 // produced the drift it repairs: /administration/agents/system-agents/agents
@@ -86,7 +86,7 @@ export type ListScope =
   /** `industryId: null` = blended across every industry my orgs have attached. */
   | { kind: "industry"; industryId: string | null }
   | { kind: "public" }
-  /** Platform-published records. Admin-only, gated again server-side. */
+  /** Platform-published records; the RPC decides what each viewer reads. */
   | { kind: "system" }
   /** ADMIN: every organization's records. `organizationId` narrows to one. */
   | { kind: "platform_orgs"; organizationId: string | null }

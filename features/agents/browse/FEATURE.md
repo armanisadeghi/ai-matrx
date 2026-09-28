@@ -207,17 +207,29 @@ how the duplicate grid came to exist.
 
 `system` is a member of the SHARED list-scope vocabulary (`lib/list-scope/`),
 not a local invention: _what does the platform itself ship_, as distinct from
-`public` (_what a tenant published platform-wide_). Two gates, both
-load-bearing:
+`public` (_what a tenant published platform-wide_). **Every signed-in person
+sees the System tab (2026-09-27).** `agx_list_scoped` decides the rows: a
+platform admin reads the whole builtin corpus and owns it (`is_owner` TRUE —
+rename, favorite, delete); everyone else reads the PUBLISHED built-ins
+(`card_visibility = 'public'`) and owns none of them. Before this, the tab was
+admin-only in the client and the arm admin-only in the database, and the
+admin-seat change made `selectIsAdmin` false outside `/administration`, so
+nobody saw the 500+ public built-ins on `/agents/all` (migration
+`agents_system_lane_for_everyone.sql`). On `/agents/all` New always makes the
+viewer's own agent; Duplicate on a built-in makes a built-in only for the seat
+that owns it (a platform admin), a personal copy for everyone else.
 
-- The page renders the tab only for a Matrx admin (`selectIsAdmin` — any tier,
-  the same bar `/administration` uses).
-- `agx_list_scoped` re-checks `public.is_platform_admin()` and returns zero
-  system rows to everyone else. **The hidden tab is a convenience, never the
-  security.**
+### Fills mandates column
 
-`is_owner` is TRUE for an admin inside this scope — the system corpus is theirs
-to rename, favorite, and delete, and the row affordances read that flag.
+One column, `fills_mandates`: how many mandates this agent currently fills for
+the viewer, and a popover listing them, each linking to its Intelligence page.
+"Fills" is the WINNING rung of `mandate._rungs` for the viewer's seat — system
+default, active organization, own — exactly the holder the mandate list shows.
+Read once per page by `public.mnd_filled_by` (`features/mandates/filled-by/`,
+migration `mnd_filled_by_holders.sql`), in parallel with the favorite overlay;
+never per row. Not sortable or filterable (the ladder is per viewer, not a list
+RPC column); a failed read shows a warning mark, never a zero. Workflows carry
+the same column.
 
 A scope string arriving from outside TypeScript is validated against
 `LIST_SCOPE_KINDS`, never a hand-listed subset. The hand-listed one in
@@ -382,3 +394,4 @@ hostile at 2,000.
   standards (no header, no second lines, `SOON` badges). `useScrollFade`
   primitive + fade on menu and filter panel. Prefs shape `version` + backfill.
 - **2026-07-25** — Built. `agx_list_scoped` + `agx_list_scope_counts` applied and verified live; `lib/list-views/` and `lib/coming-soon/` primitives extracted; `ItemMenu` dropdown taught to scroll (a 20+ entry menu had its tail off-screen and unreachable); `ConfirmDialog` taught `cancelLabel: null`.
+- 2026-09-27: System lane for every viewer (published built-ins; all built-ins for a platform admin); Fills mandates column (agents + workflows) via `mnd_filled_by`; Duplicate in both agent peek shells for agents the viewer does not own.
