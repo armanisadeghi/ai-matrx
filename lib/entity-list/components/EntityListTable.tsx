@@ -459,7 +459,12 @@ export function EntityListTable<TRow>({
   // While the skeleton shows, the table keeps the widths it last fitted to
   // real rows (page-pass 2026-09-27: the skeleton drew the declared widths,
   // then the loaded rows yielded their empty columns and everything jumped).
-  const fitted = fitColumnWidths(declaredColumns, rows, nameColumnId);
+  const fitted = fitColumnWidths(
+    declaredColumns,
+    rows,
+    nameColumnId,
+    config.nameColumnMaxWidth,
+  );
   const widthKey = config.surfaceKey;
   // Remember the fitted widths once real rows are on screen (an effect, never
   // a write during render).

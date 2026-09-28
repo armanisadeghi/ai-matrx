@@ -529,6 +529,37 @@ export function EditSetView({ setId }: { setId: string }) {
       // Positions are assigned server-side, so refetch for the true order.
       setReloadKey((k) => k + 1);
     },
+    delete_cards: async (value: unknown) => {
+      if (!data || !Array.isArray(value) || value.length < 1 || value.length > 25) {
+        throw new Error("delete_cards: provide an array of 1-25 card ids from this loaded set.");
+      }
+      const ids = value.map((entry) => {
+        if (typeof entry !== "string" || !entry.trim()) {
+          throw new Error("delete_cards: every entry must be a card id string.");
+        }
+        return entry.trim();
+      });
+      if (new Set(ids).size !== ids.length) {
+        throw new Error("delete_cards: the same card cannot be listed twice.");
+      }
+      const visibleIds = new Set(data.cards.map((card) => card.id));
+      const missing = ids.filter((id) => !visibleIds.has(id));
+      if (missing.length) {
+        throw new Error(`delete_cards: these cards are no longer in the open set: ${missing.join(", ")}.`);
+      }
+      for (const id of ids) {
+        const result = await fcService.deleteCard(id);
+        if (result.error) {
+          setReloadKey((key) => key + 1);
+          throw new Error(`delete_cards: could not archive ${id}: ${result.error}`);
+        }
+      }
+      setData((previous) => previous ? {
+        ...previous,
+        cards: previous.cards.filter((card) => !ids.includes(card.id)),
+      } : previous);
+      setReloadKey((key) => key + 1);
+    },
   });
 
   return (

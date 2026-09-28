@@ -231,6 +231,35 @@ export const gameService = {
     }
   },
 
+  /**
+   * Retire a room that has not started yet. This is deliberately narrower than
+   * a general delete: an active room has live players and must finish through
+   * the game flow. RLS remains the authority for who may change the row.
+   */
+  async cancelLobbyRoom(roomId: string): Promise<EngageResult<GameRoomRow>> {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await EDU()
+        .from("game_room")
+        .update({ status: "ended", ended_at: now, deleted_at: now })
+        .eq("id", roomId)
+        .eq("status", "lobby")
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle();
+      if (error) return fail("cancelLobbyRoom", error);
+      if (!data) {
+        return fail(
+          "cancelLobbyRoom",
+          "This room is no longer waiting to start, or you no longer have permission to cancel it.",
+        );
+      }
+      return { data, error: null };
+    } catch (e) {
+      return fail("cancelLobbyRoom", e);
+    }
+  },
+
   /** The host's own rooms (RLS-scoped), newest first. */
   async listMyRooms(limit = 20): Promise<EngageResult<GameRoomRow[]>> {
     try {

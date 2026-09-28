@@ -27,8 +27,20 @@ import {
   TrendingUp,
   Wifi,
   WifiOff,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useGamePlay } from "../../data/useGamePlay";
@@ -73,6 +85,7 @@ export function MultiplayerGameImpl({
   const [verificationError, setVerificationError] = useState<string | null>(
     null,
   );
+  const [cancelling, setCancelling] = useState(false);
 
   const startedRef = useRef(false);
 
@@ -193,6 +206,19 @@ export function MultiplayerGameImpl({
 
   const exit = () => router.push("/education/game");
 
+  const cancelLobby = async (): Promise<void> => {
+    setCancelling(true);
+    const res = await gameService.cancelLobbyRoom(roomId);
+    setCancelling(false);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    channel.broadcastEnd();
+    toast.success("Room cancelled");
+    router.replace("/education/game");
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -263,6 +289,8 @@ export function MultiplayerGameImpl({
       queueError={game.status === "error" ? game.error : null}
       onCopy={copyCode}
       onStart={onHostStart}
+      onCancel={cancelLobby}
+      cancelling={cancelling}
       onExit={exit}
     />
   );
@@ -277,6 +305,8 @@ function Lobby({
   queueError,
   onCopy,
   onStart,
+  onCancel,
+  cancelling,
   onExit,
 }: {
   code: string;
@@ -287,6 +317,8 @@ function Lobby({
   queueError: string | null;
   onCopy: () => void;
   onStart: () => void;
+  onCancel: () => Promise<void>;
+  cancelling: boolean;
   onExit: () => void;
 }) {
   return (
@@ -341,22 +373,45 @@ function Lobby({
       {queueError && <p className="text-sm text-destructive">{queueError} <ErrorAlchemyMenu /></p>}
 
       {isHost ? (
-        <Button
-          size="lg"
-          disabled={!queueReady}
-          onClick={onStart}
-          className="gap-2"
-        >
-          {queueReady ? (
-            <>
-              <Play className="h-4 w-4" /> Start game
-            </>
-          ) : (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Preparing…
-            </>
-          )}
-        </Button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
+            size="lg"
+            disabled={!queueReady || cancelling}
+            onClick={onStart}
+            className="gap-2"
+          >
+            {queueReady ? (
+              <>
+                <Play className="h-4 w-4" /> Start game
+              </>
+            ) : (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Preparing…
+              </>
+            )}
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="lg" disabled={cancelling} className="gap-2">
+                <X className="h-4 w-4" /> Cancel room
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel this room?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This ends the waiting room and invalidates its join code. No new players can join after you confirm.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={cancelling}>Keep room</AlertDialogCancel>
+                <AlertDialogAction onClick={() => void onCancel()} disabled={cancelling}>
+                  {cancelling ? "Cancelling…" : "Cancel room"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       ) : (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Waiting for the host to

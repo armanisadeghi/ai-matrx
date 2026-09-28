@@ -59,7 +59,7 @@ export function SourceInput({
   const [searchEverything, setSearchEverything] = useState(false);
   const set = useSourceSet(surfaceKey, { defaultForm });
   const runner = useProcessingRunner();
-  const intake = useSourceIntake(set, { attachTo, runner });
+  const intake = useSourceIntake(set, { attachTo });
   const [threshold, setThreshold] = useState<number | null>(null);
   const [thresholdError, setThresholdError] = useState<string | null>(null);
   const autoOpened = useRef(false);

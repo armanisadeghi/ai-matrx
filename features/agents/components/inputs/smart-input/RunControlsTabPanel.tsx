@@ -61,7 +61,10 @@ import {
   selectShowCreatorPanel,
   toggleShowCreatorPanel,
 } from "@/lib/redux/preferences/creatorDebugSlice";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import {
+  selectIsSuperAdmin,
+  selectIsSuperAdminDebugger,
+} from "@/lib/redux/slices/userSlice";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { useOpenChatDebugWindow } from "@/features/overlays/openers/chatDebugWindow";
 import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPreviewWindow";
@@ -165,7 +168,8 @@ export function useRunControlsState(
   const isDebugMode = useAppSelector(selectIsDebugMode);
   const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
   const showCreatorTab = isCreator || isAdmin;
-  const showDebugAction = isAdmin && isDebugMode;
+  const isAdminDebugger = useAppSelector(selectIsSuperAdminDebugger);
+  const showDebugAction = isAdminDebugger && isDebugMode;
 
   const workingDocEnabled = useAppSelector(
     selectWorkingDocEnabled(conversationId),

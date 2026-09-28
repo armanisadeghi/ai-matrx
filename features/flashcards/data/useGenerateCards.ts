@@ -22,6 +22,7 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { claimConversationForSurface } from "@/features/canvas/materialization/surfaceOwnedConversations";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { foldDepthIntoRequest } from "./enhanceCard";
 import { coerceCards, setTitleOf } from "./coerce-card";
@@ -190,6 +191,11 @@ export function useGenerateCards(): GenerateCardsResult {
             user_request:
               foldDepthIntoRequest(vars.depth, vars.user_request) ?? "",
           },
+      // The caller saves the deck itself (createGeneratedSetForConversation);
+      // claim the conversation so the stream's commit never materializes a
+      // twin deck (a check-then-create race both writers could lose, seen
+      // live 2026-09-28 on /education/flashcards/new).
+      onConversationCreated: claimConversationForSurface,
       timeoutMs: EXTRACTION_TIMEOUT_MS,
       pollIntervalMs: POLL_INTERVAL_MS,
       failureMessages: {

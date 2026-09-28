@@ -88,11 +88,12 @@ export async function runAgentExtraction(
     keepInstance: opts.live !== false,
     timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     pollIntervalMs: opts.pollIntervalMs ?? DEFAULT_POLL_MS,
-    // A background (segment) run's reply is merged by the caller into ONE
-    // artifact; claim its conversation before the stream commits so the
-    // commit step never materializes a per-section twin.
-    onConversationCreated:
-      opts.live === false ? claimConversationForSurface : undefined,
+    // Every converter generator writes its artifact itself (the contract in
+    // ./types.ts), so the run's conversation is surface-owned: claimed before
+    // the stream commits, the commit step never materializes a twin — neither
+    // one per section of a segmented run nor a race-lost duplicate of a
+    // single live run (both seen live 2026-09-28).
+    onConversationCreated: claimConversationForSurface,
     onRequestId: opts.onRequestId,
     failureMessages: {
       streamError: "The generation agent failed before returning a result",

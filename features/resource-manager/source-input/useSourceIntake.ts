@@ -11,12 +11,13 @@
  *                   then `POST /sources/{id}/keep` files it against the thing
  *                   being made.
  *   a file/image  → `useFileUpload().uploadMany` — UploadGuardHost's SHA-256
- *                   check offers "use the one you already have" — then the
- *                   existing processing runner starts reading it. The file is
- *                   filed against `attachTo` at once through the ONE
- *                   associations chokepoint (`file → target`, the edge task
- *                   attachments use), and its Source, once reading makes one,
- *                   is kept and filed through the door (`fileLanded`).
+ *                   check offers "use the one you already have". The upload's
+ *                   finalize starts the one reading run on the server (the file
+ *                   adapters make the Source). The file is filed against
+ *                   `attachTo` at once through the ONE associations chokepoint
+ *                   (`file → target`), and its Source — new or already there —
+ *                   is kept and filed through the door (`fileLanded`), driven by
+ *                   the server's state (`fileSource.ts`, `useSourceRecovery`).
  *   YouTube/audio → no landing door of their own yet: the transcript comes
  *                   from Start's readers (`fetchYouTubeTranscript`,
  *                   `transcribeCloudFile`) and lands through
@@ -39,8 +40,6 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import type { UseProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 import { fetchYouTubeTranscript } from "@/features/education/onboard/youtubeTranscript";
 import { youtubeId } from "@/lib/media/youtube";
@@ -56,8 +55,8 @@ import { buildPastedTextLanding } from "@/features/sources/api/pastedText";
 // org-refusal-presented-by: features/sources/addFailure.ts
 import { addFailureSentence } from "@/features/sources/addFailure";
 import { createSourceRef } from "@ai-matrx/agents/sources";
-import { isAssociationTargetType } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { supabase } from "@/utils/supabase/client";
 import { isNeedsIntake, resourceToSourceRef } from "./resourceToSourceRef";
 import { MAX_KEPT_TEXT_CHARS, resumableInput } from "./interrupted";
 import type { UseSourceSetResult } from "./useSourceSet";
@@ -76,7 +75,10 @@ function attachTargets(attachTo: SourceAttachTo | undefined): SourceAttachTarget
         {
           entity_type: attachTo.entityType,
           entity_id: attachTo.entityId,
-          label: attachTo.label ?? null,
+          // The EDGE's label, which the registry names (a deck's Source is its
+          // "source", a scope's is "about") — never the target's display name,
+          // which the door refused as an unknown label (USI-3e).
+          label: null,
           signal: true,
         },
       ]
@@ -118,7 +120,7 @@ export interface UseSourceIntakeResult {
 
 export function useSourceIntake(
   set: UseSourceSetResult,
-  options: { attachTo?: SourceAttachTo; runner: UseProcessingRunner },
+  options: { attachTo?: SourceAttachTo },
 ): UseSourceIntakeResult {
   const userId = useAppSelector(selectUserId);
   const activeOrgId = useAppSelector(selectOrganizationId);
@@ -305,15 +307,33 @@ export function useSourceIntake(
     const target = options.attachTo;
     if (!target) return null;
     const what = target.label ? `"${target.label}"` : "what you are making";
-    if (!isAssociationTargetType(target.entityType))
+    // The edge goes the way the registry declares it (`fc_set → file`, but
+    // `file → task`); writing it backwards is refused (USI-3e).
+    let direction: Awaited<ReturnType<typeof registeredFileEdge>>;
+    try {
+      direction = await registeredFileEdge(target.entityType);
+    } catch (err) {
+      return `It was uploaded, but it could not be filed with ${what}: ${addFailureSentence(err)}`;
+    }
+    if (!direction)
       return `It was uploaded, but a file cannot be filed with ${what} (a ${target.entityType.replace(/_/g, " ")}), so it is not listed there.`;
-    const linked = await associationsService.add({
-      sourceType: "file",
-      sourceId: fileId,
-      targetType: target.entityType,
-      targetId: target.entityId,
-      orgId: organizationId,
-    });
+    const linked = await associationsService.add(
+      direction === "file_to_target"
+        ? {
+            sourceType: "file",
+            sourceId: fileId,
+            targetType: target.entityType,
+            targetId: target.entityId,
+            orgId: organizationId,
+          }
+        : {
+            sourceType: target.entityType,
+            sourceId: target.entityId,
+            targetType: "file",
+            targetId: fileId,
+            orgId: organizationId,
+          },
+    );
     return linked.ok
       ? null
       : `It was uploaded, but it could not be filed with ${what}: ${linked.error.message}`;
@@ -350,12 +370,11 @@ export function useSourceIntake(
       const notes = reused ? ["You already had this file — the stored copy is used, nothing new was uploaded."] : [];
       const filed = await fileAgainstTarget(fileId, organizationId);
       if (filed) notes.push(filed);
-      if (!reused) {
-        // Start reading it on the one processing runner (never a third mechanism).
-        void options.runner
-          .runForCldFile(fileId, file.name, `Reading (extract → clean → ${RAG_VOCAB.segmentStage} → embed)`)
-          .catch(() => undefined);
-      }
+      // No run is started here: the upload's finalize already started the one
+      // reading run on the server, and a reused copy may already have its
+      // Source. `useSourceRecovery` reads the server's state for the card and
+      // keeps + files the Source (or starts the one run only when nothing is
+      // reading it) — the same for a new upload, a reused copy and a reload.
       set.settle(id, { label: file.name, ref: createSourceRef("file", fileId), fileId, notes });
     } catch (err) {
       set.fail(id, addFailureSentence(err));
@@ -507,6 +526,28 @@ export function useSourceIntake(
     retryFile,
     fileLanded,
   };
+}
+
+/**
+ * Which way a file ↔ `targetType` edge is registered in
+ * `platform.association_types` — or null when it is not registered at all.
+ */
+async function registeredFileEdge(
+  targetType: string,
+): Promise<"file_to_target" | "target_to_file" | null> {
+  const { data, error } = await supabase
+    .schema("platform")
+    .from("association_types")
+    .select("source_type, target_type")
+    .eq("is_active", true)
+    .or(
+      `and(source_type.eq.file,target_type.eq.${targetType}),and(source_type.eq.${targetType},target_type.eq.file)`,
+    );
+  if (error) throw error;
+  const rows = (data ?? []) as { source_type: string; target_type: string }[];
+  if (rows.some((r) => r.source_type === "file")) return "file_to_target";
+  if (rows.some((r) => r.target_type === "file")) return "target_to_file";
+  return null;
 }
 
 /** The name a picked record goes by on its card. */
