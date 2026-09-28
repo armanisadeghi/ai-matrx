@@ -23,6 +23,7 @@ import path from "node:path";
 import { buildCarryingResolver } from "./error-census-carriers";
 import {
   findDoubleMenus,
+  findErrorDisplays,
   findDoubledStops,
   findUngatedEmptyStates,
   findUngatedEmptyStateProps,
@@ -82,6 +83,17 @@ const count = (jsx: string) =>
   uncarriedErrorDisplays(`export function C({ error, e }: any) { return (<>${jsx}</>); }`).length;
 
 describe("the error-display detector (self-test — each RC-B12 verify hole, red then green)", () => {
+  it("a red lifecycle notice is information, not an error (RC-B12 r13 ruling) — unless it carries an error or failure words", () => {
+    const shown = (body: string) => findErrorDisplays(`export function C(p: any) { return (${body}); }`).length;
+    // "This meeting was cancelled: “{reason}”" in a destructive box: nothing failed.
+    expect(shown('<div className="border-destructive/30 bg-destructive/5">This meeting was cancelled{p.reason ? `: ${p.reason}` : "."}</div>')).toBe(0);
+    // The same box reporting a failure is still an error.
+    expect(shown('<div className="bg-destructive/5 text-destructive">This meeting was cancelled but the invite could not be sent</div>')).toBe(1);
+    expect(shown('<div className="text-destructive">The event was cancelled: {p.error}</div>')).toBe(1);
+    // Red text with a message value and no lifecycle fact still counts (round 3).
+    expect(shown('<p className="text-destructive">{p.reason}</p>')).toBe(1);
+  });
+
   it("probe A: a bare role=alert box counts", () => {
     expect(count('<div role="alert" className="text-destructive">{error}</div>')).toBe(1);
   });

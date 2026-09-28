@@ -247,7 +247,6 @@ export function RsvpLanding({
             {meeting.cancellationReason
               ? `: “${meeting.cancellationReason}”`
               : "."}
-            <ErrorAlchemyMenu size="xs" />
           </div>
         ) : null}
 

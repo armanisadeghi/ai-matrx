@@ -553,7 +553,6 @@ function DetailsSection({
             ? `: “${meeting.cancellationReason}”`
             : "."}{" "}
           Nobody can join it.
-          <ErrorAlchemyMenu size="xs" />
         </div>
       ) : null}
       <h1 className="text-xl font-semibold">{meeting.title}</h1>

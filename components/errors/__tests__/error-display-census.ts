@@ -62,6 +62,9 @@ const NOTICE =
   /(?<!(?:hover|focus|focus-visible|focus-within|active|group-hover|peer-hover|disabled|placeholder|visited):)\b(?:text|bg|border)-(?:amber-\d{2,3}|orange-\d{2,3}|warning|yellow-\d{2,3})\b/;
 const FAILURE_WORDS =
   /something went wrong|something broke|\btry again later\b|(?:were|was)(?:n['’]t| not) able to|did(?:n['’]t| not) save|\boops\b|(?:page|app|screen) crashed|server refused|did(?:n['’]t| not) work|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|refresh|render|show|generate|fetch|sync|apply|run|import|export|parse|verify|complete|process|play|check|resolve|reach|be (?:loaded|saved|read|refreshed|rendered|opened|found|reached|shown|created|updated|deleted|sent|started|processed|generated|played|fetched|synced|applied|verified|completed|checked|resolved|parsed|imported|exported))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open|sync)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred|failed to compile|\btemplate error\b|permission denied|access denied|\btimed out\b|\bnot authori[sz]ed\b/i;
+/** A record's lifecycle stated as a fact — information, not a failure ("was cancelled", "has ended"). */
+const LIFECYCLE_FACT =
+  /\b(?:was|is|has been|were|are|have been)\s+(?:cancell?ed|ended|archived|closed|deleted|removed|revoked|expired|declined|retired)\b/i;
 /** Words that only mean an error when the text is painted red ("Error: {detail}"). */
 const RED_ONLY_WORDS = /\berror\b\s*:?|\bdenied\b|\binvalid\b/i;
 /** A list whose entries are errors: `brokenReasons`, `issues`, `failures`, `validationErrors`, `problems`. */
@@ -522,7 +525,13 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
     /destructive/.test(attrText(node, "variant") ?? "") &&
     [...errorLeaves, ...messageLeaves].some((leaf) => !/count|Count|length|\bn\b/.test(leaf));
   const red = RED.test(className) || STYLE_RED.test(attrText(node, "style") ?? "") || variantRed;
-  if (red && (errorLeaves.length > 0 || messageLeaves.length > 0 || FAILURE_WORDS.test(words) || RED_ONLY_WORDS.test(words))) {
+  // Red styling alone is not an error (RC-B12 r13 ruling): a notice that
+  // states a LIFECYCLE FACT ("This meeting was cancelled: “{reason}”") is
+  // information — nothing failed, nothing to copy for AI. It counts only when
+  // it also carries an error value or failure wording.
+  const lifecycleNotice =
+    LIFECYCLE_FACT.test(words) && errorLeaves.length === 0 && !FAILURE_WORDS.test(words) && !RED_ONLY_WORDS.test(words);
+  if (red && !lifecycleNotice && (errorLeaves.length > 0 || messageLeaves.length > 0 || FAILURE_WORDS.test(words) || RED_ONLY_WORDS.test(words))) {
     return "red-error";
   }
   // Orange/amber text rendering an error value is an error shown in warning colours.
