@@ -66,29 +66,37 @@ jest.mock("@ai-matrx/records-ui", () => ({
     total: a.total,
     search: a.search,
   }),
-  useRecordRights: () => ({ known: true, level: "editor", write: true }),
+  useRecordRights: () => mockRights,
 }));
+// Every hook answers the SAME object on every render, as the real store hooks do (their answers are
+// state). A mock that built a fresh client per render re-ran the row-actions read on every render,
+// whose answer re-rendered, forever — `act` never settled and the test timed out.
+const mockClient = {
+  recordUpdate,
+  rowActions: async () => ({ ok: true, data: { actions: [], stale: [] } }),
+};
+const mockTable = { data: { id: TABLE, name: "Appointments", title_field: "patient" }, loading: false, error: null, reload: () => undefined };
+const mockFields = {
+  data: [
+    { id: "f1", key: "patient", label: "Patient", type: "text", required: true },
+    { id: "f2", key: "visit_status", label: "Visit status", type: "text", required: false },
+  ],
+  loading: false,
+  error: null,
+  reload: () => undefined,
+};
+const mockRecord = {
+  data: { record_id: MAPLE, document: { patient: "Maple (Ferreira)", visit_status: "Scheduled" }, hidden: {}, computed: [] },
+  loading: false,
+  error: null,
+  reload: () => undefined,
+};
+const mockRights = { known: true, level: "editor", write: true };
 jest.mock("@ai-matrx/records/react", () => ({
-  useRecordsClient: () => ({
-    recordUpdate,
-    rowActions: async () => ({ ok: true, data: { actions: [], stale: [] } }),
-  }),
-  useTable: () => ({ data: { id: TABLE, name: "Appointments", title_field: "patient" }, loading: false, error: null, reload: () => undefined }),
-  useFields: () => ({
-    data: [
-      { id: "f1", key: "patient", label: "Patient", type: "text", required: true },
-      { id: "f2", key: "visit_status", label: "Visit status", type: "text", required: false },
-    ],
-    loading: false,
-    error: null,
-    reload: () => undefined,
-  }),
-  useRecord: () => ({
-    data: { record_id: MAPLE, document: { patient: "Maple (Ferreira)", visit_status: "Scheduled" }, hidden: {}, computed: [] },
-    loading: false,
-    error: null,
-    reload: () => undefined,
-  }),
+  useRecordsClient: () => mockClient,
+  useTable: () => mockTable,
+  useFields: () => mockFields,
+  useRecord: () => mockRecord,
   useRecordChangeRevision: () => 0,
 }));
 
