@@ -18,7 +18,7 @@
 // door the key declares (`writeAdminKnobOverride`), the same door that page's
 // exceptions use. Admin scope only: no "Mine", no "My org" — platform scopes.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,11 +83,13 @@ function NamePicker({
   ariaLabel: string;
 }) {
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const picked = value ? options.find((option) => option.id === value) : undefined;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          ref={trigger}
           type="button"
           variant="outline"
           size="sm"
@@ -101,7 +103,20 @@ function NamePicker({
           <ChevronDown className="ml-1 h-3 w-3 shrink-0 opacity-60" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent sizing="content" className="p-0" align="start">
+      <PopoverContent
+        sizing="content"
+        className="p-0"
+        align="start"
+        // Radix returns focus to this trigger when the popover UNMOUNTS, which can be after the person
+        // has already clicked the next picker on the line — the late focus lands outside the popover
+        // they just opened and closes it, so that click "did nothing". Return focus only when nothing
+        // else holds it (Escape, a pick); never steal it from the control they moved to.
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          const active = document.activeElement;
+          if (!active || active === document.body) trigger.current?.focus();
+        }}
+      >
         <Command>
           <CommandInput autoFocus placeholder="Search by name…" className="h-8 text-xs" />
           <CommandList className="max-h-64">
@@ -115,6 +130,7 @@ function NamePicker({
                   onSelect={() => {
                     onChange(option.id);
                     setOpen(false);
+                    trigger.current?.focus();
                   }}
                   className="flex items-center gap-2 text-xs"
                 >

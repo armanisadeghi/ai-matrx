@@ -146,3 +146,18 @@ The knob list is the COMPLETE platform register (400+ rows and growing), so
 `fetchFeatureKnobs` pages via `readAllRows` (`@ai-matrx/data/db`) — a bare
 `.select()` silently caps at 1000 and would hide whole features (the D190
 class). Ordered by the `(feature, key)` PK so pages never overlap.
+
+## Every level of a key stays put while you work it (2026-09-28)
+
+- A write never re-lays out the register: a refresh of the SAME system destination keeps its rows until
+  the re-read lands (`UniversalSettingsContext` masks by destination, not by refresh generation). It used
+  to empty the register for every re-read after a write (the row's `onChanged` and the server's
+  `settings_changed` directive), unmount the opened "All levels" panel and snap ~1,900 rows to the top.
+  Guard: `__tests__/a-write-keeps-the-register-where-it-was.test.tsx` (real provider).
+- One click per control on the add line: short closed choices (level; On/Off; ≤ 4 options) are pills, not
+  a modal Radix Select (which locks `body` pointer events through its close animation), and the name
+  pickers never return focus late (a queued focus-return used to close the NEXT picker the moment it
+  opened). Guard: the "one click per control" cases in `every-level-of-a-knob-from-one-place.test.tsx`.
+- The shared `KnobOverrideRow` shows its impact sentence on KEYBOARD focus (or a dirty draft) only: on
+  any focus it re-centred the row between pointerdown and pointerup, so a mouse click on a switch or a
+  choice button was lost while the keyboard worked (every settings destination had this).

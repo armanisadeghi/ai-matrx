@@ -270,6 +270,10 @@ describe("KnobOverridesAdmin — the opened key", () => {
       if (!element) throw new Error(`${what} is not on screen`);
       await act(async () => {
         (element as HTMLElement).click();
+        // Let anything a closing popover queued (Radix's focus-return on unmount) run before the next
+        // click. That queued focus-return is what closed the NEXT picker the moment it opened; this
+        // test goes red on it (flakily, as the person felt it) without NamePicker's onCloseAutoFocus.
+        await new Promise((settle) => setTimeout(settle, 0));
       });
       expect(document.body.style.pointerEvents).not.toBe("none");
     };
@@ -282,7 +286,6 @@ describe("KnobOverridesAdmin — the opened key", () => {
     await clickOnce(option("admin's Workspace"), "admin's Workspace in the picker");
     if (person) {
       await clickOnce(container.querySelector('button[aria-label="Person for the new override"]'), "the person picker");
-      console.log("DBG", [...document.querySelectorAll("[cmdk-item]")].map((i) => i.textContent), container.querySelector('button[aria-label="Person for the new override"]')?.outerHTML);
       await clickOnce(option(person), `${person} in the picker`);
     }
     await clickOnce(inGroup("Value for the new override", "On"), "the On value");

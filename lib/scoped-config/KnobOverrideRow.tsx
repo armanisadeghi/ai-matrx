@@ -573,8 +573,8 @@ export function KnobOverrideRow(props: {
   // 🚨 PREVIEW BEFORE SAVE (settings history, 2026-09-26). What a change here
   // reaches, said in one sentence while the person is changing it: the blast
   // radius, what it overrides, and — where the live census knows — how many
-  // database functions read this key. Shown while the control has focus and
-  // whenever a typed draft differs from what is saved.
+  // database functions read this key. Shown while the control has KEYBOARD
+  // focus and whenever a typed draft differs from what is saved.
   const readers = databaseConsumersOf(knob.full_key);
   const readerSentence = readers
     ? ` Read by ${readers.length} database function${readers.length === 1 ? "" : "s"} (${readers.slice(0, 3).join(", ")}${readers.length > 3 ? ", …" : ""}).`
@@ -722,8 +722,13 @@ export function KnobOverrideRow(props: {
             </div>
           )}
           {!stateOnly && canWrite && (
+            // KEYBOARD focus only (`:focus-visible`), or a typed draft that differs. It used to open on
+            // ANY focus-within, and a mouse press focuses the control: the sentence appeared between
+            // pointerdown and pointerup, the row re-centred, the control jumped ~27px up, and the
+            // pointerup landed on this sentence — so a switch or a choice button ignored the click
+            // (the keyboard worked). A press must never move what is being pressed.
             <p
-              className={`${draftDirty ? "block" : "hidden group-focus-within/knobrow:block"} mt-1 text-xs leading-snug text-muted-foreground`}
+              className={`${draftDirty ? "block" : "hidden group-has-[:focus-visible]/knobrow:block"} mt-1 text-xs leading-snug text-muted-foreground`}
             >
               {impactSentence}
             </p>
