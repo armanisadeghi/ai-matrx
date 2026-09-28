@@ -433,10 +433,13 @@ export function TrashList({
                 )}
               >
                 <Icon className="text-muted-foreground h-4 w-4 shrink-0" />
-                <span className="min-w-0 flex-1 truncate text-sm">
-                  {item.title?.trim() || (
-                    <span className="text-muted-foreground italic">Untitled</span>
-                  )}
+                <span className="min-w-0 flex-1 text-sm sm:truncate">
+                  {/* On a phone the title wraps to two lines instead of cutting off what it is in. */}
+                  <span className="max-sm:line-clamp-2 max-sm:break-words">
+                    {item.title?.trim() || (
+                      <span className="text-muted-foreground italic">Untitled</span>
+                    )}
+                  </span>
                   {isMovedOlderTable(item) && (
                     // Said on every width: on a phone the kind column is hidden.
                     <span className="text-muted-foreground block truncate text-xs sm:hidden">{item.label}</span>
