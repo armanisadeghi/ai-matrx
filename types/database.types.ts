@@ -26779,6 +26779,7 @@ export type Database = {
           canonical_page: number | null
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           file_id: string
           id: string
           job_id: string
@@ -26793,6 +26794,7 @@ export type Database = {
           canonical_page?: number | null
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           file_id: string
           id?: string
           job_id: string
@@ -26807,6 +26809,7 @@ export type Database = {
           canonical_page?: number | null
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           file_id?: string
           id?: string
           job_id?: string
@@ -26847,6 +26850,7 @@ export type Database = {
           completed_chunks: number
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           error: string | null
           failed_chunks: number
           finished_at: string | null
@@ -26867,6 +26871,7 @@ export type Database = {
           completed_chunks?: number
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           error?: string | null
           failed_chunks?: number
           finished_at?: string | null
@@ -26887,6 +26892,7 @@ export type Database = {
           completed_chunks?: number
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           error?: string | null
           failed_chunks?: number
           finished_at?: string | null
@@ -89065,6 +89071,7 @@ export type Database = {
           created_at: string
           created_by: string
           custom_fields: Json
+          deleted_at: string | null
           description: string | null
           discoverable: boolean
           id: string
@@ -89084,6 +89091,7 @@ export type Database = {
           created_at?: string
           created_by: string
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string | null
           discoverable?: boolean
           id?: string
@@ -89103,6 +89111,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string | null
           discoverable?: boolean
           id?: string
@@ -105981,6 +105990,7 @@ export type Database = {
         Row: {
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           executor_name: string
           id: string
           is_active: boolean
@@ -105992,6 +106002,7 @@ export type Database = {
         Insert: {
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           executor_name: string
           id?: string
           is_active?: boolean
@@ -106003,6 +106014,7 @@ export type Database = {
         Update: {
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           executor_name?: string
           id?: string
           is_active?: boolean
@@ -107219,6 +107231,7 @@ export type Database = {
         Row: {
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           id: string
           pass_index: number
           processor_key: string
@@ -107234,6 +107247,7 @@ export type Database = {
         Insert: {
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           pass_index: number
           processor_key?: string
@@ -107249,6 +107263,7 @@ export type Database = {
         Update: {
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           pass_index?: number
           processor_key?: string
@@ -107290,6 +107305,7 @@ export type Database = {
           confidence: number | null
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           description: string | null
           id: string
           kind: string
@@ -107304,6 +107320,7 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string | null
           id?: string
           kind: string
@@ -107318,6 +107335,7 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string | null
           id?: string
           kind?: string
@@ -107409,6 +107427,7 @@ export type Database = {
           block_type: string
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           id: string
           module_id: string
           pass_index: number
@@ -107422,6 +107441,7 @@ export type Database = {
           block_type: string
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           module_id: string
           pass_index: number
@@ -107435,6 +107455,7 @@ export type Database = {
           block_type?: string
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           module_id?: string
           pass_index?: number
@@ -107466,6 +107487,7 @@ export type Database = {
           chunk_index: number
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           id: string
           recording_segment_id: string | null
           session_id: string
@@ -107479,6 +107501,7 @@ export type Database = {
           chunk_index: number
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           recording_segment_id?: string | null
           session_id: string
@@ -107492,6 +107515,7 @@ export type Database = {
           chunk_index?: number
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           recording_segment_id?: string | null
           session_id?: string
@@ -108061,6 +108085,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           description: string
           execution_mode: string
           executor_name: string | null
@@ -108092,6 +108117,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string
           execution_mode?: string
           executor_name?: string | null
@@ -108123,6 +108149,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string
           execution_mode?: string
           executor_name?: string | null
