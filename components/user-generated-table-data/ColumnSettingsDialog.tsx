@@ -253,6 +253,7 @@ function ColumnSettingsForm({
         ...(typedFrom && !(undo && rehomedCells > 0)
           ? {
               description: "Values that did not fit are set aside on their rows. Undo changes the column back and brings them back.",
+              duration: 10000,
               action: (
                 <ToastAction
                   altText="Undo the type change"
