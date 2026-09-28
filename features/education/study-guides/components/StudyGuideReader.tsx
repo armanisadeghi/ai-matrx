@@ -2,6 +2,7 @@
 
 import { RichContent } from "@/components/rich-content/RichContent";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { initialOutlineExpansion, studyGuideOutlineDisplayTitle, studyGuideOutlineItems, studyGuideOutlineTree, toggleOutlineSection, type StudyGuideOutlineNode } from "../outline";
 import { OutlineHeader } from "./OutlineHeader";
 import { StudyGuideResources } from "./StudyGuideResources";
@@ -19,7 +20,9 @@ import {
   PanelRight,
   Loader2,
   Pencil,
+  Plus,
   Search,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
@@ -39,15 +42,20 @@ import type { Note, NoteListItem } from "@/features/notes/types";
 import { parseNoteOutline, type NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { NotesView } from "@/features/notes/components/NotesView";
-import { saveNote } from "@/features/notes/redux/thunks";
+import { NotesAPI } from "@/features/notes/service/notesApi";
+import { deleteNote, saveNote } from "@/features/notes/redux/thunks";
 import { setNoteEditorMode } from "@/features/notes/redux/slice";
+import { EDUCATION_NOTE_CREATE_FIELDS } from "@/features/education/notes/education-notes";
+import { useNewNoteOrganization } from "@/features/notes/hooks/useNewNoteOrganization";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationStudyGuidesScope } from "@/features/surfaces/manifests/education-study-guides.manifest";
 import { createEducationStudyGuideScope, EDUCATION_STUDY_GUIDE_SURFACE_NAME } from "@/features/surfaces/manifests/education-study-guide.manifest";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import { StudyGuideAgentBridge, type StudyGuideAnnotationSnapshot } from "./StudyGuideAgentBridge";
-import { parseGuideContentValue } from "../studyGuideAgentWrites";
+import { parseCreateStudyGuidesValue, parseDeleteStudyGuidesValue, parseGuideContentValue } from "../studyGuideAgentWrites";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { PanelControlProvider, usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
@@ -71,6 +79,8 @@ import type { AnnotationSource } from "@/features/rich-document/annotations/type
 import { noteBodyStore, spliceSaveBody } from "@/features/rich-document/annotations/sourceSave";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 type InspectorTab = "notes" | "terms" | "resources";
 
@@ -92,7 +102,7 @@ function ReaderPanelBody({ children }: { children: React.ReactNode }) {
   return <div className={cn("h-full min-h-0", controls.isCollapsed("guides") && "pl-8", controls.isCollapsed("inspector") && "pr-8")}>{children}</div>;
 }
 
-function GuideList({ guides, activeId, activeLabel, content, onJump, loading, error, onRetry }: { guides: NoteListItem[]; activeId?: string; activeLabel?: string; content: string; onJump: (headingIndex: number) => void; loading: boolean; error: string | null; onRetry: () => void }) {
+function GuideList({ guides, activeId, activeLabel, content, onJump, loading, error, onRetry, onCreate, creating }: { guides: NoteListItem[]; activeId?: string; activeLabel?: string; content: string; onJump: (headingIndex: number) => void; loading: boolean; error: string | null; onRetry: () => void; onCreate: () => void; creating: boolean }) {
   const [query, setQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const visible = guides.filter((guide) => guide.label.toLowerCase().includes(query.trim().toLowerCase()));
@@ -108,6 +118,10 @@ function GuideList({ guides, activeId, activeLabel, content, onJump, loading, er
         </nav>
       </div>
       <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto p-1">
+        <Button className="mb-2 w-full" size="sm" onClick={onCreate} disabled={creating}>
+          {creating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : <Plus className="mr-1.5 h-4 w-4" aria-hidden />}
+          New study guide
+        </Button>
         <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
           <PopoverTrigger asChild>
             <button type="button" className="mb-2 flex w-full items-center justify-between rounded-lg border border-border bg-card px-1.5 py-1 text-left hover:bg-accent">
@@ -215,7 +229,7 @@ function useStudyPassageActions(guide: Note): { actions: Action[]; tutor: React.
   return { actions, tutor };
 }
 
-function ReaderContent({ guide, onEdit, jumpRequest }: { guide: Note; onEdit: () => void; jumpRequest: { index: number; nonce: number } | null }) {
+function ReaderContent({ guide, onEdit, onDelete, deleting, jumpRequest }: { guide: Note; onEdit: () => void; onDelete: () => void; deleting: boolean; jumpRequest: { index: number; nonce: number } | null }) {
   const readerRef = useRef<HTMLDivElement>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [findFocusRequest, setFindFocusRequest] = useState(0);
@@ -242,6 +256,7 @@ function ReaderContent({ guide, onEdit, jumpRequest }: { guide: Note; onEdit: ()
     <div className="absolute right-3 top-2 z-20 flex gap-1">
       <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Search this guide" title="Search this guide" onClick={openFind}><Search className="h-4 w-4" aria-hidden /></Button>
       <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Edit study guide" title="Edit study guide" onClick={onEdit}><Pencil className="h-4 w-4" aria-hidden /></Button>
+      <Button size="icon" variant="outline" className="h-8 w-8 bg-background text-destructive hover:text-destructive" aria-label="Delete study guide" title="Delete study guide" onClick={onDelete} disabled={deleting}><Trash2 className="h-4 w-4" aria-hidden /></Button>
     </div>
     {findOpen && <div className="absolute right-3 top-11 z-30 w-[min(96%,520px)]"><RenderedFindBar rootRef={readerRef} onClose={() => setFindOpen(false)} label="Find in this guide" focusRequest={findFocusRequest} /></div>}
     <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto">
@@ -281,6 +296,8 @@ function guideSource(guide: Note, onSaved: () => void): AnnotationSource {
 
 function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideReaderProps) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const resolveNewNoteOrganization = useNewNoteOrganization();
   const isMobile = useIsMobile();
   const userId = useAppSelector(selectUserId);
   const [guides, setGuides] = useState<NoteListItem[]>([]);
@@ -300,6 +317,9 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
   const [mobilePanel, setMobilePanel] = useState<"guides" | "details" | null>(null);
   const [editingGuide, setEditingGuide] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [creatingGuide, setCreatingGuide] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Note | null>(null);
+  const [deletingGuide, setDeletingGuide] = useState(false);
 
   useEffect(() => {
     let stale = false;
@@ -339,6 +359,44 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
     } catch (cause) {
       setEditError(cause instanceof Error ? cause.message : "Could not save the guide. Your draft is still available in the editor.");
       setEditingGuide(true);
+    }
+  };
+
+  const createGuide = async (plan: { title: string; content: string }) => {
+    const organizationId = await resolveNewNoteOrganization();
+    const note = await NotesAPI.create({
+      label: plan.title,
+      content: plan.content || `# ${plan.title}\n\n`,
+      ...EDUCATION_NOTE_CREATE_FIELDS,
+      organization_id: organizationId,
+    });
+    router.push(`/education/study-guides/${note.id}`);
+    return note;
+  };
+
+  const createManualGuide = async () => {
+    if (creatingGuide) return;
+    setCreatingGuide(true);
+    try {
+      await createGuide({ title: "Untitled study guide", content: "" });
+    } catch (cause) {
+      if (!isOrganizationSelectionCancelled(cause)) setEditError(cause instanceof Error ? cause.message : "Could not create the study guide.");
+    } finally {
+      setCreatingGuide(false);
+    }
+  };
+
+  const deleteGuide = async () => {
+    if (!pendingDelete || deletingGuide) return;
+    setDeletingGuide(true);
+    try {
+      await dispatch(deleteNote(pendingDelete.id)).unwrap();
+      setPendingDelete(null);
+      router.replace("/education/study-guides");
+    } catch (cause) {
+      setEditError(cause instanceof Error ? cause.message : "Could not move the study guide to Trash.");
+    } finally {
+      setDeletingGuide(false);
     }
   };
 
@@ -393,7 +451,38 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
 
   // guide_content — the guide's body, saved through the reader's own splice-save
   // (the same `guideSource(...).save` an accepted suggestion uses: CAS on the note's version).
-  const getWriteHandlers = (): SurfaceWriteHandlers => (initialGuideId ? {
+  const getWriteHandlers = (): SurfaceWriteHandlers => {
+    const guideTargets = collectionWriteHandlers(
+      {
+        plural: "study_guides",
+        singular: "study guide",
+        create: {
+          parse: parseCreateStudyGuidesValue,
+          run: async (plan) => {
+            const note = await createGuide(plan);
+            return { id: note.id, name: note.label };
+          },
+          nameOf: (plan) => plan.title,
+          refusalFor: (cause) => isOrganizationSelectionCancelled(cause) ? "The person closed the workspace picker, so no study guide was created." : undefined,
+        },
+        delete: {
+          parse: (value) => {
+            const current = guideRef.current;
+            if (!current) refuseSurfaceWrite("The guide has not loaded, so there is nothing to move to Trash yet.");
+            return parseDeleteStudyGuidesValue(value, { id: current.id, title: current.label || "Untitled guide" });
+          },
+          run: async (plan) => {
+            await dispatch(deleteNote(plan.id)).unwrap();
+            router.replace("/education/study-guides");
+            return { id: plan.id, name: plan.title };
+          },
+          nameOf: (plan) => plan.title,
+        },
+      },
+      refuseSurfaceWrite,
+    );
+    return initialGuideId ? {
+      ...guideTargets,
     guide_content: {
       validate: (value) => {
         const current = guideRef.current;
@@ -416,7 +505,8 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
         };
       },
     },
-  } : {});
+    } : guideTargets;
+  };
 
   const getListScope = () => createEducationStudyGuidesScope({
     guide_loaded: Boolean(guide) && !loading && !error,
@@ -458,20 +548,22 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
     </NonEditableContextMenu>
   );
 
-  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><Button size="sm" variant="outline" className="absolute right-3 top-2 z-20 bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} jumpRequest={outlineJump} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
+  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><Button size="sm" variant="outline" className="absolute right-3 top-2 z-20 bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} onDelete={() => setPendingDelete(guide)} deleting={deletingGuide} jumpRequest={outlineJump} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
 
   const reader = loading || error || !guide ? <div className="scroll-page-end-space h-full min-h-0 overflow-y-auto">{readerState}</div> : readerState;
 
   const withSidecar = (node: React.ReactNode) => guide ? <AnnotationSidecarProvider source={guideSource(guide, () => { void loadStudyGuide(guide.id).then((next) => { if (next) setGuide(next); }); })}>{node}</AnnotationSidecarProvider> : node;
 
-  if (isMobile) return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}{withMenu(<PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button size="sm" variant="ghost" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button size="sm" variant="ghost" onClick={() => setMobilePanel("details")}>Study details</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} terms={terms} loading={tab === "terms" ? detailsLoading.terms : false} error={tab === "terms" ? detailsError.terms : null} onRetry={retryDetails} /></DrawerBody></DrawerContent></Drawer></div></PanelControlProvider>)}</SurfaceRuntimeProvider>);
+  const deleteDialog = <ConfirmDialog open={Boolean(pendingDelete)} onOpenChange={(open) => !open && setPendingDelete(null)} title="Move study guide to Trash" description={archiveConfirmSentence(pendingDelete ? `“${pendingDelete.label || "Untitled guide"}”` : "this study guide")} confirmLabel="Move to Trash" variant="destructive" busy={deletingGuide} onConfirm={deleteGuide} />;
+
+  if (isMobile) return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}{withMenu(<PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button size="sm" variant="ghost" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button size="sm" variant="ghost" onClick={() => setMobilePanel("details")}>Study details</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} onCreate={() => { void createManualGuide(); }} creating={creatingGuide} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} terms={terms} loading={tab === "terms" ? detailsLoading.terms : false} error={tab === "terms" ? detailsError.terms : null} onRetry={retryDetails} /></DrawerBody></DrawerContent></Drawer>{deleteDialog}</div></PanelControlProvider>)}</SurfaceRuntimeProvider>);
 
   return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}{withMenu(<PanelControlProvider initialLayouts={[defaultLayout]}>
     <div className="relative h-full min-h-0 overflow-hidden">
       <ReaderPanelControls />
       <ClientGroup id="study-guide-reader" groupKey="study-guide-reader" cookieName="panels:study-guide-reader" defaultLayout={defaultLayout} orientation="horizontal" className="h-full w-full" resizeTargetMinimumSize={{ coarse: 20, fine: 10 }}>
         <RegisteredPanel registerAs="guides" groupKey="study-guide-reader" id="guides" collapsible collapsedSize="0%" defaultSize="250px" minSize="190px">
-          <GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 }))} loading={guidesLoading} error={guidesError} onRetry={retryIndex} />
+          <GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 }))} loading={guidesLoading} error={guidesError} onRetry={retryIndex} onCreate={() => { void createManualGuide(); }} creating={creatingGuide} />
         </RegisteredPanel>
         <Handle hideWhenCollapsed={["guides"]} />
         <Panel id="reader" minSize="35%">
@@ -482,6 +574,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
           <Inspector guide={guide} tab={tab} onTabChange={setTab} terms={terms} loading={tab === "terms" ? detailsLoading.terms : false} error={tab === "terms" ? detailsError.terms : null} onRetry={retryDetails} />
         </RegisteredPanel>
       </ClientGroup>
+      {deleteDialog}
     </div>
   </PanelControlProvider>)}</SurfaceRuntimeProvider>);
 }

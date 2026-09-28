@@ -4,6 +4,8 @@ import {
   parseCreatePersonalNotesValue,
   parseDeleteGuideCommentsValue,
   parseDeletePersonalNotesValue,
+  parseDeleteStudyGuidesValue,
+  parseCreateStudyGuidesValue,
   parseGuideContentValue,
   parseUpdateGuideCommentsValue,
   parseUpdatePersonalNotesValue,
@@ -37,6 +39,23 @@ describe("anchorForQuote", () => {
   it("refuses a quote that is missing or appears more than once", () => {
     expect(() => anchorForQuote("x", "chloroplast", guide)).toThrow(/not in the guide's text/);
     expect(() => anchorForQuote("x", "Ribosomes", guide)).toThrow(/appears 2 times/);
+  });
+});
+
+describe("study-guide collection", () => {
+  it("creates named guides and supplies an empty body when omitted", () => {
+    expect(parseCreateStudyGuidesValue([{ title: "Cell biology" }, { title: "Genetics", content: "# Genes" }])).toEqual([
+      { title: "Cell biology", content: "" },
+      { title: "Genetics", content: "# Genes" },
+    ]);
+  });
+
+  it("refuses invalid creates and an archive target other than the open guide", () => {
+    expect(() => parseCreateStudyGuidesValue([{ title: "" }, { title: "Two\nlines" }, { title: "Cell biology", extra: true }])).toThrow(/3 problems/);
+    expect(() => parseDeleteStudyGuidesValue(["another-guide"], { id: "guide-1", title: "Cell biology" })).toThrow(/not the guide open/);
+    expect(parseDeleteStudyGuidesValue([{ id: "guide-1" }], { id: "guide-1", title: "Cell biology" })).toEqual([
+      { id: "guide-1", title: "Cell biology" },
+    ]);
   });
 });
 

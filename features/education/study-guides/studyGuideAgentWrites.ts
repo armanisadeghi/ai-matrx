@@ -115,6 +115,67 @@ export function parseGuideContentValue(value: unknown, currentBody: string): str
   return value;
 }
 
+// ─── study guides (Notes-backed collection) ────────────────────────────────
+
+export interface CreateStudyGuidePlan {
+  title: string;
+  content: string;
+}
+
+/**
+ * The reader can create only ordinary Notes records marked for Education.
+ * Keep this parser here with the rest of the page's agent-write validation so
+ * manual and agent-created guides receive the same title/body contract.
+ */
+export function parseCreateStudyGuidesValue(value: unknown): CreateStudyGuidePlan[] {
+  const target = "create_study_guides";
+  const list = readCollectionList(target, "study guides", value, 10);
+  return collectProblems(
+    target,
+    list,
+    (entry, i): CreateStudyGuidePlan => {
+      const where = `${target}[${i}]`;
+      const record = asObject(where, entry, ["title", "content"]);
+      const rawTitle = optionalText(where, "title", record.title);
+      const title = rawTitle === undefined ? "" : rawTitle.trim();
+      if (!title) throw new Error(`${where}.title is required.`);
+      if (/\r|\n/.test(title)) throw new Error(`${where}.title must be a single line.`);
+      const content = optionalText(where, "content", record.content);
+      return { title, content: content === undefined ? "" : content };
+    },
+    {
+      nameOf: (entry) => rawText(entry, "title"),
+      listChecks: (items) => [
+        repeatsProblem(target, items.map((item) => (item.ok ? item.value?.title : undefined)), "title"),
+      ],
+    },
+  );
+}
+
+export interface DeleteStudyGuidePlan {
+  id: string;
+  title: string;
+}
+
+/** A detail-page agent may archive only the guide that is open in this reader. */
+export function parseDeleteStudyGuidesValue(
+  value: unknown,
+  current: { id: string; title: string },
+): DeleteStudyGuidePlan[] {
+  const target = "delete_study_guides";
+  const list = readCollectionList(target, "study guides", value, 1);
+  return collectProblems(
+    target,
+    list,
+    (entry, i): DeleteStudyGuidePlan => {
+      const id = idOf(`${target}[${i}]`, entry);
+      if (id !== current.id)
+        throw new ListLevelProblem(`${target}[${i}] "${id}" is not the guide open in this reader (${current.id}).`);
+      return { id, title: current.title };
+    },
+  );
+}
+
 // ─── personal notes (private highlights + whole-guide notes) ─────────────────
 
 export interface CreatePersonalNotePlan {

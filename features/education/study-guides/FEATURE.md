@@ -18,6 +18,7 @@ Focused tests cover missing organization, partial-save retry, annotation ownersh
 
 ## Changelog
 
+- 2026-09-27: Added the library's direct **New study guide** door and the reader's Trash-confirmed archive control. Both use the canonical Notes create/archive paths and keep the Study Notes folder marker; the detail agent surface now exposes matching `create_study_guides` and `delete_study_guides` targets.
 - 2026-09-27: `/education/study-guides/[id]` is its own agent surface, `matrx-user/education-study-guide`
   (the library route keeps `matrx-user/education-study-guides`). The guide is one record value at the
   `record` inline tier; private highlights/notes and comment threads are read from the sidecar through

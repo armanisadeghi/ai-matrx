@@ -22,6 +22,8 @@
  * child that publishes into a ref (`StudyGuideAgentBridge`).
  *
  * Write half — all `ask`, all saved through the page's own functions:
+ *  - `create_study_guides`: creates a Notes-backed guide in the Education
+ *    Study Notes folder through the same path as the library button.
  *  - `guide_content` (patchable): the guide's body, saved with the reader's
  *    own splice-save (`guideSource(...).save` → `spliceSaveBody` on the note,
  *    compare-and-swap on its version) — the same path an accepted suggestion
@@ -33,6 +35,8 @@
  *  - `create_/update_/delete_guide_comments`: comments, replies and
  *    suggestions (`addComment`, then the sidecar's `editComment` /
  *    `resolveComment` / `deleteComment`).
+ *  - `delete_study_guides`: moves only the open Notes-backed guide to Trash
+ *    through the same archive path as the reader's delete control.
  * Every list is checked whole (`features/education/study-guides/studyGuideAgentWrites.ts`,
  * unit-tested) before the approval card; `apply` returns what landed, with ids.
  *
@@ -129,6 +133,17 @@ const QUOTE_RULE =
 
 const writeTargets: SurfaceWriteTarget[] = [
   {
+    name: "create_study_guides",
+    label: "Create study guides",
+    description: 'Creates 1-10 new Study Guides in the person\'s selected organization. Value is a JSON ARRAY of { title: string, content?: string }; title is required and single-line, content is optional markdown. Each guide is a Notes record in the Education Study Notes folder and opens in this reader. If the person has not selected an organization, they are asked to choose one before anything is created.',
+    valueType: "array",
+    updatesValue: "available_guides",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "guide",
+    sortOrder: 90,
+  },
+  {
     name: "guide_content",
     label: "Guide content",
     description:
@@ -141,6 +156,17 @@ const writeTargets: SurfaceWriteTarget[] = [
     applyPolicy: "ask",
     group: "guide",
     sortOrder: 100,
+  },
+  {
+    name: "delete_study_guides",
+    label: "Move this study guide to Trash",
+    description: 'Moves the open study guide to Trash. Value is a JSON ARRAY containing exactly this guide\'s id (or { id }). What is lost: the guide leaves this library and its reader; it can be restored from Trash. The guide\'s associated annotations and comments are not changed by this action.',
+    valueType: "array",
+    updatesValue: "available_guides",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "guide",
+    sortOrder: 200,
   },
   {
     name: "create_personal_notes",
@@ -215,7 +241,7 @@ export const educationStudyGuideManifest: SurfaceManifest = {
   client: "matrx-user",
   executionMode: "python-stream",
   description:
-    "One study guide: its full text, outline, the person's private highlights and notes, comment threads and linked key terms; edit the text, add or change notes and comments (/education/study-guides/[id]).",
+    "One study guide: its full text, outline, the person's private highlights and notes, comment threads and linked key terms; create, edit, or move a guide to Trash, and add or change notes and comments (/education/study-guides/[id]).",
   label: "Study guide",
   urlPattern: "/education/study-guides/[id]",
   readiness: "partial",
@@ -226,7 +252,9 @@ export const educationStudyGuideManifest: SurfaceManifest = {
 You are on one study guide at /education/study-guides/[id]. study_guide is the guide itself (title and the full markdown body in content); personal_annotations are the person's private highlights and notes on it; guide_comments are comment threads everyone who can read the guide sees; key_terms are flashcards from linked decks (read-only here).
 
 Every change goes through these targets; each asks the person once and returns what it did, with ids:
+- create_study_guides — add one or more Notes-backed study guides to the Education library.
 - guide_content — rewrite or fix the guide's text (send the whole body, or { command: "str_replace", old_str, new_str } for one part).
+- delete_study_guides — move this open guide to Trash. It can be restored there.
 - create_personal_notes / update_personal_notes / delete_personal_notes — private highlights (on a quoted passage) and notes. Use these when the person says "highlight", "note to self", "mark this".
 - create_guide_comments / update_guide_comments / delete_guide_comments — shared comments, replies and suggested rewrites; resolve a thread with update_guide_comments (resolved: true) rather than deleting it.
 A quote must be copied exactly from study_guide.content and appear there once. Never use generic note, document or comment tools for this guide: they skip the page's anchoring and privacy rules.
