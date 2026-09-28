@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "6fa7799d189a";
+export const KIND_REGISTRY_FINGERPRINT = "f00e2d7ec503";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -8035,12 +8035,22 @@ export interface CmsAlignResult {
 }
 
 /**
- * Kind `cms_html_page_result` (registry v2).
+ * Kind `cms_html_page_result` (registry v4).
  */
 export interface CmsHtmlPageResult {
-  page?: Record<string, unknown> | null;
+  page?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  } | null;
   count?: number | null;
-  pages?: (Record<string, unknown>)[] | null;
+  pages?: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  })[] | null;
   total?: number | null;
   /**
    * The registered kind this payload is an instance of.
@@ -8048,18 +8058,55 @@ export interface CmsHtmlPageResult {
   __kind?: "cms_html_page_result";
   fields?: string[] | null;
   reused?: boolean | null;
-  source?: Record<string, unknown> | null;
+  source?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  } | null;
   deleted?: boolean | null;
   dry_run?: boolean | null;
+  notices?: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  })[] | null;
   page_id?: string | null;
-  preview?: Record<string, unknown> | null;
-  version?: Record<string, unknown> | null;
+  preview?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  } | null;
+  success?: boolean | null;
+  version?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  } | null;
+  archived?: boolean | null;
   promoted?: boolean | null;
-  versions?: (Record<string, unknown>)[] | null;
-  diff_stats?: Record<string, unknown> | null;
+  versions?: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  })[] | null;
+  deleted_id?: string | null;
+  diff_stats?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  } | null;
+  archived_id?: string | null;
   preview_url?: string | null;
+  restored_id?: string | null;
   would_apply?: boolean | null;
   original_url?: string | null;
+  restore_with?: string | null;
   would_create?: boolean | null;
   would_delete?: boolean | null;
   would_update?: boolean | null;
