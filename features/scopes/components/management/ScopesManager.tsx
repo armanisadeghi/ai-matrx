@@ -320,7 +320,10 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
       )}
 
       <ArchivedDisclosure
-        count={archiveReadFailed && archivedTypes.length === 0 ? undefined : archivedTypes.length}
+        // A failed archive read with nothing known renders no control (count 0) and is
+        // said by the toast; a failed refresh keeps the last count (stale-while-error).
+        count={archivedTypes.length}
+        countLabel={archiveReadFailed && archivedTypes.length > 0 ? `${archivedTypes.length}, may be out of date` : undefined}
         open={showArchived}
         onOpenChange={setShowArchived}
         className="mt-2"
