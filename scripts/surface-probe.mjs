@@ -283,9 +283,16 @@ async function openSurfaceContext(page) {
   return ok;
 }
 
-/** Answer "Which workspace is this for?" with --workspace. */
+/**
+ * Answer the organization picker with --workspace. Its heading became "Which
+ * organization is this for?" (it was "Which workspace…"); matching only the old
+ * words left every agent write test stuck behind the dialog (page-pass
+ * 2026-09-27, /education/flashcards).
+ */
 async function pickWorkspaceIfAsked(page) {
-  const asked = await page.evaluate(() => /Which workspace is this for\?/.test(document.body.innerText || ""));
+  const asked = await page.evaluate(() =>
+    /Which (workspace|organization) is this for\?/.test(document.body.innerText || ""),
+  );
   if (!asked) return false;
   await page.evaluate((name) => {
     const el = Array.from(document.querySelectorAll("[role=dialog] *"))
