@@ -314,10 +314,7 @@ describe("PageHeader is server-rendered", () => {
 const CLIENT_ONLY_HEADER_BASELINE = new Set([
   "app/(core)/tools/pdf-extractor/PdfStudioRouteClient.tsx -> features/pdf-extractor/studio/PdfStudioShell.tsx",
   "app/(core)/tools/pdf-extractor/PdfStudioRouteClient.tsx -> features/pdf-extractor/studio/PdfStudioMobile.tsx",
-  "app/(core)/tools/scanner/ScannerRouteClient.tsx -> features/pdf/scanner/components/ScannerSurface.tsx",
-  "app/(core)/tools/scanner/ScannerRouteClient.tsx -> features/pdf/scanner/components/desktop/ScannerDesktop.tsx",
   "features/agents/components/context-items/bodies/ProcessedDocumentBody.tsx -> features/rag/components/library/LibraryPreviewPage.tsx",
-  "features/marketing/search-console/components/SearchConsoleGate.tsx -> features/marketing/search-console/components/SearchConsoleWorkspace.tsx",
   "features/notes/components/NotesLayout.tsx -> features/notes/components/NotesHeaderPortal.tsx",
   "features/notes/components/NotesView.tsx -> features/notes/components/mobile/MobileNotesView.tsx",
   "features/war-room/components/thread/ThreadAudioTab.tsx -> features/transcription-cleanup/components/CleanupPad.tsx",
@@ -337,13 +334,33 @@ function resolveSpec(from: string, spec: string): string | null {
   return [".tsx", ".ts", "/index.tsx"].map((ext) => base + ext).find((p) => existsSync(p)) ?? null;
 }
 
+/** Does the dynamic() at `at` pass a `loading` fallback that draws a header —
+ *  inline, or through a local `*HeaderFallback` component / `loading` const? */
+function loadingDrawsHeader(text: string, at: number): boolean {
+  const call = text.slice(at, at + 700);
+  const loading = call.match(/loading(?::\s*([\s\S]{0,300}?)\}\s*,?\s*\)|\s*[,}])/);
+  if (!loading) return false;
+  const fallback = loading[1] ?? "";
+  const DRAWS = /<(PageHeader|RouteHeader|EntityModeHeader|CrumbTrailHeader|\w+HeaderFallback)\b/;
+  if (DRAWS.test(fallback)) return true;
+  // Shorthand `loading` / a named function: read its local definition.
+  const name = loading[1] ? fallback.match(/^\s*(?:\(\)\s*=>\s*<)?(\w+)/)?.[1] : "loading";
+  if (!name) return false;
+  const def = text.match(new RegExp(`(?:const|function)\\s+${name}\\b[\\s\\S]{0,400}`));
+  return def ? DRAWS.test(def[0]) : false;
+}
+
 function findClientOnlyHeaders(files: string[], read: (f: string) => string): string[] {
   const renders = new Set(files.filter((f) => HEADER_RENDER.test(read(f))));
   const found: string[] = [];
   for (const file of files) {
-    for (const m of read(file).matchAll(CLIENT_ONLY_DYNAMIC)) {
+    const text = read(file);
+    for (const m of text.matchAll(CLIENT_ONLY_DYNAMIC)) {
       const target = resolveSpec(file, m[1]);
-      if (target && renders.has(target)) found.push(`${file} -> ${target}`);
+      if (!target || !renders.has(target)) continue;
+      // Covered: its `loading` fallback (rendered by the server) draws a header.
+      if (loadingDrawsHeader(text, m.index ?? 0)) continue;
+      found.push(`${file} -> ${target}`);
     }
   }
   return found;
@@ -364,6 +381,17 @@ describe("no route header is client-only", () => {
 
   it("keeps the baseline honest (a fixed entry leaves it)", () => {
     expect([...CLIENT_ONLY_HEADER_BASELINE].filter((row) => !found.includes(row))).toEqual([]);
+  });
+
+  it("counts a client-only header as covered when its loading fallback draws one (self-test)", () => {
+    const fake: Record<string, string> = {
+      "features/x/Covered.tsx": `const H = dynamic(() => import("@/features/shell/components/header/RouteHeader"), { ssr: false, loading: () => <XHeaderFallback /> });`,
+      "features/x/Bare.tsx": `const H = dynamic(() => import("@/features/shell/components/header/RouteHeader"), { ssr: false, loading: () => <Spinner /> });`,
+    };
+    const all = ["features/x/Covered.tsx", "features/x/Bare.tsx", "features/shell/components/header/RouteHeader.tsx"];
+    expect(findClientOnlyHeaders(all, (f) => fake[f] ?? read(f))).toEqual([
+      "features/x/Bare.tsx -> features/shell/components/header/RouteHeader.tsx",
+    ]);
   });
 
   it("detects the class (self-test)", () => {

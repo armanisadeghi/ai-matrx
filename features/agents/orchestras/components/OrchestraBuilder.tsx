@@ -196,10 +196,27 @@ export function OrchestraBuilder({
     status === "idle" ||
     (status === "loading" && members.length === 0 && !exists);
 
+  const modes = [
+    { name: "Canvas", href: basePath, icon: Network },
+    { name: "Grid", href: `${basePath}?view=grid`, icon: LayoutGrid },
+    { name: "Org chart", href: `${basePath}?view=chart`, icon: GitFork },
+  ];
+  const activeModeHref = view === "canvas" ? basePath : `${basePath}?view=${view}`;
+
   if (loading) {
+    // Back + name + modes are drawn while the orchestra loads, so the header
+    // is in the server HTML instead of popping in with the data.
     return (
-      <div className="bg-textured flex h-full items-center justify-center">
-        <SuspenseLoader centered={false} message="Loading orchestra builder…" />
+      <div className="bg-textured flex h-full flex-col overflow-hidden">
+        <EntityModeHeader
+          backHref="/agents/orchestras"
+          entityLabel={title}
+          modes={modes}
+          activeModeHref={activeModeHref}
+        />
+        <div className="flex flex-1 items-center justify-center">
+          <SuspenseLoader centered={false} message="Loading orchestra builder…" />
+        </div>
       </div>
     );
   }
@@ -324,12 +341,8 @@ export function OrchestraBuilder({
           href: `/agents/orchestras/${s.conductorId}`,
           active: s.conductorId === conductorId,
         }))}
-        modes={[
-          { name: "Canvas", href: basePath, icon: Network },
-          { name: "Grid", href: `${basePath}?view=grid`, icon: LayoutGrid },
-          { name: "Org chart", href: `${basePath}?view=chart`, icon: GitFork },
-        ]}
-        activeModeHref={view === "canvas" ? basePath : `${basePath}?view=${view}`}
+        modes={modes}
+        activeModeHref={activeModeHref}
         actions={headerActions}
         right={<IntelligenceIndicator feature="orchestras" label="Orchestra builder" />}
       />

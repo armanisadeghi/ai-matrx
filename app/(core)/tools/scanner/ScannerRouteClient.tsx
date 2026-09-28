@@ -14,11 +14,28 @@
 import { useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+
+/** Both skins open with a back door in the header; the server draws it while
+ *  the (browser-only) skin loads, so the header is never empty. */
+function ScannerHeaderFallback() {
+  return (
+    <PageHeader>
+      <div className="flex w-full min-w-0 items-center">
+        <ChevronLeftTapButton href="/tools/pdf-extractor" ariaLabel="Back" />
+      </div>
+    </PageHeader>
+  );
+}
 
 const loading = () => (
-  <div className="flex h-full items-center justify-center">
-    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-  </div>
+  <>
+    <ScannerHeaderFallback />
+    <div className="flex h-full items-center justify-center">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  </>
 );
 
 const ScannerSurface = dynamic(

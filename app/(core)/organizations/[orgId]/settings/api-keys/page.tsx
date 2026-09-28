@@ -128,12 +128,31 @@ export default function OrgApiKeysPage() {
     }
   };
 
+  // Drawn in every state, so the title is in the server HTML; the org's name
+  // is a sized placeholder until it loads.
+  const header = (
+    <PageHeader>
+      <CrumbTrailHeader
+        trail={[
+          organization
+            ? { label: organization.name, href: `/organizations/${orgId}` }
+            : { label: "", pending: true },
+          { label: "Settings", href: `/organizations/${orgId}/settings` },
+          { label: "API Keys" },
+        ]}
+      />
+    </PageHeader>
+  );
+
   if (loading || roleLoading) {
     return (
-      <div className="space-y-3 p-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-24 w-full" />
-      </div>
+      <>
+        {header}
+        <div className="space-y-3 p-6">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      </>
     );
   }
   if (error || !organization || !organizationId) {
@@ -148,15 +167,7 @@ export default function OrgApiKeysPage() {
 
   return (
     <>
-      <PageHeader>
-        <CrumbTrailHeader
-          trail={[
-            { label: organization.name, href: `/organizations/${orgId}` },
-            { label: "Settings", href: `/organizations/${orgId}/settings` },
-            { label: "API Keys" },
-          ]}
-        />
-      </PageHeader>
+      {header}
       {/* Scroll is owned by .shell-main (the OrgManage convention) — no nested
           overflow container, so content starts below the glass header and the
           action button stays clickable. */}

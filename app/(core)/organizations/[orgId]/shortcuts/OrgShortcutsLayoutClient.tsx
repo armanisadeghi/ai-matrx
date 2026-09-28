@@ -63,13 +63,28 @@ export function OrgShortcutsLayoutClient({
   const isEditPage = pathname.includes("/shortcuts/edit/");
 
   if (loading) {
+    // The header (back + section nav) needs nothing from the organization
+    // read, so it is drawn while it loads — in the server HTML.
     return (
-      <div className="h-full flex items-center justify-center bg-textured">
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading organization…
+      <>
+        {!isEditPage && (
+          <RouteHeader
+            left={
+              <ChevronLeftTapButton
+                href={`/organizations/${urlOrgId}`}
+                ariaLabel="Back"
+              />
+            }
+            center={<RouteModeNav items={getNavItems(urlOrgId)} />}
+          />
+        )}
+        <div className="h-full flex items-center justify-center bg-textured">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading organization…
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 

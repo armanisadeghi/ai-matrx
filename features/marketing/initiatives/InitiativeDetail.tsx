@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { Skeleton } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
@@ -42,7 +43,22 @@ export function InitiativeDetail({ id }: { id: string }) {
       live = false;
     };
   }, [id]);
-  if (loading) return <LoadingSurface label="Loading initiative…" />;
+  if (loading)
+    // Back + a name-sized placeholder while the initiative loads, so the
+    // header is in the server HTML.
+    return (
+      <>
+        <RouteHeader
+          left={
+            <>
+              <ChevronLeftTapButton href="/marketing/initiatives" ariaLabel="Back to initiatives" />
+              <Skeleton aria-label="Loading" className="ml-1 h-4 w-32 rounded" />
+            </>
+          }
+        />
+        <LoadingSurface label="Loading initiative…" />
+      </>
+    );
   if (loadError || !row)
     return (
       <AccessGate

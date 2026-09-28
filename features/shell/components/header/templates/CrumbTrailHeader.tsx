@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@ai-matrx/design-system";
 
 export interface CrumbOption {
   label: string;
@@ -49,6 +50,10 @@ export interface Crumb {
   options?: CrumbOption[];
   /** Optional heading above the options list (e.g. "Sites"). */
   optionsLabel?: string;
+  /** The level's name is still loading (a record read on the client): draws
+   *  a name-sized placeholder so the header is never empty in the server HTML
+   *  and the crumbs after it barely move when the name lands. */
+  pending?: boolean;
 }
 
 export interface CrumbTrailHeaderProps {
@@ -108,6 +113,13 @@ function CrumbOptions({ crumb }: { crumb: Crumb }) {
 }
 
 function CrumbNode({ crumb, isLast }: { crumb: Crumb; isLast: boolean }) {
+  if (crumb.pending) {
+    return (
+      <span className="flex min-w-0 items-center">
+        <Skeleton aria-label="Loading" className="h-4 w-24 rounded" />
+      </span>
+    );
+  }
   const text = isLast ? (
     <span
       className="min-w-0 break-words text-xs leading-4 font-medium text-foreground sm:text-sm"

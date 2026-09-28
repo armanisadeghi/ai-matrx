@@ -17,7 +17,17 @@ export function OrganizationPerformanceReviewsPage({
     useResolvedOrganization(orgSlugOrId);
 
   if (loading) {
+    // The header is drawn while the organization loads (its name a sized
+    // placeholder), so it is in the server HTML.
     return (
+      <>
+      <CrumbTrailHeader
+        backHref={`/organizations/${encodeURIComponent(orgSlugOrId)}`}
+        trail={[
+          { label: "", pending: true },
+          { label: organizationPerformanceReviewsManifest.label },
+        ]}
+      />
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <div className="flex h-full">
           <div className="hidden w-72 flex-none space-y-3 border-r border-border p-4 lg:block">
@@ -37,6 +47,7 @@ export function OrganizationPerformanceReviewsPage({
           </div>
         </div>
       </div>
+      </>
     );
   }
 

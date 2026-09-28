@@ -121,8 +121,15 @@ export function AssessmentResults({
   }, [assessmentId, resultId, reloadKey]);
 
   if (loading) {
+    // The header is drawn while the result loads, so it is in the server HTML.
     return (
       <div className="min-h-full w-full bg-textured">
+        <PageHeader>
+          <StudyDeckHeader
+            title="Results"
+            backHref={`${assessmentListDoor(pathname).href}/${assessmentId}`}
+          />
+        </PageHeader>
         <div className="mx-auto max-w-2xl px-4 py-8">
           <Skeleton className="h-28 w-full rounded-xl" />
           <Skeleton className="mt-4 h-64 w-full rounded-xl" />

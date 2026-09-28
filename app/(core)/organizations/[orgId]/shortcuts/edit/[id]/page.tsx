@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
@@ -82,13 +83,27 @@ export default function OrgEditShortcutPage({
   const resolved = shortcut ?? shortcutInList ?? null;
 
   if (isLoading && !resolved) {
+    // Back + a name-sized placeholder while the shortcut loads, so the header
+    // is never empty in the server HTML.
     return (
-      <div className="h-full flex items-center justify-center bg-textured">
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading shortcut…
+      <>
+        <RouteHeader
+          left={
+            <>
+              <ChevronLeftTapButton onClick={goToList} ariaLabel="Back to shortcuts" />
+              <span className="flex min-w-0 items-center px-1.5">
+                <Skeleton aria-label="Loading" className="h-4 w-32 rounded" />
+              </span>
+            </>
+          }
+        />
+        <div className="h-full flex items-center justify-center bg-textured">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading shortcut…
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 

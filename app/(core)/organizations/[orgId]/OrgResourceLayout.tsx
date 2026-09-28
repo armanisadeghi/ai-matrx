@@ -34,13 +34,21 @@ export function OrgResourceLayout({
   } = useResolvedOrganization(orgId);
 
   if (loading) {
+    // The header is drawn while the organization loads, so its title is in
+    // the server HTML (the org's name is a sized placeholder until it lands).
     return (
+      <>
+      <CrumbTrailHeader
+        backHref={`/organizations/${orgId}`}
+        trail={[{ label: "", pending: true }, { label: resourceName }]}
+      />
       <div className="h-full flex items-center justify-center bg-textured">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Loading…</p>
         </div>
       </div>
+      </>
     );
   }
 

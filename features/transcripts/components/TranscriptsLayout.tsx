@@ -149,26 +149,35 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
     toast.success("Transcript exported");
   };
 
+  // The header needs nothing from the transcript list, so it is drawn while
+  // the list loads — in the server HTML, and it never remounts.
+  const header = (
+    <PageHeader>
+      <TranscriptsProcessorHeader
+        hasActiveTranscript={activeTranscript !== null}
+        onCreateNew={handleCreateNew}
+        onRefresh={() => void handleRefresh()}
+        onCopy={() => void handleCopy()}
+        onExport={handleExport}
+        onDelete={handleDeleteClick}
+      />
+    </PageHeader>
+  );
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <>
+        {header}
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </>
     );
   }
 
   return (
     <>
-      <PageHeader>
-        <TranscriptsProcessorHeader
-          hasActiveTranscript={activeTranscript !== null}
-          onCreateNew={handleCreateNew}
-          onRefresh={() => void handleRefresh()}
-          onCopy={() => void handleCopy()}
-          onExport={handleExport}
-          onDelete={handleDeleteClick}
-        />
-      </PageHeader>
+      {header}
 
       <div
         className={cn(
