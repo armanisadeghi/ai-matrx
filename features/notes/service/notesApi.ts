@@ -18,6 +18,7 @@ import type {
   CreateNoteInput,
   UpdateNoteInput,
   UpdateNoteOptions,
+  DeleteNoteOptions,
   Note,
   NoteListItem,
 } from "../types";
@@ -63,8 +64,11 @@ export async function update(
  * await NotesAPI.delete(noteId);
  * ```
  */
-export async function remove(noteId: string): Promise<void> {
-  return deleteNoteService(noteId);
+export async function remove(
+  noteId: string,
+  options?: DeleteNoteOptions,
+): Promise<void> {
+  return deleteNoteService(noteId, options);
 }
 
 /**
@@ -111,7 +115,8 @@ export async function quickCreate(
   label?: string,
   organizationId?: string,
 ): Promise<Note> {
-  if (!organizationId) throw new Error("Choose an organization before creating a note.");
+  if (!organizationId)
+    throw new Error("Choose an organization before creating a note.");
   return createNoteService({
     label: label || "Quick Note",
     content,

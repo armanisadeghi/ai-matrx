@@ -98,6 +98,18 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "session",
   },
   {
+    name: "owned_tutor_conversations",
+    label: "Owned loaded tutor conversations",
+    description:
+      "The owned AI Tutor conversations loaded on this route, as { id, title, status }. Only these exact ids may be renamed, archived, restored, or moved to Trash by an agent. Shared conversations and conversations from every other feature are excluded.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 240,
+    autoContext: false,
+    sortOrder: 95,
+    group: "session",
+  },
+  {
     name: "tutor_agent_id",
     label: "Tutor agent ID",
     description:
@@ -410,6 +422,42 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "session",
     sortOrder: 120,
   },
+  {
+    name: "rename_tutor_conversation",
+    label: "Rename tutor conversation",
+    description:
+      "Renames one owned, loaded AI Tutor conversation immediately. Value is { conversation_id: string from owned_tutor_conversations, title: non-empty string }. The exact canonical conversation rename action is used. Shared, unloaded, and non-tutor conversation ids are refused before approval.",
+    valueType: "object",
+    updatesValue: "owned_tutor_conversations",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "session",
+    sortOrder: 130,
+  },
+  {
+    name: "archive_tutor_conversation",
+    label: "Archive or restore tutor conversation",
+    description:
+      "Archives or restores one owned, loaded AI Tutor conversation immediately. Value is { conversation_id: string from owned_tutor_conversations, archived: boolean }; true archives it and false restores it. Shared, unloaded, and non-tutor conversation ids are refused before approval.",
+    valueType: "object",
+    updatesValue: "owned_tutor_conversations",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "session",
+    sortOrder: 140,
+  },
+  {
+    name: "delete_tutor_conversation",
+    label: "Move tutor conversation to Trash",
+    description:
+      "Soft-deletes one owned, loaded AI Tutor conversation. Value is { conversation_id: string from owned_tutor_conversations }. The conversation leaves the Tutor list and its transcript moves to Trash, where it can be restored. Prefer archive when the learner may want to keep it visible later. Shared, unloaded, and non-tutor conversation ids are refused before approval.",
+    valueType: "object",
+    updatesValue: "owned_tutor_conversations",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "session",
+    sortOrder: 150,
+  },
 ];
 
 export const educationTutorManifest: SurfaceManifest = {
@@ -466,6 +514,11 @@ export function createEducationTutorScope(values: {
   trust_envelope?: Record<string, unknown>;
   turn_trust?: Record<string, unknown>;
   tutor_message_limit?: number;
+  owned_tutor_conversations?: Array<{
+    id: string;
+    title: string | null;
+    status: string;
+  }>;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

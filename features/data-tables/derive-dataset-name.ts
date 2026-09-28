@@ -76,6 +76,30 @@ async function fetchMessageDisplayText(
   return convertCxContentToDisplay(data.content).content;
 }
 
+/** "Table", "Table 1", "table 12": what a canvas calls a table nobody named. */
+export function isPlaceholderTableTitle(title: string): boolean {
+  return /^table(\s*\d+)?$/i.test(title.trim());
+}
+
+/** The title of the conversation the table's message sits in, when it has one. */
+async function fetchConversationTitle(messageId: string | null | undefined): Promise<string | null> {
+  if (!messageId) return null;
+  const { data: message } = await supabase
+    .schema("chat").from("message")
+    .select("conversation_id")
+    .eq("id", messageId)
+    .maybeSingle();
+  if (!message?.conversation_id) return null;
+  const { data: conversation } = await supabase
+    .schema("chat").from("conversation")
+    .select("title")
+    .is("deleted_at", null)
+    .eq("id", message.conversation_id)
+    .maybeSingle();
+  const title = conversation?.title?.trim();
+  return title && !isPlaceholderTableTitle(title) ? title : null;
+}
+
 /** Locate the table in flattened message text for heading lookup. */
 export function findTableOffsetInMessage(
   messageText: string,
@@ -141,8 +165,17 @@ export async function deriveDatasetNameForChatTable(
     }
   }
 
+  // A PLACEHOLDER IS NO NAME (lane HANDOVER, 2026-09-28). The canvas titles an untitled table
+  // "Table 1", and that won over the conversation Cedar Ridge Physical Therapy had just had
+  // ("Post-Knee Surgery Home Exercises"), so the clinic's data filled with "Table 1", "Table 1 (2)".
   const title = args.artifactTitle?.trim();
-  if (title) return normalizeDatasetDisplayName(title);
+  if (title && !isPlaceholderTableTitle(title)) return normalizeDatasetDisplayName(title);
+
+  const conversation = await fetchConversationTitle(args.sourceMessageId);
+  if (conversation) {
+    const normalized = normalizeDatasetDisplayName(conversation);
+    if (normalized) return normalized;
+  }
 
   const fromHeaders = deriveNameFromHeaders(args.headers);
   if (fromHeaders) return normalizeDatasetDisplayName(fromHeaders);

@@ -1656,3 +1656,31 @@ export async function fetchCredentialDefinitions(): Promise<
   }
   return defs;
 }
+
+// ── Fill devices (access ladder T-30) ─────────────────────────────────────
+
+/** One browser (an AI Matrx extension install) that may fill saved passwords. */
+export interface VaultFillDevice {
+  id: string;
+  label: string;
+  extension_origin: string | null;
+  registered_at: string | null;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  revoke_reason: string | null;
+  key_thumbprint: string;
+}
+
+/** The browsers that may fill this person's saved passwords, newest first. */
+export async function listVaultFillDevices(): Promise<VaultFillDevice[]> {
+  const resp = await vaultFetch<{ devices: VaultFillDevice[] }>("/fill-devices");
+  return resp.devices;
+}
+
+/** Turn filling off for one browser. It stays listed as turned off (audited). */
+export function revokeVaultFillDevice(deviceId: string): Promise<VaultFillDevice> {
+  return vaultFetch<VaultFillDevice>(
+    `/fill-devices/${encodeURIComponent(deviceId)}/revoke`,
+    { method: "POST" },
+  );
+}

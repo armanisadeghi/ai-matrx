@@ -33,7 +33,11 @@ function fail<T>(where: string, error: unknown): EngageResult<T> {
   // programmer, so the remedy sentence replaces it and the console noise is
   // dropped. Law: common-docs/policies/context-is-carried-never-rebuilt.md.
   if (isOrganizationRequiredError(error)) {
-    return { data: null, error: "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu." };
+    return {
+      data: null,
+      error:
+        "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu.",
+    };
   }
   const message =
     typeof error === "string"
@@ -228,6 +232,35 @@ export const gameService = {
       return { data: data as GameRoomRow, error: null };
     } catch (e) {
       return fail("setRoomStatus", e);
+    }
+  },
+
+  /**
+   * Retire a room that has not started yet. This is deliberately narrower than
+   * a general delete: an active room has live players and must finish through
+   * the game flow. RLS remains the authority for who may change the row.
+   */
+  async cancelLobbyRoom(roomId: string): Promise<EngageResult<GameRoomRow>> {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await EDU()
+        .from("game_room")
+        .update({ status: "ended", ended_at: now, deleted_at: now })
+        .eq("id", roomId)
+        .eq("status", "lobby")
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle();
+      if (error) return fail("cancelLobbyRoom", error);
+      if (!data) {
+        return fail(
+          "cancelLobbyRoom",
+          "This room is no longer waiting to start, or you no longer have permission to cancel it.",
+        );
+      }
+      return { data, error: null };
+    } catch (e) {
+      return fail("cancelLobbyRoom", e);
     }
   },
 
