@@ -211,6 +211,14 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- **2026-09-27** — The reviewer pane carries its own "Run a new review" button
+  (`ReviewerChat` header strip). Below 2xl the left rail is a drawer, so once a
+  review existed the primary action was reachable only through it. Every
+  review button (sidebar, reviewer pane, first-review empty state) now goes
+  through ONE door, `useEnrollmentActions().confirmAndRunReview`, which states
+  the cost before spending — the first-review button used to skip that
+  confirm. While a review runs the pane shows "Reviewing — m:ss" instead of a
+  button.
 - **2026-08-30** — Repo-artifact accepts are no longer dead ends: a report-only
   finding whose proposal names a `file_path` now says "Accept files it as a
   tracked change request" (and toasts so) — the server files the D8 repo-diff
