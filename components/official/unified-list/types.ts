@@ -303,7 +303,9 @@ export interface ItemActionsConfig<T extends BaseListItem> {
   onEdit?: (id: string) => void;
   
   /**
-   * Delete action (with confirmation)
+   * Move-to-Trash action (with confirmation). Must archive (set deleted_at),
+   * never hard-delete: the default confirmation copy tells the person the
+   * item can be restored from Trash.
    */
   onDelete?: (id: string) => Promise<void>;
   

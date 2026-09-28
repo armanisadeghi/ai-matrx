@@ -444,14 +444,14 @@ export function UnifiedListLayout<T extends BaseListItem>({
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle className="text-destructive">
-                                {config.itemActions.deleteConfirmation?.title || "Delete Item"}
+                                {config.itemActions.deleteConfirmation?.title || "Move to Trash?"}
                             </AlertDialogTitle>
                             <AlertDialogDescription>
                                 {config.itemActions.deleteConfirmation?.message
                                     ? config.itemActions.deleteConfirmation.message(
                                           deleteConfirmation.itemName || ""
                                       )
-                                    : `Are you sure you want to delete "${deleteConfirmation.itemName}"? This action cannot be undone.`}
+                                    : `"${deleteConfirmation.itemName}" moves to Trash. You can restore it from Trash.`}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -462,7 +462,7 @@ export function UnifiedListLayout<T extends BaseListItem>({
                                 onClick={handleConfirmDelete}
                                 className="bg-destructive hover:bg-destructive/90"
                             >
-                                {config.itemActions.deleteConfirmation?.confirmLabel || "Delete"}
+                                {config.itemActions.deleteConfirmation?.confirmLabel || "Move to Trash"}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
