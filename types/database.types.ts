@@ -16519,7 +16519,7 @@ export type Database = {
       }
       dm_conversations: {
         Row: {
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -16529,13 +16529,13 @@ export type Database = {
           metadata: Json
           organization_id: string
           type: string | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -16545,13 +16545,13 @@ export type Database = {
           metadata?: Json
           organization_id: string
           type?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -16561,7 +16561,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           type?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
