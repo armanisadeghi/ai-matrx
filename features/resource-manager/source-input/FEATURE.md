@@ -23,8 +23,8 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 
 **Hooks**
 - `useSourceSet(surfaceKey, { defaultForm?, organizationId? })` — THE client handler. `sources`, `topic/setTopic`, `addReady/addPending/settle/fail/remove`, `updateRef` (form, parts, cap, delivery), `setWaitForClean`, `toSourceSet()`, `applySourceSet()` (from the review page), `manifest()`, `resolve()`, `totalChars`, `manifestError`, `settled`, and (USI-3b, additive) `restoring` (the saved draft is not read back yet — show a loading state, never "nothing picked"), `restart(id)`, `updateDraft(id, patch)`. Landing the same Source twice keeps ONE card and says so on it. A host that needs the payload calls `useSourceSet` with the SAME `surfaceKey` it gave `<SourceInput>`.
-- `useSourceIntake(set, { attachTo, runner })` — every way new material becomes a Source, through the existing doors (below). USI-3b adds `resume(card)` (land the kept input again), `retryFile(card, file)`, `fileLanded(card, processedDocumentId)`.
-- `useSourceRecovery(set, intake, runner)` — UI-free: re-lands what a reload cut off (once per card, module-scope guard) and keeps + files an uploaded file's Source when reading makes one. Any UI on this core calls it once.
+- `useSourceIntake(set, { attachTo })` — every way new material becomes a Source, through the existing doors (below). USI-3b adds `resume(card)` (land the kept input again), `retryFile(card, file)`, `fileLanded(card, processedDocumentId)`.
+- `useSourceRecovery(set, intake, runner)` — UI-free: re-lands what a reload cut off (once per card, module-scope guard) and, for every stored-file card without a Source, reads the SERVER's state (`fileSource.ts`: `/files/{id}/rag-status` → keep / wait / start the one run / unreadable) — so a new upload, a reused copy, a picked file and a reload all end the same way, and a live run is never duplicated. Any UI on this core calls it once.
 - `interrupted.ts` — THE decision for a card cut off mid-landing (`reloadedCard`): resume from the kept input, re-offer a file whose bytes were lost (keeps its name), or the plain remedy.
 
 **Registry**
@@ -51,7 +51,7 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 |---|---|---|
 | Paste text | `buildPastedTextLanding` → `POST /sources/land` (kept, filed against `attachTo`) | `processed_document` |
 | A web page | scraper → lands → `keep` against `attachTo` | `processed_document` |
-| Upload a file / An image | `useFileUpload().uploadMany` (SHA-256 "use the one you already have"), filed at once `file → attachTo` through `associationsService` (the edge task attachments use), then `useProcessingRunner().runForCldFile`; when the run reports its Source it is kept + filed through `keepSource` | `file` |
+| Upload a file / An image | `useFileUpload().uploadMany` (SHA-256 "use the one you already have"), filed at once through `associationsService` in the direction `platform.association_types` registers (`fc_set → file`, `file → task`); then `useSourceRecovery` reads the server's state and starts the one run (`runForCldFile` → the orchestrator's file adapters, which land the Source) only when nothing is reading it; the Source is kept + filed through `keepSource` | `file` |
 | A YouTube video | fallback: `fetchYouTubeTranscript` → `POST /sources/land` (identity `youtube:<id>`) | `processed_document` |
 | A recording | fallback: upload → `transcribeCloudFile` → `POST /sources/land` (identity `audio-transcript:<fileId>`) | `processed_document` |
 | Your files / A note / Documents & tables | `ResourcePickerMenu initialView` → `resourceToSourceRef` (lane USI-1's total mapping) | the record's token |
@@ -72,7 +72,7 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 ## Known gaps (named, not silent)
 
 - YouTube and recordings have no landing door of their own; the transcript is read client-side and landed. Tracked in DESIGN.md A3 as fallback rows.
-- An uploaded file's Source is kept + filed only when THIS page's processing run reports it. The legacy ingest (`runForCldFile`) chunks a plain-text file without making a Source row at all, so such a file stays "Still being read" in the manifest and only the `file → attachTo` edge exists; a reload during processing also loses the run (no keep). Needs the file door to land a Source (server).
+- Browser uploads go to the standalone files service, which runs NO post-upload processing (aidream's `dispatch_on_upload` is absent there by design, S16) — so the Source input starts the one run itself when the server shows none. Other upload surfaces still rely on the scheduled sweep.
 - `pnpm sync-types` is refused at the time of writing by an unrelated drop in the aidream checkout (ai-visibility `PanelTrend`), so `/sources/manifest|resolve` are typed from the shared package, not the generated file.
 - "Wait for the clean version" is recorded on the draft; the host that runs the request must honour it (USI-5 onward).
 - Pasted text and transcripts land without `clean_content` (the clean stage is skipped for them), so `/sources/manifest` reports them "processing" forever while the stage table says "cleaned". Server-side (source resolution) — the card shows both honestly until it is fixed.
@@ -82,6 +82,7 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 
 ## Change log
 
+- 2026-09-28 — USI-3e: file Sources follow the server's state (`fileSource.ts` + test): text/markdown/PDF uploads land a Source (aidream: a person's run of an orchestrator-owned file goes through the file adapters and returns the Source id), a reused copy is kept at once, a reload mid-run re-attaches with no second job; attach targets send no edge label (the registry names it), file edges follow the registered direction, and the door files a Source for a deck the made-from way. Verified on the shared preview (own host) as admin@admin.com against a local aidream with the fixes.
 - 2026-09-28 — USI-3b: never lose input (kept input + auto re-land after reload, "Try again", "Choose it again"; `interrupted.ts` + test), uploads filed `file → attachTo` via `associationsService` and their Source kept when reading makes one, the family chooser (`ResourceFamilyPolicyEditor`, shared with chat) speaks in outcomes (`resource-family-words.ts` + test; chat chip reads "Best · All", "What the AI reads"), a stable "Bringing back what you picked…" state replaces the false "Nothing picked yet." (server HTML carries no empty state), one card per Source, a kept web page drops the stale "not saved" notice, recovery logic in the UI-free `useSourceRecovery`, demo takes `?attach=<type>:<id>[:label]`. Verified on the shared preview as admin@admin.com (1024 and 375): paste and web page reloaded mid-land came back landed, one row each, kept and filed against the test project; a repeat paste returned the same Source; the upload's `file → project` edge shows on the file's Info tab.
 
 - 2026-09-27 — Verified on the shared preview as admin@admin.com (desktop 1440, phone 375): paste → landed + kept; web page → landed; stored 240-page PDF → measured (359k), 3 of 73 parts picked, form switched to raw, review auto-opened above 100k; note picked; remove; reload keeps picks; max 3 enforced. YouTube reached the transcript route, which failed server-side (shown on the card).
