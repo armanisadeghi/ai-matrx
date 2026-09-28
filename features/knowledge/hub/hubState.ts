@@ -412,3 +412,30 @@ export function hubHref(s: HubState): string {
   const qs = hubStateToParams(s).toString();
   return qs ? `/knowledge?${qs}` : "/knowledge";
 }
+
+// ─── Organization reach ─────────────────────────────────────────────────────
+
+/**
+ * "Only the organization I am working in" — kept in the URL and in saved views
+ * as this word, never as an id, and resolved against the ONE active
+ * organization (Redux `appContext.organization_id`, set by the shell header)
+ * every time the query runs. So the hub never holds an organization of its
+ * own: change the header's organization and the results follow. With no
+ * organization chosen, it reaches every organization the person belongs to —
+ * the hub's default (reach is ALL unless the person narrows it).
+ */
+export const ACTIVE_ORGANIZATION = "active";
+
+export function resolveOrganizationReach(q: KnowledgeQuery, activeOrgId: string | null | undefined): KnowledgeQuery {
+  if (!q.organizations?.includes(ACTIVE_ORGANIZATION)) return q;
+  const rest = q.organizations.filter((o) => o !== ACTIVE_ORGANIZATION);
+  const ids = activeOrgId ? [...new Set([...rest, activeOrgId])] : rest;
+  const { organizations: _drop, ...others } = q;
+  return ids.length ? { ...others, organizations: ids } : others;
+}
+
+/** all · active (follows the header) · pinned (specific ids a link or older view carried). */
+export function organizationReachOf(q: KnowledgeQuery): "all" | "active" | "pinned" {
+  if (!q.organizations?.length) return "all";
+  return q.organizations.includes(ACTIVE_ORGANIZATION) ? "active" : "pinned";
+}

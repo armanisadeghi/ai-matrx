@@ -69,9 +69,12 @@ import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { keepSource, sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 import type { EntityRef, FiledRef, KnowledgeHit, KnowledgeQuery } from "@/features/knowledge/api/knowledgeSearch";
 import {
+  ACTIVE_ORGANIZATION,
   HUB_KINDS,
   isHubPresetViewKey,
   normalizeQuery,
+  organizationReachOf,
+  resolveOrganizationReach,
   selectionQuery,
   type HubLayout,
   type HubState,
@@ -341,8 +344,13 @@ export function KnowledgeHubPage({
     return row?.definition ?? (code ? presetDefinition(code) : null);
   };
   const presetPending = Boolean(presetKey && presetDef && appliedPreset.current !== presetKey);
-  const effectiveQuery =
-    presetPending && presetDef ? mergePresetQuery(presetDef.query, state.query) : state.query;
+  // The ONE active organization (the shell header's). The hub keeps none of its own: "Only my
+  // organization" is stored as a word and resolved here on every run.
+  const activeOrgId = useAppSelector(selectOrganizationId);
+  const effectiveQuery = resolveOrganizationReach(
+    presetPending && presetDef ? mergePresetQuery(presetDef.query, state.query) : state.query,
+    activeOrgId,
+  );
   // `library:*` (the Libraries preset) → every library this person can see.
   const expanded = expandAnyContainers(effectiveQuery, idsByType);
   // Ask (H4) answers over the same filter in a docked panel; the results keep listing it.
@@ -355,14 +363,13 @@ export function KnowledgeHubPage({
     undefined,
     rerank,
   );
-  const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
   const [saveDialog, setSaveDialog] = useState<null | { mode: "create" } | { mode: "rename"; view: HubSavedView }>(null);
   const viewCountInputs = sidebar.savedViews.items
     .filter((v) => v.definition)
     .slice(0, 40)
     .flatMap((v) => {
-      const x = expandAnyContainers(v.definition!.query, idsByType);
+      const x = expandAnyContainers(resolveOrganizationReach(v.definition!.query, activeOrgId), idsByType);
       return x.status === "pending" ? [] : [{ id: v.id, query: x.query }];
     });
   const { counts: viewCounts, refresh: refreshCounts } = useSavedViewCounts(
@@ -1483,20 +1490,25 @@ export function KnowledgeHubPage({
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel>Search reach</DropdownMenuLabel>
               <DropdownMenuRadioGroup
-                value={state.query.organizations?.length ? "current" : "all"}
+                value={organizationReachOf(state.query)}
                 onValueChange={(v) =>
                   write({
                     query: normalizeQuery({
                       ...state.query,
-                      organizations: v === "current" && activeOrgId ? [activeOrgId] : undefined,
+                      organizations: v === "active" ? [ACTIVE_ORGANIZATION] : undefined,
                     }),
                   })
                 }
               >
                 <DropdownMenuRadioItem value="all">Every organization I belong to</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="current" disabled={!activeOrgId}>
-                  {activeOrgName ? `Only ${activeOrgName}` : "Only the selected organization (choose one first)"}
+                <DropdownMenuRadioItem value="active" disabled={!activeOrgId}>
+                  {activeOrgName ? `Only ${activeOrgName}` : "Only my current organization"}
                 </DropdownMenuRadioItem>
+                {organizationReachOf(state.query) === "pinned" ? (
+                  <DropdownMenuRadioItem value="pinned" disabled>
+                    The organizations this link names
+                  </DropdownMenuRadioItem>
+                ) : null}
               </DropdownMenuRadioGroup>
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Rerank results</DropdownMenuLabel>

@@ -61,6 +61,8 @@ describe("row content", () => {
     });
     const c = transcriptRowContent(yt);
     expect(c).toEqual({
+      mediaKind: "youtube",
+      title: null,
       snippet: "When Thomas Young demonstrated the wave",
       channel: "Huygens Optics",
       speakers: [],
@@ -170,5 +172,74 @@ describe("the empty view", () => {
     expect(host.querySelector('[role="status"]')).toBeNull();
     expect(host.textContent).not.toContain("Load more");
     expect(host.querySelector("[data-hit-key]")).toBeNull();
+  });
+});
+
+// ─── Round 3: glyphs, placeholder titles, organization reach ────────────────
+
+import { hitIcon, TRANSCRIPT_MEDIA_ICON } from "@/features/knowledge/hub/hubPresentation";
+import { transcriptMediaKind } from "@/features/knowledge/hub/transcripts/transcriptRows";
+import {
+  ACTIVE_ORGANIZATION,
+  organizationReachOf,
+  resolveOrganizationReach,
+} from "@/features/knowledge/hub/hubState";
+import { AudioLines, Globe, MessagesSquare, Mic, MonitorPlay, Podcast, TextCursorInput, Users } from "lucide-react";
+
+describe("every row its own glyph", () => {
+  it("a transcript's record decides: YouTube, podcast, meeting, interview, recording", () => {
+    const kind = (over: Partial<TranscriptRecordFields>) => transcriptMediaKind(record(over));
+    expect(kind({ source_type: "video", metadata: { media: { adapter: "youtube" } } })).toBe("youtube");
+    expect(kind({ source_type: "video", metadata: { media: { adapter: "podcast_rss" } } })).toBe("podcast");
+    expect(kind({ source_type: "meeting" })).toBe("meeting");
+    expect(kind({ source_type: "audio", metadata: { origin: { surface: "masterwork.interview" } } })).toBe("interview");
+    expect(kind({ source_type: "audio" })).toBe("recording");
+    expect(kind({ source_type: "other" })).toBe("text");
+    expect(new Set(Object.values(TRANSCRIPT_MEDIA_ICON)).size).toBe(Object.keys(TRANSCRIPT_MEDIA_ICON).length);
+    expect([TRANSCRIPT_MEDIA_ICON.youtube, TRANSCRIPT_MEDIA_ICON.podcast, TRANSCRIPT_MEDIA_ICON.meeting, TRANSCRIPT_MEDIA_ICON.interview, TRANSCRIPT_MEDIA_ICON.recording]).toEqual([
+      MonitorPlay,
+      Podcast,
+      Users,
+      MessagesSquare,
+      Mic,
+    ]);
+  });
+  it("before a record is read, a transcript is never the mic: YouTube by origin, else the transcript glyph", () => {
+    expect(hitIcon({ entity: "processed_document", source_kind: "transcript", origin: "youtube", title: "x" }).Icon).toBe(MonitorPlay);
+    expect(hitIcon({ entity: "transcript", source_kind: "transcript", title: "x" }).Icon).toBe(AudioLines);
+  });
+  it("files wear their type; pages a globe; pasted text a cursor", () => {
+    const pdf = hitIcon({ entity: "file", title: "grant.pdf" });
+    const sheet = hitIcon({ entity: "file", title: "budget.xlsx" });
+    expect(pdf.Icon).not.toBe(sheet.Icon);
+    expect(pdf.className).toBeTruthy();
+    expect(hitIcon({ entity: "processed_document", source_kind: "web_page", title: "a.com" }).Icon).toBe(Globe);
+    expect(hitIcon({ entity: "processed_document", source_kind: "inline", title: "t" }).Icon).toBe(TextCursorInput);
+  });
+});
+
+describe("placeholder titles", () => {
+  it("'unlabeled' shows the opening words; with none, the kind and time", () => {
+    expect(transcriptRowContent(record({ title: "unlabeled", seg0: "I gave you flashcards and they were very specific about it" })).title).toBe(
+      "I gave you flashcards and they were…",
+    );
+    const bare = transcriptRowContent(record({ title: "Untitled transcript", source_type: "audio", created_at: "2026-09-27T19:35:00Z" })).title!;
+    expect(bare.startsWith("Recording · Sep 27")).toBe(true);
+    expect(transcriptRowContent(record({ title: "Board meeting" })).title).toBeNull();
+  });
+});
+
+describe("organization reach — one active organization, default all", () => {
+  it("no reach set means every organization", () => {
+    expect(resolveOrganizationReach({ mode: "find" }, "org-a")).toEqual({ mode: "find" });
+    expect(organizationReachOf({ mode: "find" })).toBe("all");
+  });
+  it("'only mine' is a word resolved against the live active organization, and follows it", () => {
+    const q = { mode: "find" as const, organizations: [ACTIVE_ORGANIZATION] };
+    expect(organizationReachOf(q)).toBe("active");
+    expect(resolveOrganizationReach(q, "org-a").organizations).toEqual(["org-a"]);
+    expect(resolveOrganizationReach(q, "org-b").organizations).toEqual(["org-b"]);
+    // No organization chosen: reach every organization, never an empty filter.
+    expect(resolveOrganizationReach(q, null).organizations).toBeUndefined();
   });
 });
