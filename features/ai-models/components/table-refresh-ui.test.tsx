@@ -149,10 +149,13 @@ describe.each(cases)("$name refresh failures", ({ rowLabel, loadError, render })
     });
 
     expect(host.textContent).toContain(loadError);
+    // One failure, one message: the table's (its desktop and card layouts each
+    // carry it), never a page banner beside it.
+    expect(host.querySelectorAll('[role="alert"]:not([data-matrx-table-read-failure] *)')).toHaveLength(0);
     const retry = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-      (button) => button.textContent === "Retry",
+      (button) => button.textContent === "Try again",
     );
-    if (!retry) throw new Error("Initial load failure did not render Retry.");
+    if (!retry) throw new Error("Initial load failure did not render Try again.");
     await act(async () => {
       retry.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -167,10 +170,11 @@ describe.each(cases)("$name refresh failures", ({ rowLabel, loadError, render })
 
     expect(host.textContent).toContain(rowLabel);
     expect(host.querySelector('[role="alert"]')?.textContent).toContain(loadError);
+    expect(host.querySelectorAll('[role="alert"]')).toHaveLength(1);
     const retry = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-      (button) => button.textContent === "Retry refresh",
+      (button) => button.textContent === "Try again",
     );
-    if (!retry) throw new Error("Retained-row refresh failure did not render Retry refresh.");
+    if (!retry) throw new Error("Retained-row refresh failure did not render Try again.");
     await act(async () => {
       retry.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });

@@ -370,6 +370,13 @@ export default function AiModelsContainer() {
               allModels={models}
               onClose={() => setAuditOpen(false)}
               onModelsChanged={loadData}
+              // With models on screen the stale-catalog strip above says the failure once.
+              read={{
+                status: models.length === 0 && loadError ? "error" : isLoading && models.length === 0 ? "loading" : "ready",
+                error: models.length > 0 ? null : loadError,
+                onRetry: () => void loadData(),
+                what: "the model catalog",
+              }}
             />
           </div>
         ) : (

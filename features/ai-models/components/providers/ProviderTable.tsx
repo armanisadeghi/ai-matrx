@@ -2,7 +2,6 @@
 
 import { useState, type ComponentType } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
@@ -36,7 +35,7 @@ import {
   TrashTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import type { AiProvider } from "../../types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 function LinkIcon({
   href,
@@ -275,18 +274,6 @@ export default function ProviderTable({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {error && providers.length > 0 ? (
-        <div
-          role="alert"
-          className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
-        >
-          <span className="min-w-0 flex-1">{error}</span>
-          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-            Retry refresh
-          </Button>
-          <ErrorAlchemyMenu className="ml-auto" />
-        </div>
-      ) : null}
       <MatrxDataTable<AiProvider>
         data={providers}
         isLoading={isLoading && providers.length === 0}
@@ -303,23 +290,13 @@ export default function ProviderTable({
             ? "bg-primary/10 hover:bg-primary/15"
             : undefined
         }
-        emptyState={
-          error
-            ? {
-                title: "Could not load providers",
-                description: error,
-                icon: <Building2 className="h-8 w-8" />,
-                action: (
-                  <Button size="sm" variant="outline" onClick={onRetry}>
-                    Retry
-                  </Button>
-                ),
-              }
-            : {
-                title: "No providers found",
-                icon: <Building2 className="h-8 w-8" />,
-              }
-        }
+        // The read's failure is the table's to say, once: the failure with no
+        // rows, a stale notice above rows kept from an earlier read.
+        read={readOf({ loading: isLoading, error }, { what: "providers", onRetry })}
+        emptyState={{
+          title: "No providers found",
+          icon: <Building2 className="h-8 w-8" />,
+        }}
         tableId="ai/providers"
         toolbar={{
           title: "AI Providers",

@@ -78,6 +78,7 @@ import {
   type UnitEconomicsRecentRun,
 } from "../service/kgCostService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // ---------------------------------------------------------------------------
@@ -294,12 +295,14 @@ function OrgLeaderboard({
   refreshing,
   total,
   onPick,
+  read,
 }: {
   orgs: OrgCostRow[];
   loading: boolean;
   refreshing: boolean;
   total: number | null;
   onPick: (orgId: string) => void;
+  read: ReadOutcome;
 }) {
   const columns: MatrxColumnDef<OrgCostRow>[] = [
     {
@@ -377,6 +380,7 @@ function OrgLeaderboard({
       getRowId={(row) => row.organization_id}
       isLoading={loading}
       isFetching={refreshing}
+      read={read}
       density="condensed"
       stickyHeader
       pageSize={0}
@@ -411,12 +415,14 @@ function PendingBatchesTable({
   refreshing,
   total,
   onPick,
+  read,
 }: {
   batches: BatchRow[];
   loading: boolean;
   refreshing: boolean;
   total: number | null;
   onPick: (batchRowId: string) => void;
+  read: ReadOutcome;
 }) {
   const columns: MatrxColumnDef<BatchRow>[] = [
     {
@@ -505,6 +511,7 @@ function PendingBatchesTable({
       data={batches}
       columns={columns}
       getRowId={(row) => row.id}
+      read={read}
       isLoading={loading}
       isFetching={refreshing}
       density="condensed"
@@ -1108,9 +1115,11 @@ function BatchDetailDialog({
 function BySourceKindTable({
   rows,
   loading,
+  read,
 }: {
   rows: UnitEconomicsBySourceKindRow[];
   loading: boolean;
+  read: ReadOutcome;
 }) {
   const columns: MatrxColumnDef<UnitEconomicsBySourceKindRow>[] = [
     {
@@ -1289,6 +1298,7 @@ function BySourceKindTable({
       columns={columns}
       getRowId={(row) => row.source_kind}
       isLoading={loading}
+      read={read}
       density="condensed"
       stickyHeader
       pageSize={0}
@@ -1309,9 +1319,11 @@ function BySourceKindTable({
 function RecentRunsTable({
   rows,
   loading,
+  read,
 }: {
   rows: UnitEconomicsRecentRun[];
   loading: boolean;
+  read: ReadOutcome;
 }) {
   const columns: MatrxColumnDef<UnitEconomicsRecentRun>[] = [
     {
@@ -1517,6 +1529,7 @@ function RecentRunsTable({
       data={rows}
       columns={columns}
       getRowId={(row) => row.id}
+      read={read}
       isLoading={loading}
       density="condensed"
       stickyHeader
@@ -1576,6 +1589,10 @@ function UnitEconomicsSection({ refreshTick, onRetry }: { refreshTick: number; o
   const cacheHitPct =
     cacheHits + cacheCalls > 0 ? (100 * cacheHits) / (cacheHits + cacheCalls) : null;
 
+  // The section's failure is said once, above; the tables render only once the
+  // read has answered (or is loading), so they carry its wait, never a second failure.
+  const tablesRead: ReadOutcome = { status: loading && !data ? "loading" : "ready", what: "unit economics", hasData: data !== null };
+
   const rawMultiplier = data?.enrichment.multiplier;
   const multiplierValue =
     rawMultiplier === null || rawMultiplier === undefined
@@ -1605,6 +1622,10 @@ function UnitEconomicsSection({ refreshTick, onRetry }: { refreshTick: number; o
 
       {error && <ReadFailure message={error} onRetry={onRetry} />}
 
+      {/* One read, one message: with nothing loaded the failure above is the whole
+          answer — no "$0" tiles, no second and third "could not load" in the tables. */}
+      {error && !data ? null : (
+      <>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
         <KpiTile
           label={`Window total (${days}d)`}
@@ -1666,12 +1687,14 @@ function UnitEconomicsSection({ refreshTick, onRetry }: { refreshTick: number; o
       </div>
 
       <div className="mt-4">
-        <BySourceKindTable rows={data?.by_source_kind ?? []} loading={loading} />
+        <BySourceKindTable rows={data?.by_source_kind ?? []} loading={loading} read={tablesRead} />
       </div>
 
       <div className="mt-4">
-        <RecentRunsTable rows={data?.recent_runs ?? []} loading={loading} />
+        <RecentRunsTable rows={data?.recent_runs ?? []} loading={loading} read={tablesRead} />
       </div>
+      </>
+      )}
     </section>
   );
 }
@@ -1793,8 +1816,8 @@ export function KgCostDashboard() {
           <UnitEconomicsSection refreshTick={refreshTick} onRetry={() => setRefreshTick((t) => t + 1)} />
 
           <section>
-            {orgsError && <ReadFailure message={orgsError} onRetry={() => setRefreshTick((t) => t + 1)} />}
             <OrgLeaderboard
+              read={readOf({ loading: orgsLoading, error: orgsError }, { what: "organizations", onRetry: () => setRefreshTick((t) => t + 1) })}
               orgs={orgs}
               loading={orgsLoading}
               refreshing={orgsRefreshing}
@@ -1804,8 +1827,8 @@ export function KgCostDashboard() {
           </section>
 
           <section>
-            {batchesError && <ReadFailure message={batchesError} onRetry={() => setRefreshTick((t) => t + 1)} />}
             <PendingBatchesTable
+              read={readOf({ loading: batchesLoading, error: batchesError }, { what: "in-flight batches", onRetry: () => setRefreshTick((t) => t + 1) })}
               batches={batches}
               loading={batchesLoading}
               refreshing={batchesRefreshing}

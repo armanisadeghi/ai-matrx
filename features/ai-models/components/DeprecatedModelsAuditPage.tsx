@@ -1,7 +1,7 @@
 'use client';
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { readOf } from "@/components/read-state/ReadGate";
 import React, { useEffect, useState, useCallback } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import { aiModelService } from '../service';
@@ -45,21 +45,13 @@ export default function DeprecatedModelsAuditPage() {
         return <ReadFailure error={loadError} what="the AI models" onRetry={() => void loadModels()} />;
     }
 
+    // A failed refresh over earlier models is the audit table's to say (stale notice), once.
     return (
-        <>
-        {loadError != null && (
-            <StaleDataNotice
-                hasData
-                what="the AI models"
-                onRetry={() => void loadModels()}
-                className="m-3"
-            />
-        )}
         <DeprecatedModelsAudit
             allModels={models}
             onClose={() => window.history.back()}
             onModelsChanged={loadModels}
+            read={readOf({ loading: isLoading, error: loadError, hasData: models.length > 0 }, { what: "the AI models", onRetry: () => void loadModels() })}
         />
-        </>
     );
 }

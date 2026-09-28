@@ -46,6 +46,7 @@ import { aiModelService } from "../../service";
 import type { AiApi, AiEndpoint } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 // ─── Shared bits ─────────────────────────────────────────────────────────────
 
@@ -506,11 +507,11 @@ function EndpointApiTable<T extends EndpointApiRow>({
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {(actionError || (loadError && rows.length > 0)) && (
+      {/* Action failures only: the read's failure is the table's to say (read=), once. */}
+      {actionError && (
         <div role="alert" className="flex items-start gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{actionError || loadError}</span>
-          {loadError ? <Button type="button" variant="outline" size="sm" onClick={onRetry}>Retry refresh</Button> : null}
+          <span>{actionError}</span>
           <ErrorAlchemyMenu className="ml-auto" />
         </div>
       )}
@@ -531,23 +532,11 @@ function EndpointApiTable<T extends EndpointApiRow>({
             ? "bg-primary/10 hover:bg-primary/15"
             : undefined
         }
-        emptyState={
-          loadError
-            ? {
-                title: `Could not load ${title.toLowerCase()}`,
-                description: loadError,
-                icon: <Plug className="h-8 w-8" />,
-                action: (
-                  <Button size="sm" variant="outline" onClick={onRetry}>
-                    Retry
-                  </Button>
-                ),
-              }
-            : {
-                title: "Nothing here yet",
-                icon: <Plug className="h-8 w-8" />,
-              }
-        }
+        read={readOf({ loading, error: loadError }, { what: title.toLowerCase(), onRetry })}
+        emptyState={{
+          title: "Nothing here yet",
+          icon: <Plug className="h-8 w-8" />,
+        }}
         tableId={deleteNoun === "endpoint" ? "ai/endpoints" : "ai/apis"}
         toolbar={{
           title,

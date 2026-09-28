@@ -75,6 +75,7 @@ import {
 } from "../service/kgInspectorService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const PAGE_SIZE = 50;
 const FETCH_MAX = 200;
@@ -482,13 +483,6 @@ function EntitiesTab({
   return (
     <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "entities", kg_entities_filter: { kind, q, tableQuery: tableQuery.state }, kg_entities: currentRows })}>
     <div className="flex flex-col gap-3">
-      {currentError ? (
-        <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
-          {currentError}
-          <ErrorAlchemyMenu error={currentError} />
-        </div>
-      ) : null}
-
       <MatrxDataTable<KgEntityRow>
         tableId="kg-inspector-entities"
         viewTabs={false}
@@ -535,6 +529,11 @@ function EntitiesTab({
           search: true,
           searchPlaceholder: "Search canonical names…",
         }}
+        read={readOf(
+          // A failed NEXT page is the footer's to say (with its retry); the read fails only when nothing loaded.
+          { loading: loading && currentRows.length === 0, error: currentRows.length === 0 ? currentError : null, hasData: currentRows.length > 0 },
+          { what: "entities", onRetry: () => setReloadNonce((current) => current + 1) },
+        )}
         emptyState={{ title: "No entities match the current filters." }}
         onRowOpen={(row) =>
           onSelectEntity({ id: row.id, name: row.canonical_name, kind: row.kind })
@@ -783,6 +782,7 @@ function EdgesTab({
   const [orgId, setOrgId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [edgesNonce, setEdgesNonce] = useState(0);
   const tableQuery = useTableUrlState({
     tableId: "kg-inspector-edges",
     defaultSort: { id: "weight", direction: "desc" },
@@ -816,7 +816,7 @@ function EdgesTab({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [edgeKind, orgId]);
+  }, [edgeKind, orgId, edgesNonce]);
 
   const edgeColumns: MatrxColumnDef<KgEdgeRow>[] = [
     {
@@ -869,13 +869,6 @@ function EdgesTab({
   return (
     <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "edges", kg_edges_filter: { orgId, edgeKind, tableQuery: tableQuery.state }, kg_edges: rawRows })}>
     <div className="flex flex-col gap-3">
-      {error ? (
-        <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      ) : null}
-
       <MatrxDataTable<KgEdgeRow>
         tableId="kg-inspector-edges"
         viewTabs={false}
@@ -908,6 +901,7 @@ function EdgesTab({
             />
           ),
         }}
+        read={readOf({ loading, error }, { what: "edges", onRetry: () => setEdgesNonce((n) => n + 1) })}
         emptyState={{ title: "No edges match the current filters." }}
         mobileCards={(row) => (
           <div className="rounded-md border border-border bg-card p-3">

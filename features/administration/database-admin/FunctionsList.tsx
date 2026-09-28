@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -11,7 +10,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { ViewTapButton } from "@ai-matrx/tap-target/buttons";
 import { databaseFunctionSignature, type DatabaseFunction } from "./types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface FunctionsListProps {
   functions: DatabaseFunction[];
@@ -111,20 +110,6 @@ export const FunctionsList = ({
 
   return (
     <div className="space-y-3">
-      {error && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          <span>{error}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-          >
-            Retry
-          </Button>
-          <ErrorAlchemyMenu />
-        </div>
-      )}
       <MatrxDataTable
         tableId="administration/database/database-admin/functions"
         data={functions}
@@ -133,6 +118,7 @@ export const FunctionsList = ({
         searchText={databaseFunctionSignature}
         isLoading={loading && functions.length === 0}
         isFetching={isRefreshing}
+        read={readOf({ loading, error }, { what: "the function catalog", onRetry: onRefresh })}
         density="condensed"
         stickyHeader
         copy={false}
@@ -153,14 +139,7 @@ export const FunctionsList = ({
             onClick={() => onViewDetails(func)}
           />
         )}
-        emptyState={{
-          title: error
-            ? "Function catalog unavailable"
-            : "No database functions found",
-          description: error
-            ? "Retry to reload the function catalog."
-            : undefined,
-        }}
+        emptyState={{ title: "No database functions found" }}
       />
     </div>
   );

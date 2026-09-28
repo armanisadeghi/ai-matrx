@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
@@ -31,6 +30,7 @@ import {
 import { Lock, SlidersHorizontal } from "lucide-react";
 import type { AiSetting } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 function CompactRange({
   min,
@@ -241,18 +241,6 @@ export default function SettingTable({
   ];
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {error && settings.length > 0 ? (
-        <div
-          role="alert"
-          className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
-        >
-          <span className="min-w-0 flex-1">{error}</span>
-          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-            Retry refresh
-          </Button>
-          <ErrorAlchemyMenu className="ml-auto" />
-        </div>
-      ) : null}
       <MatrxDataTable<AiSetting>
         data={settings}
         isLoading={isLoading && settings.length === 0}
@@ -269,23 +257,13 @@ export default function SettingTable({
             ? "bg-primary/10 hover:bg-primary/15"
             : undefined
         }
-        emptyState={
-          error
-            ? {
-                title: "Could not load settings",
-                description: error,
-                icon: <SlidersHorizontal className="h-8 w-8" />,
-                action: (
-                  <Button size="sm" variant="outline" onClick={onRetry}>
-                    Retry
-                  </Button>
-                ),
-              }
-            : {
-                title: "No settings found",
-                icon: <SlidersHorizontal className="h-8 w-8" />,
-              }
-        }
+        // The read's failure is the table's to say, once: the failure with no
+        // rows, a stale notice above rows kept from an earlier read.
+        read={readOf({ loading: isLoading, error }, { what: "settings", onRetry })}
+        emptyState={{
+          title: "No settings found",
+          icon: <SlidersHorizontal className="h-8 w-8" />,
+        }}
         tableId="ai/settings"
         toolbar={{
           title: "Settings Vocabulary",

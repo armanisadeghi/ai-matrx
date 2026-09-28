@@ -118,8 +118,11 @@ describe("FunctionsList canonical contract", () => {
       );
     });
 
-    expect(host.textContent).toContain("Function receipt unavailable");
-    expect(host.textContent).toContain("Retry");
+    // One failure, one message: the table says it (stale rows kept), not a page banner too.
+    expect(host.textContent).not.toContain("Function receipt unavailable");
+    expect(tableProps?.read).toEqual(
+      expect.objectContaining({ status: "error", error: "Function receipt unavailable", onRetry: expect.any(Function) }),
+    );
     expect(tableProps?.data).toBe(overloadedFunctions);
   });
 });

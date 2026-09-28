@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { readOf } from "@/components/read-state/ReadGate";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -621,11 +622,14 @@ export function ExposureAuditClient() {
               `${row.resource_type}:${row.resource_id} · ${row.discovery_status}`,
           }}
           window={{ enabled: true, title: (row) => row.display_name }}
+          read={readOf(
+            // A failed NEXT page is the footer's to say; the read fails only when nothing loaded.
+            { loading: pagination.loading, error: rows.length === 0 ? pagination.error : null, hasData: rows.length > 0 },
+            { what: "the exposure rows", onRetry: pagination.refresh },
+          )}
           emptyState={{
-            title: pagination.error ? "Exposure rows could not load" : "No matching exposure",
-            description: pagination.error
-              ? "Use Retry below to load the exposure rows."
-              : "No files or notes match this exposure, resource, and search combination.",
+            title: "No matching exposure",
+            description: "No files or notes match this exposure, resource, and search combination.",
           }}
         />
         </NonEditableContextMenu>

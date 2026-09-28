@@ -385,6 +385,9 @@ export default function OfferingsContainer() {
                 onDelete={handleDelete}
                 onCreate={openNew}
                 onRetry={loadData}
+                // A failure is said once for the whole page (ReadFailure / the stale
+                // notice above the tabs); the table carries the read's wait.
+                read={{ status: loading && offerings.length === 0 ? "loading" : "ready", what: "the model offerings", hasData: offerings.length > 0 }}
               />
             </div>
 

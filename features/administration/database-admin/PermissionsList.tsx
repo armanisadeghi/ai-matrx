@@ -7,7 +7,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Search } from "lucide-react";
 import type { DatabasePermission } from "./types";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface PermissionsListProps {
   permissions?: DatabasePermission[];
@@ -103,9 +103,6 @@ const PermissionsList = ({
 
   return (
     <div className="min-w-0" data-surface-value="database_permissions">
-      {error && (
-        <ErrorNotice size="inline" className="mb-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm" message={error} />
-      )}
       <MatrxDataTable
         tableId="database-admin-permissions"
         data={matching}
@@ -113,14 +110,11 @@ const PermissionsList = ({
         getRowId={permissionRowId}
         isLoading={loading}
         isFetching={isRefreshing}
+        read={readOf({ loading, error }, { what: "permissions", ...(onRefresh ? { onRetry: onRefresh } : {}) })}
         viewTabs={false}
         pageSize={25}
         detail={{ enabled: false }}
-        emptyState={{
-          title: error
-            ? "Permissions could not be loaded"
-            : "No permissions match",
-        }}
+        emptyState={{ title: "No permissions match" }}
         coverage={
           error
             ? undefined

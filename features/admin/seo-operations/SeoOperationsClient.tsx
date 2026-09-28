@@ -55,20 +55,26 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 // ── Automations panel ───────────────────────────────────────────────────────
 
 export function AutomationsPanel() {
   const [rows, setRows] = useState<SeoTaskRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadNonce, setLoadNonce] = useState(0);
   const [runningId, setRunningId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSeoTasks()
-      .then(setRows)
-      .catch((error) => toast.error(`Tasks failed to load: ${String(error)}`))
+      .then((next) => {
+        setRows(next);
+        setLoadError(null);
+      })
+      .catch((error: unknown) => setLoadError(error))
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadNonce]);
 
   const trigger = useCallback(async (task: SeoTaskRow) => {
     setRunningId(task.id);
@@ -192,6 +198,7 @@ export function AutomationsPanel() {
           columns={columns}
           getRowId={(row) => row.id}
           isLoading={loading}
+          read={readOf({ loading, error: loadError }, { what: "SEO automations", onRetry: () => { setLoading(true); setLoadNonce((n) => n + 1); } })}
           pageSize={30}
           emptyState={{ title: "No SEO automations found" }}
           toolbar={{ search: true }}
@@ -207,6 +214,8 @@ function MandatesPanel() {
   const [mandates, setMandates] = useState<SeoMandateRow[]>([]);
   const [provisions, setProvisions] = useState<SeoProvisionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadNonce, setLoadNonce] = useState(0);
   const [clickedMandate, setClickedMandate] = useState<SeoMandateRow | null>(
     null,
   );
@@ -216,10 +225,11 @@ function MandatesPanel() {
       .then(([mandateRows, provisionRows]) => {
         setMandates(mandateRows);
         setProvisions(provisionRows);
+        setLoadError(null);
       })
-      .catch((error) => toast.error(`Mandates failed to load: ${String(error)}`))
+      .catch((error: unknown) => setLoadError(error))
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadNonce]);
 
   const provisionByKey = useMemo(() => {
     const map = new Map<string, SeoProvisionRow>();
@@ -369,6 +379,7 @@ function MandatesPanel() {
           columns={columns}
           getRowId={(row) => row.id}
           isLoading={loading}
+          read={readOf({ loading, error: loadError }, { what: "SEO mandates", onRetry: () => { setLoading(true); setLoadNonce((n) => n + 1); } })}
           pageSize={30}
           emptyState={{ title: "No SEO mandates found" }}
           toolbar={{ search: true }}

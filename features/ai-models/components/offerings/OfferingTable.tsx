@@ -20,6 +20,7 @@ import {
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 import {
   ProviderPriceCell,
   type ProviderPriceField,
@@ -35,6 +36,8 @@ interface OfferingTableProps {
   onDelete: (offering: AiOffering) => void;
   onCreate: () => void;
   onRetry: () => void;
+  /** The offerings read (the container owns it). */
+  read?: ReadOutcome | undefined;
 }
 
 function ProviderModelIdCell({ value }: { value: string }) {
@@ -119,6 +122,7 @@ export default function OfferingTable({
   onDelete,
   onCreate,
   onRetry,
+  read,
 }: OfferingTableProps) {
   const modelName = (id: string) => {
     const model = models.find((item) => item.id === id);
@@ -273,6 +277,7 @@ export default function OfferingTable({
         detail={{ enabled: false }}
         onRowOpen={onSelect}
         tableId="ai/offerings"
+        read={read}
         emptyState={{ title: "No offerings yet." }}
         toolbar={{
           title: "AI Offerings",

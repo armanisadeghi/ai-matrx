@@ -55,11 +55,14 @@ import {
 } from "@ai-matrx/design-system/data-table";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 interface DeprecatedModelsAuditProps {
   allModels: AiModel[];
   onClose: () => void;
   onModelsChanged: () => void | Promise<void>;
+  /** The read of `allModels` (the parent owns it): the audit's rows are its answer. */
+  read?: ReadOutcome | undefined;
 }
 
 interface DeprecatedEntry {
@@ -124,6 +127,7 @@ export default function DeprecatedModelsAudit({
   allModels,
   onClose,
   onModelsChanged,
+  read,
 }: DeprecatedModelsAuditProps) {
   const [entries, setEntries] = useState<DeprecatedEntry[]>([]);
   // ── Agent Change Impact (I5): every model swap ends in the batch panel ──
@@ -620,6 +624,7 @@ export default function DeprecatedModelsAudit({
           defaultSort={{ id: "total", direction: "desc" }}
           coverage={{ noun: "deprecated model", answeredBy: "client" }}
           copy={false}
+          read={read}
           emptyState={{
             icon: entries.length === 0 ? (
               <CheckCircle2 className="h-10 w-10 opacity-30" />
