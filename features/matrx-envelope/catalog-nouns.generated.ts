@@ -1313,6 +1313,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Billing product",
   "family": "Other"
  },
+ "billing_spend_approval": {
+  "label": "Spend Approval",
+  "family": "Other"
+ },
  "billing_spend_guardrail": {
   "label": "Spend Guardrail",
   "family": "Other"
@@ -1395,6 +1399,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "calendar_event": {
   "label": "Calendar event",
+  "family": "Other"
+ },
+ "campaign_watch_ramp_gate_run": {
+  "label": "Ramp gate run",
+  "family": "Other"
+ },
+ "campaign_watch_switch_outbox": {
+  "label": "Switch outbox",
+  "family": "Other"
+ },
+ "campaign_watch_switch_window": {
+  "label": "Switch window",
   "family": "Other"
  },
  "canvas_comment": {
@@ -1713,6 +1729,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Recall Audit",
   "family": "Other"
  },
+ "communication_calendar_selected_snapshot_state": {
+  "label": "Calendar snapshot state",
+  "family": "Other"
+ },
+ "communication_channel_readiness": {
+  "label": "Channel readiness",
+  "family": "Other"
+ },
  "comparison_set": {
   "label": "Comparison Set",
   "family": "Other"
@@ -1877,6 +1901,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Sending Policy",
   "family": "Other"
  },
+ "custom_agg_digest_checked": {
+  "label": "Aggregate digest checked",
+  "family": "Other"
+ },
  "custom_entity_definition": {
   "label": "Custom Object",
   "family": "Other"
@@ -1891,6 +1919,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "custom_record": {
   "label": "Custom Record",
+  "family": "Other"
+ },
+ "custom_share_tails_mine_repair": {
+  "label": "Share tails repair",
   "family": "Other"
  },
  "data_rights_event": {
@@ -2102,7 +2134,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Other"
  },
  "fc_set": {
-  "label": "Flashcard Set",
+  "label": "Flashcard Deck",
   "family": "Other"
  },
  "feature_knob": {
@@ -2797,6 +2829,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Emergency access request",
   "family": "Other"
  },
+ "iam_org_availability_key": {
+  "label": "Organization availability key",
+  "family": "Other"
+ },
+ "iam_read_lane_v2_rollout": {
+  "label": "Read lane v2 rollout",
+  "family": "Other"
+ },
  "idempotency": {
   "label": "Idempotency",
   "family": "Other"
@@ -3233,6 +3273,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Check Run",
   "family": "Other"
  },
+ "ops_db_host_sample": {
+  "label": "Database host sample",
+  "family": "Other"
+ },
  "ops_issue_class": {
   "label": "Ops Issue Class",
   "family": "Other"
@@ -3417,8 +3461,52 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Actor token event",
   "family": "Other"
  },
+ "platform_class_approval_by_arman": {
+  "label": "Class approval by Arman",
+  "family": "Other"
+ },
  "platform_continued_access": {
   "label": "Continued Access",
+  "family": "Other"
+ },
+ "platform_cutover_census_run": {
+  "label": "Cutover census run",
+  "family": "Other"
+ },
+ "platform_cutover_evaluation_replaced": {
+  "label": "Cutover evaluation replaced",
+  "family": "Other"
+ },
+ "platform_cutover_evaluation_write": {
+  "label": "Cutover evaluation write",
+  "family": "Other"
+ },
+ "platform_cutover_seam": {
+  "label": "Cutover seam",
+  "family": "Other"
+ },
+ "platform_cutover_seam_measure": {
+  "label": "Cutover seam measure",
+  "family": "Other"
+ },
+ "platform_cutover_seam_press": {
+  "label": "Cutover seam press",
+  "family": "Other"
+ },
+ "platform_doors_only_pending_cutover": {
+  "label": "Doors-only pending cutover",
+  "family": "Other"
+ },
+ "platform_google_calendar_event_create_intent": {
+  "label": "Google calendar event create intent",
+  "family": "Other"
+ },
+ "platform_google_task_create_intent": {
+  "label": "Google task create intent",
+  "family": "Other"
+ },
+ "platform_kernel_fingerprint_record": {
+  "label": "Kernel fingerprint record",
   "family": "Other"
  },
  "platform_outcome_event": {
@@ -3429,8 +3517,20 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Outsider consumer",
   "family": "Other"
  },
+ "platform_provision_base_contract_pending": {
+  "label": "Provision base contract pending",
+  "family": "Other"
+ },
  "platform_reachability": {
   "label": "Reachability",
+  "family": "Other"
+ },
+ "platform_reachability_rebuild_pending": {
+  "label": "Reachability rebuild pending",
+  "family": "Other"
+ },
+ "platform_realtime_topic_prefix": {
+  "label": "Realtime topic prefix",
   "family": "Other"
  },
  "platform_reference_category": {
@@ -3459,6 +3559,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "platform_share_link": {
   "label": "Share link",
+  "family": "Other"
+ },
+ "platform_strict_class_probe": {
+  "label": "Strict class probe",
   "family": "Other"
  },
  "podcast_race": {
@@ -3865,6 +3969,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Short Link",
   "family": "Other"
  },
+ "sign_in_fk_legacy": {
+  "label": "Sign-in reference baseline",
+  "family": "Other"
+ },
  "sms_consent": {
   "label": "SMS Consent",
   "family": "Other"
@@ -4177,6 +4285,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Uploads Inflight",
   "family": "Other"
  },
+ "user": {
+  "label": "User",
+  "family": "Other"
+ },
  "user_achievement": {
   "label": "User Achievement",
   "family": "Other"
@@ -4447,6 +4559,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "web_tag_manager_snapshot": {
   "label": "Tag Manager snapshot",
+  "family": "Other"
+ },
+ "web_voice_fingerprint": {
+  "label": "Voice Fingerprint",
   "family": "Other"
  },
  "web_youtube_video": {
