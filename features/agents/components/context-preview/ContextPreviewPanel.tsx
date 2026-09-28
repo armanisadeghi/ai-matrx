@@ -50,6 +50,7 @@ import {
 import { AttachedContextSection } from "./AttachedContextSection";
 import { ContextCompareView } from "./ContextCompareView";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 
 type View = "resolved" | "compare" | "attached";
 
@@ -563,7 +564,7 @@ export function ContextPreviewPanel({
         const docKind = docKindForContextKey(e.key);
         return {
           key: e.key,
-          label: e.label?.trim() || e.key,
+          label: contextEntryLabel(e),
           kind:
             docKind === "working"
               ? "working_document"

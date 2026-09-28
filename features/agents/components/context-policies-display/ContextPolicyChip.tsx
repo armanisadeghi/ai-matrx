@@ -20,6 +20,7 @@ import { CONTEXT_TYPE_TILE_LABEL } from "./contextPolicyTile.theme";
 import { contextPolicyEntryPreview } from "./contextPolicyPreview";
 import { ContextPolicyDetailSheet } from "./ContextPolicyDetailSheet";
 import { ContextPolicyTile } from "./ContextPolicyTile";
+import { contextEntryLabel } from "./contextEntryLabel";
 
 interface ContextPolicyChipProps {
   conversationId: string;
@@ -43,7 +44,7 @@ export function ContextPolicyChip({
   const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
   const typeLabel = CONTEXT_TYPE_TILE_LABEL[type] ?? "Context";
 
-  const label = policy?.label?.trim() || entry.label?.trim() || entry.key;
+  const label = contextEntryLabel(entry, policy?.label);
   const liveEntry = useAppSelector(
     selectInstanceContextEntry(conversationId, entry.key),
   );

@@ -119,6 +119,7 @@ import { TaskPanel } from "@/features/agents/ui-first-tools/ui/lists/TaskPanel";
 import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { selectActiveScopeIdsByType } from "@/features/scopes/redux/selectors/active-context";
+import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 
 interface ConversationContextRailProps {
   conversationId: string;
@@ -545,7 +546,7 @@ export function ConversationContextRail({
       // by the branches ABOVE and are untouched.
       if (!machineFramesVisible) continue;
       const Icon = CONTEXT_TYPE_ICON[e.type] ?? FALLBACK_CONTEXT_ICON;
-      const label = e.label?.trim() || e.key;
+      const label = contextEntryLabel(e);
       out.push({
         id: `ctx:${e.key}`,
         icon: Icon,
