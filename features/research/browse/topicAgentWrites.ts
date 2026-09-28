@@ -135,7 +135,7 @@ export function parseDeleteTopics(value: unknown, rows: ResearchTopicListRow[]):
 }
 
 export interface ListViewPlan {
-  scope?: "mine" | "orgs";
+  scope?: "mine" | "team" | "orgs";
   archived?: "active" | "archived" | "all";
   search?: string;
 }
@@ -154,8 +154,8 @@ export function parseListView(value: unknown): ListViewPlan {
   const obj = value as Record<string, unknown>;
   const plan: ListViewPlan = {};
   if (obj.scope !== undefined) {
-    if (obj.scope !== "mine" && obj.scope !== "orgs")
-      throw new Error(`${target}: scope must be "mine" or "orgs".`);
+    if (obj.scope !== "mine" && obj.scope !== "team" && obj.scope !== "orgs")
+      throw new Error(`${target}: scope must be "mine", "team" or "orgs".`);
     plan.scope = obj.scope;
   }
   if (obj.archived !== undefined) {

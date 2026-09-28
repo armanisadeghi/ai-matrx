@@ -183,7 +183,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "list_view",
     label: "List view",
     description:
-      'Changes WHICH topics the list shows — nothing is saved or changed on any topic. Value is a JSON OBJECT with any of { scope?: "mine" | "orgs", archived?: "active" | "archived" | "all", search?: string (matches names and research questions; "" clears it) }, e.g. { "archived": "all" }. update_topics and delete_topics act only on topics on screen, so switch the view first to reach an archived topic (archived: "archived" or "all") or one outside the current scope. Read topic_list again after it applies.',
+      'Changes WHICH topics the list shows — nothing is saved or changed on any topic. Value is a JSON OBJECT with any of { scope?: "mine" | "team" | "orgs" (team = what you and the people you share a team with made), archived?: "active" | "archived" | "all", search?: string (matches names and research questions; "" clears it) }, e.g. { "archived": "all" }. update_topics and delete_topics act only on topics on screen, so switch the view first to reach an archived topic (archived: "archived" or "all") or one outside the current scope. Read topic_list again after it applies.',
     valueType: "object",
     updatesValue: "list_archived",
     mode: "ui",

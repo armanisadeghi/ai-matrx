@@ -120,6 +120,9 @@ describe("list_view", () => {
       scope: "mine",
       search: "heat pump",
     });
+    // An agent can open the My team view the tab bar offers, and nothing outside the vocabulary.
+    expect(parseListView({ scope: "team" })).toEqual({ scope: "team" });
+    expect(() => parseListView({ scope: "everyone" })).toThrow(/"mine", "team" or "orgs"/);
     expect(() => parseListView({ archived: "deleted" })).toThrow(/"active", "archived" or "all"/);
     expect(() => parseListView({})).toThrow(/changes nothing/);
     expect(() => parseListView(["all"])).toThrow(/OBJECT/);

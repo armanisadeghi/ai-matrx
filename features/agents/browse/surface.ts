@@ -19,6 +19,7 @@ import type { AgentBrowseRow } from "./types";
  */
 export const AGENT_BROWSE_OWNERSHIP_TABS = [
   "mine",
+  "team",
   "orgs",
   "shared",
   "public",

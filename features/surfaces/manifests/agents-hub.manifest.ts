@@ -345,7 +345,7 @@ const writeTargets: SurfaceWriteTarget[] = [
       "Value is an OBJECT containing ONLY the keys you want to change; every key is optional and each one you send REPLACES that filter outright. " +
       'Keys: `search_query` (string; matches agent names and tags, or prompt text too when `deep_search` is on; "" clears it), ' +
       "`deep_search` (boolean; true also searches INSIDE agent prompts, server-side), " +
-      '`ownership_tab` (one of the ownership tabs visible in the current gallery: canonical `/agents/all` offers "mine" | "orgs" | "shared" | "public", and additionally "system" for a Matrx admin; temporary `/agents/classic` offers "mine" | "shared" | "all", and rejects "shared" when that tab is not rendered), ' +
+      '`ownership_tab` (one of the ownership tabs visible in the current gallery: canonical `/agents/all` offers "mine" | "team" | "orgs" | "shared" | "public" ("team" = made by you or someone you share a team with), and additionally "system" for a Matrx admin; temporary `/agents/classic` offers "mine" | "shared" | "all", and rejects "shared" when that tab is not rendered), ' +
       "`sort_by` (" +
       SORT_OPTIONS.map((o) => `"${o.value}"`).join(" | ") +
       "), " +
@@ -418,7 +418,7 @@ export function createAgentsHubScope(values: {
   // alwaysAvailable: false because empty is the valid default
   search_query?: string;
   deep_search: boolean;
-  ownership_tab: "mine" | "orgs" | "shared" | "public" | "all" | "system";
+  ownership_tab: "mine" | "team" | "orgs" | "shared" | "public" | "all" | "system";
   sort_by: string;
   // alwaysAvailable: false because empty arrays are the valid default
   included_categories?: string[];
