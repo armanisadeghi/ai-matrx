@@ -282,12 +282,18 @@ describe("PageHeader is server-rendered", () => {
     segment.id = "S:0";
     document.body.appendChild(segment);
     segment.innerHTML = renderToString(header("Flashcard set"));
+    // The ghost is drawn while the HTML parses, before the bundle has loaded:
+    // the client's "ghost born" hook does not exist yet.
+    const w = window as Window & { __matrxHeaderGhostBorn?: () => void };
+    const born = w.__matrxHeaderGhostBorn;
+    delete w.__matrxHeaderGhostBorn;
     segment.querySelectorAll("script").forEach((dead) => {
       const live = document.createElement("script");
       live.textContent = dead.textContent;
       dead.replaceWith(live);
     });
     flushFrame();
+    w.__matrxHeaderGhostBorn = born;
     expect(document.querySelector("matrx-header-ghost")?.textContent).toContain("Flashcard set");
   }
 
@@ -348,6 +354,63 @@ describe("PageHeader is server-rendered", () => {
     streamStaleSegment(false);
 
     act(() => root!.render(<Shell>{header("AI-Powered SEO")}</Shell>));
+    expect(document.querySelector("matrx-header-ghost")).toBeNull();
+    expect(document.querySelector("[data-page-header-ssr]")).toBeNull();
+  });
+
+  // 9. A CENTER ghost drawn in a frame that arrives AFTER the real header
+  //    mounted. Observed 2026-09-28 on /files/f/<id> (loading.tsx + a hidden
+  //    agent tab): the center ghost waits for requestAnimationFrame, frames
+  //    are held while the tab is hidden, React client-rendered the boundary
+  //    and its header swept first (no ghost yet, so no watcher) — then the
+  //    frame came and the placeholder "Loading…" was cloned into a ghost
+  //    that nothing ever swept: two titles in the header.
+  function streamSegmentFrameHeld(boundaryStillPending: boolean) {
+    if (boundaryStillPending) {
+      const marker = document.createElement("template");
+      marker.id = "B:0";
+      app.appendChild(marker);
+    }
+    const segment = document.createElement("div");
+    segment.hidden = true;
+    segment.id = "S:0";
+    document.body.appendChild(segment);
+    segment.innerHTML = renderToString(header("Loading…"));
+    segment.querySelectorAll("script").forEach((dead) => {
+      const live = document.createElement("script");
+      live.textContent = dead.textContent;
+      dead.replaceWith(live);
+    });
+    // The frame is held (hidden tab): no ghost yet.
+    expect(document.querySelector("matrx-header-ghost")).toBeNull();
+  }
+
+  it("drops a center ghost drawn in a late frame after its segment was discarded", () => {
+    root = createRoot(app);
+    act(() => root!.render(<Shell>{null}</Shell>));
+    streamSegmentFrameHeld(false);
+    act(() => root!.render(<Shell>{header("soil-health-field-notes.txt")}</Shell>));
+
+    flushFrame();
+
+    expect(slot().textContent).toContain("soil-health-field-notes.txt");
+    expect(document.querySelector("matrx-header-ghost")).toBeNull();
+    expect(document.querySelector("[data-page-header-ssr]")).toBeNull();
+  });
+
+  it("drops a late-frame center ghost once its pending segment is discarded later", async () => {
+    root = createRoot(app);
+    act(() => root!.render(<Shell>{null}</Shell>));
+    streamSegmentFrameHeld(true);
+    act(() => root!.render(<Shell>{header("soil-health-field-notes.txt")}</Shell>));
+    flushFrame();
+    // Still pending: the ghost may stand in for the unrevealed segment.
+    expect(document.querySelector("matrx-header-ghost")?.textContent).toContain("Loading…");
+
+    document.getElementById("B:0")!.remove();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
     expect(document.querySelector("matrx-header-ghost")).toBeNull();
     expect(document.querySelector("[data-page-header-ssr]")).toBeNull();
   });
