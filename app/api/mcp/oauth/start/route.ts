@@ -3,7 +3,9 @@ import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import {
   discoverOAuthEndpoints,
+  DynamicClientRegistrationError,
   registerDynamicClient,
+  resolveOAuthServerMetadata,
   resolveRegisteredTokenEndpointAuthMethod,
   selectDcrTokenEndpointAuthMethod,
 } from "@/features/agents/services/mcp-oauth/discovery";
@@ -113,9 +115,12 @@ export async function GET(req: NextRequest) {
   }
   const discoveryEndpoint = endpointOverride ?? server.endpoint_url;
 
-  // Static auth endpoints stored in metadata (used as primary or fallback for
-  // servers like Canva that use traditional OAuth without MCP discovery).
-  const staticMeta = (server.metadata ?? {}) as Record<string, string>;
+  // Static endpoints are catalog hints for providers without discovery docs.
+  // They remain a fallback; successful discovery may also advertise DCR.
+  const staticMeta =
+    server.metadata && typeof server.metadata === "object" && !Array.isArray(server.metadata)
+      ? (server.metadata as Record<string, unknown>)
+      : {};
   const supportsCimd = supportsClientIdMetadataDocument(server.metadata);
   const staticAuthEndpoint = staticMeta["oauth_auth_endpoint"] as
     string | undefined;
@@ -130,17 +135,18 @@ export async function GET(req: NextRequest) {
       ReturnType<typeof discoverOAuthEndpoints>
     >["protectedResource"] = null;
 
-    // If both static endpoints are known, skip discovery entirely — faster and
-    // more reliable for providers (e.g. Canva) that don't expose well-known docs.
-    if (staticAuthEndpoint && staticTokenEndpoint) {
+    // A catalog client ID is an explicit registration contract. Its paired
+    // static endpoints may belong to that registered application rather than
+    // the MCP resource's discovery issuer, so retain that established flow.
+    // All unregistered connections discover first to retain DCR capabilities.
+    const usesExplicitStaticRegistration = Boolean(
+      server.oauth_client_id && staticAuthEndpoint && staticTokenEndpoint,
+    );
+
+    if (usesExplicitStaticRegistration) {
       console.log(
-        `[MCP OAuth] Using static endpoints for ${server.slug} (skipping discovery)`,
+        `[MCP OAuth] Using registered static client endpoints for ${server.slug}`,
       );
-      authServer = {
-        issuer: new URL(staticAuthEndpoint).origin,
-        authorization_endpoint: staticAuthEndpoint,
-        token_endpoint: staticTokenEndpoint,
-      };
     } else if (discoveryEndpoint) {
       console.log(
         `[MCP OAuth] Starting discovery for ${server.slug} at ${discoveryEndpoint}`,
@@ -150,31 +156,29 @@ export async function GET(req: NextRequest) {
         authServer = result.authServer;
         protectedResource = result.protectedResource;
       } catch (discoverErr) {
-        // If discovery fails AND we have at least an auth endpoint in metadata,
-        // fall back to static config rather than hard-failing.
-        if (staticAuthEndpoint) {
+        // Static hints are only a fallback. A discovered contract may include
+        // DCR, which a hand-configured auth/token pair cannot express.
+        if (staticAuthEndpoint && staticTokenEndpoint) {
           console.warn(
             `[MCP OAuth] Discovery failed for ${server.slug}, falling back to static metadata:`,
             discoverErr instanceof Error ? discoverErr.message : discoverErr,
           );
-          authServer = {
-            issuer: new URL(staticAuthEndpoint).origin,
-            authorization_endpoint: staticAuthEndpoint,
-            token_endpoint:
-              staticTokenEndpoint ??
-              `${new URL(staticAuthEndpoint).origin}/oauth/token`,
-          };
         } else {
           throw discoverErr;
         }
       }
-    } else {
+    } else if (!staticAuthEndpoint || !staticTokenEndpoint) {
       return errorRedirect(
         req,
         returnUrl,
         `${server.name} has no endpoint URL or static auth endpoints configured.`,
       );
     }
+
+    authServer = resolveOAuthServerMetadata(authServer, {
+      authorizationEndpoint: staticAuthEndpoint,
+      tokenEndpoint: staticTokenEndpoint,
+    });
 
     if (!authServer) {
       return errorRedirect(
@@ -200,6 +204,10 @@ export async function GET(req: NextRequest) {
 
     let clientId: string | undefined;
     let clientSecret: string | undefined;
+    let registrationFailureReason:
+      | "redirect_uri_not_approved"
+      | "registration_rejected"
+      | null = null;
 
     // Strategy 1: Use pre-registered client_id from the catalog DB.
     // Also look up the matching client_secret from env vars.
@@ -250,6 +258,9 @@ export async function GET(req: NextRequest) {
         tokenEndpointAuthMethod = registeredAuthMethod;
         console.log(`[MCP OAuth] DCR succeeded, got client_id: ${clientId}`);
       } catch (dcrErr) {
+        if (dcrErr instanceof DynamicClientRegistrationError) {
+          registrationFailureReason = dcrErr.reason;
+        }
         console.warn(
           `[MCP OAuth] DCR failed${supportsCimd ? " (will try declared CIMD fallback)" : ""}:`,
           dcrErr instanceof Error ? dcrErr.message : dcrErr,
@@ -270,6 +281,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (!clientId) {
+      if (registrationFailureReason === "redirect_uri_not_approved") {
+        return errorRedirect(
+          req,
+          returnUrl,
+          `${server.name} requires its provider to approve AI Matrx's secure callback URL before it can be connected.`,
+        );
+      }
       return errorRedirect(
         req,
         returnUrl,
