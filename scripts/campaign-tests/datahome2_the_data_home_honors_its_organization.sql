@@ -9,14 +9,14 @@
 --   B. named ONE organization, the door answers exactly the rows the unnamed call answers for that
 --      organization — every column, so every lane (Mine, My Orgs, Shared, Public) and every kind
 --      agree — for EACH organization the unnamed call lists;
---   C. an organization the walk does not admit (an invented id) answers zero rows;
+--   C. an organization the caller cannot reach (an invented id) is REFUSED (42501), naming the door;
 --   D. named nobody, the door answers what it always did (the call with no argument = named null);
 --   E. the knob custom.data_home_default_organization defaults to "all" and has no organization or
 --      user rung (switching the active organization must never change it);
 --   F. custom.data_home_pages(org) — the forms and booking pages — answers, for EACH organization,
 --      exactly what the store's own doors custom.forms(org) and custom.bookings(org) answer, each
 --      row naming that organization; named nobody, it answers every organization's at once;
---   G. an organization the walk does not admit answers zero pages.
+--   G. the same for the pages door.
 --
 -- RUN IT (clone or production; always rolled back):
 --   psql "<DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/datahome2_the_data_home_honors_its_organization.sql
@@ -35,6 +35,8 @@
 begin;
 select set_config('request.jwt.claims',
   json_build_object('sub', (select id from auth.users where email = 'admin@admin.com'), 'role', 'authenticated')::text, true);
+-- HER SEAT, NOT THE STORE OWNER'S: the doors are asked as `authenticated`, the way a browser asks.
+set local role authenticated;
 
 select to_regprocedure('custom.data_home_tables(uuid)') is not null as door_exists \gset
 \if :door_exists
@@ -87,11 +89,15 @@ begin
   end loop;
   raise notice 'B passed: % organizations, each named alone answers exactly its own % rows in total', v_orgs, v_rows;
 
-  select count(*) into v_diff from custom.data_home_tables('00000000-0000-4000-8000-00000000dead'::uuid);
-  if v_diff <> 0 then
-    raise exception 'C FAILED: an organization nobody admits answered % row(s)', v_diff;
-  end if;
-  raise notice 'C passed: an organization the walk does not admit answers nothing';
+  begin
+    select count(*) into v_diff from custom.data_home_tables('00000000-0000-4000-8000-00000000dead'::uuid);
+    raise exception 'C FAILED: an organization the caller cannot reach answered % row(s) instead of a refusal', v_diff;
+  exception when insufficient_privilege then
+    if sqlerrm not like '%custom.data_home_tables%' then
+      raise exception 'C FAILED: the refusal does not name custom.data_home_tables: %', sqlerrm;
+    end if;
+  end;
+  raise notice 'C passed: an organization the caller cannot reach is refused, naming custom.data_home_tables';
 
   select count(*) into v_diff from (
     ((select * from _all) except all (select * from custom.data_home_tables(null)))
@@ -151,11 +157,15 @@ begin
     v_orgs, v_rows, (select count(*) from _pages where kind = 'form'), (select count(*) from _pages where kind = 'booking'),
     (select count(distinct organization_id) from _pages);
 
-  select count(*) into v_diff from custom.data_home_pages('00000000-0000-4000-8000-00000000dead'::uuid);
-  if v_diff <> 0 then
-    raise exception 'G FAILED: an organization nobody admits answered % page(s)', v_diff;
-  end if;
-  raise notice 'G passed: an organization the walk does not admit answers no pages';
+  begin
+    select count(*) into v_diff from custom.data_home_pages('00000000-0000-4000-8000-00000000dead'::uuid);
+    raise exception 'G FAILED: an organization the caller cannot reach answered % page(s) instead of a refusal', v_diff;
+  exception when insufficient_privilege then
+    if sqlerrm not like '%custom.data_home_pages%' then
+      raise exception 'G FAILED: the refusal does not name custom.data_home_pages: %', sqlerrm;
+    end if;
+  end;
+  raise notice 'G passed: an organization the caller cannot reach is refused, naming custom.data_home_pages';
 end $$;
 
 rollback;
