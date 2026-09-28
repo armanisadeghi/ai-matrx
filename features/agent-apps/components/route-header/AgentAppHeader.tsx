@@ -2,6 +2,7 @@
 
 import {
   AppWindow,
+  Bookmark,
   Code,
   EyeOff,
   History,
@@ -21,6 +22,8 @@ import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import { setAgentAppPublication } from "@/features/agents/redux/agent-apps/thunks";
 import { useOpenAgentRunHistoryWindow } from "@/features/overlays/openers/agentRunHistoryWindow";
 import { toast } from "@/lib/toast";
+import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
+import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { AppStatus, AppVisibility } from "@/features/agent-apps/types";
 
@@ -95,6 +98,21 @@ export function AgentAppHeader({
         }),
     });
   }
+  // The phone ⋮ carries Copy reference too — on desktop it is the tap button
+  // passed through `right`, which the phone header hides.
+  actions.push({
+    label: "Copy reference",
+    icon: Bookmark,
+    phoneOnly: true,
+    onPress: async () => {
+      const copied = await copyReferenceFence(
+        buildRecordReferenceFence({ type: "agent_app", id: appId, label: appName }),
+      );
+      if (copied) {
+        toast.success("Reference copied to clipboard", { description: appName });
+      }
+    },
+  });
   actions.push({
     label: isPublished ? "Unpublish" : "Publish",
     icon: isPublished ? EyeOff : Rocket,

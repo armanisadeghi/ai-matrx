@@ -88,6 +88,12 @@ export interface EntityHeaderAction {
    * action; the name gives up room to it.
    */
   pinnedOnPhone?: boolean;
+  /**
+   * Only in the PHONE ⋮ sheet — for an action whose desktop form is a control
+   * passed through `right` (e.g. the copy-reference button), so the phone does
+   * not lose it and the desktop does not show it twice.
+   */
+  phoneOnly?: boolean;
 }
 
 export interface EntityModeHeaderProps {
@@ -405,9 +411,11 @@ export function EntityModeHeader({
             {/* Desktop: extras + declarative actions as tap targets */}
             <div className="hidden sm:flex items-center">
               {right}
-              {actions?.map((a) => (
-                <DesktopAction key={a.label} action={a} />
-              ))}
+              {actions
+                ?.filter((a) => !a.phoneOnly)
+                .map((a) => (
+                  <DesktopAction key={a.label} action={a} />
+                ))}
             </div>
             {/* Mobile: one trigger, everything in the drawer */}
             {hasSheet && (
