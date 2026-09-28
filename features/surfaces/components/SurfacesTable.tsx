@@ -536,9 +536,9 @@ export function SurfacesTable({
             extraSections: [
               {
                 id: "surface-row",
-                // The menu's heading already names the row; the section is
-                // just "Surface" so the row is named once.
-                label: "Surface",
+                // Labelled with the row's name; the shared menu heads a primary
+                // section that repeats the header's name "Row" (named once).
+                label: surfaceRowTitle(row),
                 primary: true,
                 anchor: "after-clipboard",
                 items: [
