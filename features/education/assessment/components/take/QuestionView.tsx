@@ -9,7 +9,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { PenLine } from "lucide-react";
+import { PenLine, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -96,15 +96,30 @@ export function QuestionView({
       {/* Answer capture */}
       <div className="mt-4">
         {type === "multiple_choice" || type === "true_false" ? (
-          <div className="flex flex-col gap-2">
+          <div
+            className="flex flex-col gap-2"
+            role="radiogroup"
+            aria-label="Answer choices"
+          >
             {options.map((opt) => {
               const selected = response === opt;
               const isCorrect = graded && opt === item.correct_answer;
               const isWrongPick = graded && selected && opt !== item.correct_answer;
+              // Correctness must never be color-only: the icon + the
+              // accessible name below carry the verdict for anyone who
+              // can't rely on green/red (screen reader, color-blind, or a
+              // low-vision zoom that clips the tint).
+              const verdictLabel = isCorrect
+                ? " (correct answer)"
+                : isWrongPick
+                  ? " (your answer — incorrect)"
+                  : "";
               return (
                 <button
                   key={opt}
                   type="button"
+                  role="radio"
+                  aria-checked={selected}
                   disabled={locked}
                   onClick={() => onResponseChange(opt)}
                   className={cn(
@@ -123,6 +138,7 @@ export function QuestionView({
                       "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
                       selected ? "border-primary" : "border-muted-foreground/40",
                     )}
+                    aria-hidden
                   >
                     {selected && <span className="h-2 w-2 rounded-full bg-primary" />}
                   </span>
@@ -131,6 +147,21 @@ export function QuestionView({
                     source={opt}
                     className="text-foreground"
                   />
+                  {isCorrect && (
+                    <Check
+                      className="ml-auto h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
+                      aria-hidden
+                    />
+                  )}
+                  {isWrongPick && (
+                    <X
+                      className="ml-auto h-4 w-4 shrink-0 text-red-600 dark:text-red-400"
+                      aria-hidden
+                    />
+                  )}
+                  {verdictLabel && (
+                    <span className="sr-only">{verdictLabel}</span>
+                  )}
                 </button>
               );
             })}

@@ -36,7 +36,6 @@ import {
   Clock,
   FileSpreadsheet,
   Loader2,
-  Sparkle,
 } from "lucide-react";
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
@@ -704,7 +703,7 @@ export function CreateDeckPage() {
                         {busy ? (
                           <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                         ) : (
-                          <Sparkle className="mr-1.5 h-4 w-4" />
+                          <AGENT_ICON className="mr-1.5 h-4 w-4" />
                         )}
                         {isNavigating ? "Opening…" : "Make the deck"}
                       </Button>

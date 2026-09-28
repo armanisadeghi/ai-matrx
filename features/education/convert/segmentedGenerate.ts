@@ -128,6 +128,19 @@ export function isNearDuplicateQA(
   a: { question: string; answer: string },
   b: { question: string; answer: string },
 ): boolean {
+  // "What is osmotic pressure?" and "What is osmotic pressure, and why is it
+  // colligative?" — the longer question is the shorter one plus "and …".
+  const ka = looseKey(a.question);
+  const kb = looseKey(b.question);
+  const [shortKey, longKey] = ka.length <= kb.length ? [ka, kb] : [kb, ka];
+  if (
+    shortKey.split(" ").length >= 2 &&
+    (longKey === shortKey ||
+      longKey.startsWith(`${shortKey} and `) ||
+      longKey.startsWith(`${shortKey} or `))
+  ) {
+    return true;
+  }
   const qa = contentWords(a.question);
   const qb = contentWords(b.question);
   if (qa.size > 0 && qb.size > 0 && jaccard(qa, qb) >= 0.6) return true;
@@ -181,7 +194,15 @@ export async function segmentedGenerate<T>({
         surfaceKey,
         sourceFeature,
         organizationId: ctx.orgId,
-        variables: variables(segment, plan),
+        // THE COUNT LAW's spare: with an explicit count each section is asked
+        // for one more than its share, so a dropped duplicate or a short
+        // answer elsewhere is filled from the spares instead of shipping
+        // fewer than the person asked for. The merge still keeps only shares
+        // first and trims to the total.
+        variables: variables(
+          options?.count ? { ...segment, items: segment.items + 1 } : segment,
+          plan,
+        ),
         timeoutMs: timeoutMs ?? 120_000,
         live,
         // Only a single-pass run has a stream worth showing; a fan-out reports

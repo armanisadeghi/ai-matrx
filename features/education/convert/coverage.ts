@@ -245,10 +245,16 @@ type Packed = { text: string; first: string; last: string };
 function foldPacked(packed: Packed[], ceiling: number): Packed[] {
   const limit = Math.max(1, ceiling);
   if (packed.length <= limit) return packed;
-  const per = Math.ceil(packed.length / limit);
+  // Balanced: exactly `limit` groups whose sizes differ by at most one, so a
+  // count of 5 over 8 sections is 5 passes of one item — never 4 passes where
+  // one must write two.
+  const base = Math.floor(packed.length / limit);
+  const extra = packed.length % limit;
   const merged: Packed[] = [];
-  for (let i = 0; i < packed.length; i += per) {
-    const group = packed.slice(i, i + per);
+  for (let g = 0, i = 0; g < limit; g++) {
+    const size = base + (g < extra ? 1 : 0);
+    const group = packed.slice(i, i + size);
+    i += size;
     merged.push({
       text: group.map((g) => g.text).join("\n\n"),
       first: group[0].first,

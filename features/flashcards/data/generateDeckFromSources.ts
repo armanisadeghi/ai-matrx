@@ -29,6 +29,7 @@ import { attachRefsToCitation } from "@/features/education/trust/grounding";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
 import {
+  isNearDuplicateQA,
   looseKey,
   segmentedGenerate,
 } from "@/features/education/convert/segmentedGenerate";
@@ -245,16 +246,40 @@ export function defaultDeckName(sources: ResolvedSource[]): string {
     : first;
 }
 
-export async function generateDeckFromSources({
+export interface CardsFromSourcesInput
+  extends Omit<DeckFromSourcesInput, "name"> {
+  /** What the sections are titled after (the deck's name). */
+  title: string;
+  /** Cards the deck already has — never made again (the top-up). */
+  existingCards?: { front: string; back: string }[];
+}
+
+export interface CardsFromSourcesOutcome {
+  cards: NewCardInput[];
+  sources: ResolvedSource[];
+  gapNote: string | null;
+  sections: number;
+  singlePass: boolean;
+  conversationId: string | null;
+  firstValue: unknown;
+}
+
+/**
+ * Resolved Sources → grounded cards, nothing saved. The one card generator
+ * behind BOTH "Make the deck" and "Add more cards" (the top-up), so a deck and
+ * its top-up can never drift apart in grounding, count or de-duplication.
+ */
+export async function generateCardsFromSources({
   resolved,
   count,
   difficulty,
   depth,
   gradeLevel,
   focus,
-  name,
+  title,
+  existingCards = [],
   ctx,
-}: DeckFromSourcesInput): Promise<DeckFromSourcesOutcome> {
+}: CardsFromSourcesInput): Promise<CardsFromSourcesOutcome> {
   const sources = resolved.sources.filter((s) => s.text.trim().length > 0);
   if (sources.length === 0) {
     throw new Error(
@@ -263,10 +288,17 @@ export async function generateDeckFromSources({
   }
   const owners = chunkOwners(resolved);
   const fallback = sources.length === 1 ? sources[0] : null;
-  const baseTitle = name?.trim() || defaultDeckName(sources);
+  const have = existingCards.map((c) => ({ question: c.front, answer: c.back }));
+  const haveKeys = new Set(existingCards.map((c) => looseKey(c.front)));
   const focusText = [
     gradeLevel?.trim() ? `Write for this level: ${gradeLevel.trim()}.` : "",
     focus?.trim() ?? "",
+    existingCards.length > 0
+      ? `This deck already has these cards — write different ones:\n${existingCards
+          .slice(0, 80)
+          .map((c) => `- ${c.front}`)
+          .join("\n")}`
+      : "",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -275,7 +307,7 @@ export async function generateDeckFromSources({
     ctx,
     source: {
       text: sources.map((s) => s.text).join("\n\n"),
-      title: baseTitle,
+      title,
     },
     targetKind: "deck",
     options: { count, difficulty },
@@ -292,18 +324,80 @@ export async function generateDeckFromSources({
         document_id: documentIdOf(owner),
         title:
           plan.segments.length > 1
-            ? `${baseTitle} - section ${segment.index} of ${segment.total}: ${segment.label}`
-            : baseTitle,
+            ? `${title} - section ${segment.index} of ${segment.total}: ${segment.label}`
+            : title,
         count: String(segment.items),
         difficulty,
         focus: foldDepthIntoRequest(depth, focusText) ?? "",
       };
     },
-    extract: (value) => coerceCards(value),
+    // A top-up never re-makes a card the deck already has: those are dropped
+    // before the count is filled, so the person still gets the number asked.
+    extract: (value) =>
+      coerceCards(value).filter(
+        (c) =>
+          !haveKeys.has(looseKey(c.front)) &&
+          !have.some((h) => isNearDuplicateQA(h, { question: c.front, answer: c.back })),
+      ),
     identity: (card) => looseKey(card.front),
+    // "What is osmosis?" written twice by two sections is one card.
+    sameAs: (a, b) =>
+      isNearDuplicateQA(
+        { question: a.front, answer: a.back },
+        { question: b.front, answer: b.back },
+      ),
   });
 
-  const cards = covered.items.map((c) => groundCard(c, owners, fallback));
+  return {
+    cards: covered.items.map((c) => groundCard(c, owners, fallback)),
+    sources,
+    gapNote: covered.gapNote,
+    sections: covered.plan.segments.length,
+    singlePass: covered.plan.singlePass,
+    conversationId: covered.conversationId,
+    firstValue: covered.firstValue,
+  };
+}
+
+/** The deck's own row as a lineage result (for `recordSourceLineage`). */
+export function deckLineageResult(
+  setId: string,
+  title: string,
+  detail: string,
+): ConvertResult {
+  return {
+    targetKind: "deck",
+    artifactId: setId,
+    resourceType: "fc_set",
+    href: `/education/flashcards/${setId}`,
+    title,
+    detail,
+  };
+}
+
+export async function generateDeckFromSources({
+  resolved,
+  count,
+  difficulty,
+  depth,
+  gradeLevel,
+  focus,
+  name,
+  ctx,
+}: DeckFromSourcesInput): Promise<DeckFromSourcesOutcome> {
+  const live = resolved.sources.filter((s) => s.text.trim().length > 0);
+  const baseTitle = name?.trim() || defaultDeckName(live);
+  const covered = await generateCardsFromSources({
+    resolved,
+    count,
+    difficulty,
+    depth,
+    gradeLevel,
+    focus,
+    title: baseTitle,
+    ctx,
+  });
+  const { cards, sources } = covered;
   if (cards.length === 0) {
     throw new Error(
       covered.gapNote ??
@@ -313,7 +407,7 @@ export async function generateDeckFromSources({
 
   const setName = name?.trim()
     ? name.trim()
-    : covered.plan.singlePass
+    : covered.singlePass
       ? setTitleOf(covered.firstValue) || baseTitle
       : baseTitle;
 
@@ -342,14 +436,11 @@ export async function generateDeckFromSources({
   }
   const setId = created.data.set.id;
   const detail = `${cards.length} card${cards.length === 1 ? "" : "s"}`;
-  const result: ConvertResult = {
-    targetKind: "deck",
-    artifactId: setId,
-    resourceType: "fc_set",
-    href: `/education/flashcards/${setId}`,
-    title: setName,
-    detail: covered.gapNote ? `${detail} - ${covered.gapNote}` : detail,
-  };
+  const result = deckLineageResult(
+    setId,
+    setName,
+    covered.gapNote ? `${detail} - ${covered.gapNote}` : detail,
+  );
 
   // Lineage for EVERY Source — not only stored files.
   await Promise.all(
@@ -361,6 +452,6 @@ export async function generateDeckFromSources({
     name: setName,
     cardCount: created.data.cards.length,
     gapNote: covered.gapNote,
-    sections: covered.plan.segments.length,
+    sections: covered.sections,
   };
 }

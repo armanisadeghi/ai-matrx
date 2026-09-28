@@ -229,6 +229,9 @@ export async function recordPendingPurchase(
     .upsert(
       {
         buyer_user_id: input.buyerUserId,
+        // Service-role write: auth.uid() is NULL here, so platform._stamp_actor
+        // cannot stamp the creator. The buyer is the row's person.
+        created_by: input.buyerUserId,
         class_id: input.classId,
         creator_user_id: input.creatorUserId,
         organization_id: input.organizationId,

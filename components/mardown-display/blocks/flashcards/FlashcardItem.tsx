@@ -232,6 +232,12 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
       role="group"
       tabIndex={0}
       aria-label={`Flashcard ${index + 1}. Click to flip. ${isFlipped ? "Showing back" : "Showing front"}`}
+      // A host like StudyDeck also binds a page-level Enter/Space "flip"
+      // shortcut for when focus is elsewhere. This marker lets that host
+      // skip its own handler while focus is already on the card itself —
+      // otherwise both handlers fire on the same keypress and the two
+      // toggles cancel out, so Enter looks like it does nothing.
+      data-flashcard-card
     >
       {showDevWindowTrigger && isAdmin && (
         <div

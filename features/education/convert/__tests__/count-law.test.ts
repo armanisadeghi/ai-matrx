@@ -34,7 +34,8 @@ describe("the count law", () => {
     const plan = await planCoverage({ text: TEN_SECTIONS, targetKind: "deck", requestedTotal: 5 });
     expect(plan.total).toBe(5);
     expect(plan.segments.reduce((a, s) => a + s.items, 0)).toBe(5);
-    expect(plan.segments.length).toBeLessThanOrEqual(5);
+    // Balanced: exactly five passes of one item each.
+    expect(plan.segments.map((seg) => seg.items)).toEqual([1, 1, 1, 1, 1]);
     // Nothing is dropped: every section's text still reaches one pass.
     const all = plan.segments.map((s) => s.text).join("\n");
     for (let i = 1; i <= 10; i++) expect(all).toContain(`END${i}`);
@@ -85,5 +86,24 @@ describe("the count law", () => {
       },
     );
     expect(different).toBe(false);
+    // Seen live on the fix run: one question is the other plus "and why…".
+    expect(
+      isNearDuplicateQA(
+        {
+          question: "What is osmotic pressure, and why is it classified as a colligative property?",
+          answer: "The external pressure required to prevent net solvent movement; it depends on solute concentration.",
+        },
+        {
+          question: "What is osmotic pressure?",
+          answer: "The force per unit area required to prevent the passage of water through a membrane.",
+        },
+      ),
+    ).toBe(true);
+    expect(
+      isNearDuplicateQA(
+        { question: "What is a cell?", answer: "The basic unit of life." },
+        { question: "What is a cell membrane made of?", answer: "A phospholipid bilayer." },
+      ),
+    ).toBe(false);
   });
 });
