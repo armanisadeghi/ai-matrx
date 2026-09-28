@@ -14,7 +14,6 @@ import {
   FolderOpen,
   MoreHorizontal,
   Copy,
-  Download,
   Loader2,
   Network,
 } from "lucide-react";
@@ -158,15 +157,8 @@ export function NoteEditorDock({
           .catch(() => setClipboardFallbackOpen(true));
       },
     },
-    {
-      key: "export",
-      label: "Export",
-      tooltip: "Download as a Markdown file",
-      Icon: Download,
-      onPress: () => {
-        onExport();
-      },
-    },
+    // Export lives in the More sheet (Export as Markdown) — the dock copy
+    // duplicated it and downloaded silently.
     {
       key: "context",
       label: "Context",
@@ -386,7 +378,10 @@ export function NoteEditorDock({
               moveToFolder: readOnly ? undefined : () => setSheetOpen("folder-tags"),
               knowledge: () => openKnowledge({ noteId }),
               knowledgeIndexed: ingest.state === "ingested",
-              exportMarkdown: onExport,
+              exportMarkdown: () => {
+                onExport();
+                toast.success(`Downloaded ${noteLabel || "note"}.md`);
+              },
               print: () => openNotePrintStudio(noteId),
               versionHistory: () => router.push(`/notes/${noteId}/diff`),
               share: () => setShareOpen(true),

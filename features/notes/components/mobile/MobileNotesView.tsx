@@ -195,25 +195,34 @@ export default function MobileNotesView({
             {/* The record's actions live in the shell's ⋮ sheet ("This page"),
                 so the title keeps the row — one overflow per phone header
                 (page-pass shared defects, 2026-09-27). */}
-            {/* The view switch sits IN the header row as ONE labelled button
-                that switches to the other view (44px on touch): two pills left
-                the title "Clinic in…". The title keeps the room. */}
-            {(() => {
-              const next =
-                NOTE_PHONE_VIEW_MODES.find((m) => m.mode !== editorMode) ??
-                NOTE_PHONE_VIEW_MODES[0];
-              return (
+            {/* The view switch: a segmented Plain | Write showing the CURRENT
+                view highlighted (a single button naming the other view read
+                like the current state). 44px on touch; short labels leave the
+                title its room. */}
+            <div
+              role="radiogroup"
+              aria-label="Note view"
+              className="flex flex-shrink-0 items-center rounded-full bg-muted p-0.5"
+            >
+              {NOTE_PHONE_VIEW_MODES.map(({ mode, label, hint }) => (
                 <button
+                  key={mode}
                   type="button"
-                  onClick={() => setEditorMode(next.mode)}
-                  aria-label={`Switch to ${next.label}: ${next.hint}`}
-                  title={next.hint}
-                  className="h-9 flex-shrink-0 rounded-full bg-muted/60 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted pointer-coarse:h-11"
+                  role="radio"
+                  aria-checked={editorMode === mode}
+                  title={hint}
+                  onClick={() => setEditorMode(mode)}
+                  className={cn(
+                    "h-8 rounded-full px-2.5 text-xs font-medium transition-colors pointer-coarse:h-10",
+                    editorMode === mode
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground",
+                  )}
                 >
-                  {next.label}
+                  {label}
                 </button>
-              );
-            })()}
+              ))}
+            </div>
 
             <PageHeaderRightPortal>
               {/* Clean up content — mutates the note, so viewers don't get it.

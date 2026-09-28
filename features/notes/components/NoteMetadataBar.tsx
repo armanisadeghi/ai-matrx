@@ -59,11 +59,17 @@ interface NoteMetadataBarProps {
    * top border. `slot` — for rare cases where a parent already frames it.
    */
   variant?: "chrome" | "slot";
+  /**
+   * Rendered at the row's right end, before the copy pair — the page passes
+   * the save status + word count here so the editor has ONE footer row.
+   */
+  trailing?: React.ReactNode;
 }
 
 export function NoteMetadataBar({
   noteId,
   variant = "chrome",
+  trailing,
 }: NoteMetadataBarProps) {
   const dispatch = useAppDispatch();
 
@@ -310,6 +316,8 @@ export function NoteMetadataBar({
             </button>
           )}
         </div>
+
+        {trailing && <div className="ml-auto flex min-w-0 shrink items-center">{trailing}</div>}
 
         {/*
          * The note RECORD pair. A note's body is the highest-value AI capture

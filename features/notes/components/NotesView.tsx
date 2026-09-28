@@ -652,8 +652,12 @@ export function NotesView({
         {/* Layer 2: chrome (folder/context/tags) + stats footer (metrics only) */}
         {activeTabId && (
           <>
-            <NoteMetadataBar noteId={activeTabId} />
-            <NoteStatsFooter noteId={activeTabId} standalone />
+            {/* ONE footer row: folder · context · tags … save status · counts · copy
+                (two stacked rows cost ~70px of editor height). */}
+            <NoteMetadataBar
+              noteId={activeTabId}
+              trailing={<NoteStatsFooter noteId={activeTabId} className="px-0 py-0" />}
+            />
           </>
         )}
       </div>
