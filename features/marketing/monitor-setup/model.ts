@@ -121,7 +121,9 @@ export function scheduleOptions(raw: unknown): ScheduleOption[] {
     const label = typeof e.label === "string" ? e.label : "";
     const runs = Number(e.runs_per_month);
     if (!id || !label || !Number.isFinite(runs)) return [];
-    return [{ id, label, runsPerMonth: runs, recommended: e.recommended === true }];
+    return [
+      { id, label, runsPerMonth: runs, recommended: e.recommended === true },
+    ];
   });
 }
 
@@ -221,7 +223,10 @@ export type SetupProposal = Proposal;
  * has: a proposed item is added only when no item with the same text exists,
  * and a proposed means line fills only an empty one.
  */
-export function applyProposal(draft: MonitorDraft, proposal: Proposal): MonitorDraft {
+export function applyProposal(
+  draft: MonitorDraft,
+  proposal: Proposal,
+): MonitorDraft {
   const items = (list: Proposal["topics"]) =>
     (list ?? []).map((i) => ({ text: i.text, basis: i.basis }));
   const brandKeywords = (proposal.coverage_keywords ?? []).filter(
@@ -239,11 +244,18 @@ export function applyProposal(draft: MonitorDraft, proposal: Proposal): MonitorD
     return {
       ...k,
       means: k.means.trim() ? k.means : hit.means,
-      excludeHints: k.excludeHints.length ? k.excludeHints : (hit.exclude_hints ?? []),
+      excludeHints: k.excludeHints.length
+        ? k.excludeHints
+        : (hit.exclude_hints ?? []),
     };
   });
   for (const p of brandKeywords) {
-    if (!keywords.some((k) => k.keyword.trim().toLowerCase() === p.keyword.trim().toLowerCase())) {
+    if (
+      !keywords.some(
+        (k) =>
+          k.keyword.trim().toLowerCase() === p.keyword.trim().toLowerCase(),
+      )
+    ) {
       keywords.push({
         keyword: p.keyword,
         means: p.means,
@@ -255,15 +267,29 @@ export function applyProposal(draft: MonitorDraft, proposal: Proposal): MonitorD
 
   const competitors = [...draft.competitors];
   for (const c of [
-    ...items(proposal.competitors).map((i) => ({ name: i.text, means: "", excludeHints: [] as string[], basis: i.basis })),
-    ...competitorKeywords.map((k) => ({ name: k.keyword, means: k.means, excludeHints: k.exclude_hints ?? [], basis: k.basis })),
+    ...items(proposal.competitors).map((i) => ({
+      name: i.text,
+      means: "",
+      excludeHints: [] as string[],
+      basis: i.basis,
+    })),
+    ...competitorKeywords.map((k) => ({
+      name: k.keyword,
+      means: k.means,
+      excludeHints: k.exclude_hints ?? [],
+      basis: k.basis,
+    })),
   ]) {
     const existing = competitors.findIndex(
       (x) => x.name.trim().toLowerCase() === c.name.trim().toLowerCase(),
     );
     if (existing < 0) competitors.push(c);
     else if (!competitors[existing].means.trim() && c.means.trim()) {
-      competitors[existing] = { ...competitors[existing], means: c.means, excludeHints: c.excludeHints };
+      competitors[existing] = {
+        ...competitors[existing],
+        means: c.means,
+        excludeHints: c.excludeHints,
+      };
     }
   }
 
@@ -279,8 +305,14 @@ export function applyProposal(draft: MonitorDraft, proposal: Proposal): MonitorD
     keywords,
     competitors,
     topics: dedupe([...draft.topics, ...items(proposal.topics)], (i) => i.text),
-    searchTerms: dedupe([...draft.searchTerms, ...items(proposal.search_terms)], (i) => i.text),
-    standing: dedupe([...draft.standing, ...items(proposal.standing)], (i) => i.text),
+    searchTerms: dedupe(
+      [...draft.searchTerms, ...items(proposal.search_terms)],
+      (i) => i.text,
+    ),
+    standing: dedupe(
+      [...draft.standing, ...items(proposal.standing)],
+      (i) => i.text,
+    ),
     feeds,
   };
 }
@@ -309,7 +341,9 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function asStrings(value: unknown): string[] {
-  return Array.isArray(value) ? value.map((v) => String(v)).filter(Boolean) : [];
+  return Array.isArray(value)
+    ? value.map((v) => String(v)).filter(Boolean)
+    : [];
 }
 
 /** The brand's own names: its name first, then every alias on the brand. */
@@ -322,7 +356,10 @@ export function brandKeywordsFromBrand(
       keyword,
       means: "",
       excludeHints: [],
-      basis: { kind: "brand_record" as const, ref: index === 0 ? "brand:company_name" : "brand:aliases" },
+      basis: {
+        kind: "brand_record" as const,
+        ref: index === 0 ? "brand:company_name" : "brand:aliases",
+      },
     })),
     (k) => k.keyword,
   );
@@ -347,7 +384,9 @@ export function draftFromTracker(
       basis: USER_BASIS,
     };
   });
-  const competitors = (Array.isArray(tracker.competitors) ? tracker.competitors : []).map((raw) => {
+  const competitors = (
+    Array.isArray(tracker.competitors) ? tracker.competitors : []
+  ).map((raw) => {
     const c = asRecord(raw);
     const terms = asStrings(c.terms);
     return {
@@ -357,7 +396,8 @@ export function draftFromTracker(
       basis: USER_BASIS,
     };
   });
-  const user = (list: string[]) => list.map((text) => ({ text, basis: USER_BASIS }));
+  const user = (list: string[]) =>
+    list.map((text) => ({ text, basis: USER_BASIS }));
   const opportunity = tracker.lenses.includes("opportunity");
   return {
     name: tracker.name,
@@ -369,7 +409,11 @@ export function draftFromTracker(
     topics: user(tracker.topics),
     searchTerms: user(tracker.search_terms),
     standing: user(tracker.standing),
-    feeds: tracker.feed_ids.map((feedId) => ({ feedId, why: "", proposed: false })),
+    feeds: tracker.feed_ids.map((feedId) => ({
+      feedId,
+      why: "",
+      proposed: false,
+    })),
     xTrends: tracker.x_trends_woeids.length > 0,
     exclusions: tracker.exclude_terms,
     brief: emptyBrief(),
@@ -434,7 +478,8 @@ export function parseBriefMarkdown(markdown: string): DraftBrief {
   for (const part of parts) {
     const [headingLine, ...rest] = part.split("\n");
     const match = BRIEF_SECTIONS.find(
-      ([, heading]) => heading.toLowerCase() === headingLine.trim().toLowerCase(),
+      ([, heading]) =>
+        heading.toLowerCase() === headingLine.trim().toLowerCase(),
     );
     if (match) out[match[0]] = rest.join("\n").trim();
   }
@@ -458,7 +503,8 @@ export function toDeclareBody(
   if (draft.opportunity) lenses.push("opportunity");
   const keywords = draft.keywords.filter((k) => k.keyword.trim());
   const competitors = draft.competitors.filter((c) => c.name.trim());
-  const texts = (list: DraftItem[]) => list.map((i) => i.text.trim()).filter(Boolean);
+  const texts = (list: DraftItem[]) =>
+    list.map((i) => i.text.trim()).filter(Boolean);
   const termMeanings: NonNullable<DeclareTrackerBody["term_meanings"]> = {};
   for (const k of keywords) {
     termMeanings[k.keyword.trim()] = {

@@ -14,9 +14,16 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { CoverageTrackerRow } from "@/features/marketing/data/coverage-types";
 import type { BusinessFact } from "@/features/marketing/types";
-import { createNote, fetchNoteById, updateNote } from "@/features/notes/service/notesService";
+import {
+  createNote,
+  fetchNoteById,
+  updateNote,
+} from "@/features/notes/service/notesService";
 import { supabase } from "@/utils/supabase/client";
-import { authenticatedWebDb, requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
+import {
+  authenticatedWebDb,
+  requireAuthenticatedSupabaseSession,
+} from "@/utils/supabase/webDb";
 
 export const monitorSetupKeys = {
   all: ["marketing", "monitor-setup"] as const,
@@ -24,7 +31,8 @@ export const monitorSetupKeys = {
     [...monitorSetupKeys.all, "brand-trackers", brandId] as const,
   tracker: (trackerId: string) =>
     [...monitorSetupKeys.all, "tracker", trackerId] as const,
-  brief: (noteId: string) => [...monitorSetupKeys.all, "brief", noteId] as const,
+  brief: (noteId: string) =>
+    [...monitorSetupKeys.all, "brief", noteId] as const,
   runMentions: (trackerId: string) =>
     [...monitorSetupKeys.all, "run-mentions", trackerId] as const,
 };
@@ -47,7 +55,9 @@ export async function listBrandTrackers(
   brandId: string,
   signal?: AbortSignal,
 ): Promise<CoverageTrackerRow[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("coverage_tracker")
     .select("*")
     .eq("brand_id", brandId)
@@ -63,7 +73,9 @@ export async function getTracker(
   trackerId: string,
   signal?: AbortSignal,
 ): Promise<CoverageTrackerRow | null> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("coverage_tracker")
     .select("*")
     .eq("id", trackerId)
@@ -82,11 +94,16 @@ export function useBrandTrackers(brandId: string) {
   });
 }
 
-export function useTracker(trackerId: string | null) {
+/** `pollMs` re-reads the monitor while a run it started is still going. */
+export function useTracker(
+  trackerId: string | null,
+  pollMs: number | false = false,
+) {
   return useQuery({
     queryKey: monitorSetupKeys.tracker(trackerId ?? ""),
     queryFn: ({ signal }) => getTracker(trackerId ?? "", signal),
     enabled: Boolean(trackerId),
+    refetchInterval: pollMs,
   });
 }
 
@@ -98,8 +115,18 @@ export function useInvalidateMonitorSetup() {
 
 // ── the spokesperson / proof step ─────────────────────────────────────────
 
-export const SPOKESPERSON_LABELS = new Set(["spokesperson", "spokes_person", "spokesman", "spokeswoman"]);
-export const PROOF_LABELS = new Set(["proof", "proof_asset", "proof_point", "case_study"]);
+export const SPOKESPERSON_LABELS = new Set([
+  "spokesperson",
+  "spokes_person",
+  "spokesman",
+  "spokeswoman",
+]);
+export const PROOF_LABELS = new Set([
+  "proof",
+  "proof_asset",
+  "proof_point",
+  "case_study",
+]);
 
 function factTag(fact: BusinessFact): string {
   const value = (fact.value ?? {}) as Record<string, unknown>;
@@ -221,7 +248,9 @@ export async function listRunMentions(
   trackerId: string,
   signal?: AbortSignal,
 ): Promise<RunMention[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("coverage_mention")
     .select("id, title, url, domain, verdict, is_competitor, discovered_at")
     .eq("tracker_id", trackerId)

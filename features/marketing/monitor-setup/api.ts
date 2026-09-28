@@ -33,7 +33,9 @@ export interface ProposalResult {
 }
 
 function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
-  return event.event === "data" ? (event.data as Record<string, unknown>) : null;
+  return event.event === "data"
+    ? (event.data as Record<string, unknown>)
+    : null;
 }
 
 /**
@@ -55,13 +57,16 @@ export async function getSetupFacts(
     }),
   );
   if (outcome.error) {
-    throw new Error(outcome.error.message ?? "Could not load the monitor setup settings.");
+    throw new Error(
+      outcome.error.message ?? "Could not load the monitor setup settings.",
+    );
   }
   return outcome.data as SetupFacts;
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  gathering: "Reading your brand, confirmed facts, site pages and recent coverage",
+  gathering:
+    "Reading your brand, confirmed facts, site pages and recent coverage",
   proposing: "Proposing beats, search terms and means lines from what we read",
 };
 
@@ -137,7 +142,9 @@ export async function getMonitorSchedule(
     }),
   );
   if (outcome.error) {
-    throw new Error(outcome.error.message ?? "Could not load this monitor's schedule.");
+    throw new Error(
+      outcome.error.message ?? "Could not load this monitor's schedule.",
+    );
   }
   return outcome.data as ScheduleView;
 }
@@ -160,7 +167,9 @@ export async function saveMonitorSchedule(
     }),
   );
   if (outcome.error) {
-    throw new Error(outcome.error.message ?? "The schedule could not be saved.");
+    throw new Error(
+      outcome.error.message ?? "The schedule could not be saved.",
+    );
   }
   return outcome.data as ScheduleView;
 }
@@ -168,6 +177,8 @@ export async function saveMonitorSchedule(
 export interface MonitorRunStarted {
   /** The workflow run the person can open, when the stream named it. */
   runId: string | null;
+  /** When Run now was pressed: a monitor whose last run is older is still running. */
+  startedAt: string;
 }
 
 /** Run now: the "News monitor run" workflow, streamed (Lane C). The editor
@@ -177,6 +188,7 @@ export async function runMonitorNow(
   trackerId: string,
   organizationId: string,
 ): Promise<MonitorRunStarted> {
+  const startedAt = new Date().toISOString();
   let runId: string | null = null;
   const outcome = await dispatch(
     callApi({
@@ -199,5 +211,5 @@ export async function runMonitorNow(
   if (outcome.error) {
     throw new Error(outcome.error.message ?? "The run could not start.");
   }
-  return { runId };
+  return { runId, startedAt };
 }
