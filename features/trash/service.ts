@@ -92,6 +92,24 @@ export async function getTrashCounts(): Promise<TrashCount[]> {
   return data ?? [];
 }
 
+/**
+ * A removed row stops holding its name (db-rules §8, DD-121), so while it sat in
+ * Trash a live one may have taken the same name or slug. `entity_undelete` then
+ * answers 23505 with a plain sentence naming the taken value and a hint with the
+ * remedy (rename the other one) — show exactly that, not a "Failed to restore"
+ * wrapper around it.
+ */
+export function restoreError(error: {
+  message: string;
+  code?: string;
+  hint?: string | null;
+}): Error {
+  if (error.code === "23505") {
+    return new Error(error.hint ? `${error.message} ${error.hint}` : error.message);
+  }
+  return new Error(`Failed to restore: ${error.message}`);
+}
+
 export async function restoreFromTrash(
   entityToken: string,
   id: string,
@@ -100,7 +118,7 @@ export async function restoreFromTrash(
     p_token: entityToken,
     p_id: id,
   });
-  if (error) throw new Error(`Failed to restore: ${error.message}`);
+  if (error) throw restoreError(error);
   if (data === false) {
     throw new Error(
       "Restore was refused — you may no longer have edit access.",
@@ -166,7 +184,7 @@ export async function restoreFromOrgTrash(
     p_token: entityToken,
     p_id: id,
   });
-  if (error) throw new Error(`Failed to restore: ${error.message}`);
+  if (error) throw restoreError(error);
   const raw = (data ?? {}) as { restored?: unknown; message?: unknown };
   return {
     restored: raw.restored === true,

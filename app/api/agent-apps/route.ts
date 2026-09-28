@@ -110,8 +110,9 @@ export async function POST(request: NextRequest) {
     const { data: existing, error: existingError } = await supabase
       .schema("app")
       .from("definition")
-      .select("id, deleted_at")
+      .select("id")
       .eq("slug", normalizedSlug)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (existingError && existingError.code !== "PGRST116") {
@@ -125,14 +126,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (existing) {
-      // The slug index covers apps in Trash too (app.definition.slug is unique
-      // across live and archived rows), so say which one holds it.
+      // Only a LIVE app holds its slug (db-rules §8, DD-121): the unique index
+      // aga_apps_slug_key is partial on deleted_at IS NULL, so an app in Trash
+      // never blocks a new one from taking its slug.
       return NextResponse.json(
-        {
-          error: existing.deleted_at
-            ? "That slug belongs to an app in Trash. Restore that app from Trash, or choose a different slug."
-            : "That slug is already taken",
-        },
+        { error: "That slug is already taken" },
         { status: 409 },
       );
     }

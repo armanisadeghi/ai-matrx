@@ -90,6 +90,8 @@ export async function POST(
         .from("definition")
         .select("id")
         .eq("slug", slug)
+        // Only a live app holds its slug (partial unique index, DD-121).
+        .is("deleted_at", null)
         .maybeSingle();
       if (slugCheckError) {
         console.error(

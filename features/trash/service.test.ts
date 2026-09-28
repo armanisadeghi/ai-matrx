@@ -183,3 +183,26 @@ describe("Trash restore routing", () => {
     ).toThrow("Recovery details were incomplete");
   });
 });
+
+describe("Trash restore when the name was taken while in Trash", () => {
+  beforeEach(() => rpc.mockReset());
+
+  test("shows the database's plain sentence and remedy, not a raw unique violation", async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: {
+        code: "23505",
+        message: 'This app can\'t be restored: another app already uses the slug "lsi-generator".',
+        hint: "Rename the other app (or give it a different slug), then restore this one.",
+      },
+    });
+    await expect(restoreFromTrash("app", "archived-app")).rejects.toThrow(
+      'This app can\'t be restored: another app already uses the slug "lsi-generator". Rename the other app (or give it a different slug), then restore this one.',
+    );
+  });
+
+  test("any other failure keeps the generic prefix", async () => {
+    rpc.mockResolvedValue({ data: null, error: { code: "42501", message: "access denied" } });
+    await expect(restoreFromTrash("app", "x")).rejects.toThrow("Failed to restore: access denied");
+  });
+});
