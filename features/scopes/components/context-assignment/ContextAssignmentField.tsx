@@ -380,7 +380,7 @@ function SectionShell({
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           onClick={() => setOpenOverride((o) => !(o ?? defaultOpen))}
-          className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-medium"
         >
           {open ? (
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -400,11 +400,17 @@ function SectionShell({
         </button>
         {headerExtra}
         {onAdd && (
+          // The section's own name keeps the room: a long type name made this
+          // button crowd the title out and draw its "+" over the count. The
+          // label truncates, and on a phone the "+" alone carries the name.
           <button
             onClick={onAdd}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+            aria-label={addLabel}
+            title={addLabel}
+            className="inline-flex min-w-0 max-w-[45%] shrink items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center"
           >
-            <Plus className="h-3.5 w-3.5" /> {addLabel}
+            <Plus className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden truncate sm:inline">{addLabel}</span>
           </button>
         )}
       </div>
@@ -1807,9 +1813,8 @@ export function ContextAssignmentField({
                 onRemoveTask={(id) => toggleTask(id)}
               />
             ) : totalSelected === 0 ? (
-              <span className="text-xs text-muted-foreground">
-                Nothing selected — saving with no associations is fine.
-              </span>
+              // Nothing chosen needs no sentence; the Save button stands alone.
+              <span />
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
                 {[...selScopes].map((id) => {
