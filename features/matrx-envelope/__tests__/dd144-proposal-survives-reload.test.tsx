@@ -66,7 +66,7 @@ jest.mock("@/utils/supabase/client", () => {
         ? { data: messageRows, error: null }
         : { data: ledgerRows, error: null };
     const builder: Record<string, unknown> = {};
-    for (const fn of ["select", "eq", "not"]) builder[fn] = () => builder;
+    for (const fn of ["select", "eq", "not", "is"]) builder[fn] = () => builder;
     builder.order = () => Promise.resolve(rows());
     return builder;
   };
