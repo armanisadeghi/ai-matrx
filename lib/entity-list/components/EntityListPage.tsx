@@ -421,10 +421,13 @@ export function EntityListPage<TRow>({
   const teamScope = list.query.scope.kind === "team" ? list.query.scope : null;
   const teamOrgId = teamScope?.organizationId ?? null;
   const myTeams = useMyTeams(teamOrgId, teamScope !== null);
+  // The team narrow rows list only organizations where the viewer HAS teammates,
+  // so the name is looked up in both lists; an unnamed organization is still
+  // one organization, never "any of your organizations".
   const teamOrgName = teamOrgId
-    ? ((list.counts.narrow.team ?? list.counts.narrow.orgs ?? []).find(
+    ? ([...(list.counts.narrow.team ?? []), ...(list.counts.narrow.orgs ?? [])].find(
         (o) => o.id === teamOrgId,
-      )?.label ?? null)
+      )?.label ?? "this organization")
     : null;
   const teamNames = Array.from(new Set(myTeams.data.map((t) => t.teamName)));
   const teamNamesSentence =

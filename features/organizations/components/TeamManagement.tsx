@@ -521,6 +521,7 @@ function TeamDetail({
           roleOptions={TEAM_ROLE_OPTIONS}
           operationLoading={busy}
           containerNoun="team"
+          removeConsequence="They stay in the organization and keep everything they could open; lists just stop showing their work under My team for this team."
           copyContainer={{ noun: "team", id: team.id, name: team.name }}
           canManageMember={() => team.canManage}
           canRemoveMember={(m) => byUser.get(m.userId)?.isListed ?? false}

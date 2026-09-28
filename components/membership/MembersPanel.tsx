@@ -127,6 +127,11 @@ export interface MembersPanelProps {
   enableEmail?: boolean;
   /** Noun used in the remove-confirmation copy ("organization" / "project"). */
   containerNoun?: string;
+  /**
+   * What removing someone does, said in the remove dialog. Defaults to losing
+   * access; a container that grants none (a team is a list filter) says so.
+   */
+  removeConsequence?: string;
   /** Optional notice rendered under the list (e.g. personal-org message). */
   footerNotice?: React.ReactNode;
   /** Word used in the count line. Default "member". */
@@ -207,6 +212,7 @@ export function MembersPanel({
   enableMessaging = true,
   enableEmail = true,
   containerNoun = "organization",
+  removeConsequence = "They will lose access to all shared resources.",
   footerNotice,
   memberNoun = "member",
   copyContainer,
@@ -578,8 +584,7 @@ export function MembersPanel({
               <strong>
                 {memberToRemove?.user?.email ?? `this ${memberNoun}`}
               </strong>{" "}
-              from this {containerNoun}? They will lose access to all shared
-              resources.
+              from this {containerNoun}? {removeConsequence}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
