@@ -146,9 +146,18 @@ export async function POST(request: NextRequest) {
       | { ok: true; site: Record<string, unknown> }
       | { ok: false; status: 403 | 404 }
     > => {
+      // The access predicate READS owner_user_id / organization_id / visibility, so
+      // they are always selected — callers passing a narrow column list ("id, slug,
+      // name") used to hand the gate a row without them, and every such action
+      // (delete, update, lineage, domain) answered "Site not found or access denied"
+      // to the site's own owner (felt live 2026-09-28 on Settings → Move to Trash).
+      const selected =
+        columns.trim() === "*"
+          ? "*"
+          : `${columns}, owner_user_id, organization_id, visibility`;
       // An archived site (CMS 0041) is not found by any action.
       const { data } = await onlyLive(
-        db.from("client_sites").select(columns).eq("id", siteId),
+        db.from("client_sites").select(selected).eq("id", siteId),
         await archiveLive(db, "client_sites"),
       ).maybeSingle();
       if (!data) return { ok: false, status: 404 };

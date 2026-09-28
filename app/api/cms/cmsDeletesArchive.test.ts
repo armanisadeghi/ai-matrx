@@ -157,3 +157,17 @@ describe.each(CASES)("%s delete", (_label, rel, body) => {
     expect(archived).toBe(true);
   });
 });
+
+it("site delete reads the governance columns its access gate needs", async () => {
+  // Regression, felt live 2026-09-28: the gate selected "id, slug, name" and then
+  // judged owner_user_id / organization_id / visibility it never loaded, so the
+  // site's own owner got "Site not found or access denied".
+  columnPresent = true;
+  await loadRoute("app/api/cms/sites/route.ts").POST(
+    request({ action: "delete", siteId: "site-1", force: true }),
+  );
+  const selects = ops
+    .filter(([n]) => n === "client_sites.select")
+    .map(([, cols]) => String(cols));
+  expect(selects.some((c) => c.includes("owner_user_id") && c.includes("visibility"))).toBe(true);
+});
