@@ -1004,6 +1004,36 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const { shown: mountedBlockCount, sentinel: progressiveSentinel } =
     useProgressiveMount(stableBlocks.length);
 
+  // THE SAME BUDGET FOR A PERSISTED TURN WITH THINKING OR TOOLS. A reloaded
+  // answer that carries a thinking or tool part renders segment by segment
+  // (hasDbInterleavedSpecial) — and that path used to mount EVERY text block
+  // at once, so a long real agent answer never sliced and never waited for the
+  // scroll (claim 10 could not trigger on one: conversation 481275cb, text +
+  // thinking). Its text blocks now spend one progressive budget, in order.
+  const interleavedTextSplits = useMemo(() => {
+    const splits = new Map<string, RenderBlock[]>();
+    for (const segment of messageInterleavedContent) {
+      if (segment.type !== "text" || splits.has(segment.content)) continue;
+      try {
+        splits.set(segment.content, splitContentIntoBlocksV2(segment.content) as RenderBlock[]);
+      } catch {
+        splits.set(segment.content, [
+          { type: "text", content: segment.content, startLine: 0, endLine: 0 } as RenderBlock,
+        ]);
+      }
+    }
+    return splits;
+  }, [messageInterleavedContent]);
+  const interleavedTextBlockTotal = hasDbInterleavedSpecial
+    ? messageInterleavedContent.reduce(
+        (sum, segment) =>
+          segment.type === "text" ? sum + (interleavedTextSplits.get(segment.content)?.length ?? 0) : sum,
+        0,
+      )
+    : 0;
+  const { shown: interleavedShown, sentinel: interleavedSentinel } =
+    useProgressiveMount(interleavedTextBlockTotal);
+
   // Find the index of the last reasoning block for animation purposes
   const lastReasoningBlockIndex = useMemo(() => {
     for (let i = processedBlocks.length - 1; i >= 0; i--) {
@@ -1440,7 +1470,12 @@ export const EnhancedChatMarkdownInternal: React.FC<
 
   // Renders one persisted grouped segment — shared between the top-level map
   // and the expanded body of an AgentWorkGroup (same rationale as above).
+  // Spent in render order by the text segments below; reset every render.
+  let interleavedBudget = interleavedShown;
   const renderGroupedSegment = (segment: GroupedSegment, segIdx: number) => {
+    // Past the mounted budget nothing renders — not even a later tool card —
+    // until the sentinel (after the last segment) brings in the next slice.
+    if (interleavedBudget <= 0 && interleavedShown < interleavedTextBlockTotal) return null;
     if (segment.type === "db_tool_batch") {
       if (!machineFramesVisible) return null;
       return (
@@ -1504,9 +1539,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
       ).map((block, blockIdx) => renderBlock(block, segIdx * 1000 + blockIdx));
     }
     if (segment.type === "text") {
-      const segBlocks = (() => {
+      const segBlocks = interleavedTextSplits.get(segment.content) ?? (() => {
         try {
-          return splitContentIntoBlocksV2(segment.content);
+          return splitContentIntoBlocksV2(segment.content) as RenderBlock[];
         } catch {
           return [
             {
@@ -1514,11 +1549,13 @@ export const EnhancedChatMarkdownInternal: React.FC<
               content: segment.content,
               startLine: 0,
               endLine: 0,
-            },
+            } as RenderBlock,
           ];
         }
       })();
-      return stableSlotBlocks(`segtext:${segIdx}`, segBlocks as RenderBlock[]).map(
+      const visible = segBlocks.slice(0, Math.max(0, interleavedBudget));
+      interleavedBudget -= segBlocks.length;
+      return stableSlotBlocks(`segtext:${segIdx}`, visible).map(
         (block, blockIdx) => renderBlock(block, segIdx * 1000 + blockIdx),
       );
     }
@@ -1534,7 +1571,14 @@ export const EnhancedChatMarkdownInternal: React.FC<
         <DocumentNumberingProvider source={currentContent}>
         {/* A message that can be saved lets its task checkboxes write back (splice API). */}
         <MaybeSourceEdit source={currentContent} save={isStreamActive ? undefined : onContentChange ? handleSaveEdit : undefined}>
-        <div className="mb-1 w-full min-w-0 text-left overflow-x-clip" data-matrx-doc-root="">
+        <div
+          className="mb-1 w-full min-w-0 text-left overflow-x-clip"
+          data-matrx-doc-root=""
+          // The answer's own block count and how many are mounted — readable
+          // from the page (evidence and debugging), never shown.
+          data-block-count={hasUnifiedSpecial ? undefined : hasDbInterleavedSpecial ? interleavedTextBlockTotal : stableBlocks.length}
+          data-blocks-mounted={hasUnifiedSpecial ? undefined : hasDbInterleavedSpecial ? Math.min(interleavedShown, interleavedTextBlockTotal) : mountedBlockCount}
+        >
           <div className={containerStyles}>
             {hasUnifiedSpecial && requestId
               ? workGroupedSlots.map((slot, i) =>
@@ -1582,6 +1626,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                     ),
                   )}
             {!hasUnifiedSpecial && !hasDbInterleavedSpecial && progressiveSentinel}
+            {!hasUnifiedSpecial && hasDbInterleavedSpecial && interleavedSentinel}
             {/* The answer's notes, once, after its last block (as GFM places them). */}
             <DocumentFootnotes render={(markdown) => renderBlock({ type: "text", content: markdown }, 1_000_000)} />
           </div>
