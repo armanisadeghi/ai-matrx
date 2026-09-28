@@ -151,6 +151,49 @@ export interface SpokenFrontVariables {
   scene: string;
 }
 
+/** The exact cue pieces `content` was built from — real facts of THIS card's
+ *  narration, offered to the TTS mandate by name (`flashcards.tts_render`). */
+export interface SpokenFrontCues {
+  /** The spoken lead-in actually used (first-card, milestone, or energy + lead-in). */
+  lead_in_phrase: string;
+  anticipation_cue: string;
+  /** Present only when the energy cue is actually spoken (not on the first card
+   *  or a milestone card, whose lead-in replaces it). */
+  energy_cue?: string;
+}
+
+/** The deterministic cue picks for a card — the same values `content` speaks. */
+export function pickSpokenFrontCues(
+  cardId: string,
+  index: number,
+  total: number,
+): SpokenFrontCues {
+  const h = hash(cardId);
+  // Decorrelate the picks by shifting the hash per dimension.
+  const energy = pick(ENERGY_CUES, h);
+  // `hash()` returns an unsigned 32-bit integer. Keep every decorrelated lane
+  // unsigned too: `>>` reinterprets hashes above 0x7fffffff as negative and a
+  // negative remainder becomes an invalid array index. That silently turned
+  // guaranteed TTS offer values into `undefined` for real cards.
+  const anticipation = pick(ANTICIPATION_CUES, h >>> 3);
+  const remaining = total - index - 1;
+  const milestone = index > 0 ? milestonePhrase(remaining) : null;
+  if (index === 0) {
+    return {
+      lead_in_phrase: pick(FIRST_CARD_PHRASES, h >>> 5),
+      anticipation_cue: anticipation,
+    };
+  }
+  if (milestone) {
+    return { lead_in_phrase: milestone, anticipation_cue: anticipation };
+  }
+  return {
+    lead_in_phrase: `${energy} ${pick(LEAD_IN_PHRASES, h >>> 5)}`,
+    anticipation_cue: anticipation,
+    energy_cue: energy,
+  };
+}
+
 /**
  * Deterministically pick a full, varied spoken-front variable set for a card.
  * Same `cardId` → same selection (stable regeneration); different cards → varied.
@@ -163,19 +206,8 @@ export function pickSpokenFrontVariables(
   total: number,
 ): SpokenFrontVariables {
   const h = hash(cardId);
-  // Decorrelate the picks by shifting the hash per dimension.
-  const energy = pick(ENERGY_CUES, h);
-  // `hash()` returns an unsigned 32-bit integer. Keep every decorrelated lane
-  // unsigned too: `>>` reinterprets hashes above 0x7fffffff as negative and a
-  // negative remainder becomes an invalid array index. That silently turned
-  // guaranteed TTS offer values into `undefined` for real cards.
-  const anticipation = pick(ANTICIPATION_CUES, h >>> 3);
-  const remaining = total - index - 1;
-  const milestone = index > 0 ? milestonePhrase(remaining) : null;
-  const leadIn =
-    index === 0
-      ? pick(FIRST_CARD_PHRASES, h >>> 5)
-      : (milestone ?? `${energy} ${pick(LEAD_IN_PHRASES, h >>> 5)}`);
+  const { lead_in_phrase: leadIn, anticipation_cue: anticipation } =
+    pickSpokenFrontCues(cardId, index, total);
 
   // Fill-in-the-blank fronts ("… is the ___.") must be spoken as "blank", never
   // the literal "underscore" the TTS engine would read from the raw glyphs.

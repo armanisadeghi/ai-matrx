@@ -22,7 +22,8 @@ import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-syst
 import { selectRenderBlocksByType } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { fcService } from "@/features/flashcards/data/fcService";
-import { pickSpokenFrontVariables } from "./variations";
+import { pickSpokenFrontCues, pickSpokenFrontVariables } from "./variations";
+import { ttsRenderFacts } from "../ttsRenderFacts";
 import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
@@ -52,6 +53,15 @@ export async function getSpokenFrontReadiness(
 interface SpokenFrontCard {
   id: string;
   front: string;
+  back?: string | null;
+  topic?: string | null;
+}
+
+/** The set run this card is being narrated in — present only when the caller
+ *  really walks a set (then `index`/`total` are the card's true position). */
+interface SpokenFrontSetRun {
+  setId: string;
+  setName?: string | null;
 }
 
 /**
@@ -98,12 +108,14 @@ export function generateSpokenFront(
   card: SpokenFrontCard,
   index: number,
   total: number,
+  setRun?: SpokenFrontSetRun,
 ) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
     const picked = pickSpokenFrontVariables(card.id, card.front, index, total);
+    const cues = pickSpokenFrontCues(card.id, index, total);
     const vars: FlashcardsTtsRenderOffer = {
       content: picked.content,
       sample_context: picked.sample_context,
@@ -126,7 +138,24 @@ export function generateSpokenFront(
           isEphemeral: false,
           runtime: {
             surfaceName: "matrx-user/education-fastfire",
-            variables: { ...vars },
+            // Mapped-only offers ride beside the five speech variables; the
+            // default pin drops them (payload-neutral for current Holders).
+            variables: {
+              ...vars,
+              ...ttsRenderFacts({
+                renderLane: "spoken_front",
+                cardId: card.id,
+                cardFront: card.front,
+                cardBack: card.back,
+                cardTopic: card.topic,
+                position: setRun ? { index, total } : null,
+                setId: setRun?.setId,
+                setName: setRun?.setName,
+                energyCue: cues.energy_cue,
+                leadInPhrase: cues.lead_in_phrase,
+                anticipationCue: cues.anticipation_cue,
+              }),
+            },
           },
           // autoRun:true → the launch thunk executes AND polls to completion
           // before returning, so the audio render block is present afterward.
@@ -200,7 +229,10 @@ export function ensureSpokenFrontsForSet(
       if (existing?.audio_file_id) {
         result[c.id] = existing.audio_file_id;
       } else {
-        todo.push({ card: { id: c.id, front: c.front }, index });
+        todo.push({
+          card: { id: c.id, front: c.front, back: c.back, topic: c.topic },
+          index,
+        });
       }
     });
 
@@ -211,7 +243,10 @@ export function ensureSpokenFrontsForSet(
     await Promise.all(
       todo.map(async (item) => {
         const fileId = await dispatch(
-          generateSpokenFront(item.card, item.index, total),
+          generateSpokenFront(item.card, item.index, total, {
+            setId,
+            setName: setRes.data?.set.name,
+          }),
         );
         if (fileId) result[item.card.id] = fileId;
         done += 1;

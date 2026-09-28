@@ -36,6 +36,7 @@ import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import { coerceDetails } from "@/features/flashcards/data/enhanceCard";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import { readAudioFileId } from "../spoken-front/generateSpokenFront.thunk";
+import { ttsRenderFacts } from "../ttsRenderFacts";
 import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
@@ -148,8 +149,19 @@ function writeHelperText(
   };
 }
 
+/** The set a helper-audio batch is preparing (fact for the TTS offer). */
+interface HelperSetRun {
+  setId: string;
+  setName?: string | null;
+}
+
 /** TTS-render one helper text to a durable audio file_id (null on failure). */
-function renderHelperAudio(cardId: string, text: string) {
+function renderHelperAudio(
+  card: CardWithDetails,
+  text: string,
+  setRun?: HelperSetRun,
+) {
+  const cardId = card.id;
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
@@ -168,7 +180,21 @@ function renderHelperAudio(cardId: string, text: string) {
           isEphemeral: false,
           runtime: {
             surfaceName: "matrx-user/education-fastfire",
-            variables: { ...variables },
+            // Mapped-only offers ride beside the five speech variables; the
+            // default pin drops them (payload-neutral for current Holders).
+            variables: {
+              ...variables,
+              ...ttsRenderFacts({
+                renderLane: "helper",
+                cardId,
+                cardFront: card.front,
+                cardBack: card.back,
+                cardTopic: card.topic,
+                setId: setRun?.setId,
+                setName: setRun?.setName,
+                helperText: text,
+              }),
+            },
           },
           config: { autoRun: true, displayMode: "background" },
         }),
@@ -201,6 +227,7 @@ function renderHelperAudio(cardId: string, text: string) {
 export function generateHelperAudio(
   card: CardWithDetails,
   onUnusable?: (sentence: string) => void,
+  setRun?: HelperSetRun,
 ) {
   return async (dispatch: AppDispatch): Promise<string | null> => {
     const { withAudio, textOnly } = findHelper(card);
@@ -210,7 +237,7 @@ export function generateHelperAudio(
       textOnly?.text ?? (await dispatch(writeHelperText(card, onUnusable)));
     if (!text) return null;
 
-    const fileId = await dispatch(renderHelperAudio(card.id, text));
+    const fileId = await dispatch(renderHelperAudio(card, text, setRun));
     if (!fileId) return null;
 
     const persisted = textOnly
@@ -285,7 +312,10 @@ export function ensureHelperAudioForSet(
             const card = queue.shift();
             if (!card) return;
             const fileId = await dispatch(
-              generateHelperAudio(card, fireUnusableOnce),
+              generateHelperAudio(card, fireUnusableOnce, {
+                setId,
+                setName: setRes.data?.set.name,
+              }),
             );
             if (fileId) result[card.id] = fileId;
             done += 1;
