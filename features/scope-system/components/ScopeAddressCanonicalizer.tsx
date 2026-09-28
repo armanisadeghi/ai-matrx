@@ -116,7 +116,11 @@ export function ScopeAddressCanonicalizer() {
     // Read the query from the document rather than `useSearchParams()`: this
     // component mounts in a layout, and the hook would opt the whole subtree
     // into a Suspense requirement for a value only an effect ever reads.
-    router.replace(`${target}${window.location.search}`, { scroll: false });
+    // Keep the query AND the #section: a link to /organizations/<uuid>/settings#teams
+    // must still land on Teams after the address becomes the slug.
+    router.replace(`${target}${window.location.search}${window.location.hash}`, {
+      scroll: false,
+    });
   }, [router, target]);
 
   return null;
