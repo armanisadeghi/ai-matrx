@@ -55,6 +55,7 @@ import { buildPastedTextLanding } from "@/features/sources/api/pastedText";
 // org-refusal-presented-by: features/sources/addFailure.ts
 import { addFailureSentence } from "@/features/sources/addFailure";
 import { createSourceRef } from "@ai-matrx/agents/sources";
+import { isAssociationTargetType } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { supabase } from "@/utils/supabase/client";
 import { isNeedsIntake, resourceToSourceRef } from "./resourceToSourceRef";
@@ -317,12 +318,15 @@ export function useSourceIntake(
     }
     if (!direction)
       return `It was uploaded, but a file cannot be filed with ${what} (a ${target.entityType.replace(/_/g, " ")}), so it is not listed there.`;
+    const targetType = target.entityType;
+    if (direction === "file_to_target" && !isAssociationTargetType(targetType))
+      return `It was uploaded, but a file cannot be filed with ${what} (a ${targetType.replace(/_/g, " ")}), so it is not listed there.`;
     const linked = await associationsService.add(
-      direction === "file_to_target"
+      direction === "file_to_target" && isAssociationTargetType(targetType)
         ? {
             sourceType: "file",
             sourceId: fileId,
-            targetType: target.entityType,
+            targetType,
             targetId: target.entityId,
             orgId: organizationId,
           }
