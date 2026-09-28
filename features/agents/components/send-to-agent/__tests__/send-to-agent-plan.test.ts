@@ -89,7 +89,10 @@ describe("buildLaunchPlan", () => {
 
   it("a variable destination fills that variable and shows the variable panel", () => {
     const plan = buildLaunchPlan({ kind: "variable", name: "topic" }, content);
-    expect(plan.runtime).toEqual({ variables: { topic: content }, surfaceName: null });
+    expect(plan.runtime).toEqual({
+      valueMappings: { topic: { mapType: "direct_value", target: content } },
+      surfaceName: null,
+    });
     expect(plan.showVariablePanel).toBe(true);
   });
 

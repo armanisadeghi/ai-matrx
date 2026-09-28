@@ -151,8 +151,8 @@ export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(func
           title="Filters (f)"
         >
           <SlidersHorizontal className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Filter</span>
-          <kbd className="hidden rounded border border-border px-1 text-[10px] sm:inline">F</kbd>
+          <span className="hidden @xl:inline">Filter</span>
+          <kbd className="hidden rounded border border-border px-1 text-[10px] @xl:inline">F</kbd>
         </button>
       </div>
       {chips.length ? (

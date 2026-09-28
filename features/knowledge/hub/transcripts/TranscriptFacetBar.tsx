@@ -60,7 +60,7 @@ export function TranscriptFacetBar({
   if (!shown.length && !note) return null;
   return (
     <div
-      className="-mx-1 flex min-w-0 items-center gap-1.5 overflow-x-auto px-1 text-xs scrollbar-hide md:flex-wrap md:overflow-visible"
+      className="-mx-1 flex min-w-0 items-center gap-1.5 overflow-x-auto px-1 text-xs scrollbar-hide @2xl:flex-wrap @2xl:overflow-visible"
       role="group"
       aria-label="Transcript filters"
     >
@@ -74,7 +74,7 @@ export function TranscriptFacetBar({
           <div
             key={f}
             className={cn(
-              "inline-flex h-8 shrink-0 items-center rounded-md border md:h-7",
+              "inline-flex h-8 shrink-0 items-center rounded-md border @2xl:h-7",
               summary ? "border-primary/30 bg-primary/10 text-foreground" : "border-dashed border-border text-muted-foreground",
             )}
           >

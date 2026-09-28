@@ -7,10 +7,13 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export default async function AgentNewShortcutRoute({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ seed?: string }>;
 }) {
   const { id } = await params;
+  const { seed } = await searchParams;
   const agent = await getAgent(id);
 
   // A null read is ambiguous under RLS (denied / deleted / never existed /
@@ -32,7 +35,7 @@ export default async function AgentNewShortcutRoute({
       <PageHeader>
         <AgentHeader agentId={id} agentName={agent.name} />
       </PageHeader>
-      <ShortcutEditorNext agent={agent} shortcutId="new" />
+      <ShortcutEditorNext agent={agent} shortcutId="new" seedId={seed ?? null} />
     </>
   );
 }

@@ -213,6 +213,7 @@ See `features/agents/migration/MASTER-PLAN.md`.
 
 ## Change log
 
+- `2026-09-27` — claude: **A shortcut can start from a one-off mapping.** `ShortcutEditorNext` takes `seedId`; a new draft starts from `takeShortcutDraftSeed(seedId)` (`draft-seed.ts`, module scope, taken once) and the binding auto-seed never overwrites it. Custom Agent's "Save as shortcut" is the producer. Launches also accept `runtime.valueMappings` (per-launch layer, same language, resolved once and pinned) on both the agent and shortcut branches of `launchAgentExecution`.
 
 - `2026-09-17` — **Duplicating a platform-global category is admin-gated, the same as creating one.** `POST /api/agent-shortcut-categories/[id]/duplicate` copied `source.organization_id` verbatim while `applyScopeToInsertPayload` 403s a non-super-admin asking for `scope: "global"` — so any reader of a system-org category could press Duplicate and mint a second platform-global row. A global source duplicated by a non-super-admin now lands in the caller's ADMITTED organization (`X-Organization-Id`, which the duplicate thunk now sends) as their own row; a super admin's copy stays global. Refusing outright was rejected: Duplicate is offered on rows the person can only read, and a 403 there is a dead button.
 

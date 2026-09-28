@@ -1365,8 +1365,10 @@ export function KnowledgeHubPage({
   const containerRecordHref =
     state.view.kind === "container" ? (tryGetEntityInfo(state.view.type)?.hrefFor?.(state.view.id) ?? null) : null;
 
+  // @container: the toolbar sizes to the MAIN PANE, not the window — with the peek open the
+  // pane is narrow on a wide screen, and labels must fold to icons before the search box does.
   const resultsMain = (
-    <div className="flex h-full min-h-0 flex-col gap-2 px-4 pb-2 pt-3 md:px-4">
+    <div className="@container flex h-full min-h-0 flex-col gap-2 px-4 pb-2 pt-3 md:px-4">
       {engineBanner}
       <div className="flex min-w-0 items-start gap-2">
         <div className="min-w-0 flex-1">
@@ -1459,10 +1461,10 @@ export function KnowledgeHubPage({
             </Button>
           ) : null}
           {transcriptsView ? (
-            <Button asChild size="sm" className="h-8 gap-1.5 px-2.5 max-md:w-8 max-md:px-0">
+            <Button asChild size="sm" className="h-8 gap-1.5 px-2.5 @max-3xl:w-8 @max-3xl:px-0">
               <Link href="/transcripts/new" aria-label="New transcript" title="Record, upload or paste a new transcript">
                 <Plus className="h-4 w-4" />
-                <span className="hidden md:inline">New transcript</span>
+                <span className="hidden @3xl:inline">New transcript</span>
               </Link>
             </Button>
           ) : null}
@@ -1474,10 +1476,10 @@ export function KnowledgeHubPage({
             title="Save view (⌥V)"
           >
             <BookmarkPlus className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">{dirty ? "Save as new view" : "Save view"}</span>
-            <kbd className="ml-0.5 hidden rounded border border-border px-1 text-[10px] text-muted-foreground lg:inline">⌥V</kbd>
+            <span className="hidden @3xl:inline">{dirty ? "Save as new view" : "Save view"}</span>
+            <kbd className="ml-0.5 hidden rounded border border-border px-1 text-[10px] text-muted-foreground @4xl:inline">⌥V</kbd>
           </Button>
-          {!searching ? <div className="hidden sm:block">{layoutSwitch}</div> : null}
+          {!searching ? <div className="hidden @2xl:block">{layoutSwitch}</div> : null}
         </div>
       </div>
       {bulkBar}
@@ -1485,7 +1487,7 @@ export function KnowledgeHubPage({
           and — on a phone — the layout switch (Linear's display row). */}
       {!trashView && (!searching || transcriptsView) ? (
         <div className="flex min-h-8 min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
-          <div className={transcriptsView ? "min-w-0 basis-full sm:basis-0 sm:flex-1" : "min-w-0 flex-1"}>
+          <div className={transcriptsView ? "min-w-0 basis-full @2xl:basis-0 @2xl:flex-1" : "min-w-0 flex-1"}>
             {transcriptsView ? (
               <TranscriptFacetBar
                 counts={transcriptFacetCounts(baseHits, transcriptFacts.factFor)}
@@ -1501,11 +1503,11 @@ export function KnowledgeHubPage({
             ) : null}
           </div>
           {resultCount ? (
-            <span className="mr-auto shrink-0 text-xs tabular-nums text-muted-foreground sm:mr-0" aria-live="polite">
+            <span className="mr-auto shrink-0 text-xs tabular-nums text-muted-foreground @2xl:mr-0" aria-live="polite">
               {resultCount}
             </span>
           ) : null}
-          {!searching ? <div className="sm:hidden">{layoutSwitch}</div> : null}
+          {!searching ? <div className="@2xl:hidden">{layoutSwitch}</div> : null}
         </div>
       ) : null}
       {transcriptFacts.status === "error" && transcriptFacts.error ? (

@@ -5,6 +5,7 @@
  * the card read the tool result ("held", forever) and never the approval row. The card now reads
  * the row's standing and says what was decided, with no buttons.
  */
+import { expect, it, jest } from "@jest/globals";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -15,7 +16,7 @@ let rowState: { state: string; decided_at?: string } = { state: "approved", deci
 
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@ai-matrx/records-ui", () => ({
-  ...jest.requireActual("@ai-matrx/records-ui"),
+  ...(jest.requireActual("@ai-matrx/records-ui") as object),
   recordsDataSource: () => ({
     rpc: async (name: string) =>
       name === "work_approval_read" ? { data: rowState, error: null } : { data: null, error: null },

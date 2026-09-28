@@ -15,8 +15,9 @@
  * each answer offers "Apply to source" (review/applyTargets).
  */
 
-import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, BookmarkPlus, Loader2 } from "lucide-react";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +43,7 @@ import {
   buildMappedRuntime,
 } from "./custom-agent-plan";
 import { getCustomAgentSession, releaseCustomAgentSession } from "./session";
+import { putShortcutDraftSeed } from "@/features/agent-shortcuts/draft-seed";
 
 export interface CustomAgentWindowProps {
   isOpen: boolean;
@@ -64,6 +66,8 @@ export default function CustomAgentWindow({
 }: CustomAgentWindowProps) {
   const dispatch = useAppDispatch();
   const { launchAgent } = useAgentLauncher();
+  const router = useRouter();
+  const [isNavigating, startNavigation] = useTransition();
   const session = getCustomAgentSession(sessionId);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
@@ -135,6 +139,26 @@ export default function CustomAgentWindow({
     }
   };
 
+  // The same mapping, saved: the ONE shortcut editor opens with it filled in,
+  // bound to the page it was captured on.
+  const handleSaveAsShortcut = () => {
+    if (!agentId) return;
+    const runtime = buildMappedRuntime(mapping, sources, rows, session?.scope);
+    const surface = session?.scope?.surface_name;
+    const seedId = putShortcutDraftSeed({
+      surfaceName: typeof surface === "string" && surface ? surface : null,
+      valueMappings: runtime.valueMappings ?? {},
+      displayMode: "floating-chat",
+      allowChat: true,
+      autoRun: false,
+    });
+    startNavigation(() => {
+      // agent-link-ok: the shortcut editor lives under the user-shell agent route
+      router.push(`/agents/${agentId}/shortcuts/new?seed=${seedId}`);
+    });
+    close();
+  };
+
   return (
     <AgentPickerFrame
       id={`custom-agent-${instanceId}`}
@@ -146,15 +170,26 @@ export default function CustomAgentWindow({
       {...(agentId
         ? {
             footerLeft: (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setAgentId(null)}
-                disabled={isOpening}
-              >
-                <ArrowLeft className="mr-1 h-4 w-4" />
-                Back
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAgentId(null)}
+                  disabled={isOpening}
+                >
+                  <ArrowLeft className="mr-1 h-4 w-4" />
+                  Back
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSaveAsShortcut}
+                  disabled={load.status !== "ready" || isNavigating}
+                >
+                  <BookmarkPlus className="mr-1 h-4 w-4" />
+                  Save as shortcut
+                </Button>
+              </>
             ),
             footerRight: (
               <>

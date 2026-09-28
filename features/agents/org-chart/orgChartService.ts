@@ -19,7 +19,11 @@ import type { ManualOrgEdge } from "./buildAgentOrgForest";
 /** PostgREST answers at most this many rows and says nothing when it stops. */
 const ROW_CAP = 1000;
 
-type SourceEdges = Awaited<ReturnType<typeof associationsService.listForSources>>;
+type SourceEdge = Extract<
+  Awaited<ReturnType<typeof associationsService.listForSources>>,
+  { ok: true }
+>["data"]["edges"][number];
+type SourceEdges = ScopesRpcResult<{ edges: SourceEdge[] }>;
 
 /**
  * Every agent → agent edge out of `ids`. A read that comes back AT the row cap

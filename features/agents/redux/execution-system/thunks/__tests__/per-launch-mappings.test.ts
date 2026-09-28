@@ -30,3 +30,16 @@ describe("resolvePerLaunchMappings — a mapping chosen for one launch", () => {
     expect(resolvePerLaunchMappings({ mappings: undefined, applicationScope: {}, variableDefinitions, contextPolicies: [], variables: none }).variables).toBe(none);
   });
 });
+
+describe("resolvePerLaunchMappings — a fixed value (send-to-agent's variable destination)", () => {
+  it("a direct_value lands in its variable with no scope at all", () => {
+    const out = resolvePerLaunchMappings({
+      mappings: { topic: { mapType: "direct_value", target: "the answer text" } },
+      applicationScope: undefined,
+      variableDefinitions: [{ name: "topic", defaultValue: "" }],
+      contextPolicies: [],
+      variables: undefined,
+    });
+    expect(out.variables).toEqual({ topic: "the answer text" });
+  });
+});

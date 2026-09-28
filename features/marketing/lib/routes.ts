@@ -219,6 +219,17 @@ export const marketingRoutes = {
     `/marketing/${brandId}/intelligence/competitors`,
   brandMonitoring: (brandId: string) =>
     `/marketing/${brandId}/intelligence/monitoring`,
+  /** The tracker editor — one editor for both monitor lenses. */
+  brandMonitorSetup: (
+    brandId: string,
+    opts: { trackerId?: string | null; siteId?: string | null } = {},
+  ) => {
+    const params = new URLSearchParams();
+    if (opts.trackerId) params.set("tracker", opts.trackerId);
+    if (opts.siteId) params.set("site", opts.siteId);
+    const query = params.toString();
+    return `/marketing/${brandId}/intelligence/monitoring/setup${query ? `?${query}` : ""}`;
+  },
   brandReputation: (brandId: string, siteId?: string) =>
     siteId
       ? `/marketing/${brandId}/intelligence/reputation/${siteId}`

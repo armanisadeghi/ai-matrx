@@ -186,8 +186,13 @@ function buildDestinationRuntime(
     case "user-text":
       return { runtime: { userInput: content }, showVariablePanel: false };
     case "variable":
+      // The shortcut mapping language: a fixed value for one variable.
       return {
-        runtime: { variables: { [destination.name]: content } },
+        runtime: {
+          valueMappings: {
+            [destination.name]: { mapType: "direct_value", target: content },
+          },
+        },
         showVariablePanel: true,
       };
     case "context-slot":

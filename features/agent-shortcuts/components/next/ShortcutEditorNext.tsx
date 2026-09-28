@@ -58,6 +58,7 @@ import type { AgentDefinition } from "@/features/agents/types/agent-definition.t
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { takeShortcutDraftSeed } from "@/features/agent-shortcuts/draft-seed";
 const DEFAULT_SURFACE_NAME = "matrx-default/default";
 
 /**
@@ -73,9 +74,12 @@ const DEFAULT_SURFACE_NAME = "matrx-default/default";
 export function ShortcutEditorNext({
   agent,
   shortcutId,
+  seedId = null,
 }: {
   agent: AgentDefinition;
   shortcutId: string;
+  /** A new draft starts from this seed (draft-seed.ts) — e.g. a Custom Agent mapping. */
+  seedId?: string | null;
 }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -179,8 +183,12 @@ export function ShortcutEditorNext({
   }, [dispatch, agentId]);
 
   // ── Form state ────────────────────────────────────────────────────────
+  // Taken once, on the first render of a new draft.
+  const [seed] = useState(() => (isNew ? takeShortcutDraftSeed(seedId) : null));
   const [form, setForm] = useState<EditableShortcut>(() =>
-    existing ? hydrateFromShortcut(existing) : freshDraft(),
+    existing
+      ? hydrateFromShortcut(existing)
+      : { ...freshDraft(), ...(seed ?? {}) },
   );
   // Re-hydrate when the existing record arrives or changes
   useEffect(() => {
@@ -233,7 +241,8 @@ export function ShortcutEditorNext({
 
   // ── Auto-seed mappings from the agent's existing binding on this
   // surface, the first time a fresh draft picks a surface.
-  const hasSeededFromBinding = useStableRef(false);
+  // A seeded draft already carries the person's own mapping — never replace it.
+  const hasSeededFromBinding = useStableRef(seed !== null);
   useEffect(() => {
     if (!isNew) return;
     if (!form.surfaceName) return;
