@@ -2,13 +2,11 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import dynamic from "next/dynamic";
 import {
   FileText,
   PilcrowRight,
   Eye,
   SplitSquareHorizontal,
-  Loader2,
   Save,
   Clock,
   ChevronDown,
@@ -28,25 +26,11 @@ import {
 import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/MarkdownStream";
 import type { ContentEditorProps, EditorMode, EditorModeConfig } from "./types";
-import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
+import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { CopyDropdownButton } from "./CopyDropdownButton.lazy";
 import { ContentManagerMenu } from "./ContentManagerMenu.lazy";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-
-// Dynamic import for TUI editor
-const TuiEditorContent = dynamic(
-  () =>
-    import("@/components/mardown-display/chat-markdown/tui/TuiEditorContent"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
-      </div>
-    ),
-  },
-);
 
 // Mode configurations
 export const MODE_CONFIGS: EditorModeConfig[] = [
@@ -65,8 +49,8 @@ export const MODE_CONFIGS: EditorModeConfig[] = [
   {
     value: "markdown",
     icon: SplitSquareHorizontal,
-    label: "Split with toolbar",
-    description: "Text with a formatting toolbar and a live preview",
+    label: "Source",
+    description: "The Markdown source, with a live preview",
   },
   {
     value: "matrx-split",
@@ -120,7 +104,9 @@ export function ContentEditor({
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   // Refs - properly typed
-  const tuiEditorRef = useRef<TuiEditorContentRef>(null);
+  // THE ONE EDITOR (components/rich-editor) serves Write ("wysiwyg") and
+  // Source ("markdown"); Toast UI is gone from the app.
+  const richEditorRef = useRef<RichEditorController | null>(null);
   const plainTextareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const localContentRef = useRef(localContent);
@@ -184,22 +170,21 @@ export function ContentEditor({
   // Handle mode changes with proper TUI editor sync
   const handleModeChange = useCallback(
     (newMode: EditorMode) => {
-      // Sync content from TUI editor before switching (using the ref method)
+      // Deliver the one editor's pending keystrokes before switching.
       const currentModeValue = modeRef.current;
       if (
         (currentModeValue === "wysiwyg" || currentModeValue === "markdown") &&
-        tuiEditorRef.current
+        richEditorRef.current
       ) {
         try {
-          // Use the ref's getCurrentMarkdown method which handles conversions
-          const markdown = tuiEditorRef.current.getCurrentMarkdown();
+          const markdown = richEditorRef.current.flush();
           // Only update if content actually changed to prevent unnecessary re-renders
           if (markdown !== localContentRef.current) {
             setLocalContent(markdown);
             onChange(markdown);
           }
         } catch (error) {
-          console.error("Error syncing content from TUI editor:", error);
+          console.error("Error syncing content from the editor:", error);
         }
       }
 
@@ -221,8 +206,8 @@ export function ContentEditor({
     [onChange],
   );
 
-  // Handle TUI editor changes
-  const handleTuiChange = useCallback(
+  // The one editor's changes
+  const handleRichChange = useCallback(
     (newContent: string) => {
       setLocalContent(newContent);
       onChange(newContent);
@@ -237,10 +222,10 @@ export function ContentEditor({
       let currentContent = localContent;
       if (
         (currentMode === "wysiwyg" || currentMode === "markdown") &&
-        tuiEditorRef.current
+        richEditorRef.current
       ) {
         try {
-          currentContent = tuiEditorRef.current.getCurrentMarkdown();
+          currentContent = richEditorRef.current.flush();
         } catch (error) {
           console.error("Error getting content for action:", error);
         }
@@ -461,33 +446,27 @@ export function ContentEditor({
             </EditableContextMenu>
           )}
 
-          {/* WYSIWYG Mode */}
-          {currentMode === "wysiwyg" && (
+          {/* Write ("wysiwyg") and Source ("markdown"): THE ONE EDITOR — one
+              instance serves both, so switching between them keeps it; the
+              mode selector above is the one view switch (no toolbar row). */}
+          {(currentMode === "wysiwyg" || currentMode === "markdown") && (
             <div
-              style={{ height: "500px", minHeight: "500px" }}
+              style={{ height: currentMode === "markdown" ? "600px" : "500px" }}
               className="rounded-none"
             >
-              <TuiEditorContent
-                ref={tuiEditorRef}
-                content={localContent}
-                onChange={handleTuiChange}
-                isActive={true}
-                editMode="wysiwyg"
-                className="w-full h-full"
-              />
-            </div>
-          )}
-
-          {/* Markdown Split Mode */}
-          {currentMode === "markdown" && (
-            <div style={{ height: "600px", minHeight: "600px" }}>
-              <TuiEditorContent
-                ref={tuiEditorRef}
-                content={localContent}
-                onChange={handleTuiChange}
-                isActive={true}
-                editMode="markdown"
-                className="w-full h-full"
+              <RichEditor
+                value={localContent}
+                onChange={handleRichChange}
+                view={currentMode === "markdown" ? "source" : "visual"}
+                chrome="bare"
+                controllerRef={richEditorRef}
+                placeholder={placeholder}
+                surfaceName={surfaceName}
+                sourceFeature={sourceFeature}
+                contentSource={contentSource}
+                defaultOutlineOpen={false}
+                imagePolicy={imagePolicy}
+                className="h-full"
               />
             </div>
           )}

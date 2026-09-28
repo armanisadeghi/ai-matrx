@@ -7,9 +7,7 @@ import FullScreenOverlay, {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import type { HtmlPreviewState, HtmlPreviewActions } from "./types";
-import TuiEditorContent, {
-  type TuiEditorContentRef,
-} from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
+import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { MarkdownPlainTextTab } from "./tabs/MarkdownPlainTextTab";
 import { MarkdownPreviewTab } from "./tabs/MarkdownPreviewTab";
 import { HtmlCodeFilesTab } from "./tabs/HtmlCodeFilesTab";
@@ -17,6 +15,7 @@ import { CustomCopyTab } from "./tabs/CustomCopyTab";
 import { SavePageTab } from "./tabs/SavePageTab";
 import { MatrxSplitTab } from "./tabs/MatrxSplitTab";
 import { MarkdownWysiwygTab } from "./tabs/MarkdownWysiwygTab";
+import { MarkdownSplitViewTab } from "./tabs/MarkdownSplitViewTab";
 import { HtmlCodeTab } from "./tabs/HtmlCodeTab";
 import { CompleteHtmlTab } from "./tabs/CompleteHtmlTab";
 import { EditHtmlTab } from "./tabs/EditHtmlTab";
@@ -39,10 +38,10 @@ interface HtmlPreviewFullScreenEditorProps {
  * Integrates markdown editing tabs with HTML preview and management
  *
  * Tab Structure (11 tabs):
- * 1.  Split Editor     — TUI markdown editor with side-by-side preview (editMode="markdown")
- * 2.  WYSIWYG          — True rich-text editor (editMode="wysiwyg")
- * 3.  Plain Text       — Raw markdown textarea editor
- * 4.  Matrx Split      — Custom split view component
+ * 1.  Source           — THE ONE EDITOR's source view (Markdown, live preview)
+ * 2.  Write            — THE ONE EDITOR's visual view (formatted)
+ * 3.  Plain            — Raw markdown textarea editor
+ * 4.  Split            — Plain text left, the formatted result live right (opens here)
  * 5.  Preview          — Rendered markdown preview
  * 6.  HTML Files       — Multi-file source editor (content.html / wordpress.css / metadata.json / complete.html)
  * 7.  HTML Code        — Body-only HTML read-only textarea + copy buttons
@@ -64,18 +63,21 @@ export default function HtmlPreviewFullScreenEditor({
   isAgentSystem = false,
 }: HtmlPreviewFullScreenEditorProps) {
   const user = useAppSelector(selectUser);
-  const [activeTab, setActiveTab] = useState<string>("markdown");
+  // Opens in Split — the plain text beside its live result (the notes default).
+  const [activeTab, setActiveTab] = useState<string>("matrx-split");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const tuiEditorRef = useRef<TuiEditorContentRef>(null);
+  // THE ONE EDITOR's controller (Source / Write tabs).
+  const richEditorRef = useRef<RichEditorController | null>(null);
   const saveLockRef = useRef(false);
   const retrySaveRef = useRef<(() => Promise<void>) | null>(null);
 
-  // Handle tab change - sync content from TUI editor
+  const richTabActive = activeTab === "markdown" || activeTab === "wysiwyg";
+
+  // Leaving Source / Write delivers the editor's pending keystrokes first.
   const handleTabChange = (newTab: string) => {
-    // Get current content from TuiEditor if leaving the markdown (split) tab
-    if (activeTab === "markdown" && tuiEditorRef.current?.getCurrentMarkdown) {
-      const markdown = tuiEditorRef.current.getCurrentMarkdown();
+    if (richTabActive && richEditorRef.current) {
+      const markdown = richEditorRef.current.flush();
       if (markdown !== htmlPreviewState.currentMarkdown) {
         htmlPreviewState.setCurrentMarkdown(markdown);
       }
@@ -104,48 +106,41 @@ export default function HtmlPreviewFullScreenEditor({
 
   const handleSave = () => {
     if (onSave) {
-      // Get final markdown from TUI editor if on wysiwyg tab
-      let finalMarkdown = htmlPreviewState.currentMarkdown;
-      if (
-        activeTab === "markdown" &&
-        tuiEditorRef.current?.getCurrentMarkdown
-      ) {
-        finalMarkdown = tuiEditorRef.current.getCurrentMarkdown();
-      }
+      // The one editor's text with pending keystrokes, when it is showing.
+      const finalMarkdown =
+        richTabActive && richEditorRef.current
+          ? richEditorRef.current.flush()
+          : htmlPreviewState.currentMarkdown;
       void settleSave(() => onSave(finalMarkdown));
     }
   };
 
   // Define tabs for the FullScreenOverlay
   const tabDefinitions: TabDefinition[] = [
-    // 1. Markdown split-view editor (TUI)
+    // 1. Source — THE ONE EDITOR's source view
     {
       id: "markdown",
-      label: "Split Editor",
+      label: "Source",
       content: (
-        <TuiEditorContent
-          ref={tuiEditorRef}
-          content={htmlPreviewState.currentMarkdown}
-          onChange={(newContent) => {
-            if (newContent) {
-              htmlPreviewState.setCurrentMarkdown(newContent);
-            }
-          }}
-          isActive={activeTab === "markdown"}
-          editMode="markdown"
+        <MarkdownSplitViewTab
+          state={htmlPreviewState}
+          actions={htmlPreviewState}
+          activeTab={activeTab}
+          controllerRef={richEditorRef}
         />
       ),
       className: "overflow-hidden p-0 bg-background",
     },
-    // 2. True WYSIWYG (rich-text, no source pane)
+    // 2. Write — THE ONE EDITOR's visual view
     {
       id: "wysiwyg",
-      label: "WYSIWYG",
+      label: "Write",
       content: (
         <MarkdownWysiwygTab
           state={htmlPreviewState}
           actions={htmlPreviewState}
           activeTab={activeTab}
+          controllerRef={richEditorRef}
         />
       ),
       className: "overflow-hidden p-0 bg-background",

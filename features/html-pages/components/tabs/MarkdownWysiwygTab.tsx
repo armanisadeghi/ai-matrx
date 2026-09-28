@@ -1,24 +1,22 @@
 "use client";
 
-import React, { useRef } from "react";
+// Write tab — THE ONE EDITOR's visual view (components/rich-editor). Toast UI is
+// gone from the app; the host's tabs are the one view switch (no toolbar row).
+
+import React from "react";
 import type { MarkdownTabProps } from "../types";
-import TuiEditorContent, { type TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
+import RichEditor from "@/components/rich-editor/RichEditor";
 
-export function MarkdownWysiwygTab({ state, actions, activeTab }: MarkdownTabProps) {
-    const tuiEditorRef = useRef<TuiEditorContentRef>(null);
-
+export function MarkdownWysiwygTab({ state, actions, controllerRef }: MarkdownTabProps) {
     return (
-        <TuiEditorContent
-            ref={tuiEditorRef}
-            content={state.currentMarkdown}
-            onChange={(newContent) => {
-                if (newContent) {
-                    actions.setCurrentMarkdown(newContent);
-                }
-            }}
-            isActive={activeTab === "wysiwyg"}
-            editMode="wysiwyg"
+        <RichEditor
+            value={state.currentMarkdown}
+            onChange={(newContent) => actions.setCurrentMarkdown(newContent)}
+            defaultView="visual"
+            chrome="bare"
+            controllerRef={controllerRef}
+            defaultOutlineOpen={false}
+            className="h-full"
         />
     );
 }
-

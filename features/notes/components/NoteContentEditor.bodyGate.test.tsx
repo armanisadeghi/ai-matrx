@@ -33,7 +33,7 @@ import { NoteContentEditor } from "./NoteContentEditor";
 import type { Note } from "../types";
 
 const id = "44444444-4444-4444-8444-444444444444", org = "11111111-1111-4111-8111-111111111111", actor = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-const note = (o: Partial<Note> = {}): Note => ({ id, organization_id: org, version: 2, content: "Kiln firing schedule", label: "Kiln", folder_name: null, folder_id: null, tags: [], metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null, created_at: "", created_by: actor, updated_at: "", updated_by: actor, deleted_at: null, content_hash: null, file_path: null, last_device_id: null, custom_fields: {}, sync_version: 0, ...o });
+const note = (o: Partial<Note> = {}): Note => ({ id, organization_id: org, version: 2, content: "Kiln firing schedule", label: "Kiln", folder_name: null, folder_id: null, tags: [], metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null, created_at: "", created_by: actor, updated_at: "", updated_by: actor, deleted_at: null, content_hash: null, file_path: null, last_device_id: null, custom_fields: {}, sync_version: 0, search_engine_indexed: null, shown_to: null, ...o });
 
 it("waits for the body of a listed note, then mounts the editor", async () => {
   (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

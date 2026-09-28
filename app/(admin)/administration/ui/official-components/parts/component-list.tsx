@@ -790,7 +790,7 @@ export const componentList: ComponentEntry[] = [
     name: "Content Editor",
     path: "components/content-editor/index.ts",
     description:
-      "Powerful multi-mode content editor with plain text, WYSIWYG, markdown, and preview modes. Built-in copy, export, HTML preview, and Notes integration",
+      "Multi-mode content editor: Plain, Split, Write and Source (the one editor, components/rich-editor) and Read. Built-in copy, export, HTML preview, and Notes integration",
     categories: ["editor", "inputs", "interactive"],
     tags: [
       "editor",
@@ -803,7 +803,6 @@ export const componentList: ComponentEntry[] = [
       "html",
       "collapsible",
       "notes",
-      "tui",
     ],
   },
   {

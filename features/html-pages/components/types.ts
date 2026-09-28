@@ -1,3 +1,5 @@
+import type { Ref } from "react";
+import type { RichEditorController } from "@/components/rich-editor/RichEditor";
 /**
  * Types for HTML Preview components
  *
@@ -130,6 +132,8 @@ export interface MarkdownTabProps {
   state: HtmlPreviewState;
   actions: HtmlPreviewActions;
   activeTab?: string;
+  /** THE ONE EDITOR's controller (Source / Write tabs): the host flushes it before Save or a tab switch. */
+  controllerRef?: Ref<RichEditorController>;
   analysisData?: any;
   messageId?: string;
 }

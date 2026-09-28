@@ -119,7 +119,6 @@
   "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx": 1,
   "components/mardown-display/chat-markdown/InlineCodeSnippet.tsx": 1,
   "components/mardown-display/chat-markdown/StreamAwareChatMarkdown.tsx": 1,
-  "components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx": 1,
   "components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback.tsx": 1,
   "components/mardown-display/markdown-classification/custom-views/view-components/AppSuggestionsView.tsx": 1,
   "components/mardown-display/markdown-classification/custom-views/view-components/CandidateProfileWithCollapseView.tsx": 1,

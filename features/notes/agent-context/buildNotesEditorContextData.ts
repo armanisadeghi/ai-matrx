@@ -245,7 +245,9 @@ export function buildNotesEditorContextData(
     open_notes_summary: openNotesSummary,
     all_folder_names: allFolders,
     note_scope_assignments: scopeAssignments,
-    editor_mode: editorMode,
+    // Notes have no Source mode (Split is their source-plus-preview view);
+    // the shared EditorMode names it for other hosts, read here as Split.
+    editor_mode: editorMode === "source" ? "split" : editorMode,
     is_split_pane_visible: splitNoteId != null,
     history_pane_open: historyOpen,
 

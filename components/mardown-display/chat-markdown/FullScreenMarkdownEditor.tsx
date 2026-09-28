@@ -25,9 +25,7 @@ import LinesViewer, {
 } from "./analyzer/analyzer-options/lines-viewer";
 import SectionViewerV2 from "./analyzer/analyzer-options/section-viewer-V2";
 import MarkdownStream from "@/components/MarkdownStream";
-import TuiEditorContent, {
-  type TuiEditorContentRef,
-} from "./tui/TuiEditorContent";
+import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
@@ -100,11 +98,11 @@ const ALL_TAB_IDS: TabId[] = [
 
 const TAB_LABELS: Record<TabId, string> = {
   // THE ONE VOCABULARY for editor views (the Notes header's words):
-  // Write / Read / Plain / Split. The toolbar Markdown editor has no
-  // counterpart there, so it is named as a Split variant.
+  // Write / Read / Plain / Split. Write ("wysiwyg") and Source ("markdown")
+  // are THE ONE EDITOR's visual and source views (components/rich-editor).
   write: "Plain",
   matrx_split: "Split",
-  markdown: "Split with toolbar",
+  markdown: "Source",
   wysiwyg: "Write",
   preview: "Read",
   analysis: "Analysis",
@@ -1057,7 +1055,9 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [forcedTabs, setForcedTabs] = useState<TabId[]>([]);
   const [capturedAt] = useState(() => new Date().toISOString());
-  const tuiEditorRef = useRef<TuiEditorContentRef>(null);
+  // THE ONE EDITOR's controller (Write / Source tabs): Save and Copy read its
+  // text with pending keystrokes delivered.
+  const richEditorRef = useRef<RichEditorController | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -1116,8 +1116,15 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
     }
   };
 
+  /** The text now — the one editor's pending keystrokes included. */
+  const currentText = () =>
+    (activeTab === "wysiwyg" || activeTab === "markdown") && richEditorRef.current
+      ? richEditorRef.current.flush()
+      : editedContent;
+
   const handleSave = () => {
-    if (onSave) void settleSave(() => onSave(editedContent));
+    const text = currentText();
+    if (onSave) void settleSave(() => onSave(text));
   };
 
   const handleForceOpenTab = useCallback((tabId: TabId) => {
@@ -1196,20 +1203,30 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
     });
   }
 
+  // Write ("wysiwyg") and Source ("markdown"): THE ONE EDITOR. Only the active
+  // tab is mounted; leaving it delivers its last keystrokes (the visual view
+  // reports on unmount), so switching tabs never drops typing.
+  const richTab = (tabId: "markdown" | "wysiwyg") =>
+    wrapInBoundary(
+      tabId,
+      <RichEditor
+        value={editedContent}
+        onChange={handleContentChange}
+        defaultView={tabId === "markdown" ? "source" : "visual"}
+        chrome="bare"
+        controllerRef={richEditorRef}
+        placeholder="Start writing..."
+        defaultOutlineOpen={false}
+        imagePolicy={imagePolicy}
+        className="h-full"
+      />,
+    );
+
   if (effectiveTabs.includes("markdown")) {
     tabDefinitions.push({
       id: "markdown",
       label: TAB_LABELS.markdown,
-      content: wrapInBoundary(
-        "markdown",
-        <TuiEditorContent
-          ref={tuiEditorRef}
-          content={editedContent}
-          onChange={handleContentChange}
-          isActive={activeTab === "markdown"}
-          editMode="markdown"
-        />,
-      ),
+      content: richTab("markdown"),
       className: "overflow-hidden p-0 bg-textured",
     });
   }
@@ -1218,16 +1235,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
     tabDefinitions.push({
       id: "wysiwyg",
       label: TAB_LABELS.wysiwyg,
-      content: wrapInBoundary(
-        "wysiwyg",
-        <TuiEditorContent
-          ref={tuiEditorRef}
-          content={editedContent}
-          onChange={handleContentChange}
-          isActive={activeTab === "wysiwyg"}
-          editMode="wysiwyg"
-        />,
-      ),
+      content: richTab("wysiwyg"),
       className: "overflow-hidden p-0 bg-textured",
     });
   }
@@ -1568,7 +1576,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
         <Button
           key={action.id}
           variant={action.variant ?? "default"}
-          onClick={() => onPrimaryAction && void settleSave(() => onPrimaryAction(action.id, editedContent))}
+          onClick={() => onPrimaryAction && void settleSave(() => onPrimaryAction(action.id, currentText()))}
           disabled={isSaving}
         >
           {action.label}
