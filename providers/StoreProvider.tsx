@@ -46,6 +46,20 @@ type AnyStoreFactory = (initialState?: any) => SlimAppStore;
 // gives us deterministic lookup.
 const clientStores = new Map<AnyStoreFactory, SlimAppStore>();
 
+// Each client store's state at creation — before the sync boot restores any
+// warm cache — keyed like `clientStores`. It equals the server store's state
+// (same factory, same server-supplied `initialState`), so it is handed to
+// react-redux as `serverState`: every useAppSelector HYDRATES against exactly
+// what the server rendered and switches to the live value right after.
+//
+// 🚨 WHY (2026-09-27, /chat/new "1 Issue"): boot runs after load + idle, or at
+// the D345 cap even while a streamed boundary still waits to hydrate. When the
+// cache landed first, that boundary read the cached active org — the composer's
+// context chip hydrated as "Context: ASW" over the server's "Set context".
+// With this, boot timing can never change what hydrates.
+// Guard: providers/__tests__/warm-cache-never-changes-what-hydrates.test.tsx
+const hydrationSnapshots = new Map<AnyStoreFactory, unknown>();
+
 function getOrCreateClientStore(
   factory: AnyStoreFactory,
   initialState?: any,
@@ -54,6 +68,7 @@ function getOrCreateClientStore(
   if (existing) return existing;
 
   const store = factory(initialState);
+  hydrationSnapshots.set(factory, store.getState());
 
   // Phase 4 PR 4.C: wire the reactive identity source. `attachStore` lets
   // non-React consumers (entity sagas, server-bridge utilities) read the
@@ -130,7 +145,14 @@ export default function StoreProvider({
   }
 
   return (
-    <Provider store={storeRef.current}>
+    <Provider
+      store={storeRef.current}
+      // Client: the pre-boot state (see hydrationSnapshots). Server: undefined,
+      // so react-redux reads the per-request store itself.
+      serverState={
+        typeof window !== "undefined" ? (hydrationSnapshots.get(makeStore) as never) : undefined
+      }
+    >
       {/* MUST stay first: it schedules persisted boot after load + browser idle,
           beyond streamed/selective hydration. */}
       <SyncBootstrap />
