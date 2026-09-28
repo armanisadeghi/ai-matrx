@@ -36,7 +36,7 @@ import { FENCE_META_KEY } from "@/components/markdown-core/fence-meta";
 import CsvBlock from "@/components/mardown-display/blocks/csv/CsvBlock";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import { NestedRichContent } from "./NestedRichContent";
-import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
+import { DocumentFootnotes, DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
 import { healStreamingTail } from "./stream-holdback";
 import {
   MarkdownStreamingProvider,
@@ -272,6 +272,8 @@ export function StandardBlocks({
               isStreaming={live && index === blocks.length - 1}
             />
           ))}
+          {/* The document's notes, once, after its last block (as GFM places them). */}
+          <DocumentFootnotes render={(markdown) => <StandardBlock block={{ type: "text", content: markdown }} />} />
         </div>
       </DocumentNumberingProvider>
     </MarkdownStreamingProvider>

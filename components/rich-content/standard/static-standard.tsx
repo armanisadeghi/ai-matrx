@@ -28,6 +28,7 @@ import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
 import { tokenizeXml } from "@/components/mardown-display/blocks/xml/xml-tokenize";
 import {
   computeDocumentNumbering,
+  documentFootnoteSource,
   type DocumentNumbering,
 } from "@/components/markdown-core/syntax/document-numbering";
 import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
@@ -252,6 +253,16 @@ export function StaticStandard({
           numbering={docNumbering}
         />
       ))}
+      {/* The document's notes, once, after the root's last block (as GFM places them). */}
+      {isRoot && documentFootnoteSource(docNumbering) ? (
+        <StaticBlock
+          block={{ type: "text", content: documentFootnoteSource(docNumbering) }}
+          depth={depth}
+          cap={cap}
+          Prose={Prose}
+          numbering={docNumbering}
+        />
+      ) : null}
     </div>
   );
   // Client blocks beneath (code cards, capped sections) read the same

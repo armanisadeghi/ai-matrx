@@ -20,7 +20,7 @@ import { RenderBlock } from "./block-registry/BlockRenderer";
 import { reuseUnchangedBlocks } from "./stable-blocks";
 import { useProgressiveMount } from "./progressive-mount";
 import { renderBlockToContentBlock } from "./render-block-to-content-block";
-import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
+import { DocumentFootnotes, DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
 import { OptionalMarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
 
 /** Task checkboxes toggle only when the message has a save path; otherwise they stay read-only marks. */
@@ -1582,6 +1582,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
                     ),
                   )}
             {!hasUnifiedSpecial && !hasDbInterleavedSpecial && progressiveSentinel}
+            {/* The answer's notes, once, after its last block (as GFM places them). */}
+            <DocumentFootnotes render={(markdown) => renderBlock({ type: "text", content: markdown }, 1_000_000)} />
           </div>
 
           {!hideCopyButton && (

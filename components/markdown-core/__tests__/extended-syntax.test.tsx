@@ -355,6 +355,41 @@ describe("footnotes end to end", () => {
     });
   });
 
+  // verify-RC-B4 round 16 ruling: notes go after the WHOLE document (GFM, Google
+  // Docs, print). The firing log defines its notes mid-document, above a later
+  // section: the definitions render nothing there, and one section follows the
+  // last block, numbered and back-linked across blocks.
+  const MID = [
+    "Bisque at cone 04[^bisque].",
+    "",
+    "[^bisque]: Cone 04 is about 1,060 °C.",
+    "[^glaze]: Cone 6 is about 1,222 °C.",
+    "",
+    "```bash",
+    "kiln --fire cone6",
+    "```",
+    "",
+    "Glaze fired Friday[^glaze]; unloaded Monday.",
+  ].join("\n");
+
+  it.each([
+    ["split into blocks", standard],
+    ["inside a callout container holding a fence", (s: string) => standard(`:::note\n${s}\n:::\n\nSigned off by the studio lead.`)],
+  ])("places one note section after the last block (%s)", async (_path, make) => {
+    const scope = await render(make(MID));
+    const sections = scope.querySelectorAll("section[data-footnotes]");
+    expect(sections).toHaveLength(1);
+    const all = text(scope);
+    expect(all.indexOf("unloaded Monday")).toBeLessThan(all.indexOf("Cone 04 is about 1,060 °C."));
+    expect(all.split("Cone 04 is about 1,060 °C.")).toHaveLength(2);
+    // Nothing of the document follows the notes.
+    expect(all.endsWith(text(sections[0]!))).toBe(true);
+    expect([...sections[0]!.querySelectorAll("li")].map((li) => li.id)).toEqual(["user-content-fn-bisque", "user-content-fn-glaze"]);
+    expect([...scope.querySelectorAll("a[data-footnote-ref]")].map((a) => text(a))).toEqual(["1", "2"]);
+    expect(scope.querySelector("#user-content-fn-glaze a[data-footnote-backref]")?.getAttribute("href")).toBe("#user-content-fnref-glaze");
+    expect(scope.querySelector("#user-content-fnref-glaze")).not.toBeNull();
+  });
+
   it("leaves a citation literal when nothing in the document defines it", async () => {
     const scope = await render(full("Glaze notes[^m] are pending."));
     expect(text(scope)).toContain("Glaze notes[^m] are pending.");

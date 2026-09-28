@@ -24,7 +24,7 @@
 
 import { isTocLine } from "@ai-matrx/print/directives";
 import { extractFrontmatter } from "./frontmatter";
-import { captionKey, type DocumentNumbering } from "./document-numbering";
+import { captionKey, DOCUMENT_FOOTNOTES_MARKER, type DocumentNumbering } from "./document-numbering";
 import { transformContainers } from "./containers";
 import { transformMentions } from "./mentions";
 import { transformInline, type InlineContext, type XrefTarget } from "./inline-syntax";
@@ -358,26 +358,31 @@ function footnoteIds(tree: MNode): { defined: Set<string>; referenced: Set<strin
 }
 
 /**
- * The notes of a document the renderer split into blocks, as GFM shows the
- * WHOLE document (verify-RC-B4 round 15 ruling): GFM renders a note only when
- * its own tree cites it, so a note whose reference sat in another block used
- * to vanish, and the old fallback rendered every such note — even one nothing
- * cites. With the document's numbering, THIS pass renders every note defined
- * in this tree that the document cites, in one section, in number order, each
- * with its back-link; an uncited note is dropped, as GFM drops it. Without a
- * document numbering the tree is the document and GFM's own footer stands.
+ * The notes of a document the renderer split into blocks go where GFM puts them:
+ * after the WHOLE document (verify-RC-B4 round 16 rulings). With a document
+ * numbering, a block never renders a definition the document numbers — the
+ * definition line renders nothing where it is written — and the root renders
+ * every cited note once, after its last block, through a tree that opens with
+ * DOCUMENT_FOOTNOTES_MARKER (DocumentFootnotes): one section, in number order,
+ * each note with its back-link. An uncited note is dropped, as GFM drops it. A
+ * definition the document numbering does not know (a ```markdown fence's own
+ * document) keeps GFM's own footer in its tree. Without a document numbering
+ * the tree is the document and GFM's footer stands.
  */
 function renderFootnoteSection(tree: MNode, numbers: ReadonlyMap<string, number> | null): void {
   if (!numbers) return;
+  const children = tree.children ?? [];
+  const isSection = children.some((c) => c.type === "html" && (c.value ?? "").trim() === DOCUMENT_FOOTNOTES_MARKER);
   const notes: { n: number; def: MNode }[] = [];
   const kept: MNode[] = [];
-  for (const child of tree.children ?? []) {
-    if (child.type !== "footnoteDefinition" || !child.identifier) {
+  for (const child of children) {
+    if (child.type === "html" && (child.value ?? "").trim() === DOCUMENT_FOOTNOTES_MARKER) continue;
+    const n = child.type === "footnoteDefinition" && child.identifier ? numbers.get(child.identifier.toLowerCase()) : undefined;
+    if (n === undefined) {
       kept.push(child);
       continue;
     }
-    const n = numbers.get(child.identifier.toLowerCase());
-    if (n !== undefined && !notes.some((note) => note.n === n)) notes.push({ n, def: child });
+    if (isSection && !notes.some((note) => note.n === n)) notes.push({ n, def: child });
   }
   tree.children = kept;
   if (notes.length === 0) return;
@@ -389,14 +394,14 @@ function renderFootnoteSection(tree: MNode, numbers: ReadonlyMap<string, number>
       { href: `#user-content-fnref-${id}`, dataFootnoteBackref: "", ariaLabel: `Back to reference ${n}`, className: ["data-footnote-backref"] },
       [text("↩")],
     );
-    const children = [...(def.children ?? [])];
-    const tail = children[children.length - 1];
+    const body = [...(def.children ?? [])];
+    const tail = body[body.length - 1];
     if (tail?.type === "paragraph") {
-      children[children.length - 1] = { ...tail, children: [...(tail.children ?? []), text(" "), back] };
+      body[body.length - 1] = { ...tail, children: [...(tail.children ?? []), text(" "), back] };
     } else {
-      children.push(back);
+      body.push(back);
     }
-    return el("li", { id: `user-content-fn-${id}`, value: n }, children);
+    return el("li", { id: `user-content-fn-${id}`, value: n }, body);
   });
   tree.children.push(
     el("section", { dataFootnotes: true, className: ["footnotes"] }, [

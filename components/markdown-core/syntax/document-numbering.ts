@@ -48,6 +48,13 @@ export interface DocumentNumbering {
    */
   footnotes: Map<string, number>;
   /**
+   * The cited notes' definitions exactly as written (`[^x]: …` plus their
+   * continuation lines), in number order, "" when none. The document root
+   * renders them ONCE, after its last block (DocumentFootnotes), as GFM places
+   * notes after the whole document; a block never renders a definition itself.
+   */
+  footnoteMarkdown: string;
+  /**
    * The document's link reference definitions as canonical definition lines
    * (`[label]: <url> "title"`), "" when none — every block resolves its
    * `[text][label]` references against them (prepareCoreSource), so a block
@@ -86,7 +93,7 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
   const byLabel = new Map<string, NumberedTarget>();
   const byCaption = new Map<string, string[]>();
   const footnotes = new Map<string, number>();
-  if (!source) return { byLabel, byCaption, footnotes, linkDefinitions: "" };
+  if (!source) return { byLabel, byCaption, footnotes, footnoteMarkdown: "", linkDefinitions: "" };
 
   // Prose only: fenced code never numbers anything (THE one code-range rule).
   const kinds = fenceLineKinds(source);
@@ -134,8 +141,21 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
     const first = labels[0];
     if (first) byLabel.set(first, { kind: "eq", display });
   }
-  numberFootnotes(prose, footnotes);
-  return { byLabel, byCaption, footnotes, linkDefinitions: linkDefinitionLines(source) };
+  const footnoteMarkdown = numberFootnotes(prose, footnotes);
+  return { byLabel, byCaption, footnotes, footnoteMarkdown, linkDefinitions: linkDefinitionLines(source) };
+}
+
+/**
+ * The first line of the document's footnote block: the root renders
+ * `documentFootnoteSource(numbering)` through its ordinary prose path after its
+ * last block, and the syntax pass (remarkMatrxSyntax) renders the notes' section
+ * ONLY in the tree that carries this line.
+ */
+export const DOCUMENT_FOOTNOTES_MARKER = "<!-- matrx:document-footnotes -->";
+
+/** The markdown of the document's one footnote section, or "" when nothing is cited. */
+export function documentFootnoteSource(numbering: DocumentNumbering | null | undefined): string {
+  return numbering?.footnoteMarkdown ? `${DOCUMENT_FOOTNOTES_MARKER}\n\n${numbering.footnoteMarkdown}` : "";
 }
 
 const FOOTNOTE_DEF = /^ {0,3}\[\^([^\]\s]+)\]:[ \t]?(.*)$/;
@@ -154,8 +174,9 @@ function footnoteRefs(line: string): string[] {
  * A note is its definition line plus its continuation: indented lines, a blank
  * line followed by an indented paragraph, and lazy lines that start no block.
  */
-function numberFootnotes(prose: readonly string[], footnotes: Map<string, number>): void {
+function numberFootnotes(prose: readonly string[], footnotes: Map<string, number>): string {
   const notes = new Map<string, string[]>();
+  const written = new Map<string, string[]>(); // label → the definition's lines as written
   const body: string[] = [];
   for (let i = 0; i < prose.length; i += 1) {
     const def = FOOTNOTE_DEF.exec(prose[i] ?? "");
@@ -165,6 +186,7 @@ function numberFootnotes(prose: readonly string[], footnotes: Map<string, number
     }
     const label = (def[1] ?? "").toLowerCase();
     const lines = [def[2] ?? ""];
+    const raw = [prose[i] ?? ""];
     let previous = prose[i] ?? "";
     let j = i + 1;
     for (; j < prose.length; j += 1) {
@@ -174,12 +196,16 @@ function numberFootnotes(prose: readonly string[], footnotes: Map<string, number
       const blankThenIndented = line.trim() === "" && /^(?: {4}|\t)\S/.test(prose[j + 1] ?? "");
       if (!indented && !lazy && !blankThenIndented) break;
       lines.push(line);
+      raw.push(line);
       previous = line;
     }
-    if (!notes.has(label)) notes.set(label, lines);
+    if (!notes.has(label)) {
+      notes.set(label, lines);
+      written.set(label, raw);
+    }
     i = j - 1;
   }
-  if (notes.size === 0) return;
+  if (notes.size === 0) return "";
   const cite = (id: string) => {
     if (notes.has(id) && !footnotes.has(id)) footnotes.set(id, footnotes.size + 1);
   };
@@ -187,6 +213,8 @@ function numberFootnotes(prose: readonly string[], footnotes: Map<string, number
   // A reference inside a note numbers after the body's (GFM's footer order);
   // a Map iterates entries added while iterating, so a chain is followed.
   for (const id of footnotes.keys()) for (const line of notes.get(id) ?? []) footnoteRefs(line).forEach(cite);
+  // Blank-line separated, so a lazy last line can never run into the next note.
+  return [...footnotes.keys()].map((id) => (written.get(id) ?? []).join("\n").replace(/\s+$/, "")).join("\n\n");
 }
 
 /**
@@ -199,7 +227,7 @@ function numberFootnotes(prose: readonly string[], footnotes: Map<string, number
  */
 export function sameDocumentNumbering(a: DocumentNumbering, b: DocumentNumbering): boolean {
   if (a === b) return true;
-  if (a.linkDefinitions !== b.linkDefinitions) return false;
+  if (a.linkDefinitions !== b.linkDefinitions || a.footnoteMarkdown !== b.footnoteMarkdown) return false;
   if (a.byLabel.size !== b.byLabel.size || a.byCaption.size !== b.byCaption.size || a.footnotes.size !== b.footnotes.size) return false;
   for (const [k, v] of a.byLabel) {
     const o = b.byLabel.get(k);
