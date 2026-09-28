@@ -28,6 +28,9 @@
 --       and the store half (copying again) clears it
 --   H5  Switch back carries the copy's words back, erases nothing the copy does not say, and names
 --       (never writes) a status the old table would refuse
+--   H6  the Slug Field carries the store's unique rule, so a writer that is not the scope door — the
+--       generic record_write, as a signed-in person, once the copy fence is open — is refused a second
+--       live Matter with the same slug in a plain sentence (lane SCOPES-STORE-HOMES, third file)
 
 \set ON_ERROR_STOP on
 \timing off
@@ -183,6 +186,32 @@ begin
       (select status from context.context_items where id = v_item), v_out;
   end if;
 
+  -- ══ H6: the store's own unique rule, for a writer that is not the scope door ══
+  if not exists (select 1 from custom.record f where f.organization_id = v_org
+                  and f.id = custom._ctx_id('scope-column-field', v_type::text, 'slug')
+                  and f.data -> 'rules' @> '[{"kind": "unique"}]'::jsonb) then
+    raise exception 'H6 RED: the Matters Table''s Slug Field carries no unique rule';
+  end if;
+  -- The copy fence open for this organization (the old side writes, the copy no longer follows), so the
+  -- generic door reaches the store's rules as it will once the fence lifts.
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'context_copy_following', 'organization', v_org, v_org, 'false'::jsonb, 'scopeshomes H6: fence open');
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform custom.record_write(v_org, v_type, '{"name": "Ortega v. Pacific Freight (second filing)", "slug": "ortega-v-pacific-freight"}'::jsonb);
+    v_refused := null;
+  exception when unique_violation then
+    v_refused := sqlerrm;
+  end;
+  perform set_config('role', 'none', true);
+  if v_refused is null then
+    raise exception 'H6 RED: record_write took a second live Matter with the slug ortega-v-pacific-freight';
+  end if;
+  if v_refused not like 'Another record here already has Slug "ortega-v-pacific-freight"%' then
+    raise exception 'H6: the refusal is not the plain sentence: %', v_refused;
+  end if;
+
+  raise notice 'GREEN H6: record_write is refused a duplicate slug: %', v_refused;
   raise notice 'GREEN H1–H5: a scope type''s, a context field''s and a scope''s own words live in the Table''s, the Field''s and the Record''s own documents, the slug stays unique among a type''s live scopes, a cleared word and a shortened list reach the copy, the switch names a copy that disagrees and copying again clears it, and switching back carries every word back, erasing nothing and naming what the old table would refuse.';
 end
 $t$;
