@@ -41,6 +41,9 @@ import type { SourceRef } from "@ai-matrx/agents/sources";
 import { chosenForm, type SourcePlanEntry } from "./plan";
 import { SourcePartsPicker } from "./SourcePartsPicker";
 
+/** Phones: every segment is a 44px target (the package control is 28px at "sm"). */
+const SEGMENTED_TOUCH = "max-w-full flex-wrap max-lg:[&_[role=tab]]:min-h-11!";
+
 /** Roughly how many characters fill a printed page — only for "about N pages". */
 const CHARS_PER_PAGE = 3_000;
 
@@ -125,7 +128,11 @@ export function SourceReviewRow({
         <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-foreground">{entry.label}</span>
-          <span className="block truncate text-xs text-muted-foreground">
+          <span
+            className="block truncate text-xs text-muted-foreground"
+            title={`${plan.sentChars.toLocaleString()} characters go in`}
+            data-sent-chars={plan.sentChars}
+          >
             {kind.label}
             {usable && form ? ` · ${form.label}` : ""}
             {usable ? ` · ${sizeWords}` : ""}
@@ -186,6 +193,7 @@ export function SourceReviewRow({
                     label: `${f.label} · ${formatChars(f.chars)}`,
                   }))}
                   size="sm"
+                  className={SEGMENTED_TOUCH}
                 />
               ) : (
                 <Select value={form?.form ?? entry.default_form} onValueChange={onFormChange}>
@@ -221,6 +229,7 @@ export function SourceReviewRow({
                   { value: "parts", label: "Choose parts" },
                 ]}
                 size="sm"
+                className={SEGMENTED_TOUCH}
               />
               {choosingParts && (
                 <div className="pt-2">
@@ -288,6 +297,7 @@ export function SourceReviewRow({
                   { value: "context", label: "Let the AI look it up" },
                 ]}
                 size="sm"
+                className={SEGMENTED_TOUCH}
               />
             </Field>
           )}

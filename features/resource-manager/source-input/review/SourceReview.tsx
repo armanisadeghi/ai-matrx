@@ -36,12 +36,16 @@ export interface SourceReviewProps {
   onPlanChange?: (plan: SourcePlan) => void;
 }
 
-/** The manifest is re-read only when a chosen VERSION changes (it changes the parts). */
+/**
+ * The manifest request: identity + chosen VERSION only (the version changes the
+ * parts). Parts, limits and delivery are planned locally, so changing them never
+ * re-measures.
+ */
 function manifestRequest(refs: SourceRef[], base: SourceSet, targetModelId?: string): SourceSet {
   return {
     ...base,
     sources: refs.map((r) => {
-      const { include_segments: _parts, max_chars: _cap, ...rest } = r;
+      const { include_segments: _parts, max_chars: _cap, delivery: _delivery, ...rest } = r;
       return rest;
     }),
     ...(targetModelId ? { target_model_id: targetModelId } : {}),
@@ -153,12 +157,16 @@ export function SourceReview({
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         {error ? (
           <ErrorBox
+            as="div"
             message="Your Sources could not be measured."
             error={error}
             operation="Measure Sources for review"
           >
             <div className="space-y-2">
-              <p className="text-sm">Your Sources could not be measured, so nothing here can be trusted yet.</p>
+              <p className="text-sm">
+                Your Sources could not be measured, so nothing here can be trusted yet.
+                {error instanceof Error && error.message ? ` ${error.message}` : ""}
+              </p>
               <Button type="button" size="sm" variant="outline" onClick={() => setReloadKey((k) => k + 1)}>
                 <RefreshCw className="mr-1.5 h-4 w-4" />
                 Try again
@@ -271,7 +279,10 @@ function BudgetSummary({
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <Info className="mt-px h-3.5 w-3.5 shrink-0" />
         <span>
-          {formatChars(plan.sentChars)} characters, about {formatTokens(plan.sentTokens)} tokens of{" "}
+          <span title={`${plan.sentChars.toLocaleString()} characters`} data-sent-chars={plan.sentChars}>
+            {formatChars(plan.sentChars)} characters
+          </span>
+          , about {formatTokens(plan.sentTokens)} tokens of{" "}
           {formatTokens(plan.windowTokens)}. AI models measure reading in tokens — roughly three characters each.{" "}
           {plan.windowIsFallback
             ? `We don't know which model will read this, so it is sized against ${formatTokens(plan.windowTokens)} tokens, a common size.`
