@@ -4,6 +4,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import FloatingSheet from "@/components/official/FloatingSheet";
 import { AgentRunner } from "../smart/AgentRunner";
+import { useAgentShellAddress } from "./useAgentShellAddress";
 
 interface AgentPanelOverlayProps {
   conversationId: string;
@@ -15,6 +16,7 @@ export function AgentPanelOverlay({
   onClose,
 }: AgentPanelOverlayProps) {
   const title = useAppSelector(selectInstanceDisplayTitle(conversationId));
+  useAgentShellAddress(conversationId, "panel");
 
   return (
     <FloatingSheet

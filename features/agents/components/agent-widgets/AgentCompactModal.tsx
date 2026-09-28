@@ -4,6 +4,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AgentRunner } from "../smart/AgentRunner";
+import { useAgentShellAddress } from "./useAgentShellAddress";
 
 interface AgentCompactModalProps {
   conversationId: string;
@@ -15,6 +16,7 @@ export function AgentCompactModal({
   onClose,
 }: AgentCompactModalProps) {
   const title = useAppSelector(selectInstanceDisplayTitle(conversationId));
+  useAgentShellAddress(conversationId, "modal-compact");
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
