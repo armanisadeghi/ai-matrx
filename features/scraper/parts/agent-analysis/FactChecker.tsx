@@ -39,12 +39,14 @@ import MarkdownTable from "@/components/mardown-display/tables/MarkdownTable";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import {
-  SCRAPER_ANALYSIS_CONTENT_VARIABLE,
   SCRAPER_ANALYSIS_MANDATES,
 } from "@/features/scraper/constants/analysis-agents";
 import { useMandate } from "@/features/mandates/useMandate";
 import { AnalysisMandateGate } from "./AnalysisMandateGate";
-import type { PageAnalysisFacts } from "./page-analysis-offer-values";
+import {
+  factCheckVariables,
+  type PageAnalysisFacts,
+} from "./page-analysis-offer-values";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FactCheckerPageProps {
@@ -112,10 +114,7 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
       sourceFeature: "scraper",
       initiation: "auto",
       expect: "text",
-      variables: {
-        [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: value,
-        ...offerValuesRef.current,
-      },
+      variables: factCheckVariables(value, offerValuesRef.current),
       signal: controller.signal,
       // Stale text from the previous run must never survive into this one.
       // Cleared here (a callback fired by the run, before the stream) rather

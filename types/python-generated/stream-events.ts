@@ -1654,6 +1654,77 @@ export interface MediaNoticeData {
   metadata?: Record<string, unknown>;
 }
 
+export interface MediaResearchAnchor {
+  title?: string | null;
+  url: string;
+  published_at?: string | null;
+}
+
+export interface MediaResearchProfile {
+  name: string;
+  outlet?: string | null;
+  url?: string | null;
+  published_at?: string | null;
+}
+
+export interface MediaResearchRow {
+  party_id: string;
+  name: string;
+  outlet?: string | null;
+  status: "fit" | "soft_fit" | "research_needed" | "cut";
+  rank?: number;
+  why_them?: string;
+  anchor?: MediaResearchAnchor | null;
+  pitch_note?: string | null;
+  cut_reason?: string | null;
+  contact_state?: "verified" | "quarantined" | "unresolved";
+  contact_address?: string | null;
+  contact_note?: string | null;
+  first_wave?: boolean;
+  fit_check?: string | null;
+  on_list?: boolean;
+}
+
+export interface MediaResearchProgressData {
+  type?: "media_research_progress";
+  run_key: string;
+  stage: "approved" | "search" | "resolve" | "judge" | "contacts" | "first_wave" | "save";
+  percent: number;
+  says: string;
+  found?: number;
+  target?: number;
+  judged?: number;
+  new_profiles?: MediaResearchProfile[];
+  rows?: MediaResearchRow[];
+}
+
+export interface MediaResearchSummaryData {
+  requested: number;
+  research_target: number;
+  multiplier: number;
+  multiplier_reason: string;
+  resolved?: number;
+  judged?: number;
+  first_wave?: number;
+  added_to_list?: number;
+  already_on_list?: number;
+  gaps?: string[];
+}
+
+export interface MediaResearchResultData {
+  type?: "media_research_result";
+  run_key: string;
+  list_id: string;
+  status: "complete" | "partial";
+  reused?: boolean;
+  says: string;
+  summary: MediaResearchSummaryData;
+  rows?: MediaResearchRow[];
+  cuts?: MediaResearchRow[];
+  problems?: string[];
+  next_action?: string;
+}
+
 export interface MemoryBufferSpawnedData {
   type?: "memory_buffer_spawned";
   conversation_id: string;
@@ -2332,6 +2403,8 @@ export type TypedDataPayload =
   | MasterworkTriageProgressData
   | MediaBlockData
   | MediaNoticeData
+  | MediaResearchProgressData
+  | MediaResearchResultData
   | MediaSelectionJobProgressData
   | MemoryBufferSpawnedData
   | MemoryContextInjectedData

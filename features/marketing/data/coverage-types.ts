@@ -75,3 +75,23 @@ export interface CoveragePagedResult {
   rows: CoverageMentionRow[];
   total: number;
 }
+
+/**
+ * One story a news monitor decided (NEWS-ENGINE-SPEC §5.3) — per-monitor state,
+ * written by the engine's commit step and, for surface-anyway / undo / dismiss,
+ * by a person directly under the table's RLS. The row carries its own display
+ * `evidence` (≤8), so no story screen ever reads `web.news_item` (guard:
+ * `features/marketing/news-monitor/__tests__/no-news-item-join.test.ts`).
+ */
+export type TrackerStoryRow = Database["seo"]["Tables"]["tracker_story"]["Row"];
+
+/** The reasons a person may give for dismissing a story (the table's CHECK). */
+export const STORY_DISMISS_REASONS = [
+  "off_beat",
+  "not_news",
+  "wrong_entity",
+  "already_known",
+  "off_policy",
+  "other",
+] as const;
+export type StoryDismissReason = (typeof STORY_DISMISS_REASONS)[number];

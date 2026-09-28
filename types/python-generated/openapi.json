@@ -14737,7 +14737,7 @@
           "Credential Vault"
         ],
         "summary": "Register Fill Device",
-        "description": "Register this fill client install's public key: its own OAuth session plus the\nperson's password on this request (the step-up).",
+        "description": "Register this fill client install's public key: its own OAuth session plus a\nstep-up — the person's password on this request, or a fresh passkey approval of\nthis key (``POST /fill-devices/approvals``).",
         "operationId": "register_fill_device_vault_fill_devices_post",
         "parameters": [
           {
@@ -14808,6 +14808,102 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VaultFillDeviceListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/fill-devices/step-up-methods": {
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Fill Device Step Up Methods",
+        "description": "Whether this person can confirm with their password, a passkey, or neither.",
+        "operationId": "fill_device_step_up_methods_vault_fill_devices_step_up_methods_get",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultFillStepUpMethodsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/fill-devices/approvals": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Approve Fill Device",
+        "description": "Approve one browser's key with the person's passkey (single-use, short-lived).",
+        "operationId": "approve_fill_device_vault_fill_devices_approvals_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultFillDeviceApproveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultFillDeviceApproveResponse"
                 }
               }
             }
@@ -47772,6 +47868,159 @@
         }
       }
     },
+    "/seo/sites/{site_id}/press/clips": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Make Press Clip Door",
+        "description": "Make clip — render, review, re-render up to the org's round knob; a DURABLE\nstreamed command (renders and reviews are minutes of browser and model work).\nThe finished clip is the run's result on ``seo.collection_run`` (operation\n``press.clip.make``), which is the brand's clips gallery.",
+        "operationId": "make_press_clip_door_seo_sites__site_id__press_clips_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PressClipBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/press/headlines": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Write Press Headlines Door",
+        "description": "Headlines from one story's facts, a candidate set per format and one pick each;\ncode recomputes every subject line's characters against the org's knob.",
+        "operationId": "write_press_headlines_door_seo_sites__site_id__press_headlines_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PressHeadlinesBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/reputation/crisis-holding": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Draft Crisis Holding Door",
+        "description": "Crisis holding statement from the guided intake: the counsel stop when a trigger\nfires with no counsel engaged, otherwise (or with \"Draft for counsel anyway\") the\nfull set; code recomputes word counts and valid-until from the decay knobs.",
+        "operationId": "draft_crisis_holding_door_seo_sites__site_id__reputation_crisis_holding_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrisisHoldingBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/press/newsroom/sync": {
       "post": {
         "tags": [
@@ -65727,6 +65976,143 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/brand-voice/extract": {
+      "post": {
+        "tags": [
+          "Brand Voice"
+        ],
+        "summary": "Extract Voice Door",
+        "description": "Measure 5-20 Sources into a draft fingerprint (saved unconfirmed) and return the triage.",
+        "operationId": "extract_voice_door_brand_voice_extract_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceExtractRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceMeasureResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/brand-voice/{fingerprint_id}/confirm": {
+      "post": {
+        "tags": [
+          "Brand Voice"
+        ],
+        "summary": "Confirm Voice Door",
+        "description": "Save the person's confirmed high-risk fields; a brand's voice_tone becomes the summary line.",
+        "operationId": "confirm_voice_door_brand_voice__fingerprint_id__confirm_post",
+        "parameters": [
+          {
+            "name": "fingerprint_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Fingerprint Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceConfirmation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmedVoice"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/brand-voice/fix": {
+      "post": {
+        "tags": [
+          "Brand Voice"
+        ],
+        "summary": "Fix Voice Door",
+        "description": "\"Fix voice\": the enforce loop on one draft — check, rewrite, re-check, header when it still fails.",
+        "operationId": "fix_voice_door_brand_voice_fix_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceFixRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceTextOutcome"
                 }
               }
             }
@@ -102408,6 +102794,7 @@
               "mandate",
               "rewrite_line",
               "schedule_at",
+              "split_angles",
               "strip_tracking"
             ],
             "title": "Action"
@@ -114878,6 +115265,50 @@
         ],
         "title": "BandwidthServiceStatus"
       },
+      "BannedStructure": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "pattern": {
+            "type": "string",
+            "title": "Pattern"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why",
+            "default": ""
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "block",
+              "warn"
+            ],
+            "title": "Severity",
+            "default": "block"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "pattern"
+        ],
+        "title": "BannedStructure"
+      },
       "BaremetricsServiceStatus": {
         "properties": {
           "__kind": {
@@ -125598,6 +126029,30 @@
         "title": "CacheBypass",
         "description": "Opt-in cache invalidation flags attached to an AI request body.\n\nAll fields default to ``False`` — callers pay nothing for the feature\nwhen they do not use it.\n\nconversation\n    Bust ``AgentCache`` for the current conversation AND flush every\n    ``Cx*`` model in the ORM ``StateManager``. Required when the\n    caller has written to ``cx_message`` / ``cx_tool_call`` /\n    ``cx_media`` directly (e.g. via Supabase client).\nagent\n    Evict the agent definition from ``AgxAgent`` / ``AgxVersion``\n    caches in the ORM ``StateManager``. Required after the agent\n    definition has been edited. Scoped to the single agent the route\n    is executing when ``apply_cache_bypass`` is given an ``agent_id``;\n    otherwise a whole-model flush.\ntools\n    Flush the ``Tools`` model cache in the ORM ``StateManager``.\n    Required after a tool definition has been edited.\nmodels\n    Flush the ``ModelDefinition`` cache AND rebuild the standalone\n    ``_pricing_lookup_cache``. Required after an AI model row has\n    been added / edited / repriced."
       },
+      "Cadence": {
+        "properties": {
+          "sentence_length": {
+            "$ref": "#/components/schemas/SentenceLengthStats"
+          },
+          "paragraph_length": {
+            "$ref": "#/components/schemas/ParagraphStats"
+          },
+          "rhythm_signature": {
+            "type": "string",
+            "enum": [
+              "flowing",
+              "listy",
+              "mixed",
+              "short-burst"
+            ],
+            "title": "Rhythm Signature",
+            "default": "mixed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Cadence"
+      },
       "CalcFlag": {
         "properties": {
           "code": {
@@ -127597,6 +128052,33 @@
         ],
         "title": "CapabilityVerdict",
         "description": "One operation's truthful answer for one provider × origin.\n\n``reason`` is MANDATORY whenever ``supported`` is false: a UI renders this\nsentence instead of guessing parity, and \"unavailable\" with no reason is\nthe silent failure the contract forbids. When ``supported`` is true the\nreason may still carry the live-probe caveat (a hosted runtime needs a\nMatrx Sandbox; a local runtime needs Matrx Local running)."
+      },
+      "CapitalizationQuirks": {
+        "properties": {
+          "lowercase_i": {
+            "type": "boolean",
+            "title": "Lowercase I",
+            "default": false
+          },
+          "sentence_case_headers": {
+            "type": "boolean",
+            "title": "Sentence Case Headers",
+            "default": false
+          },
+          "all_caps_for_emphasis": {
+            "type": "string",
+            "enum": [
+              "habitual",
+              "never",
+              "occasional"
+            ],
+            "title": "All Caps For Emphasis",
+            "default": "never"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CapitalizationQuirks"
       },
       "CapsuleServiceStatus": {
         "properties": {
@@ -135646,6 +136128,27 @@
         ],
         "title": "ClosePageResult"
       },
+      "CloserSet": {
+        "properties": {
+          "observed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Observed"
+          },
+          "banned_from_use": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Banned From Use"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CloserSet"
+      },
       "CloudCannonServiceStatus": {
         "properties": {
           "__kind": {
@@ -143254,6 +143757,40 @@
         ],
         "title": "ConfirmedOutletContact"
       },
+      "ConfirmedVoice": {
+        "properties": {
+          "fingerprint_id": {
+            "type": "string",
+            "title": "Fingerprint Id"
+          },
+          "status": {
+            "type": "string",
+            "const": "confirmed",
+            "title": "Status",
+            "default": "confirmed"
+          },
+          "summary_line": {
+            "type": "string",
+            "title": "Summary Line"
+          },
+          "block": {
+            "type": "string",
+            "title": "Block"
+          },
+          "voice_tone_updated": {
+            "type": "boolean",
+            "title": "Voice Tone Updated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fingerprint_id",
+          "summary_line",
+          "block",
+          "voice_tone_updated"
+        ],
+        "title": "ConfirmedVoice"
+      },
       "ConformanceState": {
         "type": "string",
         "enum": [
@@ -148750,6 +149287,68 @@
         "title": "CorpusSegmentOut",
         "description": "One thing the Expert contributed, with every door that exists for it."
       },
+      "CorpusTriage": {
+        "properties": {
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "default": 0
+          },
+          "total_words": {
+            "type": "integer",
+            "title": "Total Words",
+            "default": 0
+          },
+          "ai_tell_share": {
+            "type": "number",
+            "title": "Ai Tell Share",
+            "description": "Share of samples showing two or more named AI tells.",
+            "default": 0.0
+          },
+          "ai_tell_samples": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ai Tell Samples",
+            "description": "Source ids of the samples flagged."
+          },
+          "register_split": {
+            "type": "boolean",
+            "title": "Register Split",
+            "description": "True when the samples split into two registers.",
+            "default": false
+          },
+          "per_sample_involved": {
+            "items": {
+              "$ref": "#/components/schemas/SampleInvolved"
+            },
+            "type": "array",
+            "title": "Per Sample Involved"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "high",
+              "insufficient",
+              "low",
+              "medium"
+            ],
+            "title": "Confidence",
+            "default": "insufficient"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CorpusTriage"
+      },
       "CorpusTurnOut": {
         "properties": {
           "voice": {
@@ -151860,6 +152459,281 @@
           "provider"
         ],
         "title": "CredentialVerifyResponse"
+      },
+      "CrisisHoldingBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "intake": {
+            "$ref": "#/components/schemas/CrisisIntake"
+          },
+          "counsel_review_mode": {
+            "type": "boolean",
+            "title": "Counsel Review Mode",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "intake"
+        ],
+        "title": "CrisisHoldingBody"
+      },
+      "CrisisIntake": {
+        "properties": {
+          "incident_summary": {
+            "type": "string",
+            "title": "Incident Summary"
+          },
+          "incident_type": {
+            "type": "string",
+            "title": "Incident Type"
+          },
+          "first_known_at": {
+            "type": "string",
+            "title": "First Known At"
+          },
+          "org_name": {
+            "type": "string",
+            "title": "Org Name"
+          },
+          "person_role": {
+            "type": "string",
+            "title": "Person Role"
+          },
+          "audiences": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Audiences"
+          },
+          "known_facts": {
+            "type": "string",
+            "title": "Known Facts"
+          },
+          "unknowns": {
+            "type": "string",
+            "title": "Unknowns"
+          },
+          "actions_taken": {
+            "type": "string",
+            "title": "Actions Taken"
+          },
+          "actions_committed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actions Committed"
+          },
+          "people_involved": {
+            "items": {
+              "$ref": "#/components/schemas/CrisisPerson"
+            },
+            "type": "array",
+            "title": "People Involved"
+          },
+          "legal_status": {
+            "type": "string",
+            "title": "Legal Status"
+          },
+          "regulatory_exposure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regulatory Exposure"
+          },
+          "media_timing": {
+            "type": "string",
+            "title": "Media Timing"
+          },
+          "prior_statement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prior Statement"
+          },
+          "tone_constraints": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tone Constraints"
+          },
+          "spokesperson": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spokesperson"
+          },
+          "press_contact": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Press Contact"
+          },
+          "prior_draft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prior Draft"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "incident_summary",
+          "incident_type",
+          "first_known_at",
+          "org_name",
+          "person_role",
+          "known_facts",
+          "unknowns",
+          "actions_taken",
+          "legal_status",
+          "media_timing"
+        ],
+        "title": "CrisisIntake",
+        "description": "The guided intake. Keys are the stable choices; the performer receives the words."
+      },
+      "CrisisPerson": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "consented": {
+            "type": "boolean",
+            "title": "Consented",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CrisisPerson"
       },
       "CrmFoldSettings": {
         "properties": {
@@ -172893,6 +173767,56 @@
         ],
         "title": "ExtractedTextResponse"
       },
+      "Extraction": {
+        "properties": {
+          "extractor_version": {
+            "type": "string",
+            "title": "Extractor Version",
+            "default": "brand.voice_measure/1.0.0"
+          },
+          "baseline_version": {
+            "type": "string",
+            "title": "Baseline Version",
+            "default": "english_baseline_v1"
+          },
+          "rules_version": {
+            "type": "string",
+            "title": "Rules Version",
+            "default": "voice-extractor@092d882+matrx.1"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "high",
+              "insufficient",
+              "low",
+              "medium"
+            ],
+            "title": "Confidence",
+            "default": "medium"
+          },
+          "triage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CorpusTriage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Extraction"
+      },
       "ExtractionProposal": {
         "properties": {
           "assist_id": {
@@ -187753,6 +188677,43 @@
         "type": "object",
         "title": "IdentityHealth",
         "description": "The rolling picture. Rates are fractions (0.03 == 3%), never percentages —\none unit, decided once, so nothing downstream has to guess."
+      },
+      "Idioms": {
+        "properties": {
+          "signature_phrases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Signature Phrases",
+            "description": "Candidates for the person to confirm."
+          },
+          "signature_words": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Signature Words",
+            "description": "Candidates for the person to confirm."
+          },
+          "hedges_you_actually_use": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hedges You Actually Use"
+          },
+          "hedges_you_never_use": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hedges You Never Use"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Idioms"
       },
       "IetfPublicDocument": {
         "properties": {
@@ -202853,6 +203814,46 @@
         ],
         "title": "LeverServiceStatus"
       },
+      "Lexical": {
+        "properties": {
+          "mattr": {
+            "type": "number",
+            "title": "Mattr",
+            "description": "Moving-average type-token ratio over a 100-token window.",
+            "default": 0.0
+          },
+          "mattr_by_window": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Mattr By Window",
+            "description": "MATTR at windows 25, 50 and 100, so a short draft is compared on a window it can fill."
+          },
+          "function_word_zvector": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Function Word Zvector",
+            "description": "Burrows's Delta z-scores of the baseline function words."
+          },
+          "delta_band": {
+            "type": "number",
+            "title": "Delta Band",
+            "description": "Delta distance above which a draft has drifted.",
+            "default": 1.0
+          },
+          "baseline_version": {
+            "type": "string",
+            "title": "Baseline Version",
+            "default": "english_baseline_v1"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Lexical"
+      },
       "LibraryCatalogItemOut": {
         "properties": {
           "id": {
@@ -212634,6 +213635,126 @@
           "tools"
         ],
         "title": "McpToolsResponse"
+      },
+      "Mechanics": {
+        "properties": {
+          "contractions": {
+            "type": "string",
+            "enum": [
+              "mixed",
+              "no",
+              "yes"
+            ],
+            "title": "Contractions",
+            "default": "mixed"
+          },
+          "contraction_rate": {
+            "type": "number",
+            "title": "Contraction Rate",
+            "description": "Contracted / (contracted + expanded) contractible pairs.",
+            "default": 0.0
+          },
+          "em_dash_usage": {
+            "type": "string",
+            "enum": [
+              "habitual",
+              "never",
+              "rare"
+            ],
+            "title": "Em Dash Usage",
+            "default": "rare"
+          },
+          "em_dash_per_1k_words": {
+            "type": "number",
+            "title": "Em Dash Per 1K Words",
+            "default": 0.0
+          },
+          "oxford_comma": {
+            "type": "string",
+            "enum": [
+              "inconsistent",
+              "no",
+              "unknown",
+              "yes"
+            ],
+            "title": "Oxford Comma",
+            "default": "unknown"
+          },
+          "ellipsis_usage": {
+            "type": "string",
+            "enum": [
+              "habitual",
+              "never",
+              "rare"
+            ],
+            "title": "Ellipsis Usage",
+            "default": "never"
+          },
+          "ellipsis_per_1k_words": {
+            "type": "number",
+            "title": "Ellipsis Per 1K Words",
+            "default": 0.0
+          },
+          "exclamation_rate_per_1k_words": {
+            "type": "number",
+            "title": "Exclamation Rate Per 1K Words",
+            "default": 0.0
+          },
+          "question_rate_per_1k_words": {
+            "type": "number",
+            "title": "Question Rate Per 1K Words",
+            "default": 0.0
+          },
+          "semicolon_per_1k_words": {
+            "type": "number",
+            "title": "Semicolon Per 1K Words",
+            "default": 0.0
+          },
+          "parenthesis_per_1k_words": {
+            "type": "number",
+            "title": "Parenthesis Per 1K Words",
+            "default": 0.0
+          },
+          "punctuation_classes": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "habitual",
+                "never",
+                "rare"
+              ]
+            },
+            "type": "object",
+            "title": "Punctuation Classes",
+            "description": "never | rare | habitual per mark, by fixed cut-offs (< 0.5 per 1k never, < 3 rare)."
+          },
+          "parenthetical_aside_frequency": {
+            "type": "string",
+            "enum": [
+              "high",
+              "low",
+              "medium"
+            ],
+            "title": "Parenthetical Aside Frequency",
+            "default": "low"
+          },
+          "capitalization_quirks": {
+            "$ref": "#/components/schemas/CapitalizationQuirks"
+          },
+          "smart_quotes": {
+            "type": "string",
+            "enum": [
+              "mixed",
+              "no",
+              "yes"
+            ],
+            "title": "Smart Quotes",
+            "default": "no"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Mechanics"
       },
       "MediaBlock": {
         "properties": {
@@ -224385,6 +225506,35 @@
         "title": "OpenVSXExtension",
         "description": "Safe factual projection of one public Open VSX extension."
       },
+      "OpenerSet": {
+        "properties": {
+          "observed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Observed"
+          },
+          "banned_from_use": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Banned From Use"
+          },
+          "pos_distribution": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Pos Distribution",
+            "description": "Share of sentences by the part of speech of their first token (spaCy)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OpenerSet"
+      },
       "OpenversePublicImageAttribution": {
         "properties": {
           "__kind": {
@@ -231293,6 +232443,24 @@
         ],
         "title": "ParadoxServiceStatus"
       },
+      "ParagraphStats": {
+        "properties": {
+          "mean_sentences": {
+            "type": "number",
+            "title": "Mean Sentences",
+            "description": "Mean sentences per paragraph (blank-line separated).",
+            "default": 0.0
+          },
+          "one_sentence_paragraph_frequency": {
+            "type": "number",
+            "title": "One Sentence Paragraph Frequency",
+            "default": 0.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ParagraphStats"
+      },
       "PartyKindBatchRequest": {
         "properties": {
           "organization_id": {
@@ -234026,6 +235194,34 @@
           "operational"
         ],
         "title": "PersonioServiceStatus"
+      },
+      "PerspectiveAnchors": {
+        "properties": {
+          "first_person_singular_rate": {
+            "type": "number",
+            "title": "First Person Singular Rate",
+            "description": "Per 1,000 words.",
+            "default": 0.0
+          },
+          "first_person_plural_rate": {
+            "type": "number",
+            "title": "First Person Plural Rate",
+            "default": 0.0
+          },
+          "second_person_rate": {
+            "type": "number",
+            "title": "Second Person Rate",
+            "default": 0.0
+          },
+          "third_person_rate": {
+            "type": "number",
+            "title": "Third Person Rate",
+            "default": 0.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PerspectiveAnchors"
       },
       "PhenomServiceStatus": {
         "properties": {
@@ -239173,6 +240369,263 @@
           "file_path"
         ],
         "title": "PresignedUploadResponse"
+      },
+      "PressClipBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 8,
+            "title": "Url"
+          },
+          "client_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Client Name"
+          },
+          "coverage_mention_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Mention Id"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "section",
+              "whole"
+            ],
+            "title": "Scope",
+            "default": "whole"
+          },
+          "section_heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Heading"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url",
+          "client_name"
+        ],
+        "title": "PressClipBody"
+      },
+      "PressHeadlinesBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "angle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Angle Id"
+          },
+          "facts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 60,
+            "title": "Facts"
+          },
+          "formats": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "feature",
+                "news",
+                "press_release",
+                "subject_line"
+              ]
+            },
+            "type": "array",
+            "title": "Formats"
+          },
+          "peg": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peg"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PressHeadlinesBody"
       },
       "PressidiumServiceStatus": {
         "properties": {
@@ -252114,6 +253567,32 @@
         "title": "RegionValuePlan",
         "description": "One region facet value this pass would create or already found."
       },
+      "RegisterAxis": {
+        "properties": {
+          "involved_score": {
+            "type": "number",
+            "title": "Involved Score",
+            "description": "(contraction + first_person + private_verb) - (noun_ratio + nominalization), all as shares.",
+            "default": 0.0
+          },
+          "involved_band": {
+            "type": "number",
+            "title": "Involved Band",
+            "description": "One band on the involved axis.",
+            "default": 0.25
+          },
+          "per_sample": {
+            "items": {
+              "$ref": "#/components/schemas/SampleInvolved"
+            },
+            "type": "array",
+            "title": "Per Sample"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RegisterAxis"
+      },
       "RegisterDeviceRequest": {
         "properties": {
           "registration": {
@@ -263393,6 +264872,78 @@
         ],
         "title": "SamepageServiceStatus"
       },
+      "SampleIndexEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The Source (processed document) id the text was read from."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "other"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count",
+            "default": 0
+          },
+          "hash": {
+            "type": "string",
+            "title": "Hash",
+            "description": "sha256 of the sample text; the text itself is never stored.",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "SampleIndexEntry"
+      },
+      "SampleInvolved": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "involved_score": {
+            "type": "number",
+            "title": "Involved Score"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "involved_score"
+        ],
+        "title": "SampleInvolved"
+      },
       "SandboxBindRequest": {
         "properties": {
           "organization_id": {
@@ -268568,6 +270119,105 @@
         ],
         "title": "SendingRefusal",
         "description": "One machine-readable reason a send was refused, with its fix."
+      },
+      "SentenceInitial": {
+        "properties": {
+          "conjunction_starts_allowed": {
+            "type": "boolean",
+            "title": "Conjunction Starts Allowed",
+            "default": false
+          },
+          "conjunction_start_rate": {
+            "type": "number",
+            "title": "Conjunction Start Rate",
+            "default": 0.0
+          },
+          "participial_start_rate": {
+            "type": "number",
+            "title": "Participial Start Rate",
+            "default": 0.0
+          },
+          "transitions_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Transitions Used",
+            "description": "Which of however / furthermore / moreover / additionally the samples really open with."
+          },
+          "uses_however_furthermore_moreover": {
+            "type": "boolean",
+            "title": "Uses However Furthermore Moreover",
+            "default": false
+          },
+          "uses_in_conclusion_in_summary": {
+            "type": "boolean",
+            "title": "Uses In Conclusion In Summary",
+            "default": false
+          },
+          "uses_imagine_if": {
+            "type": "boolean",
+            "title": "Uses Imagine If",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SentenceInitial"
+      },
+      "SentenceLengthStats": {
+        "properties": {
+          "mean": {
+            "type": "number",
+            "title": "Mean",
+            "description": "Mean words per sentence.",
+            "default": 0.0
+          },
+          "median": {
+            "type": "number",
+            "title": "Median",
+            "default": 0.0
+          },
+          "p10": {
+            "type": "number",
+            "title": "P10",
+            "description": "10th percentile, linear interpolation.",
+            "default": 0.0
+          },
+          "p90": {
+            "type": "number",
+            "title": "P90",
+            "description": "90th percentile, linear interpolation.",
+            "default": 0.0
+          },
+          "stdev": {
+            "type": "number",
+            "title": "Stdev",
+            "description": "Population standard deviation of sentence length.",
+            "default": 0.0
+          },
+          "length_cv": {
+            "type": "number",
+            "title": "Length Cv",
+            "description": "Burstiness: stdev / mean. AI prose clusters low.",
+            "default": 0.0
+          },
+          "one_word_sentence_frequency": {
+            "type": "number",
+            "title": "One Word Sentence Frequency",
+            "description": "Share of sentences of one to three words.",
+            "default": 0.0
+          },
+          "long_sentence_frequency": {
+            "type": "number",
+            "title": "Long Sentence Frequency",
+            "description": "Share of sentences of 35 or more words.",
+            "default": 0.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SentenceLengthStats"
       },
       "SeoCapability": {
         "type": "string",
@@ -293700,6 +295350,23 @@
         ],
         "title": "TopicResponse"
       },
+      "TopicSignatures": {
+        "properties": {
+          "recurring_themes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recurring Themes"
+          },
+          "perspective_anchors": {
+            "$ref": "#/components/schemas/PerspectiveAnchors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TopicSignatures"
+      },
       "TopicUpdate": {
         "properties": {
           "name": {
@@ -303717,6 +305384,147 @@
         ],
         "title": "VaultFieldValueRequest"
       },
+      "VaultFillDeviceApproveRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "key_thumbprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Key Thumbprint"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "challenge_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Challenge Id"
+          },
+          "credential": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Credential"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key_thumbprint",
+          "challenge_id",
+          "credential"
+        ],
+        "title": "VaultFillDeviceApproveRequest",
+        "description": "The person approves one fill-device key with their account passkey, on the\nAI Matrx web app. ``challenge_id`` and ``credential`` are exactly what the\nauth server's ``/passkeys/authentication/options`` issued and the browser's\nWebAuthn ``get()`` returned (serialized JSON)."
+      },
+      "VaultFillDeviceApproveResponse": {
+        "properties": {
+          "approved": {
+            "type": "boolean",
+            "title": "Approved"
+          },
+          "key_thumbprint": {
+            "type": "string",
+            "title": "Key Thumbprint"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approved",
+          "key_thumbprint",
+          "expires_at"
+        ],
+        "title": "VaultFillDeviceApproveResponse"
+      },
       "VaultFillDeviceListResponse": {
         "properties": {
           "devices": {
@@ -303919,23 +305727,48 @@
             "title": "Extension Origin"
           },
           "password": {
-            "type": "string",
-            "maxLength": 1024,
-            "minLength": 1,
-            "format": "password",
-            "title": "Password",
-            "writeOnly": true
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024,
+                "minLength": 1,
+                "format": "password",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "public_key_jwk",
-          "label",
-          "password"
+          "label"
         ],
         "title": "VaultFillDeviceRegisterRequest",
         "description": "The browser extension registers the PUBLIC half of its non-extractable\nP-256 key. Accepted only over the extension's own OAuth session."
+      },
+      "VaultFillStepUpMethodsResponse": {
+        "properties": {
+          "password": {
+            "type": "boolean",
+            "title": "Password"
+          },
+          "passkey": {
+            "type": "boolean",
+            "title": "Passkey"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password",
+          "passkey"
+        ],
+        "title": "VaultFillStepUpMethodsResponse",
+        "description": "How this person can confirm it is them to turn filling on."
       },
       "VaultForkRequest": {
         "properties": {
@@ -308224,6 +310057,510 @@
         "title": "VistaSocialServiceStatus",
         "description": "Safe aggregate status projection for Vista Social's fixed status page."
       },
+      "VoiceCheckStats": {
+        "properties": {
+          "draft_mean": {
+            "type": "number",
+            "title": "Draft Mean"
+          },
+          "fingerprint_mean": {
+            "type": "number",
+            "title": "Fingerprint Mean"
+          },
+          "drift_score": {
+            "type": "number",
+            "title": "Drift Score",
+            "description": "0 = on the fingerprint, 1 = fully off it (mean of capped drifts)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "draft_mean",
+          "fingerprint_mean",
+          "drift_score"
+        ],
+        "title": "VoiceCheckStats"
+      },
+      "VoiceConfirmation": {
+        "properties": {
+          "em_dash_usage": {
+            "type": "string",
+            "enum": [
+              "habitual",
+              "never",
+              "rare"
+            ],
+            "title": "Em Dash Usage"
+          },
+          "openers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Openers",
+            "description": "Observed openers the person keeps."
+          },
+          "closers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Closers",
+            "description": "Observed closers the person keeps."
+          },
+          "signature_phrases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Signature Phrases",
+            "description": "Signature phrases and words they keep."
+          },
+          "banned_words_allowed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Banned Words Allowed",
+            "description": "Globally banned words the person really uses; the check lets them through."
+          },
+          "register_label": {
+            "type": "string",
+            "enum": [
+              "casual",
+              "casual-professional",
+              "formal",
+              "irreverent",
+              "professional"
+            ],
+            "title": "Register Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "em_dash_usage",
+          "register_label"
+        ],
+        "title": "VoiceConfirmation",
+        "description": "The high-risk fields the person confirms before a fingerprint drives any draft (Brief 8)."
+      },
+      "VoiceExtractRequest": {
+        "properties": {
+          "profile_scope": {
+            "type": "string",
+            "enum": [
+              "brand",
+              "person"
+            ],
+            "title": "Profile Scope"
+          },
+          "owner_id": {
+            "type": "string",
+            "title": "Owner Id",
+            "description": "The person's user id, or the web.brand id."
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/VoiceSampleRef"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Samples"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profile_scope",
+          "owner_id",
+          "samples"
+        ],
+        "title": "VoiceExtractRequest"
+      },
+      "VoiceFingerprint": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "voice_fingerprint",
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of.",
+            "default": "voice_fingerprint"
+          },
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version",
+            "default": 1
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id",
+            "description": "Human-readable profile handle."
+          },
+          "profile_scope": {
+            "type": "string",
+            "enum": [
+              "brand",
+              "person"
+            ],
+            "title": "Profile Scope",
+            "default": "person"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "last_extracted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Extracted At"
+          },
+          "refresh_due_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Due At",
+            "description": "last_extracted_at + 90 days."
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "default": 0
+          },
+          "sample_word_count": {
+            "type": "integer",
+            "title": "Sample Word Count",
+            "default": 0
+          },
+          "sample_age_p50_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Age P50 Days"
+          },
+          "sample_age_oldest_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Age Oldest Days"
+          },
+          "intent": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Intent"
+          },
+          "register_label": {
+            "type": "string",
+            "enum": [
+              "casual",
+              "casual-professional",
+              "formal",
+              "irreverent",
+              "professional"
+            ],
+            "title": "Register Label",
+            "description": "voice.yaml's `register` (renamed: `register` shadows a pydantic model attribute).",
+            "default": "professional"
+          },
+          "cadence": {
+            "$ref": "#/components/schemas/Cadence"
+          },
+          "mechanics": {
+            "$ref": "#/components/schemas/Mechanics"
+          },
+          "lexical": {
+            "$ref": "#/components/schemas/Lexical"
+          },
+          "openers": {
+            "$ref": "#/components/schemas/OpenerSet"
+          },
+          "closers": {
+            "$ref": "#/components/schemas/CloserSet"
+          },
+          "sentence_initial": {
+            "$ref": "#/components/schemas/SentenceInitial"
+          },
+          "idioms": {
+            "$ref": "#/components/schemas/Idioms"
+          },
+          "register_axis": {
+            "$ref": "#/components/schemas/RegisterAxis"
+          },
+          "banned_words_user_specific": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Banned Words User Specific"
+          },
+          "banned_words_global": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Banned Words Global"
+          },
+          "banned_words_global_allowed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Banned Words Global Allowed",
+            "description": "Globally banned words the person confirmed as genuinely theirs; the check lets them through."
+          },
+          "global_words_in_samples": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Global Words In Samples",
+            "description": "Globally banned words found in the real samples, flagged for review."
+          },
+          "banned_structures": {
+            "items": {
+              "$ref": "#/components/schemas/BannedStructure"
+            },
+            "type": "array",
+            "title": "Banned Structures"
+          },
+          "topic_signatures": {
+            "$ref": "#/components/schemas/TopicSignatures"
+          },
+          "samples_index": {
+            "items": {
+              "$ref": "#/components/schemas/SampleIndexEntry"
+            },
+            "type": "array",
+            "title": "Samples Index"
+          },
+          "extraction": {
+            "$ref": "#/components/schemas/Extraction"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile_id"
+        ],
+        "title": "VoiceFingerprint",
+        "description": "A measured writing voice: cadence, mechanics, lexicon, openers, register, idioms."
+      },
+      "VoiceFixRequest": {
+        "properties": {
+          "fingerprint_id": {
+            "type": "string",
+            "title": "Fingerprint Id"
+          },
+          "draft": {
+            "type": "string",
+            "title": "Draft"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "newsletter",
+              "pitch",
+              "reactive",
+              "social"
+            ],
+            "title": "Surface",
+            "default": "pitch"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fingerprint_id",
+          "draft"
+        ],
+        "title": "VoiceFixRequest"
+      },
+      "VoiceMeasureResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "voice_measure_result",
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of.",
+            "default": "voice_measure_result"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "check",
+              "extract"
+            ],
+            "title": "Action"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "fail",
+                  "pass"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "pass_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pass Rate",
+            "description": "Share of the draft's sentences with no violation."
+          },
+          "fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fingerprint",
+            "description": "profile_id@YYYY-MM-DD of the fingerprint used."
+          },
+          "violations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VoiceViolation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violations"
+          },
+          "stats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VoiceCheckStats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "regenerate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regenerate",
+            "description": "True when any block violation means redraft."
+          },
+          "triage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CorpusTriage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fingerprint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fingerprint Id",
+            "description": "The saved voice_fingerprint row id."
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VoiceFingerprint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The extracted fingerprint."
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary",
+            "description": "Plain-English summary for the confirm step."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "title": "VoiceMeasureResult",
+        "description": "One result of ``brand_voice_measure``: an extraction or a draft check."
+      },
       "VoicePreviewRequest": {
         "properties": {
           "organization_id": {
@@ -308360,6 +310697,105 @@
         ],
         "title": "VoicePreviewResponse"
       },
+      "VoiceRound": {
+        "properties": {
+          "attempt": {
+            "type": "integer",
+            "title": "Attempt"
+          },
+          "tells_before": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tells Before"
+          },
+          "changes": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Changes"
+          },
+          "unfixable": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Unfixable"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "attempt",
+          "tells_before"
+        ],
+        "title": "VoiceRound"
+      },
+      "VoiceSampleRef": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "A Source (processed document) id."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "blog",
+              "email",
+              "linkedin",
+              "other",
+              "pitch",
+              "slack",
+              "substack",
+              "tweet"
+            ],
+            "title": "Source",
+            "default": "other"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id"
+        ],
+        "title": "VoiceSampleRef"
+      },
       "VoiceShare": {
         "properties": {
           "key": {
@@ -308409,6 +310845,116 @@
           "share_pct"
         ],
         "title": "VoiceShare"
+      },
+      "VoiceTextOutcome": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field",
+            "default": ""
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "failed",
+              "fixed",
+              "passed"
+            ],
+            "title": "Status"
+          },
+          "retries": {
+            "type": "integer",
+            "title": "Retries",
+            "default": 0
+          },
+          "initial_tells": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Initial Tells"
+          },
+          "tells": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tells",
+            "description": "Block rule ids still present at the end."
+          },
+          "header": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Header"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "rounds": {
+            "items": {
+              "$ref": "#/components/schemas/VoiceRound"
+            },
+            "type": "array",
+            "title": "Rounds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "text"
+        ],
+        "title": "VoiceTextOutcome"
+      },
+      "VoiceViolation": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "match": {
+            "type": "string",
+            "title": "Match",
+            "description": "The exact matched text (empty for whole-draft statistics)."
+          },
+          "span": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Span",
+            "description": "[start, end] character offsets into the draft."
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "block",
+              "info",
+              "warn"
+            ],
+            "title": "Severity"
+          },
+          "fix_hint": {
+            "type": "string",
+            "title": "Fix Hint"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rule_id",
+          "match",
+          "span",
+          "severity",
+          "fix_hint"
+        ],
+        "title": "VoiceViolation"
       },
       "VolusionServiceStatus": {
         "properties": {

@@ -13414,6 +13414,635 @@
     "title": "CutoverFinalSwitchCopyAgainResultData",
     "type": "object"
   },
+  "MediaResearchProgressData": {
+    "$defs": {
+      "MediaResearchAnchor": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Published At"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "MediaResearchAnchor",
+        "type": "object"
+      },
+      "MediaResearchProfile": {
+        "additionalProperties": false,
+        "description": "One newly usable named journalist, as research finds them.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outlet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Outlet"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Published At"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "MediaResearchProfile",
+        "type": "object"
+      },
+      "MediaResearchRow": {
+        "additionalProperties": false,
+        "description": "One journalist, judged. The table the person reads.",
+        "properties": {
+          "party_id": {
+            "title": "Party Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outlet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Outlet"
+          },
+          "status": {
+            "enum": [
+              "fit",
+              "soft_fit",
+              "research_needed",
+              "cut"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "rank": {
+            "default": 0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "why_them": {
+            "default": "",
+            "title": "Why Them",
+            "type": "string"
+          },
+          "anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/MediaResearchAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "pitch_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pitch Note"
+          },
+          "cut_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cut Reason"
+          },
+          "contact_state": {
+            "default": "unresolved",
+            "enum": [
+              "verified",
+              "quarantined",
+              "unresolved"
+            ],
+            "title": "Contact State",
+            "type": "string"
+          },
+          "contact_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Contact Address"
+          },
+          "contact_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Contact Note"
+          },
+          "first_wave": {
+            "default": false,
+            "title": "First Wave",
+            "type": "boolean"
+          },
+          "fit_check": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fit Check"
+          },
+          "on_list": {
+            "default": false,
+            "title": "On List",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "party_id",
+          "name",
+          "status"
+        ],
+        "title": "MediaResearchRow",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "A meaningful change in a media-list research run — never an identical poll.",
+    "properties": {
+      "type": {
+        "const": "media_research_progress",
+        "default": "media_research_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_key": {
+        "title": "Run Key",
+        "type": "string"
+      },
+      "stage": {
+        "enum": [
+          "approved",
+          "search",
+          "resolve",
+          "judge",
+          "contacts",
+          "first_wave",
+          "save"
+        ],
+        "title": "Stage",
+        "type": "string"
+      },
+      "percent": {
+        "title": "Percent",
+        "type": "integer"
+      },
+      "says": {
+        "title": "Says",
+        "type": "string"
+      },
+      "found": {
+        "default": 0,
+        "title": "Found",
+        "type": "integer"
+      },
+      "target": {
+        "default": 0,
+        "title": "Target",
+        "type": "integer"
+      },
+      "judged": {
+        "default": 0,
+        "title": "Judged",
+        "type": "integer"
+      },
+      "new_profiles": {
+        "items": {
+          "$ref": "#/$defs/MediaResearchProfile"
+        },
+        "title": "New Profiles",
+        "type": "array"
+      },
+      "rows": {
+        "items": {
+          "$ref": "#/$defs/MediaResearchRow"
+        },
+        "title": "Rows",
+        "type": "array"
+      }
+    },
+    "required": [
+      "run_key",
+      "stage",
+      "percent",
+      "says"
+    ],
+    "title": "MediaResearchProgressData",
+    "type": "object"
+  },
+  "MediaResearchResultData": {
+    "$defs": {
+      "MediaResearchAnchor": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Published At"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "MediaResearchAnchor",
+        "type": "object"
+      },
+      "MediaResearchRow": {
+        "additionalProperties": false,
+        "description": "One journalist, judged. The table the person reads.",
+        "properties": {
+          "party_id": {
+            "title": "Party Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outlet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Outlet"
+          },
+          "status": {
+            "enum": [
+              "fit",
+              "soft_fit",
+              "research_needed",
+              "cut"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "rank": {
+            "default": 0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "why_them": {
+            "default": "",
+            "title": "Why Them",
+            "type": "string"
+          },
+          "anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/MediaResearchAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "pitch_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pitch Note"
+          },
+          "cut_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cut Reason"
+          },
+          "contact_state": {
+            "default": "unresolved",
+            "enum": [
+              "verified",
+              "quarantined",
+              "unresolved"
+            ],
+            "title": "Contact State",
+            "type": "string"
+          },
+          "contact_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Contact Address"
+          },
+          "contact_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Contact Note"
+          },
+          "first_wave": {
+            "default": false,
+            "title": "First Wave",
+            "type": "boolean"
+          },
+          "fit_check": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fit Check"
+          },
+          "on_list": {
+            "default": false,
+            "title": "On List",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "party_id",
+          "name",
+          "status"
+        ],
+        "title": "MediaResearchRow",
+        "type": "object"
+      },
+      "MediaResearchSummaryData": {
+        "additionalProperties": false,
+        "properties": {
+          "requested": {
+            "title": "Requested",
+            "type": "integer"
+          },
+          "research_target": {
+            "title": "Research Target",
+            "type": "integer"
+          },
+          "multiplier": {
+            "title": "Multiplier",
+            "type": "integer"
+          },
+          "multiplier_reason": {
+            "title": "Multiplier Reason",
+            "type": "string"
+          },
+          "resolved": {
+            "default": 0,
+            "title": "Resolved",
+            "type": "integer"
+          },
+          "judged": {
+            "default": 0,
+            "title": "Judged",
+            "type": "integer"
+          },
+          "first_wave": {
+            "default": 0,
+            "title": "First Wave",
+            "type": "integer"
+          },
+          "added_to_list": {
+            "default": 0,
+            "title": "Added To List",
+            "type": "integer"
+          },
+          "already_on_list": {
+            "default": 0,
+            "title": "Already On List",
+            "type": "integer"
+          },
+          "gaps": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Gaps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "requested",
+          "research_target",
+          "multiplier",
+          "multiplier_reason"
+        ],
+        "title": "MediaResearchSummaryData",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "The run's answer: the outcome first, then the table, then the cuts.",
+    "properties": {
+      "type": {
+        "const": "media_research_result",
+        "default": "media_research_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_key": {
+        "title": "Run Key",
+        "type": "string"
+      },
+      "list_id": {
+        "title": "List Id",
+        "type": "string"
+      },
+      "status": {
+        "enum": [
+          "complete",
+          "partial"
+        ],
+        "title": "Status",
+        "type": "string"
+      },
+      "reused": {
+        "default": false,
+        "title": "Reused",
+        "type": "boolean"
+      },
+      "says": {
+        "title": "Says",
+        "type": "string"
+      },
+      "summary": {
+        "$ref": "#/$defs/MediaResearchSummaryData"
+      },
+      "rows": {
+        "items": {
+          "$ref": "#/$defs/MediaResearchRow"
+        },
+        "title": "Rows",
+        "type": "array"
+      },
+      "cuts": {
+        "items": {
+          "$ref": "#/$defs/MediaResearchRow"
+        },
+        "title": "Cuts",
+        "type": "array"
+      },
+      "problems": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Problems",
+        "type": "array"
+      },
+      "next_action": {
+        "default": "",
+        "title": "Next Action",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_key",
+      "list_id",
+      "status",
+      "says",
+      "summary"
+    ],
+    "title": "MediaResearchResultData",
+    "type": "object"
+  },
   "ToolStartedData": {
     "additionalProperties": false,
     "properties": {

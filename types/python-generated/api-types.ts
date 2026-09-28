@@ -5991,10 +5991,51 @@ export interface paths {
         put?: never;
         /**
          * Register Fill Device
-         * @description Register this fill client install's public key: its own OAuth session plus the
-         *     person's password on this request (the step-up).
+         * @description Register this fill client install's public key: its own OAuth session plus a
+         *     step-up — the person's password on this request, or a fresh passkey approval of
+         *     this key (``POST /fill-devices/approvals``).
          */
         post: operations["register_fill_device_vault_fill_devices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/fill-devices/step-up-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fill Device Step Up Methods
+         * @description Whether this person can confirm with their password, a passkey, or neither.
+         */
+        get: operations["fill_device_step_up_methods_vault_fill_devices_step_up_methods_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/fill-devices/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Fill Device
+         * @description Approve one browser's key with the person's passkey (single-use, short-lived).
+         */
+        post: operations["approve_fill_device_vault_fill_devices_approvals_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23992,6 +24033,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/press/clips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make Press Clip Door
+         * @description Make clip — render, review, re-render up to the org's round knob; a DURABLE
+         *     streamed command (renders and reviews are minutes of browser and model work).
+         *     The finished clip is the run's result on ``seo.collection_run`` (operation
+         *     ``press.clip.make``), which is the brand's clips gallery.
+         */
+        post: operations["make_press_clip_door_seo_sites__site_id__press_clips_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/press/headlines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write Press Headlines Door
+         * @description Headlines from one story's facts, a candidate set per format and one pick each;
+         *     code recomputes every subject line's characters against the org's knob.
+         */
+        post: operations["write_press_headlines_door_seo_sites__site_id__press_headlines_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/reputation/crisis-holding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Crisis Holding Door
+         * @description Crisis holding statement from the guided intake: the counsel stop when a trigger
+         *     fires with no counsel engaged, otherwise (or with "Draft for counsel anyway") the
+         *     full set; code recomputes word counts and valid-until from the decay knobs.
+         */
+        post: operations["draft_crisis_holding_door_seo_sites__site_id__reputation_crisis_holding_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/press/newsroom/sync": {
         parameters: {
             query?: never;
@@ -31175,6 +31282,66 @@ export interface paths {
         get: operations["export_document_research_topics__topic_id__document_export_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/brand-voice/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract Voice Door
+         * @description Measure 5-20 Sources into a draft fingerprint (saved unconfirmed) and return the triage.
+         */
+        post: operations["extract_voice_door_brand_voice_extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/brand-voice/{fingerprint_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Voice Door
+         * @description Save the person's confirmed high-risk fields; a brand's voice_tone becomes the summary line.
+         */
+        post: operations["confirm_voice_door_brand_voice__fingerprint_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/brand-voice/fix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fix Voice Door
+         * @description "Fix voice": the enforce loop on one draft — check, rewrite, re-check, header when it still fails.
+         */
+        post: operations["fix_voice_door_brand_voice_fix_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -44853,7 +45020,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "flatten_attachments" | "hold_until" | "label_cold" | "limit_to" | "mandate" | "rewrite_line" | "schedule_at" | "strip_tracking";
+            action: "flatten_attachments" | "hold_until" | "label_cold" | "limit_to" | "mandate" | "rewrite_line" | "schedule_at" | "split_angles" | "strip_tracking";
             /** Mandate Key */
             mandate_key?: string | null;
             /** Detail */
@@ -50543,6 +50710,26 @@ export interface components {
              */
             status_page?: "https://status.bandwidth.com";
         };
+        /** BannedStructure */
+        BannedStructure: {
+            /** Id */
+            id: string;
+            /** Pattern */
+            pattern: string;
+            /**
+             * Why
+             * @default
+             */
+            why?: string;
+            /**
+             * Severity
+             * @default block
+             * @enum {string}
+             */
+            severity?: "block" | "warn";
+            /** Threshold */
+            threshold?: string | null;
+        };
         /** BaremetricsServiceStatus */
         BaremetricsServiceStatus: {
             /**
@@ -55461,6 +55648,17 @@ export interface components {
              */
             models?: boolean;
         };
+        /** Cadence */
+        Cadence: {
+            sentence_length?: components["schemas"]["SentenceLengthStats"];
+            paragraph_length?: components["schemas"]["ParagraphStats"];
+            /**
+             * Rhythm Signature
+             * @default mixed
+             * @enum {string}
+             */
+            rhythm_signature?: "flowing" | "listy" | "mixed" | "short-burst";
+        };
         /**
          * CalcFlag
          * @description A human-renderable reason something is missing, clamped or unverified.
@@ -56300,6 +56498,25 @@ export interface components {
             reason?: string | null;
             /** Live Probe */
             live_probe?: string | null;
+        };
+        /** CapitalizationQuirks */
+        CapitalizationQuirks: {
+            /**
+             * Lowercase I
+             * @default false
+             */
+            lowercase_i?: boolean;
+            /**
+             * Sentence Case Headers
+             * @default false
+             */
+            sentence_case_headers?: boolean;
+            /**
+             * All Caps For Emphasis
+             * @default never
+             * @enum {string}
+             */
+            all_caps_for_emphasis?: "habitual" | "never" | "occasional";
         };
         /**
          * CapsuleServiceStatus
@@ -59344,6 +59561,13 @@ export interface components {
             closed?: boolean;
             /** Active Page Id */
             active_page_id?: string | null;
+        };
+        /** CloserSet */
+        CloserSet: {
+            /** Observed */
+            observed?: string[];
+            /** Banned From Use */
+            banned_from_use?: string[];
         };
         /**
          * CloudCannonServiceStatus
@@ -62450,6 +62674,23 @@ export interface components {
              */
             contact_points_added?: number;
         };
+        /** ConfirmedVoice */
+        ConfirmedVoice: {
+            /** Fingerprint Id */
+            fingerprint_id: string;
+            /**
+             * Status
+             * @default confirmed
+             * @constant
+             */
+            status?: "confirmed";
+            /** Summary Line */
+            summary_line: string;
+            /** Block */
+            block: string;
+            /** Voice Tone Updated */
+            voice_tone_updated: boolean;
+        };
         /**
          * ConformanceState
          * @enum {string}
@@ -64716,6 +64957,46 @@ export interface components {
             /** Corpus Item Id */
             corpus_item_id?: string | null;
         };
+        /** CorpusTriage */
+        CorpusTriage: {
+            /**
+             * Sample Count
+             * @default 0
+             */
+            sample_count?: number;
+            /**
+             * Total Words
+             * @default 0
+             */
+            total_words?: number;
+            /**
+             * Ai Tell Share
+             * @description Share of samples showing two or more named AI tells.
+             * @default 0
+             */
+            ai_tell_share?: number;
+            /**
+             * Ai Tell Samples
+             * @description Source ids of the samples flagged.
+             */
+            ai_tell_samples?: string[];
+            /**
+             * Register Split
+             * @description True when the samples split into two registers.
+             * @default false
+             */
+            register_split?: boolean;
+            /** Per Sample Involved */
+            per_sample_involved?: components["schemas"]["SampleInvolved"][];
+            /**
+             * Confidence
+             * @default insufficient
+             * @enum {string}
+             */
+            confidence?: "high" | "insufficient" | "low" | "medium";
+            /** Warnings */
+            warnings?: string[];
+        };
         /**
          * CorpusTurnOut
          * @description One turn of a contributed conversation, already classified for a reader.
@@ -65962,6 +66243,101 @@ export interface components {
              *     }
              */
             details?: components["schemas"]["CredentialVerifyDetails"];
+        };
+        /** CrisisHoldingBody */
+        CrisisHoldingBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            intake: components["schemas"]["CrisisIntake"];
+            /**
+             * Counsel Review Mode
+             * @default false
+             */
+            counsel_review_mode?: boolean;
+        };
+        /**
+         * CrisisIntake
+         * @description The guided intake. Keys are the stable choices; the performer receives the words.
+         */
+        CrisisIntake: {
+            /** Incident Summary */
+            incident_summary: string;
+            /** Incident Type */
+            incident_type: string;
+            /** First Known At */
+            first_known_at: string;
+            /** Org Name */
+            org_name: string;
+            /** Person Role */
+            person_role: string;
+            /** Audiences */
+            audiences?: string[];
+            /** Known Facts */
+            known_facts: string;
+            /** Unknowns */
+            unknowns: string;
+            /** Actions Taken */
+            actions_taken: string;
+            /** Actions Committed */
+            actions_committed?: string | null;
+            /** People Involved */
+            people_involved?: components["schemas"]["CrisisPerson"][];
+            /** Legal Status */
+            legal_status: string;
+            /** Regulatory Exposure */
+            regulatory_exposure?: string | null;
+            /** Media Timing */
+            media_timing: string;
+            /** Prior Statement */
+            prior_statement?: string | null;
+            /** Tone Constraints */
+            tone_constraints?: string | null;
+            /** Spokesperson */
+            spokesperson?: string | null;
+            /** Press Contact */
+            press_contact?: string | null;
+            /** Prior Draft */
+            prior_draft?: string | null;
+        };
+        /** CrisisPerson */
+        CrisisPerson: {
+            /** Name */
+            name: string;
+            /** Role */
+            role?: string | null;
+            /**
+             * Consented
+             * @default false
+             */
+            consented?: boolean;
         };
         /**
          * CrmFoldSettings
@@ -74921,6 +75297,33 @@ export interface components {
             /** Pages */
             pages: components["schemas"]["ExtractedTextPageOut"][];
         };
+        /** Extraction */
+        Extraction: {
+            /**
+             * Extractor Version
+             * @default brand.voice_measure/1.0.0
+             */
+            extractor_version?: string;
+            /**
+             * Baseline Version
+             * @default english_baseline_v1
+             */
+            baseline_version?: string;
+            /**
+             * Rules Version
+             * @default voice-extractor@092d882+matrx.1
+             */
+            rules_version?: string;
+            /** Warnings */
+            warnings?: string[];
+            /**
+             * Confidence
+             * @default medium
+             * @enum {string}
+             */
+            confidence?: "high" | "insufficient" | "low" | "medium";
+            triage?: components["schemas"]["CorpusTriage"] | null;
+        };
         /**
          * ExtractionProposal
          * @description The typed proposal riding on the assist's ``navigate`` action.
@@ -81911,6 +82314,23 @@ export interface components {
             /** Breaches */
             breaches?: string[];
         };
+        /** Idioms */
+        Idioms: {
+            /**
+             * Signature Phrases
+             * @description Candidates for the person to confirm.
+             */
+            signature_phrases?: string[];
+            /**
+             * Signature Words
+             * @description Candidates for the person to confirm.
+             */
+            signature_words?: string[];
+            /** Hedges You Actually Use */
+            hedges_you_actually_use?: string[];
+            /** Hedges You Never Use */
+            hedges_you_never_use?: string[];
+        };
         /**
          * IetfPublicDocument
          * @description Safe bounded projection of one public IETF document.
@@ -88553,6 +88973,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** Lexical */
+        Lexical: {
+            /**
+             * Mattr
+             * @description Moving-average type-token ratio over a 100-token window.
+             * @default 0
+             */
+            mattr?: number;
+            /**
+             * Mattr By Window
+             * @description MATTR at windows 25, 50 and 100, so a short draft is compared on a window it can fill.
+             */
+            mattr_by_window?: {
+                [key: string]: number;
+            };
+            /**
+             * Function Word Zvector
+             * @description Burrows's Delta z-scores of the baseline function words.
+             */
+            function_word_zvector?: {
+                [key: string]: number;
+            };
+            /**
+             * Delta Band
+             * @description Delta distance above which a draft has drifted.
+             * @default 1
+             */
+            delta_band?: number;
+            /**
+             * Baseline Version
+             * @default english_baseline_v1
+             */
+            baseline_version?: string;
+        };
         /** LibraryCatalogItemOut */
         LibraryCatalogItemOut: {
             /** Id */
@@ -92765,6 +93219,89 @@ export interface components {
             server_slug: string | null;
             /** Tools */
             tools: components["schemas"]["McpDiscoveredTool"][];
+        };
+        /** Mechanics */
+        Mechanics: {
+            /**
+             * Contractions
+             * @default mixed
+             * @enum {string}
+             */
+            contractions?: "mixed" | "no" | "yes";
+            /**
+             * Contraction Rate
+             * @description Contracted / (contracted + expanded) contractible pairs.
+             * @default 0
+             */
+            contraction_rate?: number;
+            /**
+             * Em Dash Usage
+             * @default rare
+             * @enum {string}
+             */
+            em_dash_usage?: "habitual" | "never" | "rare";
+            /**
+             * Em Dash Per 1K Words
+             * @default 0
+             */
+            em_dash_per_1k_words?: number;
+            /**
+             * Oxford Comma
+             * @default unknown
+             * @enum {string}
+             */
+            oxford_comma?: "inconsistent" | "no" | "unknown" | "yes";
+            /**
+             * Ellipsis Usage
+             * @default never
+             * @enum {string}
+             */
+            ellipsis_usage?: "habitual" | "never" | "rare";
+            /**
+             * Ellipsis Per 1K Words
+             * @default 0
+             */
+            ellipsis_per_1k_words?: number;
+            /**
+             * Exclamation Rate Per 1K Words
+             * @default 0
+             */
+            exclamation_rate_per_1k_words?: number;
+            /**
+             * Question Rate Per 1K Words
+             * @default 0
+             */
+            question_rate_per_1k_words?: number;
+            /**
+             * Semicolon Per 1K Words
+             * @default 0
+             */
+            semicolon_per_1k_words?: number;
+            /**
+             * Parenthesis Per 1K Words
+             * @default 0
+             */
+            parenthesis_per_1k_words?: number;
+            /**
+             * Punctuation Classes
+             * @description never | rare | habitual per mark, by fixed cut-offs (< 0.5 per 1k never, < 3 rare).
+             */
+            punctuation_classes?: {
+                [key: string]: "habitual" | "never" | "rare";
+            };
+            /**
+             * Parenthetical Aside Frequency
+             * @default low
+             * @enum {string}
+             */
+            parenthetical_aside_frequency?: "high" | "low" | "medium";
+            capitalization_quirks?: components["schemas"]["CapitalizationQuirks"];
+            /**
+             * Smart Quotes
+             * @default no
+             * @enum {string}
+             */
+            smart_quotes?: "mixed" | "no" | "yes";
         };
         /** MediaBlock */
         MediaBlock: {
@@ -98445,6 +98982,20 @@ export interface components {
             /** Registry Page */
             registry_page: string;
         };
+        /** OpenerSet */
+        OpenerSet: {
+            /** Observed */
+            observed?: string[];
+            /** Banned From Use */
+            banned_from_use?: string[];
+            /**
+             * Pos Distribution
+             * @description Share of sentences by the part of speech of their first token (spaCy).
+             */
+            pos_distribution?: {
+                [key: string]: number;
+            };
+        };
         /**
          * OpenversePublicImageAttribution
          * @description Safe attribution projection for one openly indexed image.
@@ -101309,6 +101860,20 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** ParagraphStats */
+        ParagraphStats: {
+            /**
+             * Mean Sentences
+             * @description Mean sentences per paragraph (blank-line separated).
+             * @default 0
+             */
+            mean_sentences?: number;
+            /**
+             * One Sentence Paragraph Frequency
+             * @default 0
+             */
+            one_sentence_paragraph_frequency?: number;
+        };
         /**
          * PartyKindBatchRequest
          * @description ``organization_id`` is the caller's injected app context, never the target;
@@ -102447,6 +103012,30 @@ export interface components {
             indicator: "critical" | "major" | "minor" | "none";
             /** Operational */
             operational: boolean;
+        };
+        /** PerspectiveAnchors */
+        PerspectiveAnchors: {
+            /**
+             * First Person Singular Rate
+             * @description Per 1,000 words.
+             * @default 0
+             */
+            first_person_singular_rate?: number;
+            /**
+             * First Person Plural Rate
+             * @default 0
+             */
+            first_person_plural_rate?: number;
+            /**
+             * Second Person Rate
+             * @default 0
+             */
+            second_person_rate?: number;
+            /**
+             * Third Person Rate
+             * @default 0
+             */
+            third_person_rate?: number;
         };
         /** PhenomServiceStatus */
         PhenomServiceStatus: {
@@ -105143,6 +105732,94 @@ export interface components {
             expires_in: number;
             /** File Path */
             file_path: string;
+        };
+        /** PressClipBody */
+        PressClipBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /** Url */
+            url: string;
+            /** Client Name */
+            client_name: string;
+            /** Coverage Mention Id */
+            coverage_mention_id?: string | null;
+            /**
+             * Scope
+             * @default whole
+             * @enum {string}
+             */
+            scope?: "section" | "whole";
+            /** Section Heading */
+            section_heading?: string | null;
+        };
+        /** PressHeadlinesBody */
+        PressHeadlinesBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /** Angle Id */
+            angle_id?: string | null;
+            /** Facts */
+            facts?: string[];
+            /** Formats */
+            formats?: ("feature" | "news" | "press_release" | "subject_line")[];
+            /** Peg */
+            peg?: string | null;
         };
         /** PressidiumServiceStatus */
         PressidiumServiceStatus: {
@@ -110757,6 +111434,23 @@ export interface components {
              */
             existed?: boolean;
         };
+        /** RegisterAxis */
+        RegisterAxis: {
+            /**
+             * Involved Score
+             * @description (contraction + first_person + private_verb) - (noun_ratio + nominalization), all as shares.
+             * @default 0
+             */
+            involved_score?: number;
+            /**
+             * Involved Band
+             * @description One band on the involved axis.
+             * @default 0.25
+             */
+            involved_band?: number;
+            /** Per Sample */
+            per_sample?: components["schemas"]["SampleInvolved"][];
+        };
         /** RegisterDeviceRequest */
         RegisterDeviceRequest: {
             registration: components["schemas"]["DeviceRegistration"];
@@ -115428,6 +116122,41 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** SampleIndexEntry */
+        SampleIndexEntry: {
+            /**
+             * Id
+             * @description The Source (processed document) id the text was read from.
+             */
+            id: string;
+            /**
+             * Source
+             * @default other
+             */
+            source?: string;
+            /** Date */
+            date?: string | null;
+            /** Audience */
+            audience?: string | null;
+            /**
+             * Word Count
+             * @default 0
+             */
+            word_count?: number;
+            /**
+             * Hash
+             * @description sha256 of the sample text; the text itself is never stored.
+             * @default
+             */
+            hash?: string;
+        };
+        /** SampleInvolved */
+        SampleInvolved: {
+            /** Source Id */
+            source_id: string;
+            /** Involved Score */
+            involved_score: number;
+        };
         /** SandboxBindRequest */
         SandboxBindRequest: {
             /**
@@ -117614,6 +118343,94 @@ export interface components {
              * @default false
              */
             transient?: boolean;
+        };
+        /** SentenceInitial */
+        SentenceInitial: {
+            /**
+             * Conjunction Starts Allowed
+             * @default false
+             */
+            conjunction_starts_allowed?: boolean;
+            /**
+             * Conjunction Start Rate
+             * @default 0
+             */
+            conjunction_start_rate?: number;
+            /**
+             * Participial Start Rate
+             * @default 0
+             */
+            participial_start_rate?: number;
+            /**
+             * Transitions Used
+             * @description Which of however / furthermore / moreover / additionally the samples really open with.
+             */
+            transitions_used?: string[];
+            /**
+             * Uses However Furthermore Moreover
+             * @default false
+             */
+            uses_however_furthermore_moreover?: boolean;
+            /**
+             * Uses In Conclusion In Summary
+             * @default false
+             */
+            uses_in_conclusion_in_summary?: boolean;
+            /**
+             * Uses Imagine If
+             * @default false
+             */
+            uses_imagine_if?: boolean;
+        };
+        /** SentenceLengthStats */
+        SentenceLengthStats: {
+            /**
+             * Mean
+             * @description Mean words per sentence.
+             * @default 0
+             */
+            mean?: number;
+            /**
+             * Median
+             * @default 0
+             */
+            median?: number;
+            /**
+             * P10
+             * @description 10th percentile, linear interpolation.
+             * @default 0
+             */
+            p10?: number;
+            /**
+             * P90
+             * @description 90th percentile, linear interpolation.
+             * @default 0
+             */
+            p90?: number;
+            /**
+             * Stdev
+             * @description Population standard deviation of sentence length.
+             * @default 0
+             */
+            stdev?: number;
+            /**
+             * Length Cv
+             * @description Burstiness: stdev / mean. AI prose clusters low.
+             * @default 0
+             */
+            length_cv?: number;
+            /**
+             * One Word Sentence Frequency
+             * @description Share of sentences of one to three words.
+             * @default 0
+             */
+            one_word_sentence_frequency?: number;
+            /**
+             * Long Sentence Frequency
+             * @description Share of sentences of 35 or more words.
+             * @default 0
+             */
+            long_sentence_frequency?: number;
         };
         /**
          * SeoCapability
@@ -128897,6 +129714,12 @@ export interface components {
             progress?: components["schemas"]["PipelineProgress"] | null;
             cost_summary?: components["schemas"]["TopicCostSummary"] | null;
         };
+        /** TopicSignatures */
+        TopicSignatures: {
+            /** Recurring Themes */
+            recurring_themes?: string[];
+            perspective_anchors?: components["schemas"]["PerspectiveAnchors"];
+        };
         /** TopicUpdate */
         TopicUpdate: {
             /** Name */
@@ -133143,6 +133966,67 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * VaultFillDeviceApproveRequest
+         * @description The person approves one fill-device key with their account passkey, on the
+         *     AI Matrx web app. ``challenge_id`` and ``credential`` are exactly what the
+         *     auth server's ``/passkeys/authentication/options`` issued and the browser's
+         *     WebAuthn ``get()`` returned (serialized JSON).
+         */
+        VaultFillDeviceApproveRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /** Key Thumbprint */
+            key_thumbprint: string;
+            /** Label */
+            label?: string | null;
+            /** Challenge Id */
+            challenge_id: string;
+            /** Credential */
+            credential: {
+                [key: string]: unknown;
+            };
+        };
+        /** VaultFillDeviceApproveResponse */
+        VaultFillDeviceApproveResponse: {
+            /** Approved */
+            approved: boolean;
+            /** Key Thumbprint */
+            key_thumbprint: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
         /** VaultFillDeviceListResponse */
         VaultFillDeviceListResponse: {
             /** Devices */
@@ -133215,11 +134099,18 @@ export interface components {
             label: string;
             /** Extension Origin */
             extension_origin?: string | null;
-            /**
-             * Password
-             * Format: password
-             */
-            password: string;
+            /** Password */
+            password?: string | null;
+        };
+        /**
+         * VaultFillStepUpMethodsResponse
+         * @description How this person can confirm it is them to turn filling on.
+         */
+        VaultFillStepUpMethodsResponse: {
+            /** Password */
+            password: boolean;
+            /** Passkey */
+            passkey: boolean;
         };
         /** VaultForkRequest */
         VaultForkRequest: {
@@ -135057,6 +135948,224 @@ export interface components {
              */
             status_page?: "https://status.vistasocial.com/";
         };
+        /** VoiceCheckStats */
+        VoiceCheckStats: {
+            /** Draft Mean */
+            draft_mean: number;
+            /** Fingerprint Mean */
+            fingerprint_mean: number;
+            /**
+             * Drift Score
+             * @description 0 = on the fingerprint, 1 = fully off it (mean of capped drifts).
+             */
+            drift_score: number;
+        };
+        /**
+         * VoiceConfirmation
+         * @description The high-risk fields the person confirms before a fingerprint drives any draft (Brief 8).
+         */
+        VoiceConfirmation: {
+            /**
+             * Em Dash Usage
+             * @enum {string}
+             */
+            em_dash_usage: "habitual" | "never" | "rare";
+            /**
+             * Openers
+             * @description Observed openers the person keeps.
+             */
+            openers?: string[];
+            /**
+             * Closers
+             * @description Observed closers the person keeps.
+             */
+            closers?: string[];
+            /**
+             * Signature Phrases
+             * @description Signature phrases and words they keep.
+             */
+            signature_phrases?: string[];
+            /**
+             * Banned Words Allowed
+             * @description Globally banned words the person really uses; the check lets them through.
+             */
+            banned_words_allowed?: string[];
+            /**
+             * Register Label
+             * @enum {string}
+             */
+            register_label: "casual" | "casual-professional" | "formal" | "irreverent" | "professional";
+        };
+        /** VoiceExtractRequest */
+        VoiceExtractRequest: {
+            /**
+             * Profile Scope
+             * @enum {string}
+             */
+            profile_scope: "brand" | "person";
+            /**
+             * Owner Id
+             * @description The person's user id, or the web.brand id.
+             */
+            owner_id: string;
+            /** Samples */
+            samples: components["schemas"]["VoiceSampleRef"][];
+            /** Label */
+            label?: string | null;
+        };
+        /**
+         * VoiceFingerprint
+         * @description A measured writing voice: cadence, mechanics, lexicon, openers, register, idioms.
+         */
+        VoiceFingerprint: {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of.
+             * @default voice_fingerprint
+             * @constant
+             */
+            __kind?: "voice_fingerprint";
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version?: number;
+            /**
+             * Profile Id
+             * @description Human-readable profile handle.
+             */
+            profile_id: string;
+            /**
+             * Profile Scope
+             * @default person
+             * @enum {string}
+             */
+            profile_scope?: "brand" | "person";
+            /** Created At */
+            created_at?: string | null;
+            /** Last Extracted At */
+            last_extracted_at?: string | null;
+            /**
+             * Refresh Due At
+             * @description last_extracted_at + 90 days.
+             */
+            refresh_due_at?: string | null;
+            /**
+             * Sample Count
+             * @default 0
+             */
+            sample_count?: number;
+            /**
+             * Sample Word Count
+             * @default 0
+             */
+            sample_word_count?: number;
+            /** Sample Age P50 Days */
+            sample_age_p50_days?: number | null;
+            /** Sample Age Oldest Days */
+            sample_age_oldest_days?: number | null;
+            /** Intent */
+            intent?: string[];
+            /**
+             * Register Label
+             * @description voice.yaml's `register` (renamed: `register` shadows a pydantic model attribute).
+             * @default professional
+             * @enum {string}
+             */
+            register_label?: "casual" | "casual-professional" | "formal" | "irreverent" | "professional";
+            cadence?: components["schemas"]["Cadence"];
+            mechanics?: components["schemas"]["Mechanics"];
+            lexical?: components["schemas"]["Lexical"];
+            openers?: components["schemas"]["OpenerSet"];
+            closers?: components["schemas"]["CloserSet"];
+            sentence_initial?: components["schemas"]["SentenceInitial"];
+            idioms?: components["schemas"]["Idioms"];
+            register_axis?: components["schemas"]["RegisterAxis"];
+            /** Banned Words User Specific */
+            banned_words_user_specific?: string[];
+            /** Banned Words Global */
+            banned_words_global?: string[];
+            /**
+             * Banned Words Global Allowed
+             * @description Globally banned words the person confirmed as genuinely theirs; the check lets them through.
+             */
+            banned_words_global_allowed?: string[];
+            /**
+             * Global Words In Samples
+             * @description Globally banned words found in the real samples, flagged for review.
+             */
+            global_words_in_samples?: string[];
+            /** Banned Structures */
+            banned_structures?: components["schemas"]["BannedStructure"][];
+            topic_signatures?: components["schemas"]["TopicSignatures"];
+            /** Samples Index */
+            samples_index?: components["schemas"]["SampleIndexEntry"][];
+            extraction?: components["schemas"]["Extraction"];
+        };
+        /** VoiceFixRequest */
+        VoiceFixRequest: {
+            /** Fingerprint Id */
+            fingerprint_id: string;
+            /** Draft */
+            draft: string;
+            /**
+             * Surface
+             * @default pitch
+             * @enum {string}
+             */
+            surface?: "newsletter" | "pitch" | "reactive" | "social";
+        };
+        /**
+         * VoiceMeasureResult
+         * @description One result of ``brand_voice_measure``: an extraction or a draft check.
+         */
+        VoiceMeasureResult: {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of.
+             * @default voice_measure_result
+             * @constant
+             */
+            __kind?: "voice_measure_result";
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "check" | "extract";
+            /** Verdict */
+            verdict?: ("fail" | "pass") | null;
+            /**
+             * Pass Rate
+             * @description Share of the draft's sentences with no violation.
+             */
+            pass_rate?: number | null;
+            /**
+             * Fingerprint
+             * @description profile_id@YYYY-MM-DD of the fingerprint used.
+             */
+            fingerprint?: string | null;
+            /** Violations */
+            violations?: components["schemas"]["VoiceViolation"][] | null;
+            stats?: components["schemas"]["VoiceCheckStats"] | null;
+            /**
+             * Regenerate
+             * @description True when any block violation means redraft.
+             */
+            regenerate?: boolean | null;
+            triage?: components["schemas"]["CorpusTriage"] | null;
+            /**
+             * Fingerprint Id
+             * @description The saved voice_fingerprint row id.
+             */
+            fingerprint_id?: string | null;
+            /** @description The extracted fingerprint. */
+            profile?: components["schemas"]["VoiceFingerprint"] | null;
+            /**
+             * Summary
+             * @description Plain-English summary for the confirm step.
+             */
+            summary?: string | null;
+        };
         /** VoicePreviewRequest */
         VoicePreviewRequest: {
             /**
@@ -135119,6 +136228,41 @@ export interface components {
              */
             mime_type?: string;
         };
+        /** VoiceRound */
+        VoiceRound: {
+            /** Attempt */
+            attempt: number;
+            /** Tells Before */
+            tells_before: string[];
+            /** Changes */
+            changes?: {
+                [key: string]: unknown;
+            }[];
+            /** Unfixable */
+            unfixable?: {
+                [key: string]: unknown;
+            }[];
+            /** Error */
+            error?: string | null;
+        };
+        /** VoiceSampleRef */
+        VoiceSampleRef: {
+            /**
+             * Source Id
+             * @description A Source (processed document) id.
+             */
+            source_id: string;
+            /**
+             * Source
+             * @default other
+             * @enum {string}
+             */
+            source?: "blog" | "email" | "linkedin" | "other" | "pitch" | "slack" | "substack" | "tweet";
+            /** Date */
+            date?: string | null;
+            /** Audience */
+            audience?: string | null;
+        };
         /** VoiceShare */
         VoiceShare: {
             /** Key */
@@ -135141,6 +136285,59 @@ export interface components {
              * @default false
              */
             is_brand?: boolean;
+        };
+        /** VoiceTextOutcome */
+        VoiceTextOutcome: {
+            /**
+             * Field
+             * @default
+             */
+            field?: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "failed" | "fixed" | "passed";
+            /**
+             * Retries
+             * @default 0
+             */
+            retries?: number;
+            /** Initial Tells */
+            initial_tells?: string[];
+            /**
+             * Tells
+             * @description Block rule ids still present at the end.
+             */
+            tells?: string[];
+            /** Header */
+            header?: string | null;
+            /** Text */
+            text: string;
+            /** Rounds */
+            rounds?: components["schemas"]["VoiceRound"][];
+        };
+        /** VoiceViolation */
+        VoiceViolation: {
+            /** Rule Id */
+            rule_id: string;
+            /**
+             * Match
+             * @description The exact matched text (empty for whole-draft statistics).
+             */
+            match: string;
+            /**
+             * Span
+             * @description [start, end] character offsets into the draft.
+             */
+            span: number[];
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "block" | "info" | "warn";
+            /** Fix Hint */
+            fix_hint: string;
         };
         /** VolusionServiceStatus */
         VolusionServiceStatus: {
@@ -151316,6 +152513,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultFillDeviceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fill_device_step_up_methods_vault_fill_devices_step_up_methods_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultFillStepUpMethodsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_fill_device_vault_fill_devices_approvals_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultFillDeviceApproveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultFillDeviceApproveResponse"];
                 };
             };
             /** @description Validation Error */
@@ -176922,6 +178185,111 @@ export interface operations {
             };
         };
     };
+    make_press_clip_door_seo_sites__site_id__press_clips_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PressClipBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_press_headlines_door_seo_sites__site_id__press_headlines_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PressHeadlinesBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draft_crisis_holding_door_seo_sites__site_id__reputation_crisis_holding_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrisisHoldingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sync_press_newsroom_seo_sites__site_id__press_newsroom_sync_post: {
         parameters: {
             query?: never;
@@ -188745,6 +190113,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_voice_door_brand_voice_extract_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceExtractRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceMeasureResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_voice_door_brand_voice__fingerprint_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fingerprint_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceConfirmation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmedVoice"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fix_voice_door_brand_voice_fix_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceFixRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceTextOutcome"];
                 };
             };
             /** @description Validation Error */

@@ -11,6 +11,8 @@
  * omitted — never sent as "" or null.
  */
 
+import { isoInstantWithOffset } from "@/lib/dates/isoInstantWithOffset";
+import { SCRAPER_ANALYSIS_CONTENT_VARIABLE } from "@/features/scraper/constants/analysis-agents";
 import type { ScraperPageAnalysisOffer } from "@/types/python-generated/provision-offers";
 
 export type PageAnalysisFacts = Partial<
@@ -101,4 +103,23 @@ export function pageAnalysisOfferValues(
     if (value !== undefined) Object.assign(out, { [key]: value });
   }
   return out;
+}
+
+/**
+ * The Fact Checker tab's variables: the page text, the page's facts, and
+ * `current_time` — the exact instant, ISO-8601 with offset — so a claim's
+ * "recent", "currently" or "new" is judged against today (the
+ * `scraper.fact_check` default Holder maps it; aidream `client_mandates.py`
+ * offers it on `scraper.page_analysis`). The clock is read at CALL time.
+ */
+export function factCheckVariables(
+  pageContent: string,
+  facts: PageAnalysisFacts = {},
+  now: Date = new Date(),
+): Record<string, string | number> & { current_time: string } {
+  return {
+    [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: pageContent,
+    ...facts,
+    current_time: isoInstantWithOffset(now),
+  };
 }
