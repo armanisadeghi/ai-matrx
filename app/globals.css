@@ -2546,8 +2546,9 @@
    leading heading's mt-4) pushed a note's Read view 24px below its Write and
    Plain views; GitHub, Notion and every prose reader zero the first child's top
    margin. "First" = the first block wrapper no earlier block precedes (empty
-   `contents` slots come first). Unlayered, so it out-ranks the utilities. */
+   `contents` slots come first); its first child skips the scoped <style> a
+   block may carry. Unlayered, so it out-ranks the utilities. */
 .markdown-flush-start > .contents:not(.contents:has(> .math-content-wrapper) ~ .contents) > .math-content-wrapper,
-.markdown-flush-start > .contents:not(.contents:has(> .math-content-wrapper) ~ .contents) > .math-content-wrapper > :first-child {
+.markdown-flush-start > .contents:not(.contents:has(> .math-content-wrapper) ~ .contents) > .math-content-wrapper > :nth-child(1 of :not(style)) {
   margin-top: 0;
 }
