@@ -39,7 +39,8 @@ export function ManualKitCreator() {
     let active = true;
     queueMicrotask(() => {
       const raw = sessionStorage.getItem(draftKey);
-      if (!active || !raw) return;
+      if (!active) return;
+      if (!raw) { setRecoveryReady(true); return; }
       try {
         const draft = JSON.parse(raw) as { title?: string; sourceId?: string; sourceName?: string; selected?: EducationLibraryRow[] };
         if (typeof draft.title === "string") setTitle(draft.title);
@@ -86,20 +87,23 @@ export function ManualKitCreator() {
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create this kit."); }
     finally { setSaving(false); }
   };
-  const candidates = [...new Map([...rows, ...selected].map((row) => [row.id, row])).values()];
+  const candidates = [...new Map([...rows, ...selected].map((row) => [`${row.kind}:${row.id}`, row])).values()];
   const getScope = () => createEducationKitsScope({ view: "new", kit_draft_title: title, kit_source_file_id: sourceId ?? undefined, kit_member_candidates: candidates.map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })) });
   const getWriteHandlers = () => collectionWriteHandlers({ plural: "kits", singular: "kit", create: {
     parse: (value) => readCollectionList("create_kits", "kits", value, 25).map((raw, index) => {
+      if (index > 0) throw new Error("create_kits accepts exactly one kit for the selected source file.");
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(`create_kits[${index}] must be an object.`);
       const item = raw as Record<string, unknown>;
       if (typeof item.title !== "string" || !item.title.trim()) throw new Error(`create_kits[${index}].title needs text.`);
       if (item.source_file_id !== sourceId) throw new Error(`create_kits[${index}].source_file_id must be the file selected in this creator.`);
-      if (!Array.isArray(item.artifact_ids) || !item.artifact_ids.length) throw new Error(`create_kits[${index}].artifact_ids needs one or more visible study aids.`);
-      const ids = item.artifact_ids;
-      if (!ids.every((id) => typeof id === "string") || new Set(ids).size !== ids.length) throw new Error(`create_kits[${index}].artifact_ids must be distinct ids.`);
-      const artifacts = ids.map((id) => candidates.find((row) => row.id === id));
+      if (!Array.isArray(item.artifact_refs) || !item.artifact_refs.length) throw new Error(`create_kits[${index}].artifact_refs needs one or more visible study aids.`);
+      const refs = item.artifact_refs;
+      if (!refs.every((ref) => ref && typeof ref === "object" && typeof (ref as Record<string, unknown>).kind === "string" && typeof (ref as Record<string, unknown>).id === "string")) throw new Error(`create_kits[${index}].artifact_refs must contain { kind, id } objects.`);
+      const keys = refs.map((ref) => `${(ref as Record<string, string>).kind}:${(ref as Record<string, string>).id}`);
+      if (new Set(keys).size !== keys.length) throw new Error(`create_kits[${index}].artifact_refs must be distinct kind and id pairs.`);
+      const artifacts = refs.map((ref) => candidates.find((row) => `${row.kind}:${row.id}` === `${(ref as Record<string, string>).kind}:${(ref as Record<string, string>).id}`));
       if (artifacts.some((row) => !row)) throw new Error(`create_kits[${index}] includes an aid that is not in the current picker.`);
-      return { title: item.title.trim(), sourceId: sourceId ?? "", artifacts: artifacts as EducationLibraryRow[] };
+      return { title: item.title.trim(), sourceId: sourceId ?? "", artifacts: artifacts.filter((row): row is EducationLibraryRow => !!row) };
     }),
     run: async (plan) => { await createManualKit({ sourceId: plan.sourceId, title: plan.title, artifacts: plan.artifacts }); return { id: plan.sourceId, name: plan.title }; },
     nameOf: (plan) => plan.title,

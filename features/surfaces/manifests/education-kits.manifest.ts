@@ -232,7 +232,7 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 const writeTargets: SurfaceWriteTarget[] = [
-  { name: "create_kits", label: "Create study kits", description: "Available only in the manual kit creator after a source file and visible study aids load. Value is an ARRAY of { title: string, source_file_id: string, artifact_ids: string[] }; every id must come from kit_member_candidates and source_file_id must equal kit_source_file_id. Creates source associations only.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 90 },
+  { name: "create_kits", label: "Create study kits", description: "Available only in the manual kit creator after a source file and visible study aids load. Value is an ARRAY of exactly one { title: string, source_file_id: string, artifact_refs: [{ kind: string, id: string }] }. Each reference must match a current kit_member_candidate by both kind and id, and source_file_id must equal kit_source_file_id. Creates member associations only; it never asserts generated-from provenance.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 90 },
   {
     name: "update_kits", label: "Rename study kits",
     description: "Renames existing kits. Value is an ARRAY of { source_type: string, source_id: string, expected_membership_fingerprint: string, title: string }. Identity and fingerprint must be current. Stale membership is refused before any edge changes. The person approves before saving.",
