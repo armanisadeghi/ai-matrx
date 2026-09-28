@@ -30,6 +30,7 @@ import {
 import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setPageContextEnabled } from "@/features/agents/redux/execution-system/thunks/page-context.thunk";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 
 export function usePageContextChipShown(conversationId: string): boolean {
   const stamped = useAppSelector((state) => state.conversations.byConversationId[conversationId]?.surfaceName ?? null);
@@ -111,7 +112,7 @@ export function PageContextChip({
                     className="flex h-8 w-full min-w-0 items-center gap-2 rounded-lg px-2.5 text-left text-sm text-foreground hover:bg-accent"
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate">{entry.label?.trim() || entry.key}</span>
+                    <span className="min-w-0 flex-1 truncate">{contextEntryLabel(entry)}</span>
                   </button>
                 );
               })}

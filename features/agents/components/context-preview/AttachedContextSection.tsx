@@ -58,6 +58,7 @@ import type {
   ManagedResource,
 } from "@/features/agents/types/instance.types";
 import { cn } from "@/lib/utils";
+import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 
 /** Hover copy that stays visible on touch devices. */
 const COPY_REVEAL =
@@ -175,7 +176,7 @@ export function AttachedContextSection({
 
   const describeEntry = (e: InstanceContextEntry): SeenItem => {
     const preview = valuePreview(e.value).trim();
-    const title = e.label?.trim() || e.key;
+    const title = contextEntryLabel(e);
     const base = { key: e.key, preview, chars: preview.length };
     const docKind = docKindForContextKey(e.key);
     if (docKind === "working") {

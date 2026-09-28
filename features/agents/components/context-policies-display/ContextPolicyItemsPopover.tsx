@@ -31,6 +31,7 @@ import { contextPolicyEntryPreview } from "./contextPolicyPreview";
 import { getKnownContextDefinition } from "./knownContextValues";
 import { ContextPolicyDetailSheet } from "./ContextPolicyDetailSheet";
 import { ContextPolicyTile } from "./ContextPolicyTile";
+import { contextEntryLabel } from "./contextEntryLabel";
 
 interface ContextPolicyItemsPopoverProps {
   conversationId: string;
@@ -103,7 +104,7 @@ export function ContextPolicyItemsPopover({
                 CONTEXT_TYPE_TILE_LABEL[type] ??
                 "Context";
               const label =
-                policy?.label?.trim() || entry.label?.trim() || entry.key;
+                contextEntryLabel(entry, policy?.label);
               const preview = contextPolicyEntryPreview(
                 entry,
                 type,
