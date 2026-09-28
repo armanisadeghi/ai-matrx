@@ -1047,13 +1047,25 @@ export async function applySurfaceWrite(
       if (verdict !== true) return verdict;
     }
 
-    // THE WRITE RECEIPT's "before": the page value this target updates, read
-    // AFTER approval and immediately before the handler runs, so it is the
-    // state the write actually replaced.
-    const before = await readPageValueBeforeWrite(target, runtime);
-
     try {
-      const outcome = toWriteOutcome(await handler.apply(value));
+      // Approval can span renders or navigation. Resolve the current handlers
+      // again so draft/revision guards see the state at the time of the write.
+      if (!getSurfaceRuntimeStack().includes(runtime))
+        throw new SurfaceWriteRefusalError("The page changed while approval was open. Review the current page before applying this change.");
+      const currentHandler = splitHandler(resolveHandlers(runtime)[targetName]);
+      if (!currentHandler)
+        throw new SurfaceWriteRefusalError("This operation is no longer available on the current page.");
+      if (currentHandler.validate) {
+        try { await currentHandler.validate(value); }
+        catch (error) {
+          throw new SurfaceWriteRefusalError(error instanceof Error && error.message
+            ? error.message : `"${target.label}" refused this value.`);
+        }
+      }
+
+      // Read the receipt after approval and current page validation.
+      const before = await readPageValueBeforeWrite(target, runtime);
+      const outcome = toWriteOutcome(await currentHandler.apply(value));
       // ui-mode writes are self-evident on screen (selection moved, view
       // changed) — no toast. Draft/entity writes confirm what landed where.
       if (!opts?.quiet && target.mode !== "ui") {

@@ -60,6 +60,32 @@ describe("surface writeback handler outcomes", () => {
     mockGetManifest.mockReturnValue({ writeTargets: [target] });
   });
 
+  it("revalidates the latest handler when a draft opens during approval", async () => {
+    let draftOpen = false;
+    const apply = jest.fn();
+    const unregister = registerSurfaceRuntime({
+      surfaceName: "matrx-user/test",
+      getScope: () => ({}),
+      getWriteHandlers: () => {
+        const capturedDraftOpen = draftOpen;
+        return { review_field: {
+          validate: () => { if (capturedDraftOpen) throw new Error("Save your draft first."); },
+          apply,
+        } };
+      },
+    }, 1);
+    try {
+      const result = await applySurfaceWrite("review_field", "Change", {
+        origin: "agent",
+        requestApproval: async () => { draftOpen = true; return { kind: "approved" }; },
+      });
+      expect(result).toMatchObject({ ok: false, refused: true, phase: "apply", error: "Save your draft first." });
+      expect(apply).not.toHaveBeenCalled();
+      expect(mockCaptureError).not.toHaveBeenCalled();
+      expect(mockToastError).not.toHaveBeenCalled();
+    } finally { unregister(); }
+  });
+
   it("returns an expected domain refusal without an error toast or capture", async () => {
     const unregister = registerSurfaceRuntime(
       {
