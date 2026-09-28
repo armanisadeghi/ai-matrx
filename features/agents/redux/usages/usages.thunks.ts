@@ -205,6 +205,7 @@ export const fetchDriftAlerts = createAsyncThunk<void, { force?: boolean } | voi
         .from("drift_alert")
         .select("*")
         .eq("recipient_id", userId)
+        .is("deleted_at", null)
         .in("status", ["pending", "acknowledged"])
         .order("detected_at", { ascending: false });
       if (error) throw pgErrorToError(error);

@@ -1,3 +1,7 @@
+> **DRAFT — not an active skill.** This text is preserved pending the auditable proof recorded in
+> `evals.md`; do not rename it to `SKILL.md` or claim its guard is validated until the required
+> independent RED/GREEN and trigger reps exist.
+
 ---
 name: board-items
 description: "Putting a platform feature on the Board (/board) as an Add-menu item with its real component and full agent surface. Use when adding a feature, record type or 'X on the board', or editing features/spatial/items/** or a tile body."

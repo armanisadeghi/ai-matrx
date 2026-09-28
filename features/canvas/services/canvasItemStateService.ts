@@ -54,6 +54,9 @@ export const canvasItemStateService = {
         {
           canvas_id: canvasId,
           viewer_id: userId,
+          // The lifetime key remains one row per canvas/viewer. A new save after an
+          // archive revives that same identity instead of updating an invisible row.
+          deleted_at: null,
           organization_id: await ensureOrgId(undefined),
           state: merged,
         },
