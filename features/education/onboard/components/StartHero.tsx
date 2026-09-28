@@ -38,6 +38,8 @@ import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
 import type { CoverageDepth } from "@/features/education/convert/coverage";
 import { useKitGeneration } from "../useKitGeneration";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { KitBoard } from "./KitBoard";
 import { KitDepthPicker } from "./KitDepthPicker";
 import {
@@ -124,6 +126,15 @@ export function StartHero({
   // School-safe COPPA gate: an under-13 account with no active guardian link is
   // blocked from AI generation until a parent approves (never a silent failure).
   const coppa = useAiComplianceGate();
+  // THE ORGANIZATION IS RESOLVED AT THE BUTTON, never inside the run. A kit run
+  // is dozens of org-scoped requests (upload, namer, every generator's agent
+  // call and write); if the first of them to need an organization asks, the
+  // run stops mid-stream behind a blocking picker (2026-09-28). So: no
+  // workspace chosen → the press is HELD, the inline workspace notice appears
+  // beside the button, and the moment one is chosen the same press replays
+  // with that organization carried by every request of the run.
+  const { organizationState, organizationId } = useOrganizationRequired();
+  const [heldForWorkspace, setHeldForWorkspace] = useState(false);
 
   const [mode, setMode] = useState<InputMode>(initialMode);
   const [file, setFile] = useState<File | null>(null);
@@ -200,6 +211,12 @@ export function StartHero({
     // data at all? An unconsented under-13 opens the "a parent must approve"
     // dialog and never reaches the billing gate or starts a run.
     if (!(await coppa.ensureAllowed())) return;
+    if (organizationState !== "ready" || !organizationId) {
+      setHeldForWorkspace(true);
+      return;
+    }
+    const runOrgId = organizationId;
+    setHeldForWorkspace(false);
     // Canonical guard (P8): server-truth check BEFORE spending; a cap-hit opens
     // the respectful contextual paywall and never starts the kit build.
     await ingestGuard.guard(async () => {
@@ -222,7 +239,7 @@ export function StartHero({
         focus: focus.trim() || undefined,
         depth,
         count: Number.isFinite(requested) && requested > 0 ? requested : undefined,
-      });
+      }, runOrgId);
       if (ok) await ingestGuard.commit();
     });
   }, [
@@ -240,7 +257,21 @@ export function StartHero({
     count,
     kit,
     coppa,
+    organizationState,
+    organizationId,
   ]);
+
+  // Replay the held press the moment a workspace is chosen (hold-and-replay).
+  useEffect(() => {
+    if (!heldForWorkspace || organizationState !== "ready" || !organizationId)
+      return;
+    setHeldForWorkspace(false);
+    void onGenerate();
+  }, [heldForWorkspace, organizationState, organizationId, onGenerate]);
+  const showWorkspaceNotice =
+    organizationState !== "ready" &&
+    organizationState !== "resolving" &&
+    (heldForWorkspace || organizationState === "required");
 
   // The board goes up the INSTANT the run starts — ingest included. Hiding it
   // until generation began is what left a multi-minute upload+extract behind a
@@ -438,6 +469,19 @@ export function StartHero({
           <ingestGuard.Paywall />
           <coppa.Gate />
 
+          {showWorkspaceNotice && (
+            <OrganizationContextNotice
+              state={organizationState}
+              title="Your study kit needs a workspace"
+              description={
+                heldForWorkspace
+                  ? "Your kit is ready to go — choose a workspace and it starts building right away."
+                  : "Choose the workspace this kit belongs to before you build it."
+              }
+              compact
+            />
+          )}
+
           <Button
             size="lg"
             className="w-full"
@@ -447,6 +491,11 @@ export function StartHero({
             {kit.busy ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" /> Building your kit…
+              </>
+            ) : heldForWorkspace ? (
+              <>
+                Waiting for a workspace — then building{" "}
+                <ArrowRight className="h-4 w-4" />
               </>
             ) : (
               <>

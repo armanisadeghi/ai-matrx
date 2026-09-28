@@ -16,7 +16,6 @@ import type {
   TargetKind,
 } from "@/features/education/convert/types";
 import { useContentConverter } from "@/features/education/convert/useContentConverter";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useIngest } from "./useIngest";
 import type {
   IngestProgress,
@@ -52,11 +51,17 @@ export interface UseKitGeneration {
    * Run the whole flow. Resolves true once the document was ingested and every
    * target has settled (so the caller can meter `ingest_document`), false on an
    * empty selection or a failed ingest.
+   *
+   * `orgId` is REQUIRED and resolved by the caller BEFORE the run starts (the
+   * org gate's hold-at-the-button contract): nothing inside a running kit may
+   * stop to ask "which organization?" — every request the run makes carries
+   * this one organization from the first byte.
    */
   run: (
     input: RawIngestInput,
     kinds: TargetKind[],
-    options?: ConvertOptions,
+    options: ConvertOptions | undefined,
+    orgId: string,
   ) => Promise<boolean>;
   /** Settle a streamed child after its own durable runner reports success. */
   markTargetReady: (kind: TargetKind) => void;
@@ -117,7 +122,8 @@ export function useKitGeneration(): UseKitGeneration {
     async (
       input: RawIngestInput,
       kinds: TargetKind[],
-      options?: ConvertOptions,
+      options: ConvertOptions | undefined,
+      orgId: string,
     ): Promise<boolean> => {
       if (kinds.length === 0) {
         setError("Pick at least one thing to create.");
@@ -158,14 +164,10 @@ export function useKitGeneration(): UseKitGeneration {
       // what all eight artifacts end up called. Best-effort by construction:
       // `resolveKitTitle` never throws and always returns a usable name.
       //
-      // 🚨 The org is resolved HERE, the same way `convertMany` resolves it for
-      // every generator (`ensureOrgId`). Without it the namer launches with no
-      // organization and, for a learner who has never touched the org picker —
-      // i.e. exactly the new user whose filenames are the messiest — the run
-      // throws before any network call and the kit silently falls back to the
-      // humanized filename. The AI namer would have been dead code for the
-      // whole audience it exists to serve.
-      const orgId = await ensureOrgId(undefined);
+      // 🚨 The org is the one the CALLER resolved before the run started.
+      // This spot used to call `ensureOrgId` itself — after ingest, with the
+      // board already live — so a learner with no organization selected got a
+      // blocking "Which organization is this for?" dialog MID-RUN (2026-09-28).
       const resolvedTitle = await resolveKitTitle(dispatch, store, {
         text: normalized.text,
         rawTitle: normalized.title,
@@ -216,6 +218,7 @@ export function useKitGeneration(): UseKitGeneration {
         },
         (kind, requestId) => patchTarget(kind, { requestId }),
         (kind, progress) => patchTarget(kind, { coverage: progress }),
+        orgId,
       );
 
       setPhase("done");

@@ -529,6 +529,13 @@ export interface SurfaceManifest extends SurfaceDeclaration {
    */
   requiresBeforeExecute?: boolean;
   /**
+   * What the person sees while this surface's `beforeExecute` works, shown on
+   * the outgoing message the instant Send is pressed (e.g. "Searching your
+   * study material"). Present tense, no trailing ellipsis. Defaults to
+   * "Preparing your message".
+   */
+  beforeExecuteLabel?: string;
+  /**
    * Campaign tracking — REQUIRED. See `SurfaceReadiness`. Only flip to
    * `verified` after the surface-authoring checklist passes end-to-end.
    */

@@ -12,6 +12,7 @@ import {
   markInputSubmitted,
   clearUserInput,
   resetSubmissionPhase,
+  setPreSend,
 } from "../instance-user-input/instance-user-input.slice";
 import { selectUserInputText } from "../instance-user-input/instance-user-input.selectors";
 import { resolvePendingAsksWithInput } from "@/features/agents/ui-first-tools/redux/resolve-asks-with-input.thunk";
@@ -117,6 +118,9 @@ export const smartExecute = createAsyncThunk<
       return;
     }
 
+    // Whether THIS submit put a "preparing" pre-send state up (so the finally
+    // can take it down on every early return — a gate cancel, a dropped send).
+    let preSendShown = false;
     let claimReleased = false;
     const releaseClaim = () => {
       if (claimReleased) return;
@@ -293,9 +297,56 @@ export const smartExecute = createAsyncThunk<
       // and re-apply the canonical value_mappings before any execution gate or
       // request snapshot reads the instance. Conversation/focus/gate lifecycle
       // stays exactly where the launcher established it.
-      await dispatch(
-        refreshSurfaceScope({ conversationId, composerText }),
-      ).unwrap();
+      //
+      // THIS IS THE PRE-SEND WINDOW, AND IT IS VISIBLE. A surface's
+      // `beforeExecute` can take real time (the tutor searches the learner's
+      // material for 10–25 s); it used to show nothing, and its failure reached
+      // only the console. The outgoing message renders with what is happening
+      // (`PendingSendMessage`), and a failure stays in place with Retry. The
+      // composer text is never touched here.
+      const prepSurface =
+        state.conversations.byConversationId[conversationId]?.surfaceName ??
+        undefined;
+      dispatch(
+        setPreSend({
+          conversationId,
+          preSend: {
+            status: "preparing",
+            text: composerText,
+            label:
+              (prepSurface && getManifest(prepSurface)?.beforeExecuteLabel) ||
+              "Preparing your message",
+            startedAt: Date.now(),
+          },
+        }),
+      );
+      preSendShown = true;
+      try {
+        await dispatch(
+          refreshSurfaceScope({ conversationId, composerText }),
+        ).unwrap();
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof (error as { message?: unknown })?.message === "string"
+              ? (error as { message: string }).message
+              : "This message could not be prepared. Nothing was sent.";
+        dispatch(
+          setPreSend({
+            conversationId,
+            preSend: {
+              status: "failed",
+              text: composerText,
+              label: "Not sent",
+              error: message,
+              startedAt: Date.now(),
+            },
+          }),
+        );
+        preSendShown = false; // the failure stays up until Retry / Dismiss
+        throw error;
+      }
       state = getState();
 
       // Sandbox hard-gate. A conversation BOUND to a sandbox must never silently
@@ -354,6 +405,9 @@ export const smartExecute = createAsyncThunk<
       const userValues =
         state.instanceVariableValues?.byConversationId[conversationId]
           ?.userValues ?? {};
+      // Admission: the real optimistic turn takes over from the pre-send one.
+      dispatch(setPreSend({ conversationId, preSend: null }));
+      preSendShown = false;
       dispatch(markInputSubmitted({ conversationId, userValues }));
 
       // Fire the execute on the CURRENT conversation — do NOT await yet.
@@ -441,6 +495,7 @@ export const smartExecute = createAsyncThunk<
     } finally {
       // Covers every gate cancellation, validation failure, and thrown error.
       // A claim can never strand the composer.
+      if (preSendShown) dispatch(setPreSend({ conversationId, preSend: null }));
       releaseClaim();
     }
   },
