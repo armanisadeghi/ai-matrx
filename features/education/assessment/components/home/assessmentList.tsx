@@ -181,8 +181,10 @@ function AssessmentPhoneCard({
       {/* One row: the name (and its facts under it) beside Take and the menu —
           about 72px a card, so a phone shows twice as many quizzes. */}
       <div className="flex items-center gap-1">
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium leading-5 [&_a]:block [&_a]:truncate">
+        {/* The name's link stretches over this whole block (name + facts), so
+            the door is a 44px+ target without making the card taller. */}
+        <div className="relative min-h-11 min-w-0 flex-1 py-0.5">
+          <div className="truncate text-sm font-medium leading-5 [&_a]:block [&_a]:truncate [&_a]:after:absolute [&_a]:after:inset-0 [&_a]:after:content-['']">
             {controls.renderCell("title")}
           </div>
           <p className="truncate text-xs leading-5 text-muted-foreground">{facts.join(" · ")}</p>
