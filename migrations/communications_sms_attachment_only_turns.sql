@@ -80,3 +80,18 @@ begin
   order by claimed.created_at;
 end;
 $function$;
+
+-- Access decision (the provision-shape guard requires one in the same transaction).
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+VALUES (
+  'communication', 'claim_pending_sms_agent_turns',
+  'p_worker_id text, p_limit integer, p_lease_seconds integer',
+  ARRAY['text'::regtype, 'integer'::regtype, 'integer'::regtype]::oid[],
+  'p_worker_id names the internal worker lease owner, while p_limit and p_lease_seconds bound one claim batch. The function takes no entity id; it claims only resolved, assistant-enabled inbound rows.',
+  'communications_sms_attachment_only_turns.sql',
+  'server_only: called by the aidream SMS dispatcher worker to lease inbound texts for the agent. A client calling it could lease and read another person''s messages.',
+  false, false
+)
+ON CONFLICT DO NOTHING;
