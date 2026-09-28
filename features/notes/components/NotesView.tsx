@@ -421,14 +421,20 @@ export function NotesView({
   const splitNoteLabel = useAppSelector(
     splitNoteId ? selectNoteLabel(splitNoteId) : () => null,
   );
-  const editorMode = useNoteEditorMode(activeTabId);
+  // THE HEADER RENDERS ON THE SERVER (page-pass /notes 2026-09-28): the view
+  // switch and the note's header tools waited for the client to activate the
+  // tab (activeTabId), so the first HTML had an empty header centre for as
+  // long as the bundle and the note load took. The note the URL names is known
+  // on the server, so the header draws for it at once.
+  const headerNoteId = activeTabId ?? initialActiveTab ?? null;
+  const editorMode = useNoteEditorMode(headerNoteId);
 
   // A mode click changes only this note (its mode and the mode it reopens in) —
   // never the person's default; that lives on the Notes settings page.
   const selectNoteMode = useSelectNoteMode();
   const setMode = (mode: string) => {
     const next = normalizeNoteEditorMode(mode, editorMode);
-    if (activeTabId) selectNoteMode(activeTabId, next);
+    if (headerNoteId) selectNoteMode(headerNoteId, next);
   };
 
   const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
@@ -686,7 +692,7 @@ export function NotesView({
 
       {/* Center — view / style modes only */}
       <div className="flex min-w-0 flex-1 items-center justify-center">
-        {activeTabId && (
+        {headerNoteId && (
           // Equal columns: the control's width never depends on which view
           // is selected (a bolder selected label used to nudge it sideways).
           <div className="matrx-glass-thin-border grid grid-cols-4 items-center gap-0.5 rounded-full p-0.5">
@@ -782,7 +788,7 @@ export function NotesView({
                     is 331 mandates across 47 domains. */}
                 <MandateDoorLink feature="notes" label="Notes agents" />
                 <TapTargetButtonGroup>
-                  {activeTabId && (
+                  {headerNoteId && (
                     <>
                       <ListTapButton
                         variant="group"
@@ -798,7 +804,7 @@ export function NotesView({
                         tooltip="Version history"
                         className={showHistory ? "text-primary" : undefined}
                       />
-                      <NoteCleanupButton noteId={activeTabId} asTapGroup />
+                      <NoteCleanupButton noteId={headerNoteId} asTapGroup />
                     </>
                   )}
                   {isRefreshing ? (
