@@ -60,6 +60,25 @@ import {
 } from "../browse/surface";
 
 const INTEGRATIONS_HREF = "/settings/integrations";
+/** Per-viewer convenience only: the account this browser last looked at. */
+const PICK_STORAGE_KEY = "connected-sources:account";
+
+function readStoredPick(): ChosenTarget | null {
+  try {
+    const raw = window.localStorage.getItem(PICK_STORAGE_KEY);
+    return raw ? parseTargetKey(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storePick(target: ChosenTarget): void {
+  try {
+    window.localStorage.setItem(PICK_STORAGE_KEY, targetKey(target));
+  } catch {
+    // Storage blocked (private window): the pick simply isn't remembered.
+  }
+}
 
 interface ChosenTarget {
   adapter: string;
@@ -134,7 +153,11 @@ export function BrowseEverything() {
   const [adapters, setAdapters] = useState<ConnectedAdapterRow[] | null>(null);
   const [loadError, setLoadError] = useState<unknown>(null);
   const [attempt, setAttempt] = useState(0);
-  const [picked, setPicked] = useState<ChosenTarget | null>(null);
+  // The last account this viewer chose, when it still exists; otherwise the
+  // first connected one (the server lists them oldest first).
+  const [picked, setPicked] = useState<ChosenTarget | null>(() =>
+    typeof window === "undefined" ? null : readStoredPick(),
+  );
   // How the last read of the list ended, tagged with the account + organization
   // it was for — a status from another account is no status for this one.
   const [status, setStatus] = useState<{
@@ -284,7 +307,10 @@ export function BrowseEverything() {
         value={targetKey(chosen)}
         onValueChange={(value) => {
           const next = parseTargetKey(value);
-          if (next) setPicked(next);
+          if (next) {
+            storePick(next);
+            setPicked(next);
+          }
         }}
       >
         <SelectTrigger
@@ -296,7 +322,7 @@ export function BrowseEverything() {
           {/* A div, not a span: the trigger clamps a direct child SPAN to one
               line ([&>span]:line-clamp-1), which flattened these two lines. */}
           <div className="flex min-w-0 flex-col text-left sm:flex-row sm:items-baseline sm:gap-1">
-            <span className="truncate">
+            <span className="truncate sm:shrink-0">
               {chosenAdapter?.connections.find(
                 (c) => c.connection_id === chosen.connectionId,
               )?.account_email ?? "This account"}
