@@ -31,7 +31,6 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 import LucideIcon from "@/features/shell/components/header/variants/shared/LucideIcon";
-import { useIsMobile } from "@/hooks/use-mobile";
 import {
   EDUCATION_NAV_FALLBACK_LABEL,
   EDUCATION_NAV_ITEMS,
