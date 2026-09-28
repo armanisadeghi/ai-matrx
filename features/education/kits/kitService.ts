@@ -523,6 +523,24 @@ export async function removeKitMemberVersioned(kit: StudyKit, artifact: Generate
   await removeKitMember(current, fresh);
 }
 
+export async function removeKitMembersVersioned(
+  kit: StudyKit,
+  refs: readonly { kind: string; id: string }[],
+  expectedFingerprint: string,
+): Promise<void> {
+  if (!refs.length) throw new Error("Choose at least one study aid to remove.");
+  const keys = refs.map((ref) => `${ref.kind}:${ref.id}`);
+  if (new Set(keys).size !== keys.length) throw new Error("Each study aid may be removed only once.");
+  const current = await currentKitOrThrow(kit, expectedFingerprint);
+  const artifacts = refs.map((ref) => current.artifacts.find((item) => item.artifactType === ref.kind && item.artifactId === ref.id));
+  if (artifacts.some((artifact) => !artifact)) throw new Error("One requested aid is no longer in this kit. Nothing was changed.");
+  let completed = 0;
+  for (const artifact of artifacts as GeneratedArtifact[]) {
+    try { await removeKitMember(current, artifact); completed += 1; }
+    catch { throw new Error(`Removed ${completed} of ${artifacts.length} study aids. The remaining aids still belong to this kit; reload and try again.`); }
+  }
+}
+
 /**
  * Delete this association-backed kit by removing all of its membership edges.
  * The source material and every saved study aid remain intact.

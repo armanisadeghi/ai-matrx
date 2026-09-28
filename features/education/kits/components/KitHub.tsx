@@ -48,7 +48,7 @@ import {
   readKit,
   readKitArtifactStats,
   removeKitMember,
-  removeKitMemberVersioned,
+  removeKitMembersVersioned,
   renameKit,
   type KitArtifactStats,
   type StudyKit,
@@ -311,22 +311,38 @@ export function KitHub({
         nameOf: (plan) => plan.kit.title,
       },
     }, refuseSurfaceWrite);
-    return { ...collection, remove_kit_members: {
-      validate: (value: unknown) => {
-        if (writing || (managing && draftTitle !== kit.title)) throw new Error("Save or cancel your kit title edits before applying agent changes.");
-        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("remove_kit_members needs { expected_membership_fingerprint, artifact_refs }.");
-        const raw = value as Record<string, unknown>;
-        if (raw.expected_membership_fingerprint !== kitMembershipFingerprint(kit)) throw new Error("remove_kit_members membership fingerprint is stale.");
-        if (!Array.isArray(raw.artifact_refs) || raw.artifact_refs.length === 0) throw new Error("remove_kit_members needs artifact_refs.");
-      },
-      apply: async (value: unknown) => {
-        const raw = value as Record<string, unknown>;
-        const refs = raw.artifact_refs as Array<{ kind: string; id: string }>;
-        for (const ref of refs) {
-          const artifact = kit.artifacts.find((item) => item.artifactType === ref.kind && item.artifactId === ref.id);
-          if (!artifact) throw new Error("One requested aid is no longer in this kit.");
-          await removeKitMemberVersioned(kit, artifact, raw.expected_membership_fingerprint as string);
+    const parseMemberRemoval = (value: unknown) => {
+      if (writing || (managing && draftTitle !== kit.title)) {
+        throw new Error("Save or cancel your kit title edits before applying agent changes.");
+      }
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("remove_kit_members needs { expected_membership_fingerprint, artifact_refs }.");
+      }
+      const raw = value as Record<string, unknown>;
+      const fingerprint = raw.expected_membership_fingerprint;
+      if (typeof fingerprint !== "string" || fingerprint !== kitMembershipFingerprint(kit)) {
+        throw new Error("remove_kit_members membership fingerprint is stale.");
+      }
+      if (!Array.isArray(raw.artifact_refs) || raw.artifact_refs.length === 0) {
+        throw new Error("remove_kit_members needs qualified artifact_refs.");
+      }
+      const refs = raw.artifact_refs.map((ref) => {
+        if (!ref || typeof ref !== "object" || Array.isArray(ref)) {
+          throw new Error("remove_kit_members needs qualified artifact_refs.");
         }
+        const candidate = ref as Record<string, unknown>;
+        if (typeof candidate.kind !== "string" || !candidate.kind || typeof candidate.id !== "string" || !candidate.id) {
+          throw new Error("remove_kit_members needs qualified artifact_refs.");
+        }
+        return { kind: candidate.kind, id: candidate.id };
+      });
+      return { fingerprint, refs };
+    };
+    return { ...collection, remove_kit_members: {
+      validate: (value: unknown) => { parseMemberRemoval(value); },
+      apply: async (value: unknown) => {
+        const { refs, fingerprint } = parseMemberRemoval(value);
+        await removeKitMembersVersioned(kit, refs, fingerprint);
         setRefreshKey((key) => key + 1);
         return { summary: `Removed ${refs.length} study aid${refs.length === 1 ? "" : "s"} from the kit.` };
       },
