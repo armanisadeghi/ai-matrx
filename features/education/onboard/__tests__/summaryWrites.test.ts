@@ -24,7 +24,7 @@ describe("summary writes", () => {
   });
 
   it("preserves envelope metadata and nested kind markers while downgrading edited trust", () => {
-    const plan = parseUpdateSummaries([{ id: "summary-1", summary_markdown: "Changed body" }], [row()])[0];
+    const plan = parseUpdateSummaries([{ id: "summary-1", expected_revision: 7, summary_markdown: "Changed body" }], [row()])[0];
     expect(plan.irEnvelope).toMatchObject({
       __kind: "study_summary", metadata: { source: "converter" }, nested_kind: { __kind: "citation_bundle", keep: true },
       summary_markdown: "Changed body",
@@ -36,5 +36,10 @@ describe("summary writes", () => {
   it("refuses an agent write against a stale expected revision before approval", () => {
     expect(() => parseUpdateSummaries([{ id: "summary-1", title: "Changed", expected_revision: 6 }], [row()]))
       .toThrow(/expected_revision is stale/);
+  });
+
+  it("requires the emitted revision for every update", () => {
+    expect(() => parseUpdateSummaries([{ id: "summary-1", title: "Changed" }], [row()]))
+      .toThrow(/expected_revision is required/);
   });
 });

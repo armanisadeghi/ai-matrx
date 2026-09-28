@@ -104,7 +104,10 @@ export function parseUpdateSummaries(value: unknown, available: readonly StudyMe
       const unknown = changed.filter((key) => !allowed.includes(key));
       if (unknown.length) throw new Error(`${target}[${index}] does not accept ${unknown.join(", ")}.`);
       const expectedRevision = raw.expected_revision;
-      if (expectedRevision !== undefined && expectedRevision !== current.version) {
+      if (typeof expectedRevision !== "number") {
+        throw new Error(`${target}[${index}].expected_revision is required. Reload the summary before changing it.`);
+      }
+      if (expectedRevision !== current.version) {
         throw new Error(`${target}[${index}].expected_revision is stale. Reload the summary before changing it.`);
       }
       const previous = record(current.ir_envelope, `summary ${id}`);

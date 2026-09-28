@@ -149,6 +149,16 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "record",
   },
   {
+    name: "summary_version",
+    label: "Summary revision",
+    description: "Current saved revision of the open summary. Send this exact number as expected_revision for update_summaries; a stale revision is refused.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 325,
+    group: "record",
+  },
+  {
     name: "summary_title",
     label: "Summary title",
     description:
@@ -244,7 +254,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 const writeTargets: SurfaceWriteTarget[] = [
   { name: "create_summaries", label: "Create summaries", description: "Creates and saves 1-25 manually authored study summaries. Value is a JSON ARRAY of objects, each { title: string, summary_markdown: string, key_points: string[] }. Each summary needs a non-empty title and markdown body; key_points may be empty. The registered study_summary kind is written automatically. Manual summaries have no generated grounding claim. The person approves before creation.", valueType: "array", updatesValue: "summaries", mode: "entity", applyPolicy: "ask", group: "library", sortOrder: 100 },
-  { name: "update_summaries", label: "Update summaries", description: "Changes 1-25 saved summaries. Value is a JSON ARRAY of { id: string, title?: string, summary_markdown?: string, key_points?: string[] }; only supplied fields change. The id must be from summaries. A content edit retains source and citation evidence but is marked inferred so edited prose is never presented as authoritative grounding. The person approves before saving.", valueType: "array", updatesValue: "summaries", mode: "entity", applyPolicy: "ask", group: "library", sortOrder: 110 },
+  { name: "update_summaries", label: "Update summaries", description: "Changes 1-25 saved summaries. Value is a JSON ARRAY of { id: string, expected_revision: number, title?: string, summary_markdown?: string, key_points?: string[] }. expected_revision is required and must equal the emitted version for that summary; reload after any change. The id must be from summaries. A content edit retains source and citation evidence but is marked inferred so edited prose is never presented as authoritative grounding. The person approves before saving.", valueType: "array", updatesValue: "summaries", mode: "entity", applyPolicy: "ask", group: "library", sortOrder: 110 },
   { name: "delete_summaries", label: "Delete summaries", description: "Deletes 1-25 summaries from the library. Value is a JSON ARRAY of ids or { id } values from summaries. A deleted summary is no longer available through this page. The person approves every deletion.", valueType: "array", updatesValue: "summaries", mode: "entity", applyPolicy: "ask", group: "library", sortOrder: 120 },
 ];
 
@@ -280,6 +290,7 @@ Everything in the Grounding group — confidence, citations, what the summary wa
 /** One entry of `summaries` (the list view's library). */
 export interface SummaryListSummary {
   id: string;
+  version: number;
   title: string;
   source_title: string | null;
   source_kind: string | null;
@@ -313,6 +324,7 @@ export function createEducationSummariesScope(values: {
   summary_loading?: boolean;
   summary_not_found?: boolean;
   summary_id?: string;
+  summary_version?: number;
   summary_title?: string;
   summary_source_title?: string;
   summary_markdown?: string;

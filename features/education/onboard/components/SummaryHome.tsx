@@ -70,6 +70,7 @@ export function SummaryHome() {
         ? undefined
         : rows.map((r) => ({
             id: r.id,
+            version: r.version,
             title: r.title,
             source_title: r.source_title,
             source_kind: r.source_kind,

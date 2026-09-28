@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
@@ -40,9 +40,34 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
   const router = useRouter();
   const [currentMedia, setCurrentMedia] = useState(media);
   const [draft, setDraft] = useState<SummaryDraft>(() => draftFrom(media));
+  const [baseRevision, setBaseRevision] = useState(media?.version);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canDelete = Boolean(currentMedia && isOwner);
+  const draftKey = `study-summary-draft:${currentMedia?.id ?? "new"}`;
+  const persistedDraft = draftFrom(currentMedia);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(persistedDraft);
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      const stored = sessionStorage.getItem(draftKey);
+      if (!active || !stored) return;
+      try {
+        const saved = JSON.parse(stored) as { draft?: SummaryDraft; baseRevision?: number };
+        if (!saved.draft || typeof saved.draft.title !== "string" || typeof saved.draft.summary_markdown !== "string" || !Array.isArray(saved.draft.key_points)) throw new Error("Invalid draft");
+        setDraft(saved.draft); setBaseRevision(saved.baseRevision); toast.info("Your unsaved summary was restored.");
+      } catch { sessionStorage.removeItem(draftKey); }
+    });
+    return () => { active = false; };
+  }, [draftKey]);
+  useEffect(() => {
+    if (!dirty) { sessionStorage.removeItem(draftKey); return; }
+    sessionStorage.setItem(draftKey, JSON.stringify({ draft, baseRevision }));
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [baseRevision, draft, draftKey, dirty]);
 
   const scope = () => createEducationSummariesScope({
     view: currentMedia ? "detail" : "new",
@@ -62,16 +87,17 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
       }, nameOf: (summary) => summary.title,
     },
     update: currentMedia ? {
-      parse: (value) => parseUpdateSummaries(value, [currentMedia]),
+      parse: (value) => { if (dirty || saving) throw new Error("Save or cancel your edits before applying agent changes."); return parseUpdateSummaries(value, [currentMedia]); },
       run: async (plan) => {
         const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.summary.title, ir_envelope: plan.irEnvelope, trust: plan.trust });
         if (result.error || !result.data) throw new Error(result.error ?? "Could not update summary.");
         setCurrentMedia(result.data);
+        setDraft(draftFrom(result.data)); setBaseRevision(result.data.version); sessionStorage.removeItem(draftKey);
         return { id: result.data.id, name: result.data.title };
       }, nameOf: (plan) => plan.summary.title, changedOf: (plan) => plan.changed,
     } : undefined,
     delete: canDelete && currentMedia ? {
-      parse: (value) => parseSummaryIds(value, "delete_summaries", [currentMedia]).map(() => currentMedia),
+      parse: (value) => { if (dirty || saving) throw new Error("Save or cancel your edits before applying agent changes."); return parseSummaryIds(value, "delete_summaries", [currentMedia]).map(() => currentMedia); },
       run: async (row) => {
         const result = await studyMediaService.softDelete(row.id);
         if (result.error) throw new Error(result.error);
@@ -93,7 +119,7 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
     setSaving(true);
     setError(null);
     const updatePlan = currentMedia
-      ? parseUpdateSummaries([{ id: currentMedia.id, ...draft }], [currentMedia])[0]
+      ? parseUpdateSummaries([{ id: currentMedia.id, expected_revision: baseRevision, ...draft }], [currentMedia])[0]
       : null;
     const result = currentMedia && updatePlan
       ? await studyMediaService.updateVersioned(currentMedia.id, currentMedia.version, { title: updatePlan.summary.title, ir_envelope: updatePlan.irEnvelope, trust: updatePlan.trust })
@@ -105,6 +131,7 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
       toast.error(message);
       return;
     }
+    sessionStorage.removeItem(draftKey);
     toast.success(currentMedia ? "Summary saved" : "Summary created");
     router.push(`/education/summaries/${result.data.id}`);
     router.refresh();
@@ -120,7 +147,7 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
         <Button type="button" variant="outline" size="sm" onClick={() => setDraft((current) => ({ ...current, key_points: [...current.key_points, ""] }))}><Plus className="mr-1 h-4 w-4" />Add key point</Button>
       </section>
       {error ? <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
-      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button><Button type="button" disabled={saving} onClick={() => { void save(); }}>{saving ? "Saving…" : currentMedia ? "Save changes" : "Create summary"}</Button></div>
+      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.back(); }}>Cancel</Button><Button type="button" disabled={saving} onClick={() => { void save(); }}>{saving ? "Saving…" : currentMedia ? "Save changes" : "Create summary"}</Button></div>
     </main>
   </SurfaceRuntimeProvider>;
 }

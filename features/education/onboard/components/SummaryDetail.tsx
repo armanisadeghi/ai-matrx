@@ -35,6 +35,9 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { useStudyMediaAuthReady } from "@/features/education/media/authLoad";
 import { SummaryEditor } from "./SummaryEditor";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { parseSummaryIds, parseUpdateSummaries } from "../summaryWrites";
 
 interface SummaryEnvelope {
   __kind?: string;
@@ -140,6 +143,7 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
     createEducationSummariesScope({
       view: "detail",
       summary_id: row.id,
+      summary_version: row.version,
       summary_title: row.title,
       summary_source_title: row.source_title ?? undefined,
       summary_markdown: markdown || undefined,
@@ -155,8 +159,21 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
       })),
     });
 
+  const getWriteHandlers = () => collectionWriteHandlers({
+    plural: "summaries", singular: "summary",
+    update: canEdit ? { parse: (value) => parseUpdateSummaries(value, [row]), run: async (plan) => {
+      const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.summary.title, ir_envelope: plan.irEnvelope, trust: plan.trust });
+      if (result.error || !result.data) throw new Error(result.error ?? "Could not update summary.");
+      setRow(result.data); return { id: result.data.id, name: result.data.title };
+    }, nameOf: (plan) => plan.summary.title, changedOf: (plan) => plan.changed } : undefined,
+    delete: access.isOwner ? { parse: (value) => parseSummaryIds(value, "delete_summaries", [row]).map(() => row), run: async (item) => {
+      const result = await studyMediaService.softDelete(item.id); if (result.error) throw new Error(result.error);
+      router.push("/education/summaries"); return { id: item.id, name: item.title };
+    }, nameOf: (item) => item.title } : undefined,
+  }, refuseSurfaceWrite);
+
   return (
-    <SurfaceRuntimeProvider surfaceName="matrx-user/education-summaries" getScope={getScope}>
+    <SurfaceRuntimeProvider surfaceName="matrx-user/education-summaries" getScope={getScope} getWriteHandlers={getWriteHandlers}>
     <div className="mx-auto w-full max-w-2xl space-y-5 p-4 sm:p-6">
       <div className="flex items-center gap-3">
         <Button
