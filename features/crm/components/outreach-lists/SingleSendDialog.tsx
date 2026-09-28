@@ -46,6 +46,10 @@ import type {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
 import { usePitchAdvisories } from "@/features/crm/pitch-advisories/usePitchAdvisories";
+import {
+  canPerformOutreachOffer,
+  performOutreachOffer,
+} from "@/features/crm/pitch-advisories/outreachOffers";
 
 interface SingleSendDialogProps {
   open: boolean;
@@ -343,16 +347,37 @@ export function SingleSendDialog({
                 organizationId={list.organization_id}
                 actionLabel="the send"
                 surfaceName="crm-outreach-single-send"
-                canPerformLocal={(offer) => offer.action === "label_cold"}
+                canPerformLocal={(offer) =>
+                  canPerformOutreachOffer(
+                    { memberId: member?.id ?? null, templateId: draft.template_id },
+                    offer,
+                  )
+                }
                 onLocalOffer={(_advisory, offer) => {
-                  if (offer.action !== "label_cold") return false;
-                  void advisories
-                    .recordGoAhead({
-                      entityType: "crm_interaction",
-                      entityId: draft.id,
-                      choice: "label_cold",
-                    })
-                    .then(() => toast.success("Noted as a cold pitch"));
+                  const target = {
+                    memberId: member?.id ?? null,
+                    templateId: draft.template_id,
+                  };
+                  void (async () => {
+                    try {
+                      await advisories.recordGoAhead({
+                        entityType: "crm_interaction",
+                        entityId: draft.id,
+                        choice: offer.action,
+                      });
+                      const said = await performOutreachOffer(target, offer);
+                      toast.success(said);
+                      if (offer.action === "schedule_at" || offer.action === "hold_until") {
+                        onSent();
+                        onOpenChange(false);
+                      } else if (offer.action !== "label_cold") {
+                        // The template changed: the previewed bytes are stale.
+                        setDraft(null);
+                      }
+                    } catch (failure) {
+                      toast.error(failure instanceof Error ? failure.message : String(failure));
+                    }
+                  })();
                   return true;
                 }}
               />

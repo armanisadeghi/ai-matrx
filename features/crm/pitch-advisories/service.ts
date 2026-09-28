@@ -35,6 +35,7 @@ export interface AdvisoryOffer {
   label: string;
   action:
     | "mandate"
+    | "limit_to"
     | "schedule_at"
     | "hold_until"
     | "label_cold"
@@ -73,6 +74,7 @@ export interface PitchAdvisoryRequest {
   subject?: string | null;
   body?: string | null;
   recipient_count?: number | null;
+  adding_recipients?: number | null;
   attachment_count?: number;
   is_exclusive?: boolean;
   exclusive_expires_at?: string | null;
