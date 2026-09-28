@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
-  AlertCircle,
   ExternalLink,
   Network,
   Plus,
@@ -30,7 +29,10 @@ import { AddToolBindingDialog } from "@/features/tool-registry/executor-surfaces
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface Props {
   /**
@@ -140,6 +142,11 @@ export function ExecutorSurfaceDetailPanel({
     }
   };
 
+  // The bindings read's outcome — every count and the empty view hang off it.
+  const bindingsRead = readOf(
+    { loading, error, data: bindings },
+    { what: "this executor's bindings", onRetry: () => void load() },
+  );
   const activeBindings = bindings.filter((b) => b.is_active);
   const inactiveBindings = bindings.filter((b) => !b.is_active);
 
@@ -218,20 +225,20 @@ export function ExecutorSurfaceDetailPanel({
             variant="outline"
             className="text-[10px] h-4 px-1 tabular-nums"
           >
-            {bindings.length} bound
+            <UntrustedCount value={bindings.length} read={bindingsRead} label="Bound tools" /> bound
           </Badge>
           <Badge
             variant="default"
             className="text-[10px] h-4 px-1 tabular-nums"
           >
-            {activeBindings.length} active
+            <UntrustedCount value={activeBindings.length} read={bindingsRead} label="Active bindings" /> active
           </Badge>
           {inactiveBindings.length > 0 && (
             <Badge
               variant="secondary"
               className="text-[10px] h-4 px-1 tabular-nums"
             >
-              {inactiveBindings.length} inactive
+              <UntrustedCount value={inactiveBindings.length} read={bindingsRead} label="Inactive bindings" /> inactive
             </Badge>
           )}
           <Button
@@ -256,12 +263,15 @@ export function ExecutorSurfaceDetailPanel({
         </div>
       </div>
 
-      {error && (
-        <div className="shrink-0 mx-3 mt-2 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive flex items-center gap-2">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{error}</span>
-          <ErrorAlchemyMenu error={error} />
-        </div>
+      {error && bindings.length > 0 && (
+        <StaleDataNotice
+          hasData
+          what="this executor's bindings"
+          onRetry={() => void load()}
+          retrying={loading}
+          detail={error}
+          className="shrink-0 mx-3 mt-2"
+        />
       )}
 
       {/* Body */}
@@ -271,8 +281,11 @@ export function ExecutorSurfaceDetailPanel({
           title="Bound tools"
           subtitle="Tools this executor can handle. Toggle active to enable/disable."
           count={bindings.length}
+          read={bindingsRead}
         />
-        {bindings.length === 0 ? (
+        {error && bindings.length === 0 ? (
+          <ReadFailure error={error} what="this executor's bindings" onRetry={() => void load()} />
+        ) : bindings.length === 0 ? (
           <EmptyState>
             {loading ? (
               <SuspenseLoader
@@ -315,11 +328,14 @@ function SectionHeader({
   title,
   subtitle,
   count,
+  read,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   count: number;
+  /** The read the count comes from — a failed one shows "—", never 0. */
+  read: CountRead;
 }) {
   return (
     <div className="sticky top-0 z-10 bg-muted/60 backdrop-blur px-3 py-1.5 border-b border-border flex items-center gap-2">
@@ -331,7 +347,7 @@ function SectionHeader({
         </div>
       </div>
       <Badge variant="outline" className="text-[10px] tabular-nums h-4 px-1.5">
-        {count}
+        <UntrustedCount value={count} read={read} label={title} />
       </Badge>
     </div>
   );

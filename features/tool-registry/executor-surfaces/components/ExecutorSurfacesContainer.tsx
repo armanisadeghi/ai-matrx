@@ -19,6 +19,8 @@ import {
   type ExecutorWithStats,
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 
 type KindFilter = "all" | "mcp" | "non-mcp";
 
@@ -82,6 +84,9 @@ export function ExecutorSurfacesContainer() {
     return { bound, active };
   }, [executors]);
 
+  // The executors read's outcome — the header counts say "—" when it failed.
+  const executorsRead = readOf({ loading, error, data: executors });
+
   return (
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-background">
       {/* Header */}
@@ -90,13 +95,13 @@ export function ExecutorSurfacesContainer() {
         <h1 className="text-sm font-medium">Tool Registry · Executors</h1>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Badge variant="outline" className="text-[10px]">
-            {executors.length} executors
+            <UntrustedCount value={executors.length} read={executorsRead} label="Executors" /> executors
           </Badge>
           <Badge variant="outline" className="text-[10px]">
-            {totals.bound} bindings
+            <UntrustedCount value={totals.bound} read={executorsRead} label="Bindings" /> bindings
           </Badge>
           <Badge variant="default" className="text-[10px]">
-            {totals.active} active
+            <UntrustedCount value={totals.active} read={executorsRead} label="Active bindings" /> active
           </Badge>
         </div>
         {loading && (
@@ -145,7 +150,7 @@ export function ExecutorSurfacesContainer() {
           ))}
         </div>
         <span className="text-[11px] text-muted-foreground tabular-nums">
-          {filtered.length} shown
+          <UntrustedCount value={filtered.length} read={executorsRead} label="Executors shown" /> shown
         </span>
       </div>
 

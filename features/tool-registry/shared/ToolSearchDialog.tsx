@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast";
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
 import type { Database } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 /**
  * One searchable row. `name` is the only required field — everything else
@@ -182,7 +183,8 @@ export function ToolSearchDialog({
             Include inactive
           </label>
           <span className="text-[11px] text-muted-foreground tabular-nums">
-            {filtered.length} / {tools.length}
+            <UntrustedCount value={filtered.length} trustworthy={!error} label="Tools shown" /> /{" "}
+            <UntrustedCount value={tools.length} trustworthy={!error} label="Tools" />
           </span>
         </div>
 
@@ -305,6 +307,7 @@ export function ToolSearchDialog({
 
         <div className="shrink-0 pt-2 border-t border-border flex items-center justify-between gap-2">
           <span className="text-[11px] text-muted-foreground tabular-nums">
+            {/* read-gate-exempt: count of tools the person added in this dialog session (an action tally), not rows from the tools read */}
             {addedNames.size > 0
               ? `${addedNames.size} tool${addedNames.size === 1 ? "" : "s"} added`
               : "No changes yet"}
