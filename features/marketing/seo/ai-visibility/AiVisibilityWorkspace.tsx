@@ -1,5 +1,6 @@
 "use client";
 
+import { ONE_QUESTION_NOT_A_MEASUREMENT } from "./AiVisibilityReport";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -848,6 +849,12 @@ export function AiVisibilityWorkspace({
                 <p className="text-xs text-muted-foreground">
                   See what each assistant recommended, which words influenced
                   it, and why every source earned attention.
+                </p>
+                <p
+                  className="text-xs font-medium text-foreground"
+                  data-surface-value="ai_visibility_not_a_measurement"
+                >
+                  {ONE_QUESTION_NOT_A_MEASUREMENT}
                 </p>
               </div>
             </div>
