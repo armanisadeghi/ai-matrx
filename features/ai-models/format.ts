@@ -41,6 +41,28 @@ export function speedRatingWord(rating: number | null): string {
   return "Max";
 }
 
+/**
+ * Compact RELATIVE-cost word for pickers — the same voice as `speedRatingWord`.
+ * Never a run of dollar signs: members only ever see credits (Arman,
+ * 2026-09-27: "Everyone should see credits/points except for system admins"),
+ * and "$$$$" beside a model reads as money. 1 Low · 2 Low+ · 3 Med · 4 High ·
+ * 5 High+ · 6 (the "5+" outlier band) Max.
+ */
+export function costRatingWord(rating: number | null): string {
+  if (typeof rating !== "number") return "—";
+  if (rating <= 1) return "Low";
+  if (rating === 2) return "Low+";
+  if (rating === 3) return "Med";
+  if (rating === 4) return "High";
+  if (rating === 5) return "High+";
+  return "Max";
+}
+
+/** A `PriceTier` back to its 1-6 rating (6 = the "5+" band). */
+export function priceTierRating(tier: PriceTier): number {
+  return tier.endsWith("+") ? 6 : tier.length;
+}
+
 export const AI_MODELS_LOCATION =
   "AI Matrx Admin — AI Models (/administration/ai/ai-models)";
 
