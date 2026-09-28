@@ -377,11 +377,27 @@ export function EntityModeHeader({
             {isPhone &&
               actions
                 ?.filter((a) => a.pinnedOnPhone)
-                .map((a) => (
-                  <span key={`pinned-${a.label}`} className="shrink-0">
-                    <DesktopAction action={a} />
-                  </span>
-                ))}
+                .map((a) => {
+                  // The phone row is narrow: pinned actions are ICONS with
+                  // their name as the accessible label/tooltip, so the title
+                  // keeps room and nothing slides under the shell's icons.
+                  const Icon = a.icon;
+                  const shared = {
+                    icon: <Icon className="h-4 w-4" />,
+                    onClick: a.onPress,
+                    disabled: a.disabled,
+                    ariaLabel: a.label,
+                  };
+                  return (
+                    <span key={`pinned-${a.label}`} className="shrink-0">
+                      {a.primary ? (
+                        <TapTargetButtonSolid {...shared} />
+                      ) : (
+                        <TapTargetButton {...shared} />
+                      )}
+                    </span>
+                  );
+                })}
           </>
         }
         center={
