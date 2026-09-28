@@ -102,7 +102,7 @@ different UI (`MandateWorkspace.tsx` § "Who fulfils this job"):
 | Host | Route | Rungs |
 |---|---|---|
 | User workspace | `/mandates/[key]` | user · org (the rung control offers both) |
-| Admin | `/administration/mandates/[key]` | system · org · user (`allowGlobal`; the server's super-admin gate is the authority) |
+| Admin | `/administration/intelligence/mandates/[key]` | system · org · user (`allowGlobal`; the server's super-admin gate is the authority) |
 | Window panel | `MandateWindow` | same section, same component |
 
 The middle's header carries the two tabs the surface bind panel carries: **AI map**
