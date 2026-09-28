@@ -98,6 +98,7 @@ export function RefineRunPage({ id }: { id: string }) {
     phase: "loading",
   });
   const [recentRuns, setRecentRuns] = useState<RecentRunSummary[]>([]);
+  const [recentRunsFailed, setRecentRunsFailed] = useState(false);
   /** A `?run=` id that probed as unreachable — fail fast, offer the way out. */
   const [badRunId, setBadRunId] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -160,10 +161,13 @@ export function RefineRunPage({ id }: { id: string }) {
     let cancelled = false;
     listRecentRuns(definitionId)
       .then((runs) => {
-        if (!cancelled) setRecentRuns(runs);
+        if (cancelled) return;
+        setRecentRuns(runs);
+        setRecentRunsFailed(false);
       })
       .catch(() => {
-        // Non-fatal: the intake still works with no history shown.
+        // Non-fatal: the intake still works — and says the history is missing.
+        if (!cancelled) setRecentRunsFailed(true);
       });
     return () => {
       cancelled = true;
@@ -247,6 +251,7 @@ export function RefineRunPage({ id }: { id: string }) {
           name={resolution.name}
           definition={resolution.definition}
           recentRuns={recentRuns}
+          recentRunsFailed={recentRunsFailed}
           onOpened={(newRunId) =>
             replaceAddressOrNavigate(router, `${BASE}/${resolution.definitionId}?run=${newRunId}`)
           }
@@ -432,12 +437,15 @@ function IntakeBody({
   name,
   definition,
   recentRuns,
+  recentRunsFailed,
   onOpened,
 }: {
   definitionId: string;
   name: string;
   definition: WorkflowDefinitionLike;
   recentRuns: RecentRunSummary[];
+  /** The earlier-runs read failed — said under the intake, never an absent list. */
+  recentRunsFailed: boolean;
   onOpened: (runId: string) => void;
 }) {
   const served = useServedRunForm(definitionId);
@@ -472,6 +480,13 @@ function IntakeBody({
             }}
             onOpenRun={onOpened}
           />
+          {recentRunsFailed ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Couldn&apos;t load this workflow&apos;s earlier runs, so none are
+              listed.
+              <ErrorAlchemyMenu operation="Load earlier runs" />
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

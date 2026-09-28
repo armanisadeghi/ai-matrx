@@ -191,6 +191,7 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
           setProbeSlot({ runId, verdict: defId ? "ok" : "unreachable" });
         }
       })
+      // read-gate-exempt: a failed probe leaves the verdict "unknown", which claims nothing (no dead-run notice); the run adapter keeps reading
       .catch(() => {
         // Transient read failure — leave it unknown; the adapter keeps trying.
       });

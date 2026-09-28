@@ -34,6 +34,7 @@
  */
 
 import type { ReactNode } from "react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -421,6 +422,8 @@ function ChildRunReadout({
   const childStatus = useAppSelector(selectRunStatus(childRunId ?? ""));
   const [loaded, setLoaded] = useState<CompactChildSurface | null>(null);
   const [expanded, setExpanded] = useState(false);
+  // The summary below is a stand-in when the child's own surface can't be read — it says so.
+  const [lookupFailedFor, setLookupFailedFor] = useState<string | null>(null);
 
   useEffect(() => {
     // No definition id on the child run (older engine events) — nothing to
@@ -441,7 +444,8 @@ function ChildRunReadout({
       })
       .catch(() => {
         // A failed lookup must never break the parent surface — the summary
-        // fallback below is always renderable.
+        // fallback below is always renderable, and names itself a stand-in.
+        if (!cancelled) setLookupFailedFor(childDefinitionId);
       });
     return () => {
       cancelled = true;
@@ -490,6 +494,13 @@ function ChildRunReadout({
         </span>
       </button>
       {expanded ? <WorkflowRunBoard runId={childRunId} adopt={false} /> : null}
+      {lookupFailedFor !== null && lookupFailedFor === childDefinitionId ? (
+        <p className="text-[11px] text-muted-foreground">
+          Couldn&apos;t load this sub-workflow&apos;s own view, so its summary
+          is shown instead.
+          <ErrorAlchemyMenu operation="Load the sub-workflow's view" />
+        </p>
+      ) : null}
     </div>
   );
 }

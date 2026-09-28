@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ExternalLink } from "lucide-react";
 
 import { Slider } from "@/components/ui/slider";
@@ -126,6 +127,8 @@ export function PreviewPane({
   const lastMoment = moments.length - 1;
 
   const [runs, setRuns] = useState<RecentRunSummary[] | null>(null);
+  // A failed past-runs read is not "this workflow has never run".
+  const [runsError, setRunsError] = useState<unknown>(null);
   const [source, setSource] = useState<PreviewSource>("sample");
   const [realRunId, setRealRunId] = useState<string>("");
   const [moment, setMoment] = useState(() => Math.min(2, lastMoment));
@@ -138,6 +141,7 @@ export function PreviewPane({
       .then((rows) => {
         if (cancelled) return;
         setRuns(rows);
+        setRunsError(null);
         // Bind to real data when there IS real data: a run that finished is
         // the only one that fills the page. A failed or half-started run
         // teaches an author nothing about their layout, so it is offered in
@@ -150,8 +154,10 @@ export function PreviewPane({
           setRealRunId(rows[0].id);
         }
       })
-      .catch(() => {
-        if (!cancelled) setRuns([]);
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setRuns([]);
+        setRunsError(error ?? new Error("The past runs read failed"));
       });
     return () => {
       cancelled = true;
@@ -216,7 +222,13 @@ export function PreviewPane({
         </div>
 
         {source === "real" ? (
-          runs === null ? (
+          runsError ? (
+            <p className="text-xs text-muted-foreground">
+              Couldn&apos;t look up this workflow&apos;s past runs, so there is
+              no real data to show. Switch back to the sample run.
+              <ErrorAlchemyMenu operation="Look up past runs" />
+            </p>
+          ) : runs === null ? (
             <p className="text-xs text-muted-foreground">Looking for past runs…</p>
           ) : runs.length === 0 ? (
             <p className="text-xs text-muted-foreground">
