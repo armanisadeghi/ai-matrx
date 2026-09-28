@@ -46,11 +46,22 @@ import { cellIsEmpty } from "./columnWidths";
  * - `rest` — real, but behind the card's own "More" disclosure. One tap.
  * - `off` — never on the card. For a column that only exists to be sorted or
  *   filtered on, or whose value is already inside the title cell.
+ * - `actions` — the row's one-tap buttons (Study, Play): drawn as a bare row of
+ *   controls under the title, with no label beside them (page-pass
+ *   2026-09-27: a "STUDY" label beside Study/Fast Fire buttons was noise).
  */
-export type EntityPhoneRole = "title" | "primary" | "meta" | "rest" | "off";
+export type EntityPhoneRole =
+  | "title"
+  | "primary"
+  | "meta"
+  | "rest"
+  | "off"
+  | "actions";
 
 export interface PhoneCardLayout<TRow> {
   title: EntityColumnSpec<TRow> | null;
+  /** Columns drawn as bare controls under the title. */
+  actions?: EntityColumnSpec<TRow>[];
   primary: EntityColumnSpec<TRow>[];
   meta: EntityColumnSpec<TRow>[];
   rest: EntityColumnSpec<TRow>[];
@@ -149,7 +160,7 @@ export function resolvePhoneCardLayout<TRow>(
     ...promotable.filter((spec) => !primaryIds.has(spec.id)),
   ];
 
-  return { title, primary, meta, rest, favorite };
+  return { title, primary, meta, rest, favorite, actions: declared("actions") };
 }
 
 /**
@@ -280,6 +291,16 @@ export function EntityPhoneCard<TRow>({
           {controls.actions}
         </div>
       </div>
+
+      {declaredLayout.actions && declaredLayout.actions.length > 0 ? (
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          {declaredLayout.actions.map((spec) => (
+            <span key={spec.id} className="contents">
+              {controls.renderCell(spec.id)}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {layout.primary.length > 0 ? (
         <dl className={cn("mt-1.5", FIELD_GRID)}>

@@ -157,7 +157,13 @@ export default function AssistsDock() {
   // Fixed positioning from the bottom-right corner; the drag hook already
   // clamped the offset to the current viewport. `pb-safe` keeps the default
   // resting place off the iOS home indicator.
-  const style = { right: `${offset.right}px`, bottom: `${offset.bottom}px` };
+  // A page with a bottom bar (a list's pager, a note's toolbar) publishes its
+  // height as --page-bottom-dock-h; the desktop pill rests above it too
+  // (page-pass 2026-09-27: it sat on the flashcards list's pager arrow).
+  const style = {
+    right: `${offset.right}px`,
+    bottom: `calc(${offset.bottom}px + var(--page-bottom-dock-h, 0px))`,
+  };
 
   // The mobile launcher follows the established inbox/chat-launcher pattern:
   // one 44pt edge button, never a content-width floating pill. The shell's

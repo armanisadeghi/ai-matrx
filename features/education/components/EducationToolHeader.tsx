@@ -143,9 +143,14 @@ export function EducationToolHeader({
         </div>
       }
       center={
+        // ONE header shape on every tool page (page-pass 2026-09-27): the
+        // section nav is always the labelled "Education" menu here, so the
+        // list, a deck and Fast Fire do not each draw it differently (full
+        // pill on one, icons on another) depending on their title's length.
         <RouteModeNav
           items={EDUCATION_NAV_ITEMS}
           fallbackLabel={EDUCATION_NAV_FALLBACK_LABEL}
+          maxVariant="menu"
         />
       }
       right={

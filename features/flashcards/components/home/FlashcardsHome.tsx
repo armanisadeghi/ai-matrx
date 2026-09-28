@@ -243,7 +243,7 @@ export function FlashcardsHome({
   const createButton = (
     <Button
       size="sm"
-      className="h-11 lg:h-7"
+      className="h-11 min-w-11 lg:h-7 lg:min-w-0"
       onClick={() => goTo(`${EDU_BASE}/new`)}
     >
       <Plus className="h-4 w-4" />

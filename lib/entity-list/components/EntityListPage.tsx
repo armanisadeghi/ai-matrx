@@ -414,7 +414,8 @@ export function EntityListPage<TRow>({
     typeof emptyAction === "function" ? emptyAction(list) : emptyAction;
 
   // "MY TEAM" SAYS WHOSE ITEMS IT SHOWS (T-29). An empty My team tab is either
-  // "you are on no team here, so this is only your own items" or "nobody on
+  // "you are on no team here, so there is nothing to show" (the reach is empty
+  // for a person on no team since 2026-09-28 — never a copy of Mine) or "nobody on
   // your teams has made one yet" — two different facts, and the first has a
   // door: teams are set up in the organization's settings. Asked only while
   // the My team tab is the one on screen.
@@ -440,8 +441,8 @@ export function EntityListPage<TRow>({
         ? {
             title: `No ${plural} from your team`,
             description: teamOrgName
-              ? `You are not on a team in ${teamOrgName}, so My team shows only the ${plural} you made there, and you have none. Owners and admins of ${teamOrgName} set up teams in its settings.`
-              : `You are not on a team in any of your organizations, so My team shows only the ${plural} you made, and you have none. An organization's owners and admins set up teams in its settings.`,
+              ? `You are not on a team in ${teamOrgName}, so My team has no ${plural} to show. Owners and admins of ${teamOrgName} set up teams in its settings.`
+              : `You are not on a team in any of your organizations, so My team has no ${plural} to show. An organization's owners and admins set up teams in its settings.`,
             action: (
               <Button size="sm" variant="outline" asChild>
                 <Link
@@ -581,8 +582,14 @@ export function EntityListPage<TRow>({
 
   // The table owns the bar (count + Clear + copy-of-selection + these buttons);
   // every other view has none, so there the banner carries them instead.
+  // A page where no row can be ticked (another person's decks in the My Orgs
+  // lane) draws no select-all box either (page-pass 2026-09-27: a header
+  // checkbox over rows with none read as broken).
+  const isRowSelectable = config.bulkSelection?.isRowSelectable;
+  const anyRowSelectable =
+    !isRowSelectable || list.rows.some((row) => isRowSelectable(row));
   const tableSelection: MatrxDataTableSelectionConfig<TRow> | undefined =
-    bulkEnabled
+    bulkEnabled && anyRowSelectable
       ? {
           selectedIds: selection.ids,
           onSelectedIdsChange: selection.setIds,
@@ -601,6 +608,27 @@ export function EntityListPage<TRow>({
   // while this list pane holds the focus or the pointer, never while a text
   // field has focus, and never while a dialog is open on top.
   const paneRef = useRef<HTMLDivElement | null>(null);
+  // The list's pager is a bottom bar: publish its height so floating
+  // controls (the assists pill) rest above it instead of on its arrows.
+  useEffect(() => {
+    const pane = paneRef.current;
+    if (!pane || typeof ResizeObserver === "undefined") return undefined;
+    const root = document.documentElement;
+    const publish = () => {
+      const footer = pane.querySelector<HTMLElement>("[data-matrx-table-footer]");
+      if (!footer) return;
+      const fromBottom = window.innerHeight - footer.getBoundingClientRect().top;
+      if (fromBottom > 0 && fromBottom < 200)
+        root.style.setProperty("--page-bottom-dock-h", `${Math.round(fromBottom)}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(pane);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--page-bottom-dock-h");
+    };
+  }, []);
   const pointerInPaneRef = useRef(false);
   const hoveredRowIdRef = useRef<string | null>(null);
   // Every handler on the controller is a fresh function each render (the
@@ -927,7 +955,9 @@ export function EntityListPage<TRow>({
           the real header exists. Only the table view renders cards.
         */}
         {view === "table" ? (
-          <EntityCardsSelectAll selection={selection} noun={bulkNoun} />
+          anyRowSelectable ? (
+            <EntityCardsSelectAll selection={selection} noun={bulkNoun} />
+          ) : null
         ) : null}
       </div>
 

@@ -48,7 +48,7 @@ export function FolderTagPicker({ setId }: { setId: string }) {
       entityId={setId}
       dimension={DIMENSION}
       edgeRole={EDGE_ROLE.theme}
-      addLabel="Add folder / tag"
+      addLabel="Add folder"
       icon={FolderPlus}
       emptyText="No folders yet."
     />

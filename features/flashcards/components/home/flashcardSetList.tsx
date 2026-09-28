@@ -194,7 +194,7 @@ export function buildFlashcardSetColumns(
       id: "study",
       label: "Study",
       locked: true,
-      phone: "primary",
+      phone: "actions",
       // Ordered right after the name (page-pass 2026-09-27): the main action
       // stays on screen at 800px instead of behind Topic and Folders.
       column: {
@@ -250,7 +250,7 @@ export function buildFlashcardSetColumns(
       label: "Difficulty",
       facet: "difficulty",
       formatFacetValue: formatDifficulty,
-      phone: "rest",
+      phone: "off",
       column: {
         id: "difficulty",
         accessorKey: "difficulty",
@@ -269,7 +269,7 @@ export function buildFlashcardSetColumns(
       label: "Folders",
       facet: "folders",
       formatFacetValue: formatFolder,
-      phone: "rest",
+      phone: "off",
       column: {
         id: "folders",
         width: 160,
@@ -291,7 +291,7 @@ export function buildFlashcardSetColumns(
       label: "Who can see it",
       facet: "visibility",
       formatFacetValue: visibilityLabel,
-      phone: "rest",
+      phone: "off",
       column: {
         id: "visibility",
         accessorKey: "visibility",

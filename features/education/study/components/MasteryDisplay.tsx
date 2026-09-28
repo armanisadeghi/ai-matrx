@@ -51,13 +51,23 @@ export function MasteryTierPill({
   className?: string;
 }) {
   const { tier, label, pct } = masteryTier(mastery);
+  // The % is the chance you recall this card right now (it fades between
+  // reviews). "Struggling" can sit beside a high % when the card was missed
+  // recently — the title says so (page-pass 2026-09-27: "Struggling 86%" read
+  // as a contradiction with no explanation).
+  const missedRecently = tier === "struggling" && pct != null && pct >= 0.4;
+  const explanation =
+    pct == null
+      ? "Not studied yet"
+      : `${Math.round(pct * 100)}% chance you recall it now${
+          missedRecently ? " — marked struggling because you missed it recently" : ""
+        }`;
   return (
     <span
-      title={
-        pct != null ? `${label} · ${Math.round(pct * 100)}% recall` : label
-      }
+      title={`${label}: ${explanation}`}
+      aria-label={`${label}: ${explanation}`}
       className={cn(
-        "inline-flex items-center gap-1 rounded border px-1.5 py-0 text-[10px] font-medium",
+        "inline-flex items-center gap-1 rounded border px-1.5 py-0 text-xs font-medium",
         TIER_PILL[tier],
         className,
       )}
@@ -66,7 +76,7 @@ export function MasteryTierPill({
         className={cn("h-1.5 w-1.5 shrink-0 rounded-full", TIER_BAR[tier])}
       />
       {label}
-      {showPct && pct != null ? ` ${Math.round(pct * 100)}%` : ""}
+      {showPct && pct != null ? ` · ${Math.round(pct * 100)}% recall` : ""}
     </span>
   );
 }

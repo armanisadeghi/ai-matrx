@@ -86,7 +86,26 @@ export function useFlashcardSetRowActions(
         id: row.id,
         name: copyName(row.name, taken),
       });
-      toast.success(`Copied as "${copy.name}"`, { id: pending });
+      // Says what happened, names the copy, and can be taken back.
+      toast.success(`Made a copy: "${copy.name}"`, {
+        id: pending,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void archiveRecord("fc_set", copy.id, "deck")
+              .then(() => {
+                list.removeRow(copy.id);
+                list.refresh();
+                toast.success(`Removed the copy "${copy.name}"`);
+              })
+              .catch((e: unknown) =>
+                toast.error(
+                  e instanceof Error ? e.message : "The copy was not removed.",
+                ),
+              );
+          },
+        },
+      });
       list.refresh();
     } catch (e) {
       if (e instanceof Error && e.name === "OrganizationSelectionCancelled") {

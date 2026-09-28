@@ -311,40 +311,40 @@ function CardPeek({
         </span>
         <div className="flex items-center gap-1">
           {kind === CARD_KIND.cloze && (
-            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-[10px] font-medium text-primary">
-              <Scissors className="h-2.5 w-2.5" />
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary">
+              <Scissors className="h-3 w-3" />
               Cloze
             </span>
           )}
           {kind === CARD_KIND.matching && (
-            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-[10px] font-medium text-primary">
-              <Grid3x3 className="h-2.5 w-2.5" />
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary">
+              <Grid3x3 className="h-3 w-3" />
               Match · {pairs.length}
             </span>
           )}
           {layerCount > 0 && (
             <span
               title={`${layerCount} detail layer${layerCount === 1 ? "" : "s"} — read them under "More on this card" while studying`}
-              className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-[10px] font-medium text-primary"
+              className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary"
             >
-              <Layers className="h-2.5 w-2.5" />
+              <Layers className="h-3 w-3" />
               {layerCount}
             </span>
           )}
           {hasAudio && (
             <span
               title="Has audio detail"
-              className="inline-flex items-center rounded border border-border px-1 py-0 text-[10px] text-muted-foreground"
+              className="inline-flex items-center rounded border border-border px-1 py-0 text-xs text-muted-foreground"
             >
-              <Volume2 className="h-2.5 w-2.5" />
+              <Volume2 className="h-3 w-3" />
             </span>
           )}
           {(images.front || images.back) && (
             <span
               title="Has image"
-              className="inline-flex items-center rounded border border-border px-1 py-0 text-[10px] text-muted-foreground"
+              className="inline-flex items-center rounded border border-border px-1 py-0 text-xs text-muted-foreground"
             >
-              <ImageIcon className="h-2.5 w-2.5" />
+              <ImageIcon className="h-3 w-3" />
             </span>
           )}
           {onEnhance && !selectable && (
@@ -380,7 +380,7 @@ function CardPeek({
             </p>
           ))}
           {pairs.length > 3 && (
-            <p className="text-[10px] text-muted-foreground/70">
+            <p className="text-xs text-muted-foreground/70">
               +{pairs.length - 3} more
             </p>
           )}
