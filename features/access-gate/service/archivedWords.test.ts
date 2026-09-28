@@ -49,17 +49,23 @@ describe("an archived record is said as archived, never as deleted", () => {
     const viewer = context({ level: "view" });
     expect(mayRestoreArchived(viewer)).toBe(false);
     expect(archivedExplanation(viewer)).toBe(
-      "It was archived, not erased. Rosa Delgado can restore it from Trash.",
+      "Nothing in it was erased. Rosa Delgado can restore it from Trash.",
     );
   });
 
   it("with nobody to name it still says it can come back", () => {
-    expect(archivedExplanation(context({ owner: null }))).toContain("can restore it from Trash");
+    expect(archivedExplanation(context({ owner: null }))).toContain("can restore it");
   });
 
   it("never offers Restore on any other state", () => {
     for (const status of ["denied", "missing", "anonymous", "ok", "error"] as const) {
       expect(mayRestoreArchived(context({ status, isOwner: true, level: "admin" }))).toBe(false);
+    }
+  });
+
+  it("says Trash, never archived — one word for one state (list-shell fix D)", () => {
+    for (const c of [context(), context({ isOwner: true }), context({ owner: null }), context({ level: "view" })]) {
+      expect(`${archivedHeadline(c)} ${archivedExplanation(c)}`.toLowerCase()).not.toContain("archived");
     }
   });
 });

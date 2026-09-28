@@ -25,12 +25,15 @@ export function archivedHeadline(context: AccessDeniedContext): string {
   return `This ${context.entity.label.toLowerCase()} is in Trash`;
 }
 
+// ONE WORD FOR ONE STATE (list-shell fix D, 2026-09-28): the headline said
+// "in Trash" and the next line "archived". The word a person sees is Trash —
+// "in Trash", "Move to Trash", "Restore"; "archived" stays an engineering word.
 export function archivedExplanation(context: AccessDeniedContext): string {
   if (mayRestoreArchived(context)) {
-    return "It was archived, not erased. Restore it to open it again — everything in it comes back.";
+    return "Nothing in it was erased. Restore it to open it again — everything in it comes back.";
   }
   const holder = context.owner?.displayName ?? context.organization?.name ?? null;
   return holder
-    ? `It was archived, not erased. ${holder} can restore it from Trash.`
-    : "It was archived, not erased. Whoever archived it can restore it from Trash.";
+    ? `Nothing in it was erased. ${holder} can restore it from Trash.`
+    : "Nothing in it was erased. Whoever moved it to Trash can restore it.";
 }

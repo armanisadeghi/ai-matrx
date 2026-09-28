@@ -357,10 +357,18 @@ try {
     if (!/east wall/.test(now)) friction(`the editor's edit did not land: "${now}"`);
   }
 
-  if (PHASE === "breaker") {
-    await open(T.supplies);
+  if (PHASE === "breaker" || PHASE === "bf9") {
+    // The Sheet is where the breaker walked (the column dialogs, + Row, Configure Table).
+    await open(T.supplies, "?view=sheet");
+    if (!(await page.locator("[data-sheet-layout]").count())) {
+      await page.getByRole("button", { name: "Sheet", exact: true }).first().click();
+      await until("the Sheet", async () => (await page.locator("[data-sheet-layout]").count()) > 0, 60000);
+      await sleep(2500);
+    }
+    let d;
+    if (PHASE === "breaker") {
     // B-F5/F7: rename, then add the old name; an emoji name beside a real one
-    let d = await columnSettings("Room");
+    d = await columnSettings("Room");
     await d.locator("#col-name").fill("Treatment area");
     await d.getByRole("button", { name: "Save", exact: true }).click();
     await sleep(3000);
@@ -402,15 +410,26 @@ try {
     step("B-F1 a choice column with no choices", { shows_as: showsAs });
     if (!/Choice/.test(showsAs ?? "")) friction(`the empty choice column shows as ${showsAs}`);
     await page.keyboard.press("Escape");
+    }
     // B-F9: Configure Table save keeps the grid
     const before = (await headers()).length;
     await page.locator('[aria-label="Table settings"]').click();
     const cfg = page.getByRole("dialog").filter({ hasText: "Configure Table" });
     await cfg.waitFor({ timeout: 20000 });
     await sleep(1500);
-    const nameInputs = cfg.locator("input[type=text], input:not([type])");
-    await nameInputs.first().fill("Title");
+    // The breaker's exact step: a Choice column turned into Text, saved from Configure Table.
+    const fieldIdx = await cfg.evaluate((x) =>
+      [...x.querySelectorAll("input")].filter((i) => i.type === "text" || !i.getAttribute("type")).findIndex((i) => i.value === "Stock Status"),
+    );
+    step("B-F9 the Stock Status card", { fieldIdx });
+    const showsAsBox = cfg.getByRole("combobox").nth(fieldIdx * 2 + 1);
+    await showsAsBox.click();
+    await sleep(600);
+    await page.getByRole("option", { name: /^Text/ }).first().click();
+    await sleep(600);
     await cfg.getByRole("button", { name: /Save Changes/ }).click().catch(() => {});
+    const confirmBtn = page.getByRole("alertdialog").getByRole("button").filter({ hasNotText: "Cancel" });
+    if (await confirmBtn.count()) await confirmBtn.first().click();
     const snaps = [];
     for (const ms of [400, 1500, 4000]) {
       await sleep(ms);
