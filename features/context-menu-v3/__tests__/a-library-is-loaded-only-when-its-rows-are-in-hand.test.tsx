@@ -132,6 +132,32 @@ describe("a menu library is loaded only when its rows are in hand", () => {
     act(() => root.unmount());
   });
 
+  it("a library that missed its deadline stops saying 'failed' once its rows land (live: a 'Couldn't load' row stayed after the fetch arrived)", async () => {
+    const store = makeStore();
+    (globalThis as { fetch: unknown }).fetch = jest.fn(async () => ({ ok: false, status: 503, statusText: "Busy", json: async () => ({}) }) as unknown as Response);
+    let last: { loading: boolean; error: string | null } | null = null;
+    let refresh: (() => Promise<void>) | null = null;
+    function Probe() {
+      const r = useUnifiedAgentContextMenu({ placementTypes: ["user-tool"], availableKeys: new Set<string>(), hasSelection: false, scope: "user" });
+      last = { loading: r.loading, error: r.error };
+      refresh = r.refresh;
+      return null;
+    }
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    await act(async () => root.render(<Provider store={store}><Probe /></Provider>));
+    await act(async () => { await refresh!(); });
+    expect(last!.error).not.toBeNull();
+    // The rows arrive later (another caller's fetch, or the same fetch past the deadline).
+    const { release } = holdMenuFetch();
+    const run = store.dispatch(fetchUnifiedMenu({ scope: "user", scopeId: null }));
+    release();
+    await act(async () => { await run; });
+    await flush();
+    expect(last!.error).toBeNull();
+    act(() => root.unmount());
+  });
+
   it("the Agents hook is unsettled until its first fetch lands (an empty list before that is not 'no agents')", async () => {
     const store = makeStore();
     const seen: { settled: boolean; loading: boolean }[] = [];

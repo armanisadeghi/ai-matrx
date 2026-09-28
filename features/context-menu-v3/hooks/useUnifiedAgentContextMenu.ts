@@ -400,7 +400,9 @@ export function useUnifiedAgentContextMenu(
     categoryGroups,
     loading:
       enabled && placementTypes.length > 0 && !rowsInHand && error === null,
-    error,
+    // Rows in hand end a failure too: a fetch that landed after the menu's
+    // deadline must not leave a "Couldn't load" row beside the rows it brought.
+    error: rowsInHand ? null : error,
     refresh,
   };
 }
