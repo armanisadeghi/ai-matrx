@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { deleteRow, isRecordStoreTable } from "@/features/data-tables/service";
+import { deleteRow, isRecordStoreTable, restoreArchivedRow } from "@/features/data-tables/service";
+import { toast as notify } from "@/lib/toast";
 import { isServiceFailure } from "@/features/data-tables/types";
 // A CONFIRMATION of an irreversible act is an AlertDialog: it blocks the page on
 // purpose (policy ai-reachable-everywhere, rule 1). The ordinary Dialog is a
@@ -55,6 +56,32 @@ export default function DeleteRowModal({
 
       onSuccess();
       onClose();
+      // THE WAY BACK, WHERE THE PERSON IS LOOKING (DATA-V2-BASICS-2 F34). The row went to the
+      // archive; the only way back used to be Trash, two pages away. Undo restores it in place.
+      if (archives) {
+        const archivedId = rowId;
+        const named = rowLabel ? `"${rowLabel}"` : "The row";
+        notify.success(`${named} was archived`, {
+          description: "It is in this table's archive and in Trash. Undo puts it back here.",
+          duration: 10000,
+          action: {
+            label: "Undo",
+            onClick: () => {
+              void (async () => {
+                const back = await restoreArchivedRow({ tableId, rowId: archivedId });
+                if (isServiceFailure(back)) {
+                  notify.error(`${named} could not be put back: ${back.error}`, {
+                    description: "It is still in Trash, where Restore brings it back.",
+                  });
+                  return;
+                }
+                notify.success(`${named} is back`);
+                onSuccess();
+              })();
+            },
+          },
+        });
+      }
     } catch (err) {
       console.error("Error deleting row:", err);
       setError(
