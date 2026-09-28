@@ -14,6 +14,7 @@ import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordFilter } from "@ai-matrx/records";
 import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import type { PageCaptureSection } from "@/components/agent-copy/page-capture/pageCapture";
+import { recordsForAnAssistant, type CaptureField, type CaptureRow } from "./recordsForAnAssistant";
 
 /** How many records a "with the records" copy reads — the store's own page ceiling decides beyond. */
 export const TABLE_CAPTURE_RECORD_LIMIT = 200;
@@ -57,19 +58,24 @@ export function useTableCaptureContribution(opts: {
           role: "data",
           value: `Not in the quick copy. Choose "Everything, with records" or "Only the data" to read up to ${TABLE_CAPTURE_RECORD_LIMIT} now.`,
           load: async () => {
-            const page = unwrap(
-              (await client.list({
+            const [listed, declared] = await Promise.all([
+              client.list({
                 table_id: tableId,
                 ...(filter ? { filter } : {}),
                 limit: TABLE_CAPTURE_RECORD_LIMIT,
-              })) as Answer<{ rows: unknown[]; total: number | null }>,
-              "The records could not be read",
-            );
+              }),
+              client.fields({ table_id: tableId }),
+            ]);
+            const page = unwrap(listed as Answer<{ rows: CaptureRow[]; total: number | null }>, "The records could not be read");
+            const fields = unwrap(declared as Answer<CaptureField[]>, "The table's columns could not be read");
+            // Every value named by the column a person reads (DATA-V2-BASICS-2 F41).
+            const shaped = recordsForAnAssistant(fields, page.rows);
             return {
               count: page.rows.length,
               limit: TABLE_CAPTURE_RECORD_LIMIT,
               more_may_exist: page.rows.length >= TABLE_CAPTURE_RECORD_LIMIT,
-              rows: page.rows,
+              columns: shaped.columns,
+              rows: shaped.rows,
             };
           },
         },
