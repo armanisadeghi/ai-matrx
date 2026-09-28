@@ -1175,9 +1175,9 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         {/* Your reports — each count opens the list behind it. */}
         {stats && (
           <div className="flex items-center gap-6 rounded-lg border border-border px-6 py-2">
-            <StatPill label="Submitted" value={stats.total} onNavigate={onClose} />
-            <StatPill label="Pending" value={stats.pending} group="pending" onNavigate={onClose} />
-            <StatPill label="Resolved" value={stats.resolved} group="resolved" onNavigate={onClose} />
+            <StatPill label="Submitted" value={stats.total} onNavigate={onClose} crossApp={isAdmin} />
+            <StatPill label="Pending" value={stats.pending} group="pending" onNavigate={onClose} crossApp={isAdmin} />
+            <StatPill label="Resolved" value={stats.resolved} group="resolved" onNavigate={onClose} crossApp={isAdmin} />
           </div>
         )}
 
@@ -1203,10 +1203,10 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             New report
           </Button>
           <Button asChild variant="outline">
-            <Link href={feedbackListHref()} onClick={onClose}>
+            <FeedbackListLink href={feedbackListHref()} onClick={onClose} crossApp={isAdmin}>
               <List />
               View all
-            </Link>
+            </FeedbackListLink>
           </Button>
           <Button type="button" variant="outline" onClick={onClose}>
             <X />
@@ -1530,19 +1530,37 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+/**
+ * The list lives on the user site. In the admin section (manage.aimatrx.com)
+ * a client-side Link prefetched it cross-host and the redirect failed CORS
+ * three times in the console — there a plain full-page link is the honest
+ * door (live, 2026-09-27).
+ */
+function FeedbackListLink({
+  crossApp,
+  ...props
+}: React.ComponentProps<typeof Link> & { crossApp: boolean }) {
+  if (!crossApp) return <Link {...props} />;
+  const { href, prefetch: _prefetch, replace: _replace, scroll: _scroll, ...rest } = props;
+  return <a {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} href={String(href)} />;
+}
+
 function StatPill({
   label,
   value,
   group,
   onNavigate,
+  crossApp,
 }: {
   label: string;
   value: number;
   group?: FeedbackCountGroup;
   onNavigate: () => void;
+  crossApp: boolean;
 }) {
   return (
-    <Link
+    <FeedbackListLink
+      crossApp={crossApp}
       href={feedbackListHref(group)}
       onClick={onNavigate}
       className="flex flex-col items-center gap-0.5 rounded-md px-2 py-1 hover:bg-accent transition-colors"
@@ -1551,6 +1569,6 @@ function StatPill({
         {value}
       </span>
       <span className="text-xs text-muted-foreground">{label}</span>
-    </Link>
+    </FeedbackListLink>
   );
 }
