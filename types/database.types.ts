@@ -91084,15 +91084,18 @@ export type Database = {
           authority_weight: string
           created_at: string
           default_keyword_count: number
+          deleted_at: string | null
           domain_class_multipliers: Json
           entity_match_risk: boolean
           freshness_weight: string
+          id: string
           include_youtube_default: boolean
           is_active: boolean
           key: string
           keyword_guidance: string
           label: string
           max_keyword_count: number
+          metadata: Json
           min_keyword_count: number
           position: number
           primary_objective: string
@@ -91109,15 +91112,18 @@ export type Database = {
           authority_weight: string
           created_at?: string
           default_keyword_count?: number
+          deleted_at?: string | null
           domain_class_multipliers?: Json
           entity_match_risk?: boolean
           freshness_weight: string
+          id?: string
           include_youtube_default?: boolean
           is_active?: boolean
           key: string
           keyword_guidance?: string
           label: string
           max_keyword_count?: number
+          metadata?: Json
           min_keyword_count?: number
           position?: number
           primary_objective: string
@@ -91134,15 +91140,18 @@ export type Database = {
           authority_weight?: string
           created_at?: string
           default_keyword_count?: number
+          deleted_at?: string | null
           domain_class_multipliers?: Json
           entity_match_risk?: boolean
           freshness_weight?: string
+          id?: string
           include_youtube_default?: boolean
           is_active?: boolean
           key?: string
           keyword_guidance?: string
           label?: string
           max_keyword_count?: number
+          metadata?: Json
           min_keyword_count?: number
           position?: number
           primary_objective?: string
