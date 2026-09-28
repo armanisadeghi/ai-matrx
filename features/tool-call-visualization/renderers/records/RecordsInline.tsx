@@ -27,12 +27,19 @@ import type { ToolRendererProps } from "../../types";
 import { resultAsObject } from "../_shared";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+const COUNTED: Record<string, readonly [string, string]> = {
+  table_list: ["table", "tables"],
+  metadata_search: ["match", "matches"],
+};
+
 function sentenceFor(result: Record<string, unknown>): string | null {
   const notDone = result["not_done"];
   if (typeof notDone === "string" && notDone.trim()) return notDone;
   const count = result["count"];
   if (typeof count === "number") {
-    return `${count} ${count === 1 ? "record" : "records"}.`;
+    // The count names what the verb counted: a table list counts tables, never "records".
+    const [one, many] = COUNTED[String(result["action"] ?? "")] ?? ["record", "records"];
+    return `${count} ${count === 1 ? one : many}.`;
   }
   if (result["applied"] === true) {
     const proposal = result["proposal"];
