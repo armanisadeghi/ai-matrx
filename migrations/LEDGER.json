@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-28T18:54:08.451Z",
+  "generated_at": "2026-09-28T19:21:09.305Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -668,6 +668,12 @@
       "checksum": "03392ced630b5688b7217623ac5a515cd3274b96854cdcfeb9726c2faf74ad2d",
       "applied_at": "2026-09-20 08:19:54.298612+00"
     },
+    "migrations/campaign/databasics2_a_choice_changed_keeps_its_words.sql": {
+      "source": "matrx-frontend",
+      "filename": "databasics2_a_choice_changed_keeps_its_words.sql",
+      "checksum": "b3514b0e77b787f927e27980d7f6c41e3448191f9c59fd95e85b711282c6c226",
+      "applied_at": "2026-09-28 19:21:07.692641+00"
+    },
     "migrations/campaign/databasics2_a_column_default_fills_a_new_record.sql": {
       "source": "matrx-frontend",
       "filename": "databasics2_a_column_default_fills_a_new_record.sql",
@@ -751,6 +757,18 @@
       "filename": "datahome1_the_data_home_knows_whose_each_table_is.sql",
       "checksum": "9716d2beba84956ec11c8db4a0d1ae5e71710c4cc5c76eb1fe031f16c6566e0b",
       "applied_at": "2026-09-28 04:41:43.768958+00"
+    },
+    "migrations/campaign/datahome2_a_the_data_home_honors_its_organization.sql": {
+      "source": "matrx-frontend",
+      "filename": "datahome2_a_the_data_home_honors_its_organization.sql",
+      "checksum": "234c21fe411a4f9518514ac2f58e1565373bd5355865f035a68acee9ebcb1349",
+      "applied_at": "2026-09-28 19:20:36.115327+00"
+    },
+    "migrations/campaign/datahome2_b_the_data_home_default_organization_is_a_knob.sql": {
+      "source": "matrx-frontend",
+      "filename": "datahome2_b_the_data_home_default_organization_is_a_knob.sql",
+      "checksum": "8d31a2c749827b6736967bd16a1bb1cd1ffd7aa8cca6755a4e747f49f2f00048",
+      "applied_at": "2026-09-28 19:20:48.464373+00"
     },
     "migrations/campaign/datav2face2_a_copied_table_opens_as_the_sheet_it_was.sql": {
       "source": "campaign",
@@ -4009,6 +4027,30 @@
       "filename": "scopeadmin2_the_platform_admin_edits_any_organizations_scopes_from_administration.sql",
       "checksum": "516563d6e3f585f1f080c16e755eebf6038438c7204a32308a2282db312e1512",
       "applied_at": "2026-09-25 23:12:07.380961+00"
+    },
+    "migrations/campaign/scopeshomes_every_column_a_scope_reader_uses_has_a_home_in_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeshomes_every_column_a_scope_reader_uses_has_a_home_in_the_store.sql",
+      "checksum": "8439f9d1d1b0805366876862ea9b4935f59c560ae7dcde995e9950ffcf072757",
+      "applied_at": "2026-09-28 19:02:07.358098+00"
+    },
+    "migrations/campaign/scopesrowscopied_the_scopes_switch_counts_every_row_by_id.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesrowscopied_the_scopes_switch_counts_every_row_by_id.sql",
+      "checksum": "641543aa529b2f5784882d0be154fefadc4a6ccad4fa3480a5a4110099ae1b52",
+      "applied_at": "2026-09-28 18:56:09.307832+00"
+    },
+    "migrations/campaign/scopessidefx_the_store_change_feed_does_the_context_side_effects.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopessidefx_the_store_change_feed_does_the_context_side_effects.sql",
+      "checksum": "1ba46eff661570c821d7b8d61c61cd7fda90e0595a13bfcd8a423c69e974e863",
+      "applied_at": "2026-09-28 19:20:11.226449+00"
+    },
+    "migrations/campaign/scopessidefx_the_store_halves_refuse_what_the_old_triggers_refused.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopessidefx_the_store_halves_refuse_what_the_old_triggers_refused.sql",
+      "checksum": "079238ad263c09d9368fda590e6974055f90992510de9a65b321fb0cd6caf13d",
+      "applied_at": "2026-09-28 19:20:27.45197+00"
     },
     "migrations/campaign/scopestails_a_template_is_applied_through_the_store_doors.sql": {
       "source": "matrx-frontend",
