@@ -264,6 +264,11 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   }, [content, label]);
 
   const handleSave = useCallback(async () => {
+    // Honest: a Save with nothing to save says so and writes nothing.
+    if (!isDirty) {
+      toast.info("No changes to save");
+      return;
+    }
     const result = await dispatch(saveNote(noteId));
     if (saveNote.rejected.match(result)) {
       // `saveNote` owns failure classification/capture. This is only the
@@ -273,7 +278,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       return;
     }
     toast.success("Note saved");
-  }, [dispatch, noteId]);
+  }, [dispatch, isDirty, noteId]);
 
   const handleCopyContent = useCallback(() => {
     navigator.clipboard
@@ -400,6 +405,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     label: string;
     fn: () => void;
     destructive?: boolean;
+    /** Greyed WITH this reason (absent-or-honest). */
+    disabledReason?: string;
   };
   // The tab's own rows: things about THIS TAB and the editor buffer. The
   // note's actions are the ONE shared set (noteActionSet.ts) — the same rows,
@@ -407,12 +414,19 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // The note's buffer rows (Save, Copy note text) — about the NOTE, so they
   // sit with the note's rows, never in the Tab section.
   const bufferItems: TabMenuItem[] = [
-    {
-      id: "save",
-      icon: Save,
-      label: isSaving ? "Saving…" : "Save",
-      fn: () => void handleSave(),
-    },
+    // Read has nothing to save (and the registry's own "Save" submenu is
+    // there); elsewhere Save is greyed with its reason when nothing changed.
+    ...(editorMode === "preview"
+      ? []
+      : [
+          {
+            id: "save",
+            icon: Save,
+            label: isSaving ? "Saving…" : "Save",
+            fn: () => void handleSave(),
+            ...(!isDirty && !isSaving ? { disabledReason: "No changes to save" } : {}),
+          },
+        ]),
     {
       id: "copy-content",
       icon: Copy,
@@ -496,6 +510,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         label: item.label,
         icon: item.icon,
         onSelect: item.fn,
+        ...(item.disabledReason ? { disabled: true, description: item.disabledReason } : {}),
       })),
     },
     tabSection(false),
