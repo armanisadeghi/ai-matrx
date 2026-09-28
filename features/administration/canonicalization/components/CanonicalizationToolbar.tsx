@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -14,9 +14,12 @@ function formatRefreshTime(iso: string | null | undefined): string {
   return d.toLocaleString();
 }
 
-function snapshotAge(iso: string | null | undefined): { label: string; stale: boolean } | null {
+function snapshotAge(
+  iso: string | null | undefined,
+  now: number,
+): { label: string; stale: boolean } | null {
   if (!iso) return null;
-  const ms = Date.now() - new Date(iso).getTime();
+  const ms = now - new Date(iso).getTime();
   if (Number.isNaN(ms)) return null;
   const minutes = Math.max(0, Math.round(ms / 60000));
   const label =
@@ -50,9 +53,15 @@ export function CanonicalizationToolbar({
   lastRefreshedAt?: string | null;
   actions?: ReactNode;
 }) {
+  // Re-evaluated every minute so an open page turns stale without a reload.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
   if (!onReload && !onRefreshAudit && !actions) return null;
   const busy = reloading || refreshingAudit;
-  const age = snapshotAge(lastRefreshedAt);
+  const age = snapshotAge(lastRefreshedAt, now);
 
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1.5">
