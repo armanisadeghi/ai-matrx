@@ -73,15 +73,17 @@ it.each([
   const details = Array.from(host.querySelectorAll("[role=tab]")).find((b) => b.textContent === "Details");
   act(() => (details as HTMLButtonElement).click());
   expect(q("[data-testid=embed]")).toBeNull();
-  expect(text()).toContain("Suggestions");
+  expect(text()).toContain("Details");
 });
 
 it("a kind without an embed keeps the light peek", () => {
   peek({ entity: "project", id: "p1", title: "Project X" });
   expect(q("[data-testid=embed]")).toBeNull();
   expect(q("[role=tablist]")).toBeNull();
-  expect(text()).toContain("Top segments");
-  expect(text()).toContain("Suggestions");
+  // A kind with no passages and no suggestions shows neither section — no empty prose.
+  expect(text()).not.toContain("Top segments");
+  expect(text()).not.toContain("Suggestions");
+  expect(text()).toContain("Filed under");
 });
 
 it("a Source of an unknown kind keeps the light peek", () => {
