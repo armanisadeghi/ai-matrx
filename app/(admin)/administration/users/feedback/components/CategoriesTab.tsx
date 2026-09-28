@@ -233,13 +233,13 @@ export default function CategoriesTab() {
             const res = await fetch(`/api/admin/feedback/categories/${deleteTarget.id}`, { method: 'DELETE' });
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.error || 'Delete failed');
+                throw new Error(err.error || 'Move to Trash failed');
             }
-            toast.success('Category deleted');
+            toast.success('Category moved to Trash');
             setDeleteTarget(null);
             await loadData();
         } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Delete failed');
+            toast.error(err instanceof Error ? err.message : 'Move to Trash failed');
         }
     };
 
@@ -696,16 +696,16 @@ export default function CategoriesTab() {
             <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete category?</AlertDialogTitle>
+                        <AlertDialogTitle>Move category to Trash?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete <strong>{deleteTarget?.name}</strong>. This cannot be undone.
-                            If any feedback items are assigned to this category, the delete will be blocked — you must reassign them first.
+                            <strong>{deleteTarget?.name}</strong> moves to Trash; you can restore it from Trash at any time.
+                            If any feedback items are assigned to this category, this is blocked — reassign them first.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Delete
+                            Move to Trash
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

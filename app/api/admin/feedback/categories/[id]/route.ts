@@ -3,7 +3,7 @@
  *
  * GET /api/admin/feedback/categories/[id] - Get a single category
  * PATCH /api/admin/feedback/categories/[id] - Update a category
- * DELETE /api/admin/feedback/categories/[id] - Delete a category (only if no items assigned)
+ * DELETE /api/admin/feedback/categories/[id] - Move a category to Trash (only if no items assigned)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -179,18 +179,22 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     if (count && count > 0) {
       return NextResponse.json(
         {
-          error: `Cannot delete: ${count} feedback item(s) are assigned to this category. Reassign them first.`,
+          error: `Cannot move to Trash: ${count} feedback item(s) are assigned to this category. Reassign them first.`,
         },
         { status: 409 },
       );
     }
 
+    // Delete means archive (Arman, 2026-09-27): the category moves to Trash.
+    // Its slug is unique only among live categories (uq_categories_slug is
+    // partial on deleted_at IS NULL), so a new category may reuse it.
     const { error } = await supabase
       .schema("platform")
       .from("categories")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("dimension", "feedback")
-      .eq("id", id);
+      .eq("id", id)
+      .is("deleted_at", null);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -200,7 +204,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   } catch (err) {
     const authResponse = authErrorResponse(err);
     if (authResponse) return authResponse;
-    console.error("Failed to delete category:", err);
+    console.error("Failed to move category to Trash:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
