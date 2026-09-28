@@ -46,7 +46,7 @@ import type {
 import { resolveThread } from "../service/threadResolver";
 import { messageRecordToText } from "../service/messageText";
 import { openWatch } from "@/features/war-room/redux/watchSlice";
-import { loadWarRoomSession } from "@/features/war-room/redux/thunks";
+import { hydrateWarRoomSession } from "@/features/war-room/redux/thunks";
 import { listRoomIdsForThread } from "@/features/war-room/service/associations";
 import { buildThreadAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
 import { selectThreadById } from "@/features/war-room/redux/selectors";
@@ -226,12 +226,13 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
     try {
       // The tile's context lives in Redux only when its ROOM is loaded. The
       // master spans all rooms, so the target tile may be in a room that isn't
-      // active — load it first (guarded: skip if the tile is already present).
+      // active — hydrate it first (guarded: skip if the tile is already present;
+      // hydrating never changes the room the person has open).
       if (!selectThreadById(thread.id)(getState())) {
         const roomIds = await listRoomIdsForThread(thread.id);
         const roomId = roomIds[0] ?? null;
         if (roomId) {
-          await dispatch(loadWarRoomSession(roomId));
+          await dispatch(hydrateWarRoomSession(roomId));
         }
       }
       const contextEntries = buildThreadAgentContextEntries(

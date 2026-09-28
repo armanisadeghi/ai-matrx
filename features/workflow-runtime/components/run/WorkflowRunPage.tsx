@@ -35,6 +35,7 @@ import type { RunSurfaceConfig } from "../../surface/config";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 import { RunStartForm } from "../RunStartForm";
 import { RunStage } from "./RunStage";
+import { WorkflowRunSurfaceHost } from "../../agent-surface/WorkflowRunSurfaceHost";
 import { MasterworkRulesProvider } from "@/features/masterwork/rules-context/MasterworkRulesContext";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
@@ -310,6 +311,21 @@ export function WorkflowRunPage({
           />
         </div>
       </div>
+    );
+  }
+
+  // The run's agent surface (`matrx-user/workflow-run`) — the same host a run
+  // on the Board mounts — whenever this page is showing a run.
+  if (showingRun && runId && workflow) {
+    body = (
+      <WorkflowRunSurfaceHost
+        runId={runId}
+        workflowId={workflow.id}
+        workflowName={workflow.name}
+        definition={workflow.definition}
+      >
+        {body}
+      </WorkflowRunSurfaceHost>
     );
   }
 

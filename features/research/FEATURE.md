@@ -117,6 +117,11 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
 
 ## Change log
 
+- 2026-09-28 — The topic's agent surface is one host, `components/shell/ResearchTopicSurfaceHost.tsx`
+  (scope + `ResearchTopicWriteTargets`), mounted by the topic workspace route
+  (`ResearchTopicShell`, which passes the pathname's view) and by a research topic on the Board
+  (`activeView="document"`).
+
 - 2026-09-27 — page-pass 2026-09-27: /research/topics, type list page, posture after Linear's
   issue list. The hand-built card grid (`components/landing/TopicList.tsx`) is replaced by the
   canonical entity list (`browse/`: service over `research.rs_topic` + project association edges,

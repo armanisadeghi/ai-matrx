@@ -17,7 +17,8 @@ chrome, and the routes.
 | `<IncomingCallHost>` — mounted ONCE, directly | [`../../providers/MeetHost.tsx`](../../providers/MeetHost.tsx) |
 | The room, both lanes | [`components/MeetingSurface.tsx`](./components/MeetingSurface.tsx) |
 | `/meetings` — Upcoming / Past / Cancelled / Archived, New meeting, Start now, row actions | [`components/manage/MeetingsHome.tsx`](./components/manage/MeetingsHome.tsx); data [`hooks/useMeetingsDirectory.ts`](./hooks/useMeetingsDirectory.ts) |
-| `/meetings/[id]` — the meeting's home (details, guests, occurrences, settings, record) | [`components/manage/MeetingDetail.tsx`](./components/manage/MeetingDetail.tsx) |
+| `/meetings/[id]` — the meeting's home (details, guests, occurrences, settings, record); `chrome="embedded"` is the same home on a Board tile (sections + actions in a strip) | [`components/manage/MeetingDetail.tsx`](./components/manage/MeetingDetail.tsx) |
+| The meeting's agent surface `matrx-user/meeting` — values (meeting, guests, plan, settings, and after it happened the record: summary, decisions, action items, notes, transcript excerpt) and write targets `meeting_title`, `meeting_agenda`, `ai_note_taker` through `useMeetingActions`; mounted by `MeetingDetail`, so the page and a Board tile share it | [`agent-surface/MeetingSurfaceHost.tsx`](./agent-surface/MeetingSurfaceHost.tsx), `features/surfaces/manifests/meeting.manifest.ts` |
 | The one meeting form (create / edit / reschedule / duplicate) + repeat editor | [`components/manage/MeetingFormDialog.tsx`](./components/manage/MeetingFormDialog.tsx), [`RecurrenceEditor.tsx`](./components/manage/RecurrenceEditor.tsx); model [`lib/meeting-draft.ts`](./lib/meeting-draft.ts), [`lib/recurrence.ts`](./lib/recurrence.ts), [`lib/zoned-time.ts`](./lib/zoned-time.ts) |
 | Every management write + `announce` | [`hooks/useMeetingActions.ts`](./hooks/useMeetingActions.ts); dialogs dispatched by [`components/manage/useMeetingActionHost.tsx`](./components/manage/useMeetingActionHost.tsx) |
 | Guests (invitees + RSVP), used by the page AND the Invite panel | [`components/manage/MeetingGuests.tsx`](./components/manage/MeetingGuests.tsx), [`GuestPicker.tsx`](./components/manage/GuestPicker.tsx) |
@@ -262,6 +263,8 @@ reader of an older tag will otherwise conclude the package is broken.
    "captions, live notes, Q&A and the wrap-up without a page reload".
 
 ## Change log
+
+- 2026-09-28 — NEW agent surface `matrx-user/meeting` (`agent-surface/MeetingSurfaceHost.tsx`, registered in `ui.ui_surface`), mounted by `MeetingDetail`; `MeetingDetail` gained `chrome="embedded"` for the Board's meeting tile. Notes, decisions and action items are not write targets: the client has no canonical write for them (the note-taker and wrap-up write them server-side).
 
 - 2026-09-27 — Meet wave 4: calendar events in Upcoming, Find a time, Draft agenda, Prepare (brief), templates, after-meeting workflows + CRM log readback. See § Before and after the meeting.
 

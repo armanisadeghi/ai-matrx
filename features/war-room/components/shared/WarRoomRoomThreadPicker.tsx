@@ -19,7 +19,7 @@ import {
   selectThreadIdsForRoom,
   selectThreadsStatusForRoom,
 } from "@/features/war-room/redux/selectors";
-import { loadWarRoomSession } from "@/features/war-room/redux/thunks";
+import { hydrateWarRoomSession } from "@/features/war-room/redux/thunks";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { threadDisplayTitle } from "@/features/war-room/utils/threadDisplayTitle";
 import { cn } from "@/lib/utils";
@@ -108,7 +108,7 @@ export function WarRoomRoomThreadPicker({
               <ReadFailure
                 error
                 what="this room's threads"
-                onRetry={() => void dispatch(loadWarRoomSession(roomId))}
+                onRetry={() => void dispatch(hydrateWarRoomSession(roomId))}
                 className="m-2"
               />
             ) : (

@@ -648,3 +648,13 @@ describe("message template record page", () => {
     );
   });
 });
+
+describe("one run and one meeting", () => {
+  it("maps a run permalink and a meeting's home to their record surfaces, and leaves the lists alone", () => {
+    const id = "47dcdb39-47b8-5574-bff2-b6d36801284a";
+    expect(surfaceFromPathname(`/workflows/runs/${id}`)).toBe("matrx-user/workflow-run");
+    expect(surfaceFromPathname("/workflows/runs")).not.toBe("matrx-user/workflow-run");
+    expect(surfaceFromPathname(`/meetings/${id}`)).toBe("matrx-user/meeting");
+    expect(surfaceFromPathname("/meetings")).not.toBe("matrx-user/meeting");
+  });
+});

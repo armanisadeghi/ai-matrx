@@ -115,7 +115,7 @@ features/projects/
 
 ## Agent surface — `matrx-user/projects`
 
-The project workspace (`ProjectWorkspace.tsx`, route `/projects/[projectId]`) is wired into the agent context system so agents bound to `matrx-user/projects` can act on the open project.
+The project workspace (`ProjectWorkspace.tsx`, route `/projects/[projectId]`) is wired into the agent context system so agents bound to `matrx-user/projects` can act on the open project. The workspace for one resolved project is `ProjectRecordWorkspace` (same file): the route renders it with `chrome="page"` after resolving the id or slug, and a project on the Board renders it with `chrome="embedded"` — one component, one `SurfaceRuntimeProvider`, identical controls and write targets in both places (2026-09-28).
 
 - **Manifest:** `features/surfaces/manifests/projects.manifest.ts` (`createProjectsScope`). Customs: `active_project_id/name/description`, `is_personal_project`, `active_organization_id/name`, plus list-level `selected_project_ids` / `project_count` (owned by a future list-surface mount, **not** the single-project workspace).
 - **Emit contract:** `features/projects/agent-context/buildProjectsContextData.ts` — a PURE builder (live project + org + member/task counts → manifest scope, exact value names). Emits real baselines where the surface has them (`content` = project description, `selection` = browser selection, `context` = a status/priority/counts/role blob) + the customs above. Exports `PROJECTS_CONTEXT_MENU_PROPS` (`sourceFeature: "project-create"` — reused as the closest valid `SourceFeature`; `surfaceName`; `placementMode`) and `createProjectsExtraSections` (Manage settings / knowledge-graph navigation). `isEditable` is NOT baked in — each mount passes its own.
