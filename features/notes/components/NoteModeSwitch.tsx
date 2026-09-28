@@ -12,7 +12,10 @@ import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,
 } from "@/features/shell/components/header/navItemClasses";
-import { useSelectNoteMode } from "../hooks/usePreferredDefaultEditorMode";
+import {
+  useNoteEditorMode,
+  useSelectNoteMode,
+} from "../hooks/usePreferredDefaultEditorMode";
 import { NOTE_VIEW_MODES } from "./NoteViewControls";
 
 export interface NoteModeSwitchProps {
@@ -34,6 +37,7 @@ export function NoteModeSwitch({
   labels = "always",
   className,
 }: NoteModeSwitchProps) {
+  const editorMode = useNoteEditorMode(noteId);
   const selectNoteMode = useSelectNoteMode();
 
   const setMode = useCallback(
