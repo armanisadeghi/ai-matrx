@@ -12,7 +12,7 @@
  * (`useOrganizationVaultMemberAccess`) and each row reads its member from it.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { KeyRound } from "lucide-react";
 import {
   Select,
@@ -38,21 +38,28 @@ export function useOrganizationVaultMemberAccess(
 ) {
   const [data, setData] = useState<VaultMemberAccessList | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    if (!enabled) return;
-    try {
-      setData(await fetchOrganizationVaultMemberAccess(organizationId));
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  }, [organizationId, enabled]);
+  const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    if (!enabled) return;
+    let cancelled = false;
+    fetchOrganizationVaultMemberAccess(organizationId).then(
+      (next) => {
+        if (cancelled) return;
+        setData(next);
+        setError(null);
+      },
+      (e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : String(e));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId, enabled, nonce]);
 
+  const reload = () => setNonce((n) => n + 1);
   return { data, error, reload };
 }
 
