@@ -2,6 +2,7 @@
 
 import { qualifyValueKey } from "@ai-matrx/alchemy/declare";
 import { createClient } from "@/utils/supabase/client";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
 import type {
   SurfaceDriftReport,
@@ -68,39 +69,73 @@ const sb = () => createClient();
 
 export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
   const c = sb();
-  const [
-    surfacesRes,
-    surfaceDefaultsRes,
-    bundlesRes,
-    agentCountsRes,
-    surfaceValueCountsRes,
-  ] = await Promise.all([
-    // VIEW LAW: public catalog by design — ui_surface is platform-wide admin config, not user-owned
-    c
-      .schema("ui")
-      .from("ui_surface")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true }),
-    c
-      .schema("tool")
-      .from("surface_defaults")
-      .select("surface_name, always_include_tools, always_include_bundles"),
-    c.schema("tool").from("bundle").select("id, name").is("deleted_at", null),
-    c.schema("agent").from("menu_surface").select("surface_name"),
-    c.schema("ui").from("ui_surface_value").select("surface_name"),
-  ]);
-  if (surfacesRes.error) throw surfacesRes.error;
-  if (surfaceDefaultsRes.error) throw surfaceDefaultsRes.error;
-  if (bundlesRes.error) throw bundlesRes.error;
-  if (agentCountsRes.error) throw agentCountsRes.error;
-  if (surfaceValueCountsRes.error) throw surfaceValueCountsRes.error;
+  // Every list here is treated as complete (counts per surface), so each is
+  // read in full — a bare select stops at 1000 rows, and ui_surface_value
+  // alone holds ~5,500, which showed Chat as "1 value in DB" when it has 31.
+  const [surfaces, surfaceDefaults, bundles, agentEdges, surfaceValues] =
+    await Promise.all([
+      // VIEW LAW: public catalog by design — ui_surface is platform-wide admin config, not user-owned
+      readAllRows(
+        ({ from, to }) =>
+          c
+            .schema("ui")
+            .from("ui_surface")
+            .select("*", { count: "exact" })
+            .order("sort_order", { ascending: true })
+            .order("name", { ascending: true })
+            .range(from, to),
+        { label: "ui.ui_surface" },
+      ),
+      readAllRows(
+        ({ from, to }) =>
+          c
+            .schema("tool")
+            .from("surface_defaults")
+            .select("surface_name, always_include_tools, always_include_bundles", {
+              count: "exact",
+            })
+            .order("surface_name", { ascending: true })
+            .range(from, to),
+        { label: "tool.surface_defaults" },
+      ),
+      readAllRows(
+        ({ from, to }) =>
+          c
+            .schema("tool")
+            .from("bundle")
+            .select("id, name", { count: "exact" })
+            .is("deleted_at", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "tool.bundle" },
+      ),
+      readAllRows(
+        ({ from, to }) =>
+          c
+            .schema("agent")
+            .from("menu_surface")
+            .select("surface_name", { count: "exact" })
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "agent.menu_surface" },
+      ),
+      readAllRows(
+        ({ from, to }) =>
+          c
+            .schema("ui")
+            .from("ui_surface_value")
+            .select("surface_name", { count: "exact" })
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "ui.ui_surface_value" },
+      ),
+    ]);
 
   // Bundle name → member count, so we can expand always_include_bundles. Member
   // counts come from the tool → tool_bundle 'member' association edges (the
   // collapsed legacy tool↔bundle junction), keyed by bundle id (edge target).
   const bundleIdToName = new Map<string, string>();
-  for (const b of bundlesRes.data ?? []) bundleIdToName.set(b.id, b.name);
+  for (const b of bundles) bundleIdToName.set(b.id, b.name);
   const { edges: memberEdges } = assocData(
     await associationsService.listForTargets(
       TOOL_BUNDLE,
@@ -118,7 +153,7 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
   }
 
   const toolByName = new Map<string, number>();
-  for (const row of surfaceDefaultsRes.data ?? []) {
+  for (const row of surfaceDefaults) {
     let count = row.always_include_tools.length;
     for (const bundleName of row.always_include_bundles) {
       count += bundleNameToMemberCount.get(bundleName) ?? 0;
@@ -126,7 +161,7 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
     toolByName.set(row.surface_name, count);
   }
   const agentByName = new Map<string, number>();
-  for (const row of agentCountsRes.data ?? []) {
+  for (const row of agentEdges) {
     // View columns are typed nullable; a binding edge always has a surface.
     if (!row.surface_name) continue;
     agentByName.set(
@@ -135,13 +170,13 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
     );
   }
   const valueByName = new Map<string, number>();
-  for (const row of surfaceValueCountsRes.data ?? []) {
+  for (const row of surfaceValues) {
     valueByName.set(
       row.surface_name,
       (valueByName.get(row.surface_name) ?? 0) + 1,
     );
   }
-  return (surfacesRes.data ?? []).map((s) => ({
+  return surfaces.map((s) => ({
     ...s,
     toolCount: toolByName.get(s.name) ?? 0,
     agentCount: agentByName.get(s.name) ?? 0,
