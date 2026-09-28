@@ -450,7 +450,10 @@ export function AgentUserMessage({
             ref={measureRef}
             className={cn(
               "space-y-1.5 overflow-hidden transition-all duration-300",
-              shouldBeCollapsible && isCollapsed && "max-h-12",
+              // Clamp leaves room below the fade: the first lines (what was
+              // sent, the context strip) read at full contrast, and the
+              // expand chevron never sits on top of text.
+              shouldBeCollapsible && isCollapsed && "max-h-24 pb-7",
             )}
           >
             {/* First-turn variables — the values this conversation was launched
@@ -513,7 +516,7 @@ export function AgentUserMessage({
           {/* Fade + expand affordance — overlays the whole collapsed body. */}
           {shouldBeCollapsible && isCollapsed && (
             <>
-              <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-muted via-muted/60 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-muted via-muted/80 to-transparent pointer-events-none" />
               <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-1">
                 <Button
                   variant="ghost"
