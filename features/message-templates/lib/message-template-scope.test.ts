@@ -27,6 +27,8 @@ const template: MessageTemplateDB = {
   version: 1,
   deleted_at: null,
   visibility: "internal",
+  shown_to: null,
+  search_engine_indexed: null,
   custom_fields: {},
 };
 

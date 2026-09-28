@@ -117,6 +117,7 @@ const provider = (name: string, version: number): AiProvider => ({
   website_url: null,
   logo_url: null,
   visibility: "public",
+  shown_to: null,
   doc_sources: [],
   is_system: false,
   organization_id: "system",

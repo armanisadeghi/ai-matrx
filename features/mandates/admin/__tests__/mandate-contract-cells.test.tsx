@@ -54,6 +54,7 @@ const mandate: MandateDefinitionRow = {
   updated_by: null,
   version: 1,
   visibility: "public",
+  shown_to: null,
 };
 
 const row: MandateRow = {

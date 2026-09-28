@@ -82,6 +82,7 @@ const setting = (key: string, version: number): AiSetting => ({
   ui: {},
   description: null,
   visibility: "public",
+  shown_to: null,
   is_system: false,
   organization_id: "system",
   metadata: {},

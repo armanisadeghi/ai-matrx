@@ -103,6 +103,7 @@ function endpointRow(index: number): EndpointRow {
     vendor: "Captured vendor",
     version: 1,
     visibility: "internal",
+    shown_to: null,
   };
 }
 
@@ -126,6 +127,7 @@ function apiRow(index: number): ApiRow {
     updated_by: null,
     version: 1,
     visibility: "internal",
+    shown_to: null,
   };
 }
 
@@ -155,6 +157,7 @@ function offeringRow(index: number): OfferingRow {
     usage_basis: null,
     version: 1,
     visibility: "internal",
+    shown_to: null,
   };
 }
 

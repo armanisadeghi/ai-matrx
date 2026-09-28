@@ -65,6 +65,7 @@ export function googleDocumentRow(
     version: 3,
     metadata: {},
     visibility: "internal",
+    shown_to: null,
     ...overrides,
     custom_fields: overrides.custom_fields ?? {},
   };
