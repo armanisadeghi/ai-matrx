@@ -439,9 +439,15 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
             </div>
           </TooltipProvider>
         </div>
+        {/* A flex COLUMN, not a block: a body that fills the panel (a chat —
+            transcript over composer — declares `flex-1 min-h-0`) got its own
+            content height inside a block, so the transcript region collapsed
+            to 0px and the AI Tutor drawer showed only its composer. Ordinary
+            content still stacks and scrolls exactly as before. */}
         <div
+          data-panel-body
           className={cn(
-            "overflow-auto scrollbar-none",
+            "flex flex-col overflow-auto scrollbar-none",
             isMobile && currentPosition === "bottom" && "pb-safe",
           )}
           style={{
