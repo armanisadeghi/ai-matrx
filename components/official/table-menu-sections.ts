@@ -82,6 +82,20 @@ function iconFor(name: MatrxTableMenuIconName | undefined): LucideIcon | undefin
 
 const NOTHING = () => undefined;
 
+/**
+ * An item that STARTS A NEW GROUP (`separatorBefore`, design-system menu-targets) gets a divider
+ * above it: a delete sits in its own group, last, never beside Duplicate or Edit (DATA-V2-BASICS-2).
+ * Read structurally, so a table package that predates the setting simply draws no divider.
+ */
+function toExtraItems(items: readonly MatrxTableMenuItem[]): ContextMenuExtraItem[] {
+  return items.flatMap((item) => {
+    const startsGroup = "separatorBefore" in item && (item as { separatorBefore?: unknown }).separatorBefore === true;
+    return startsGroup
+      ? [{ kind: "separator" as const, id: `${item.id}-group` }, toExtraItem(item)]
+      : [toExtraItem(item)];
+  });
+}
+
 function toExtraItem(item: MatrxTableMenuItem): ContextMenuExtraItem {
   const icon = iconFor(item.icon);
   const disabled = Boolean(item.disabledReason);
@@ -92,7 +106,7 @@ function toExtraItem(item: MatrxTableMenuItem): ContextMenuExtraItem {
       label: item.label,
       ...(icon ? { icon } : {}),
       ...(disabled ? { disabled } : {}),
-      children: item.submenu.map(toExtraItem),
+      children: toExtraItems(item.submenu),
     };
   }
   return {
@@ -120,6 +134,6 @@ export function toContextMenuExtraSections(
       label: section.title,
       anchor: "after-clipboard" as const,
       ...(section.primary ? { primary: true } : {}),
-      items: section.items.map(toExtraItem),
+      items: toExtraItems(section.items),
     }));
 }

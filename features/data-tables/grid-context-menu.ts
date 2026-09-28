@@ -423,6 +423,8 @@ export function buildGridRowMenuSection(opts: {
           },
         ]
       : []),
+    // The destructive item in its own group, as the column's menu has it (grid-col-sep-delete).
+    { kind: "separator", id: "grid-row-sep-delete" },
     {
       kind: "item",
       id: "grid-row-delete",
