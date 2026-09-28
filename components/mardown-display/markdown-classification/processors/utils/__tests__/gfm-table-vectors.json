@@ -1313,6 +1313,47 @@
     },
     {
       "lines": [
+        "<link rel=\"canonical\" href=\"https://harbor.example/bays\" />",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
+        "<nav>",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
+        "<nav>",
+        "Tonight's bays:",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": true
+    },
+    {
+      "lines": [
+        "</header>",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
         "Notes",
         "|---|",
         "Dock B closed"

@@ -174,6 +174,13 @@ export const TABLE_START_INPUTS: ReadonlyArray<string[]> = [
   under("<div>", "hello"),
   under("</div>"),
   under("<!DOCTYPE html>"),
+  // verify-RC-B4 round 16 ruling — THE ONE DELIBERATE GFM DEVIATION: a block whose
+  // element every sanitizer strips ends at its own line (content-ir
+  // opensStrippedHtmlBlock), so a table right under it opens; GFM would keep it raw.
+  under('<link rel="canonical" href="https://harbor.example/bays" />'),
+  under("<nav>"),
+  under("<nav>", "Tonight's bays:"),
+  under("</header>"),
 ];
 
 /** Where a table can open at the FIRST line (header + delimiter as GFM pairs them). */

@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { computeGfmTableVectors } from "../gfm-table-vectors";
 import { oracleTableGrid } from "@/scripts/lib/gfm-table-oracle";
+import { opensStrippedHtmlBlock } from "@ai-matrx/content-ir/source";
 
 const FILE = resolve(__dirname, "gfm-table-vectors.json");
 if (process.env.GFM_TABLE_VECTORS_WRITE === "1") {
@@ -51,7 +52,11 @@ it.each((stored.tableEnds as Array<{ lines: string[]; start: number; end: number
 it.each((stored.tableStarts as Array<{ lines: string[]; index: number; opens: boolean }>).map((v) => [JSON.stringify(v.lines.slice(0, v.index)), v] as const))(
   "a table opens (or not) where GFM opens it, under %s (index 0: the header itself)",
   (_label, v) => {
-    expect(oracleTableGrid(v.lines.join("\n")) !== null).toBe(v.opens);
+    // THE ONE DELIBERATE GFM DEVIATION (content-ir opensStrippedHtmlBlock, round 16
+    // ruling): a block whose element every sanitizer strips ends at its own line —
+    // judged as GFM reads the text with a blank line after that line.
+    const lines = v.lines.flatMap((line) => (opensStrippedHtmlBlock(line.trim()) ? [line, ""] : [line]));
+    expect(oracleTableGrid(lines.join("\n")) !== null).toBe(v.opens);
   },
 );
 
