@@ -18,6 +18,7 @@ import StructuredPlanBlock from "../../blocks/plan/StructuredPlanBlock";
 import FlashcardsBlock from "../../blocks/flashcards/FlashcardsBlock";
 import VideoPromptOptionsBlock from "../../blocks/video-prompt-options/VideoPromptOptionsBlock";
 import MapTopicProposalBlock from "../../blocks/map-topic-proposal/MapTopicProposalBlock";
+import PrPlayMenuBlock from "../../blocks/pr-play-menu/PrPlayMenuBlock";
 import DecisionAnswersBlock from "../../blocks/decision-answers/DecisionAnswersBlock";
 import ListChangeProposalBlock from "../../blocks/list-change-proposal/ListChangeProposalBlock";
 import KeywordResearchBlock from "../../blocks/keyword-research/KeywordResearchBlock";
@@ -372,6 +373,11 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <MapTopicProposalBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  PrPlayMenuBlock: (props: React.ComponentProps<typeof PrPlayMenuBlock>) => (
+    <LazyBlockWrapper>
+      <PrPlayMenuBlock {...props} />
     </LazyBlockWrapper>
   ),
   DecisionAnswersBlock: (

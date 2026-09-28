@@ -449,6 +449,7 @@ export type FeSynthesizedBlockType =
   | "media_block"
   | "video_prompt_options"
   | "map_topic_proposal"
+  | "pr_play_menu"
   | "decision_answers"
   | "list_change_proposal"
   | "keyword_research"
@@ -628,6 +629,7 @@ export type ShapeBlockType =
   | "item_presentation"
   | "video_prompt_options"
   | "map_topic_proposal"
+  | "pr_play_menu"
   | "decision_answers"
   | "list_change_proposal"
   | "keyword_research"
@@ -1869,6 +1871,25 @@ const SHAPE_BLOCK_DISPATCH = {
         <BlockComponents.MapTopicProposalBlock
           key={index}
           serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (`pr_play_menu` — the PR Director's menu of plays, each a
+  // button). Complete-only: a half-streamed play has no action yet. The
+  // conversation id rides along so a pressed play is that chat's next turn.
+  pr_play_menu: ({ block, index, conversationId }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.PrPlayMenuBlock
+          key={index}
+          serverData={block.serverData}
+          conversationId={conversationId}
         />
       );
     }
