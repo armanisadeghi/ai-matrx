@@ -53,12 +53,20 @@ describe("Google backend transport — organization gate", () => {
     },
   );
 
-  it("does not invent a revocation result from the old response shape", async () => {
+  it("treats the previous server's false boolean as unconfirmed, not revoked", async () => {
     selectOrganization(getState, CHOSEN_ORG);
     mockFetchJson({ google_authorization_remains_active: false });
-    await expect(disconnectGoogle("last-google-connection")).rejects.toThrow(
-      "authorization status could not be confirmed",
-    );
+    await expect(disconnectGoogle("last-google-connection")).resolves.toEqual({
+      googleAuthorizationStatus: "revocation_unconfirmed",
+    });
+  });
+
+  it("treats the previous server's true boolean as a surviving sibling", async () => {
+    selectOrganization(getState, CHOSEN_ORG);
+    mockFetchJson({ google_authorization_remains_active: true });
+    await expect(disconnectGoogle("youtube-connection")).resolves.toEqual({
+      googleAuthorizationStatus: "active_for_other_connection",
+    });
   });
 
   it("keeps the backend's mixed product result for the redirect notice", async () => {

@@ -236,8 +236,23 @@ Invariants the template carries, all of them learned the hard way:
 8. **Match every final projection type exactly.** PostgreSQL does not coerce a
    schema enum to a `text` OUT column in `RETURN QUERY`; cast canonical enums
    explicitly at the wire boundary.
+9. **Nothing per-row runs before the page, and no `LANGUAGE sql` helper is
+   nested inside a per-row `LANGUAGE sql` predicate.** A `*_list_match`
+   function with `SET search_path` is never inlined, so PostgreSQL builds a
+   fresh executor for every row — and every `LANGUAGE sql` function it calls
+   is parsed and planned again on each of those calls (measured 2026-09-28:
+   `education.fc_set_list_filter_ok` cost ~0.12 ms × 6 × rows inside
+   `fc_set_list_match`, ~150 ms of a 210 ms list). Helpers called from a
+   per-row predicate are `LANGUAGE plpgsql` (compiled once per session). Display
+   helpers (folder ids, question counts, my-attempts) are read only for the
+   page's rows, or per row only when the active filter or sort key needs them.
+   Worked example: `migrations/education_list_rpcs_no_per_row_replan.sql`.
 
 ## Change log
+
+- 2026-09-28 — Invariant 9 (no per-row replanning, per-row helpers after the
+  page): education fc_set / assessment lists 212→58 ms and 75→41 ms, facets
+  546→124 ms and 195→38 ms, with results proven identical.
 
 - 2026-09-27 — Access ladder T-11: Shown to (per row) + Shown to by default
   (per-type knob) replace `default_list_scope` for lists; all list RPCs and
