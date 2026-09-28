@@ -1,4 +1,3 @@
--- draft: deep-lane read-lane-v2 lock order — chair runs it at the start of the 2026-09-27 window, before the first table
 -- chair-step: replaces iam._apply_rls_unchecked so an enrolled (read-lane v2) regeneration locks every relation its policies read BEFORE the first policy statement; adds iam.read_lane_v2_lock_policy_reads. No policy statement, no freeze. Self-test: aidream scripts/read_lane_v2/lock_order_selftest.py (clone, RED on the old body, GREEN on this one).
 -- based-on: iam._apply_rls_unchecked(text, text, text, text) fe411e6fd8322593a685ffa4ac7477438cf3b0cb8b1528c1530cc41fc0a7fdcd
 -- read_lane_v2_b_lock_order — design: common-docs/projects/rich-content-unification/evidence/generator-perf-design.md; queue: read-lane-v2-queue.md
