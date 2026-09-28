@@ -62,6 +62,10 @@ jest.mock("@ai-matrx/records/react", () => ({
   useRecordsClient: () => ({ config: {}, recordUpdate: async () => ({ ok: true }) }),
 }));
 jest.mock("@ai-matrx/design-system", () => ({ Button: () => null }));
+jest.mock("@/features/unified-data/tableCopyEvaluation", () => ({
+  tableCopyEvaluation: async () => ({ state: "none" }),
+  useTableCopyEvaluation: () => ({ state: "none" }),
+}));
 jest.mock("@ai-matrx/agents/mandates", () => ({ MANDATE_KEYS: { data__page_guidance: "data.page_guidance" } }));
 jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({ useAgentLauncher: () => ({ launchMandate: jest.fn() }) }));
 jest.mock("@/features/access-gate/components/AccessGate", () => ({ AccessGate: () => null }));
@@ -123,7 +127,11 @@ jest.mock("@/features/unified-data/row-change-agent/RowChangeAgentLink", () => (
   useRowChangeAgentOffer: () => ({ state: "absent" }),
 }));
 jest.mock("@/features/unified-data/recordsNotify", () => ({ RECORDS_NOTIFY: {} }));
-jest.mock("@/lib/url-state/addressWithoutNavigating", () => ({ replaceAddressWithoutNavigating: jest.fn(), currentPathWithSearch: () => "" }));
+// The real writer (a history write, no navigation) so the address the page leaves is asserted.
+jest.mock("@/lib/url-state/addressWithoutNavigating", () => ({
+  replaceAddressWithoutNavigating: (href: string) => window.history.replaceState(null, "", href),
+  currentPathWithSearch: (params: URLSearchParams) => `${window.location.pathname}?${params.toString()}`,
+}));
 jest.mock("@/features/unified-data/recordsFiles", () => ({ RECORDS_FILES: {} }));
 jest.mock("@/components/agent-copy/page-capture/usePageCapture", () => ({ usePageCapture: () => undefined }));
 jest.mock("@/components/agent-copy/page-capture/pageCapture", () => ({ tablePageCapture: () => ({}) }));
@@ -186,6 +194,18 @@ describe("the /data-v2 table route", () => {
     // ONE copy/export on the page — the table toolbar's (merged-grid review 2, D6); the header drew
     // an identical second one.
     expect(page.querySelector("[data-page-capture-button]")).toBeNull();
+  });
+
+  it("puts the saved view the person moved to in the address, and hands it back raw on the next load (review 2, D5)", async () => {
+    await mount();
+    const onViewChanged = tablePageProps?.onViewChanged as (view: string) => void;
+    expect(typeof onViewChanged).toBe("function");
+    const view = "063b3d6b-216b-4869-88e5-55580d4d2bb5";
+    onViewChanged(view);
+    expect(new URLSearchParams(window.location.search).get("view")).toBe(view);
+    // The old Sheet's alias is a layout word the same parameter still carries.
+    onViewChanged("sheet");
+    expect(new URLSearchParams(window.location.search).get("view")).toBe("sheet");
   });
 
   it("declares the table's organization to the shell (lit there when it is not the active one), never showing it on the page", async () => {
