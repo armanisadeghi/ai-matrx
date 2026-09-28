@@ -196,7 +196,7 @@ function KitLoading() {
   return (
     <>
       <EducationToolHeader title="Study kit" />
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-10">
+      <div className="matrx-touch-targets mx-auto w-full max-w-6xl space-y-6 px-4 pb-10">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-48 w-full rounded-2xl" />
         <div className="grid gap-4 lg:grid-cols-3">
@@ -350,14 +350,14 @@ export function KitHub({
     return withSurface(
       <>
         <EducationToolHeader title="Study kit" />
-        <div className="mx-auto w-full max-w-3xl px-4 pb-10">
+        <div className="matrx-touch-targets mx-auto w-full max-w-3xl px-4 pb-10">
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
             <AGENT_ICON className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
               Nothing has been made from this material yet.
             </p>
             <Button asChild size="sm" className="gap-1.5">
-              <Link href="/education/start">
+              <Link href="/education/start" data-tap-target>
                 <AGENT_ICON className="h-4 w-4" />
                 Create a study kit
               </Link>

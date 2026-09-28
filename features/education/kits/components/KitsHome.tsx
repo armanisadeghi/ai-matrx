@@ -143,13 +143,13 @@ export function KitsHome() {
       getScope={getScope}
     >
       <EducationToolHeader title="Study Kits" />
-      <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">
+      <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
             Each kit is one piece of your material and everything made from it.
           </p>
           <Button asChild size="sm" className="gap-1.5">
-            <Link href="/education/start">
+            <Link href="/education/start" data-tap-target>
               <AGENT_ICON className="h-4 w-4" />
               New kit
             </Link>
