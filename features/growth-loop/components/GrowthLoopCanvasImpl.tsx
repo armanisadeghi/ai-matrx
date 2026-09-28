@@ -553,8 +553,8 @@ function GrowthLoopCanvasInner() {
         })
       }
     >
-    <div className="flex h-full w-full min-h-0" data-surface-value="selection_kind">
-      <div className="relative min-w-0 flex-1">
+    <div className="flex h-full w-full min-h-0 flex-col md:flex-row" data-surface-value="selection_kind">
+      <div className="relative min-h-0 min-w-0 flex-1">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -617,7 +617,9 @@ function GrowthLoopCanvasInner() {
         </ReactFlow>
       </div>
 
-      <aside className="w-[340px] shrink-0 overflow-y-auto border-l border-border bg-card p-3">
+      {/* Phones stack the detail panel under the map: side by side, a fixed
+          340px panel left the map ~50px wide on a 390px screen. */}
+      <aside className="max-h-[45%] w-full shrink-0 overflow-y-auto border-t border-border bg-card p-3 md:max-h-none md:w-[340px] md:border-l md:border-t-0">
         {!stage && !edge && (
           <div className="space-y-3">
             <div>
