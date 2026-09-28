@@ -35,9 +35,12 @@ and the `list_change_proposal` entry in `block-dispatch.tsx`.
   per-message place, writable by a conversation editor under RLS (`std_update`), merged through
   the canonical optimistic-concurrency primitive. There is no generic message-interaction store
   to use instead — this is it.
-- **Accepting a removal DESTROYS the row.** `udt_bulk_write`'s delete op issues a real
-  `DELETE FROM workbench.udt_dataset_rows` even though the table carries `deleted_at`, so the
-  confirm says exactly that rather than a generic "cannot be undone". Tracked in
+- **Where a removed row goes depends on the store, and the confirm says which.** A Record
+  table (`target.kind === "table"`) archives: `custom.record_delete` sets `deleted_at`, the
+  row moves to Trash. A scope dataset still loses the row: `udt_bulk_write`'s delete op issues
+  a real `DELETE FROM workbench.udt_dataset_rows` until the rehearsed draft
+  `migrations/udt_dataset_rows_delete_archives_and_trash_restores.sql` is applied — then both
+  archive and the scope-dataset branch of the confirm copy goes. Tracked in
   [FOUND_DEFECTS.md](../../FOUND_DEFECTS.md).
 - **A control that would do nothing is ABSENT with the reason in words** — no message id, a
   store that refuses to be read, or a read-only host each say so.

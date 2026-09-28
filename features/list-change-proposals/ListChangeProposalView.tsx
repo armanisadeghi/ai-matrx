@@ -221,6 +221,14 @@ export function ListChangeProposalView({
   }, [openProposals, runReject]);
 
   const listLabel = target.label ?? snapshot?.label ?? "this list";
+  // A Record table archives a removed row (custom.record_delete sets deleted_at).
+  // A scope dataset's row store (udt_bulk_write op "delete") still removes the row
+  // itself until the Data-table row archive migration lands
+  // (migrations/udt_dataset_rows_delete_archives_and_trash_restores.sql) — say so.
+  const removalGoesToTrash = target.kind === "table";
+  const removalFate = removalGoesToTrash
+    ? "moves to Trash, where it can be restored"
+    : "is removed from the list store and does not go to Trash";
 
   return (
     <div className={cn("flex w-full min-w-0 flex-col gap-2.5", className)}>
@@ -336,14 +344,22 @@ export function ListChangeProposalView({
         title={
           pendingConfirm?.scope === "all"
             ? `Apply ${openProposals.length} changes to ${listLabel}?`
-            : `Remove this from ${listLabel}?`
+            : removalGoesToTrash
+              ? `Move this row from ${listLabel} to Trash?`
+              : `Remove this row from ${listLabel}?`
         }
         description={
           pendingConfirm?.scope === "all"
-            ? `${openRemovals.length} of these ${openProposals.length} changes DELETE a row outright — the row and its text are gone from ${listLabel}, not archived, and this cannot be undone. The rest add or edit rows.`
-            : `This DELETES the row "${pendingConfirm?.scope === "one" ? pendingConfirm.item.title : ""}" outright — it is gone from ${listLabel}, not archived, and this cannot be undone.`
+            ? `${openRemovals.length} of these ${openProposals.length} changes take a row off ${listLabel}; each one ${removalFate}. The rest add or edit rows.`
+            : `The row "${pendingConfirm?.scope === "one" ? pendingConfirm.item.title : ""}" leaves ${listLabel} and ${removalFate}.`
         }
-        confirmLabel={pendingConfirm?.scope === "all" ? "Apply all" : "Remove"}
+        confirmLabel={
+          pendingConfirm?.scope === "all"
+            ? "Apply all"
+            : removalGoesToTrash
+              ? "Move to Trash"
+              : "Remove"
+        }
         variant="destructive"
         busy={busyId !== null}
         onConfirm={() => {
