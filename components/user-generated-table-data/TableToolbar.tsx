@@ -346,7 +346,9 @@ export default function TableToolbar({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 data-surface-value="search_term"
-                className="h-11 w-full pl-8 pr-10 text-base md:h-7 md:pl-7 md:pr-7 md:text-sm"
+                // The clear button's room is kept only while there is something to clear: at 390 an
+                // always-reserved 40px cut "Search rows" to "Search row" (DATA-V2-BASICS-2).
+                className={`h-11 w-full pl-8 text-base md:h-7 md:pl-7 md:text-sm ${searchTerm ? "pr-10 md:pr-7" : "pr-2 md:pr-2"}`}
                 style={{ fontSize: "16px" }}
               />
               {searchTerm && (
