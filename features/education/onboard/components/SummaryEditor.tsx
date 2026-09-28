@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ContentEditor } from "@/components/official/content-editor/ContentEditor";
+import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { studyMediaService } from "@/features/education/media/service";
@@ -44,6 +44,7 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
   const router = useRouter();
   const [currentMedia, setCurrentMedia] = useState(media);
   const [draft, setDraft] = useState<SummaryDraft>(() => draftFrom(media));
+  const summaryEditorRef = useRef<RichEditorController | null>(null);
   const [baseRevision, setBaseRevision] = useState(media?.version);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,8 +113,10 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
   }, refuseSurfaceWrite);
 
   async function save() {
+    // The one editor reports typing on a short timer; Save reads its text now.
+    const summaryMarkdown = summaryEditorRef.current?.flush() ?? draft.summary_markdown;
     let summary;
-    try { summary = parseStudySummary(draft); }
+    try { summary = parseStudySummary({ ...draft, summary_markdown: summaryMarkdown }); }
     catch (cause) {
       const message = cause instanceof Error ? cause.message : "Check the summary.";
       setError(message);
@@ -144,7 +147,8 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
   return <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={scope} getWriteHandlers={handlers}>
     <main className="mx-auto w-full max-w-4xl space-y-5 px-4 pb-20 pt-4">
       <div className="space-y-1"><Label htmlFor="summary-title">Title</Label><Input id="summary-title" value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} /></div>
-      <ContentEditor value={draft.summary_markdown} onChange={(summary_markdown) => setDraft((current) => ({ ...current, summary_markdown }))} title="Summary" initialMode="markdown" availableModes={["wysiwyg", "markdown", "preview"]} surfaceName={SURFACE_NAME} imagePolicy="ai" />
+      {/* THE ONE EDITOR (Visual · Source · Preview in its own view switch); opens on the Markdown source. */}
+      <div className="space-y-1"><Label>Summary</Label><div className="h-[600px] overflow-hidden rounded-xl border border-border"><RichEditor value={draft.summary_markdown} onChange={(summary_markdown) => setDraft((current) => ({ ...current, summary_markdown }))} defaultView="source" controllerRef={summaryEditorRef} surfaceName={SURFACE_NAME} sourceFeature="documents" defaultOutlineOpen={false} imagePolicy="ai" className="h-full" /></div></div>
       <section className="space-y-3 rounded-xl border border-border bg-card p-4">
         <div><h2 className="font-semibold">Key points</h2><p className="text-sm text-muted-foreground">Add concise takeaways when they help; they are optional for a manual summary.</p></div>
         {draft.key_points.map((point, index) => <div key={index} className="flex gap-2"><Input aria-label={`Key point ${index + 1}`} value={point} onChange={(event) => setDraft((current) => ({ ...current, key_points: current.key_points.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))} /><Button type="button" size="icon" variant="ghost" aria-label={`Remove key point ${index + 1}`} onClick={() => setDraft((current) => ({ ...current, key_points: current.key_points.filter((_, itemIndex) => itemIndex !== index) }))}><Minus className="h-4 w-4" /></Button></div>)}

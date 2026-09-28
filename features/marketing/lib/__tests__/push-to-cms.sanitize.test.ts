@@ -66,7 +66,7 @@ describe("executeCmsPush writes sanitized HTML into the CMS draft", () => {
     ["heading", "## Residential solar", "<h2>Residential solar</h2>"],
     ["table", "| System | kW |\n| --- | --- |\n| Starter | 6.4 |", "<td>6.4</td>"],
     ["link", "[Get a quote](https://example-solar.com/quote)", '<a href="https://example-solar.com/quote">Get a quote</a>'],
-    ["task list", "- [x] Permit filed\n- [ ] Panels installed", /<input checked(="")? disabled(="")? type="checkbox">/],
+    ["task list", "- [x] Permit filed\n- [ ] Panels installed", /<input(?=[^>]*\btype="checkbox")(?=[^>]*\bchecked)(?=[^>]*\bdisabled)[^>]*>/],
   ])("keeps %s", async (_label, markdown, expected) => {
     expect(await pushedHtml(markdown)).toMatch(expected);
   });

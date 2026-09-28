@@ -67,6 +67,8 @@ const CORE_FILES = [
   CORE_EDGE,
   "components/markdown-core/markdown-core-presets.ts",
   "components/markdown-core/MarkdownCoreServer.tsx",
+  // The core's HTML edge (no React): the same preset table → hast, for email/CMS markup.
+  "components/markdown-core/markdown-core-html.ts",
 ];
 
 const RENDER_VIA_CORE =
