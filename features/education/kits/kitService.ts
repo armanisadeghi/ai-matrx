@@ -296,7 +296,15 @@ function metaBoolean(meta: Json | undefined, key: string): boolean {
 async function manualMembers(sourceType: string, sourceId: string): Promise<GeneratedArtifact[]> {
   const result = await associationsService.listForEntity(sourceType, sourceId);
   if (!result.ok) throw new Error("Could not read manual kit members.");
-  return result.data.edges.filter((edge) => edge.direction === "incoming" && edge.role === "member" && metaBoolean(edge.metadata, "educationKit")).map((edge) => ({ edgeId: edge.id, targetKind: metaString(edge.metadata, "targetKind") as TargetKind | null, artifactType: edge.otherType, artifactId: edge.otherId, title: edge.label ?? "Study artifact", href: metaString(edge.metadata, "href") ?? "/education", detail: metaString(edge.metadata, "detail"), sourceTitle: metaString(edge.metadata, "kitTitle"), createdAt: edge.createdAt, membershipRole: "member" as const, edgeMetadata: edge.metadata }));
+  const edges = result.data.edges.filter((edge) => edge.direction === "incoming" && edge.role === "member" && metaBoolean(edge.metadata, "educationKit"));
+  const titles = new Map<string, string>();
+  const wanted = new Set(edges.map((edge) => `${edge.otherType}:${edge.otherId}`));
+  for (let page = 1; wanted.size; page += 1) {
+    const library = await fetchEducationLibraryPage({ ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "mine" }, page }, { sort: "updated", direction: "desc", favoritesFirst: false, pageSize: KIT_SCAN_PAGE });
+    for (const row of library.rows) if (wanted.delete(`${row.kind}:${row.id}`)) titles.set(`${row.kind}:${row.id}`, row.title);
+    if (library.rows.length < KIT_SCAN_PAGE || page * KIT_SCAN_PAGE >= library.total) break;
+  }
+  return edges.map((edge) => ({ edgeId: edge.id, targetKind: metaString(edge.metadata, "targetKind") as TargetKind | null, artifactType: edge.otherType, artifactId: edge.otherId, title: titles.get(`${edge.otherType}:${edge.otherId}`) ?? "Unavailable study aid", href: metaString(edge.metadata, "href") ?? "/education", detail: metaString(edge.metadata, "detail"), sourceTitle: metaString(edge.metadata, "kitTitle"), createdAt: edge.createdAt, membershipRole: "member" as const, edgeMetadata: edge.metadata }));
 }
 
 /**
