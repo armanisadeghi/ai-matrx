@@ -13,7 +13,7 @@ import { DatabaseTool } from './tools-service';
  */
 export type PublicDatabaseTool = Omit<
   DatabaseTool,
-  'created_by' | 'updated_by' | 'organization_id' | 'metadata' | 'version'
+  'created_by' | 'updated_by' | 'organization_id' | 'metadata' | 'version' | 'shown_to'
 >;
 
 /**
