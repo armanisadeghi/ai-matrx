@@ -44,6 +44,7 @@ export async function fetchIndustries(
     .schema("iam")
     .from("industries")
     .select("*")
+    .is("deleted_at", null)
     .order("sort_order");
   if (!includeInactive) q = q.eq("is_active", true);
   const { data, error } = await q;
