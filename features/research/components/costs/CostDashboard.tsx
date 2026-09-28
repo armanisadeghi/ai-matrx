@@ -10,19 +10,7 @@
  */
 
 import { useState } from "react";
-import {
-  AlertTriangle,
-  Brain,
-  Coins,
-  DollarSign,
-  FileText,
-  Gauge,
-  Layers,
-  Loader2,
-  Snowflake,
-  Tags,
-  Zap,
-} from "lucide-react";
+import { AlertTriangle, Brain, Coins, Gauge, FileText, Layers, Loader2, Snowflake, Tags, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Cost } from "@/components/cost/Cost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -468,7 +456,7 @@ export default function CostDashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 p-6 text-center">
         <div className="h-12 w-12 rounded-2xl bg-destructive/10 flex items-center justify-center">
-          <DollarSign className="h-6 w-6 text-destructive/60" />
+          <Gauge className="h-6 w-6 text-destructive/60" />
         </div>
         <div>
           <p className="text-xs font-medium text-foreground/70">
@@ -488,7 +476,7 @@ export default function CostDashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 p-6 text-center">
         <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
-          <DollarSign className="h-6 w-6 text-primary/40" />
+          <Gauge className="h-6 w-6 text-primary/40" />
         </div>
         <div>
           <p className="text-xs font-medium text-foreground/70">

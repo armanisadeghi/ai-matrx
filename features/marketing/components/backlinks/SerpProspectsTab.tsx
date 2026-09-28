@@ -28,7 +28,7 @@ import {
   Ban,
   CheckCircle2,
   Clock,
-  DollarSign,
+  Gauge,
   ExternalLink,
   ListPlus,
   Loader2,
@@ -695,8 +695,8 @@ function PreviewCard({ prospects }: { prospects: SerpProspects }) {
           {preview.queries.length === 1 ? "" : "es"} would run
         </span>
         <span className="inline-flex items-center gap-1 text-xs tabular-nums text-foreground">
-          <DollarSign className="h-3 w-3 text-muted-foreground" />
-          about {formatCostDisplay(preview.estimated_cost_usd)} — nothing is spent until you
+          <Gauge className="h-3 w-3 text-muted-foreground" />
+          about {formatCostDisplay(Number(preview.estimated_cost_usd))} — nothing is spent until you
           press Run
         </span>
       </div>

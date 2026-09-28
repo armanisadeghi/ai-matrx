@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, Hash, FileText, Info } from 'lucide-react';
+import { Gauge, Hash, FileText, Info } from "lucide-react";
 import type { CostEstimate } from '@/features/tool-call-visualization/testing/types';
 import { Cost } from '@/components/cost/Cost';
 import { useCostDisplay } from '@/components/cost/useCostDisplay';
@@ -46,7 +46,7 @@ export function CostEstimateTable({ costEstimate }: CostEstimateTableProps) {
         </div>
         <div className="rounded-lg border border-border bg-card p-3 space-y-1">
           <div className="flex items-center gap-1.5 text-muted-foreground">
-            <DollarSign className="h-3.5 w-3.5" />
+            <Gauge className="h-3.5 w-3.5" />
             <span className="text-[10px] font-medium uppercase tracking-wider">Chars/Token</span>
           </div>
           <p className="text-lg font-semibold tabular-nums">

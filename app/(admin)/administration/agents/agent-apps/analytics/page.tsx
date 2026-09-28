@@ -28,7 +28,7 @@ import {
   Activity,
   CheckCircle,
   Clock,
-  DollarSign,
+  Gauge,
   Users,
 } from "lucide-react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
@@ -465,7 +465,7 @@ export default function AgentAppsAnalyticsPage() {
               })}
             />
             <OverviewCard
-              icon={<DollarSign className="w-4 h-4 text-green-600" />}
+              icon={<Gauge className="w-4 h-4 text-green-600" />}
               label="Total Cost"
               value={`${costPartial.prefix}${formatCostDisplay(totals.totalCost)}`}
               sub={[

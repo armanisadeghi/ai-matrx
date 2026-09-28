@@ -148,7 +148,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
       );
       return;
     }
-    const parsedUsd = unit === "usd" ? parsed : pointsToUsd(parsed);
+    const parsedUsd = unit === "usd" ? parsed : (pointsToUsd(parsed) ?? 0);
     try {
       await pref.setBudgetUsd(parsedUsd);
       setEditingBudget(false);

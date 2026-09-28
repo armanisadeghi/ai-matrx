@@ -12,16 +12,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import {
-  AlertTriangle,
-  CircleCheck,
-  CircleDollarSign,
-  Hammer,
-  Radio,
-  Timer,
-  TriangleAlert,
-  Wrench,
-} from "lucide-react";
+import { AlertTriangle, CircleCheck, Gauge, Hammer, Radio, Timer, TriangleAlert, Wrench } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -121,7 +112,7 @@ export function Wire({
           </span>
           {cost > 0 ? (
             <span className="flex items-center gap-1 tabular-nums">
-              <CircleDollarSign className="h-3 w-3" />{formatCostDisplay(cost)}
+              <Gauge className="h-3 w-3" />{formatCostDisplay(cost)}
             </span>
           ) : null}
         </div>

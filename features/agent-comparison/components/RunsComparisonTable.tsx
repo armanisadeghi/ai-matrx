@@ -647,13 +647,13 @@ const SECTIONS: MetricSection[] = [
       {
         label: "Accumulated text",
         pick: (s) => s.clientAccumulatedBytes,
-        format: formatFileSize,
+        format: (v) => formatFileSize(v),
         direction: "lower",
       },
       {
         label: "Total payload",
         pick: (s) => s.clientTotalPayloadBytes,
-        format: formatFileSize,
+        format: (v) => formatFileSize(v),
         direction: "lower",
       },
     ],

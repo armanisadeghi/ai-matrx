@@ -7,7 +7,7 @@ import {
   Send,
   Zap,
   Wrench,
-  DollarSign,
+  Gauge,
   Hash,
   Clock,
   AlertTriangle,
@@ -202,7 +202,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
             label="Total Cost"
             value={formatCost(kpis.total_cost, unit)}
             subValue={`avg ${formatCost(kpis.avg_cost_per_request, unit)}/req`}
-            icon={DollarSign}
+            icon={Gauge}
             onClick={() =>
               pushAppHref(router, "/administration/chat/cx-dashboard/usage")
             }

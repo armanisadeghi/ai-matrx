@@ -16,7 +16,7 @@
  */
 
 import React, { useCallback, useEffect } from "react";
-import { DollarSign, RefreshCw, Zap } from "lucide-react";
+import { Gauge, RefreshCw, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -89,7 +89,7 @@ export function MemoryCostCard({
       {/* Header */}
       <div className="flex items-center gap-2">
         <div className="flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/10 text-amber-500">
-          <DollarSign className="w-4 h-4" />
+          <Gauge className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80">

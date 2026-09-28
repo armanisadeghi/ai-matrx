@@ -24,14 +24,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  ChevronDown,
-  ChevronRight,
-  DollarSign,
-  Info,
-  Package,
-} from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, Gauge, Info, Package } from "lucide-react";
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -85,7 +78,7 @@ function Section({
   title,
   children,
 }: {
-  icon: typeof DollarSign;
+  icon: typeof Gauge;
   title: string;
   children: React.ReactNode;
 }) {
@@ -112,7 +105,7 @@ function Folded({
   onOpenChange,
   children,
 }: {
-  icon: typeof DollarSign;
+  icon: typeof Gauge;
   title: string;
   summary: string;
   open: boolean;
@@ -420,7 +413,7 @@ export function SpendDashboard() {
       {data ? (
         <>
           <Folded
-            icon={DollarSign}
+            icon={Gauge}
             title="Every cost source"
             summary={`${data.ledgers.length} sources · ${gaps.length} unmeasured`}
             open={costSourcesExpanded}

@@ -22,14 +22,7 @@
 
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCallback, useEffect, useState } from "react";
-import {
-    BadgeDollarSign,
-    Captions,
-    CircleAlert,
-    Clock,
-    Loader2,
-    TriangleAlert,
-} from "lucide-react";
+import { Gauge, Captions, CircleAlert, Clock, Loader2, TriangleAlert } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -309,7 +302,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                     misleading, and nothing goes unsaid. */}
                                 {paidAllowed && (
                                     <Row
-                                        icon={<BadgeDollarSign className="size-4" aria-hidden />}
+                                        icon={<Gauge className="size-4" aria-hidden />}
                                         label={`Paid — a model watches the ${vocabulary.item.one}`}
                                         value={`${formatCount(estimate.paid_count)} ${estimate.paid_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
                                     />

@@ -23,16 +23,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Check,
-  CircleDollarSign,
-  Clock,
-  OctagonX,
-  Pause,
-  Play,
-  SearchX,
-} from "lucide-react";
+import { ArrowLeft, Check, Gauge, Clock, OctagonX, Pause, Play, SearchX } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -386,7 +377,7 @@ function PromiseStrip({
         </span>
         {cost > 0 ? (
           <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground">
-            <CircleDollarSign className="h-3.5 w-3.5" aria-hidden />
+            <Gauge className="h-3.5 w-3.5" aria-hidden />
             {formatCostDisplay(cost)}
           </span>
         ) : null}

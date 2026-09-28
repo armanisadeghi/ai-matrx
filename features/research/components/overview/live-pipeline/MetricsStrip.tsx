@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  Globe,
-  Download,
-  Brain,
-  Cpu,
-  Zap,
-  Gauge,
-  DollarSign,
-  AlertTriangle
-} from "lucide-react";
+import { Globe, Download, Brain, Cpu, Zap, Gauge, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -114,7 +105,7 @@ export function MetricsStrip({ state, derived, authoritativeCostUsd }: Props) {
         />
       )}
       <MetricChip
-        icon={DollarSign}
+        icon={Gauge}
         iconColor="text-green-500"
         label={isLiveCost ? "spent so far" : "spent"}
         value={cost == null ? "—" : formatCostDisplay(cost)}

@@ -1,22 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Brain,
-  ExternalLink,
-  Globe,
-  DollarSign,
-  Coins,
-  CheckCircle2,
-  XCircle,
-  RefreshCw,
-  Loader2,
-  Hammer,
-  ChevronLeft,
-  ArrowUpRight,
-  AlertCircle,
-  MinusCircle,
-} from "lucide-react";
+import { Brain, ExternalLink, Globe, Gauge, Coins, CheckCircle2, XCircle, RefreshCw, Loader2, Hammer, ChevronLeft, ArrowUpRight, AlertCircle, MinusCircle } from "lucide-react";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +98,7 @@ function StatsBar({
       </div>
       <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-card/40 px-2.5 py-2">
         <div className="h-7 w-7 rounded-lg bg-amber-500/8 flex items-center justify-center shrink-0">
-          <DollarSign className="h-3.5 w-3.5 text-amber-500" />
+          <Gauge className="h-3.5 w-3.5 text-amber-500" />
         </div>
         <div>
           <p className="text-[10px] text-muted-foreground leading-none">Cost</p>

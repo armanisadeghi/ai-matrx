@@ -10,20 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-    ThumbsUp,
-    ThumbsDown,
-    Minus,
-    Copy,
-    Check,
-    Loader2,
-    BookmarkCheck,
-    BookmarkX,
-    Pencil,
-    ChevronDown,
-    DollarSign,
-    FileCode2,
-} from "lucide-react";
+import { ThumbsUp, ThumbsDown, Minus, Copy, Check, Loader2, BookmarkCheck, BookmarkX, Pencil, ChevronDown, Gauge, FileCode2 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
@@ -474,7 +461,7 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
                     )}
                     {costEstimate && (
                         <TabsTrigger value="cost" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0 gap-1">
-                            <DollarSign className="h-3 w-3" />
+                            <Gauge className="h-3 w-3" />
                             Cost
                         </TabsTrigger>
                     )}

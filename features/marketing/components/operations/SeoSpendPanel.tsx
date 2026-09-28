@@ -10,7 +10,7 @@
  */
 
 import { useState } from "react";
-import { AlertTriangle, CircleDollarSign, Copy, Loader2 } from "lucide-react";
+import { AlertTriangle, Gauge, Copy, Loader2 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -209,7 +209,7 @@ export function SeoSpendPanel() {
         </div>
         {paidThisMonth.length === 0 ? (
           <div className="flex items-center gap-2 rounded-md border border-dashed border-border p-4 text-xs text-muted-foreground">
-            <CircleDollarSign className="h-4 w-4" /> No SEO provider spend
+            <Gauge className="h-4 w-4" /> No SEO provider spend
             recorded this month.
           </div>
         ) : (
