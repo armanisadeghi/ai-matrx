@@ -74,7 +74,8 @@ const RULES: { id: string; pattern: RegExp; allowCanonical: boolean }[] = [
 
 /** Rule 5: selection-driven floating UI, by behaviour (all four in one file). */
 const BEHAVIOUR = {
-  readsSelection: /getSelection\(|\.selectionStart\b/,
+  // Reading it — clearing it (`getSelection()?.removeAllRanges()`, a canvas tile entering edit) is not.
+  readsSelection: /getSelection\(\)(?!\??\.removeAllRanges\(\))|\.selectionStart\b/,
   endsGesture: /addEventListener\(\s*["'](mouseup|pointerup|selectionchange|keyup|touchend|select)["']|on(MouseUp|PointerUp|KeyUp|TouchEnd|Select)=/,
   measures: /getBoundingClientRect/,
   positions: /createPortal\(|position:\s*["']?(fixed|absolute)|["' `]fixed["' `]/,
