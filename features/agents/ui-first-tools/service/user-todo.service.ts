@@ -21,6 +21,7 @@ export async function listUserTodos(
     .schema("chat").from("user_todo")
     .select("*")
     .eq("conversation_id", conversationId)
+    .is("deleted_at", null)
     .order("done", { ascending: true })
     .order("created_at", { ascending: true });
   if (error) throw error;
@@ -66,21 +67,29 @@ export async function updateUserTodo(
   return (data as CxUserTodoRow) ?? null;
 }
 
+/** Move one to-do to Trash (soft delete; restorable). */
 export async function removeUserTodo(id: string): Promise<void> {
   await writeOne(
-    db.schema("chat").from("user_todo").delete().eq("id", id).select("id"),
-    { action: "delete", noun: "to-do" },
+    db
+      .schema("chat")
+      .from("user_todo")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "archive", noun: "to-do" },
   );
 }
 
+/** Move every done to-do of a conversation to Trash; returns their ids. */
 export async function clearDoneUserTodos(
   conversationId: string,
 ): Promise<string[]> {
   const { data, error } = await db
     .schema("chat").from("user_todo")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("conversation_id", conversationId)
     .eq("done", true)
+    .is("deleted_at", null)
     .select("id");
   if (error) throw error;
   return (data ?? []).map((r) => r.id as string);

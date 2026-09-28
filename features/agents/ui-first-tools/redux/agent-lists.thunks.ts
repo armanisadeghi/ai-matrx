@@ -114,11 +114,15 @@ export function subscribeAgentLists(
           table: "agent_plan",
           filter: scoped,
           rowId,
-          fingerprint: (row) => JSON.stringify(row.steps ?? row.updated_at ?? null),
+          fingerprint: (row) =>
+            JSON.stringify([row.steps ?? row.updated_at ?? null, row.deleted_at ?? null]),
           onChange: ({ payload, row }) => {
-            if (payload.eventType === "DELETE") {
-              // Plan deleted — re-hydrate (cheaper than tracking which plan id
-              // was the current one for handling supersession).
+            if (
+              payload.eventType === "DELETE" ||
+              (row && (row as { deleted_at?: string | null }).deleted_at)
+            ) {
+              // Plan moved to Trash (or deleted) — re-hydrate (cheaper than
+              // tracking which plan id was the current one for supersession).
               void dispatch(hydrateAgentLists(conversationId));
             } else if (row) {
               dispatch(upsertPlan(row as unknown as CxAgentPlanRow));
@@ -154,13 +158,17 @@ export function subscribeAgentLists(
           table: "user_todo",
           filter: scoped,
           rowId,
-          fingerprint: (row) => JSON.stringify([row.status ?? null, row.title ?? null]),
+          fingerprint: (row) =>
+            JSON.stringify([row.status ?? null, row.title ?? null, row.deleted_at ?? null]),
           onChange: ({ payload, row }) => {
             if (payload.eventType === "DELETE") {
               const old = payload.old as Partial<CxUserTodoRow> | undefined;
               if (old?.id) {
                 dispatch(removeUserTodo({ conversationId, id: old.id }));
               }
+            } else if (row && (row as { deleted_at?: string | null }).deleted_at) {
+              // Moved to Trash — gone from the list; Trash restores it.
+              dispatch(removeUserTodo({ conversationId, id: String(row.id) }));
             } else if (row) {
               dispatch(upsertUserTodo(row as unknown as CxUserTodoRow));
             }

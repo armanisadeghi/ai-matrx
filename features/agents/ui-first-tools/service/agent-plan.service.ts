@@ -30,6 +30,7 @@ export async function getCurrentPlan(
     .schema("chat").from("agent_plan")
     .select("*")
     .eq("conversation_id", conversationId)
+    .is("deleted_at", null)
     .neq("status", "superseded")
     .order("updated_at", { ascending: false })
     .limit(1)
@@ -45,6 +46,7 @@ export async function listPlansForConversation(
     .schema("chat").from("agent_plan")
     .select("*")
     .eq("conversation_id", conversationId)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as CxAgentPlanRow[];
@@ -60,6 +62,7 @@ export async function createPlan(
     .schema("chat").from("agent_plan")
     .update({ status: "superseded" })
     .eq("conversation_id", input.conversation_id)
+    .is("deleted_at", null)
     .neq("status", "superseded");
 
   const { data, error } = await db
@@ -95,10 +98,12 @@ export async function setPlanStatus(
   return data as CxAgentPlanRow;
 }
 
+/** Move every plan of a conversation to Trash (soft delete; restorable). */
 export async function clearPlan(conversationId: string): Promise<void> {
   const { error } = await db
     .schema("chat").from("agent_plan")
-    .delete()
-    .eq("conversation_id", conversationId);
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("conversation_id", conversationId)
+    .is("deleted_at", null);
   if (error) throw error;
 }
