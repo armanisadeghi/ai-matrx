@@ -135,4 +135,27 @@ describe("table row context registry", () => {
     unregister();
     table.remove();
   });
+
+  it("names the row ONCE: a primary section labelled with the header's name is headed 'Row' instead (admin judge 2026-09-27)", () => {
+    const table = document.createElement("table");
+    table.dataset.matrxTableId = "table-instance-once";
+    table.innerHTML =
+      '<tbody><tr data-row-id="r1"><td data-matrx-table-column-id="name" id="n">Basic Editor</td></tr></tbody>';
+    document.body.append(table);
+    const descriptor = createTableRowMenuDescriptor({
+      context: { content: "{}" },
+      extraSections: [
+        { id: "surface-row", label: "Basic Editor", primary: true, items: [{ kind: "item", id: "open", label: "Open editor", onSelect: () => {} }] },
+        { id: "other", label: "Tools", items: [{ kind: "item", id: "x", label: "X", onSelect: () => {} }] },
+      ],
+    });
+    const unregister = registerTableRowContextResolver("table-instance-once", () => descriptor);
+    const resolved = resolveTableRowMenuDescriptor(table.querySelector<HTMLElement>("#n"));
+    expect((resolved?.context as Record<string, unknown>).__heading).toEqual({ label: "Row", text: "Basic Editor" });
+    expect(resolved?.extraSections[0]?.label).toBe("Row");
+    expect(resolved?.extraSections[0]?.items).toHaveLength(1);
+    expect(resolved?.extraSections[1]?.label).toBe("Tools");
+    unregister();
+    table.remove();
+  });
 });

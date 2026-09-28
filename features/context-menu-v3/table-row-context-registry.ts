@@ -138,7 +138,18 @@ export function resolveTableRowMenuDescriptor(target: HTMLElement | null): Table
     ...(shown ? { content: shown } : {}),
     ...(recordName ? { [CONTEXT_MENU_HEADING_KEY]: { label: "Row", text: recordName } } : {}),
   };
-  return shown || recordName ? { ...descriptor, context } : descriptor;
+  // THE ROW IS NAMED ONCE (admin final judge 2026-09-27: "Row: Basic Editor" then a "Basic
+  // Editor" section heading right under it). A primary section labelled with the same name the
+  // header already shows is headed "Row" instead — its rows stay first (an unnamed section
+  // would lose its place; the package never draws a coined or empty heading).
+  const headed = (ownHeading as { text?: unknown } | undefined)?.text ?? recordName;
+  const same = (label: string | undefined) =>
+    typeof headed === "string" && !!label && label.trim().toLowerCase() === headed.trim().toLowerCase();
+  const extraSections = descriptor.extraSections.map((section) =>
+    section.primary && same(section.label) ? { ...section, label: "Row" } : section,
+  );
+  const changedSections = extraSections.some((section, i) => section !== descriptor.extraSections[i]);
+  return shown || recordName || changedSections ? { ...descriptor, context, extraSections } : descriptor;
 }
 
 /** The row's record name: the first data cell (not a tick box, star or button cell) with words. */
