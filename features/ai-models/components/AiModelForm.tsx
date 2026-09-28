@@ -359,16 +359,16 @@ export default function AiModelForm({
                                 className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
                             >
                                 <Trash2 className="h-3.5 w-3.5" />
-                                Delete Model
+                                Move to Trash
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Delete AI Model?</AlertDialogTitle>
+                                <AlertDialogTitle>Move AI Model to Trash?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This will permanently delete <strong>{data.common_name || data.name}</strong>.
-                                    Any prompts or builtins using this model will lose their model reference.
-                                    This action cannot be undone.
+                                    <strong>{data.common_name || data.name}</strong> leaves the model list, and agents
+                                    set to it cannot run on it while it is in Trash. Restore it from Trash to
+                                    bring it back.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -377,7 +377,7 @@ export default function AiModelForm({
                                     onClick={onDelete}
                                     className="bg-destructive hover:bg-destructive/90"
                                 >
-                                    Delete Model
+                                    Move to Trash
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>

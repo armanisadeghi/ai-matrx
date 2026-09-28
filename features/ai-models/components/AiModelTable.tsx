@@ -425,7 +425,7 @@ export function RowActions({
       setPendingDelete(false);
       onDelete(item);
     } catch (err) {
-      toastWriteFailure(err, { action: "delete this model", remedy: "Try again." });
+      toastWriteFailure(err, { action: "move this model to Trash", remedy: "Try again." });
     } finally {
       setDeleting(false);
     }
@@ -492,7 +492,7 @@ export function RowActions({
           variant="ghost"
           size="icon"
           className="h-6 w-6 text-destructive hover:bg-destructive/10 hover:text-destructive max-lg:h-10 max-lg:w-10"
-          title="Delete"
+          title="Move to Trash"
           onClick={(e) => {
             e.stopPropagation();
             setPendingDelete(true);
@@ -506,13 +506,12 @@ export function RowActions({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete &quot;{item.common_name || item.name}&quot;?
+              Move &quot;{item.common_name || item.name}&quot; to Trash?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the model &quot;
-              {item.common_name || item.name}&quot; ({item.name}). Any prompts
-              or builtins using this model will lose their reference. This
-              cannot be undone.
+              The model &quot;{item.common_name || item.name}&quot; ({item.name})
+              leaves the model list, and agents set to it cannot run on it while
+              it is in Trash. Restore it from Trash to bring it back.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -522,7 +521,7 @@ export function RowActions({
               disabled={deleting}
               onClick={() => void handleConfirmDelete()}
             >
-              {deleting ? "Deleting…" : "Delete Model"}
+              {deleting ? "Moving…" : "Move to Trash"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1372,7 +1371,7 @@ function CanonicalModelActions({
       setConfirmDelete(false);
       onDelete(model);
     } catch (err) {
-      toastWriteFailure(err, { action: "delete this model", remedy: "Try again." });
+      toastWriteFailure(err, { action: "move this model to Trash", remedy: "Try again." });
     } finally {
       setDeleting(false);
     }
@@ -1398,24 +1397,24 @@ function CanonicalModelActions({
       <TrashTapButton
         variant="transparent"
         iconColor="text-destructive"
-        ariaLabel="Delete model"
+        ariaLabel="Move model to Trash"
         onClick={() => setConfirmDelete(true)}
       />
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete &quot;{model.common_name || model.name}&quot;?
+              Move &quot;{model.common_name || model.name}&quot; to Trash?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently deletes this model. Prompts or builtins using it
-              will lose their reference. This cannot be undone.
+              This model leaves the model list, and agents set to it cannot run
+              on it while it is in Trash. Restore it from Trash to bring it back.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction disabled={deleting} onClick={() => void handleConfirmDelete()}>
-              {deleting ? "Deleting…" : "Delete Model"}
+              {deleting ? "Moving…" : "Move to Trash"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

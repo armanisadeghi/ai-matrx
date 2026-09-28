@@ -658,6 +658,7 @@ export const aiModelService = {
             .schema("ai")
             .from("model_definition")
             .select("*", { count: "exact" })
+            .is("deleted_at", null)
             .order("common_name", { ascending: true, nullsFirst: false })
             .order("id", { ascending: true })
             .range(from, to),
@@ -1092,6 +1093,7 @@ export const aiModelService = {
           .schema("ai")
           .from("model_definition")
           .select("id,name,common_name,is_deprecated", { count: "exact" })
+          .is("deleted_at", null)
           .order("common_name", { ascending: true, nullsFirst: false })
           .order("id", { ascending: true })
           .range(from, to),
@@ -1229,15 +1231,16 @@ export const aiModelService = {
     return { ...withValidatedCapabilities(row), maker };
   },
 
+  /** Move a model to Trash (soft delete; restorable from Trash). */
   async remove(id: string): Promise<void> {
     await writeOne(
       supabase
         .schema("ai")
         .from("model_definition")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id)
         .select("id"),
-      { action: "delete", noun: "model" },
+      { action: "archive", noun: "model" },
     );
   },
 
