@@ -74,6 +74,14 @@ Running an conductor makes it **call its members as tools** and weave their outp
 - `orchestras/hooks/` — `useOrchestrasList`, `useOrchestra`.
 - `orchestras/run/` — the live-highlight module: `orchestra-run-status.selectors.ts` (sub_agent op aggregation), `useOrchestraMemberRunStatus` (child-conversation → agent_id resolution), `OrchestraRunStatusContext` (node/card distribution), `OrchestraRunPanel` (embedded runner).
 
+## Org chart (nested Orchestras)
+
+A member that is itself an Orchestra is a manager of managers. The builder canvas shows each such
+member's whole team beneath it (read-only, "Team of N" toggle), and **Org chart** (`?view=chart`)
+draws everything under this Conductor as one tree — automatic links (these member edges) plus manual
+links people record. Canonical: [`features/agents/org-chart/FEATURE.md`](../org-chart/FEATURE.md).
+Canvas edges are **solid**: a dashed line means a manual link.
+
 ## Invariants
 
 - **No `orchestra` table, ever.** Membership is association edges. New write → reuse `associationsService`, never a bespoke RPC.
