@@ -257,6 +257,7 @@ export function SingleSendDialog({
                 <SelectValue placeholder="Choose the real case behind this message" />
               </SelectTrigger>
               <SelectContent>
+                {/* read-gate-exempt: "No reputation case" is the choice to attach none, not an empty list (a failed read sets templatesReadFailed and shows the problem) */}
                 <SelectItem value="none">No reputation case</SelectItem>
                 {reputationCases.map((reputationCase) => (
                   <SelectItem key={reputationCase.id} value={reputationCase.id}>

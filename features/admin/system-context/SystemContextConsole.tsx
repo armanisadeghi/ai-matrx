@@ -9,6 +9,10 @@ import { adminPageCapture } from "@/components/agent-copy/page-capture/pageCaptu
 import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  UntrustedCount,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
+import {
   Boxes,
   Clock,
   Database,
@@ -162,11 +166,14 @@ function StatCard({
   label,
   value,
   tone,
+  read,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   tone: string;
+  /** The system-context read behind `value` — a failed read shows "—", never 0. */
+  read: CountRead;
 }) {
   return (
     <Card>
@@ -177,7 +184,7 @@ function StatCard({
             {label}
           </div>
           <div className={`mt-1 text-2xl font-semibold tabular-nums ${tone}`}>
-            {value}
+            <UntrustedCount read={read} label={label} value={value} />
           </div>
         </div>
       </CardContent>
@@ -212,6 +219,10 @@ export function SystemContextConsole() {
       }
       setLoadError(null);
       setData((await response.json()) as SystemContextPayload);
+    } catch (cause) {
+      setLoadError(
+        `Failed to load system context: ${cause instanceof Error ? cause.message : String(cause)}`,
+      );
     } finally {
       setLoading(false);
       setFetching(false);
@@ -394,6 +405,11 @@ export function SystemContextConsole() {
     }),
   );
 
+  const statRead: CountRead = readOf(
+    { loading, error: loadError, data },
+    { what: "system context" },
+  );
+
   return (
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
       <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
@@ -429,24 +445,28 @@ export function SystemContextConsole() {
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
+            read={statRead}
             icon={<Database className="h-4 w-4" />}
             label="Total items"
             value={items.length}
             tone="text-foreground"
           />
           <StatCard
+            read={statRead}
             icon={<Clock className="h-4 w-4" />}
             label="Ambient"
             value={classCounts.ambient}
             tone="text-amber-600 dark:text-amber-400"
           />
           <StatCard
+            read={statRead}
             icon={<Globe className="h-4 w-4" />}
             label="Curated"
             value={classCounts.curated}
             tone="text-sky-600 dark:text-sky-400"
           />
           <StatCard
+            read={statRead}
             icon={<Boxes className="h-4 w-4" />}
             label="Stored values"
             value={stored}

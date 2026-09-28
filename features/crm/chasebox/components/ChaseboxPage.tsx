@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowRight, Inbox, Lightbulb } from "lucide-react";
@@ -64,6 +65,8 @@ export function ChaseboxPage() {
 
   const [scope, setScope] = useState<ListScope>(makeScope("mine"));
   const [counts, setCounts] = useState<ChaseboxCounts | null>(null);
+  // The queue counts are their own read: a failure shows "—" on the tabs, never a forever-skeleton.
+  const [countsError, setCountsError] = useState<string | null>(null);
   const [scopeTotals, setScopeTotals] = useState<EntityScopeCounts>({
     byKind: {},
     narrow: {},
@@ -122,9 +125,13 @@ export function ChaseboxPage() {
           narrow: {},
         });
         setCounts(scope.kind === "orgs" ? orgs : scope.kind === "team" ? team : mine);
+        setCountsError(null);
       })
       .catch((loadError: unknown) => {
         if (cancelled) return;
+        setCountsError(
+          loadError instanceof Error ? loadError.message : "Could not load the queue counts.",
+        );
         setError(
           loadError instanceof Error
             ? loadError.message
@@ -247,10 +254,18 @@ export function ChaseboxPage() {
                   </span>
                 </span>
                 <span className="text-lg font-semibold tabular-nums leading-none">
-                  {count == null ? (
+                  {count == null && !countsError ? (
                     <Skeleton className="mt-1 h-5 w-8 rounded" />
                   ) : (
-                    count
+                    <UntrustedCount
+                      read={{
+                        status: countsError ? "error" : "ready",
+                        error: countsError,
+                        hasData: count != null,
+                      }}
+                      label={queueMeta.label}
+                      value={count ?? 0}
+                    />
                   )}
                 </span>
               </button>

@@ -11,6 +11,7 @@
 // place their name renders.
 
 import { useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   ArrowRight,
   Building2,
@@ -209,6 +210,7 @@ export function CandidatePairCard({
       : (target?.id ?? ""),
   );
   const [busy, setBusy] = useState(false);
+  const [detailsError, setDetailsError] = useState<unknown>(null);
 
   if (!source || !target) return null;
 
@@ -220,24 +222,24 @@ export function CandidatePairCard({
 
   const signals = parseSignals(candidate.signals);
 
+  const loadDetails = async () => {
+    setDetailsError(null);
+    try {
+      const [s, t] = await Promise.all([
+        fetchPartyDetail(source.id),
+        fetchPartyDetail(target.id),
+      ]);
+      setDetails({ source: s, target: t });
+    } catch (e) {
+      // Said in place of the merge summary — never "Loading…" forever.
+      setDetailsError(e);
+    }
+  };
+
   const onToggle = () => {
     const next = !expanded;
     setExpanded(next);
-    if (next && !details.source) {
-      void (async () => {
-        try {
-          const [s, t] = await Promise.all([
-            fetchPartyDetail(source.id),
-            fetchPartyDetail(target.id),
-          ]);
-          setDetails({ source: s, target: t });
-        } catch (e) {
-          toast.error(
-            e instanceof Error ? e.message : "Failed to load record details",
-          );
-        }
-      })();
-    }
+    if (next && !details.source) void loadDetails();
   };
 
   // What moves vs stays — computed from the loaded details so the confirm
@@ -341,7 +343,14 @@ export function CandidatePairCard({
 
           {/* The verdict: what a merge actually does. */}
           <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-            {loserDetail && winnerDetail ? (
+            {detailsError ? (
+              <ReadFailure
+                className="m-0"
+                error={detailsError}
+                what="what this merge would move"
+                onRetry={() => void loadDetails()}
+              />
+            ) : loserDetail && winnerDetail ? (
               <>
                 Merging moves{" "}
                 <span className="text-foreground">

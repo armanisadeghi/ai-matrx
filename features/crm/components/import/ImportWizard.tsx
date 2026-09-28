@@ -657,6 +657,7 @@ export function ImportWizard() {
         {step === "preview" && plan && (
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
+              {/* read-gate-exempt: the import plan is shown only once planning succeeded (a failed dry run stays on the mapping step and toasts its error) */}
               <span className="rounded bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
                 {selectedPreviewCount} selected
               </span>
@@ -679,6 +680,7 @@ export function ImportWizard() {
               )}
               {plan.newCompanyNames.length > 0 && (
                 <span className="text-xs text-muted-foreground">
+                  {/* read-gate-exempt: the import plan is shown only once planning succeeded (a failed dry run stays on the mapping step and toasts its error) */}
                   + creates {plan.newCompanyNames.length} compan
                   {plan.newCompanyNames.length === 1 ? "y" : "ies"}:{" "}
                   {plan.newCompanyNames.slice(0, 4).join(", ")}
@@ -709,6 +711,7 @@ export function ImportWizard() {
                     </>
                   ) : (
                     <>
+                      {/* read-gate-exempt: the import plan is shown only once planning succeeded (a failed dry run stays on the mapping step and toasts its error) */}
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Import {selectedPreviewCount} selected record
                       {selectedPreviewCount === 1 ? "" : "s"}

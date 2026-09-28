@@ -13,6 +13,7 @@
 //   * ONE "…" menu per row carrying every record action
 
 import { useEffect, useRef, useState } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
@@ -557,14 +558,21 @@ export function CrmListPage({
   // Duplicates indicator — a true pending-pair count behind the header door.
   // The assist-strip sweep refreshes it after detection runs.
   const [dupCount, setDupCount] = useState<number | null>(null);
+  // A failed count read shows "—" on the door, never a silently missing badge.
+  const [dupCountFailed, setDupCountFailed] = useState(false);
   useEffect(() => {
     if (!list.ctx || list.ctx.orgIds.length === 0) return;
     let cancelled = false;
     void fetchPendingCandidateCount(list.ctx.orgIds)
       .then((n) => {
-        if (!cancelled) setDupCount(n);
+        if (cancelled) return;
+        setDupCount(n);
+        setDupCountFailed(false);
       })
-      .catch((e) => console.error("[crm] duplicate count failed:", e));
+      .catch((e) => {
+        console.error("[crm] duplicate count failed:", e);
+        if (!cancelled) setDupCountFailed(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -1095,9 +1103,13 @@ export function CrmListPage({
                 <Link href="/crm/duplicates">
                   <Merge className="h-3.5 w-3.5" />
                   <span className="max-sm:sr-only">Duplicates</span>
-                  {dupCount !== null && dupCount > 0 && (
+                  {(dupCountFailed || (dupCount !== null && dupCount > 0)) && (
                     <span className="ml-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary">
-                      {dupCount}
+                      <UntrustedCount
+                        trustworthy={!dupCountFailed}
+                        label="Pending duplicates"
+                        value={dupCount ?? 0}
+                      />
                     </span>
                   )}
                 </Link>

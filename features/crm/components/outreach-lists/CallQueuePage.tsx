@@ -421,6 +421,7 @@ export function CallQueuePage({ listId }: { listId: string }) {
         )}
         {unreadable.length > 0 && (
           <div className="mt-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] text-amber-600 dark:text-amber-400">
+            {/* read-gate-exempt: unreadable names members a successful claim skipped; shown only when non-empty, never a zero */}
             {unreadable.length === 1
               ? "1 member was skipped because you can't open their record"
               : `${unreadable.length} members were skipped because you can't open their records`}

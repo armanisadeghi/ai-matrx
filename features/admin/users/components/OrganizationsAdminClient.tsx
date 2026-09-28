@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
@@ -474,6 +475,9 @@ export function OrganizationsAdminClient() {
     },
   ];
 
+  // Counts come from the directory read: a failed read shows "—", never 0.
+  const directoryRead = readOf({ loading, error, data: directory }, { what: "organizations" });
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       {/* The read's failure is said once, by the table (read=). */}
@@ -489,7 +493,13 @@ export function OrganizationsAdminClient() {
               email={focusedUser?.email}
               hideEmail
             />
-            <Badge variant="secondary">{visibleOrganizations.length}</Badge>
+            <Badge variant="secondary">
+              <UntrustedCount
+                read={directoryRead}
+                label="Organizations"
+                value={visibleOrganizations.length}
+              />
+            </Badge>
           </div>
           <Button size="sm" variant="ghost" onClick={clearUserFocus}>
             <X className="mr-1 h-4 w-4" /> Show all organizations
@@ -505,8 +515,17 @@ export function OrganizationsAdminClient() {
                 <Building2 className="h-4 w-4 text-primary" /> Organizations
               </div>
               <p className="text-xs text-muted-foreground">
-                {visibleOrganizations.length} visible of{" "}
-                {directory?.organizations.length ?? 0}
+                <UntrustedCount
+                  read={directoryRead}
+                  label="Visible organizations"
+                  value={visibleOrganizations.length}
+                />{" "}
+                visible of{" "}
+                <UntrustedCount
+                  read={directoryRead}
+                  label="Organizations"
+                  value={directory?.organizations.length ?? 0}
+                />
               </p>
             </div>
             <Button
@@ -628,7 +647,14 @@ export function OrganizationsAdminClient() {
               )}
               {selectedOrganization ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{members.length} members</span>
+                  <span>
+                    <UntrustedCount
+                      read={directoryRead}
+                      label="Members"
+                      value={members.length}
+                    />{" "}
+                    members
+                  </span>
                 </div>
               ) : null}
             </div>

@@ -8,6 +8,7 @@
 // including them is a visible, deliberate choice.
 
 import { useEffect, useMemo, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
 import { Bookmark, Building2, Contact, Users } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -67,6 +68,8 @@ export function AddMembersDialog({
   // "everyone in this view" is one click instead of rebuilding the filter here.
   const [views, setViews] = useState<SavedView[]>([]);
   const [viewsLoading, setViewsLoading] = useState(true);
+  const [viewsError, setViewsError] = useState<unknown>(null);
+  const [viewsAttempt, setViewsAttempt] = useState(0);
   const [viewId, setViewId] = useState<string | null>(null);
   const selectedView = views.find((v) => v.id === viewId) ?? null;
   const [excludeDnc, setExcludeDnc] = useState(true);
@@ -75,6 +78,8 @@ export function AddMembersDialog({
     dncCount: number;
   } | null>(null);
   const [previewing, setPreviewing] = useState(false);
+  const [previewError, setPreviewError] = useState<unknown>(null);
+  const [previewAttempt, setPreviewAttempt] = useState(0);
   const [adding, setAdding] = useState(false);
 
   const orgName =
@@ -112,13 +117,13 @@ export function AddMembersDialog({
           listKey: "parties",
           parse: parseSavedViewDefinition,
         });
-        if (!cancelled) setViews(rows);
+        if (cancelled) return;
+        setViews(rows);
+        setViewsError(null);
       } catch (e) {
         if (!cancelled) {
           console.error("[crm] saved views load failed:", e);
-          toast.error(
-            e instanceof Error ? e.message : "Could not load smart views",
-          );
+          setViewsError(e);
         }
       } finally {
         if (!cancelled) setViewsLoading(false);
@@ -127,7 +132,7 @@ export function AddMembersDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, ctx]);
+  }, [open, ctx, viewsAttempt]);
 
   useEffect(() => {
     if (!open) return;
@@ -143,11 +148,13 @@ export function AddMembersDialog({
       void (async () => {
         try {
           const p = await fetchFilterPreview(currentQuery, ctx);
-          if (!cancelled) setPreview(p);
+          if (cancelled) return;
+          setPreview(p);
+          setPreviewError(null);
         } catch (e) {
           if (!cancelled) {
             setPreview(null);
-            toast.error(e instanceof Error ? e.message : "Preview failed");
+            setPreviewError(e);
           }
         } finally {
           if (!cancelled) setPreviewing(false);
@@ -158,7 +165,7 @@ export function AddMembersDialog({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [open, query, ctx]);
+  }, [open, query, ctx, previewAttempt]);
 
   const willAdd = preview
     ? excludeDnc
@@ -246,6 +253,13 @@ export function AddMembersDialog({
                 <div className="rounded-md border border-border bg-muted/30 px-2.5 py-2 text-xs text-muted-foreground">
                   Loading your views…
                 </div>
+              ) : viewsError ? (
+                <ReadFailure
+                  className="m-0"
+                  error={viewsError}
+                  what="your smart views"
+                  onRetry={() => setViewsAttempt((n) => n + 1)}
+                />
               ) : views.length === 0 ? (
                 <div className="rounded-md border border-border bg-muted/30 px-2.5 py-2 text-xs text-muted-foreground">
                   No smart views yet. Filter the list on{" "}
@@ -349,6 +363,7 @@ export function AddMembersDialog({
             />
             <span className="text-xs text-foreground">
               Skip do-not-contact records
+              {/* read-gate-exempt: preview is null whenever its read failed (the count box below says the failure) */}
               {preview && preview.dncCount > 0 && (
                 <span className="ml-1 text-muted-foreground">
                   ({preview.dncCount.toLocaleString()} flagged)
@@ -364,6 +379,13 @@ export function AddMembersDialog({
               </span>
             ) : previewing ? (
               <span className="text-muted-foreground">Counting…</span>
+            ) : previewError ? (
+              <ReadFailure
+                className="m-0"
+                error={previewError}
+                what="who this enrolls"
+                onRetry={() => setPreviewAttempt((n) => n + 1)}
+              />
             ) : preview ? (
               <span className="text-foreground">
                 <span className="font-semibold tabular-nums">

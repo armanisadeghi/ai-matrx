@@ -8,6 +8,8 @@
 //    one canonical row per module, with the full value in the detail panel.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppLink from "@/components/navigation/AppLink";
 import {
@@ -155,6 +157,8 @@ function DriftDashboard() {
     ];
   }, []);
 
+  const driftRead = readOf({ loading, error, data: report }, { what: "the drift report" });
+
   return (
     <div className="h-full overflow-y-auto p-6 space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -211,7 +215,11 @@ function DriftDashboard() {
             Total preference rows
           </div>
           <div className="mt-1 text-2xl font-semibold text-foreground">
-            {report ? report.total : "—"}
+            <UntrustedCount
+              read={driftRead}
+              label="Total preference rows"
+              value={report?.total ?? 0}
+            />
           </div>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
@@ -222,7 +230,11 @@ function DriftDashboard() {
               (clean ? "text-foreground" : "text-amber-500")
             }
           >
-            {report ? report.drifted : "—"}
+            <UntrustedCount
+              read={driftRead}
+              label="Drifted rows"
+              value={report?.drifted ?? 0}
+            />
           </div>
         </div>
         <div className="col-span-2 flex items-center gap-2 rounded-lg border border-border bg-card p-4 sm:col-span-1">
@@ -240,7 +252,7 @@ function DriftDashboard() {
                 Drift present
               </span>
             </>
-          ) : (
+          ) : error ? null : (
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           )}
         </div>
@@ -292,6 +304,9 @@ function DriftDashboard() {
           detail={{ enabled: false }}
           pageSize={50}
           emptyState={{ title: "No drifted preference rows" }}
+          // The report exists only after a read succeeded; a failed refresh is
+          // said once, by the error strip above.
+          read={readOf({ loading }, { what: "drifted preference rows" })}
           toolbar={{
             search: true,
             searchPlaceholder: "Search user, organization, or field…",

@@ -281,6 +281,7 @@ export function CrmFoldControl({
           )}
           {(report.skipped ?? []).length > 0 && (
             <div>
+              {/* read-gate-exempt: report is the answer of a fold run that succeeded (a failed run toasts its error), not a read */}
               <p className="font-medium text-foreground">
                 Left out on purpose ({(report.skipped ?? []).length})
               </p>

@@ -590,6 +590,7 @@ export function ChaseboxDraftDialog({
                     aria-hidden
                   />
                   Written as the next message in a real conversation
+                  {/* read-gate-exempt: reply is set only from a draft that loaded; a failed load shows loadError instead */}
                   {reply.threadMessageCount != null && (
                     <span className="text-muted-foreground">
                       · {reply.threadMessageCount} message
@@ -691,6 +692,7 @@ export function ChaseboxDraftDialog({
             approved none, so each one names itself and its fix. */}
         {batchOutcomes.length > 0 && (
           <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+            {/* read-gate-exempt: batchOutcomes are the refusals an approve-the-rest action returned, not a read */}
             <p className="font-medium">
               {batchOutcomes.length} message
               {batchOutcomes.length === 1 ? "" : "s"} still need you

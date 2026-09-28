@@ -809,7 +809,7 @@ export function UserAcquisitionTableClient() {
                 <ErrorAlchemyMenu error={journeyError} />
               </div>
             ) : null}
-            {journey ? (
+            {journey && !journeyError ? (
               <div className="space-y-5">
                 {journey.source_warnings.length ? (
                   <div className="space-y-2">

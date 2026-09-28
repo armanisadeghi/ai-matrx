@@ -28,6 +28,7 @@ import { AlertTriangle, ChevronDown, ChevronRight, Gauge, Info, Package } from "
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { readOf } from "@/components/read-state/ReadGate";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { SpendExplorer } from "./SpendExplorer";
@@ -432,6 +433,7 @@ export function SpendDashboard() {
                         {gap.label}
                       </span>
                       <span className="shrink-0 text-[11px] text-destructive">
+                        {/* read-gate-exempt: "no ledger" labels a cost source that has no table, not an empty read */}
                         {gap.tableRef ? staleness(gap.lastWrite) : "no ledger"}
                       </span>
                     </div>
@@ -445,6 +447,9 @@ export function SpendDashboard() {
                 getRowId={(r) => r.ledgerKey}
                 pageSize={25}
                 emptyState={{ title: "No cost sources registered." }}
+                // `data` exists only after the overview read succeeded; a failed
+                // refresh is said once, by the page's overview strip above.
+                read={readOf({ loading }, { what: "cost sources" })}
                 toolbar={{
                   title: "Cost sources",
                   search: true,

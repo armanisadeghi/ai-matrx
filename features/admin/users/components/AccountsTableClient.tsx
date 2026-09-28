@@ -557,6 +557,7 @@ export function AccountsTableClient() {
         >
           <div className="flex min-w-0 items-center gap-2 text-sm">
             <UserRound className="h-4 w-4 shrink-0 text-primary" />
+            {/* read-gate-exempt: focusMissed is true only after the accounts read succeeded (!loading && !error) */}
             {focusMissed ? (
               <span className="min-w-0">
                 No account with id{" "}
