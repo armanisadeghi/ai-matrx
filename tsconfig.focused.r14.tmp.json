@@ -1,1 +1,0 @@
-{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts","features/context-menu-v3/alchemy-provider.ts","features/context-menu-v3/__tests__/alchemy-provider.test.ts"]}
