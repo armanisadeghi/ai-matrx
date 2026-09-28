@@ -59,9 +59,13 @@ describe(".env.clone.local generation", () => {
     expect(env.validateCloneEnv(parsed, CLONE)).toEqual([]);
   });
 
-  it("covers every backend URL variable the app resolves a server from", () => {
-    const endpoints = readFileSync(resolve(__dirname, "../../lib/api/endpoints.ts"), "utf8");
-    const read = new Set(endpoints.match(/NEXT_PUBLIC_BACKEND_URL_[A-Z0-9_]+/g));
+  it("covers every Python-server URL variable the app resolves a server from", () => {
+    const read = new Set<string>();
+    for (const file of ["lib/api/endpoints.ts", "lib/api/service-routing.ts"]) {
+      const text = readFileSync(resolve(__dirname, "../..", file), "utf8");
+      for (const name of text.match(/NEXT_PUBLIC_[A-Z0-9_]*_URL(?:_[A-Z0-9]+)?/g) ?? []) read.add(name);
+    }
+    expect(read.size).toBeGreaterThan(8);
     for (const name of read) expect(env.BACKEND_URL_VARS).toContain(name);
   });
 

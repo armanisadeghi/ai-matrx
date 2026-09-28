@@ -53,8 +53,10 @@ database. So `pnpm preview:start --clone`:
 1. regenerates the gitignored `.env.clone.local` whenever CLONE-REF's `clone_ref`
    changes (the clone rotates nightly; no ref is hardcoded) — the clone's
    Supabase URL + publishable + secret key from the Management API, and EVERY
-   backend URL the app can select (prod/dev/staging/local/gpu/ec2) set to
-   `http://localhost:8200`;
+   Python-server URL the app can select — aidream's tiers
+   (prod/dev/staging/local/gpu/ec2) AND the separately hosted files, scraper and
+   seo services, which are wired to live — set to `http://localhost:8200` (the
+   clone-wired aidream serves the same `/files`, `/scraper`, `/seo` routes);
 2. asks `http://localhost:8200/health/database-identity` which project its
    database pool AND its auth issuer belong to, and REFUSES — starting nothing —
    unless both are the clone. The refusal prints the exact command:

@@ -81,7 +81,7 @@ list_any_dev_servers() {
         pgid=$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ')
         if printf '%s\n' "$dev_pgids" | grep -qx "$pgid"; then
           # Label it so the deny message can tell the agent whose server it is.
-          echo "$pgid $pid $port $(ps -Ao pgid=,command= 2>/dev/null | awk -v g="$pgid" '$1==g' | label_for_argv)"
+          echo "$pgid $pid $port $(label_for_group "$pgid")"
         fi
       done |
     sort -k1,1n -k3,3n |
@@ -100,6 +100,20 @@ label_for_argv() {
     echo agent-preview
   else
     echo human-or-other
+  fi
+}
+
+# A freshly started server has no workers yet, so its argv carries no dist dir. The launcher's
+# lease names its root pid (= the process group), so trust the lease first, argv second.
+PREVIEW_STATE_DIR="${MATRX_PREVIEW_STATE_DIR:-${TMPDIR:-/tmp}/matrx-frontend-preview-${UID:-$(id -u)}}"
+label_for_group() {
+  local pgid="$1"
+  if [ "$(sed -n 's/^PID=//p' "$PREVIEW_STATE_DIR/shared-next-dev-clone.meta" 2>/dev/null | head -1)" = "$pgid" ]; then
+    echo agent-preview-clone
+  elif [ "$(sed -n 's/^PID=//p' "$PREVIEW_STATE_DIR/shared-next-dev.meta" 2>/dev/null | head -1)" = "$pgid" ]; then
+    echo agent-preview
+  else
+    ps -Ao pgid=,command= 2>/dev/null | awk -v g="$pgid" '$1==g' | label_for_argv
   fi
 }
 

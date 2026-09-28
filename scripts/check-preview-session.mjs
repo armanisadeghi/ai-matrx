@@ -204,7 +204,7 @@ await check("a managed preview from THIS checkout is reused without a new PID", 
     encoding: "utf8",
     env: { ...process.env, MATRX_PREVIEW_SESSION: "mysess" },
   });
-  assert.match(out, /reusing the managed preview \(pid 4242, port 3001\)/);
+  assert.match(out, /reusing the managed live preview \(pid 4242, port 3001\)/);
   assert.match(out, /http:\/\/mysess\.localhost:3001/);
 });
 

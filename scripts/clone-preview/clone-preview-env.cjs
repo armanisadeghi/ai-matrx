@@ -36,14 +36,28 @@ const AIDREAM_STATUS = `cd ${AIDREAM_DIR} && scripts/clone/clone_server.sh statu
 const PRODUCTION_DB_HOST = "db.matrxserver.com";
 const REF_RE = /^[a-z0-9]{20}$/;
 
-/** Every backend-URL variable the app can resolve a server from (lib/api/endpoints.ts). */
+/**
+ * Every Python-server URL variable the app can resolve a server from: aidream's tiers
+ * (lib/api/endpoints.ts) AND the independently hosted files / scraper / seo services
+ * (lib/api/service-routing.ts). Those services are hosted against LIVE, so they point at the
+ * clone-wired aidream too, which serves the same /files, /scraper and /seo routes. Missing
+ * one of these is exactly how a clone page would write through a live server
+ * (found 2026-09-27: uploads went to files.matrxserver.com).
+ */
 const BACKEND_URL_VARS = Object.freeze([
+  "NEXT_PUBLIC_BACKEND_URL",
   "NEXT_PUBLIC_BACKEND_URL_PROD",
   "NEXT_PUBLIC_BACKEND_URL_DEV",
   "NEXT_PUBLIC_BACKEND_URL_STAGING",
   "NEXT_PUBLIC_BACKEND_URL_LOCAL",
   "NEXT_PUBLIC_BACKEND_URL_GPU",
   "NEXT_PUBLIC_BACKEND_URL_EC2",
+  "NEXT_PUBLIC_FILES_URL",
+  "NEXT_PUBLIC_FILES_URL_LOCAL",
+  "NEXT_PUBLIC_SCRAPER_URL",
+  "NEXT_PUBLIC_SCRAPER_URL_LOCAL",
+  "NEXT_PUBLIC_SEO_URL",
+  "NEXT_PUBLIC_SEO_URL_LOCAL",
 ]);
 
 function cloneRefPath(env = process.env) {
