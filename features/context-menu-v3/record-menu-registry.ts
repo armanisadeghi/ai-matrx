@@ -23,6 +23,12 @@ export const RECORD_MENU_ATTR = "data-record-menu";
 export interface RecordMenuRows {
   entity?: ContextMenuEntityRef | null;
   extraSections: ContextMenuExtraSection[];
+  /**
+   * The record's own name for the menu header ("Note · Clinic intake
+   * checklist") — used when the clicked content names nothing itself, so the
+   * header names the record instead of quoting its body. A selection still wins.
+   */
+  heading?: { label: string; text: string } | null;
 }
 
 const registry = new Map<string, () => RecordMenuRows>();

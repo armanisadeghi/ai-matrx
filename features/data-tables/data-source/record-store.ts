@@ -1313,7 +1313,13 @@ const KIND_FOR_TYPE: Partial<Record<string, string>> = {
   integer: "number",
   boolean: "checkbox",
   datetime: "datetime",
+  // A DAY IS A DATE-AND-TIME COLUMN SHOWN AS A DATE (DATA-V2-BASICS-2 T2): the store has no "date"
+  // kind, and the Sheet's "Date" choice refused every time — a dead option in the Stores list.
+  date: "datetime",
 };
+
+/** The storage types a record-store column can be changed into — the Sheet's Stores list offers only these. */
+export const RECORD_STORE_COLUMN_TYPES: readonly string[] = Object.keys(KIND_FOR_TYPE);
 
 export async function changeFieldType(
   home: RecordStoreHome,
@@ -1322,9 +1328,7 @@ export async function changeFieldType(
   const kind = KIND_FOR_TYPE[args.newType];
   if (!kind) {
     return plainFailure(
-      args.newType === "date"
-        ? "The record store keeps a day as a date-and-time column; choose Date & time. Nothing was changed."
-        : `The record store has no "${args.newType}" kind of column to change this one into. Nothing was changed.`,
+      `The record store has no "${args.newType}" kind of column to change this one into. Nothing was changed.`,
     );
   }
   // FLD-4 / T12: the store converts what converts and keeps what does not in
@@ -1338,7 +1342,11 @@ export async function changeFieldType(
   if (kind === "datetime" || args.newType === "integer") {
     const shaped = await clientFor(home).fieldUpdate({
       field_id: args.fieldId,
-      patch: (kind === "datetime" ? { type: "datetime" } : { display_format: { id: "integer" } }) as never,
+      patch: (args.newType === "date"
+        ? { type: "datetime", display_format: { id: "date" } }
+        : kind === "datetime"
+          ? { type: "datetime" }
+          : { display_format: { id: "integer" } }) as never,
     });
     if (!shaped.ok) {
       invalidateRecordStoreTable(args.tableId);

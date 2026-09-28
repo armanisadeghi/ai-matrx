@@ -58,6 +58,13 @@ export interface NotesEditorExtraSectionsConfig {
   /** Super-admin only — hard delete (bypasses soft-delete). Omitted otherwise. */
   isSuperAdmin?: boolean;
   onPermanentDelete?: () => void;
+  /**
+   * The note's tab already contributes THE note actions (noteActionSet.ts —
+   * Duplicate, Move, Export, Move to Trash…) to this same menu. Then this
+   * section carries only the editor's own rows, under "Editor", so no action
+   * appears twice under two names.
+   */
+  noteActionsFromTab?: boolean;
 }
 
 export function createNotesEditorExtraSections(
@@ -83,6 +90,7 @@ export function createNotesEditorExtraSections(
     onDelete,
     isSuperAdmin,
     onPermanentDelete,
+    noteActionsFromTab = false,
   } = config;
 
   // Move-to-Folder submenu: one item per folder (current disabled) + the full
@@ -224,13 +232,18 @@ export function createNotesEditorExtraSections(
     });
   }
 
+  const shared = new Set(["duplicate", "export", "move", "tabs", "delete-sep", "delete"]);
+  const own = noteActionsFromTab
+    ? items.filter((item) => !shared.has(item.id))
+    : items;
+
   return [
     {
       id: "notes-ops",
-      label: "Note",
+      label: noteActionsFromTab ? "Editor" : "Note",
       icon: StickyNote,
       anchor: "after-compare",
-      items,
+      items: own,
     },
   ];
 }

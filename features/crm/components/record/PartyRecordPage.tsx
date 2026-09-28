@@ -90,6 +90,9 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   partyId: string;
+  /** The record's name + kind read on the server, so the header title is in
+   *  the first HTML; the live record replaces it once loaded. */
+  initialHeading?: { name: string; kind: string | null } | null;
 }
 
 function RecordSkeleton() {
@@ -108,7 +111,7 @@ function RecordSkeleton() {
   );
 }
 
-export function PartyRecordPage({ partyId }: Props) {
+export function PartyRecordPage({ partyId, initialHeading }: Props) {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { detail, isLoading, error, refresh } = usePartyDetail(partyId);
@@ -144,6 +147,10 @@ export function PartyRecordPage({ partyId }: Props) {
 
   const party = detail?.party ?? null;
   const isPerson = party?.party_kind === "person";
+  const headingName = party?.display_name ?? initialHeading?.name ?? null;
+  const headingIsPerson = party
+    ? isPerson
+    : initialHeading?.kind === "person";
 
   // HONEST EMAIL ACTION. A record with a usable address offers "Send email";
   // one whose addresses are all blocked says so; one with no address at all

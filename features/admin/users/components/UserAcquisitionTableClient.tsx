@@ -1,5 +1,6 @@
 "use client";
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -80,12 +81,6 @@ function fmtDate(value: string | null): string {
   return value ? new Date(value).toLocaleString() : "—";
 }
 
-function fmtCost(value: number): string {
-  return `$${value.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
 
 function stateBadge(state: AcquisitionIdentityState) {
   const colors: Record<AcquisitionIdentityState, string> = {
@@ -108,6 +103,7 @@ function campaign(row: AdminUserAcquisitionRow): string {
 }
 
 export function UserAcquisitionTableClient() {
+  const { format: fmtCost } = useCostDisplay();
   const router = useRouter();
   const searchParams = useSearchParams();
   const focusUser = searchParams.get("user");

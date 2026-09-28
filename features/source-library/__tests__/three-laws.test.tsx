@@ -315,7 +315,8 @@ describe("A · nothing is spent before a person has seen what it costs", () => {
         const text = document.body.textContent ?? "";
         expect(text).toContain("7"); // free_count
         expect(text).toContain("3"); // paid_count
-        expect(text).toContain("$2.16"); // paid_cost_estimate
+        expect(text).toContain("43,200 points"); // paid_cost_estimate ($2.16), in points for a member
+        expect(text).not.toContain("$");
         expect(text).toContain(ESTIMATE.cost.basis);
     });
 

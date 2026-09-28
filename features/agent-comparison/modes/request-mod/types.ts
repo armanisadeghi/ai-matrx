@@ -12,6 +12,11 @@
  * batch of distinct cases side-by-side; demoing an agent's range.
  */
 
+import type {
+  OmittedAttachment,
+  RequestDraftSnapshot,
+} from "@/features/agents/redux/execution-system/thunks/request-draft-snapshot";
+
 /**
  * The request a column last sent (or was saved with). The column's composer
  * empties the moment it sends, so the saved battle keeps THIS, never the
@@ -20,6 +25,10 @@
 export interface RequestModColumnRequest {
   user_message: string;
   variables: Record<string, unknown>;
+  /** The complete request (attachments, context, settings, model changes). */
+  request?: RequestDraftSnapshot | null;
+  /** Attachments that could not be saved identically, with the reason. */
+  omitted_attachments?: OmittedAttachment[];
 }
 
 export interface RequestModColumn {

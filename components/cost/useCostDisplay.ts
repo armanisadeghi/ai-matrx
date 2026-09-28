@@ -28,7 +28,8 @@
  * formats a cost in dollars outside this module.
  */
 
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useContext, useSyncExternalStore } from "react";
+import { ReactReduxContext } from "react-redux";
 import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import {
   formatCost,
@@ -65,9 +66,31 @@ export interface CostDisplay {
   toPoints: (usd: number | null | undefined) => number | null;
 }
 
+const noopSubscribe = () => () => {};
+
+/**
+ * Reads the store WITHOUT requiring a Provider: a cost rendered in an embed,
+ * a portal outside the app shell, or a unit test with no store shows points —
+ * the unit every viewer gets — instead of crashing the surface.
+ */
+function useCostState(): { unit: CostUnit; canToggle: boolean } {
+  const ctx = useContext(ReactReduxContext);
+  const store = ctx?.store ?? null;
+  const unit = useSyncExternalStore(
+    store ? store.subscribe : noopSubscribe,
+    () => (store ? selectCostUnit(store.getState() as RootState) : "points"),
+    () => "points" as CostUnit,
+  );
+  const canToggle = useSyncExternalStore(
+    store ? store.subscribe : noopSubscribe,
+    () => (store ? selectCanToggleCostUnit(store.getState() as RootState) : false),
+    () => false,
+  );
+  return { unit, canToggle };
+}
+
 export function useCostDisplay(): CostDisplay {
-  const unit = useAppSelector(selectCostUnit);
-  const canToggle = useAppSelector(selectCanToggleCostUnit);
+  const { unit, canToggle } = useCostState();
   return {
     unit,
     canToggle,

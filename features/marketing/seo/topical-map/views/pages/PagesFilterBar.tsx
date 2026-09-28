@@ -17,7 +17,7 @@
 // regions. So it is present, honest, and unselectable.
 
 import { useEffect, useState } from "react";
-import { Check, ChevronsUpDown, Search, X } from "lucide-react";
+import { Check, Search, X } from "lucide-react";
 
 import {
   Command,
@@ -27,7 +27,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Popover, PopoverContent, PopoverTrigger, SelectChevron } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
@@ -207,7 +207,7 @@ export function PagesFilterBar({
               title="Narrows the whole list on the server, by intent OR coverage."
             >
               {filters.topicSlug ?? "Any topic"}
-              <ChevronsUpDown className="h-3 w-3 text-muted-foreground" aria-hidden />
+              <SelectChevron size="sm" />
             </button>
           </PopoverTrigger>
           <PopoverContent sizing="content" align="start" className="p-0">
@@ -282,7 +282,7 @@ export function PagesFilterBar({
               title="The page list cannot be narrowed by region yet — see inside."
             >
               Region
-              <ChevronsUpDown className="h-3 w-3 text-muted-foreground" aria-hidden />
+              <SelectChevron size="sm" />
             </button>
           </PopoverTrigger>
           <PopoverContent sizing="content" align="start" className="p-2">

@@ -16,7 +16,7 @@
 // cannot be selected.
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, HelpCircle } from "lucide-react";
+import { Check, HelpCircle } from "lucide-react";
 
 import {
   ENTITY_TYPE_METADATA,
@@ -37,6 +37,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 
 /** token → reason shown on the disabled row (e.g. "Already have this rule"). */
@@ -116,7 +117,7 @@ export function EntityTypeCombobox({
               <span className="text-muted-foreground">{placeholder}</span>
             )}
           </span>
-          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+          <SelectChevron size="sm" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

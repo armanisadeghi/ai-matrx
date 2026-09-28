@@ -20,6 +20,7 @@
  * (`features/administration/batch/FEATURE.md`). Do not grow a third cost
  * surface here; send the operator there.
  */
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useEffect, useState } from "react";
 import { formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -85,16 +86,6 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function fmtUsd(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "—";
-  return `$${value.toFixed(4)}`;
-}
-
-function fmtUsdShort(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "—";
-  if (value >= 1) return `$${value.toFixed(2)}`;
-  return `$${value.toFixed(4)}`;
-}
 
 /** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function fmtRelativeTime(iso: string | null | undefined): string {
@@ -226,6 +217,7 @@ function KpiTiles({
   summary: KgCostSummaryResponse | null;
   loading: boolean;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   // Defensive: `ner_coverage_pct` is being added on the Python side; until
   // it lands the tile renders "—" with the explainer copy. Once present,
   // the value flows through cleanly.
@@ -242,13 +234,13 @@ function KpiTiles({
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
       <KpiTile
         label="Spend today (all orgs)"
-        value={summary ? fmtUsdShort(summary.spend_today_usd) : null}
+        value={summary ? fmtUsd(summary.spend_today_usd) : null}
         icon={<Wallet className="h-3.5 w-3.5" />}
         loading={loading}
       />
       <KpiTile
         label="Spend last 7 days"
-        value={summary ? fmtUsdShort(summary.spend_7d_usd) : null}
+        value={summary ? fmtUsd(summary.spend_7d_usd) : null}
         icon={<Receipt className="h-3.5 w-3.5" />}
         loading={loading}
       />
@@ -268,7 +260,7 @@ function KpiTiles({
       <KpiTile
         label="Batch savings (7d)"
         value={
-          summary ? fmtUsdShort(summary.batch_savings_7d_usd ?? 0) : null
+          summary ? fmtUsd(summary.batch_savings_7d_usd ?? 0) : null
         }
         icon={<Receipt className="h-3.5 w-3.5" />}
         loading={loading}
@@ -304,6 +296,7 @@ function OrgLeaderboard({
   onPick: (orgId: string) => void;
   read: ReadOutcome;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   const columns: MatrxColumnDef<OrgCostRow>[] = [
     {
       id: "organization",
@@ -331,7 +324,7 @@ function OrgLeaderboard({
       width: 125,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(row.daily_auto_rag_cost_used_usd)}
+          {fmtUsd(row.daily_auto_rag_cost_used_usd)}
         </span>
       ),
     },
@@ -343,7 +336,7 @@ function OrgLeaderboard({
       width: 115,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(row.daily_auto_rag_budget_usd)}
+          {fmtUsd(row.daily_auto_rag_budget_usd)}
         </span>
       ),
     },
@@ -424,6 +417,7 @@ function PendingBatchesTable({
   onPick: (batchRowId: string) => void;
   read: ReadOutcome;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   const columns: MatrxColumnDef<BatchRow>[] = [
     {
       accessorKey: "custom_id",
@@ -500,7 +494,7 @@ function PendingBatchesTable({
       align: "right",
       width: 110,
       cell: (row) => (
-        <span className="tabular-nums">{fmtUsdShort(row.est_cost_usd)}</span>
+        <span className="tabular-nums">{fmtUsd(row.est_cost_usd)}</span>
       ),
     },
   ];
@@ -661,6 +655,7 @@ function OrgDetailDialog({
   onClose: () => void;
   onDetailChange: (detail: OrgCostDetailResponse | null) => void;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   const [detail, setDetail] = useState<OrgCostDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -723,13 +718,13 @@ function OrgDetailDialog({
                     Used today
                   </div>
                   <div className="text-lg font-semibold tabular-nums">
-                    {fmtUsdShort(detail.used_today_usd)}
+                    {fmtUsd(detail.used_today_usd)}
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-card p-3">
                   <div className="text-xs text-muted-foreground">Budget</div>
                   <div className="text-lg font-semibold tabular-nums">
-                    {fmtUsdShort(detail.budget_usd)}
+                    {fmtUsd(detail.budget_usd)}
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-card p-3">
@@ -907,6 +902,7 @@ function BatchDetailDialog({
   onClose: () => void;
   onDetailChange: (detail: BatchDetailResponse | null) => void;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   const [detail, setDetail] = useState<BatchDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1121,6 +1117,7 @@ function BySourceKindTable({
   loading: boolean;
   read: ReadOutcome;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   const columns: MatrxColumnDef<UnitEconomicsBySourceKindRow>[] = [
     {
       accessorKey: "source_kind",
@@ -1189,7 +1186,7 @@ function BySourceKindTable({
       width: 100,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.p50_cost_usd))}
+          {fmtUsd(num(row.p50_cost_usd))}
         </span>
       ),
     },
@@ -1201,7 +1198,7 @@ function BySourceKindTable({
       width: 100,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.p90_cost_usd))}
+          {fmtUsd(num(row.p90_cost_usd))}
         </span>
       ),
     },
@@ -1213,7 +1210,7 @@ function BySourceKindTable({
       width: 100,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.max_cost_usd))}
+          {fmtUsd(num(row.max_cost_usd))}
         </span>
       ),
     },
@@ -1225,7 +1222,7 @@ function BySourceKindTable({
       width: 125,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.cost_per_1k_chars_usd))}
+          {fmtUsd(num(row.cost_per_1k_chars_usd))}
         </span>
       ),
     },
@@ -1237,7 +1234,7 @@ function BySourceKindTable({
       width: 110,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.embedding_cost_usd))}
+          {fmtUsd(num(row.embedding_cost_usd))}
         </span>
       ),
     },
@@ -1249,7 +1246,7 @@ function BySourceKindTable({
       width: 110,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.extraction_cost_usd))}
+          {fmtUsd(num(row.extraction_cost_usd))}
         </span>
       ),
     },
@@ -1261,7 +1258,7 @@ function BySourceKindTable({
       width: 105,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.cleanup_cost_usd))}
+          {fmtUsd(num(row.cleanup_cost_usd))}
         </span>
       ),
     },
@@ -1273,7 +1270,7 @@ function BySourceKindTable({
       width: 110,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.enrichment_cost_usd))}
+          {fmtUsd(num(row.enrichment_cost_usd))}
         </span>
       ),
     },
@@ -1325,6 +1322,7 @@ function RecentRunsTable({
   loading: boolean;
   read: ReadOutcome;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   const columns: MatrxColumnDef<UnitEconomicsRecentRun>[] = [
     {
       accessorKey: "started_at",
@@ -1457,7 +1455,7 @@ function RecentRunsTable({
       width: 110,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.embedding_cost_usd))}
+          {fmtUsd(num(row.embedding_cost_usd))}
         </span>
       ),
     },
@@ -1469,7 +1467,7 @@ function RecentRunsTable({
       width: 110,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.extraction_cost_usd))}
+          {fmtUsd(num(row.extraction_cost_usd))}
         </span>
       ),
     },
@@ -1481,7 +1479,7 @@ function RecentRunsTable({
       width: 105,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.cleanup_cost_usd))}
+          {fmtUsd(num(row.cleanup_cost_usd))}
         </span>
       ),
     },
@@ -1493,7 +1491,7 @@ function RecentRunsTable({
       width: 110,
       cell: (row) => (
         <span className="tabular-nums">
-          {fmtUsdShort(num(row.enrichment_cost_usd))}
+          {fmtUsd(num(row.enrichment_cost_usd))}
         </span>
       ),
     },
@@ -1505,7 +1503,7 @@ function RecentRunsTable({
       width: 105,
       cell: (row) => (
         <span className="font-medium tabular-nums">
-          {fmtUsdShort(num(row.total_cost_usd))}
+          {fmtUsd(num(row.total_cost_usd))}
         </span>
       ),
     },
@@ -1552,6 +1550,7 @@ function RecentRunsTable({
 const UNIT_ECON_DAY_OPTIONS = [7, 30, 90] as const;
 
 function UnitEconomicsSection({ refreshTick, onRetry }: { refreshTick: number; onRetry: () => void }) {
+  const { format: fmtUsd } = useCostDisplay();
   const [data, setData] = useState<UnitEconomicsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1629,20 +1628,20 @@ function UnitEconomicsSection({ refreshTick, onRetry }: { refreshTick: number; o
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
         <KpiTile
           label={`Window total (${days}d)`}
-          value={data ? fmtUsdShort(num(data.totals.total_cost_usd)) : null}
+          value={data ? fmtUsd(num(data.totals.total_cost_usd)) : null}
           icon={<Wallet className="h-3.5 w-3.5" />}
           loading={loading}
         />
         <KpiTile
           label="Projected monthly"
           value={
-            data ? fmtUsdShort(num(data.totals.projected_monthly_usd)) : null
+            data ? fmtUsd(num(data.totals.projected_monthly_usd)) : null
           }
           icon={<TrendingUp className="h-3.5 w-3.5" />}
           loading={loading}
           hint={
             data
-              ? `10x load: ${fmtUsdShort(num(data.totals.projected_monthly_10x_usd))}`
+              ? `10x load: ${fmtUsd(num(data.totals.projected_monthly_10x_usd))}`
               : undefined
           }
         />

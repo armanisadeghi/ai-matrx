@@ -427,8 +427,15 @@ export function ContextMenuV3({
   // is idempotent and keeps lazy configs fresh.
   const resolvePerTargetContext = (target: HTMLElement | null) => {
     const rowMenu = resolveTableRowMenuDescriptor(target);
+    const answered =
+      rowMenu?.context ?? (resolveContextOnOpen ? resolveContextOnOpen(target) : null);
+    // A record the content belongs to names the header when the target
+    // names nothing itself (record-menu-registry.ts `heading`).
+    const recordHeading = resolveRecordMenu(target)?.heading ?? null;
     setResolvedContext(
-      rowMenu?.context ?? (resolveContextOnOpen ? resolveContextOnOpen(target) : null),
+      recordHeading && !readContextMenuHeading(answered)
+        ? { ...((answered as Record<string, unknown> | null) ?? {}), [CONTEXT_MENU_HEADING_KEY]: recordHeading }
+        : answered,
     );
     const surfaceSections = resolveExtraSectionsOnOpen?.(target);
     const ownSections =

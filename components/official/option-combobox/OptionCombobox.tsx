@@ -14,11 +14,12 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { Check, ChevronDown, ChevronRight } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 import {
   Command,
@@ -146,12 +147,7 @@ export function OptionCombobox({
               <span className="ml-1.5 text-muted-foreground">{hint}</span>
             )}
           </span>
-          <ChevronDown
-            className={cn(
-              "shrink-0 text-muted-foreground",
-              variant === "inline" ? "h-3 w-3" : "h-3.5 w-3.5",
-            )}
-          />
+          <SelectChevron size="sm" className={variant === "inline" ? "h-3 w-3" : undefined} />
         </button>
       </PopoverTrigger>
       <PopoverContent

@@ -10,8 +10,9 @@
 // Surface-A wiring lives in ActiveContextLensChip.
 
 import React from "react";
-import { ChevronsUpDown, Layers } from "lucide-react";
+import { Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SelectChevron } from "@ai-matrx/design-system";
 
 /** Kind ladder shared with the reimagine picker engine. */
 export type LensChipKind =
@@ -132,7 +133,7 @@ export function LensChip({
           </span>
         </>
       )}
-      <ChevronsUpDown className={cn("h-3 w-3 shrink-0 text-muted-foreground", nodes.length === 0 && "max-[480px]:hidden")} />
+      <SelectChevron size="sm" className={cn(nodes.length === 0 && "max-[480px]:hidden")} />
     </button>
   );
 }

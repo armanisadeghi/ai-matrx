@@ -21,7 +21,6 @@ import {
   Building2,
   Check,
   User,
-  ChevronsUpDown,
   LogOut,
   Plus,
   Users,
@@ -30,6 +29,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 import {
   Command,
@@ -216,7 +216,7 @@ function EmployerPicker({
                   : "Employer company"}
             </span>
           </span>
-          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <SelectChevron size="sm" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

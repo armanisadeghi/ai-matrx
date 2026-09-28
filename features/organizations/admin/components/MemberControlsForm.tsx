@@ -13,7 +13,8 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { setMemberControls } from "../service";
 import type { OrgAdminMember } from "../types";
-import { bytesToGb, gbToBytes, usdToMcents } from "../utils";
+import { bytesToGb, gbToBytes, MCENTS_PER_USD, usdToMcents } from "../utils";
+import { pointsToUsd, usdToPoints } from "@ai-matrx/kit/format";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
@@ -26,8 +27,12 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
   const [memberLevel, setMemberLevel] = useState(member.memberLevel ?? "");
   const [tierOverride, setTierOverride] = useState(member.tierOverride ?? "");
   const [storageCapGb, setStorageCapGb] = useState(bytesToGb(member.storageCapBytes));
-  const [budgetUsd, setBudgetUsd] = useState(
-    member.monthlyBudgetMcents == null ? "" : String(member.monthlyBudgetMcents / 100000),
+  // Shown and typed in POINTS (20,000 = $1) like every cost; stored as
+  // millicents (100,000 = $1) exactly as before.
+  const [budgetPoints, setBudgetPoints] = useState(
+    member.monthlyBudgetMcents == null
+      ? ""
+      : String(usdToPoints(member.monthlyBudgetMcents / MCENTS_PER_USD) ?? ""),
   );
   const [notes, setNotes] = useState(member.notes ?? "");
   const [saving, setSaving] = useState(false);
@@ -39,7 +44,11 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
         memberLevel: memberLevel.trim() || null,
         tierOverride: tierOverride.trim() || null,
         storageCapBytes: gbToBytes(storageCapGb),
-        monthlyBudgetMcents: usdToMcents(budgetUsd),
+        monthlyBudgetMcents: usdToMcents(
+          budgetPoints.trim() === ""
+            ? ""
+            : String(pointsToUsd(Number(budgetPoints)) ?? ""),
+        ),
         notes: notes.trim() || null,
       });
       toast.success("Controls saved");
@@ -87,14 +96,14 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="budget">Monthly budget (USD)</Label>
+          <Label htmlFor="budget">Monthly budget (points)</Label>
           <Input
             id="budget"
             type="number"
             min={0}
-            step="1"
-            value={budgetUsd}
-            onChange={(e) => setBudgetUsd(e.target.value)}
+            step="1000"
+            value={budgetPoints}
+            onChange={(e) => setBudgetPoints(e.target.value)}
             placeholder="No limit"
           />
         </div>

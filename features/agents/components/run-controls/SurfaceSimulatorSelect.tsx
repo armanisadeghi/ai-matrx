@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Check, ChevronsUpDown, Monitor, X } from "lucide-react";
+import { Check, Monitor, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Label } from "@/components/ui/label";
 import {
@@ -34,6 +34,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
@@ -142,7 +143,7 @@ export function SurfaceSimulatorSelect({
                 {override ?? `Detected: ${detected ?? "none"}`}
               </span>
             </span>
-            <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50" />
+            <SelectChevron size="sm" />
           </button>
         </PopoverTrigger>
         <PopoverContent

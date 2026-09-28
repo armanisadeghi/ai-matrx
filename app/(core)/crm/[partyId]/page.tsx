@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { Contact } from "lucide-react";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createClient } from "@/utils/supabase/server";
@@ -18,11 +19,41 @@ const GENERIC = {
 } as const;
 
 /**
+ * The record's name and kind, read ONCE per request as the person (RLS) and
+ * shared by the tab title and the header title — so the header's name is in
+ * the first server HTML instead of popping in when the client read lands.
+ * BOUNDED: a slow database must never hold the page's render (and so become a
+ * platform 504) for a title. Past the limit, or on any failure, it is null and
+ * the body resolves the record; it never claims the record is gone — the
+ * body's AccessGate says why.
+ */
+const readPartyHeading = cache(
+  async (
+    partyId: string,
+  ): Promise<{ name: string; kind: string | null } | null> => {
+    if (!UUID_RE.test(partyId)) return null;
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .schema("crm")
+        .from("party")
+        .select("display_name, party_kind")
+        .eq("id", partyId)
+        .abortSignal(AbortSignal.timeout(METADATA_READ_MS))
+        .maybeSingle();
+      return data?.display_name
+        ? { name: data.display_name, kind: data.party_kind ?? null }
+        : null;
+    } catch {
+      return null;
+    }
+  },
+);
+
+/**
  * The tab leads with the record's own name ("Cloud Codes — AI Matrx"), never
  * the module name — ten open records must be told apart in the tab strip.
- * The read runs as the person (RLS); an empty or failed read falls back to a
- * generic title and never claims the record is gone — the body's AccessGate
- * says why.
+ * An empty or failed read falls back to a generic title.
  */
 export async function generateMetadata({
   params,
@@ -30,31 +61,13 @@ export async function generateMetadata({
   params: Promise<{ partyId: string }>;
 }) {
   const { partyId } = await params;
-  if (!UUID_RE.test(partyId)) {
-    return createDynamicRouteMetadata("/crm", GENERIC);
-  }
-  try {
-    const supabase = await createClient();
-    // BOUNDED: a slow database must never hold the page's render (and so
-    // become a platform 504) for a tab title. Past the limit the read is
-    // aborted and the generic title stands; the body resolves the record.
-    const { data } = await supabase
-      .schema("crm")
-      .from("party")
-      .select("display_name, party_kind")
-      .eq("id", partyId)
-      .abortSignal(AbortSignal.timeout(METADATA_READ_MS))
-      .maybeSingle();
-    if (!data?.display_name) return createDynamicRouteMetadata("/crm", GENERIC);
-    return createDynamicRouteMetadata("/crm", {
-      title: data.display_name,
-      description: `${data.party_kind === "person" ? "Person" : "Company"} record in your CRM.`,
-      letter: "CR",
-    });
-  } catch {
-    // Metadata is cosmetic; the page body surfaces any real read failure.
-    return createDynamicRouteMetadata("/crm", GENERIC);
-  }
+  const heading = await readPartyHeading(partyId);
+  if (!heading) return createDynamicRouteMetadata("/crm", GENERIC);
+  return createDynamicRouteMetadata("/crm", {
+    title: heading.name,
+    description: `${heading.kind === "person" ? "Person" : "Company"} record in your CRM.`,
+    letter: "CR",
+  });
 }
 
 /** /crm/[partyId] — one party's 360° record page. */
@@ -76,5 +89,6 @@ export default async function CrmPartyRoute({
     );
   }
 
-  return <PartyRecordPage partyId={partyId} />;
+  const heading = await readPartyHeading(partyId);
+  return <PartyRecordPage partyId={partyId} initialHeading={heading} />;
 }

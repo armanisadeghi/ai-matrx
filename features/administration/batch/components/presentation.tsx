@@ -8,15 +8,10 @@
  * tiles, the filter chips, the tables and the expanded rows — a queue where
  * "dead" reads one way in a chip and another way in a row is a lying screen.
  */
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { Badge } from "@/components/ui/badge";
 import { formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
-
-export function fmtUsd(value: number | null | undefined, digits = 4): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return "—";
-  if (Math.abs(value) >= 1) return `$${value.toFixed(2)}`;
-  return `$${value.toFixed(digits)}`;
-}
 
 export function fmtPct(value: number | null | undefined, digits = 0): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
@@ -173,6 +168,7 @@ export function CostCell({
   estimate: number;
   settled?: boolean;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   if (!settled) {
     return (
       <div className="leading-tight">

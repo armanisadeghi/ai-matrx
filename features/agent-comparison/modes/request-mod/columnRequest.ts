@@ -7,6 +7,7 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
+import { captureRequestDraft } from "@/features/agents/redux/execution-system/thunks/request-draft-snapshot";
 import type { RequestModColumn, RequestModColumnRequest } from "./types";
 
 /** What the column's composer holds right now. */
@@ -14,7 +15,10 @@ export function readLiveColumnRequest(
   state: RootState,
   conversationId: string,
 ): RequestModColumnRequest {
+  const { snapshot, omitted } = captureRequestDraft(state, conversationId);
   return {
+    request: snapshot,
+    omitted_attachments: omitted,
     user_message:
       state.instanceUserInput.byConversationId[conversationId]?.text ?? "",
     variables:
@@ -34,7 +38,10 @@ export function columnRequestToSave(
   col: RequestModColumn,
 ): RequestModColumnRequest {
   const live = readLiveColumnRequest(state, col.conversationId);
-  if (live.user_message.trim() || !col.lastRequest) return live;
+  const hasLive =
+    live.user_message.trim().length > 0 ||
+    (live.request?.resources.length ?? 0) > 0;
+  if (hasLive || !col.lastRequest) return live;
   return col.lastRequest;
 }
 

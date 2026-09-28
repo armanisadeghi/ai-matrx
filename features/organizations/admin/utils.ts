@@ -26,7 +26,7 @@ export function formatRelativeTime(iso: string | null | undefined): string {
 // (The display: a size at or above 10 in its unit reads `50 KB`, not `50.0 KB`.)
 
 /** Milli-cents in the DB → the fleet's one USD string. 3996 mcents = $0.04. */
-const MCENTS_PER_USD = 100_000;
+export const MCENTS_PER_USD = 100_000;
 
 /**
  * THE LOCALE WAS THE TWIN (2026-09-12). This re-implemented `formatUsd` —

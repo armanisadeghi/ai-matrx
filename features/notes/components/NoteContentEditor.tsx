@@ -765,6 +765,7 @@ export function NoteContentEditor({
 
   // Notes-specific menu items wired to the REAL handlers above (no stubs).
   const notesExtras = createNotesEditorExtraSections({
+    noteActionsFromTab: tabCarriesActions,
     isDirty,
     allFolders: availableFolderReferences.map((folder) => folder.name),
     currentFolder,

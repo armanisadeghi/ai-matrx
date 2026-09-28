@@ -6,7 +6,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, ChevronsUpDown, Layers } from "lucide-react";
+import { Check, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -20,6 +20,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import type { FcSetRow } from "@/features/flashcards/data/types";
@@ -117,7 +118,7 @@ export function FastFireSetPicker({
               <span>{placeholder}</span>
             )}
           </span>
-          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          <SelectChevron />
         </Button>
       </PopoverTrigger>
       <PopoverContent

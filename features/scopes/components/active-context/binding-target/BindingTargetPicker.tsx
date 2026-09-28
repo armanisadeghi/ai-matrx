@@ -16,7 +16,6 @@
 import React, { useState } from "react";
 import {
   Building2,
-  ChevronsUpDown,
   FolderKanban,
   Globe,
   ListTodo,
@@ -28,6 +27,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -207,7 +207,7 @@ export function BindingTargetPicker<R extends BindingRung>({
                 )}
               </span>
             </span>
-            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+            <SelectChevron />
           </Button>
         </PopoverTrigger>
         <PopoverContent

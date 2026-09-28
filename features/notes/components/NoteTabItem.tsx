@@ -65,7 +65,7 @@ import { cn } from "@/lib/utils";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
-import { openRecordMenu, registerRecordMenu } from "@/features/context-menu-v3/record-menu-registry";
+import { openRecordMenu, registerRecordMenu, type RecordMenuRows } from "@/features/context-menu-v3/record-menu-registry";
 import { noteActionsSection, openNotePrintStudio } from "./note-actions/noteActionSet";
 import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { MoveNoteDialog } from "./MoveNoteDialog";
@@ -474,13 +474,17 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // ⋯ — like a right-click on the active tab — opens the CONTENT's menu, which
   // now carries them. A tab whose note is not on screen keeps its own menu.
   const recordMenuKey = noteTabRecordMenuKey(instanceId, noteId);
-  const recordRows = useRef({
+  // The menu opened on the note's content is headed with the note's NAME in
+  // every view (not "Content:" plus the body's first words).
+  const recordRows = useRef<RecordMenuRows>({
     entity: { type: "note" as const, id: noteId, title: label, resourceType: "note" as const },
     extraSections: tabExtraSections,
+    heading: { label: "Note", text: label || "Untitled note" },
   });
   recordRows.current = {
     entity: { type: "note" as const, id: noteId, title: label, resourceType: "note" as const },
     extraSections: tabExtraSections,
+    heading: { label: "Note", text: label || "Untitled note" },
   };
   useEffect(
     () => registerRecordMenu(recordMenuKey, () => recordRows.current),

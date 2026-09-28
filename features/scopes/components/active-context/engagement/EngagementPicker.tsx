@@ -14,7 +14,7 @@
 // Surface-A active context, a form draft, `useEntityScopes().setScopes`).
 
 import React, { useState } from "react";
-import { Building2, ChevronsUpDown, FolderKanban, ListTodo, Tags } from "lucide-react";
+import { Building2, FolderKanban, ListTodo, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,7 @@ import {
 } from "../quick-pick/engine";
 import { MillerColumnsCore } from "../miller-columns/MillerColumns";
 import { MillerColumnsPopover } from "../miller-columns/MillerColumnsPopover";
+import { SelectChevron } from "@ai-matrx/design-system";
 
 export interface EngagementPickerProps {
   value: EngagementSelection;
@@ -264,7 +265,7 @@ export function EngagementPicker({
                 {tagCount}
               </span>
             )}
-            <ChevronsUpDown className="h-3 w-3 opacity-50" />
+            <SelectChevron size="sm" />
           </span>
         </Button>
       }

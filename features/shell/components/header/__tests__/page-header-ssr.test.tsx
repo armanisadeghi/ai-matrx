@@ -48,6 +48,8 @@ class RO {
 const PageHeader = (require("../PageHeader") as typeof import("../PageHeader")).default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const RouteHeader = (require("../RouteHeader") as typeof import("../RouteHeader")).default;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const PageHeaderRightPortal = (require("../PageHeaderRightPortal") as typeof import("../PageHeaderRightPortal")).default;
 
 let mounts = 0;
 function Probe({ label }: { label: string }) {
@@ -74,7 +76,10 @@ function header(label = "Flashcard Studio") {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <div className="shell-header-center" id="shell-header-center" />
+      <header>
+        <div className="shell-header-center" id="shell-header-center" />
+        <div className="shell-header-right-inject" id="shell-header-right" />
+      </header>
       <main>{children}</main>
     </>
   );
@@ -87,7 +92,7 @@ const realRect = HTMLElement.prototype.getBoundingClientRect;
 
 beforeAll(() => {
   HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
-    if (this.id !== "shell-header-center") return realRect.call(this);
+    if (this.id !== "shell-header-center" && this.id !== "shell-header-right") return realRect.call(this);
     return { left: 120, top: 22, width: 640, height: 0, right: 760, bottom: 22, x: 120, y: 22, toJSON() {} } as DOMRect;
   };
 });
@@ -176,6 +181,32 @@ describe("PageHeader is server-rendered", () => {
     act(() => root!.unmount());
     root = null;
     expect(app.childElementCount).toBe(0);
+  });
+
+  it("server-renders the right slot, reserves its width before hydration, and moves it in", async () => {
+    const tree = (
+      <Shell>
+        <PageHeaderRightPortal>
+          <button type="button" aria-label="Incognito" data-right-probe />
+        </PageHeaderRightPortal>
+        {header()}
+      </Shell>
+    );
+    const html = renderToString(tree);
+    expect(html).toContain('aria-label="Incognito"');
+    parseLikeABrowser(html);
+    expect(document.head.querySelector('style[data-page-header-reserve="shell-header-right"]')).not.toBeNull();
+    expect(document.querySelectorAll("matrx-header-ghost")).toHaveLength(2);
+    const serverNode = app.querySelector("[data-right-probe]");
+
+    const errors: unknown[] = [];
+    await act(async () => {
+      root = hydrateRoot(app, tree, { onRecoverableError: (e) => errors.push(e) });
+    });
+    expect(errors).toEqual([]);
+    expect(document.getElementById("shell-header-right")!.contains(serverNode)).toBe(true);
+    expect(document.querySelector("matrx-header-ghost")).toBeNull();
+    expect(document.head.querySelector("style[data-page-header-reserve]")).toBeNull();
   });
 
   it("portals a client-only mount (client navigation) into the slot", () => {

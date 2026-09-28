@@ -1557,7 +1557,9 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
    measure real widths). A body-level ghost clone shows it until hydration moves
    the real node into the slot in the same frame. The ghost mirrors
    `.shell-header-center`: a zero-height line on the slot's vertical center with
-   its content centered on it, exactly as the empty slot lays it out. */
+   its content centered on it, exactly as the empty slot lays it out. A right-
+   slot ghost also reserves its width in the header row (a <style> the script
+   adds to <head>), so the center slot is laid out at its final width. */
 .page-header-ssr,
 .page-header-ghost {
   position: fixed;
@@ -1582,6 +1584,13 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
 /* On a phone, RouteHeader moves its actions and section nav into the shell's
    ⋮ sheet once the client knows it is a phone. The server cannot know, so the
    ghost (and the node, until its client snapshots land) draws the phone row. */
+/* A right-slot node is on a phone only for the frame before the client moves
+   it into the ⋮ sheet; never draw it there. */
+@media (max-width: 767px) {
+  #shell-header-right > [data-page-header-settling] {
+    display: none;
+  }
+}
 @media (max-width: 767px) {
   .page-header-ghost [data-route-header-right] > [data-route-header-action],
   .page-header-ghost [data-route-header-right] > [data-route-header-overflow],

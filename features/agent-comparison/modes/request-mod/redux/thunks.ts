@@ -57,6 +57,11 @@ import {
 } from "./slice";
 import type { RequestModColumn, RequestModColumnRequest } from "../types";
 import { columnRequestToSave, readLiveColumnRequest } from "../columnRequest";
+import {
+  applyRequestDraft,
+  isRequestDraftSnapshot,
+  type OmittedAttachment,
+} from "@/features/agents/redux/execution-system/thunks/request-draft-snapshot";
 
 // =============================================================================
 // Page-wide constants
@@ -371,6 +376,9 @@ interface PersistedRequestModEntryMeta {
   user_message: string;
   variables: Record<string, unknown>;
   resolved_variables?: Record<string, unknown>;
+  /** The complete request (absent on battles saved before it). */
+  request?: unknown;
+  omitted_attachments?: OmittedAttachment[];
 }
 
 function buildRequestModEntries(state: RootState): UpsertEntryInput[] {
@@ -386,6 +394,8 @@ function buildRequestModEntries(state: RootState): UpsertEntryInput[] {
       variables: request.variables,
       // What the column's run uses, defaults included — a record, not reloaded.
       resolved_variables: selectResolvedVariables(col.conversationId)(state),
+      request: request.request ?? null,
+      omitted_attachments: request.omitted_attachments ?? [],
     };
     out.push({
       conversationId: col.conversationId,
@@ -535,12 +545,18 @@ export const loadRequestModBattleSet = createAsyncThunk<
       const entryMeta = (entry.metadata ?? {}) as
         | Partial<PersistedRequestModEntryMeta>
         | undefined;
+      const savedSnapshot = isRequestDraftSnapshot(entryMeta?.request)
+        ? entryMeta.request
+        : null;
       const savedRequest: RequestModColumnRequest | null =
+        savedSnapshot ||
         entryMeta?.user_message ||
         (entryMeta?.variables && Object.keys(entryMeta.variables).length > 0)
           ? {
               user_message: entryMeta?.user_message ?? "",
               variables: entryMeta?.variables ?? {},
+              request: savedSnapshot,
+              omitted_attachments: entryMeta?.omitted_attachments ?? [],
             }
           : null;
 
@@ -561,7 +577,14 @@ export const loadRequestModBattleSet = createAsyncThunk<
       // Only a column that never ran gets its saved request back as a draft.
       const alreadyRan =
         selectMessageCount(entry.conversation_id)(getState()) > 0;
-      if (savedRequest && !alreadyRan) {
+      if (savedSnapshot && !alreadyRan) {
+        dispatch(
+          applyRequestDraft({
+            snapshot: savedSnapshot,
+            conversationId: entry.conversation_id,
+          }),
+        );
+      } else if (savedRequest && !alreadyRan) {
         if (savedRequest.user_message) {
           dispatch(
             setUserInputText({

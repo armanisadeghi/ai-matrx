@@ -1489,6 +1489,9 @@ export async function revertRowField(args: { tableId: string; rowId: string; fie
 }
 
 /** Bring a removed (retired) column back with its values — record store only (DATA-V2-BASICS-2 F18). */
+/** The storage types a record-store column can be changed into (the Sheet's Stores list). */
+export { RECORD_STORE_COLUMN_TYPES } from "./data-source/record-store";
+
 export async function restoreField(args: { tableId: string; fieldId: string }) {
   const home = recordStoreHomeOf(args.tableId);
   if (!home) return { success: false, error: "A column removed from an older table cannot be brought back from here." } as ServiceErr;

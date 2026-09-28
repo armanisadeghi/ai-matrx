@@ -16,8 +16,8 @@
  */
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, Settings2, User } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Check, Settings2, User } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger, SelectChevron } from "@ai-matrx/design-system";
 import AppLink from "@/components/navigation/AppLink";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { cn } from "@/lib/utils";
@@ -102,7 +102,7 @@ function CanvasOrgDropUp({ onOpenChange }: { onOpenChange?: (open: boolean) => v
           )}
         >
           <span className="min-w-0 truncate">{activeOrgName ?? "No organization"}</span>
-          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <SelectChevron size="sm" />
         </button>
       </PopoverTrigger>
       <PopoverContent side="top" align="end" sizing="content" className="p-1.5">

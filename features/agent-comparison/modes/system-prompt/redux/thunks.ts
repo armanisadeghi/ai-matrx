@@ -554,7 +554,13 @@ function buildSystemPromptEntries(state: RootState): UpsertEntryInput[] {
 function buildSetMetadata(state: RootState): Record<string, unknown> {
   const { sourceAgentId, agentVersion, agentVersionId } =
     state.agentComparisonSystemPrompt.locked;
-  const { variables, userMessage, resolvedVariables } = readBattleInputDraft(
+  const {
+    variables,
+    userMessage,
+    resolvedVariables,
+    request,
+    omittedAttachments,
+  } = readBattleInputDraft(
     state,
     state.agentComparisonSystemPrompt.inputConversationId,
   );
@@ -567,6 +573,8 @@ function buildSetMetadata(state: RootState): Record<string, unknown> {
       variables,
       user_message: userMessage,
       resolved_variables: resolvedVariables,
+      request,
+      omitted_attachments: omittedAttachments,
     },
   };
 }
@@ -617,6 +625,8 @@ interface LoadedLockedSpec {
   agent_version_id: string | null;
   variables: Record<string, unknown>;
   user_message: string;
+  /** The complete saved request (absent on battles saved before it). */
+  request?: unknown;
 }
 
 export const loadSystemPromptBattleSet = createAsyncThunk<
@@ -702,6 +712,7 @@ export const loadSystemPromptBattleSet = createAsyncThunk<
         conversationId: inputConversationId,
         userMessage: locked.user_message ?? "",
         variables: locked.variables ?? {},
+        request: locked.request,
       });
       dispatch(setSystemPromptInputConversationId(inputConversationId));
     }

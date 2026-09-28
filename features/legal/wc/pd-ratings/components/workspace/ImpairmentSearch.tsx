@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, Search, Loader2 } from "lucide-react";
+import { Check, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 import { useImpairments } from "../../api/hooks";
 import type { WcImpairmentDefinitionRead } from "../../api/types";
@@ -96,7 +97,7 @@ export function ImpairmentSearch({
               <span>{placeholder}</span>
             )}
           </span>
-          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          <SelectChevron />
         </Button>
       </PopoverTrigger>
       <PopoverContent

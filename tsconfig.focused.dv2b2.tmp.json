@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts","components/user-generated-table-data/ColumnSettingsDialog.tsx","features/data-tables/service.ts","features/data-tables/data-source/record-store.ts"]}

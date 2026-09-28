@@ -17,6 +17,7 @@ import { createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { toast } from "@/lib/toast";
 import {
   createComparisonSet,
   renameComparisonSet,
@@ -118,6 +119,29 @@ export interface BattlePersistenceConfig {
   ) => PayloadAction<{ id: string; name: string } | null>;
 }
 
+/**
+ * Every attachment a save could not keep identically, across the set's shared
+ * request and each column's own request (Request Mod), as "name (reason)".
+ */
+export function omittedAttachmentsIn(
+  metadata: Record<string, unknown>,
+  entries: UpsertEntryInput[],
+): string[] {
+  const lists: unknown[] = [
+    (metadata.locked as { omitted_attachments?: unknown } | undefined)
+      ?.omitted_attachments,
+    ...entries.map((e) => e.metadata?.omitted_attachments),
+  ];
+  const out: string[] = [];
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const item of list as { label?: unknown; reason?: unknown }[]) {
+      out.push(`${String(item.label ?? "An attachment")} (${String(item.reason ?? "not saved")})`);
+    }
+  }
+  return out;
+}
+
 /** Thrown when there is nothing to save; says so instead of writing an empty battle. */
 export const NOTHING_TO_SAVE =
   "There is nothing to compare yet: add at least one configured column first.";
@@ -137,6 +161,8 @@ export function createBattlePersistence(config: BattlePersistenceConfig) {
       const entries = config.buildEntries(state);
       if (entries.length === 0) throw new Error(NOTHING_TO_SAVE);
 
+      const metadata = config.buildMetadata(state);
+      const omitted = omittedAttachmentsIn(metadata, entries);
       const setId = config.selectActiveSetId(state);
       const agentId = config.selectNamingAgentId(state);
       const agentName = agentId
@@ -148,11 +174,17 @@ export function createBattlePersistence(config: BattlePersistenceConfig) {
           ? (config.selectActiveSetName(state) ?? config.modeLabel)
           : autoBattleName(config.modeLabel, agentName),
         userId,
-        metadata: config.buildMetadata(state),
+        metadata,
         entries,
       });
       if (result.created) {
         dispatch(config.setActive({ id: result.id, name: result.name }));
+      }
+      if (omitted.length > 0) {
+        // The battle is saved, but reopening it will not bring these back.
+        toast.warning("Saved without some attachments", {
+          description: `Reopening this battle will not include: ${omitted.join("; ")}.`,
+        });
       }
       return result;
     },

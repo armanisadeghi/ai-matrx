@@ -1,5 +1,6 @@
 "use client";
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -122,10 +123,8 @@ function OfferingPricingReadOnly({
   loading: boolean;
   error: string | null;
 }) {
-  const fmt = (p: number | null | undefined) =>
-    p === null || p === undefined
-      ? "—"
-      : `$${p.toFixed(p < 0.01 ? 4 : p < 1 ? 3 : 2)}`;
+  // A per-million-token price, in the viewer's cost unit.
+  const { format: fmt } = useCostDisplay();
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">

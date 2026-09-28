@@ -62,6 +62,7 @@ import { effectiveRowLabel, isRowLabelField } from "@/features/data-tables/row-l
 import {
   changeFieldType,
   isRecordStoreTable,
+  RECORD_STORE_COLUMN_TYPES,
   getChoiceUsage,
   renameColumn,
   setFieldFormat,
@@ -343,7 +344,12 @@ function ColumnSettingsForm({
               >
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {DATA_TYPES.map((t) => (
+                  {/* ONLY WHAT THIS TABLE CAN BECOME (DATA-V2-BASICS-2 T2): a record-store column cannot
+                      be changed into "Structured data" or "List", and offering them was a Save that
+                      refused every time. The column's own current kind always stays listed. */}
+                  {DATA_TYPES.filter(
+                    (t) => !onTheRecordStore || RECORD_STORE_COLUMN_TYPES.includes(t.value) || t.value === field.data_type,
+                  ).map((t) => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                   ))}
                 </SelectContent>

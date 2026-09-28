@@ -402,22 +402,30 @@ export function UserMessageTemplateManager() {
     );
   };
 
+  // The header is static — it renders in every state, so the title is in the
+  // server HTML instead of arriving with the data.
   if (loading) {
     return (
-      <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <>
+        <MessageTemplatesPageHeader />
+        <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </>
     );
   }
 
   if (loadError && templates.length === 0) {
     return (
-      <ReadFailure
-        error={loadError}
-        what="your message templates"
-        onRetry={() => void loadData()}
-        size="default"
-      />
+      <>
+        <MessageTemplatesPageHeader />
+        <ReadFailure
+          error={loadError}
+          what="your message templates"
+          onRetry={() => void loadData()}
+          size="default"
+        />
+      </>
     );
   }
 

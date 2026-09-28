@@ -19,6 +19,7 @@
  * expand in place). Reads go straight to Supabase under RLS; the tables are
  * `ledger` — the server writes, admins read.
  */
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -45,7 +46,7 @@ import {
   WORK_ITEM_STATUSES,
   HANDLER_STATUSES,
 } from "../service/batchAdminService";
-import { DELIVERY, fmtInt, fmtPct, fmtUsd } from "./presentation";
+import { DELIVERY, fmtInt, fmtPct } from "./presentation";
 import { WorkItemsPanel } from "./WorkItemsPanel";
 import { ProviderBatchesPanel } from "./ProviderBatchesPanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -74,6 +75,7 @@ function UndeliveredBand({
   onShow: () => void;
   loading: boolean;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   if (loading) return <Skeleton className="h-16 w-full rounded-lg" />;
 
   if (count === 0) {
@@ -139,6 +141,7 @@ function SavingsBand({
   window: SavingsWindow;
   onWindowChange: (w: SavingsWindow) => void;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   return (
     <section className="rounded-lg border border-border bg-card">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">

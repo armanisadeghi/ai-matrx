@@ -19,13 +19,12 @@ import { useState } from "react";
 import {
   AlertCircle,
   Check,
-  ChevronsUpDown,
   Loader2,
   Play,
   RefreshCw,
   Square,
 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input, SelectChevron } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -187,7 +186,7 @@ function VoicePicker({
           {hint && (
             <span className="truncate text-xs text-muted-foreground">{hint}</span>
           )}
-          <ChevronsUpDown className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
+          <SelectChevron size="sm" className="ml-auto" />
         </button>
       </PopoverTrigger>
       <PopoverContent

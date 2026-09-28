@@ -8,11 +8,12 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Globe } from "lucide-react";
+import { Check, Globe } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -76,7 +77,7 @@ export function SiteSwitcher({
               {selected ? (selected.name ?? selected.domain) : "Select a site"}
             </span>
           </span>
-          <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <SelectChevron size="sm" />
         </Button>
       </PopoverTrigger>
       <PopoverContent sizing="content" align="start" className="p-1.5">

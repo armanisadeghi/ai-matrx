@@ -12,6 +12,13 @@ import { copyInstanceRequestDraft } from "@/features/agents/redux/execution-syst
 import { setSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
 import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import {
+  applyRequestDraft,
+  captureRequestDraft,
+  isRequestDraftSnapshot,
+  type OmittedAttachment,
+  type RequestDraftSnapshot,
+} from "@/features/agents/redux/execution-system/thunks/request-draft-snapshot";
 
 const BATTLE_SOURCE_FEATURE = "agent-comparison" as const;
 
@@ -71,10 +78,13 @@ export async function replaceBattleInputDraft({
 }
 
 /**
- * The shared request as the person left it. `variables` are the values they
- * set (what a reload puts back); `resolvedVariables` are the values the run
- * actually used — their values over scope values over the agent's defaults —
- * so a saved battle records what ran even when every value was a default.
+ * The shared request as the person left it. `request` is the complete request
+ * (attachments, context, run settings and model changes included) that a
+ * reopened battle restores identically; `omittedAttachments` names anything
+ * that could not be saved that way. `userMessage` and `variables` stay as the
+ * readable summary; `resolvedVariables` are the values the run actually used —
+ * their values over scope values over the agent's defaults — so a saved battle
+ * records what ran even when every value was a default.
  */
 export function readBattleInputDraft(
   state: RootState,
@@ -83,11 +93,22 @@ export function readBattleInputDraft(
   userMessage: string;
   variables: Record<string, unknown>;
   resolvedVariables: Record<string, unknown>;
+  request: RequestDraftSnapshot | null;
+  omittedAttachments: OmittedAttachment[];
 } {
   if (!conversationId) {
-    return { userMessage: "", variables: {}, resolvedVariables: {} };
+    return {
+      userMessage: "",
+      variables: {},
+      resolvedVariables: {},
+      request: null,
+      omittedAttachments: [],
+    };
   }
+  const { snapshot, omitted } = captureRequestDraft(state, conversationId);
   return {
+    request: snapshot,
+    omittedAttachments: omitted,
     userMessage:
       state.instanceUserInput.byConversationId[conversationId]?.text ?? "",
     variables:
@@ -102,6 +123,8 @@ interface HydrateBattleInputDraftArgs {
   conversationId: string;
   userMessage: string;
   variables: Record<string, unknown>;
+  /** The saved complete request; battles saved before it existed have none. */
+  request?: unknown;
 }
 
 export function hydrateBattleInputDraft({
@@ -109,7 +132,12 @@ export function hydrateBattleInputDraft({
   conversationId,
   userMessage,
   variables,
+  request,
 }: HydrateBattleInputDraftArgs): void {
+  if (isRequestDraftSnapshot(request)) {
+    dispatch(applyRequestDraft({ snapshot: request, conversationId }));
+    return;
+  }
   dispatch(setUserInputText({ conversationId, text: userMessage }));
   dispatch(setUserVariableValues({ conversationId, values: variables }));
 }

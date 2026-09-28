@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Briefcase, Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Briefcase, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 import { useOccupationalCodes } from "../../api/hooks";
 import { LookupError } from "./LookupError";
@@ -121,7 +122,7 @@ export function OccupationCombobox({
               <span>{placeholder}</span>
             )}
           </span>
-          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          <SelectChevron />
         </Button>
       </PopoverTrigger>
       <PopoverContent

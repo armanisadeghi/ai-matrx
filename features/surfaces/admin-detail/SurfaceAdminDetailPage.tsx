@@ -12,7 +12,6 @@ import {
   AlertCircle,
   ArrowLeft,
   Check,
-  ChevronsUpDown,
   Edit2,
   ExternalLink,
   GitBranch,
@@ -24,7 +23,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, SelectChevron } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -1009,7 +1008,7 @@ function ClassificationSection({
                 <span className="truncate">
                   {surface.parent_surface_name ?? "(none)"}
                 </span>
-                <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                <SelectChevron size="sm" className="ml-2" />
               </Button>
             </PopoverTrigger>
             <PopoverContent sizing="content" className="p-0" align="start">

@@ -11,6 +11,7 @@
  * list; the money column is Stripe's (what it cost, what it would have cost,
  * the discount stated out loud).
  */
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useEffect, useMemo, useState } from "react";
 import { Inbox, Search, X } from "lucide-react";
 import {
@@ -49,7 +50,6 @@ import {
   fmtInt,
   fmtSpan,
   fmtStamp,
-  fmtUsd,
 } from "./presentation";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
@@ -565,6 +565,7 @@ function WorkItemDetail({
   row: WorkItem;
   onOpenBatch: (id: string) => void;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   const delivery = deliveryOf(row.handler_status);
   return (
     <div className="space-y-3">

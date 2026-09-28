@@ -19,6 +19,13 @@
  *   - emoji: emoji characters in visible text — core 5
  *   - smallTargets (phone): buttons/links smaller than 44px — core 4
  *   - horizontalOverflow (phone): the page scrolls sideways — core 4
+ *   - headerPaint: the route's header title from the first painted frame on —
+ *     `firstText` (what the first frame showed), `emptyFrames` (frames the
+ *     header was drawn with no route content before it arrived: the ~1s
+ *     title pop-in), `titleMovedPx` (how far the title moved between its
+ *     first frame and the settled page) and `layoutShifts` (layout-shift
+ *     entries whose sources sit in the header band). Clean = content in the
+ *     first frame, 0 empty frames, 0px, no shifts.
  *
  * Usage:
  *   pnpm page:look --route /education/flashcards [--route /x/<id>] \
@@ -326,6 +333,40 @@ const context = await chromium.launchPersistentContext(profileDir, {
   args: ["--no-sandbox"],
   ...(executablePath ? { executablePath } : {}),
 });
+// Header paint probe (see headerPaint above): samples the header slot — or,
+// before hydration, the server-rendered ghost over it — on every frame.
+await context.addInitScript(() => {
+  const probe = { samples: [], shifts: [] };
+  window.__pageLookHeader = probe;
+  const titleBox = (root) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!n.textContent.trim() || !n.parentElement) continue;
+      const r = n.parentElement.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) return { x: Math.round(r.left), y: Math.round(r.top), text: n.textContent.trim().slice(0, 40) };
+    }
+    return null;
+  };
+  const sample = () => {
+    const slot = document.querySelector('[data-page-header-target="workspace"]') || document.getElementById("shell-header-center");
+    if (slot) {
+      const ghost = document.querySelector("matrx-header-ghost");
+      const src = slot.childElementCount ? slot : ghost;
+      const text = src ? src.textContent.trim().replace(/\s+/g, " ").slice(0, 80) : "";
+      probe.samples.push({ t: Math.round(performance.now()), text, from: slot.childElementCount ? "slot" : ghost ? "ghost" : "none", box: src ? titleBox(src) : null });
+    }
+    if (performance.now() < 20000 && probe.samples.length < 2000) requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+  try {
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries()) {
+        const inHeader = (e.sources || []).filter((s) => Math.min(s.previousRect.top, s.currentRect.top) < 64);
+        if (inHeader.length) probe.shifts.push({ value: Number(e.value.toFixed(4)), nodes: inHeader.map((s) => (s.node && s.node.nodeName) || "?") });
+      }
+    }).observe({ type: "layout-shift", buffered: true });
+  } catch {}
+});
 const page = context.pages()[0] ?? (await context.newPage());
 try {
   const cdp = await context.newCDPSession(page);
@@ -487,6 +528,24 @@ try {
           ...(fullFile ? { fullScreenshot: fullFile } : {}),
           signedIn: !opts.signedOut && (await page.locator('input[type="email"]').count()) === 0,
           ...(await page.evaluate(measure, view.mobile)),
+          headerPaint: await page.evaluate(() => {
+            const probe = window.__pageLookHeader;
+            if (!probe) return null;
+            const s = probe.samples;
+            const firstWith = s.findIndex((x) => x.text);
+            const first = firstWith >= 0 ? s[firstWith] : null;
+            const last = [...s].reverse().find((x) => x.text) ?? null;
+            const moved = first?.box && last?.box ? Math.max(Math.abs(first.box.x - last.box.x), Math.abs(first.box.y - last.box.y)) : null;
+            return {
+              firstText: s[0]?.text ?? null,
+              firstFrom: s[0]?.from ?? null,
+              emptyFrames: firstWith < 0 ? s.length : firstWith,
+              contentAtMs: first?.t ?? null,
+              titleMovedPx: moved,
+              title: last?.box?.text ?? null,
+              layoutShifts: probe.shifts,
+            };
+          }),
           consoleErrors: [...new Set(consoleErrors)].slice(0, 10),
           failedRequests: [...new Set(failedRequests)].slice(0, 10),
         };
@@ -504,7 +563,7 @@ for (const r of report.routes) {
   for (const [key, v] of Object.entries(r.views)) {
     const phone = key.startsWith("phone");
     console.log(
-      `${r.route} [${key}]: used ${v.firstScreen.usedPct}% (largest empty band ${v.firstScreen.largestEmptyBandPx}px), under-header ${v.underHeader.length}, small text ${v.smallText.length}, emoji ${v.emoji.length}, console errors ${v.consoleErrors.length}, failed requests ${v.failedRequests.length}, zero-size graphics ${v.zeroSizeGraphics.length}${phone ? `, small targets ${v.smallTargets.length}, sideways scroll ${v.horizontalOverflow}` : ""}`,
+      `${r.route} [${key}]: used ${v.firstScreen.usedPct}% (largest empty band ${v.firstScreen.largestEmptyBandPx}px), under-header ${v.underHeader.length}, small text ${v.smallText.length}, emoji ${v.emoji.length}, console errors ${v.consoleErrors.length}, failed requests ${v.failedRequests.length}, zero-size graphics ${v.zeroSizeGraphics.length}, header ${v.headerPaint ? `${v.headerPaint.emptyFrames} empty frames, moved ${v.headerPaint.titleMovedPx ?? "?"}px, ${v.headerPaint.layoutShifts.length} shifts` : "?"}${phone ? `, small targets ${v.smallTargets.length}, sideways scroll ${v.horizontalOverflow}` : ""}`,
     );
   }
 }

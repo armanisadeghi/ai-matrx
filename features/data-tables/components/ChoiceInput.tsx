@@ -24,7 +24,7 @@
 
 import { usePersonChoices } from "../person-choices";
 import { useMemo, useState } from "react";
-import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
+import { Check, Plus, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  SelectChevron,
 } from "@ai-matrx/design-system";
 import {
   choicesForRow,
@@ -243,7 +244,7 @@ export function ChoiceInput({
             >
               {label}
             </span>
-            <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+            <SelectChevron size="sm" className="ml-2" />
           </Button>
         </PopoverTrigger>
 

@@ -8,6 +8,7 @@
  * did the provider take, how many polls did it cost us, was it escalated or
  * cancelled, and what did the grouping actually save.
  */
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useState } from "react";
 import { ListFilter, PackageOpen } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -23,7 +24,6 @@ import {
   fmtInt,
   fmtSpan,
   fmtStamp,
-  fmtUsd,
 } from "./presentation";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -157,6 +157,7 @@ function ProviderBatchDetail({
   row: ProviderBatch;
   onShowItems: (id: string) => void;
 }) {
+  const { format: fmtUsd } = useCostDisplay();
   const estBatch = num(row.est_cost_usd);
   const actual = num(row.cost_usd);
   return (

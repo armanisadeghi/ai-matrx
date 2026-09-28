@@ -475,7 +475,13 @@ function buildSettingsEntries(state: RootState): UpsertEntryInput[] {
 function buildSetMetadata(state: RootState): Record<string, unknown> {
   const { agentId, agentVersion, agentVersionId } =
     state.agentComparisonSettings.locked;
-  const { variables, userMessage, resolvedVariables } = readBattleInputDraft(
+  const {
+    variables,
+    userMessage,
+    resolvedVariables,
+    request,
+    omittedAttachments,
+  } = readBattleInputDraft(
     state,
     state.agentComparisonSettings.inputConversationId,
   );
@@ -488,6 +494,8 @@ function buildSetMetadata(state: RootState): Record<string, unknown> {
       variables,
       user_message: userMessage,
       resolved_variables: resolvedVariables,
+      request,
+      omitted_attachments: omittedAttachments,
     },
   };
 }
@@ -538,6 +546,8 @@ interface LoadedLockedSpec {
   agent_version_id: string | null;
   variables: Record<string, unknown>;
   user_message: string;
+  /** The complete saved request (absent on battles saved before it). */
+  request?: unknown;
 }
 
 export const loadSettingsBattleSet = createAsyncThunk<
@@ -601,6 +611,7 @@ export const loadSettingsBattleSet = createAsyncThunk<
         conversationId: inputConversationId,
         userMessage: locked.user_message ?? "",
         variables: locked.variables ?? {},
+        request: locked.request,
       });
       dispatch(setSettingsInputConversationId(inputConversationId));
     }
