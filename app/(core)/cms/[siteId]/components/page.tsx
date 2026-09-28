@@ -143,7 +143,7 @@ export default function ComponentsPage() {
       await CmsComponentService.deleteComponent(deleteTarget.id);
       await refreshComponents();
       if (editingId === deleteTarget.id) setEditingId(null);
-      toast.success(`Deleted "${deleteTarget.name}"`);
+      toast.success(`Moved "${deleteTarget.name}" to Trash`);
       setDeleteTarget(null);
     } catch (err) {
       toast.error(
@@ -542,9 +542,9 @@ export default function ComponentsPage() {
         <ConfirmDialog
           open={!!deleteTarget}
           onOpenChange={(open) => !isDeleting && !open && setDeleteTarget(null)}
-          title={`Delete "${deleteTarget?.name}"?`}
-          description="This removes the component from the site immediately. Any page still referencing it as a header/footer will render without it."
-          confirmLabel="Delete"
+          title={`Move "${deleteTarget?.name}" to Trash?`}
+          description="The component leaves the site now, and any page using it as a header or footer renders without it. You can restore it from Trash."
+          confirmLabel="Move to Trash"
           variant="destructive"
           busy={isDeleting}
           onConfirm={handleDelete}

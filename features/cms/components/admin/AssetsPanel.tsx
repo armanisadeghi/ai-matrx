@@ -189,7 +189,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
             setDeleteState(null);
             setAssets((prev) => prev.filter((a) => a.id !== asset.id));
             dismissRecordToasts({ type: 'cms_asset', id: asset.id });
-            toast.success(`Deleted '${asset.file_name}'${force ? ' (forced)' : ''}`);
+            toast.success(`Archived '${asset.file_name}'${force ? ' (forced)' : ''}`);
         } catch (err) {
             if (err instanceof AssetInUseError) {
                 // The guard fired — show exactly what breaks.
@@ -200,7 +200,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                     inUse: true,
                 });
             } else {
-                toast.error(err instanceof Error ? err.message : 'Delete failed');
+                toast.error(err instanceof Error ? err.message : 'Archive failed');
             }
         } finally {
             setIsDeleting(false);
@@ -330,7 +330,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                                 variant="ghost"
                                                 size="sm"
                                                 className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                                                title="Delete (usage-guarded)"
+                                                title="Archive (usage-guarded)"
                                                 onClick={() =>
                                                     setDeleteState({
                                                         asset,
@@ -381,7 +381,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                     <DialogHeader>
                         <DialogTitle className="text-sm flex items-center gap-2">
                             {deleteState?.inUse && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-                            Delete asset
+                            Archive asset
                         </DialogTitle>
                         <DialogDescription className="text-xs truncate">
                             {deleteState?.asset.file_name}
@@ -390,7 +390,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                     {deleteState?.inUse ? (
                         <div className="text-xs space-y-2">
                             <p className="text-destructive font-medium">
-                                This asset is still referenced by live/draft content. Deleting it will break:
+                                This asset is still referenced by live/draft content. Archiving it will break:
                             </p>
                             {deleteState.usedInPages.length > 0 && (
                                 <ul className="list-disc pl-5 space-y-0.5">
@@ -417,8 +417,8 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                         </div>
                     ) : (
                         <p className="text-xs text-muted-foreground">
-                            The delete is usage-guarded: if any page or component still references this asset, the
-                            delete is refused and the references are listed here first.
+                            Archiving removes the asset from this site's library; the file itself is kept. If any page or
+                            component still references it, the archive is refused and the references are listed here first.
                         </p>
                     )}
                     <DialogFooter>
@@ -433,7 +433,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                 onClick={() => deleteState && attemptDelete(deleteState.asset, true)}
                             >
                                 {isDeleting && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                                Force delete anyway
+                                Archive anyway
                             </Button>
                         ) : (
                             <Button
@@ -443,7 +443,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                 onClick={() => deleteState && attemptDelete(deleteState.asset, false)}
                             >
                                 {isDeleting && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                                Delete
+                                Archive
                             </Button>
                         )}
                     </DialogFooter>
