@@ -1084,6 +1084,13 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
 
 ## Change log
 
+- page-pass 2026-09-27 round 7 (/crm/[partyId]): phone record actions are
+  one-tap rows in the shell's ⋮ sheet (RouteHeader contract, no nested menu);
+  desktop header is primary action then one "…"; agent targets
+  remove_contact_point, delete_interaction, delete_note, move_to_trash,
+  attach_file; merge_state/primary_employer supplied, last_touch_at declared
+  withheld; phone identity stacks labels; currency picker; New deal title
+  stands alone; no stray rule under add forms; one-line phone provenance.
 - 2026-09-27 — Pitch advisories (PR floor E1–E17): one panel on five surfaces, go-ahead recorded in platform.activity_log.
 
 - page-pass 2026-09-27 round 6 (/crm/[partyId]): unset fillable fields reach
