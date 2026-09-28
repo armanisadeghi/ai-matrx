@@ -27,6 +27,7 @@ import {
   type Initiative,
 } from "./types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { extractErrorMessage } from "@/utils/errors";
 
 export function InitiativeEditorDialog({
   open,
@@ -102,7 +103,7 @@ export function InitiativeEditorDialog({
       toast.success(initiative ? "Initiative saved" : "Initiative created");
     } catch (error) {
       toast.error("Could not save initiative", {
-        description: error instanceof Error ? error.message : "Unknown error",
+        description: extractErrorMessage(error, "Unknown error"),
       });
     } finally {
       setBusy(false);

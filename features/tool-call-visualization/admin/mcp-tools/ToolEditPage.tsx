@@ -36,6 +36,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { toolApiErrorMessage } from "./tool-definition.service";
 import { parseSemver } from "@/features/admin/applications/version";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -138,7 +139,7 @@ export function ToolEditPage({ tool }: Props) {
     } catch (err) {
       toast({
         title: "Save failed",
-        description: err instanceof Error ? err.message : "Unknown error",
+        description: extractErrorMessage(err, "Unknown error"),
         variant: "destructive",
       });
     } finally {

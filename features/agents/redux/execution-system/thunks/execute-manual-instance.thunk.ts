@@ -191,6 +191,7 @@ import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import type { ToolSpec } from "@/features/agents/types/tool-injection.types";
 import { isUiGateKey } from "@/lib/redux/slices/agent-settings/ui-gates";
+import { extractErrorMessage } from "@/utils/errors";
 
 // Model-gated UI flags that may ride flattened in the builder's working state
 // (e.g. `tools: { allowed: true }`, `image_urls: true`). They must not be
@@ -1129,7 +1130,7 @@ export const executeManualInstance = createAsyncThunk<
         }),
       );
 
-      const message = error instanceof Error ? error.message : "Unknown error";
+      const message = extractErrorMessage(error, "Unknown error");
       // A first-response timeout is NOT a failed run: the server may still be
       // preparing or generating. Say so, name the model and the wait, and hand
       // the person the conversation — the one place the result can land.

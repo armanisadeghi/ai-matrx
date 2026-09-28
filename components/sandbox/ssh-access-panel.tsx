@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { SandboxAccessResponse } from "@/types/sandbox";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 interface SshAccessPanelProps {
   /** Supabase row UUID — used for API calls only. */
@@ -65,7 +66,7 @@ export function SshAccessPanel({
       }
       setAccess(body as unknown as SandboxAccessResponse);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(extractErrorMessage(err, "Unknown error"));
     } finally {
       setLoading(false);
     }

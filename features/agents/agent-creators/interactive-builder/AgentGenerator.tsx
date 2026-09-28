@@ -483,7 +483,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
     } catch (err) {
       console.error("Agent generation failed:", err);
       toast.error("Failed to generate agent", {
-        description: err instanceof Error ? err.message : "Unknown error",
+        description: extractErrorMessage(err, "Unknown error"),
         position: TOAST_POSITION,
       });
     }

@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import IconButton from "@/components/official/IconButton";
 import { Badge } from "@/components/ui/badge";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * Search Unsplash via our own server route (`app/api/unsplash/route.ts`).
@@ -70,7 +71,7 @@ async function searchUnsplashPhotos(
   } catch (err) {
     return {
       results: [],
-      error: err instanceof Error ? err.message : "Unknown error",
+      error: extractErrorMessage(err, "Unknown error"),
     };
   }
 }

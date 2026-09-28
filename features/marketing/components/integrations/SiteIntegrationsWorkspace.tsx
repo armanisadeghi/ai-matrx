@@ -137,6 +137,7 @@ import {
 } from "@/features/marketing/data/url-change-evidence";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 const integrationValueLabels = surfaceValueLabels(
   marketingIntegrationsManifest,
@@ -412,7 +413,7 @@ function SiteIntegrationsEditor({
     },
     onError: (error) =>
       toast.error("Could not configure URL change intake", {
-        description: error instanceof Error ? error.message : "Unknown error",
+        description: extractErrorMessage(error, "Unknown error"),
       }),
   });
 

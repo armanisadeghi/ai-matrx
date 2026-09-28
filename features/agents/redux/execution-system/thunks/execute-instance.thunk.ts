@@ -135,6 +135,7 @@ import {
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { persistInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * Build the three REQUIRED lifecycle fields for a first-turn request.
@@ -1237,7 +1238,7 @@ export const executeInstance = createAsyncThunk<
       // (createRequest, setInstanceStatus("running"), addOptimisticUserMessage)
       // before this throw; the slice reducers are tolerant of unknown ids, so
       // setting "error" is safe whether they ran or not.
-      const message = error instanceof Error ? error.message : "Unknown error";
+      const message = extractErrorMessage(error, "Unknown error");
       dispatch(setInstanceStatus({ conversationId, status: "error" }));
       dispatch(
         setRequestStatus({

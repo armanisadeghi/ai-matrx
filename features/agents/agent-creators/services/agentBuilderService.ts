@@ -16,6 +16,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { extractErrorMessage } from "@/utils/errors";
 type AgentInsert = Database["agent"]["Tables"]["definition"]["Insert"];
 
 export interface AgentBuilderConfig {
@@ -207,7 +208,7 @@ export async function createAgentFromBuilder(
     toast.success("Agent created!");
     return { success: true, agentId: data.id };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
+    const msg = extractErrorMessage(error, "Unknown error");
     console.error("Error creating agent:", error);
     toast.error("Failed to create agent", { description: msg });
     return { success: false, error: msg };

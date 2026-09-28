@@ -26,6 +26,7 @@ import ConfigJSONViewer from "./ConfigJSONViewer";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { extractErrorMessage } from "@/utils/errors";
 type ConfigValue = string | number | boolean | object | any[];
 type ConfigType = "string" | "number" | "boolean" | "object" | "list";
 type KeyDownField = "field" | "type" | "value";
@@ -214,7 +215,7 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
 
             resetForm();
         } catch (err) {
-            setError(`Invalid ${type} value: ${err instanceof Error ? err.message : "Unknown error"}`);
+            setError(`Invalid ${type} value: ${extractErrorMessage(err, "Unknown error")}`);
         }
     };
 

@@ -10,6 +10,7 @@ import { useState, useCallback } from "react";
 import { TranscriptionResult, TranscriptionOptions } from "../types";
 import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { transcribeAudioFile } from "../services/speechApi";
+import { extractErrorMessage } from "@/utils/errors";
 
 export function useAudioTranscription() {
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -39,7 +40,7 @@ export function useAudioTranscription() {
         return data;
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : "Unknown error";
+          extractErrorMessage(err, "Unknown error");
         setError(errorMessage);
 
         const errorResult: TranscriptionResult = {

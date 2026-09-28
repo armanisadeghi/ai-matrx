@@ -29,6 +29,7 @@ import {
   useUrlState,
 } from "@ai-matrx/kit/url-state";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 const nodeTypes = {
   schemaNode: SchemaNode,
@@ -100,7 +101,7 @@ export default function SchemaVisualizer() {
         <div className="text-center text-destructive">
           <p className="font-medium">Failed to load schema</p>
           <p className="text-sm text-muted-foreground mt-1">
-            {error instanceof Error ? error.message : "Unknown error"}
+            {extractErrorMessage(error, "Unknown error")}
           </p>
           <ErrorAlchemyMenu />
         </div>

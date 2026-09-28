@@ -30,6 +30,7 @@ import { openAlchemySession } from "@/components/agent-copy/alchemy-session";
 import { buildConversationMarkdown } from "./conversation-markdown";
 import { documentMarkdown } from "./document-markdown";
 import { loadFullConversationHistory } from "./load-full-history";
+import { extractErrorMessage } from "@/utils/errors";
 
 // ─── The one source ──────────────────────────────────────────────────────────
 
@@ -337,8 +338,8 @@ async function deliver(
   } catch (error) {
     // The sealed promise's own failure is the real reason (a copy reports only "refused").
     const reason = await sealed.then(
-      () => (error instanceof Error ? error.message : "Unknown error"),
-      (e: unknown) => (e instanceof Error ? e.message : "Unknown error"),
+      () => (extractErrorMessage(error, "Unknown error")),
+      (e: unknown) => (extractErrorMessage(e, "Unknown error")),
     );
     toast.error(mode === "copy" ? "Couldn't copy the conversation" : `Couldn't download as ${MIME_LABEL[format] ?? format}`, {
       id: toastId,

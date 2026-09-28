@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 export interface DiffHistoryProps {
   noteId: string;
@@ -105,7 +106,7 @@ export function DiffHistory({
       dispatch(fetchNoteVersions(noteId));
     } catch (err) {
       toast.error(
-        `Failed to restore version: ${err instanceof Error ? err.message : "Unknown error"}`,
+        `Failed to restore version: ${extractErrorMessage(err, "Unknown error")}`,
       );
     }
   };

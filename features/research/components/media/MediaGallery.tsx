@@ -77,6 +77,7 @@ import {
   youTubeChannelLabel,
   youTubeEmbedUrl,
 } from "@/lib/media/youtube";
+import { extractErrorMessage } from "@/utils/errors";
 
 const TYPE_ICONS = {
   image: ImageIcon,
@@ -1233,7 +1234,7 @@ function DocumentCard({
       );
       toast.success(`Saved "${filename}" to your library`);
     } catch (err) {
-      const detail = err instanceof Error ? err.message : "Unknown error";
+      const detail = extractErrorMessage(err, "Unknown error");
       toast.error(`Couldn't save "${filename}"`, {
         description:
           "The source may block direct downloads. Try Open, then save it manually.",

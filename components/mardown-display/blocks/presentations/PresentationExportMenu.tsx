@@ -28,6 +28,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import IconButton from "@/components/official/IconButton";
+import { extractErrorMessage } from "@/utils/errors";
 
 interface PresentationExportMenuProps {
   presentationData: PresentationData;
@@ -232,7 +233,7 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
             result = {
               success: false,
               message: "Failed to publish presentation",
-              error: error instanceof Error ? error.message : "Unknown error",
+              error: extractErrorMessage(error, "Unknown error"),
             };
           }
           break;

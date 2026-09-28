@@ -56,6 +56,7 @@ import {
   type AnnotationOut,
   type AnnotationUpdateBody,
 } from "@/features/file-analysis/api/file-analysis";
+import { extractErrorMessage } from "@/utils/errors";
 
 export interface PdfRegionContextMenuProps {
   fileId: string;
@@ -115,7 +116,7 @@ export function PdfRegionContextMenu({
     } catch (err) {
       toast({
         title: "Extract failed",
-        description: err instanceof Error ? err.message : "Unknown error",
+        description: extractErrorMessage(err, "Unknown error"),
         variant: "destructive",
       });
     }
@@ -131,7 +132,7 @@ export function PdfRegionContextMenu({
     } catch (err) {
       toast({
         title: "Promote failed",
-        description: err instanceof Error ? err.message : "Unknown error",
+        description: extractErrorMessage(err, "Unknown error"),
         variant: "destructive",
       });
     }
@@ -148,7 +149,7 @@ export function PdfRegionContextMenu({
     } catch (err) {
       toast({
         title: "Update failed",
-        description: err instanceof Error ? err.message : "Unknown error",
+        description: extractErrorMessage(err, "Unknown error"),
         variant: "destructive",
       });
     }
@@ -168,7 +169,7 @@ export function PdfRegionContextMenu({
     } catch (err) {
       toast({
         title: "Delete failed",
-        description: err instanceof Error ? err.message : "Unknown error",
+        description: extractErrorMessage(err, "Unknown error"),
         variant: "destructive",
       });
     }

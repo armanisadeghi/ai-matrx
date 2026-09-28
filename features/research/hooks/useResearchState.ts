@@ -19,6 +19,7 @@ import type {
 } from "../types";
 import type { SourceImportance } from "../ranking";
 import type { CurationData } from "../service";
+import { extractErrorMessage } from "@/utils/errors";
 
 // ============================================================================
 // Generic fetch hook
@@ -61,7 +62,7 @@ function useServiceQuery<T>(
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(extractErrorMessage(err, "Unknown error"));
         setSettledKey(fetchKey);
       });
 

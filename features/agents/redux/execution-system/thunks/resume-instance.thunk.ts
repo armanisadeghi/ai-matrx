@@ -78,6 +78,7 @@ import {
   createRequest,
   setRequestStatus,
 } from "../active-requests/active-requests.slice";
+import { extractErrorMessage } from "@/utils/errors";
 
 interface ResumeInstanceArgs {
   conversationId: string;
@@ -400,7 +401,7 @@ export const resumeInstance = createAsyncThunk<
       // request hanging around. The instance was just flipped to "running";
       // walk it back to "error" so consumers can react.
       releaseResumeClaim(userRequestId);
-      const message = error instanceof Error ? error.message : "Unknown error";
+      const message = extractErrorMessage(error, "Unknown error");
       dispatch(setInstanceStatus({ conversationId, status: "error" }));
       dispatch(
         setRequestStatus({

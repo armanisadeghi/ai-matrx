@@ -4,6 +4,7 @@ import { TriangleAlert } from "lucide-react";
 import ProcessorExtractor from "./ProcessorExtractor";
 import { useDebounce } from "@/hooks/usehooks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 // Type for a processing function that takes content and returns JSON
 type ProcessingFunction = {
@@ -38,7 +39,7 @@ const ParseExtractorOptions = ({ content, processors, configKey }: ParseExtracto
                     name: processor.name,
                     label: processor.label,
                     data: null,
-                    error: error instanceof Error ? error.message : "Unknown error"
+                    error: extractErrorMessage(error, "Unknown error")
                 };
             }
         });

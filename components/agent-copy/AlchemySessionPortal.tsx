@@ -37,6 +37,7 @@ import {
   subscribeAlchemySession,
   type AlchemySessionRequest,
 } from "./alchemy-session";
+import { extractErrorMessage } from "@/utils/errors";
 
 export function AlchemySessionPortal() {
   const request = React.useSyncExternalStore(
@@ -49,7 +50,7 @@ export function AlchemySessionPortal() {
 }
 
 function errorText(error: unknown): string {
-  return error instanceof Error ? error.message : "Unknown error";
+  return extractErrorMessage(error, "Unknown error");
 }
 
 function AlchemySession({ request }: { request: AlchemySessionRequest }) {

@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/utils/supabase/client";
-import { operationFailed } from "@/utils/errors";
+import { operationFailed, extractErrorMessage } from "@/utils/errors";
 import { formatDistanceToNow } from "date-fns";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useToolComponentAgent } from "@/features/tool-call-visualization/admin/hooks/useToolComponentAgent";
@@ -289,7 +289,7 @@ export function ToolComponentPreview({
     } catch (err) {
       toast({
         title: "Failed to load samples",
-        description: err instanceof Error ? err.message : "Unknown error",
+        description: extractErrorMessage(err, "Unknown error"),
         variant: "destructive",
       });
     } finally {

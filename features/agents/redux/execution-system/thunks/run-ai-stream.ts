@@ -86,6 +86,7 @@ import {
 } from "../active-requests/active-requests.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * Thrown when the underlying fetch is aborted (user cancel, heartbeat-driven
@@ -836,7 +837,7 @@ export async function runAiStream(
         : isTransportLost
           ? "transport_lost"
           : "client_error";
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = extractErrorMessage(error, "Unknown error");
     const connectionLossMessage =
       "Connection interrupted. Reconnecting to your response now.";
 

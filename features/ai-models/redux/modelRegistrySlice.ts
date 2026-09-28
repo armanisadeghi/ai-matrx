@@ -218,7 +218,7 @@ export const fetchModelOptions = createAsyncThunk(
         }));
     } catch (err: unknown) {
       return rejectWithValue(
-        err instanceof Error ? err.message : "Unknown error",
+        extractErrorMessage(err, "Unknown error"),
       );
     }
   },

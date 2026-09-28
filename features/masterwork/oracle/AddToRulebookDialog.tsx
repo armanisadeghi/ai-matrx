@@ -34,6 +34,7 @@ import {
   type OracleRulebookOption,
 } from "./service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 export interface AddToRulebookDialogProps {
   isOpen: boolean;
@@ -122,7 +123,7 @@ export function AddToRulebookDialog({
     } catch (error) {
       toast.error("Could not save to the Rulebook", {
         description:
-          error instanceof Error ? error.message : "Unknown error",
+          extractErrorMessage(error, "Unknown error"),
       });
     } finally {
       setIsSaving(false);

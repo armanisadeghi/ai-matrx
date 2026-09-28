@@ -18,6 +18,7 @@ import {
   type DiagramEdgeMarker,
   type DiagramNodeShape,
 } from "./diagram-visual-defaults";
+import { extractErrorMessage } from "@/utils/errors";
 
 export type DiagramNode = Omit<DiagramNodeKind, typeof KIND_KEY> & {
   /** Layout/presentation the RENDERER owns — never part of the wire kind. */
@@ -307,7 +308,7 @@ export function parseDiagramJSON(content: string): DiagramData {
   } catch (error) {
     console.error("Error parsing diagram JSON:", error);
     throw new Error(
-      `Failed to parse diagram JSON: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to parse diagram JSON: ${extractErrorMessage(error, "Unknown error")}`,
     );
   }
 }
