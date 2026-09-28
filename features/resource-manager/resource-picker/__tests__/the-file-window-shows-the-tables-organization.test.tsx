@@ -52,10 +52,15 @@ describe("FilePickerWindow organizationId", () => {
     act(() => root.render(<FilePickerWindow open onClose={() => {}} onPick={() => {}} scopeId="t" organizationId={CLINIC} />));
     expect(pickerProps.at(-1)).toMatchObject({ organizationId: CLINIC });
     expect(uploadProps.at(-1)).toMatchObject({ organizationId: CLINIC });
+    // The filter says so — an organization with no files must not read as "you have no files".
+    expect(container.querySelector(`[data-file-window-organization="${CLINIC}"]`)?.textContent).toContain(
+      "Only files in this table's organization are listed",
+    );
   });
 
   it("without one, every file the person holds (unchanged)", () => {
     act(() => root.render(<FilePickerWindow open onClose={() => {}} onPick={() => {}} scopeId="t" />));
     expect(pickerProps.at(-1)?.organizationId ?? null).toBeNull();
+    expect(container.querySelector("[data-file-window-organization]")).toBeNull();
   });
 });

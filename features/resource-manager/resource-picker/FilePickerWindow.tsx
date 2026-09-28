@@ -170,6 +170,13 @@ export function FilePickerWindow({
       bodyClassName="p-0 overflow-hidden"
     >
       <div className="flex h-full min-h-0 flex-col">
+        {organizationId ? (
+          // THE FILTER SAYS SO (nothing fails silently): an organization with no files of
+          // its own shows an empty list, which must not read as "you have no files".
+          <p className="shrink-0 border-b px-3 py-1.5 text-xs text-muted-foreground" data-file-window-organization={organizationId}>
+            Only files in this table&apos;s organization are listed. An upload is filed there.
+          </p>
+        ) : null}
         <div className="min-h-0 flex-1">
           <FilesResourcePicker
             onBack={onClose}
