@@ -297,7 +297,7 @@ export function KitHub({
           setRefreshKey((key) => key + 1);
           return { id: plan.kit.sourceId, name: plan.title };
         },
-        nameOf: (plan) => plan.title,
+        nameOf: (plan) => plan.kit.title,
         changedOf: () => ["title"],
       },
       delete: {

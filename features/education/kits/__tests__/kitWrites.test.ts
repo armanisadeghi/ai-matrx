@@ -17,4 +17,13 @@ describe("kit writes", () => {
     expect(() => requireFreshKitMembership(kit, `${kitMembershipFingerprint(kit)}:stale`))
       .toThrow(/changed since it was reviewed/);
   });
+
+  it("accepts a batch that deletes two distinct kits", () => {
+    const other = { ...kit, sourceId: "source-2", title: "Second lecture" };
+    const plans = parseKitDeletes([
+      { source_type: "file", source_id: kit.sourceId, expected_membership_fingerprint: kitMembershipFingerprint(kit) },
+      { source_type: "file", source_id: other.sourceId, expected_membership_fingerprint: kitMembershipFingerprint(other) },
+    ], [kit, other]);
+    expect(plans.map((plan) => plan.kit.sourceId)).toEqual(["source-1", "source-2"]);
+  });
 });

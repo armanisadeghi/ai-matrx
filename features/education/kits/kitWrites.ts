@@ -43,5 +43,5 @@ export function parseKitDeletes(value: unknown, kits: readonly StudyKit[]) {
   const target = "delete_kits";
   return collectProblems(target, readCollectionList(target, "kits", value, MAX_KITS_PER_WRITE), (item, index) =>
     (() => { const raw = record(item, `${target}[${index}]`); return { kit: kitFor(raw, `${target}[${index}]`, kits), fingerprint: fingerprint(raw, `${target}[${index}]`) }; })(),
-  { listChecks: (items) => [repeatsProblem(target, items.map((item) => item.value ? `${item.value.sourceType}:${item.value.sourceId}` : ""), "kit")] });
+  { listChecks: (items) => [repeatsProblem(target, items.map((item) => item.value ? `${item.value.kit.sourceType}:${item.value.kit.sourceId}` : ""), "kit")] });
 }
