@@ -357,14 +357,10 @@ if (fastMode) {
     console.log('\n  Step 3: Running TypeScript type-check...\n');
     try {
         execSync(
-            './node_modules/.bin/tsc6 --noEmit -p tsconfig.typecheck.json',
+            'bash scripts/tsc-capped.sh tsc6 --noEmit -p tsconfig.typecheck.json',
             {
                 stdio: 'inherit',
                 cwd: PROJECT_ROOT,
-                // This repository's full source graph exceeds Node's 16 GB
-                // default/previous cap during sync-types. Leave headroom on
-                // the build host so the required whole-repo check completes.
-                env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=32768' },
             },
         );
         console.log('\n  ✓ Type-check passed — all types are aligned.\n');

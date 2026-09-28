@@ -23,7 +23,7 @@
  * and removed on exit; type-errors/ is gitignored.
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -53,7 +53,7 @@ const CANDIDATES: { flag: string; group: string; needs?: string }[] = [
 
 const ROOT = process.cwd();
 const OUT_DIR = join(ROOT, "type-errors");
-const TMP_CONFIG = join(ROOT, ".tsconfig.measure.tmp.json");
+const TMP_CONFIG = join(ROOT, `.tsconfig.measure.${process.pid}.tmp.json`);
 const ERROR_RE = /error TS(\d+):/;
 
 interface Result {
@@ -92,8 +92,9 @@ function measure(flag: string): {
 
   let raw = "";
   try {
-    raw = execSync(
-      `NODE_OPTIONS=--max-old-space-size=8192 npx tsc --noEmit -p ${TMP_CONFIG}`,
+    raw = execFileSync(
+      "bash",
+      ["scripts/tsc-capped.sh", "tsc", "--noEmit", "-p", TMP_CONFIG],
       {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
