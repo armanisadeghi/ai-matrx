@@ -64,10 +64,9 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
     update: currentMedia ? {
       parse: (value) => parseUpdateSummaries(value, [currentMedia]),
       run: async (plan) => {
-        const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.summary.title, ir_envelope: plan.summary });
+        const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.summary.title, ir_envelope: plan.irEnvelope, trust: plan.trust });
         if (result.error || !result.data) throw new Error(result.error ?? "Could not update summary.");
         setCurrentMedia(result.data);
-        setDraft(draftFrom(result.data));
         return { id: result.data.id, name: result.data.title };
       }, nameOf: (plan) => plan.summary.title, changedOf: (plan) => plan.changed,
     } : undefined,
@@ -97,7 +96,7 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
       ? parseUpdateSummaries([{ id: currentMedia.id, ...draft }], [currentMedia])[0]
       : null;
     const result = currentMedia && updatePlan
-      ? await studyMediaService.updateVersioned(currentMedia.id, currentMedia.version, { title: updatePlan.summary.title, ir_envelope: updatePlan.summary })
+      ? await studyMediaService.updateVersioned(currentMedia.id, currentMedia.version, { title: updatePlan.summary.title, ir_envelope: updatePlan.irEnvelope, trust: updatePlan.trust })
       : await studyMediaService.create({ mediaKind: "summary", title: summary.title, irEnvelope: summary, status: "ready" });
     setSaving(false);
     if (result.error || !result.data) {
@@ -116,9 +115,9 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
       <div className="space-y-1"><Label htmlFor="summary-title">Title</Label><Input id="summary-title" value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} /></div>
       <ContentEditor value={draft.summary_markdown} onChange={(summary_markdown) => setDraft((current) => ({ ...current, summary_markdown }))} title="Summary" initialMode="markdown" availableModes={["wysiwyg", "markdown", "preview"]} surfaceName={SURFACE_NAME} imagePolicy="ai" />
       <section className="space-y-3 rounded-xl border border-border bg-card p-4">
-        <div><h2 className="font-semibold">Key points</h2><p className="text-sm text-muted-foreground">Add 3 to 8 concise takeaways.</p></div>
-        {draft.key_points.map((point, index) => <div key={index} className="flex gap-2"><Input aria-label={`Key point ${index + 1}`} value={point} onChange={(event) => setDraft((current) => ({ ...current, key_points: current.key_points.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))} /><Button type="button" size="icon" variant="ghost" aria-label={`Remove key point ${index + 1}`} disabled={draft.key_points.length <= 3} onClick={() => setDraft((current) => ({ ...current, key_points: current.key_points.filter((_, itemIndex) => itemIndex !== index) }))}><Minus className="h-4 w-4" /></Button></div>)}
-        <Button type="button" variant="outline" size="sm" disabled={draft.key_points.length >= 8} onClick={() => setDraft((current) => ({ ...current, key_points: [...current.key_points, ""] }))}><Plus className="mr-1 h-4 w-4" />Add key point</Button>
+        <div><h2 className="font-semibold">Key points</h2><p className="text-sm text-muted-foreground">Add concise takeaways when they help; they are optional for a manual summary.</p></div>
+        {draft.key_points.map((point, index) => <div key={index} className="flex gap-2"><Input aria-label={`Key point ${index + 1}`} value={point} onChange={(event) => setDraft((current) => ({ ...current, key_points: current.key_points.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))} /><Button type="button" size="icon" variant="ghost" aria-label={`Remove key point ${index + 1}`} onClick={() => setDraft((current) => ({ ...current, key_points: current.key_points.filter((_, itemIndex) => itemIndex !== index) }))}><Minus className="h-4 w-4" /></Button></div>)}
+        <Button type="button" variant="outline" size="sm" onClick={() => setDraft((current) => ({ ...current, key_points: [...current.key_points, ""] }))}><Plus className="mr-1 h-4 w-4" />Add key point</Button>
       </section>
       {error ? <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
       <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button><Button type="button" disabled={saving} onClick={() => { void save(); }}>{saving ? "Saving…" : currentMedia ? "Save changes" : "Create summary"}</Button></div>

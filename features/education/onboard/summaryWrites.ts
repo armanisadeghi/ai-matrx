@@ -14,6 +14,8 @@ type SummaryPatch = {
   id: string;
   version: number;
   summary: StudySummary;
+  irEnvelope: Record<string, unknown>;
+  trust: TrustEnvelope | null;
   changed: string[];
 };
 
@@ -50,10 +52,9 @@ export function parseStudySummary(value: unknown, at = "study summary"): StudySu
   const title = requiredText(raw.title, `${at}.title`);
   const summary_markdown = requiredText(raw.summary_markdown, `${at}.summary_markdown`);
   if (!Array.isArray(raw.key_points)) throw new Error(`${at}.key_points must be an array.`);
-  const key_points = raw.key_points.map((point, index) => requiredText(point, `${at}.key_points[${index}]`));
-  if (key_points.length < 3 || key_points.length > 8) {
-    throw new Error(`${at}.key_points needs 3 to 8 takeaways.`);
-  }
+  const key_points = raw.key_points
+    .map((point, index) => optionalText(point, `${at}.key_points[${index}]`))
+    .filter(Boolean);
   return { __kind: "study_summary", title, summary_markdown, key_points };
 }
 
@@ -99,9 +100,13 @@ export function parseUpdateSummaries(value: unknown, available: readonly StudyMe
       if (!current) throw new Error(`${id} is not in the current summary list.`);
       const changed = Object.keys(raw).filter((key) => key !== "id");
       if (changed.length === 0) throw new Error(`${target}[${index}] needs at least one field to change.`);
-      const allowed = ["title", "summary_markdown", "key_points"];
+      const allowed = ["title", "summary_markdown", "key_points", "expected_revision"];
       const unknown = changed.filter((key) => !allowed.includes(key));
       if (unknown.length) throw new Error(`${target}[${index}] does not accept ${unknown.join(", ")}.`);
+      const expectedRevision = raw.expected_revision;
+      if (expectedRevision !== undefined && expectedRevision !== current.version) {
+        throw new Error(`${target}[${index}].expected_revision is stale. Reload the summary before changing it.`);
+      }
       const previous = record(current.ir_envelope, `summary ${id}`);
       const summary = parseStudySummary({
         title: current.title,
@@ -114,7 +119,9 @@ export function parseUpdateSummaries(value: unknown, available: readonly StudyMe
         id,
         version: current.version,
         summary: trust ? { ...summary, trust } : summary,
-        changed,
+        irEnvelope: { ...previous, ...summary, ...(trust ? { trust } : {}) },
+        trust,
+        changed: changed.filter((key) => key !== "expected_revision"),
       };
     }, {
       listChecks: (items) => [repeatsProblem(target, items.map((item) => item.value?.id ?? titleOf(item.raw)), "id")],

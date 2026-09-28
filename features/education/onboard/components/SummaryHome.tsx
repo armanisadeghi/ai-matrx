@@ -90,7 +90,7 @@ export function SummaryHome() {
     update: {
       parse: (value) => parseUpdateSummaries(value, rows),
       run: async (plan) => {
-        const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.summary.title, ir_envelope: plan.summary });
+        const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.summary.title, ir_envelope: plan.irEnvelope, trust: plan.trust });
         if (result.error || !result.data) throw new Error(result.error ?? "Could not update summary.");
         await read.retry();
         return { id: result.data.id, name: result.data.title };
