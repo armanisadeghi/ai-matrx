@@ -16,9 +16,21 @@ describe("Note tab: one menu, opened by right-click and by the … button", () =
   const tab = read("NoteTabItem.tsx");
 
   it("routes the … button through the canonical v3 opener", () => {
-    expect(tab).toContain("openContextMenuForElement(tabRef.current)");
+    expect(tab).toContain("openContextMenuForElement(moreRef.current)");
     expect(tab).toContain('aria-haspopup="menu"');
     expect(tab).toContain("<NonEditableContextMenu");
+  });
+
+  // Arman 2026-09-28: the tab's "…" is the tab's rows (Pin, Move, Close) plus
+  // ONE "Note ▸" holding the full note menu — for the button only; a
+  // right-click on the note still opens the note's one menu.
+  it("the … is the Tab rows first, then one 'Note ▸' with the whole note menu", () => {
+    expect(tab).toContain('subjectFold="Note"');
+    expect(tab).toContain("tabSection(true)");
+    expect(tab).toContain('[data-note-tab-more]');
+    for (const id of ["pin-tab", "move-left", "move-right", "close-tab", "close-others", "close-all"]) {
+      expect(tab).toContain(`id: "${id}"`);
+    }
   });
 
   it("carries no second dropdown menu", () => {

@@ -471,6 +471,15 @@ export const selectInstanceTabs = (instanceId: string) =>
     ),
   );
 
+const NO_PINNED: string[] = [];
+export const selectInstancePinnedTabs = (instanceId: string) =>
+  cached(`instPinned:${instanceId}`, () =>
+    createSelector(
+      selectInstancesMap,
+      (instances): string[] => instances[instanceId]?.pinnedTabs ?? NO_PINNED,
+    ),
+  );
+
 export const selectInstanceActiveTab = (instanceId: string) =>
   cached(`instActive:${instanceId}`, () =>
     createSelector(

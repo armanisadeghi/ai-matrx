@@ -246,6 +246,12 @@ export interface NotesInstance {
   historyOpen: boolean;
   /** Floating outline panel open in THIS instance. */
   outlineOpen: boolean;
+  /**
+   * Pinned tabs in THIS instance (a subset of `openTabs`). Pinned tabs always
+   * lead the strip, survive "Close other tabs" / "Close all tabs", and the
+   * idle auto-move never jumps an unpinned tab in front of them.
+   */
+  pinnedTabs?: string[];
 }
 
 /**

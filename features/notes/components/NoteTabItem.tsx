@@ -21,6 +21,10 @@ import {
   Info,
   MoreHorizontal,
   PanelTop,
+  Pin,
+  PinOff,
+  ArrowLeft,
+  ArrowRight,
   type LucideIcon,
 } from "lucide-react";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
@@ -32,6 +36,8 @@ import {
   updateNoteContent,
   markTabInteraction,
   setInstanceHistoryOpen,
+  toggleInstanceTabPinned,
+  moveInstanceTab,
 } from "../redux/slice";
 import { setNoteLabelEditing } from "../utils/labelEditing";
 import {
@@ -40,6 +46,7 @@ import {
   selectNoteIsSavingById,
   selectNoteContent,
   selectInstanceTabs,
+  selectInstancePinnedTabs,
   selectAllFolders,
   selectFolderReferences,
   selectNoteFolder,
@@ -47,9 +54,10 @@ import {
 } from "../redux/selectors";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import type {
-  ContextMenuExtraItem,
-  ContextMenuExtraSection,
+import {
+  CONTEXT_MENU_HEADING_KEY,
+  type ContextMenuExtraItem,
+  type ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
 import type { ContentSource } from "@/features/rich-document/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
@@ -92,6 +100,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   );
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
+  const pinnedTabs = useAppSelector(selectInstancePinnedTabs(instanceId));
+  const isPinned = pinnedTabs.includes(noteId);
   const allFolders = useAppSelector(selectAllFolders);
   const folderReferences = useAppSelector(selectFolderReferences);
   const currentFolder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
@@ -304,20 +314,21 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const handleCloseOtherTabs = useCallback(() => {
     if (!openTabs) return;
     bumpTabInteraction();
+    // Pinned tabs stay (the point of pinning).
     for (const tabId of openTabs) {
-      if (tabId !== noteId) {
+      if (tabId !== noteId && !pinnedTabs.includes(tabId)) {
         dispatch(removeInstanceTab({ instanceId, noteId: tabId }));
       }
     }
-  }, [bumpTabInteraction, dispatch, instanceId, noteId, openTabs]);
+  }, [bumpTabInteraction, dispatch, instanceId, noteId, openTabs, pinnedTabs]);
 
   const handleCloseAllTabs = useCallback(() => {
     if (!openTabs) return;
     bumpTabInteraction();
     for (const tabId of openTabs) {
-      dispatch(removeInstanceTab({ instanceId, noteId: tabId }));
+      if (!pinnedTabs.includes(tabId)) dispatch(removeInstanceTab({ instanceId, noteId: tabId }));
     }
-  }, [bumpTabInteraction, dispatch, instanceId, openTabs]);
+  }, [bumpTabInteraction, dispatch, instanceId, openTabs, pinnedTabs]);
 
   // Copy a live record reference (the "bookmark") to the clipboard — same fence
   // ReferenceCopyButton produces, now reachable from the "…" menu.
@@ -356,6 +367,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const noTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   // The "…" button opens the tab's universal v3 menu ON this element.
   const tabRef = useRef<HTMLDivElement | null>(null);
+  const moreRef = useRef<HTMLButtonElement | null>(null);
   const buildSurfaceScope = useNotesSurfaceScope({
     instanceId,
     noteId,
@@ -392,7 +404,9 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // The tab's own rows: things about THIS TAB and the editor buffer. The
   // note's actions are the ONE shared set (noteActionSet.ts) — the same rows,
   // names and order in every view's right-click, the "…" and the phone sheet.
-  const menuItems: (TabMenuItem | null)[] = [
+  // The note's buffer rows (Save, Copy note text) — about the NOTE, so they
+  // sit with the note's rows, never in the Tab section.
+  const bufferItems: TabMenuItem[] = [
     {
       id: "save",
       icon: Save,
@@ -405,6 +419,32 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       label: "Copy note text",
       fn: handleCopyContent,
     },
+  ];
+  // TAB ACTIONS — Pin, Move, Close (Arman's ruling 2026-09-28: the tab's "…"
+  // is the tab's rows plus one "Note ▸" holding the full note menu).
+  const tabIndex = openTabs?.indexOf(noteId) ?? -1;
+  const neighbour = (d: -1 | 1) => (openTabs && tabIndex >= 0 ? openTabs[tabIndex + d] : undefined);
+  // Absent, never dead: a move that can't happen (edge, or across the pinned block) isn't offered.
+  const canMove = (d: -1 | 1) => {
+    const other = neighbour(d);
+    return other !== undefined && pinnedTabs.includes(other) === isPinned;
+  };
+  const move = (direction: -1 | 1) => {
+    bumpTabInteraction();
+    dispatch(moveInstanceTab({ instanceId, noteId, direction }));
+  };
+  const menuItems: (TabMenuItem | null)[] = [
+    {
+      id: "pin-tab",
+      icon: isPinned ? PinOff : Pin,
+      label: isPinned ? "Unpin tab" : "Pin tab",
+      fn: () => {
+        bumpTabInteraction();
+        dispatch(toggleInstanceTabPinned({ instanceId, noteId }));
+      },
+    },
+    canMove(-1) ? { id: "move-left", icon: ArrowLeft, label: "Move tab left", fn: () => move(-1) } : null,
+    canMove(1) ? { id: "move-right", icon: ArrowRight, label: "Move tab right", fn: () => move(1) } : null,
     null,
     {
       id: "close-tab",
@@ -448,10 +488,25 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       moveToTrash: requestDelete,
     }),
     {
+      id: "note-buffer",
+      anchor: "after-compare",
+      items: bufferItems.map((item): ContextMenuExtraItem => ({
+        kind: "item",
+        id: item.id,
+        label: item.label,
+        icon: item.icon,
+        onSelect: item.fn,
+      })),
+    },
+    tabSection(false),
+  ];
+  function tabSection(primary: boolean): ContextMenuExtraSection {
+    return {
       id: "note-tab",
       label: "Tab",
       icon: PanelTop,
       anchor: "after-compare",
+      ...(primary ? { primary: true } : {}),
       items: menuItems.map((item, i): ContextMenuExtraItem =>
         item === null
           ? { kind: "separator", id: `tab-sep-${i}` }
@@ -464,7 +519,13 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
               onSelect: item.fn,
             },
       ),
-    },
+    };
+  }
+  // The tab's "…": the Tab rows first (primary), and the whole note menu —
+  // the same rows a right-click on the note shows — under one "Note ▸".
+  const tabButtonSections: ContextMenuExtraSection[] = [
+    ...tabExtraSections.filter((section) => section.id !== "note-tab"),
+    tabSection(true),
   ];
 
   // ONE MENU FOR THE NOTE (R26, ALC-15 round 5). The tab's ⋯ and a right-click
@@ -542,6 +603,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           }}
           onContextMenuCapture={(e) => {
             if (titleEditing || !tabRef.current) return;
+            // The "…" has its own menu (tab rows + "Note ▸"): let it open.
+            if ((e.target as HTMLElement | null)?.closest?.("[data-note-tab-more]")) return;
             if (openNoteMenu(tabRef.current)) {
               e.preventDefault();
               e.stopPropagation();
@@ -551,6 +614,9 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         >
           {isDirty && (
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mr-1" />
+          )}
+          {isPinned && (
+            <Pin className="w-2.5 h-2.5 shrink-0 mr-1 text-muted-foreground" aria-label="Pinned tab" />
           )}
 
           {isActive ? (
@@ -608,18 +674,40 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
                   content actions (Copy as / Export → Print / Convert …) that
                   right-click already offered were invisible from the button
                   — Arman could not find Print in Notes (2026-09-21). */}
-              <button
-                className={actionBtnClass}
-                title="More actions"
-                aria-haspopup="menu"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  bumpTabInteraction();
-                  if (!openNoteMenu(e.currentTarget)) openContextMenuForElement(tabRef.current);
+              <NonEditableContextMenu
+                sourceFeature={NOTES_EDITOR_CONTEXT_MENU_PROPS.sourceFeature}
+                surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+                getApplicationScope={getApplicationScope}
+                contentSource={noteIdentityContentSource(noteId, `tab-more:${instanceId}:${noteId}`)}
+                entity={{ type: "note", id: noteId, title: label, resourceType: "note" }}
+                resolveContextOnOpen={() => ({
+                  [CONTEXT_MENU_HEADING_KEY]: { label: "Note", text: label || "Untitled note" },
+                })}
+                extraSections={tabButtonSections}
+                // Arman 2026-09-28: the tab's "…" is the Tab rows, then ONE
+                // "Note ▸" holding the full note menu.
+                subjectFold="Note"
+                onMenuOpenChange={(open) => {
+                  setTabMenuOpen(open);
+                  if (open) bumpTabInteraction();
                 }}
               >
-                <MoreHorizontal />
-              </button>
+                <button
+                  ref={moreRef}
+                  data-note-tab-more=""
+                  className={actionBtnClass}
+                  title="Tab and note actions"
+                  aria-label="Tab and note actions"
+                  aria-haspopup="menu"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    bumpTabInteraction();
+                    openContextMenuForElement(moreRef.current);
+                  }}
+                >
+                  <MoreHorizontal />
+                </button>
+              </NonEditableContextMenu>
             </div>
           )}
 

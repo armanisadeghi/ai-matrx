@@ -349,6 +349,14 @@ export interface ContextMenuV3CoreProps {
    */
   recordActionsOnly?: boolean;
   /**
+   * FOLD UNDER THE SUBJECT — for a control that sits over a CONTAINER of the
+   * thing (a note tab's "…"): the primary section (the container's own rows,
+   * e.g. "Tab") draws first and every other row goes under ONE submenu with
+   * this name ("Note ▸"). Desktop right-click layout only; the phone sheet
+   * already drills down. Omit for a normal menu.
+   */
+  subjectFold?: string;
+  /**
    * Host-specific registry actions (e.g. a surface's own "Edit note") — rendered
    * inside the ONE registry tree, in its extras group, never a parallel section.
    */
@@ -509,6 +517,8 @@ export interface MenuContentProps {
   excludedRichActions?: string[];
   /** See `ContextMenuV3CoreProps.recordActionsOnly`. */
   recordActionsOnly?: boolean;
+  /** See `ContextMenuV3CoreProps.subjectFold`. */
+  subjectFold?: string;
   /**
    * Host-specific registry actions (e.g. a surface's own "Edit note") — rendered
    * inside the ONE registry tree, in its extras group, never a parallel section.

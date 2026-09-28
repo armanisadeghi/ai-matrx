@@ -1262,16 +1262,14 @@ const notesSlice = createSlice({
       if (!inst) return;
       const noteId = action.payload.noteId;
       inst.activeTabId = noteId;
-      // Active-first contract: focused note leads `openTabs` (and thus `?tabs=`).
-      if (
-        noteId &&
-        inst.openTabs.includes(noteId) &&
-        inst.openTabs[0] !== noteId
-      ) {
-        inst.openTabs = [
-          noteId,
-          ...inst.openTabs.filter((id) => id !== noteId),
-        ];
+      // Active-first contract: focused note leads `openTabs` (and thus `?tabs=`)
+      // — after the pinned tabs, which always lead; a pinned tab stays put.
+      const pinned = new Set(inst.pinnedTabs ?? []);
+      if (noteId && inst.openTabs.includes(noteId) && !pinned.has(noteId)) {
+        const rest = inst.openTabs.filter((id) => id !== noteId && !pinned.has(id));
+        const lead = inst.openTabs.filter((id) => pinned.has(id));
+        const next = [...lead, noteId, ...rest];
+        if (next.some((id, i) => id !== inst.openTabs[i])) inst.openTabs = next;
       }
     },
 
@@ -1294,6 +1292,9 @@ const notesSlice = createSlice({
       inst.openTabs = inst.openTabs.filter(
         (id) => id !== action.payload.noteId,
       );
+      if (inst.pinnedTabs?.includes(action.payload.noteId)) {
+        inst.pinnedTabs = inst.pinnedTabs.filter((id) => id !== action.payload.noteId);
+      }
       if (inst.activeTabId === action.payload.noteId) {
         inst.activeTabId = inst.openTabs[0] ?? null;
       }
@@ -1307,7 +1308,51 @@ const notesSlice = createSlice({
       action: PayloadAction<{ instanceId: string; tabs: string[] }>,
     ) {
       const inst = state.instances[action.payload.instanceId];
-      if (inst) inst.openTabs = action.payload.tabs;
+      if (!inst) return;
+      // Pinned tabs always lead (a drag can reorder within each block, never across).
+      const pinned = new Set(inst.pinnedTabs ?? []);
+      inst.openTabs = [
+        ...action.payload.tabs.filter((id) => pinned.has(id)),
+        ...action.payload.tabs.filter((id) => !pinned.has(id)),
+      ];
+    },
+
+    /** Pin or unpin a tab: pinned tabs lead the strip in the order they were pinned. */
+    toggleInstanceTabPinned(
+      state,
+      action: PayloadAction<{ instanceId: string; noteId: string }>,
+    ) {
+      const inst = state.instances[action.payload.instanceId];
+      const { noteId } = action.payload;
+      if (!inst || !inst.openTabs.includes(noteId)) return;
+      const pinned = (inst.pinnedTabs ?? []).filter((id) => inst.openTabs.includes(id));
+      const next = pinned.includes(noteId) ? pinned.filter((id) => id !== noteId) : [...pinned, noteId];
+      inst.pinnedTabs = next;
+      const set = new Set(next);
+      const rest = inst.openTabs.filter((id) => !set.has(id));
+      // An unpinned tab lands first after the pinned block.
+      if (!set.has(noteId)) {
+        rest.splice(rest.indexOf(noteId), 1);
+        rest.unshift(noteId);
+      }
+      inst.openTabs = [...next, ...rest];
+    },
+
+    /** Move a tab one place left (-1) or right (+1) within its block (pinned / unpinned). */
+    moveInstanceTab(
+      state,
+      action: PayloadAction<{ instanceId: string; noteId: string; direction: -1 | 1 }>,
+    ) {
+      const inst = state.instances[action.payload.instanceId];
+      if (!inst) return;
+      const { noteId, direction } = action.payload;
+      const from = inst.openTabs.indexOf(noteId);
+      const to = from + direction;
+      if (from < 0 || to < 0 || to >= inst.openTabs.length) return;
+      const pinned = new Set(inst.pinnedTabs ?? []);
+      if (pinned.has(noteId) !== pinned.has(inst.openTabs[to]!)) return;
+      inst.openTabs[from] = inst.openTabs[to]!;
+      inst.openTabs[to] = noteId;
     },
 
     /**
@@ -1330,10 +1375,14 @@ const notesSlice = createSlice({
     moveActiveTabToFront(state, action: PayloadAction<{ instanceId: string }>) {
       const inst = state.instances[action.payload.instanceId];
       if (!inst || !inst.activeTabId) return;
+      // "Front" is the first place after the pinned tabs; a pinned tab stays put.
+      const pinned = new Set(inst.pinnedTabs ?? []);
+      if (pinned.has(inst.activeTabId)) return;
+      const front = inst.openTabs.filter((id) => pinned.has(id)).length;
       const idx = inst.openTabs.indexOf(inst.activeTabId);
-      if (idx <= 0) return;
+      if (idx <= front) return;
       inst.openTabs.splice(idx, 1);
-      inst.openTabs.unshift(inst.activeTabId);
+      inst.openTabs.splice(front, 0, inst.activeTabId);
     },
 
     setSplitNote(
@@ -1849,6 +1898,8 @@ export const {
   addInstanceTab,
   removeInstanceTab,
   reorderInstanceTabs,
+  toggleInstanceTabPinned,
+  moveInstanceTab,
   markTabInteraction,
   moveActiveTabToFront,
   setSplitNote,
