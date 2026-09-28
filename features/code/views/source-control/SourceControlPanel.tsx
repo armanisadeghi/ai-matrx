@@ -776,6 +776,7 @@ function RepositoryPanel({
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground">
+                {/* read-gate-exempt: a property of repository metadata that was read successfully (repo is null until then), not an empty state */}
                 {repo.upstream
                   ? `Tracking ${repo.upstream}`
                   : "No upstream branch"}
@@ -1041,6 +1042,7 @@ function RepositoryPanel({
             {status.conflicted.length > 0 && (
               <Section
                 title="Merge conflicts"
+                // read-gate-exempt: conflicts from a git status that returned; status is cleared to null when the status read fails
                 count={status.conflicted.length}
                 collapsed={false}
                 onToggle={() => {}}
@@ -1128,6 +1130,7 @@ function RepositoryPanel({
             {autoStashes.length > 0 && (
               <Section
                 title="Saved session branches"
+                // read-gate-exempt: branches that the git read listed; the section renders only when that read returned at least one
                 count={autoStashes.length}
                 collapsed={collapsed.autoStash}
                 onToggle={() =>

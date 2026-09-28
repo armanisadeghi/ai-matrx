@@ -146,6 +146,7 @@ export function FilesystemPropertiesDialog({
               <>
                 <PropertyRow
                   label="Items"
+                  // read-gate-exempt: shown only after the properties read returned (props stays null until then; its failure is shown in the error line)
                   value={
                     props.childCount != null
                       ? `${props.childCount} direct ${props.childCount === 1 ? "item" : "items"}`

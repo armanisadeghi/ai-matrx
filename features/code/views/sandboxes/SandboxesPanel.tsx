@@ -124,6 +124,9 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const [instances, setInstances] = useState<SandboxInstance[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // The list read's own failure (the banner above says it) — the empty view
+  // never claims "no sandboxes" over it.
+  const [listFailed, setListFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
   const [creatingRequest, setCreatingRequest] = useState<{
@@ -196,9 +199,15 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       if (!resp.ok)
         throw new Error(`Failed to list sandboxes (${resp.status})`);
       const data: SandboxListResponse = await resp.json();
-      if (mountedRef.current && refreshGenerationRef.current === generation && currentAuthReadyRef.current === scope.authReady && currentOrganizationIdRef.current === scope.organizationId && currentUserIdRef.current === scope.userId) setInstances(data.instances ?? []);
+      if (mountedRef.current && refreshGenerationRef.current === generation && currentAuthReadyRef.current === scope.authReady && currentOrganizationIdRef.current === scope.organizationId && currentUserIdRef.current === scope.userId) {
+        setInstances(data.instances ?? []);
+        setListFailed(false);
+      }
     } catch (err) {
-      if (mountedRef.current && refreshGenerationRef.current === generation) setError(extractErrorMessage(err));
+      if (mountedRef.current && refreshGenerationRef.current === generation) {
+        setError(extractErrorMessage(err));
+        setListFailed(true);
+      }
     } finally {
       if (mountedRef.current && refreshGenerationRef.current === generation) setLoading(false);
     }
@@ -558,7 +567,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
             Loading…
           </div>
         )}
-        {instances?.length === 0 && (
+        {!listFailed && instances?.length === 0 && (
           <div className="flex flex-col items-center gap-2 px-6 py-8 text-center text-neutral-500 dark:text-neutral-400">
             <Server size={32} strokeWidth={1.2} />
             <p className="text-xs">No sandboxes yet.</p>

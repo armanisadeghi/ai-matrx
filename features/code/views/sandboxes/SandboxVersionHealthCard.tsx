@@ -451,7 +451,13 @@ export function SandboxVersionHealthCard({
       );
       void pollMigration(status.operation_id, generation);
     } catch {
-      // No saved operation means there is no current action to label failed.
+      // The probe itself failed: say so, so nobody starts a second update
+      // believing none is running.
+      if (isCurrentGeneration(generation)) {
+        setMigrationNotice(
+          "Couldn't check whether a sandbox update is already running — refresh before starting one.",
+        );
+      }
     }
   }
 
