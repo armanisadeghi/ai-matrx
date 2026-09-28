@@ -60,6 +60,7 @@ import {
 } from "@/features/message-templates/services/message-templates-service";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { MenuPresenceProvider } from "@/features/context-menu-v3/menu-presence";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import type { RichDocumentAction } from "@/features/rich-document/types";
@@ -537,7 +538,29 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
 
   // The page's own actions, in its right-click menu (view mode).
   const pageMenuActions: RichDocumentAction[] = [
-    ...(canEdit
+    ...(canEdit && mode === "edit" && isDirty
+      ? [
+          {
+            id: "message-template-save",
+            label: "Save changes",
+            icon: Save,
+            category: "edit" as const,
+            supportedSources: "*" as const,
+            order: 0,
+            run: () => void handleSave(),
+          },
+          {
+            id: "message-template-discard",
+            label: "Discard changes",
+            icon: X,
+            category: "edit" as const,
+            supportedSources: "*" as const,
+            order: 0.5,
+            run: () => void handleDiscard(),
+          },
+        ]
+      : []),
+    ...(canEdit && mode === "view"
       ? [
           {
             id: "message-template-edit",
@@ -550,7 +573,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
           },
         ]
       : []),
-    ...(viewFields.length > 0
+    ...((mode === "edit" ? usedFields : viewFields).length > 0
       ? [
           {
             id: "message-template-toggle-example",
@@ -598,8 +621,9 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
         }
         activeModeHref={mode === "edit" ? editHref : pageHref}
         onModeSelect={selectMode}
+        modeSwitchOnPhone
         entityStatus={
-          mode === "edit" ? (
+          mode === "edit" || isDirty ? (
             // On a phone the pinned Save already says there are changes; the
             // words would only be clipped beside it.
             <span
@@ -625,6 +649,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                         label: "Discard",
                         icon: X,
                         showLabel: true,
+                        pinnedOnPhone: true,
                         onPress: () => void handleDiscard(),
                       },
                       {
@@ -637,11 +662,11 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                       },
                     ]
                   : []),
-                {
-                  label: "Archive",
-                  icon: Archive,
-                  onPress: handleArchive,
-                },
+                // Archive is a VIEW action; while editing it lives in the
+                // record's right-click menu, never as a bare icon beside Save.
+                ...(mode === "view"
+                  ? [{ label: "Archive", icon: Archive, onPress: handleArchive }]
+                  : []),
               ]
             : undefined
         }
@@ -658,7 +683,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
         resolveContextOnOpen={() => ({
           [CONTEXT_MENU_HEADING_KEY]: { label: "Message template", text: readableText },
         })}
-        extraRichActions={mode === "view" ? pageMenuActions : undefined}
+        extraRichActions={pageMenuActions}
         entity={{
           type: "message_template",
           id: saved.id,
@@ -722,6 +747,13 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                 </div>
                 {managedNotice && <div className="border-b border-border">{managedNotice}</div>}
                 <MessageBody subject={savedSubject} body={saved.content ?? ""} show={show} />
+                <div className="border-t border-border px-3 py-2">
+                  <EntityCustomFields
+                    entityToken="message_template"
+                    recordId={saved.id}
+                    organizationId={saved.organization_id}
+                  />
+                </div>
               </article>
             ) : (
               // In edit mode each field owns its right-click menu (the app's
@@ -846,11 +878,20 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                 <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto]">
                   <div className="space-y-1">
                     <Label>Tags</Label>
-                    <AgentAppTagsInput
-                      value={tags}
-                      onChange={setTags}
-                      placeholder="Add a tag and press Enter"
-                    />
+                    <EditableContextMenu
+                      sourceFeature="chat"
+                      surfaceName={MESSAGE_TEMPLATE_SURFACE_NAME}
+                      getApplicationScope={getScope}
+                      contextData={{ content: tags.join(", ") }}
+                    >
+                      <div>
+                        <AgentAppTagsInput
+                          value={tags}
+                          onChange={setTags}
+                          placeholder="Add a tag and press Enter"
+                        />
+                      </div>
+                    </EditableContextMenu>
                   </div>
                   <label className="matrx-tap-area flex h-9 cursor-pointer items-center gap-2 text-sm text-foreground">
                     <Switch checked={isPublic} onCheckedChange={setIsPublic} />
@@ -875,11 +916,15 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
               </MenuPresenceProvider>
             )}
 
-            <EntityCustomFields
-              entityToken="message_template"
-              recordId={saved.id}
-              organizationId={saved.organization_id}
-            />
+            {mode === "edit" && (
+              <section className="rounded-lg border border-border bg-card px-3 py-2">
+                <EntityCustomFields
+                  entityToken="message_template"
+                  recordId={saved.id}
+                  organizationId={saved.organization_id}
+                />
+              </section>
+            )}
           </div>
         </div>
       </NonEditableContextMenu>
