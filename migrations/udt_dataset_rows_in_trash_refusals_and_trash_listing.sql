@@ -1,4 +1,3 @@
--- draft: udt-rows-soft-delete lane — archived Data table rows are listed and restored in /trash, and every row writer says "in Trash" instead of "not found" (rehearsed on the clone; the chair removes this line and applies)
 -- based-on: public.udt_upsert_row(uuid, uuid, jsonb) 10e4ff3c30ca95c3d743f5c3b327e21ab46a23d9e4e0330b9632e6f90464e29f
 -- based-on: public.udt_upsert_cell(uuid, uuid, text, jsonb) 2ed1510f38d02c239139e20073d15ae24ecf143cd40da664a994607589d97bf2
 -- based-on: public.update_data_row_in_user_table(uuid, jsonb) 471e4005f9e8f8955ea262beb0fcac590155c3d72b1b548334531b8b9c94cdaf
