@@ -684,6 +684,8 @@ const HISTORY: Array<{ name: string; rev: string; path: string; rule: Rule; labe
   { name: "CleanupPad at 29f224b48d", rev: "29f224b48d", path: "features/transcription-cleanup/components/CleanupPad.tsx", rule: "mobile-panel-only", label: /^clean/, expectFlagged: false },
   { name: "TranscriptionCleanup window before 212847765a", rev: "212847765a^", path: "components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx", rule: "window-sidebar-only", label: /^clean/, expectFlagged: true },
   { name: "TranscriptionCleanup window at 212847765a", rev: "212847765a", path: "components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx", rule: "window-sidebar-only", label: /^clean/, expectFlagged: false },
+  { name: "Scraper window before b58af9f683 (URL + Scrape lived only in the WindowPanel sidebar)", rev: "b58af9f683^", path: "features/scraper/parts/ScraperFloatingWorkspace.tsx", rule: "window-sidebar-only", label: /^scrape/, expectFlagged: true },
+  { name: "Scraper window at b58af9f683 (the results body carries its own URL + Scrape)", rev: "b58af9f683", path: "features/scraper/parts/ScraperFloatingWorkspace.tsx", rule: "window-sidebar-only", label: /^scrape/, expectFlagged: false },
   { name: "DataStoresPage at aea8a72a83 (create-store form only in the Stores drawer; a submit button's handler is its form's onSubmit)", rev: "aea8a72a83", path: "features/rag/components/data-stores/DataStoresPage.tsx", rule: "mobile-panel-only", label: /^(create|submit)/, expectFlagged: true },
 ];
 
