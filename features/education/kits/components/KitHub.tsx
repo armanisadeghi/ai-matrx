@@ -99,7 +99,6 @@ function ArtifactCard({
   statsLoading: boolean;
   statsFailed: boolean;
 }) {
-  const router = useRouter();
   const kind = artifact.targetKind;
   if (!kind) return null;
   const look = TARGET_PRESENTATION[kind];
@@ -220,6 +219,7 @@ export function KitHub({
   /** `?add=<kind>` — the format the learner came here to add (the home's nudge). */
   addTarget?: TargetKind;
 }) {
+  const router = useRouter();
   const [kit, setKit] = useState<StudyKit | null>(null);
   const [stats, setStats] = useState<KitArtifactStats>({});
   const [statsLoading, setStatsLoading] = useState(true);
