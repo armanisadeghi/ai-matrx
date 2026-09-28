@@ -446,6 +446,18 @@ jobs:
       - name: "[signal] Complete-list reads that PostgREST silently caps at 1000"
         continue-on-error: true
         run: pnpm check:unbounded-reads
+      - name: "[signal] the component created_by guard can still fail (self-test)"
+        # Static and offline like the unbounded-read detector beside it. On a
+        # COMPONENT table the database rewrites created_by to the PARENT's owner
+        # (db-rules 6d-1), so code that reads it as "the person" addresses,
+        # attributes or keys on the wrong human (a test digest reached Arman's
+        # personal inbox from aidream; every canvas viewer shared one state row
+        # here). A signal, per the standing CI ruling.
+        continue-on-error: true
+        run: pnpm check:component-created-by-reads:self-test
+      - name: "[signal] No code reads a component's created_by as a person"
+        continue-on-error: true
+        run: pnpm check:component-created-by-reads
       - name: CLAUDE.md's machine-checkable claims still hold
         # Includes the claim that THIS workflow runs the gates named in it.
         # Without it here, deleting a step from this file would silently make
