@@ -141,6 +141,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 // ===========================================================================
 // Agent Chat surface — the "Agent Chat" tab embeds the canonical agent system
@@ -2567,12 +2568,14 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
-          {error && (
+          {error && inv ? (
+            <StaleDataNotice hasData what="the search inventory" detail={error} onRetry={() => void refresh()} />
+          ) : error ? (
             <div className="flex items-center gap-2 text-sm text-destructive">
               <AlertCircle className="h-4 w-4" /> {error}
               <ErrorAlchemyMenu error={error} />
             </div>
-          )}
+          ) : null}
 
           {!inv && !loading && !error && (
             <div className="rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground">
@@ -2592,8 +2595,8 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
             </div>
           )}
 
-          {/* A failed refresh hides the last inventory: the error above is the one message. */}
-          {inv && !error && (
+          {/* A failed refresh keeps the last inventory under the stale notice above (stale-while-error). */}
+          {inv && (
             <>
               <div className="rounded-md border bg-card overflow-hidden">
                 <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
@@ -2668,6 +2671,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                   <div className="divide-y">
                     {visibilityRoutes.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-muted-foreground">
+                        {/* read-gate-exempt: part of the last SUCCESSFUL inventory, shown under the stale notice when a refresh failed */}
                         No breakdown available.
                       </div>
                     ) : (
@@ -2694,6 +2698,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                 <div className="divide-y">
                   {inv.top_sources.length === 0 ? (
                     <div className="px-3 py-2 text-xs text-muted-foreground">
+                      {/* read-gate-exempt: part of the last SUCCESSFUL inventory, shown under the stale notice when a refresh failed */}
                       No sources.
                     </div>
                   ) : (

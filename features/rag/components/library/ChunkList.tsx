@@ -454,7 +454,8 @@ export function ChunksOnPage({
               highlighted={highlightChunkId != null && c.id === highlightChunkId}
             />
           ))}
-        {!error && total > chunks.length && (
+        {/* A failed page load keeps the known total and Load more (its retry) — stale-while-error. */}
+        {total > chunks.length && (
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground italic">
               Showing first {chunks.length} of {total}.
