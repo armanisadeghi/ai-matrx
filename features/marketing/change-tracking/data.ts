@@ -173,6 +173,7 @@ export async function getSeoChangeBundle(
       .from("change_set")
       .select("*")
       .eq("id", changeId)
+      .is("deleted_at", null)
       .abortSignal(abortSignal)
       .single(),
     db
@@ -346,7 +347,12 @@ export async function createSeoChange(
     return changeId;
   } catch (error) {
     // write-lands-exempt: rollback cleanup inside catch; the original error is what reaches the person
-    const cleanup = await db.from("change_set").delete().eq("id", changeId);
+    // Delete means archive: the half-written change set moves to Trash (its
+    // parts follow via the soft-delete cascade) instead of being destroyed.
+    const cleanup = await db
+      .from("change_set")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", changeId);
     if (cleanup.error) {
       // Two raw PostgREST messages concatenated used to reach a toast. The
       // person needs one sentence; both originals stay reachable as `cause`.
