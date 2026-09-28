@@ -26,6 +26,109 @@ const CONTACT_SEARCH_PATH = "/google-import/contacts/search";
 const CONTACT_IMPORT_PATH = "/google-import/contacts/import";
 const TASK_LIST_PATH = "/google-import/tasks/list";
 const TASK_IMPORT_PATH = "/google-import/tasks/import";
+const OTHER_CONTACTS_PREVIEW_PATH = "/google-integrations/other-contacts/preview";
+const OTHER_CONTACTS_REVIEW_PATH = "/google-integrations/other-contacts/review";
+const OTHER_CONTACTS_IMPORT_PATH = "/google-integrations/other-contacts/import";
+
+export interface OtherContactPreviewPending {
+  resource_name: string;
+  display_name: string;
+  emails: string[];
+  phones: string[];
+  source: "google_other_contacts";
+}
+
+export interface OtherContactsPreviewPending {
+  contacts: OtherContactPreviewPending[];
+  next_page_token: string | null;
+  source: "google_other_contacts";
+  access_mode: "internal_test_read_only";
+}
+
+export interface OtherContactTargetPending {
+  person_id: string | null;
+  person_name: string | null;
+  create_new: boolean;
+  matched_by: string | null;
+}
+
+export interface OtherContactsReviewPending {
+  fingerprint: string;
+  target: OtherContactTargetPending;
+  receipt: string;
+  result: ContactImportResultPending;
+}
+
+export interface OtherContactsPreviewArgs {
+  connectionId: string;
+  pageToken?: string | null;
+  signal?: AbortSignal;
+}
+
+/** One bounded page from the exact personal connection the reviewer selected. */
+export async function previewOtherContacts(
+  args: OtherContactsPreviewArgs,
+): Promise<OtherContactsPreviewPending> {
+  const { data } = await postJson<OtherContactsPreviewPending>(
+    OTHER_CONTACTS_PREVIEW_PATH,
+    {
+      connection_id: args.connectionId,
+      page_token: args.pageToken ?? null,
+      page_size: 50,
+    },
+    { signal: args.signal },
+  );
+  return data;
+}
+
+export interface OtherContactsReviewArgs {
+  organizationId: string;
+  connectionId: string;
+  resourceName: string;
+  fields: ContactFieldChoicePending[];
+  signal?: AbortSignal;
+}
+
+/** Freshly reads the one selection and returns the CRM match/mapping review. */
+export async function reviewOtherContact(
+  args: OtherContactsReviewArgs,
+): Promise<OtherContactsReviewPending> {
+  const { data } = await postJson<OtherContactsReviewPending>(
+    OTHER_CONTACTS_REVIEW_PATH,
+    {
+      organization_id: args.organizationId,
+      connection_id: args.connectionId,
+      resource_name: args.resourceName,
+      fields: args.fields,
+    },
+    { organizationId: args.organizationId, signal: args.signal },
+  );
+  return data;
+}
+
+export interface OtherContactsImportArgs extends OtherContactsReviewArgs {
+  receipt: string;
+  target: OtherContactTargetPending;
+}
+
+/** Applies only the exact, unexpired review receipt returned above. */
+export async function importOtherContact(
+  args: OtherContactsImportArgs,
+): Promise<ContactImportResultPending> {
+  const { data } = await postJson<ContactImportResultPending>(
+    OTHER_CONTACTS_IMPORT_PATH,
+    {
+      organization_id: args.organizationId,
+      connection_id: args.connectionId,
+      resource_name: args.resourceName,
+      review_receipt: args.receipt,
+      fields: args.fields,
+      target: args.target,
+    },
+    { organizationId: args.organizationId, signal: args.signal },
+  );
+  return data;
+}
 
 export async function fetchContactFieldSpecs(
   organizationId: string,
