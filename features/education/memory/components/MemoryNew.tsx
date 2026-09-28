@@ -327,10 +327,6 @@ export function MemoryNew() {
             Generate memory aids
             <IntelligenceIndicator feature="education" mandateKeys={[EDU_MEMORY_MANDATES.memoryAid]} />
           </h1>
-          <p className="text-xs text-muted-foreground">
-            Turn a deck or topic into mnemonics, analogies, and a memory-palace
-            scaffold for the hard-to-retain parts.
-          </p>
         </div>
       </div>
 

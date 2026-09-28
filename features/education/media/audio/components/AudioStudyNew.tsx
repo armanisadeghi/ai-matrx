@@ -174,10 +174,6 @@ export function AudioStudyNew() {
           <h1 className="text-lg font-semibold text-foreground">
             Generate audio study
           </h1>
-          <p className="text-xs text-muted-foreground">
-            Turn a deck or a topic into a produced audio session you can listen
-            to anywhere.
-          </p>
         </div>
       </div>
 
