@@ -25,6 +25,7 @@
 // number on this page that was not read from the live system this minute.
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useRouter } from "next/navigation";
@@ -1412,6 +1413,7 @@ function CrmContactTry({ organizationId }: { organizationId: string }) {
     if (contacts === null) return <p className="text-sm text-muted-foreground">Finding a contact…</p>;
     if (contacts.length === 0) {
         return (
+            // read-gate-exempt: a failed contacts read returns the Refusal above (if (problem) return …), so this follows a read that succeeded
             <p className="text-sm text-muted-foreground">
                 This organization has no CRM contacts yet, so there is nothing here to extend. Add one in
                 the CRM and this section works on it.{" "}
@@ -1514,6 +1516,7 @@ function AgentTry({ organizationId }: { organizationId: string }) {
                 ) : agents === null ? (
                     <p className="text-sm text-muted-foreground">Finding this organization’s agents…</p>
                 ) : agents.length === 0 ? (
+                    // read-gate-exempt: the agents read's failure (problem) is said by the Refusal branch above
                     <p className="text-sm text-muted-foreground">
                         This organization has no agents yet.{" "}
                         <Link href="/agents/all" className="underline underline-offset-2">
@@ -1761,6 +1764,10 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
     // PRODUCTS row 16 — asking somebody to sign one of these frozen documents.
     const [signRequests, setSignRequests] = useState<SignRequestRow[] | null>(null);
     const [signatureFields, setSignatureFields] = useState<FieldRow[]>([]);
+    // Each read's own failure — so "no templates" / "needs a signature column"
+    // are never said over a read that failed.
+    const [templatesError, setTemplatesError] = useState<string | null>(null);
+    const [signatureFieldsError, setSignatureFieldsError] = useState<string | null>(null);
     const [askingOn, setAskingOn] = useState<string | null>(null);
     const [askEmail, setAskEmail] = useState("");
     const [askName, setAskName] = useState("");
@@ -1779,9 +1786,12 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                     p_table_id: table.id,
                 }),
             );
+            setTemplatesError(null);
         } catch (error) {
             setTemplates([]);
-            setProblem(error instanceof Error ? error.message : String(error));
+            const message = error instanceof Error ? error.message : String(error);
+            setTemplatesError(message);
+            setProblem(message);
         }
     }, [organizationId, table.id]);
 
@@ -1836,10 +1846,12 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                     (field) => field.data?.type === "text" && field.data?.format === "signature",
                 ),
             );
-        } catch {
-            // Not a refusal worth a banner: the ask control below is ABSENT when
-            // there is no signature column, and says why.
+            setSignatureFieldsError(null);
+        } catch (error) {
+            // Not a refusal worth a banner: the ask control below is ABSENT —
+            // and says the column list could not be read, never "declare one".
             setSignatureFields([]);
+            setSignatureFieldsError(error instanceof Error ? error.message : String(error));
         }
     }, [organizationId, table.id]);
 
@@ -1880,7 +1892,14 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
             <TryIt hint={`writes a real template on ${tableName(table)} and real documents on its records`}>
                 <div className="space-y-3">
                     {/* ── the templates this table already has ─────────────── */}
-                    {templates.length === 0 ? (
+                    {templatesError ? (
+                        <ReadFailure
+                            className="m-0"
+                            error={templatesError}
+                            what={`${tableName(table)}'s document templates`}
+                            onRetry={() => void loadTemplates()}
+                        />
+                    ) : templates.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
                             {tableName(table)} has no document templates yet. Write one below — the wording is
                             yours, and <code className="rounded bg-muted px-1">{"{{field:<id>}}"}</code> drops
@@ -2137,7 +2156,14 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                     </li>
                                 ))}
                             </ul>
-                            {signatureFields.length === 0 ? (
+                            {signatureFieldsError ? (
+                                <ReadFailure
+                                    className="m-0"
+                                    error={signatureFieldsError}
+                                    what={`${tableName(table)}'s signature columns`}
+                                    onRetry={() => void loadSignatureFields()}
+                                />
+                            ) : signatureFields.length === 0 ? (
                                 <p className="text-xs text-muted-foreground">
                                     To ask somebody to sign one of these, {tableName(table)} needs a
                                     signature column — a text column whose format is{" "}
@@ -2238,7 +2264,8 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                         Works until {new Date(madeLink.expires_at).toLocaleString()}.
                                         {madeLink.signer_has_account
                                             ? " They have an account here, so reminders can be sent in the app."
-                                            : " They have no account here, so reminders are yours to send."}
+                                            : // read-gate-exempt: states the signer has no account (from the created link), not an empty read
+                                              " They have no account here, so reminders are yours to send."}
                                     </p>
                                 </div>
                             ) : null}
