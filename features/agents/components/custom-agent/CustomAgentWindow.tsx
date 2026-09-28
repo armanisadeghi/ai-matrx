@@ -44,6 +44,7 @@ import {
 } from "./custom-agent-plan";
 import { getCustomAgentSession, releaseCustomAgentSession } from "./session";
 import { putShortcutDraftSeed } from "@/features/agent-shortcuts/draft-seed";
+import { getSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 export interface CustomAgentWindowProps {
   isOpen: boolean;
@@ -144,9 +145,15 @@ export default function CustomAgentWindow({
   const handleSaveAsShortcut = () => {
     if (!agentId) return;
     const runtime = buildMappedRuntime(mapping, sources, rows, session?.scope);
-    const surface = session?.scope?.surface_name;
+    // The page the text was captured on: the scope's own name when it carries
+    // one, else the surface mounted under it (the same lookup a launch uses).
+    const scoped = session?.scope?.surface_name;
+    const surfaceName =
+      typeof scoped === "string" && scoped
+        ? scoped
+        : (getSurfaceRuntime()?.surfaceName ?? null);
     const seedId = putShortcutDraftSeed({
-      surfaceName: typeof surface === "string" && surface ? surface : null,
+      surfaceName,
       valueMappings: runtime.valueMappings ?? {},
       displayMode: "floating-chat",
       allowChat: true,
