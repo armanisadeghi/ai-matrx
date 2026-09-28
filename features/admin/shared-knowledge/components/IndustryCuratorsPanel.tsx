@@ -36,6 +36,8 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
   );
   const [revokeBusy, setRevokeBusy] = useState(false);
   const [bumper, setBumper] = useState(0);
+  // A lookup that FAILED is not "no account with that email" — it is said as a failure.
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   const curatorsRead = useRead(
     () => fetchIndustryCurators(industry.id),
@@ -49,8 +51,13 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
     const value = email.trim();
     if (!value) return;
     setGranting(true);
+    setLookupError(null);
     try {
       const found = selectedUserId ? null : await searchUserByEmail(value);
+      if (!selectedUserId && found?.error) {
+        setLookupError(found.error);
+        return;
+      }
       if (!selectedUserId && !found?.exists) {
         toast.error(
           "No account with that email — curators are normal platform accounts.",
@@ -105,6 +112,7 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
           value={email}
           onValueChange={(value) => {
             setEmail(value);
+            setLookupError(null);
             setSelectedUserId(null);
           }}
           onEnter={() => void onGrant()}
@@ -135,6 +143,14 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
           Make curator
         </Button>
       </div>
+      {lookupError ? (
+        <ReadFailure
+          error={lookupError}
+          what="that account"
+          onRetry={() => void onGrant()}
+          className="m-0"
+        />
+      ) : null}
       {loading && curators.length === 0 ? (
         <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading…
