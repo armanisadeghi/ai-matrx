@@ -5040,3 +5040,5 @@ its registry seed did not. Belongs to whoever owns the Decision playground / `fe
 Not fixed here because the remedy is a registry seed declaring that key — that lane's contract to
 write, not this one's to guess. It is the `check:settings-unregistered` class: a knob read whose
 key has no live `platform.feature_knob` row RAISES at run time by design.
+
+- 2026-09-28 (page-pass coordinator): Extension code-login — `/api/auth/extension/generate-code` now REQUIRES the organization (X-Organization-Id) and refuses with `organization_required` without it (ebaa48062f). No caller sends it yet: `utils/auth/extensionAuthHelper.ts` is unused and sends no org; whoever wires the extension login must send the org via `fetchWithOrganization`. Owner: extension-auth lane (see c714776110).
