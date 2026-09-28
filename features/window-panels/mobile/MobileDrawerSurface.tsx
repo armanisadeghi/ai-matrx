@@ -26,6 +26,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SidebarIcon, X } from "lucide-react";
+import {
+  MobileWindowActionsRow,
+  MobileWindowTitleRow,
+  mobileWindowTitleClass,
+} from "../WindowPanel/MobileTitleRow";
 
 interface MobileDrawerSurfaceProps {
   title: ReactNode;
@@ -92,39 +97,61 @@ export default function MobileDrawerSurface({
         {/* The handle row above is a 44px drag area with the bar at its
             centre; the header tucks into its lower half (no second padded
             band — the title sat 40px under the handle). */}
-        <div className="-mt-3 flex items-center gap-1 px-3 py-0 border-b border-border/50 shrink-0">
-          <div className="flex items-center gap-1 shrink-0">{actionsLeft}</div>
-          <DrawerTitle className="flex-1 text-sm font-medium truncate mx-2">
-            {title}
-          </DrawerTitle>
-          <div className="flex items-center gap-1 shrink-0">
-            {actionsRight}
-            {hasSidebar && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-                onClick={() => setSidebarOpen((v) => !v)}
-              >
-                <SidebarIcon className="w-4 h-4" />
-              </Button>
-            )}
-            {hideClose ? null : (
-              <DrawerClose asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  aria-label="Close"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </DrawerClose>
-            )}
-          </div>
+        <div className="-mt-3 flex flex-col px-3 border-b border-border/50 shrink-0">
+          {/* Row 1 is the title's alone and wraps to two lines before it
+              truncates; actions + the sidebar toggle sit on row 2
+              (MobileTitleRow.tsx). */}
+          <MobileWindowTitleRow
+            className="py-0"
+            trailing={
+              hideClose ? null : (
+                <DrawerClose asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    aria-label="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </DrawerClose>
+              )
+            }
+          >
+            <DrawerTitle
+              data-window-mobile-title=""
+              className={mobileWindowTitleClass(title)}
+            >
+              {title}
+            </DrawerTitle>
+          </MobileWindowTitleRow>
+          <MobileWindowActionsRow
+            leading={
+              actionsLeft ? (
+                <div className="flex items-center gap-1 shrink-0">{actionsLeft}</div>
+              ) : null
+            }
+            actions={
+              actionsRight || hasSidebar ? (
+                <>
+                  {actionsRight}
+                  {hasSidebar && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+                      onClick={() => setSidebarOpen((v) => !v)}
+                    >
+                      <SidebarIcon className="w-4 h-4" />
+                    </Button>
+                  )}
+                </>
+              ) : null
+            }
+          />
         </div>
 
         {/* Screen-reader description; invisible visually */}

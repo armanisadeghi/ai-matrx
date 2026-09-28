@@ -1,7 +1,7 @@
 // app/api/auth/extension/exchange/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 
 /**
  * Exchange Extension Auth Code for Session
@@ -24,7 +24,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // 🚨 THE SERVICE CLIENT, AND ONLY HERE (2026-09-28). The caller is the
+    // extension, which has no session: `extend.extension_auth_codes` is
+    // readable and claimable only by `service_role` under RLS, and minting the
+    // link needs `auth.admin`. The single-use code IS the credential — the
+    // atomic claim below is what makes that safe.
+    const supabase = createAdminClient();
 
     // Read only a live code so a soft-deleted credential can never be exchanged.
     const { data: authCode, error: lookupError } = await supabase
@@ -60,10 +65,12 @@ export async function POST(request: NextRequest) {
       .eq('used', false)
       .is('deleted_at', null)
       .gt('expires_at', new Date().toISOString())
-      .select('user_id, expires_at')
+      .select('created_by, expires_at')
       .maybeSingle();
 
-    if (claimError || !claimedCode) {
+    // A code with no person on it (created_by is stamped at generate time) is
+    // not a credential for anyone — fail closed like any other bad claim.
+    if (claimError || !claimedCode || !claimedCode.created_by) {
       // Fail closed: a replay, concurrent winner, deletion, expiry, or write
       // failure never reaches the privileged session-minting branch.
       return NextResponse.json(
@@ -74,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     // Get user data
     const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(
-      claimedCode.user_id
+      claimedCode.created_by
     );
 
     if (userError || !user) {

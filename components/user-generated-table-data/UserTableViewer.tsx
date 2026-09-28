@@ -4807,6 +4807,7 @@ const UserTableViewer = ({
       loadRows={steady.loadRowsForCopy}
       loadAllRows={chromeActs.loadAllRowsForCopy}
       onChooseReference={onChooseReference}
+      totalRows={effectiveTotalCount}
     />
   );
   const sheetCleanupControl = isReadOnly ? null : (

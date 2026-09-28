@@ -68,16 +68,44 @@ import {
   ADMIN_MANDATES_REFERENCES,
 } from "@/features/mandates/admin-routes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { describeFailure, type FailureSentence } from "@/lib/failure/transport";
 
 /** Scan freshness lives on the References page (repos + patrol). */
 const REFERENCES_PATH = ADMIN_MANDATES_REFERENCES;
 const FEATURE_ROWS_COLLAPSED = 12;
 
-type Slot<T> = { data: T | null; error: string | null; loading: boolean };
+/** A read that failed, in words for a person: which read, what, what to do. */
+type SlotFailure = FailureSentence;
+type Slot<T> = { data: T | null; error: SlotFailure | null; loading: boolean };
 const EMPTY = { data: null, error: null, loading: true } as const;
 
-function describe(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
+type ReadName = "console" | "coverage" | "truth" | "board" | "workflow";
+
+/**
+ * 🚨 EVERY FAILURE NAMES ITS READ (2026-09-28). The sections used to print
+ * `Not measured: Failed to fetch` — the browser's words for "no answer
+ * arrived", naming neither the read nor a remedy (captured 2026-09-26 10:58
+ * UTC: three server reads rejected with `TypeError: Failed to fetch` inside
+ * 0.4 s while the server logged no request). Each read now says what it was
+ * reading and from where, a transport refusal is rewritten by the platform's
+ * one describer (`lib/failure/transport.ts`), and each section retries its own
+ * read alone.
+ */
+const READS: Record<ReadName, string> = {
+  console: "reading the mandate list from the database",
+  coverage: "reading binding coverage from the AI server (GET /mandates/coverage)",
+  truth: "reading code vs database drift from the AI server (GET /mandates/code-truth)",
+  board: "reading the code-scan board from the AI server (GET /mandates/references/board)",
+  workflow: "reading workflow grades from the AI server (POST /mandates/impact/workflows)",
+};
+
+function slotFailure(cause: unknown, name: ReadName): SlotFailure {
+  const action = READS[name];
+  const failure = describeFailure(cause, { action, read: true });
+  if (failure.transient) return failure;
+  // A door's own sentence passes through word for word — prefixed with the
+  // read it answered, so a section never shows a sentence without its source.
+  return { ...failure, sentence: `Could not finish ${action}: ${failure.sentence}` };
 }
 
 /**
@@ -85,6 +113,7 @@ function describe(cause: unknown): string {
  * read blanks only its own section.
  */
 function runSlot<T>(
+  name: ReadName,
   read: () => Promise<T>,
   set: (next: Slot<T>) => void,
   isCancelled: () => boolean,
@@ -97,7 +126,9 @@ function runSlot<T>(
       const data = await read();
       if (!isCancelled()) set({ data, error: null, loading: false });
     } catch (cause) {
-      if (!isCancelled()) set({ data: null, error: describe(cause), loading: false });
+      if (!isCancelled()) {
+        set({ data: null, error: slotFailure(cause, name), loading: false });
+      }
     }
   })();
 }
@@ -106,11 +137,16 @@ function Section({
   icon: Icon,
   title,
   error,
+  onRetry,
+  retrying = false,
   children,
 }: {
   icon: typeof Activity;
   title: string;
-  error?: string | null;
+  error?: SlotFailure | null;
+  /** Re-runs ONLY the read behind this section. */
+  onRetry?: () => void;
+  retrying?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -126,9 +162,27 @@ function Section({
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <span className="min-w-0 [overflow-wrap:anywhere]">
-            Not measured: {error}
+            Not measured: {error.sentence}
+            {error.remedy ? ` ${error.remedy}` : null}
           </span>
-          <ErrorAlchemyMenu className="ml-auto" />
+          <span className="ml-auto flex shrink-0 items-center gap-1">
+            {onRetry ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={onRetry}
+                disabled={retrying}
+              >
+                <RefreshCw
+                  className={`mr-1 h-3 w-3${retrying ? " animate-spin" : ""}`}
+                  aria-hidden
+                />
+                Retry
+              </Button>
+            ) : null}
+            <ErrorAlchemyMenu />
+          </span>
         </div>
       ) : null}
       {children}
@@ -150,7 +204,24 @@ export function MandateDashboard() {
   // organization-free admin route on the server, so nothing below is gated on
   // a selection. Until 2026-09-25 the code-scan section waited for one and
   // showed the organization picker instead of its tiles.
-  const [reloads, setReloads] = useState(0);
+  // One counter per read: Refresh bumps all five, a section's Retry bumps one.
+  const [ticks, setTicks] = useState<Record<ReadName, number>>({
+    console: 0,
+    coverage: 0,
+    truth: 0,
+    board: 0,
+    workflow: 0,
+  });
+  const retry = (name: ReadName) =>
+    setTicks((prev) => ({ ...prev, [name]: prev[name] + 1 }));
+  const refreshAll = () =>
+    setTicks((prev) => ({
+      console: prev.console + 1,
+      coverage: prev.coverage + 1,
+      truth: prev.truth + 1,
+      board: prev.board + 1,
+      workflow: prev.workflow + 1,
+    }));
   const [showAllFeatures, setShowAllFeatures] = useState(false);
 
   const [consoleSlot, setConsoleSlot] = useState<Slot<MandateConsoleData>>(EMPTY);
@@ -161,16 +232,39 @@ export function MandateDashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    const isCancelled = () => cancelled;
-    runSlot(() => fetchMandateConsoleData({ home: SYSTEM_HOME }), setConsoleSlot, isCancelled);
-    runSlot(() => fetchMandateCoverage(dispatch), setCoverageSlot, isCancelled);
-    runSlot(() => fetchMandateCodeTruthReport(dispatch), setTruthSlot, isCancelled);
-    runSlot(() => fetchMandateReferenceBoard(dispatch), setBoardSlot, isCancelled);
-    runSlot(() => fetchWorkflowImpact(dispatch), setWorkflowSlot, isCancelled);
+    runSlot("console", () => fetchMandateConsoleData({ home: SYSTEM_HOME }), setConsoleSlot, () => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [dispatch, reloads]);
+  }, [ticks.console]);
+  useEffect(() => {
+    let cancelled = false;
+    runSlot("coverage", () => fetchMandateCoverage(dispatch), setCoverageSlot, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, ticks.coverage]);
+  useEffect(() => {
+    let cancelled = false;
+    runSlot("truth", () => fetchMandateCodeTruthReport(dispatch), setTruthSlot, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, ticks.truth]);
+  useEffect(() => {
+    let cancelled = false;
+    runSlot("board", () => fetchMandateReferenceBoard(dispatch), setBoardSlot, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, ticks.board]);
+  useEffect(() => {
+    let cancelled = false;
+    runSlot("workflow", () => fetchWorkflowImpact(dispatch), setWorkflowSlot, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, ticks.workflow]);
 
   const keys = systemKeys(consoleSlot.data);
   const defs = definitionMetrics(consoleSlot.data, truthSlot.data);
@@ -213,7 +307,7 @@ export function MandateDashboard() {
           variant="outline"
           size="sm"
           className="ml-auto shrink-0"
-          onClick={() => setReloads((value) => value + 1)}
+          onClick={refreshAll}
           disabled={anyLoading}
           aria-label="Refresh"
         >
@@ -222,7 +316,7 @@ export function MandateDashboard() {
         </Button>
       </header>
 
-      <Section icon={Layers} title="Mandates" error={consoleSlot.error}>
+      <Section icon={Layers} title="Mandates" error={consoleSlot.error} onRetry={() => retry("console")} retrying={consoleSlot.loading}>
         <KpiGrid>
           <KpiTile
             label="Total"
@@ -350,7 +444,7 @@ export function MandateDashboard() {
         ) : null}
       </Section>
 
-      <Section icon={Activity} title="Binding coverage" error={coverageSlot.error}>
+      <Section icon={Activity} title="Binding coverage" error={coverageSlot.error} onRetry={() => retry("coverage")} retrying={coverageSlot.loading}>
         <KpiGrid className="lg:grid-cols-3">
           <KpiTile
             label="Bound"
@@ -376,7 +470,7 @@ export function MandateDashboard() {
         </KpiGrid>
       </Section>
 
-      <Section icon={Pin} title="Pinned vs latest" error={consoleSlot.error}>
+      <Section icon={Pin} title="Pinned vs latest" error={consoleSlot.error} onRetry={() => retry("console")} retrying={consoleSlot.loading}>
         <KpiGrid className="lg:grid-cols-4">
           <KpiTile
             label="Defaults pinned"
@@ -404,7 +498,7 @@ export function MandateDashboard() {
         </KpiGrid>
       </Section>
 
-      <Section icon={Users} title="Customized" error={consoleSlot.error}>
+      <Section icon={Users} title="Customized" error={consoleSlot.error} onRetry={() => retry("console")} retrying={consoleSlot.loading}>
         <KpiGrid className="lg:grid-cols-4">
           <KpiTile
             label="By organizations"
@@ -435,7 +529,7 @@ export function MandateDashboard() {
         </KpiGrid>
       </Section>
 
-      <Section icon={GitBranch} title="Code vs database" error={truthSlot.error}>
+      <Section icon={GitBranch} title="Code vs database" error={truthSlot.error} onRetry={() => retry("truth")} retrying={truthSlot.loading}>
         <KpiGrid>
           <KpiTile
             label="Code matches DB"
@@ -478,7 +572,7 @@ export function MandateDashboard() {
         </KpiGrid>
       </Section>
 
-      <Section icon={Workflow} title="Workflow grades" error={workflowSlot.error}>
+      <Section icon={Workflow} title="Workflow grades" error={workflowSlot.error} onRetry={() => retry("workflow")} retrying={workflowSlot.loading}>
         <KpiGrid>
           <KpiTile
             label="Workflow rungs"
@@ -519,7 +613,7 @@ export function MandateDashboard() {
         </KpiGrid>
       </Section>
 
-      <Section icon={Radar} title="Code scan" error={boardError}>
+      <Section icon={Radar} title="Code scan" error={boardError} onRetry={() => retry("board")} retrying={boardLoading}>
         <KpiGrid>
           <KpiTile
             label="Last complete scan"

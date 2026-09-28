@@ -162,6 +162,12 @@ export interface DescribeOptions {
    * which" to "just try again", so say it only when it is true.
    */
   retrySafe?: boolean;
+  /**
+   * Set when the request only READS. A read that never got its answer changed
+   * nothing, so the "may or may not have gone through" uncertainty a write
+   * carries would be a false sentence here — the remedy is simply to read again.
+   */
+  read?: boolean;
   /** Fallback sentence for a thrown thing that carries no message at all. */
   fallback?: string;
 }
@@ -239,6 +245,15 @@ export function describeFailure(
     return {
       sentence: `This device is offline, so ${action} never left the browser — nothing was changed.`,
       remedy: "Reconnect and try again.",
+      transient: true,
+      raw,
+    };
+  }
+
+  if (options.read) {
+    return {
+      sentence: `The connection dropped while ${action} — the server's answer never arrived. This was only a read, so nothing was changed.`,
+      remedy: "Try again — this usually clears on its own.",
       transient: true,
       raw,
     };

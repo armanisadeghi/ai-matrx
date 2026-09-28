@@ -11,6 +11,8 @@ jest.mock("server-only", () => ({}));
 
 const insertMock = jest.fn();
 const phoneLookupMock = jest.fn();
+const inboxInsertResultMock = jest.fn();
+const inboxDuplicateLookupMock = jest.fn();
 
 jest.mock("@/utils/supabase/adminClient", () => ({
   createAdminClient: () => ({
@@ -32,10 +34,17 @@ jest.mock("@/utils/supabase/adminClient", () => ({
             insertMock(row);
             return {
               select: () => ({
-                single: async () => ({ data: { id: "row-1" }, error: null }),
+                single: inboxInsertResultMock,
               }),
             };
           },
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                maybeSingle: inboxDuplicateLookupMock,
+              }),
+            }),
+          }),
         };
       },
     }),
@@ -69,6 +78,9 @@ function message(toNumber: string) {
 beforeEach(() => {
   insertMock.mockReset();
   phoneLookupMock.mockReset();
+  inboxInsertResultMock.mockReset();
+  inboxDuplicateLookupMock.mockReset();
+  inboxInsertResultMock.mockResolvedValue({ data: { id: "row-1" }, error: null });
 });
 
 describe("storeInboundTestHandsetMessage", () => {
@@ -88,6 +100,26 @@ describe("storeInboundTestHandsetMessage", () => {
     expect(row.to_number).toBe(HANDSET_ONE);
     expect(row.direction).toBe("inbound");
     expect(row.body).toBe("Your AI Matrx verification code is: 654321");
+  });
+
+  it("returns the original receipt when Twilio retries the same provider SID", async () => {
+    phoneLookupMock.mockResolvedValue({
+      data: { organization_id: TEST_ORG },
+      error: null,
+    });
+    inboxInsertResultMock.mockResolvedValue({
+      data: null,
+      error: { code: "23505", message: "duplicate provider receipt" },
+    });
+    inboxDuplicateLookupMock.mockResolvedValue({ data: { id: "receipt-forever" }, error: null });
+
+    await expect(storeInboundTestHandsetMessage(message(HANDSET_ONE))).resolves.toEqual({
+      stored: true,
+      id: "receipt-forever",
+      duplicate: true,
+    });
+    expect(insertMock).toHaveBeenCalledTimes(1);
+    expect(inboxDuplicateLookupMock).toHaveBeenCalledTimes(1);
   });
 
   it("🚨 REFUSES a number that is not a registered test handset, writing NOTHING", async () => {

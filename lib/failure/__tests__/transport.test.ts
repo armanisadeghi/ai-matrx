@@ -85,6 +85,18 @@ describe("what the walker would have read instead", () => {
     spy.mockRestore();
   });
 
+  it("never tells a READ it may or may not have gone through (2026-09-28)", () => {
+    const failure = describeFailure(new Error("Failed to fetch"), {
+      action: "reading binding coverage",
+      read: true,
+    });
+    expect(failure.transient).toBe(true);
+    expect(failure.sentence).toMatch(/reading binding coverage/);
+    expect(failure.sentence).toMatch(/nothing was changed/i);
+    expect(failure.sentence).not.toMatch(/may or may not/);
+    expect(failure.sentence).not.toMatch(/Failed to fetch/);
+  });
+
   it("still says something when the thrown thing has no message", () => {
     expect(describeFailure({}, { fallback: "Save failed." }).sentence).toBe(
       "Save failed.",

@@ -356,6 +356,21 @@
       "ruled": "Owner lifetime-identity ruling, 2026-09-28 — verified revive upsert, owner RLS mirror, census 117 zero mismatch"
     },
     {
+      "index": "education.content_certification:content_certification_resource_key",
+      "reason": "(resource_type, resource_id) is one resource's certification record, not a reusable name. edu_uncertify_content archives that record, edu_certify_content upserts the same full key with deleted_at = NULL and clears an old human sign-off, and edu_public_decks joins only deleted_at-null certifications. Re-certifying restores the same canonical resource identity rather than making a second badge row.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — delete_is_archive_catalog_cert_curator.sql explicit archive/revive/live-reader predicates inspected"
+    },
+    {
+      "index": "public.catalog_entries:catalog_entries_app_kind_key_key",
+      "reason": "(app, kind, key) is the lifetime stable reference of one catalog entry, including human-published entries; it is not a system-only assumption or a reusable label. admin_delete_catalog_entry archives that exact row, and admin_upsert_catalog_entry takes its exact-key advisory lock then full-key upserts with deleted_at = NULL. A repeat save intentionally revives the canonical reference instead of creating a second catalog history.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — delete_is_archive_catalog_cert_curator.sql archive/upsert/live-reader contract inspected"
+    },
+    {
+      "index": "communication.test_handset_inbox:test_handset_inbox_provider_sid_uq",
+      "reason": "(provider, provider_message_sid) identifies one Twilio provider message forever, not a reusable test name. storeInboundTestHandsetMessage inserts the receipt once; on 23505 it reads the existing same-provider SID and returns that row as duplicate, so a Twilio retry must never manufacture a second receipt even if the first row is archived.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — lib/sms/test-handset-inbox duplicate writer behavior covered by focused regression"
+    },
+    {
       "index": "extend.extension_auth_codes:extension_auth_codes_code_key",
       "reason": "code is a generated 128-bit, short-lived extension credential rather than a reusable human name. The full key protects the same credential while its row is retained; it does not claim lifetime non-replay after a physical deletion.",
       "ruled": "CI-FIX extension exchange correction, 2026-09-28 — generate-code and fail-closed atomic exchange paths inspected"

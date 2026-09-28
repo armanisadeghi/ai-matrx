@@ -14,6 +14,8 @@ export interface TableCopyControlsProps {
   loadRows: () => Promise<DataTableCopyRow[]>;
   loadAllRows: () => Promise<DataTableCopyRow[]>;
   onChooseReference: () => void;
+  /** Rows in the current (filtered) view — the live size the "Filter & sort before copying…" door shows. */
+  totalRows?: number;
   className?: string;
 }
 
@@ -87,7 +89,7 @@ export function tableTransferColumns(
 }
 
 /** The page declares identity and loaders; all output UI and serialization are package-owned. */
-export function TableCopyControls({ tableId, tableName, fields, hiddenColumns = [], selectedRowIds, loadRows, loadAllRows, onChooseReference, className }: TableCopyControlsProps) {
+export function TableCopyControls({ tableId, tableName, fields, hiddenColumns = [], selectedRowIds, loadRows, loadAllRows, onChooseReference, totalRows, className }: TableCopyControlsProps) {
   useAlchemyDisclosure(true);
   const source: Source = {
     id: `dataset:${tableId}`,
@@ -113,7 +115,7 @@ export function TableCopyControls({ tableId, tableName, fields, hiddenColumns = 
     label={tableName}
     triggerVariant="outline"
     className={className}
-    table={{ availableScopes: ["view", ...(selectedRowIds.length ? ["selected" as const] : []), "target"], initialScope: "view", scopeLabels: { view: "Filtered view (all rows)", target: "Entire table", selected: "Selected rows" } }}
+    table={{ availableScopes: ["view", ...(selectedRowIds.length ? ["selected" as const] : []), "target"], initialScope: "view", scopeLabels: { view: "Filtered view (all rows)", target: "Entire table", selected: "Selected rows" }, ...(totalRows === undefined ? {} : { size: `${totalRows.toLocaleString()} ${totalRows === 1 ? "row" : "rows"} · ${fields.length - hiddenColumns.length} of ${fields.length} columns` }) }}
     capabilities={{ formats: [tableDataFormat, tableSchemaFormat] }}
     references={references}
     referenceActions={[{ id: "choose-reference", label: "Get reference", run: onChooseReference }]}

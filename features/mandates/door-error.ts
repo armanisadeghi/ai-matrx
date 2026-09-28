@@ -15,6 +15,8 @@
 // class name so a `catch` can still tell them apart, but the body — how a
 // PostgREST error becomes a printable sentence — is written once.
 
+import { isTransportFailure } from "@/lib/failure/transport";
+
 /** The shape PostgREST hands back on a raised exception. */
 export interface DoorErrorFields {
   message: string;
@@ -46,7 +48,14 @@ export class MandateDoorError extends Error {
     detail?: string | null;
     hint?: string | null;
   }) {
-    const sentence = [init.message?.trim(), init.detail?.trim()]
+    // When the door never answered, supabase-js puts the browser's words in
+    // `message` ("TypeError: Failed to fetch") and the JavaScript STACK in
+    // `details`. That detail is not a reason written for a person — joined in,
+    // it printed a stack trace on the mandate dashboard (2026-09-28). Keep the
+    // browser's words alone so `lib/failure/transport.ts` recognises and
+    // rewrites them.
+    const transport = isTransportFailure(init.message ?? "");
+    const sentence = [init.message?.trim(), transport ? undefined : init.detail?.trim()]
       .filter((part): part is string => Boolean(part))
       .join(" ");
     super(

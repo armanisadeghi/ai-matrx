@@ -20,6 +20,11 @@ import { FloatingLayer, useFloatingLayerZIndex } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
+import {
+  MobileWindowActionsRow,
+  MobileWindowTitle,
+  MobileWindowTitleRow,
+} from "../WindowPanel/MobileTitleRow";
 
 interface MobileCardSurfaceProps {
   title: ReactNode;
@@ -84,22 +89,26 @@ export default function MobileCardSurface({
       )}
       style={{ maxHeight, zIndex, paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      {/* Header */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border/50 shrink-0">
-        <span className="flex-1 text-xs font-medium truncate">{title}</span>
-        <div className="flex items-center gap-1 shrink-0">
-          {actionsRight}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-11 w-11"
-            aria-label="Close"
-            onClick={onClose}
-          >
-            <X className="w-3.5 h-3.5" />
-          </Button>
-        </div>
+      {/* Header — the title owns row 1 (two lines before it truncates);
+          actions sit on their own row below (MobileTitleRow.tsx). */}
+      <div className="flex flex-col pl-3 pr-1 border-b border-border/50 shrink-0">
+        <MobileWindowTitleRow
+          trailing={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              aria-label="Close"
+              onClick={onClose}
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          }
+        >
+          <MobileWindowTitle title={title} />
+        </MobileWindowTitleRow>
+        <MobileWindowActionsRow actions={actionsRight} />
       </div>
 
       {/* Body */}

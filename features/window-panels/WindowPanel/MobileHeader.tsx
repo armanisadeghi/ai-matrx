@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * MobileWindowHeader — slim chrome strip for the fullscreen mobile takeover
- * branch of WindowPanel. Close on the left, sidebar/main toggle
- * (when a sidebar is present) in the center, actions on the right.
+ * MobileWindowHeader — chrome for the fullscreen mobile takeover branch of
+ * WindowPanel. Row 1: close/minimize + the title, which owns the row and wraps
+ * to two lines. Row 2 (only when there is something to show): the
+ * Sidebar/Content toggle and the window's actions.
  *
  * Extracted from WindowPanel.tsx Phase 6 — purely presentational.
  */
@@ -11,6 +12,11 @@ import type { ReactNode } from "react";
 import { Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WINDOW_CHROME_ACTIONS } from "./chromeClasses";
+import {
+  MobileWindowActionsRow,
+  MobileWindowTitle,
+  MobileWindowTitleRow,
+} from "./MobileTitleRow";
 
 interface MobileWindowHeaderProps {
   title?: ReactNode;
@@ -32,19 +38,13 @@ export function MobileWindowHeader({
   activePaneMobile,
   onSetActivePane,
 }: MobileWindowHeaderProps) {
-  const titleText = typeof title === "string" ? title : "Content";
-  // A RICH title is a control (the Chat window's agent picker), not a label.
-  // With a sidebar the toggle used to swallow it into a plain "Content" tab,
-  // so at phone width the control simply did not exist while the screen said
-  // "use the dropdown in the title bar" (verifier round 1, F-A1). It now sits
-  // beside the toggle, in this same strip — no new row.
-  const richTitle =
-    hasSidebar && title != null && typeof title !== "string" && typeof title !== "number"
-      ? title
-      : null;
-  return (
-    <div className="flex min-h-11 shrink-0 items-center gap-1.5 border-b border-border/50 bg-muted/40 px-2 select-none">
-      {/* Close + Minimize */}
+  // Row 1 is the title's alone (see MobileTitleRow.tsx). The title used to be
+  // the Sidebar/Content toggle's own label (`max-w-[120px] truncate`) beside
+  // the actions, so "Run History — Recipe Scaler" read "Run History — …". A
+  // RICH title (the Chat window's agent picker) is a control and keeps its own
+  // layout in the same slot (verifier round 1, F-A1).
+  const trafficLights =
+    onClose || onMinimize ? (
       <div className="flex items-center gap-1.5 shrink-0">
         {onClose && (
           <button
@@ -74,52 +74,41 @@ export function MobileWindowHeader({
           </button>
         )}
       </div>
+    ) : null;
 
-      {/* Center: sidebar toggle or title */}
-      <div className="flex-1 flex items-center justify-center gap-1.5 min-w-0">
-        {hasSidebar ? (
-          <div className="inline-flex shrink-0 rounded-lg bg-muted/60 p-0.5 text-xs">
-            <button
-              type="button"
-              className={cn(
-                "min-h-11 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 transition-colors",
-                activePaneMobile === "sidebar"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground",
-              )}
-              onClick={() => onSetActivePane("sidebar")}
-            >
-              Sidebar
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "min-h-11 max-w-[120px] cursor-pointer truncate rounded-md px-3 py-1 transition-colors",
-                activePaneMobile === "main"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground",
-              )}
-              onClick={() => onSetActivePane("main")}
-            >
-              {titleText}
-            </button>
-          </div>
-        ) : (
-          <span className="text-xs font-medium text-foreground/80 truncate">
-            {title ?? ""}
-          </span>
-        )}
-        {richTitle ? (
-          <div className="flex min-w-0 items-center overflow-hidden" data-window-mobile-title="">
-            {richTitle}
-          </div>
-        ) : null}
-      </div>
+  const paneToggle = hasSidebar ? (
+    <div className="inline-flex shrink-0 rounded-lg bg-muted/60 p-0.5 text-xs">
+      {(["sidebar", "main"] as const).map((pane) => (
+        <button
+          key={pane}
+          type="button"
+          className={cn(
+            "min-h-10 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 transition-colors",
+            activePaneMobile === pane
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground",
+          )}
+          onClick={() => onSetActivePane(pane)}
+        >
+          {pane === "sidebar" ? "Sidebar" : "Content"}
+        </button>
+      ))}
+    </div>
+  ) : null;
 
-      {/* Right actions */}
-      {actionsRight && (
-        <div className={WINDOW_CHROME_ACTIONS}>{actionsRight}</div>
-      )}
+  return (
+    <div className="flex shrink-0 flex-col border-b border-border/50 bg-muted/40 px-2 select-none">
+      <MobileWindowTitleRow leading={trafficLights}>
+        <MobileWindowTitle title={title} className="pr-1" />
+      </MobileWindowTitleRow>
+      <MobileWindowActionsRow
+        leading={paneToggle}
+        actions={
+          actionsRight ? (
+            <div className={WINDOW_CHROME_ACTIONS}>{actionsRight}</div>
+          ) : null
+        }
+      />
     </div>
   );
 }
