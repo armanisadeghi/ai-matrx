@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-09-27`
+**Last updated:** `2026-09-28`
 
 ---
 
@@ -65,3 +65,4 @@ Organization Trash reads only the main-DB `org_trash_*` doors. CMS kinds are **n
 ## Change Log
 
 - **2026-09-27** — CMS becomes Trash source #2 (lane CMS-TRASH). `sources.ts` + `cmsKinds.ts` + `GET/POST /api/cms/trash`; `TrashList` personal mode merges sources and shows restore notices. Pre-0041 the CMS source is silent (`archiveLive` probe). Organization scope stays main-DB only (reason above). This file created.
+- **2026-09-28** — CMS migration 0041 is live; `/api/cms/trash` answers `live: true`. Localhost proof as admin@admin.com on the Factory Playground test site: an archived page was listed as "CMS page", and Restore — with a newer live page at its address — brought it back at `…-restored` and the toast showed the door's sentence verbatim. Kind labels are "CMS site / page / component" because the main registry already has a "Site" kind.
