@@ -75,10 +75,22 @@ function formatDayAndMinute(iso: string): string | null {
 export function lookalikeNotes(
   rows: readonly LookalikeRow[],
   startedWord = "Created",
+  /**
+   * Names longer than this are cut off on screen (the name column is
+   * narrower than they are), so two rows whose names share their first
+   * `visibleChars` characters READ the same and are twins too (page-pass
+   * 2026-09-28, /education/flashcards: five "AP Chemistry Nomenclature: the
+   * Absolute Core -…" rows, different only past the ellipsis, got no note).
+   */
+  visibleChars?: number,
 ): Map<string, string> {
   const groups = new Map<string, LookalikeRow[]>();
   for (const row of rows) {
-    const key = normalizeName(row.name);
+    const full = normalizeName(row.name);
+    const key =
+      visibleChars && full.length > visibleChars
+        ? `${full.slice(0, visibleChars)}\u2026`
+        : full;
     // A row with no name at all is not a lookalike of another nameless row in
     // any way a note could fix; leave the empty key out of the grouping.
     if (key === "") continue;
@@ -145,6 +157,12 @@ export interface LookalikeSpec<TRow> {
   detail?: (row: TRow) => string | null | undefined;
   /** The verb this entity is created with. Default "Created". */
   startedWord?: string;
+  /**
+   * About how many characters of the name the list shows before cutting it
+   * off. Set it when long names are common: rows that differ only past the
+   * cut get a note too. Unset, only identical names count as twins.
+   */
+  visibleChars?: number;
 }
 
 function ownCreatedAt(row: unknown): string | null {
@@ -170,5 +188,6 @@ export function lookalikeNotesFor<TRow>(
       detail: spec?.detail?.(row) ?? null,
     })),
     spec?.startedWord ?? "Created",
+    spec?.visibleChars,
   );
 }

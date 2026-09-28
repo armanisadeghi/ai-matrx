@@ -44,6 +44,9 @@ import { GuardianConsentVerifyDialog } from "./GuardianConsentVerifyDialog";
 import { StudentAgeBandControl } from "./StudentAgeBandControl";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationFamilyScope, type FamilyLinkEntry } from "@/features/surfaces/manifests/education-family.manifest";
+import { guardianLinkWriteHandlers } from "../guardianLinkWrites";
 
 function displayName(link: GuardianLinkView): string {
   return link.counterpart_name?.trim() || link.counterpart_email || "Learner";
@@ -145,7 +148,32 @@ export function FamilyDashboard() {
       return null;
     });
 
+  const toEntry = (link: GuardianLinkView): FamilyLinkEntry => ({
+    id: link.id,
+    counterpart_user_id: link.counterpart_user_id,
+    counterpart_email: link.counterpart_email,
+    relationship: link.relationship,
+    status: link.status,
+    verified_at: link.verified_at,
+  });
+  const allLinks = [...buckets.students, ...buckets.sent, ...buckets.inbox];
+  const getScope = () =>
+    createEducationFamilyScope({
+      view: "dashboard",
+      family_links_loading: loading,
+      ...(error ? { family_links_error: error } : {}),
+      ...(!loading && !error
+        ? {
+            linked_learners: buckets.students.map(toEntry),
+            sent_guardian_requests: buckets.sent.map(toEntry),
+            guardian_requests_for_me: buckets.inbox.map(toEntry),
+          }
+        : {}),
+    });
+  const getWriteHandlers = () => guardianLinkWriteHandlers(allLinks, reload);
+
   return (
+    <SurfaceRuntimeProvider surfaceName="matrx-user/education-family" getScope={getScope} getWriteHandlers={getWriteHandlers}>
     <div className="scroll-page-end-space mx-auto flex h-full w-full max-w-3xl flex-col gap-5 overflow-y-auto p-4">
       <header>
         <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
@@ -424,6 +452,7 @@ export function FamilyDashboard() {
         />
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
