@@ -40,19 +40,52 @@ function dataSource(): ReturnType<typeof recordsDataSource> {
   return sharedDataSource;
 }
 
+/** Where an approval row stands, and when it was decided (null while pending). */
+export interface ApprovalStanding {
+  state: ApprovalState;
+  decidedAt: string | null;
+}
+
+/** The row's standing, or null when it cannot be read (the caller keeps its fallback). */
+export async function readApprovalStanding(
+  organizationId: string,
+  approvalId: string,
+): Promise<ApprovalStanding | null> {
+  const read = (await dataSource().rpc(
+    "work_approval_read",
+    { p_organization_id: organizationId, p_approval_id: approvalId },
+    { schema: "custom" },
+  )) as { data?: { state?: unknown; decided_at?: unknown } | null; error?: unknown };
+  if (read.error) return null;
+  const state = read.data?.state;
+  if (typeof state !== "string" || !KNOWN.has(state)) return null;
+  const decidedAt = read.data?.decided_at;
+  return { state: state as ApprovalState, decidedAt: typeof decidedAt === "string" && decidedAt ? decidedAt : null };
+}
+
 /** The row's state, or null when it cannot be read (the caller keeps its fallback). */
 export async function readApprovalState(
   organizationId: string,
   approvalId: string,
 ): Promise<ApprovalState | null> {
-  const read = (await dataSource().rpc(
-    "work_approval_read",
-    { p_organization_id: organizationId, p_approval_id: approvalId },
-    { schema: "custom" },
-  )) as { data?: { state?: unknown } | null; error?: unknown };
-  if (read.error) return null;
-  const state = read.data?.state;
-  return typeof state === "string" && KNOWN.has(state) ? (state as ApprovalState) : null;
+  return (await readApprovalStanding(organizationId, approvalId))?.state ?? null;
+}
+
+/**
+ * What a card says about a decision somebody already took — here, in another tab, on the
+ * table's page or the run page (lane HANDOVER, 2026-09-27: a reopened chat offered Approve on a
+ * change approved minutes earlier, and pressing it answered "That was already approved").
+ */
+export function standingSentence(standing: ApprovalStanding): string | null {
+  const at = standing.decidedAt ? new Date(standing.decidedAt) : null;
+  const on =
+    at && !Number.isNaN(at.getTime())
+      ? ` on ${at.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
+      : "";
+  if (standing.state === "approved") return `Approved${on}. The change was made.`;
+  if (standing.state === "declined") return `Refused${on}. Nothing was changed.`;
+  if (standing.state === "withdrawn") return "This request was withdrawn, so nothing was changed.";
+  return null;
 }
 
 /**
@@ -64,7 +97,15 @@ export function useApprovalDecision(
   organizationId: string | null,
   approvalId: string | null,
 ): ApprovalState | null {
-  const [state, setState] = useState<ApprovalState | null>(null);
+  return useApprovalStanding(organizationId, approvalId)?.state ?? null;
+}
+
+/** The same follow, with when the decision was taken. */
+export function useApprovalStanding(
+  organizationId: string | null,
+  approvalId: string | null,
+): ApprovalStanding | null {
+  const [state, setState] = useState<ApprovalStanding | null>(null);
 
   useEffect(() => {
     if (!organizationId || !approvalId) return undefined;
@@ -88,7 +129,7 @@ export function useApprovalDecision(
       if (!visible()) return; // resumed by the visibility listener
       inFlight = true;
       try {
-        const next = await readApprovalState(organizationId!, approvalId!);
+        const next = await readApprovalStanding(organizationId!, approvalId!);
         if (!live) return;
         if (next === null) {
           console.warn(
@@ -97,7 +138,7 @@ export function useApprovalDecision(
           );
         } else {
           setState(next);
-          if (next !== "pending") decided = true;
+          if (next.state !== "pending") decided = true;
         }
       } catch (error: unknown) {
         console.warn(`[held-approval] Reading approval ${approvalId} failed.`, error);

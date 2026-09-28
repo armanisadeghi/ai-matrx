@@ -44,6 +44,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 import { createClient } from "@/utils/supabase/client";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
+import { standingSentence, useApprovalStanding } from "./approvalDecision";
 
 /** One data source for every card on the page — the organization lookup's dependency stays stable. */
 let sharedDataSource: ReturnType<typeof recordsDataSource> | null = null;
@@ -120,6 +121,12 @@ export function RecordChangeApprovalCard({
   });
 
   const [decision, setDecision] = useState<Decision>({ state: "open" });
+  // THE ROW'S OWN STANDING. The tool result says "held" forever; the queue row says whether
+  // somebody already decided — here earlier, in another tab, on the table's page. A decided
+  // change never offers Approve again (lane HANDOVER, 2026-09-27).
+  const standing = useApprovalStanding(organizationId, wait.approvalId);
+  const decidedElsewhere =
+    decision.state === "open" && standing ? standingSentence(standing) : null;
   const [fetchedTableName, setTableName] = useState<string | null>(null);
   const tableName = knownTableName ?? fetchedTableName;
   const tableId = waitTableId(wait);
@@ -223,8 +230,12 @@ export function RecordChangeApprovalCard({
       </Link>
     ) : null;
 
-  const outcome =
-    decision.state === "applying" ? (
+  const outcome = decidedElsewhere ? (
+      <span className="flex flex-wrap items-center gap-1.5">
+        <span data-held-write-outcome="">{decidedElsewhere}</span>
+        {openTable}
+      </span>
+    ) : decision.state === "applying" ? (
       <span>Applying…</span>
     ) : decision.state === "decided" ? (
       <span className="flex flex-wrap items-center gap-1.5">
@@ -248,7 +259,7 @@ export function RecordChangeApprovalCard({
           named nobody — so a person reading "waiting for a person" had no idea
           whether that person was them. It is shown only while the decision is
           still open: after it is taken, who could have taken it is noise. */}
-      {decision.state === "open" && wait.approvers.length > 0 && (
+      {decision.state === "open" && !decidedElsewhere && wait.approvers.length > 0 && (
         <p className="px-2.5 text-xs leading-relaxed text-muted-foreground">
           {wait.approvers.length === 1
             ? `${wait.approvers[0]!.name ?? "One person"} can decide this.`

@@ -8,7 +8,7 @@
  * after a reload).
  */
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import { readRecordChangeWait } from "@/features/record-change-approvals/recordChangeApproval";
 
 import { resultAsObject } from "../renderers/_shared";
