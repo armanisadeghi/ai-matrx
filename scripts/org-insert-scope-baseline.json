@@ -10,6 +10,12 @@
       "signature": "scoped as never"
     },
     {
+      "file": "app/api/sms/verify/route.ts",
+      "table": "communication.sms_consent",
+      "status": "UNRESOLVED",
+      "signature": "consentRows"
+    },
+    {
       "file": "features/agents/components/schema-proposal/create-shape.ts",
       "table": "content_ir.kind_edge",
       "status": "UNRESOLVED",
@@ -196,34 +202,28 @@
       "signature": "messages"
     },
     {
-      "file": "features/surfaces/services/manifest-sync.service.ts",
-      "table": "ui.ui_surface_agent_role",
+      "file": "features/surfaces/services/execute-sync-plan.ts",
+      "table": "<unresolved>",
       "status": "UNRESOLVED",
-      "signature": "roleUpsertRows"
+      "signature": "fresh"
     },
     {
-      "file": "features/surfaces/services/manifest-sync.service.ts",
-      "table": "ui.ui_surface_client_tool",
+      "file": "features/surfaces/services/execute-sync-plan.ts",
+      "table": "<unresolved>",
       "status": "UNRESOLVED",
-      "signature": "clientToolRows"
-    },
-    {
-      "file": "features/surfaces/services/manifest-sync.service.ts",
-      "table": "ui.ui_surface_value",
-      "status": "UNRESOLVED",
-      "signature": "upsertRows"
-    },
-    {
-      "file": "features/surfaces/services/manifest-sync.service.ts",
-      "table": "ui.ui_surface_write_target",
-      "status": "UNRESOLVED",
-      "signature": "writeTargetRows"
+      "signature": "missing.map((surface) => surface.insert)"
     },
     {
       "file": "lib/agents/actions.ts",
       "table": "agent.definition",
       "status": "UNRESOLVED",
-      "signature": "{ ...seedToInsertPayload(seed, trimmedOrganizationId), created_by: user.id, }"
+      "signature": "attempt"
+    },
+    {
+      "file": "lib/agents/actions.ts",
+      "table": "agent.definition",
+      "status": "UNRESOLVED",
+      "signature": "attempt"
     }
   ]
 }

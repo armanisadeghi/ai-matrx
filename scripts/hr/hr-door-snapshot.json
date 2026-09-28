@@ -298,6 +298,27 @@
                 }
             }
         },
+        "hr_capability": {
+            "args": {
+                "p_at": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_capability": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_subject_employment": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
         "hr_clock_state": {
             "args": {
                 "p_employment_id": {
@@ -813,7 +834,7 @@
                         "primary_address",
                         "workers_comp_policy"
                     ],
-                    "unresolved_refs": 8
+                    "unresolved_refs": 9
                 }
             }
         },
@@ -868,6 +889,19 @@
                 }
             }
         },
+        "hr_establishment_set_archived": {
+            "args": {
+                "p_archived": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
         "hr_establishment_upsert": {
             "args": {
                 "p_payload": {
@@ -892,6 +926,87 @@
                         "total_hours_worked"
                     ],
                     "unresolved_refs": 3
+                }
+            }
+        },
+        "hr_export_claim": {
+            "args": {
+                "p_export_format": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_idempotency_key": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_includes_pii": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_pay_period_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_supersedes_export_id": {
+                    "ord": 6,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_export_finish": {
+            "args": {
+                "p_adjustment_ids": {
+                    "ord": 8,
+                    "required": true
+                },
+                "p_artifact_file_id": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_artifact_sha256": {
+                    "ord": 5,
+                    "required": true
+                },
+                "p_disputes_carried": {
+                    "ord": 9,
+                    "required": true
+                },
+                "p_export_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_lines": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_total_amount": {
+                    "ord": 7,
+                    "required": true
+                },
+                "p_total_hours": {
+                    "ord": 6,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_disputes_carried": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_lines": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
                 }
             }
         },
@@ -1776,6 +1891,36 @@
             },
             "jsonb_params": {}
         },
+        "hr_leave_figures": {
+            "args": {
+                "p_as_of": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_leave_policy_id": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_lead_days": {
+            "args": {
+                "p_key": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
         "hr_leave_ledger_export": {
             "args": {
                 "p_as_of": {
@@ -2601,6 +2746,51 @@
                     "unresolved_refs": 1
                 }
             }
+        },
+        "hr_record_access_audit": {
+            "args": {
+                "p_action": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_basis": {
+                    "ord": 5,
+                    "required": true
+                },
+                "p_granted": {
+                    "ord": 6,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_purpose": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_row_count": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_sensitivity_tier": {
+                    "ord": 10,
+                    "required": false
+                },
+                "p_subject_employment_id": {
+                    "ord": 9,
+                    "required": false
+                },
+                "p_target_ids": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_target_token": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
         },
         "hr_relations_list": {
             "args": {
@@ -3700,7 +3890,7 @@
         "hr_jurisdiction_rules_admin_data",
         "hr_my_verification_consents"
     ],
-    "generated_at": "2026-09-11T17:59:16.498012+00:00",
+    "generated_at": "2026-09-28T00:48:09.752415+00:00",
     "regenerate": "pnpm hr:door-snapshot  (scripts/hr/hr_door_snapshot.sql)",
     "source": "pg_proc / hr._door_spec / platform.entity_types on db.matrxserver.com (project brsgrqvjdzwihsvnfqkf)",
     "tokens": {

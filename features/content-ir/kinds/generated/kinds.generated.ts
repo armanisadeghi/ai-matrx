@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "5850c2cafdcd";
+export const KIND_REGISTRY_FINGERPRINT = "6fa7799d189a";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -6963,7 +6963,7 @@ export interface AgentDefinition {
 }
 
 /**
- * Kind `agent_function_spec` (registry v5).
+ * Kind `agent_function_spec` (registry v6).
  */
 export interface AgentFunctionSpec {
   /**
@@ -7036,7 +7036,7 @@ export interface AgentInputQmeReport {
 }
 
 /**
- * Kind `agent_mandate_specification` (registry v3).
+ * Kind `agent_mandate_specification` (registry v4).
  */
 export interface AgentMandateSpecification {
   goal: {
@@ -7445,7 +7445,7 @@ export interface ArmanVideoPrompt {
 }
 
 /**
- * Kind `artisan_demo_reading_list` (registry v4).
+ * Kind `artisan_demo_reading_list` (registry v5).
  */
 export interface ArtisanDemoReadingList {
   books: ({
@@ -7522,7 +7522,7 @@ export interface AssetGrading {
 }
 
 /**
- * Kind `authority_newsjacking_article` (registry v3).
+ * Kind `authority_newsjacking_article` (registry v4).
  */
 export interface AuthorityNewsjackingArticle {
   slug: string;
@@ -7682,7 +7682,7 @@ export interface BatchedListResult {
 }
 
 /**
- * Kind `blog_post_outline` (registry v7).
+ * Kind `blog_post_outline` (registry v8).
  */
 export interface BlogPostOutline {
   /**
@@ -7995,7 +7995,7 @@ export interface ClaimEvidence {
 }
 
 /**
- * Kind `client_site_audit` (registry v3).
+ * Kind `client_site_audit` (registry v4).
  */
 export interface ClientSiteAudit {
   __kind: "client_site_audit";
@@ -8352,7 +8352,7 @@ export interface CompetitorPageAutopsyV1 {
 }
 
 /**
- * Kind `condition_assessment` (registry v2).
+ * Kind `condition_assessment` (registry v3).
  */
 export interface ConditionAssessment {
   __kind: "condition_assessment";
@@ -9064,7 +9064,7 @@ export interface DomainFoldReport {
 }
 
 /**
- * Kind `electronics_intake_analysis` (registry v2).
+ * Kind `electronics_intake_analysis` (registry v3).
  */
 export interface ElectronicsIntakeAnalysis {
   __kind: "electronics_intake_analysis";
@@ -9992,7 +9992,7 @@ export interface GrowthLoopStageDecision {
 }
 
 /**
- * Kind `gsc_opportunities` (registry v6).
+ * Kind `gsc_opportunities` (registry v7).
  */
 export interface GscOpportunities {
   /**
@@ -10178,7 +10178,7 @@ export interface HumanTextAnswer {
 }
 
 /**
- * Kind `identifier_entry` (registry v2).
+ * Kind `identifier_entry` (registry v3).
  */
 export interface IdentifierEntry {
   label?: string;
@@ -10219,7 +10219,7 @@ export interface ImageEditResult {
 }
 
 /**
- * Kind `image_metadata` (registry v6).
+ * Kind `image_metadata` (registry v7).
  */
 export interface ImageMetadata {
   /**
@@ -10763,7 +10763,7 @@ export interface KeywordClassificationBatchV1 {
 }
 
 /**
- * Kind `keyword_relationship_map` (registry v6).
+ * Kind `keyword_relationship_map` (registry v7).
  */
 export interface KeywordRelationshipMap {
   /**
@@ -10816,7 +10816,7 @@ export interface KeywordRelationshipResearch {
 }
 
 /**
- * Kind `keyword_search_metrics` (registry v5).
+ * Kind `keyword_search_metrics` (registry v6).
  */
 export interface KeywordSearchMetrics {
   /**
@@ -10895,7 +10895,7 @@ export interface KeywordSerpIntentAnalysisV1 {
 }
 
 /**
- * Kind `keyword_variant_set` (registry v5).
+ * Kind `keyword_variant_set` (registry v6).
  */
 export interface KeywordVariantSet {
   /**
@@ -11823,7 +11823,7 @@ export interface MathProblem {
 }
 
 /**
- * Kind `med_spa_review_response_kit` (registry v4).
+ * Kind `med_spa_review_response_kit` (registry v5).
  */
 export interface MedSpaReviewResponseKit {
   __kind: "med_spa_review_response_kit";
@@ -12105,7 +12105,7 @@ export interface MermaidDiagram {
 }
 
 /**
- * Kind `meta_tag_options` (registry v5).
+ * Kind `meta_tag_options` (registry v6).
  */
 export interface MetaTagOptions {
   /**
@@ -12283,7 +12283,7 @@ export interface NewsSearchResults {
 }
 
 /**
- * Kind `newsjacking_expert_article` (registry v3).
+ * Kind `newsjacking_expert_article` (registry v4).
  */
 export interface NewsjackingExpertArticle {
   faqs?: ({
@@ -14064,7 +14064,7 @@ export interface PricingProposal {
 }
 
 /**
- * Kind `product_entry` (registry v2).
+ * Kind `product_entry` (registry v3).
  */
 export interface ProductEntry {
   __kind: "product_entry";
@@ -14127,7 +14127,7 @@ export interface ProductEntry {
 }
 
 /**
- * Kind `product_identification` (registry v2).
+ * Kind `product_identification` (registry v3).
  */
 export interface ProductIdentification {
   brand?: {
@@ -14192,7 +14192,7 @@ export interface ProductResearch {
 }
 
 /**
- * Kind `product_research_report` (registry v5).
+ * Kind `product_research_report` (registry v6).
  */
 export interface ProductResearchReport {
   /**
@@ -14407,7 +14407,7 @@ export interface PublishPreflight {
 }
 
 /**
- * Kind `quantity_assessment` (registry v2).
+ * Kind `quantity_assessment` (registry v3).
  */
 export interface QuantityAssessment {
   __kind: "quantity_assessment";
@@ -14995,7 +14995,7 @@ export interface RenderedText {
 }
 
 /**
- * Kind `resale_intelligence_report` (registry v2).
+ * Kind `resale_intelligence_report` (registry v3).
  */
 export interface ResaleIntelligenceReport {
   __kind: "resale_intelligence_report";
@@ -15340,7 +15340,7 @@ export interface ResearchTagSuggestions {
 }
 
 /**
- * Kind `resell_research_report` (registry v3).
+ * Kind `resell_research_report` (registry v4).
  */
 export interface ResellResearchReport {
   __kind: "resell_research_report";
@@ -15520,7 +15520,7 @@ export interface ReviewVerdict {
 }
 
 /**
- * Kind `reviewer_result_card` (registry v5).
+ * Kind `reviewer_result_card` (registry v6).
  */
 export interface ReviewerResultCard {
   /**
@@ -15570,7 +15570,7 @@ export interface ReviewerResultCard {
 }
 
 /**
- * Kind `rule_governed_variant_set` (registry v5).
+ * Kind `rule_governed_variant_set` (registry v6).
  */
 export interface RuleGovernedVariantSet {
   /**
@@ -15698,7 +15698,7 @@ export interface SavedRow {
 }
 
 /**
- * Kind `schema_audit_result` (registry v5).
+ * Kind `schema_audit_result` (registry v6).
  */
 export interface SchemaAuditResult {
   /**
@@ -15740,7 +15740,7 @@ export interface SchemaAuditResult {
 }
 
 /**
- * Kind `schema_fix_result` (registry v5).
+ * Kind `schema_fix_result` (registry v6).
  */
 export interface SchemaFixResult {
   /**
@@ -15791,7 +15791,7 @@ export interface SchemaFixResult {
 }
 
 /**
- * Kind `schema_handoff_result` (registry v5).
+ * Kind `schema_handoff_result` (registry v6).
  */
 export interface SchemaHandoffResult {
   /**
@@ -15859,7 +15859,7 @@ export interface SchemaProposal {
 }
 
 /**
- * Kind `schema_qc_result` (registry v4).
+ * Kind `schema_qc_result` (registry v5).
  */
 export interface SchemaQcResult {
   /**
@@ -16581,7 +16581,7 @@ export interface SeoLinkGapSiteReceipt {
 }
 
 /**
- * Kind `seo_meta_options` (registry v6).
+ * Kind `seo_meta_options` (registry v7).
  */
 export interface SeoMetaOptions {
   /**
@@ -16605,7 +16605,7 @@ export interface SeoMetaOptions {
 }
 
 /**
- * Kind `seo_meta_tags` (registry v5).
+ * Kind `seo_meta_tags` (registry v6).
  */
 export interface SeoMetaTags {
   notes: string;
@@ -17361,7 +17361,7 @@ export interface SerialObservationTimeline {
 }
 
 /**
- * Kind `serp_analysis` (registry v5).
+ * Kind `serp_analysis` (registry v6).
  */
 export interface SerpAnalysis {
   /**
@@ -17813,7 +17813,7 @@ export interface SqlQueryResult {
 }
 
 /**
- * Kind `status_ping_debug` (registry v4).
+ * Kind `status_ping_debug` (registry v5).
  */
 export interface StatusPingDebug {
   /**
@@ -18167,7 +18167,7 @@ export interface TaskList {
 }
 
 /**
- * Kind `tasting_note` (registry v2).
+ * Kind `tasting_note` (registry v3).
  */
 export interface TastingNote {
   aroma?: {
@@ -18214,7 +18214,7 @@ export interface TemplateRenderResult {
 }
 
 /**
- * Kind `test_card` (registry v4).
+ * Kind `test_card` (registry v5).
  */
 export interface TestCard {
   name: string;
@@ -18981,7 +18981,7 @@ export interface VideoTranscriptResearch {
 }
 
 /**
- * Kind `visual_qc_result` (registry v5).
+ * Kind `visual_qc_result` (registry v6).
  */
 export interface VisualQcResult {
   /**
