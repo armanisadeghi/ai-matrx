@@ -594,17 +594,6 @@
     "is_active": true
   },
   {
-    "resource_type": "crm_saved_view",
-    "table_name": "saved_view",
-    "id_column": "id",
-    "owner_column": "created_by",
-    "is_public_column": null,
-    "display_label": "Crm Saved View",
-    "url_path_template": "",
-    "rls_uses_has_permission": true,
-    "is_active": true
-  },
-  {
     "resource_type": "crm_sending_identity",
     "table_name": "sending_identity",
     "id_column": "id",
@@ -2508,6 +2497,17 @@
     "is_active": true
   },
   {
+    "resource_type": "seo_coverage_tracker",
+    "table_name": "coverage_tracker",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "News Monitor",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "seo_engine_schedule",
     "table_name": "engine_schedule",
     "id_column": "id",
@@ -2923,17 +2923,6 @@
     "display_label": "Analysis Preferences",
     "url_path_template": "",
     "rls_uses_has_permission": false,
-    "is_active": true
-  },
-  {
-    "resource_type": "user_bookmark",
-    "table_name": "user_bookmarks",
-    "id_column": "id",
-    "owner_column": "created_by",
-    "is_public_column": null,
-    "display_label": "User Bookmark",
-    "url_path_template": "",
-    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
