@@ -77,9 +77,9 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
-async function render() {
+async function render(provider?: "box" | "dropbox") {
   await act(async () => {
-    root.render(<StorageConnectionsPanel navigate={navigate} />);
+    root.render(<StorageConnectionsPanel navigate={navigate} provider={provider} />);
   });
 }
 
@@ -106,7 +106,7 @@ test("provider limits distinguish file imports from hosted MCP agent tools", asy
   expect(container.textContent).toContain(
     "browse and import its files into Matrx Files",
   );
-  expect(container.textContent).toContain("Hosted MCP connections below");
+  expect(container.textContent).toContain("Agent tool connections are listed and managed separately in the directory.");
   expect(container.textContent).toContain(
     "only the Dropbox account that owns the approved app",
   );
@@ -114,6 +114,16 @@ test("provider limits distinguish file imports from hosted MCP agent tools", asy
     "cannot create, change, move, or delete Dropbox content",
   );
   expect(container.textContent).toContain("root-level read-only access");
+});
+
+test("a selected Dropbox detail renders Dropbox without the Box connection door", async () => {
+  await render("dropbox");
+  expect(container.textContent).toContain("Dropbox");
+  expect(container.textContent).not.toContain("Connect Box");
+
+  await act(async () => root.render(<StorageConnectionsPanel navigate={navigate} />));
+  expect(container.textContent).toContain("Connect Dropbox");
+  expect(container.textContent).toContain("Connect Box");
 });
 
 test("a failed list never claims that no accounts exist", async () => {

@@ -1,8 +1,7 @@
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchCatalog,
@@ -23,17 +22,15 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
-import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
+
 import {
-  mcpConnectionCounts,
   mcpEntryBrief,
   mcpEntryMeta,
   mcpEntrySummary,
-  mcpListSummary,
   mcpLocation,
   MCP_CSV_COLUMNS,
 } from "@/features/agents/mcp-copy";
-import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
+
 import {
   Globe,
   Radio,
@@ -57,7 +54,6 @@ import {
   Plus,
   Trash2,
   Settings2,
-  PlugZap,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,7 +66,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { matchesIntegrationSearch } from "@/features/settings/tabs/integration-search-match";
+
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
@@ -82,6 +78,7 @@ import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/Surface
 import {
   catalogActionPresentation,
   catalogConnectionPresentation,
+  catalogDirectoryAvailability,
 } from "./integration-catalog-state";
 import {
   buildManualMcpCredentials,
@@ -89,8 +86,31 @@ import {
 } from "./manual-mcp-credentials";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ensureOrganizationForRequest, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import {
+  ensureOrganizationForRequest,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { toolCheckFailure } from "./integration-tool-check";
+import { MicrosoftConnectPanel } from "@/features/microsoft-integration/MicrosoftConnectPanel";
+import { StorageConnectionsPanel } from "@/features/storage-connections/StorageConnectionsPanel";
+import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
+import { listMicrosoftConnections } from "@/features/microsoft-integration/service";
+import type { MicrosoftConnection } from "@/features/microsoft-integration/types";
+import { listStorageConnections } from "@/features/storage-connections/service";
+import type { StorageConnection } from "@/features/storage-connections/types";
+import { IntegrationDirectory } from "@/features/connectors/IntegrationDirectory";
+import {
+  DEFAULT_DIRECTORY_FILTERS,
+  directoryDetailFromParams,
+  filterDirectory,
+  savedAccountSummary,
+  type DirectoryFilters,
+  type IntegrationDirectoryItem,
+} from "@/features/connectors/integration-directory";
+import { getConnector } from "@/features/connectors/registry";
+import { GOOGLE_CONNECTOR_PROVIDER } from "@/features/connectors/provider-config";
+import { MICROSOFT_CAMPAIGN_DESCRIPTORS } from "@/features/microsoft-integration/campaigns";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -191,129 +211,309 @@ export function connectionsSummaryLabel(
   totalConnected: number,
 ): string {
   if (stillLoading) return "Checking connections…";
-  return totalConnected > 0 ? `${totalConnected} active` : "Nothing connected yet";
+  return totalConnected > 0
+    ? `${totalConnected} active`
+    : "Nothing connected yet";
 }
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
-export default function IntegrationsPage({
-  search = "",
-  activeCategory: controlledCategory,
-  onCategoryChange,
-  viewFilter: controlledViewFilter,
-  onViewFilterChange,
-  googleProductFocus,
-}: {
-  search?: string;
-  activeCategory?: string;
-  onCategoryChange?: (category: string) => void;
-  viewFilter?: ViewFilter;
-  onViewFilterChange?: (filter: ViewFilter) => void;
-  googleProductFocus?: { productKey: string; request: number } | null;
-} = {}) {
+export function IntegrationsWorkspace({
+  embedded = false,
+}: { embedded?: boolean } = {}) {
   const organizationId = useAppSelector(selectOrganizationId);
+  const userId = useAppSelector(selectUserId);
   const dispatch = useAppDispatch();
   const catalog = useAppSelector(selectMcpCatalog);
   const status = useAppSelector(selectMcpCatalogStatus);
   const error = useAppSelector(selectMcpCatalogError);
   const connectingId = useAppSelector(selectMcpConnectingServerId);
-  // The other two "your connections" contributors rendered in this same
-  // section (GitHubConnectionCard below, ConnectorsSettingsPanel for
-  // Google) — their own loading state must gate the section summary too,
-  // not just the MCP catalog's.
   const github = useGitHubConnection();
   const googleInventory = useGoogleConnectionInventory();
   const githubStatus = github.loading
     ? undefined
-    : github.inventory.connection?.status ?? null;
+    : (github.inventory.connection?.status ?? null);
   const catalogPresentation = (entry: McpCatalogEntry) =>
     catalogConnectionPresentation(entry, githubStatus, github.loading);
-
-  const [localCategory, setLocalCategory] = useState("all");
-  const [localViewFilter, setLocalViewFilter] = useState<ViewFilter>("all");
-  const activeCategory = controlledCategory ?? localCategory;
-  const viewFilter = controlledViewFilter ?? localViewFilter;
-  const changeCategory = onCategoryChange ?? setLocalCategory;
-  const changeViewFilter = onViewFilterChange ?? setLocalViewFilter;
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<DirectoryFilters>(
+    DEFAULT_DIRECTORY_FILTERS,
+  );
+  const params = useSearchParams();
+  const returnTarget = !embedded && params ? directoryDetailFromParams(params) : null;
+  const [selectedDetail, setSelectedDetail] = useState<string | null>(
+    returnTarget,
+  );
   const [checkingServerId, setCheckingServerId] = useState<string | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [handledReturnTarget, setHandledReturnTarget] = useState(returnTarget);
+  if (handledReturnTarget !== returnTarget) {
+    setHandledReturnTarget(returnTarget);
+    if (returnTarget) setSelectedDetail(returnTarget);
+  }
+  const [nativeInventory, setNativeInventory] = useState<{
+    userId: string;
+    version: number;
+    microsoft: MicrosoftConnection[];
+    storage: StorageConnection[];
+    errors: { microsoft: string | null; storage: string | null };
+  } | null>(null);
+  const nativeLoading =
+    !nativeInventory ||
+    nativeInventory.userId !== userId ||
+    nativeInventory.version !== refreshVersion;
+  const currentInventory =
+    nativeInventory?.userId === userId ? nativeInventory : null;
+  const microsoftConnections = currentInventory?.microsoft ?? [];
+  const storageConnections = currentInventory?.storage ?? [];
+  const nativeErrors = currentInventory?.errors ?? {
+    microsoft: null,
+    storage: null,
+  };
+  const openWindow = useOpenLiveIntegrationsWindow();
 
   useEffect(() => {
-    if (status === "idle") {
-      dispatch(fetchCatalog());
-    }
+    if (status === "idle") void dispatch(fetchCatalog());
   }, [dispatch, status]);
+  useEffect(() => {
+    if (!userId) return;
+    const controller = new AbortController();
+    void Promise.allSettled([
+      listMicrosoftConnections(controller.signal),
+      listStorageConnections(controller.signal),
+    ]).then(([microsoft, storage]) => {
+      if (controller.signal.aborted) return;
+      const message = (reason: unknown) =>
+        reason instanceof Error
+          ? reason.message
+          : "The connection inventory could not be loaded.";
+      setNativeInventory({
+        userId,
+        version: refreshVersion,
+        microsoft: microsoft.status === "fulfilled" ? microsoft.value : [],
+        storage: storage.status === "fulfilled" ? storage.value : [],
+        errors: {
+          microsoft:
+            microsoft.status === "rejected" ? message(microsoft.reason) : null,
+          storage:
+            storage.status === "rejected" ? message(storage.reason) : null,
+        },
+      });
+    });
+    return () => controller.abort();
+  }, [userId, refreshVersion]);
 
-  // ── Filtering ──────────────────────────────────────────────────────────────
-
-  let filtered = [...catalog];
-
-  if (activeCategory !== "all") {
-    filtered = filtered.filter((entry) => entry.category === activeCategory);
-  }
-
-  if (viewFilter === "connected") {
-    filtered = filtered.filter(
-      (entry) => catalogPresentation(entry).connected,
-    );
-  } else if (viewFilter === "available") {
-    filtered = filtered.filter(
-      (entry) =>
-        entry.serverStatus === "active" || entry.serverStatus === "beta",
-    );
-  } else if (viewFilter === "coming_soon") {
-    filtered = filtered.filter((entry) => entry.serverStatus === "coming_soon");
-  }
-
-  if (search.trim()) {
-    filtered = filtered.filter((entry) =>
-      matchesIntegrationSearch(
-        search,
-        `${entry.name} ${entry.vendor} ${entry.description} ${entry.category}`,
+  const refresh = () => {
+    void dispatch(fetchCatalog());
+    void github.reload();
+    void googleInventory.refetch();
+    setRefreshVersion((value) => value + 1);
+  };
+  const selectDetail = (id: string | null) => {
+    // Detail actions can change inventories owned by their existing panels.
+    // Refresh when returning so the list never retains an old saved-state claim.
+    if (selectedDetail && !id) refresh();
+    setSelectedDetail(id);
+  };
+  const google = savedAccountSummary(
+    (googleInventory.data?.connections ?? []).map((account) => ({
+      identity:
+        account.account_email ?? account.account_name ?? "Google account",
+      status: account.health,
+    })),
+    googleInventory.isLoading,
+    googleInventory.isError,
+  );
+  const githubSummary = savedAccountSummary(
+    github.inventory.connection
+      ? [
+          {
+            identity: github.inventory.account?.login
+              ? `@${github.inventory.account.login}`
+              : "GitHub account",
+            status: github.inventory.connection.status,
+          },
+        ]
+      : [],
+    github.loading,
+    Boolean(github.readError),
+  );
+  const microsoft = savedAccountSummary(
+    microsoftConnections.map((account) => ({
+      identity:
+        account.accountEmail ?? account.accountName ?? "Microsoft account",
+      status: account.status,
+    })),
+    nativeLoading,
+    Boolean(nativeErrors.microsoft),
+  );
+  const nativeItem = (
+    id: string,
+    name: string,
+    description: string,
+    vendor: string,
+    category: string,
+    iconUrl: string | null,
+    summary: ReturnType<typeof savedAccountSummary>,
+    keywords = "",
+  ): IntegrationDirectoryItem => ({
+    id: `native:${id}`,
+    name,
+    description,
+    vendor,
+    category,
+    keywords,
+    artwork: {
+      id,
+      name,
+      blurb: description,
+      surfaces: ["directory"],
+      iconUrl,
+      logo:
+        id === "google" ? getConnector("google-workspace")?.logo : undefined,
+    },
+    featured: ["google", "microsoft", "github"].includes(id),
+    comingSoon: false,
+    ...summary,
+  });
+  const items: IntegrationDirectoryItem[] = [
+    nativeItem(
+      "google",
+      "Google Workspace",
+      "Connect Gmail, Drive, Calendar and the Google products you use.",
+      "Google",
+      "productivity",
+      null,
+      google,
+      GOOGLE_CONNECTOR_PROVIDER.products
+        .map((product) => `${product.name} ${product.promise}`)
+        .join(" "),
+    ),
+    nativeItem(
+      "microsoft",
+      "Microsoft 365",
+      "Read your Outlook mail, calendar, OneDrive, Teams and SharePoint.",
+      "Microsoft",
+      "productivity",
+      "/icons/brands/microsoft.svg",
+      microsoft,
+      MICROSOFT_CAMPAIGN_DESCRIPTORS.map(
+        (item) => `${item.label} ${item.grants}`,
+      ).join(" "),
+    ),
+    nativeItem(
+      "github",
+      "GitHub",
+      "Connect repositories, pull requests, issues and your code workspaces.",
+      "GitHub",
+      "developer",
+      "https://github.com/favicon.ico",
+      githubSummary,
+    ),
+    ...(["dropbox", "box"] as const).map((provider) =>
+      nativeItem(
+        provider,
+        provider === "box" ? "Box files" : "Dropbox files",
+        "Browse your files and folders and import them into Matrx Files.",
+        provider === "box" ? "Box" : "Dropbox",
+        "storage",
+        `https://cdn.simpleicons.org/${provider}`,
+        savedAccountSummary(
+          storageConnections
+            .filter((account) => account.provider === provider)
+            .map((account) => ({
+              identity:
+                account.accountEmail ?? account.accountName ?? "File account",
+              status: account.status.status,
+            })),
+          nativeLoading,
+          Boolean(nativeErrors.storage),
+        ),
+        "storage import files folders",
       ),
-    );
-  }
-
-  const sorted = [...filtered].sort((a, b) => {
-    const aConn = catalogPresentation(a).connected ? 0 : 1;
-    const bConn = catalogPresentation(b).connected ? 0 : 1;
-    if (aConn !== bConn) return aConn - bConn;
-    if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
-    const statusOrder = {
-      active: 0,
-      beta: 1,
-      community: 2,
-      coming_soon: 3,
-      deprecated: 4,
-    };
-    const aOrder = statusOrder[a.serverStatus as keyof typeof statusOrder] ?? 5;
-    const bOrder = statusOrder[b.serverStatus as keyof typeof statusOrder] ?? 5;
-    if (aOrder !== bOrder) return aOrder - bOrder;
-    return a.name.localeCompare(b.name);
-  });
-
-  const categoryCounts: Record<string, number> = { all: catalog.length };
-  for (const entry of catalog) {
-    categoryCounts[entry.category] = (categoryCounts[entry.category] ?? 0) + 1;
-  }
-
-  const connectedCount = catalog.filter(
-    (entry) => catalogPresentation(entry).connected,
-  ).length;
-
-  const githubConnectedCount =
-    github.inventory.connection?.status === "connected" ? 1 : 0;
-  const googleConnectedCount = (googleInventory.data?.connections ?? []).length;
-  const totalConnectedCount =
-    connectedCount + githubConnectedCount + googleConnectedCount;
-  const connectionsStillLoading =
-    status === "loading" || github.loading || googleInventory.isLoading;
-  // The total adds three reads; if any failed it is not an answer ("0 ready").
-  const connectionsRead = readOf({
-    isLoading: connectionsStillLoading,
-    isError: status === "failed" || github.readError != null || googleInventory.isError,
-    error: error ?? github.readError ?? googleInventory.error,
-  });
+    ),
+    ...catalog
+      .filter((entry) => entry.slug !== "github")
+      .map((entry): IntegrationDirectoryItem => {
+        const presentation = catalogPresentation(entry);
+        const saved = Boolean(entry.connectionId);
+        const attention = saved && !presentation.connected;
+        const artwork = providerArtworkUrls(entry);
+        const local = entry.transport === "stdio" && !entry.endpointUrl;
+        const directoryAvailability = catalogDirectoryAvailability(
+          entry,
+          presentation,
+        );
+        const comingSoon = directoryAvailability.isComingSoon;
+        return {
+          id: entry.serverId,
+          name:
+            entry.slug === "google-workspace"
+              ? `${entry.name} · local tools`
+              : entry.name,
+          description:
+            entry.description ?? `Connect ${entry.name} to your agents.`,
+          vendor: `${entry.vendor} · Agent tools`,
+          category: entry.category,
+          keywords: entry.slug,
+          artwork: {
+            id: entry.slug,
+            name: entry.name,
+            blurb: entry.description ?? "",
+            surfaces: ["directory"],
+            iconUrl: artwork[0],
+            fallbackIconUrls: artwork.slice(1),
+            brandColor: entry.color,
+          },
+          featured: directoryAvailability.isFeatured,
+          saved,
+          connected: presentation.connected,
+          available: directoryAvailability.isAvailable,
+          comingSoon,
+          attention,
+          status: presentation.connected
+            ? entry.authStrategy === "none"
+              ? "Enabled"
+              : "Connected"
+            : attention
+              ? (STATUS_CONFIG[presentation.state ?? ""]?.label ??
+                "Needs attention")
+              : comingSoon
+                ? "Coming soon"
+                : local
+                  ? "Local setup"
+                  : entry.serverStatus === "deprecated"
+                    ? "Retired"
+                    : "Not connected",
+          server: entry,
+        };
+      }),
+  ];
+  const visible = filterDirectory(items, filters);
+  const catalogLoading = status === "idle" || status === "loading";
+  const loading =
+    catalogLoading ||
+    nativeLoading ||
+    github.loading ||
+    googleInventory.isLoading;
+  const readFailures = [
+    error ? { label: "Agent tools", message: error } : null,
+    github.readError ? { label: "GitHub", message: github.readError } : null,
+    googleInventory.isError
+      ? {
+          label: "Google",
+          message:
+            googleInventory.error instanceof Error
+              ? googleInventory.error.message
+              : "Could not load Google connections.",
+        }
+      : null,
+    nativeErrors.microsoft
+      ? { label: "Microsoft", message: nativeErrors.microsoft }
+      : null,
+    nativeErrors.storage
+      ? { label: "File connections", message: nativeErrors.storage }
+      : null,
+  ].filter((failure) => failure !== null);
 
   useSurfaceScopeContribution(
     "matrx-user/settings",
@@ -336,13 +536,18 @@ export default function IntegrationsPage({
         docs_url: entry.docsUrl,
       })),
       integration_filters: {
-        search,
-        view_filter: viewFilter,
-        category: activeCategory,
-        total_count: catalog.length,
-        visible_count: sorted.length,
-        connected_count: connectedCount,
-        category_counts: categoryCounts,
+        search: filters.query,
+        view_filter: filters.status,
+        category: filters.category,
+        total_count: items.length,
+        visible_count: visible.length,
+        connected_count: items.filter((item) => item.connected).length,
+        category_counts: Object.fromEntries(
+          [...new Set(items.map((item) => item.category))].map((category) => [
+            category,
+            items.filter((item) => item.category === category).length,
+          ]),
+        ),
       },
     }),
   );
@@ -468,9 +673,13 @@ export default function IntegrationsPage({
       const discovery = await dispatch(
         discoverServerTools(entry.serverId),
       ).unwrap();
-      toast.success(`Found ${discovery.tools.length} ${discovery.tools.length === 1 ? "tool" : "tools"} for ${entry.name}`, {
-        description: "These are the tools this service currently offers to agents.",
-      });
+      toast.success(
+        `Found ${discovery.tools.length} ${discovery.tools.length === 1 ? "tool" : "tools"} for ${entry.name}`,
+        {
+          description:
+            "These are the tools this service currently offers to agents.",
+        },
+      );
     } catch (error) {
       if (!isOrganizationSelectionCancelled(error)) {
         toast.error(`Could not check ${entry.name}'s tools`, {
@@ -482,257 +691,125 @@ export default function IntegrationsPage({
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
-  const categories = Object.entries(MCP_CATEGORY_META)
-    .filter(([key]) => categoryCounts[key])
-    .sort(([, a], [, b]) => a.order - b.order);
-
+  const renderDetail = (item: IntegrationDirectoryItem) => {
+    const entry = item.server;
+    if (entry)
+      return (
+        <ServerCard
+          entry={entry}
+          connectionPresentation={catalogPresentation(entry)}
+          isExpanded
+          onToggleExpand={() => selectDetail(null)}
+          isConnecting={connectingId === entry.serverId}
+          isChecking={checkingServerId === entry.serverId}
+          onOAuthConnect={(endpointOverride) =>
+            handleOAuthConnect(entry, endpointOverride)
+          }
+          onBearerConnect={(token) =>
+            handleBearerConnect(entry.serverId, token)
+          }
+          onNoAuthConnect={() => handleNoAuthConnect(entry)}
+          onManualConnect={(endpointOverride, headers) =>
+            handleManualConnect(entry, endpointOverride, headers)
+          }
+          onDisconnect={() => void handleDisconnect(entry)}
+          onTest={() => void handleTestConnection(entry)}
+        />
+      );
+    if (item.id === "native:google") return <ConnectorsSettingsPanel />;
+    if (item.id === "native:github") return <GitHubConnectionCard />;
+    if (item.id === "native:microsoft") return <MicrosoftConnectPanel />;
+    if (item.id === "native:box" || item.id === "native:dropbox")
+      return (
+        <StorageConnectionsPanel
+          provider={item.id === "native:box" ? "box" : "dropbox"}
+        />
+      );
+    return null;
+  };
+  // Export only the sanitized hosted entries, as before; never export credentials.
+  const visibleServers = visible.flatMap((item) =>
+    item.server ? [item.server] : [],
+  );
   return (
     <TooltipProvider>
-      <div className="mx-auto max-w-6xl space-y-5 px-1 pb-12 pt-3 sm:px-4 md:space-y-6 md:p-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-              <PlugZap className="h-3.5 w-3.5" />
-              Tools for your agents
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-              Connect the services you already use
-            </h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Give your agents useful context and actions. Connect once, then
-              manage access and check available tools whenever you need.
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="rounded-lg border border-border bg-card px-3 py-2 text-right">
-              <p className="text-lg font-semibold leading-none text-foreground">
-                <UntrustedCount
-                  read={connectionsRead}
-                  value={totalConnectedCount}
-                  label="Connections ready to use"
-                />
-              </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">ready to use</p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-10"
-              onClick={() => dispatch(fetchCatalog())}
-              disabled={status === "loading"}
-            >
-              <RefreshCw
-                className={cn(
-                  "mr-1.5 h-3.5 w-3.5",
-                  status === "loading" && "animate-spin",
-                )}
-              />
-              Refresh
-            </Button>
-          </div>
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            {error}
-            <ErrorAlchemyMenu error={error} />
-          </div>
-        )}
-
-        <section className="space-y-3" id="integration-connections">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-foreground">Your connections</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Connected services are ready for agent work. Open settings for access details.
-              </p>
-            </div>
-            <span className="hidden text-xs text-muted-foreground sm:block">
-              {connectionsSummaryLabel(connectionsStillLoading, totalConnectedCount)}
-            </span>
-          </div>
-          <GitHubConnectionCard />
-          {/* Settings → Connectors: every connected Google account with its
-              per-capability health rows, and the same consent body the "Choose
-              what to connect" dialog uses. Replaced the three status-only
-              `DirectoryConnectorCards` on 2026-09-17. */}
-          <div id="integration-google" className="scroll-mt-20">
-            <ConnectorsSettingsPanel searchFocus={googleProductFocus} />
-          </div>
-        </section>
-
-        <section id="integration-catalog" className="scroll-mt-20 space-y-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold text-foreground">Discover integrations</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Find a service, connect it, and start using it in your agents.</p>
-            </div>
-            <div className="shrink-0">
-              {/* Copy / export — SANITIZED. Payloads project through
-                  mcpEntryMeta, which drops endpoint URLs, auth strategies,
-                  connection ids and token expiry. Never pass a raw entry. */}
-              {sorted.length > 0 && (
-                <CopyButtons
-                  size="icon"
-                  label="Integrations"
-                  human={() => mcpListSummary(sorted)}
-                  agent={() => ({
-                    kind: "mcp-integrations",
-                    location: mcpLocation("Settings — Integrations"),
-                    description:
-                      "The integrations matching the current filters. Sanitized: no endpoint URLs, auth strategies, connection ids or tokens.",
-                    data: {
-                      filters: {
-                        view: viewFilter,
-                        category: activeCategory,
-                        search: search || null,
-                      },
-                      counts: mcpConnectionCounts(sorted),
-                      integrations: sorted.map(mcpEntryMeta),
-                    },
-                    summary: mcpListSummary(sorted),
-                    attributes: {
-                      ...mcpConnectionCounts(sorted),
-                      view: viewFilter,
-                      category: activeCategory,
-                      sanitized: true,
-                    },
-                  })}
-                  agentVariant={{ position: "last" }}
-                  aiVariants={[
-                    keyFieldsAiVariant({
-                      kind: "mcp-integrations",
-                      location: mcpLocation("Settings — Integrations"),
-                      description:
-                        "Integrations projected to core fields. Sanitized.",
-                      visible: sorted,
-                      project: mcpEntryBrief,
-                      query: {
-                        view: viewFilter,
-                        category: activeCategory,
-                        search: search || null,
-                      },
-                      attributes: {
-                        ...mcpConnectionCounts(sorted),
-                        sanitized: true,
-                      },
-                    }),
-                  ]}
-                  export={{
-                    items: [
-                      jsonExportItem(() => ({
-                        counts: mcpConnectionCounts(sorted),
-                        integrations: sorted.map(mcpEntryMeta),
-                      })),
-                      csvExportItem(
-                        () => sorted.map(mcpEntryBrief),
-                        "CSV (all matching)",
-                        MCP_CSV_COLUMNS,
-                      ),
-                    ],
-                  }}
-                />
-              )}
-            </div>
-          </div>
-          {!search.trim() && <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            {(
-              [
-                ["all", "All"],
-                ["connected", "Connected"],
-                ["available", "Available"],
-                ["coming_soon", "Coming Soon"],
-              ] as [ViewFilter, string][]
-            ).map(([key, label]) => (
-              <Button
-                key={key}
-                variant={viewFilter === key ? "default" : "outline"}
-                size="sm"
-                className="h-11 text-sm sm:h-8 sm:text-xs"
-                onClick={() => changeViewFilter(key)}
+      <Suspense fallback={<SuspenseLoader message="Loading integrations…" />}>
+        <IntegrationDirectory
+          items={items}
+          filters={filters}
+          onFiltersChange={setFilters}
+          selectedId={selectedDetail}
+          onSelect={selectDetail}
+          renderDetail={renderDetail}
+          loading={loading}
+          refreshing={loading}
+          incomplete={readFailures.length > 0}
+          onRefresh={refresh}
+          onOpenWindow={embedded ? undefined : () => openWindow()}
+          errors={
+            readFailures.length > 0 ? (
+              <div
+                role="alert"
+                className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm"
               >
-                {label}
-              </Button>
-            ))}
-          </div>}
-        </section>
-
-        {!search.trim() ? <div className="flex flex-wrap gap-1.5">
-          <Button
-            variant={activeCategory === "all" ? "default" : "outline"}
-            size="sm"
-            className="h-11 px-3 text-sm sm:h-7 sm:px-2.5 sm:text-xs"
-            onClick={() => changeCategory("all")}
-          >
-            All ({categoryCounts.all ?? 0})
-          </Button>
-          {categories.map(([key, meta]) => (
-            <Button
-              key={key}
-              variant={activeCategory === key ? "default" : "outline"}
-              size="sm"
-              className="h-11 px-3 text-sm sm:h-7 sm:px-2.5 sm:text-xs"
-              onClick={() => changeCategory(key)}
-            >
-              {meta.label} ({categoryCounts[key]})
-            </Button>
-          ))}
-        </div> : null}
-
-        {/* Server Grid */}
-        {status === "loading" && catalog.length === 0 ? (
-          <div className="py-8">
-            <SuspenseLoader size="sm" message="Loading integrations…" />
-          </div>
-        ) : error && catalog.length === 0 ? (
-          // The catalog read failed: the error (with its menu) is said above —
-          // an empty grid here would claim there are no integrations.
-          null
-        ) : sorted.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">
-            {search.trim()
-              ? "No hosted integrations match this search."
-              : "No integrations match your filters."}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {sorted.map((entry) => (
-              <ServerCard
-                key={entry.serverId}
-                entry={entry}
-                connectionPresentation={catalogPresentation(entry)}
-                isExpanded={expandedId === entry.serverId}
-                onToggleExpand={() =>
-                  setExpandedId(
-                    expandedId === entry.serverId ? null : entry.serverId,
-                  )
-                }
-                isConnecting={connectingId === entry.serverId}
-                isChecking={checkingServerId === entry.serverId}
-                onOAuthConnect={(endpointOverride) =>
-                  handleOAuthConnect(entry, endpointOverride)
-                }
-                onBearerConnect={(token) =>
-                  handleBearerConnect(entry.serverId, token)
-                }
-                onNoAuthConnect={() => handleNoAuthConnect(entry)}
-                onManualConnect={(endpointOverride, headers) =>
-                  handleManualConnect(entry, endpointOverride, headers)
-                }
-                onDisconnect={() => void handleDisconnect(entry)}
-                onTest={() => void handleTestConnection(entry)}
+                <p className="font-medium">
+                  Some integration information could not be loaded.
+                </p>
+                {readFailures.map((failure) => (
+                  <details key={failure.label}>
+                    <summary className="cursor-pointer text-muted-foreground">
+                      {failure.label}
+                    </summary>
+                    <p className="mt-1 break-words text-xs">
+                      {failure.message}
+                      <ErrorAlchemyMenu error={failure.message} />
+                    </p>
+                  </details>
+                ))}
+                <button
+                  type="button"
+                  className="text-sm underline"
+                  onClick={refresh}
+                >
+                  Try again
+                </button>
+              </div>
+            ) : null
+          }
+          exportControl={
+            visibleServers.length > 0 ? (
+              <CopyButtons
+                size="icon"
+                label="Hosted integrations"
+                human={() => visibleServers.map(mcpEntrySummary).join("\n\n")}
+                agent={() => ({
+                  kind: "mcp-integrations",
+                  location: mcpLocation("Integrations"),
+                  description:
+                    "Sanitized hosted integrations matching the current directory filters.",
+                  data: visibleServers.map(mcpEntryMeta),
+                  summary: `${visibleServers.length} hosted integrations`,
+                })}
+                export={{
+                  items: [
+                    jsonExportItem(() => visibleServers.map(mcpEntryMeta)),
+                    csvExportItem(
+                      () => visibleServers.map(mcpEntryBrief),
+                      "CSV (matching hosted integrations)",
+                      MCP_CSV_COLUMNS,
+                    ),
+                  ],
+                }}
               />
-            ))}
-          </div>
-        )}
-      </div>
+            ) : null
+          }
+        />
+      </Suspense>
     </TooltipProvider>
   );
 }
+
+export default IntegrationsWorkspace;
 
 // ─── Server Card ─────────────────────────────────────────────────────────────
 

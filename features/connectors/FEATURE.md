@@ -11,7 +11,14 @@
 **The connector primitive** — the generic card, consent dialog, per-capability
 health rows and settings panel that every provider is offered through, with
 Google as the first provider config (`common-docs/projects/google-native/PLAN.md`
-§2, §5.2, §5.3). Plus the user-facing catalogue of external systems a person can attach to their account, plus **`ConnectorStrip`** — the one-line reminder that sits _under the agent input_ and offers the connections a conversation could use. Normal chat shows exactly three fairly rotated, proven-connectable integrations and a `More` door. `More` opens the complete live-only catalogue in a canonical `WindowPanel`; unproven, local-only, and coming-soon Settings placeholders are deliberately excluded.
+§2, §5.2, §5.3). The shared integrations directory is the complete catalog of
+external systems a person can attach to their account: **Discover** renders
+compact featured and category cards, with search and filters; **Yours** renders
+grouped saved-integration rows that open their existing management detail in
+place. Settings and `liveIntegrationsWindow` render that same directory body.
+`ConnectorStrip` remains a separate, live-only conversation entry surface: its
+three fair-rotation chips and `More` door never imply that the full directory
+is limited to immediately usable providers.
 
 ---
 
@@ -37,7 +44,7 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 - `features/connectors/ConsentFailureNotice.tsx` — the ONE failure presentation for both consent surfaces: the sentence, and the server's raw words behind a real disclosure button (never a hover, never inline).
 - `features/connectors/ConnectorsSettingsPanel.tsx` — Settings → Connectors: the health cards plus the same consent body, and the only file in the panel path that names Google.
 - `features/connectors/ChatConnectorStrip.tsx` — draws exactly three providers from the persisted fair-rotation bag, resolves their live state, and opens the full integrations window from `More`. **Not mounted anywhere since 2026-09-27:** its last home was the retired `/chat/new` hero; the composer splash follows Arman's design (greeting · composer · quick actions), whose first-run connector offer is `ConnectorPromptHost` above the composer. Kept, not deleted — removing it is Arman's call (unfinished-work alarm).
-- `features/connectors/LiveIntegrationsList.tsx` — searchable, live-only provider list shared by the floating window. Every named provider has a real Connect, Configure, or Manage door.
+- `features/connectors/LiveIntegrationsList.tsx` — thin floating-window host for the shared IntegrationsWorkspace; it does not maintain a second catalog, search, or connection action path.
 - `features/connectors/useLiveConnectors.ts` — the ONE container for connection state and actions across the strip and full list. Google uses the Google connect window; MCP entries use the canonical route selector and OAuth/no-auth/GitHub/configure path.
 - `features/connectors/live-connectors.ts` — merges seeded Google/Gmail/Notion definitions with the usable MCP catalogue and enforces the live boundary.
 - `features/connectors/rotation.ts` — pure randomized-bag selection and persisted-state parser.
@@ -62,7 +69,7 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 
 - `features/overlays/openers/connectorConsentDialog.tsx` — the ONE door to "Choose what to connect" (`useOpenConnectorConsentDialog`).
 - `features/connectors/import/` — **the two Google import panels** (Google-native PLAN §4.5, §4.7). `GoogleContactsImportPanel.tsx` (search → the field map → save through the governed party resolver) and `GoogleTasksImportPanel.tsx` (task lists, checkboxes, already-imported badges, the server's honest count line). `service.ts` is the client half of `/google-import/*`; `types.ts` holds its `*Pending` stand-in contracts and the remedy that removes them; `contract.ts` is the ONE adapter that narrows what steers copy (the field-action set, the match state) with a runtime check, so a state a newer server sends can never render blank; `field-labels.ts` turns a column key into words and writes the provenance sentence, shared by both panels; `read-failure.ts` + `GoogleImportReadFailureNotice.tsx` are the ONE fourth-state posture both panels render when the read did not happen. Openers: `features/overlays/openers/googleImportWindows.tsx` (`useOpenGoogleContactsImport`, `useOpenGoogleTasksImport`); window entries `features/window-panels/windows/google-import/*`.
-- `features/window-panels/windows/connectors/LiveIntegrationsWindow.tsx` — canonical floating all-live-integrations window; fullscreen on mobile.
+- `features/window-panels/windows/connectors/LiveIntegrationsWindow.tsx` — floating host for the shared integrations directory; fullscreen on mobile.
 - `app/(dev)/demos/connector-strip/page.dev.tsx` — every strip state side by side (nothing / some / all connected, compact, surface filters, raised intents).
 
 **Redux slice(s)** — `conversationAttachments` (`redux/attachments.slice.ts`). The connector catalogue itself still holds no state; what a person CHOSE out of a connection does, keyed by conversation.
@@ -107,9 +114,14 @@ Status `connected` → a `Check` appears and — when the definition has `manage
 
 Each visit consumes the next three ids from a shuffled bag. No provider repeats until every eligible provider has had one placement. At a bag boundary, the previous visit's ids are deferred, preventing consecutive overlap whenever the catalogue is large enough. A changed eligible catalogue invalidates the old bag safely.
 
-### (d) The live-only `More` window
+### (d) The live-only conversation strip and shared directory
 
-The WindowPanel always includes Google, Gmail, and Notion, then adds MCP catalogue entries whose server status is `active`, `beta`, or `community`, whose sanitized `connection_ready` gate is true, and which can be used from the web app now. Disconnected providers also need a real remote endpoint and a direct OAuth, GitHub, or no-auth route. An already-connected remote provider remains visible so its management door is never lost. Unproven, local-only (`stdio`), and `coming_soon` entries never appear.
+The conversation strip is live-only: it includes Google, Gmail, and eligible MCP
+entries that can be used from the web app now. Its `More` entry opens the shared
+directory body, whose Discover view intentionally uses the complete catalog and
+states local-only, unavailable, and coming-soon status honestly. This preserves
+the strip's eligibility promise without hiding a catalog entry or a saved
+connection from its management surface.
 
 ### (d2) Two kinds of connection, and choosing what rides this chat
 
@@ -280,7 +292,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 - `ConnectorDefinition` + `CONNECTORS` (`features/connectors/`) — Why new: there was no catalogue of _user-attachable external systems_. Considered extending: `features/agent-connections` (agent reach: skills, MCP, render blocks — a different axis) and `components/icons/maker-brand.ts` (`MakerBrandId` is keyed to `ai.model_public.maker`, i.e. AI model makers; Notion/Gmail are not model makers). Rejected because both would blur two distinct registries.
 - `ConnectorStrip` (`features/connectors/ConnectorStrip.tsx`) — Why new: no existing component renders a sub-composer, status-bearing offer row. Considered extending: shortcut chip rows in the composer. Rejected because those raise prompt intents, not account-connection intents, and carry no connected/unavailable state.
-- `LiveIntegrationsList` + `LiveIntegrationsWindow` — Why new: the canonical Settings surface truthfully includes setup placeholders and local-only integrations, while chat needs the smaller set usable from the web app now. The list reuses the same catalogue and connect actions as the strip instead of creating a second provider registry.
+- `LiveIntegrationsList` + `LiveIntegrationsWindow` — the window renders the same `IntegrationsWorkspace` as Settings. The shared directory says unavailable and local-only states honestly; the chat strip remains the smaller live-only entry surface.
 
 ---
 
@@ -1155,6 +1167,12 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - `2026-08-30` — Made chat connector visibility fail closed on the catalog's sanitized `connection_ready` proof and stopped generic OAuth from inventing a CIMD client id unless provider metadata explicitly supports it; Figma now remains hidden while its MCP client admission is pending.
 - `2026-08-30` — Completed dynamic-provider artwork fallback: each entry now tries its website favicon, known brand glyph, catalogue art, and cached 128px favicon before any branded initial, eliminating anonymous letter tiles whenever provider identity is available.
 - `2026-08-30` — Restored the canonical full-color provider artwork in the rotating chat strip and Integrations window; dynamic MCP entries now retain catalogue `iconUrl`/brand color instead of collapsing to one generic monochrome plug.
+- `2026-09-28` — `IntegrationsWorkspace` is the one Settings/window directory:
+  Discover uses compact featured/category/search cards; Yours uses grouped saved
+  rows that reveal an existing provider or MCP detail in place. The Settings
+  page opens the existing window, while the embedded body omits that launcher.
+  The conversation strip stays live-only; the directory renders the complete
+  catalog with explicit status.
 - `2026-08-29` — Chat now shows three fairly rotated live integrations plus `More`. The shuffled bag prevents provider favoritism and consecutive repeats when possible; `More` opens a searchable WindowPanel containing every web-usable live integration while excluding local-only and coming-soon Settings entries.
 - `2026-08-29` — Aligned the normal-chat connector row to the composer's inner content line and shortened the Workspace chip label to `Google`; the capability detail remains in its description and tooltip.
 - `2026-08-29` — Halved the connector reminder's vertical footprint across every Smart Agent Input: the visual row is now 16px with a 2px composer gap, while coarse-pointer hit areas remain 40px via non-layout pseudo-elements.
