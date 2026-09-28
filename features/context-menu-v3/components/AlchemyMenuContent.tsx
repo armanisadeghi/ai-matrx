@@ -25,7 +25,7 @@ import { SOURCE_WRITE_TARGET, richDocumentTargetHost } from "@/features/rich-doc
 import { useRichDocumentProvider } from "@/features/rich-document/actions/useRichDocumentProvider";
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import { buildMenuModel } from "../model/menu-model";
-import { namedHeader, contextMenuActionsFromModel, menuHeader, modelRevision } from "../alchemy-provider";
+import { chatMessageSubject, namedHeader, contextMenuActionsFromModel, menuHeader, modelRevision } from "../alchemy-provider";
 import { RegroupBoundary } from "../regroup/RegroupContext";
 import type { MenuContentProps } from "../types";
 
@@ -125,13 +125,14 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   const revision = drawn;
   // In a field the header names the field ("Body"), never its raw text.
   // The message the menu opened on: its role and time, from the transcript store.
-  const chatMessage = (() => {
-    const src = m.richDocCtx.source;
-    if (src.type !== "chat-message") return null;
-    const record = (m.richDocCtx.getState() as RootState).messages?.byConversationId?.[src.conversationId]?.byId?.[src.messageId];
-    const role = record?.role ?? (m.richDocCtx.extensions?.type === "chat-message" ? m.richDocCtx.extensions.role : null);
-    return role ? { role: String(role), createdAt: record?.createdAt ?? null } : null;
-  })();
+  // Either this menu IS the message's, or it is the transcript's and the
+  // right-click resolved the message under the pointer — same subject.
+  const chatMessage = chatMessageSubject({
+    state: m.richDocCtx.getState() as RootState,
+    source: m.richDocCtx.source,
+    extensions: m.richDocCtx.extensions,
+    contextData: menuProps.contextData,
+  });
   // A row (or any target) that NAMES itself wins over the generic header —
   // "Quiz: Unit 2 review", never "Content: <agent context>". A selection
   // still shows itself.

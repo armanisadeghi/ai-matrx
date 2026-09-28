@@ -315,6 +315,51 @@ export function menuHeaderContent(actionText: { source: string; text: string }):
   return headerPreview(stripTurnTrust(actionText.text));
 }
 
+/** The transcript store slice `chatMessageSubject` reads (RootState["messages"]). */
+interface TranscriptStoreSlice {
+  messages?: {
+    byConversationId?: Record<
+      string,
+      { byId?: Record<string, { role?: unknown; createdAt?: string | null } | undefined> } | undefined
+    >;
+  };
+}
+
+/**
+ * THE MESSAGE A MENU WAS OPENED ON — one answer for every menu over a chat
+ * transcript, so the same message gets the same heading everywhere ("AI answer
+ * · Sep 27, 6:50 PM", "Your message · …").
+ *
+ * Two doors name a message and both land here:
+ *   1. the menu's own content source is that message (`chat-message` — the
+ *      per-answer registry menu);
+ *   2. the menu is the transcript-level one and the right-click resolved the
+ *      message under the pointer (`messageId` in the per-open context —
+ *      `resolveMarkdownContext` reads the `data-message-id` every message root
+ *      carries). Run History's user turns and any answer area outside the
+ *      per-answer menu came through here and were headed "Content: <the whole
+ *      text>" (2026-09-28).
+ */
+export function chatMessageSubject(args: {
+  state: TranscriptStoreSlice;
+  source: { type: string; conversationId?: string; messageId?: string } | null | undefined;
+  extensions?: { type?: string; role?: unknown } | null;
+  contextData?: Record<string, unknown> | null;
+}): { role: string; createdAt: string | null } | null {
+  const { state, source, extensions, contextData } = args;
+  const read = (conversationId: unknown, messageId: unknown) =>
+    typeof conversationId === "string" && typeof messageId === "string"
+      ? state.messages?.byConversationId?.[conversationId]?.byId?.[messageId]
+      : undefined;
+  if (source?.type === "chat-message") {
+    const record = read(source.conversationId, source.messageId);
+    const role = record?.role ?? (extensions?.type === "chat-message" ? extensions.role : null);
+    return role ? { role: String(role), createdAt: record?.createdAt ?? null } : null;
+  }
+  const record = read(contextData?.conversationId, contextData?.messageId);
+  return record?.role ? { role: String(record.role), createdAt: record.createdAt ?? null } : null;
+}
+
 /**
  * The header for a menu opened in a FIELD with no selection: the field's name
  * and, when it helps, a short plain preview (`utils/field-menu-header.ts`).

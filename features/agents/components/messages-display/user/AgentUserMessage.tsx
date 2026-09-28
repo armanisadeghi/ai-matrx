@@ -408,6 +408,10 @@ export function AgentUserMessage({
   return (
     <div
       className={cn("group relative", containerMargin)}
+      // The transcript menu resolves the message under the pointer from this
+      // tag (resolveMarkdownContext) and heads itself "Your message · <time>"
+      // — the same subject every answer carries (chatMessageSubject).
+      data-message-id={messageId}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
