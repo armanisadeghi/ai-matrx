@@ -379,7 +379,11 @@ export function EntityListToolbar<TRow>({
           // SHRINK (flex-initial, never flex-none): on a 375px phone a rigid
           // strip pushed the copy button past the 16px gutter (page-pass
           // /connected-sources, 2026-09-27).
-          className="flex min-w-0 flex-1 items-center justify-end empty:hidden sm:flex-none [&>*]:w-auto [&>*]:min-w-0 [&_[data-matrx-table-toolbar]]:flex-nowrap [&_[data-matrx-table-toolbar-tabs]]:flex-initial [&_[data-matrx-table-toolbar-tabs]]:basis-auto [&_[data-matrx-table-toolbar-tabs]]:max-w-[14rem] [&_[data-matrx-table-toolbar-tabs]]:min-w-0 [&_[data-matrx-table-tabs]]:border-b-0"
+          // ON A PHONE THE VIEW TABS TAKE THEIR OWN LINE (list-shell fix D,
+          // 2026-09-28): beside Filters · Columns · View at 375px the strip was
+          // squeezed to "Defau…" with its "+" pushed off-screen. Below `sm` the
+          // row is full-width and the strip is bounded by it, not by 14rem.
+          className="flex min-w-0 flex-1 items-center justify-end empty:hidden max-sm:basis-full max-sm:justify-start sm:flex-none [&>*]:w-auto [&>*]:min-w-0 max-sm:[&>*]:w-full [&_[data-matrx-table-toolbar]]:flex-nowrap [&_[data-matrx-table-toolbar-tabs]]:flex-initial [&_[data-matrx-table-toolbar-tabs]]:basis-auto sm:[&_[data-matrx-table-toolbar-tabs]]:max-w-[14rem] [&_[data-matrx-table-toolbar-tabs]]:min-w-0 [&_[data-matrx-table-tabs]]:border-b-0"
         />
       )}
     </div>
