@@ -56,7 +56,13 @@ export function ManualKitCreator() {
     queueMicrotask(() => {
       let raw: string | null;
       try { raw = sessionStorage.getItem(draftKey); }
-      catch { if (active) setRecoveryReady(true); return; }
+      catch {
+        if (active) {
+          setError("Could not restore your saved kit draft. You can continue creating a kit.");
+          setRecoveryReady(true);
+        }
+        return;
+      }
       if (!raw) { if (active) setRecoveryReady(true); return; }
       void recoverManualKitDraft(raw, {
         resolveSource: async (id) => {
@@ -82,20 +88,31 @@ export function ManualKitCreator() {
         },
       }, existingSourceId ? { sourceIdOverride: existingSourceId } : undefined).then((draft) => {
         if (!active) return;
-        if (!draft) { sessionStorage.removeItem(draftKey); return; }
-        setTitle(draft.title);
-        if (draft.source) { setSourceId(draft.source.id); setSourceName(draft.source.name); }
+        if (!draft) {
+          try { sessionStorage.removeItem(draftKey); }
+          catch { setError("Could not clear an invalid saved kit draft. You can continue creating a kit."); }
+          return;
+        }
+        if (!existingSourceId) setTitle(draft.title);
+        if (!existingSourceId && draft.source) { setSourceId(draft.source.id); setSourceName(draft.source.name); }
         setSelected(draft.selected);
         if (draft.restored) toast.info("Your unsaved kit was restored.");
-      }).catch(() => undefined).finally(() => { if (active) setRecoveryReady(true); });
+      }).catch((cause) => {
+        if (active) setError(cause instanceof Error ? `Could not restore your saved kit draft: ${cause.message}` : "Could not restore your saved kit draft. You can continue creating a kit.");
+      }).finally(() => { if (active) setRecoveryReady(true); });
     });
     return () => { active = false; };
   }, [draftKey, existingSourceId]);
   useEffect(() => {
     if (!recoveryReady) return;
     const dirty = Boolean(title || sourceId || selected.length);
-    if (!dirty) { sessionStorage.removeItem(draftKey); return; }
-    sessionStorage.setItem(draftKey, JSON.stringify({ title, sourceId, sourceName, selected: selected.map((row) => ({ kind: row.kind, id: row.id })) }));
+    try {
+      if (!dirty) { sessionStorage.removeItem(draftKey); return; }
+      sessionStorage.setItem(draftKey, JSON.stringify({ title, sourceId, sourceName, selected: selected.map((row) => ({ kind: row.kind, id: row.id })) }));
+    } catch {
+      toast.error("Could not save your kit draft in this browser. You can still create the kit.");
+      return;
+    }
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
@@ -119,9 +136,13 @@ export function ManualKitCreator() {
   };
   const toggle = (row: EducationLibraryRow) => setSelected((current) =>
     current.some((item) => item.id === row.id && item.kind === row.kind) ? current.filter((item) => item.id !== row.id || item.kind !== row.kind) : [...current, row]);
+  const clearDraft = () => {
+    try { sessionStorage.removeItem(draftKey); }
+    catch { setError("Could not clear your saved kit draft. You can still leave this page."); }
+  };
   const save = async () => {
     setSaving(true); setError(null);
-    try { await createManualKit({ sourceId: sourceId ?? "", title, artifacts: selected, allowExisting: !!existingSourceId, expectedFingerprint: existingFingerprint ?? undefined }); sessionStorage.removeItem(draftKey); router.push(kitHref("file", sourceId ?? "")); }
+    try { await createManualKit({ sourceId: sourceId ?? "", title, artifacts: selected, allowExisting: !!existingSourceId, expectedFingerprint: existingFingerprint ?? undefined }); clearDraft(); router.push(kitHref("file", sourceId ?? "")); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create this kit."); }
     finally { setSaving(false); }
   };
@@ -165,6 +186,6 @@ export function ManualKitCreator() {
     </div>
     <div className="flex justify-between"><Button variant="outline" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</Button><span className="text-sm text-muted-foreground">{page * PAGE_SIZE < total ? "More results available" : "End of results"}</span><Button variant="outline" disabled={page * PAGE_SIZE >= total} onClick={() => setPage((value) => value + 1)}>Next</Button></div>
     {error && <p role="alert" className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
-    <div className="flex gap-2"><Button variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.push("/education/kits"); }}>Cancel</Button><Button disabled={saving || (Boolean(existingSourceId) && !existingReady)} onClick={() => void save()}>{saving ? "Saving…" : existingSourceId ? "Add saved aids" : "Create kit"}</Button></div>
+    <div className="flex gap-2"><Button variant="outline" onClick={() => { clearDraft(); router.push("/education/kits"); }}>Cancel</Button><Button disabled={saving || (Boolean(existingSourceId) && !existingReady)} onClick={() => void save()}>{saving ? "Saving…" : existingSourceId ? "Add saved aids" : "Create kit"}</Button></div>
   </main></SurfaceRuntimeProvider>;
 }
