@@ -102,6 +102,7 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
 
   return (
     <div
+      data-code-snippet=""
       className={cn(
         // not-prose: a surrounding `prose` block gave the <pre> its own
         // ~1.7em top and bottom margins inside this frame (a tall empty band

@@ -173,3 +173,9 @@
 .rich-editor-prose ol { padding-left: 1.5rem; margin: 0 0 0.75rem; line-height: 1.625; }
 .rich-editor-prose li { margin: 0; }
 .rich-editor-prose li p { margin: 0; }
+
+/* Inside that one frame the code itself sits flat — no second rounded band. */
+.rich-editor-island[data-island-type="fence"] .rich-editor-island-render [data-code-snippet] pre,
+.rich-editor-island[data-island-type="fence"] .rich-editor-island-render [data-code-snippet] code {
+  background: transparent;
+}
