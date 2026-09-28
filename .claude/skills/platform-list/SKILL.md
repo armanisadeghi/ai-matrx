@@ -2,7 +2,7 @@
 name: platform-list
 type: Skill
 title: "platform-list — Arman's list of large platform work not started yet"
-description: "The Platform List: Arman's own register of large platform-level work he chose not to start yet. Use at session start to check for rows due today or overdue, when Arman says to add, snooze, kill, or finish a row, when you own a row, or when you think something belongs there. NOT for ordinary tasks, defects, or handoffs."
+description: "The Platform List: Arman's own register of large platform-level work he chose not to start yet. Use when the reminder hook says a row is due, when Arman says to add, snooze, kill, or finish a row, when you own a row, or when you think something belongs there. NOT for ordinary tasks, defects, or handoffs."
 tags: [operations, register, platform, arman, reminders]
 timestamp: 2026-09-21T00:00:00Z
 ---
@@ -16,8 +16,9 @@ timestamp: 2026-09-21T00:00:00Z
 # The Platform List
 
 One file: `common-docs/operations/platform-list/LIST.md`. One folder beside it with one short file per row.
-Owned by Arman. Read it at the start of every session that can reach it. If the file is not on this machine,
-say nothing about it.
+Owned by Arman. **Never read it at session start.** `due.py` beside it runs as a SessionStart hook on Arman's
+Mac and stays silent unless a `Waiting` row's Start date has arrived; it then tells the first attended session
+of the day, once, and no other. Read the list only when that reminder arrives or Arman asks about it.
 
 ## What it is for
 
@@ -27,8 +28,8 @@ handoffs, and not where your ideas go. Expect it to stay short. Almost every row
 
 ## The four things you do
 
-1. **Remind.** If any row's Start date is today or past, tell Arman in your first reply, in one plain sentence
-   per row: the item, its status, and who owns it. He will either say start it, or give a new date. A new date
+1. **Remind, only when the hook tells you to.** Tell Arman in your first reply, in one plain sentence per row
+   the reminder names. He will either say start it, or give a new date. A new date
    is a snooze: change the Start cell and nothing else. Never decide a date yourself.
 2. **Suggest, never write.** If you believe something belongs here, say so to Arman in one or two plain
    sentences inside your normal reply. You do not add rows, files, drafts, or notes anywhere. He adds it or
