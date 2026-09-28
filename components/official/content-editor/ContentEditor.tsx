@@ -31,6 +31,7 @@ import { CopyDropdownButton } from "./CopyDropdownButton.lazy";
 import { ContentManagerMenu } from "./ContentManagerMenu.lazy";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Mode configurations
 export const MODE_CONFIGS: EditorModeConfig[] = [
@@ -101,6 +102,8 @@ export function ContentEditor({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  // A failed auto-save is said in the status slot — never an old "Saved" time.
+  const [saveError, setSaveError] = useState<unknown>(null);
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   // Refs - properly typed
@@ -152,8 +155,10 @@ export function ContentEditor({
         try {
           await onSave(localContent);
           setLastSaved(new Date());
+          setSaveError(null);
         } catch (error) {
           console.error("Auto-save failed:", error);
+          setSaveError(error);
         } finally {
           setIsSaving(false);
         }
@@ -377,6 +382,11 @@ export function ContentEditor({
                     <Save className="h-3 w-3 animate-pulse" />
                     <span>Saving...</span>
                   </>
+                ) : saveError != null ? (
+                  <span className="flex items-center gap-1 text-destructive">
+                    Not saved — changes are only on this screen
+                    <ErrorAlchemyMenu error={saveError} size="xs" operation="Auto-save this content" />
+                  </span>
                 ) : lastSaved ? (
                   <>
                     <Clock className="h-3 w-3" />

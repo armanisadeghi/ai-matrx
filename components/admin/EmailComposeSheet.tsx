@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Recipient {
   id: string;
@@ -51,6 +52,9 @@ export function EmailComposeSheet({
   const [customFrom, setCustomFrom] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
+  // The sender config read's failure is said under the From field — never a
+  // placeholder that looks like the real default.
+  const [configError, setConfigError] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     success: boolean;
@@ -63,9 +67,12 @@ export function EmailComposeSheet({
       .then((data) => {
         if (data.success && data.config) {
           setEmailConfig(data.config);
+          setConfigError(null);
+        } else {
+          setConfigError(data?.msg ?? data?.error ?? "The email configuration could not be read.");
         }
       })
-      .catch(console.error);
+      .catch((err: unknown) => setConfigError(err));
   }, []);
 
   const handleSend = async () => {
@@ -211,7 +218,12 @@ export function EmailComposeSheet({
               className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {emailConfig?.allowedDomains &&
+              {configError != null ? (
+                <span className="inline-flex items-center gap-1 text-destructive">
+                  Couldn&apos;t read the default sender and allowed domains.
+                  <ErrorAlchemyMenu error={configError} size="xs" operation="Load the email configuration" />
+                </span>
+              ) : emailConfig?.allowedDomains &&
               emailConfig.allowedDomains.length > 0 ? (
                 <>Allowed domains: {emailConfig.allowedDomains.join(", ")}</>
               ) : emailConfig?.defaultFrom ? (

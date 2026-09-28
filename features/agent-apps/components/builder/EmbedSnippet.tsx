@@ -16,6 +16,7 @@ import { Check, Copy } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 
 interface EmbedSnippetProps {
   /** App slug — what /p/[slug] resolves on. */
@@ -61,8 +62,10 @@ export function EmbedSnippet({
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 2000);
-    } catch {
-      // silently fail
+    } catch (err) {
+      toast.error("Couldn't copy the snippet", {
+        description: err instanceof Error ? err.message : String(err),
+      });
     }
   };
 
