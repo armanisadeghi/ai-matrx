@@ -344,6 +344,11 @@
       "index": "education.guardian_link:guardian_link_unique",
       "reason": "(guardian_user_id, student_user_id) is the durable GUARDIAN CONSENT RELATIONSHIP. guardian_grant and guardian_request_student both INSERT ... ON CONFLICT to reactivate or reopen the same link after revocation; a partial index would break that lifecycle and permit duplicate consent histories for one pair.",
       "ruled": "CI-FIX intake, 2026-09-28 — edu_guardian_link.sql proves the conflict-revive consent lifecycle"
+    },
+    {
+      "index": "rag.kg_suggestion_ack:kg_suggestion_ack_created_by_suggestion_key",
+      "reason": "(created_by, suggestion_id) is a PERMANENT DISMISSAL IDENTITY. kgSuggestionAckService reads the acknowledgement to suppress that exact suggestion and upserts with ignoreDuplicates, so a removed acknowledgement must still prevent the same suggestion from re-triggering; only a new suggestion id may surface again.",
+      "ruled": "CI-FIX terminal identity intake, 2026-09-28 — kgSuggestionAckService proves read plus conflict-ignore lifecycle"
     }
   ]
 }
