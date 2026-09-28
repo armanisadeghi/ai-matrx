@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
@@ -148,6 +149,55 @@ function membersOf(directory: AdminKnobDirectory, organizationId: string | null)
 }
 
 /**
+ * A short closed choice (≤ 4 options: a level, On/Off) is a row of pills, never
+ * a Radix Select. A Select is MODAL: while it is open — and for the ~150 ms its
+ * close animation runs — it sets `pointer-events: none` on <body>, so the next
+ * click (the organization picker, Add override) lands on nothing and has to be
+ * made twice. It also scrolls the register when it opens (Radix `focusFirst`
+ * calls `scrollIntoView` on the picked item). Pills are one click, no overlay.
+ */
+const PILL_LIMIT = 4;
+
+function ChoicePills({
+  ariaLabel,
+  value,
+  disabled,
+  options,
+  onPick,
+}: {
+  ariaLabel: string;
+  value: string | undefined;
+  disabled?: boolean;
+  options: Array<{ value: string; label: string; title?: string }>;
+  onPick: (value: string) => void;
+}) {
+  return (
+    <ToggleGroup
+      type="single"
+      value={value ?? ""}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      // Clicking the pressed pill again reports "" — a choice is never un-picked.
+      onValueChange={(next) => {
+        if (next && next !== value) onPick(next);
+      }}
+      className="inline-flex h-7 w-full gap-0 rounded-md border border-border bg-muted/35 p-0.5"
+    >
+      {options.map((option) => (
+        <ToggleGroupItem
+          key={option.value}
+          value={option.value}
+          title={option.title}
+          className="h-6 min-w-0 flex-1 rounded px-2 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+        >
+          {option.label}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  );
+}
+
+/**
  * The value control: a closed choice is picked (and commits on pick); anything
  * else is typed and committed with Set.
  */
@@ -170,6 +220,20 @@ function ValueEditor({
   if (knobIsClosedChoice(knob)) {
     const choices = knobChoices(knob);
     const current = value === undefined || value === null ? undefined : String(value);
+    if (choices.length <= PILL_LIMIT) {
+      return (
+        <ChoicePills
+          ariaLabel={ariaLabel}
+          value={current}
+          disabled={busy}
+          options={choices.map((choice) => ({ value: choice.value, label: choice.label, title: choice.help }))}
+          onPick={(next) => {
+            const choice = choices.find((item) => item.value === next);
+            if (choice) onCommit(choice.raw);
+          }}
+        />
+      );
+    }
     return (
       <Select
         value={current}
@@ -427,13 +491,13 @@ export function KnobOverridesAdmin({
       )}
 
       {addable.length > 0 && (
-        <div className="grid grid-cols-1 items-center gap-1.5 sm:grid-cols-[8.5rem_minmax(0,1fr)_minmax(0,1fr)_10rem_auto]">
-          <Select value={addKind} onValueChange={(next) => { setAddKind(next as KnobScopeKindName); setAddPerson(null); }}>
-            <SelectTrigger aria-label="Override level" className="h-7 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {addable.map((level) => <SelectItem key={level.kind} value={level.kind}>{level.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-1 items-center gap-1.5 sm:grid-cols-[10.5rem_minmax(0,1fr)_minmax(0,1fr)_10rem_auto]">
+          <ChoicePills
+            ariaLabel="Override level"
+            value={addKind}
+            options={addable.map((level) => ({ value: level.kind, label: level.label }))}
+            onPick={(next) => { setAddKind(next as KnobScopeKindName); setAddPerson(null); }}
+          />
           <NamePicker
             ariaLabel="Organization for the new override"
             placeholder={`Organization (${orgChoices.length})…`}

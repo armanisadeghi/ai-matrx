@@ -45,6 +45,13 @@ import {
 import { KnobOverridesAdmin } from "../components/KnobOverridesAdmin";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+// jsdom has no layout: the popover's positioning and cmdk's keep-in-view need these two browser APIs.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver;
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};
 
 const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
 const OTHER_ORG = "57f2a22b-5875-46c6-80df-437076421c28";
@@ -242,5 +249,52 @@ describe("KnobOverridesAdmin — the opened key", () => {
     );
     expect(toast.error).not.toHaveBeenCalled();
     expect(onChanged).toHaveBeenCalledTimes(1);
+  });
+
+  // The break this catches: the level and a short value were Radix Selects. A Select is modal —
+  // while open and through its close animation it sets pointer-events:none on <body>, so the next
+  // click (the organization picker, Add override) landed on nothing and had to be made twice. Every
+  // control on the add line must take exactly ONE click, and nothing may lock the page's pointer.
+  it.each([
+    ["an organization", "Organization", null, "organization", ORG],
+    ["a person inside it", "Person", "admin@admin.com", "user", ADMIN],
+  ])("adds %s's override with one click per control, and never locks the page's pointer", async (_, level, person, scopeKind, scopeId) => {
+    (fetchPlatformKnobOverrides as jest.Mock).mockResolvedValue([]);
+    await act(async () => {
+      root.render(<KnobOverridesAdmin knob={knob()} onChanged={jest.fn()} />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const clickOnce = async (element: Element | null | undefined, what: string) => {
+      if (!element) throw new Error(`${what} is not on screen`);
+      await act(async () => {
+        (element as HTMLElement).click();
+      });
+      expect(document.body.style.pointerEvents).not.toBe("none");
+    };
+    const inGroup = (label: string, text: string) =>
+      [...container.querySelectorAll(`[aria-label="${label}"] button`)].find((button) => button.textContent === text);
+    const option = (text: string) => [...document.querySelectorAll("[cmdk-item]")].find((item) => item.textContent?.startsWith(text));
+
+    await clickOnce(inGroup("Override level", level), `the ${level} level`);
+    await clickOnce(container.querySelector('button[aria-label="Organization for the new override"]'), "the organization picker");
+    await clickOnce(option("admin's Workspace"), "admin's Workspace in the picker");
+    if (person) {
+      await clickOnce(container.querySelector('button[aria-label="Person for the new override"]'), "the person picker");
+      console.log("DBG", [...document.querySelectorAll("[cmdk-item]")].map((i) => i.textContent), container.querySelector('button[aria-label="Person for the new override"]')?.outerHTML);
+      await clickOnce(option(person), `${person} in the picker`);
+    }
+    await clickOnce(inGroup("Value for the new override", "On"), "the On value");
+    const addButton = [...container.querySelectorAll("button")].find((button) => button.textContent === "Add override");
+    expect(addButton?.disabled).toBe(false);
+    await clickOnce(addButton, "Add override");
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(writeKnobOverrideThroughDoor).toHaveBeenCalledTimes(1);
+    expect(writeKnobOverrideThroughDoor).toHaveBeenCalledWith(
+      expect.objectContaining({ scopeKind, scopeId, organizationId: ORG, value: true }),
+    );
   });
 });

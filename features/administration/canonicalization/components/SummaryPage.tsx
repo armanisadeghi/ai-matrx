@@ -120,7 +120,7 @@ export function SummaryPage() {
         refreshingAudit={toolbar.refreshingAudit}
         lastRefreshedAt={toolbar.lastRefreshedAt}
       />
-      <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
+      <div className="min-h-0 flex-1 overflow-hidden px-4">
         <AdminAuditTable
           rows={rows}
           columns={columns}

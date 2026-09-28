@@ -215,7 +215,7 @@ export function TableImpactPanel() {
       {/* The preflight read's failure is said once, by the table (read=): the
           failure with no result, a stale notice over the last good one. */}
 
-      <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
+      <div className="min-h-0 flex-1 overflow-hidden px-4">
         <MatrxDataTable<TableImpactRow>
           data={rows}
           columns={columns}

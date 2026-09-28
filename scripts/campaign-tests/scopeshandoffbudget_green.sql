@@ -10,7 +10,9 @@
 --      alone, the platform's default System items) — first with the bodies live before the file
 --      (the inverse, \i'd, when the up is already live), then with the file's, in one transaction
 --      over the same rows. Every (seat, turn) answer, less its clock (`resolved_at`), must be
---      byte-identical.
+--      byte-identical. So must custom.read_record (both key shapes, both seats) on every record that
+--      keeps merge alternates or retired values, every merged id and 300 live records; and
+--      custom.visibility_ancestors (the carrying walk) on 300 live records and every fixture record.
 --   2  THE ORACLE, id by id: custom.levels_of(person, ids) under the file's body equals
 --      {l: custom.effective_level, s: custom.has_visibility at viewer} asked of every id on its own,
 --      for both seats, over every live scope record, the fixture and 400 live records drawn from
@@ -25,7 +27,7 @@
 -- PLANT (the guard must be seen failing): `-v plant=named` — levels_of forgets that a carrying
 -- association TARGETING a record names it (every targeting association is ignored), so a record
 -- carried by a `references` edge from a record shared by name is answered with its class — goes red
--- at clause 2 (and clause 1: the crew lead's turn loses a record she may open). `-v plant=budget`
+-- at clause 2 (clause 1 reports its own red and goes on: the leasing agent's turn loses the cage). `-v plant=budget`
 -- runs clause 3 against a budget of 0.1 x, which the file's bodies cannot meet. With no plant every
 -- clause is green.
 --
@@ -48,14 +50,19 @@
 \else
 \set plant none
 \endif
-begin;
+-- REPEATABLE READ: the dev clone is shared with other lanes (a copy may land while this runs), and
+-- the old bodies and the file's must be asked about the same rows.
+begin isolation level repeatable read;
 set local statement_timeout = 0;
+-- the clone's 10-minute transaction_timeout would end this run midway (the old bodies alone take ~5).
+set local transaction_timeout = 0;
 set local lock_timeout = '10s';
 
 create temp table shb (k text primary key, v uuid) on commit drop;
 create temp table shb_out (tag text, seat text, turn text, digest text, len int, admitted int) on commit drop;
 create temp table shb_time (tag text, type_id uuid, n int, old_ms numeric, new_ms numeric) on commit drop;
 grant select on shb to authenticated;
+grant select, insert on shb_out, shb_time to authenticated;
 
 -- ══ THE FIXTURE ══════════════════════════════════════════════════════════════════════════════
 do $fixture$
@@ -88,7 +95,7 @@ begin
     'name', 'Units', 'slug', 'units', 'label_singular', 'Unit', 'label_plural', 'Units',
     'title_field', 'unit', 'parent_id', v_home::text, 'fields', jsonb_build_array(jsonb_build_object('name', 'unit'))));
   v_cages := custom.table_declare(v_org, v_def || jsonb_build_object(
-    'name', 'Storage cages', 'slug', 'storage-cages', 'label_singular', 'Storage cage', 'label_plural', 'Storage cages',
+    'name', 'Storage cages', 'slug', 'storage_cages', 'label_singular', 'Storage cage', 'label_plural', 'Storage cages',
     'title_field', 'cage', 'parent_id', v_home::text, 'fields', jsonb_build_array(jsonb_build_object('name', 'cage'))));
   perform custom.field_declare(v_org, v_units, jsonb_build_object('key', 'unit', 'label', 'Unit', 'type', 'text', 'sort', 10, 'required', true));
   perform custom.field_declare(v_org, v_units, jsonb_build_object('key', 'bedrooms', 'label', 'Bedrooms', 'type', 'number', 'sort', 20));
@@ -145,6 +152,26 @@ union all select 'no_table', (select r.id from custom.record r where r.table_id 
 union all select 'nobody', '00000000-0000-4000-8000-0000000fee02'::uuid;
 grant select on shb_kinds to authenticated;
 
+-- ══ THE READ DOOR'S AND THE WALK'S SAMPLE ═══════════════════════════════════════════════════
+create temp table shb_reads (org uuid, id uuid) on commit drop;
+insert into shb_reads
+select x.organization_id, x.id from custom.record x
+ where x.deleted_at is null and x.data_class = 'record'
+   and (x.data ? '_retired' or x.data -> '_values' @? '$.*.alternates')
+union
+select a.organization_id, a.old_id from custom.record_alias a where a.revoked_at is null
+union
+select y.organization_id, y.id from (select r.organization_id, r.id from custom.record r tablesample system (2)
+                                      where r.data_class = 'record' and r.deleted_at is null limit 300) y
+union
+select (select v from shb where k = 'org'), v from shb where k in ('unit_4b', 'unit_7a', 'cage_12', 'cage_19');
+grant select on shb_reads to authenticated;
+create temp table shb_walk on commit drop as
+select y.id from (select r.id from custom.record r tablesample system (2)
+                   where r.deleted_at is null limit 300) y
+union select v from shb where k in ('unit_4b', 'unit_7a', 'cage_12', 'cage_19', 'units', 'cages');
+select (select count(*) from shb_reads) as read_door_sample, (select count(*) from shb_walk) as walk_sample;
+
 create function pg_temp.shb_try(p_sql text) returns jsonb language plpgsql as $$
 declare v jsonb;
 begin
@@ -189,6 +216,15 @@ begin
       v_n := v_n + 1;
     end loop;
 
+    -- the read door, both key shapes
+    for t in select * from shb_reads order by id loop
+      for i in 0..1 loop
+        v_j := pg_temp.shb_try(format('select custom.read_record(%L::uuid, %L::uuid, %L::boolean)', t.org, t.id, i = 1));
+        insert into shb_out values (p_tag, v_seat, 'read_record/' || t.id || '/' || i, md5(coalesce(v_j::text, '<null>')), length(v_j::text), 0);
+        v_n := v_n + 1;
+      end loop;
+    end loop;
+
     -- the sweep: every type, the second (warm) call timed on both sides
     for t in select * from shb_types order by cardinality(scope_ids), type_id loop
       for i in 1..2 loop
@@ -212,6 +248,16 @@ begin
     end loop;
     perform set_config('role', v_boss, true);
   end loop;
+
+  -- the carrying walk (seat-free)
+  for t in select * from shb_walk order by id loop
+    insert into shb_out
+    select p_tag, '-', 'visibility_ancestors/' || t.id,
+           md5(coalesce(string_agg(a.container_type || ':' || a.container_id || ':' || a.depth || ':' || a.max_level, ','
+                                   order by a.container_type, a.container_id), '<none>')), 0, 0
+      from custom.visibility_ancestors('record', t.id) a;
+    v_n := v_n + 1;
+  end loop;
   return v_n;
 end $dump$;
 
@@ -225,7 +271,7 @@ select position('SCOPES-HANDOFF-BUDGET' in prosrc) > 0 as up_is_live
 select 'dumped and timed (old bodies)' as step, pg_temp.shb_dump('old') as answers;
 \i migrations/campaign/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql
 
-select :'plant' = 'named' as plant_named \gset
+select :'plant' = 'named' as plant_named, set_config('shb.plant', :'plant', true) as plant \gset
 \if :plant_named
 -- PLANT: every association that targets a record is ignored by the naming test.
 do $plant$
@@ -257,11 +303,14 @@ begin
   if v_all = 0 or v_all <> (select count(*) from shb_out where tag = 'old') then
     raise exception 'clause 1 RED: % answers paired of % dumped', v_all, (select count(*) from shb_out where tag = 'old');
   end if;
-  if v_diff > 0 then
+  if v_diff > 0 and current_setting('shb.plant') = 'named' then
+    raise notice 'clause 1 RED (planted): % of % answers moved — going on to clause 2, which must refuse too', v_diff, v_all;
+  elsif v_diff > 0 then
     raise exception 'clause 1 RED: % of % answers moved between the old bodies and the file''s', v_diff, v_all;
+  else
+    raise notice 'clause 1 GREEN: % answers byte-identical (2 seats: % scope types, the fixture''s turns, % read_record pairs; % carrying walks)', v_all,
+      (select count(*) from shb_types), (select count(*) from shb_reads), (select count(*) from shb_walk);
   end if;
-  raise notice 'clause 1 GREEN: % answers byte-identical (2 seats, % scope types, the fixture''s turns)', v_all,
-    (select count(*) from shb_types);
 end $c1$;
 
 -- ══ 2. THE ORACLE: levels_of against the ladder asked id by id ══════════════════════════════
@@ -303,10 +352,10 @@ select t.n as scopes, round(t.old_ms, 1) as old_ms, round(t.new_ms, 1) as new_ms
        y.org_name, y.type_name
   from shb_time t join shb_types y using (type_id)
  where t.tag = 'new' order by t.n desc limit 12;
-select case when :'plant' = 'budget' then 0.1 else 1.5 end as budget \gset
+select set_config('shb.budget', case when :'plant' = 'budget' then '0.1' else '1.5' end, true) as budget;
 do $c3$
 declare
-  c_budget constant numeric := :budget;
+  c_budget constant numeric := current_setting('shb.budget')::numeric;
   v_new numeric; v_old numeric;
 begin
   select sum(new_ms) / nullif(sum(old_ms), 0) into v_new from shb_time where tag = 'new';

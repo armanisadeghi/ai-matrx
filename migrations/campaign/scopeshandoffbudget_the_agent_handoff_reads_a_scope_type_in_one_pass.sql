@@ -1,11 +1,13 @@
 -- target: branch,production
 -- additive: yes
---   It REPLACES three function bodies with their existing signatures, security, search_path and
---   grants: custom.levels_of, custom._where_ids_open_with and custom.resolve_context. No table,
---   column, index, trigger, policy, grant or door row is touched; no row is written. Every answer is
---   byte-identical (scripts/campaign-tests/scopeshandoffbudget_green.sql, dev clone: every live
---   scope type of every organization for admin@admin.com and test@test.com, and levels_of against
---   the ladder asked id by id).
+--   It REPLACES five function bodies with their existing signatures, security, search_path and
+--   grants: custom.visibility_ancestors, custom.levels_of, custom._where_ids_open_with,
+--   custom._read_record_with and custom.resolve_context (which also gains SET plan_cache_mode).
+--   No table, column, index, trigger, policy, grant or door row is touched; no row is written.
+--   Every answer is byte-identical (scripts/campaign-tests/scopeshandoffbudget_green.sql, dev
+--   clone: every live scope type of every organization for admin@admin.com and test@test.com,
+--   read_record on every record that keeps alternates or retired values and a live sample, the
+--   carrying walk on a live sample, and levels_of against the ladder asked id by id).
 -- guard: custom/system_enabled
 -- lane: SCOPES-HANDOFF-BUDGET
 -- lock: custom
@@ -14,9 +16,9 @@
 -- SCOPES-CUTOVER-PLAN.md): before every organization's agents are handed context from the store,
 -- the store's hand-off (custom.resolve_context) must cost at most 1.5 x the current one
 -- (public.resolve_full_context) for the same scopes. Measured on the dev clone over the parity
--- sweep's own selection (every live scope type of every organization, 83 types, 9,253 scopes, as
--- admin@admin.com, warm): 6.5 s old against 135.9 s new, 20.8 x. Three causes, all in how the
--- answer is gathered, none in what it says:
+-- sweep's own selection (every live scope type of every organization: 83 types, 9,253 scopes, as
+-- admin@admin.com, the warm call): 6.5 s old against 135.9 s new, 20.8 x. The causes, all in how
+-- the answer is gathered and none in what it says:
 --   1. custom.levels_of walked the ladder ON ITS OWN for every record that ANY live association
 --      targets. Every scope a transcript, an agent or a workflow is tagged with is such a record (a
 --      `context_tag` edge, whose container is the scope — the target side), so the class memo never
@@ -24,21 +26,87 @@
 --      targets a record reaches the ladder only through custom.carrying_edges_of arms 1a and 2a
 --      (container on the SOURCE side); it now names the record exactly then, as the source-side
 --      test has always matched arms 1b/2b/4.
---   2. All three bodies gathered their answers by appending to a jsonb (`v := v || ...`), which
---      copies the whole value on every append: n^2 bytes for n ids. They now gather into arrays and
---      aggregate once (levels_of, the checks / admitted / withheld lists, the variables, sources and
---      cells), or answer in one statement (_where_ids_open_with's lookup and its answer).
---   3. custom.resolve_context asked the organization's value cap (a knob read) once per record; it
---      is asked once per organization.
+--   2. All the bodies gathered their answers by appending to a jsonb (`v := v || ...`), which copies
+--      the whole value on every append: n^2 bytes for n ids. They now gather into arrays and
+--      aggregate once, or answer in one statement.
+--   3. custom._where_ids_open_with asked custom.levels_of about every active Table, which halves the
+--      rungs with custom.effective_level (two or three whole-ladder walks) although this door reads
+--      only the viewer answer; a Table (always walked on its own) is now asked exactly that. An id
+--      held by nothing custom.where_id_opens reads (a scope not yet copied into the store) is left
+--      out in one statement instead of five lookups.
+--   4. custom.visibility_ancestors asked "is this container the item's Table" as an EXISTS in a
+--      target list, which the planner answered with a HASHED subplan that read every row of
+--      custom.record (12,000 buffers, 35-50 ms) on every walk; it is a scalar probe now.
+--   5. custom._read_record_with fetched the record's row again for its alternates and its retired
+--      values, and ran custom.with_whole_value_pointers' slow arm for a record with `_values` and no
+--      `_sources`; it reads the row it already holds and asks each only when the record keeps one.
+--   6. custom.resolve_context re-planned every statement on every call (a partitioned custom.record
+--      and argument-dependent custom plans: 5-9 ms of planning a statement, 50 ms of a turn that
+--      names no scope); it runs with generic plans (initial pruning still prunes the partitions).
+--      It reads the record's Table id and its value triple in one statement, and the organization's
+--      value cap once per organization.
+--   After: 0.81 x over the same set (6.5 s old, 5.2 s new); see PROGRESS-SCOPES-HANDOFF-BUDGET.md.
 --
--- Inverse: migrations/inverse/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass_down.sql puts the three bodies back verbatim.
+-- Inverse: migrations/inverse/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass_down.sql puts the five bodies back verbatim.
+-- based-on: custom.visibility_ancestors(text, uuid) 41245fc85d0ca4bd9bd2572ae75a04b404782f5e9f45d1c22b5ced164a96b577
 -- based-on: custom.levels_of(uuid, uuid[]) 6ba8a61cae881e9230b09f6b5f0bcc0410c252dd60980c28f3706b362ff512d9
 -- based-on: custom._where_ids_open_with(uuid[], uuid, jsonb) 28b1f1ee88c044a3029fc4b4860ee5487c772822eaf19323b669120a954411e0
+-- based-on: custom._read_record_with(uuid, uuid, boolean, jsonb, jsonb) 8bf31b77b73800a4ff938342112363f1088d07b8cd5ce398003e6617125f1592
 -- based-on: custom.resolve_context(text, uuid, uuid[], uuid[], text[]) 558c5dff60fbcfa19bc4c61965db49b4aa6fb7132e50bc41a311d39b5fdad7d6
 
-set local lock_timeout = '30s';
+-- ── 1. THE CARRYING WALK, WITHOUT A HASH OF EVERY RECORD ────────────────────────────────────────
+CREATE OR REPLACE FUNCTION custom.visibility_ancestors(p_item_type text, p_item_id uuid)
+ RETURNS TABLE(container_type text, container_id uuid, depth integer, max_level permission_level)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  return query
+    with recursive seed as (
+      -- THE ONE NEW FACT: which of this item's containers IS the Table it lives in. Everything
+      -- else about the walk is unchanged.
+      -- SCOPES-HANDOFF-BUDGET (2026-09-28): asked as a scalar probe (`limit 1`, true or no row),
+      -- never as EXISTS. In a target list the planner may answer an EXISTS as a HASHED subplan —
+      -- it read every row of custom.record (12,000 buffers, 35-50 ms) to build the hash for the
+      -- two or three edges a walk meets, on every call. The answer is the same boolean.
+      select e.container_type, e.container_id, e.conveys_max,
+             (p_item_type = 'record'
+              and coalesce((select true from custom.record r
+                             where r.id = p_item_id and r.table_id = e.container_id limit 1), false)) as is_table
+        from custom.carrying_edges_of(p_item_type, p_item_id) e
+    ), up as (
+      select s.container_type, s.container_id, 1 as depth, s.conveys_max as max_level, s.is_table,
+             array[p_item_type || ':' || p_item_id::text,
+                   s.container_type || ':' || s.container_id::text] as path
+        from seed s
+      union all
+      select e.container_type, e.container_id, u.depth + 1,
+             least(u.max_level, e.conveys_max),
+             -- LEAK-T10: THE SAME FACT, AT EVERY DEPTH. This was hard-coded `false`, so the
+             -- terminal rule held only for the row the walk started from. One step further out
+             -- a Home is a row of some Table too, and the walk climbed from that Table into ITS
+             -- Homes — the same leak, one level up, in a place no test looked.
+             (u.container_type = 'record'
+              and coalesce((select true from custom.record r
+                             where r.id = u.container_id and r.table_id = e.container_id limit 1), false)),
+             u.path || (e.container_type || ':' || e.container_id::text)
+        from up u
+        cross join lateral custom.carrying_edges_of(u.container_type, u.container_id) e
+       -- `not u.is_table` is the whole change: a Table is where the walk stops, because a
+       -- Table's own containers are its Homes and a Home of the Table is not a container of
+       -- every record in it.
+       where u.depth < 16
+         and not u.is_table
+         and not (e.container_type || ':' || e.container_id::text) = any (u.path)
+    )
+    select u.container_type, u.container_id, min(u.depth), max(u.max_level)
+      from up u
+     group by u.container_type, u.container_id;
+end
+$function$;
 
--- ── 1. THE RUNG, ONCE PER CLASS — a scope a context tag points at is in its class ────────────
+-- ── 2. THE RUNG, ONCE PER CLASS — a scope a context tag points at is in its class ───────────────
 CREATE OR REPLACE FUNCTION custom.levels_of(p_user_id uuid, p_ids uuid[])
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -167,7 +235,7 @@ $function$
 
 ;
 
--- ── 2. WHERE A SET OF IDS OPENS, IN ONE STATEMENT ─────────────────────────────────────────
+-- ── 3. WHERE A SET OF IDS OPENS, IN ONE STATEMENT ───────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION custom._where_ids_open_with(p_ids uuid[], p_user_id uuid DEFAULT NULL::uuid, p_levels jsonb DEFAULT NULL::jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -263,7 +331,18 @@ begin
     end if;
     if v_ask is not null then
       begin
-        v_levels := v_levels || custom.levels_of(v_me, v_ask);
+        -- SCOPES-HANDOFF-BUDGET: a Table is always walked on its own by custom.levels_of (its row
+        -- lives in the kernel Table, which has no class), and this door reads only its viewer answer
+        -- `s` = custom.has_visibility(person, 'record', id, 'viewer') — so a Table is asked exactly
+        -- that, and not the rung above it as well (custom.effective_level's halving: two or three
+        -- more walks of the whole ladder for every active Table a turn names).
+        v_levels := v_levels
+          || custom.levels_of(v_me, array(select a.id from unnest(v_ask) a(id)
+                                           where v_rows -> a.id::text ->> 'kind' <> 'table'))
+          || coalesce((select jsonb_object_agg(a.id::text, jsonb_build_object('s',
+                          custom.has_visibility(v_me, 'record', a.id, 'viewer'::public.permission_level)))
+                         from unnest(v_ask) a(id)
+                        where v_rows -> a.id::text ->> 'kind' = 'table'), '{}'::jsonb);
       exception when others then
         -- the single door, verbatim, for every id of the set arm
         v_slow := v_slow || (select array_agg(e.key::uuid) from jsonb_each(v_rows) e);
@@ -299,6 +378,18 @@ begin
      and (v_owner or coalesce((v_levels -> e.key ->> 's')::boolean, false));
 
   -- ── EVERYTHING ELSE: the single door ────────────────────────────────────────────────────
+  -- SCOPES-HANDOFF-BUDGET: an id held by NOTHING custom.where_id_opens reads — no record row, no
+  -- live merge alias, no form or booking page, no portal, no rendered document — is answered null
+  -- by it (it looks in exactly those, in that order, and returns null when all miss), so it is
+  -- left out here in one statement instead of five lookups an id. A scope not yet copied into the
+  -- store is such an id.
+  v_slow := array(
+    select s.id from unnest(v_slow) s(id)
+     where exists (select 1 from custom.record hr where hr.id = s.id)
+        or exists (select 1 from custom.record_alias ha where ha.old_id = s.id and ha.revoked_at is null)
+        or exists (select 1 from custom.anon_form hf where hf.id = s.id)
+        or exists (select 1 from custom.portal hp where hp.id = s.id)
+        or exists (select 1 from custom.doc_render hd where hd.id = s.id));
   foreach v_id in array v_slow loop
     v_w := custom.where_id_opens(v_id);
     if v_w is not null then
@@ -309,12 +400,174 @@ begin
 end;
 $function$;
 
--- ── 3. THE HAND-OFF, GATHERED ONCE ────────────────────────────────────────────────────────
+-- ── 4. THE READ DOOR READS THE ROW IT ALREADY HOLDS ─────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION custom._read_record_with(p_organization_id uuid, p_record_id uuid, p_by_id boolean, p_levels jsonb, p_cache jsonb, OUT o_doc jsonb, OUT o_cache jsonb)
+ RETURNS record
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_me       uuid := auth.uid();
+  v_table    uuid;
+  v_doc      jsonb;
+  v_mask     jsonb;
+  v_visible  text[];
+  v_declared text[];
+  v_now      uuid;
+  v_alts     jsonb;
+  v_retired  jsonb;
+  v_out      jsonb;
+  v_wv_values  jsonb;
+  v_wv_sources jsonb;
+  v_row      custom.record;
+  v_vs       record;
+  v_ck       text;
+  v_known    boolean;
+  v_key_ids  jsonb;
+begin
+  o_cache := coalesce(p_cache, '{}'::jsonb);
+  if v_me is null then
+    raise exception 'Nobody is signed in, so there is nothing to read.'
+      using errcode = '42501', hint = 'DOOR-1: the read door reads the person from the session.';
+  end if;
+
+  -- ARGS-RULED (2026-09-21). THE WALL IS DECIDED FIRST, AND IT WAS NOT DECIDED AT ALL.
+  -- REC-29: "organizations are hard walls, and a door decides who may reach one before it
+  -- decides anything else" — every other door in this store obeys it and DOOR-1, the one read
+  -- door, did not. It made no membership decision about the organization it was handed.
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.read_record');
+
+  -- REC-21 / T5. THE ID A MERGE SENT SOMEWHERE ELSE — a redirect, never a silent substitution.
+  v_now := custom.resolve_id(p_organization_id, p_record_id);
+  -- STORE-READ-PERF-2: a set door that already asked the ladder about this record for the whole
+  -- set (custom.levels_of) hands the answer in; alone, the door asks it here as it always did.
+  v_known := coalesce(p_levels ? v_now::text, false);
+
+  -- AND THE LADDER BEFORE EXISTENCE. This used to raise 02000 "there is no record % in this
+  -- organization" BEFORE asking custom.has_visibility, so the two answers differed: a caller who
+  -- guessed a record uuid learned whether it existed in that organization (02000) or not
+  -- (42501). One bit per guess, and the store's own rule is that a record you may not open and a
+  -- record that is not there answer the same thing. `custom.has_visibility` answers false for an
+  -- id that is not there, so this ordering makes the two identical without a second read.
+  if not (case when v_known then (p_levels -> v_now::text ->> 's')::boolean
+               else custom.has_visibility(v_me, 'record', v_now, 'viewer') end) then
+    raise exception 'You do not have access to this record.'
+      using errcode = '42501',
+            hint = 'DOOR-1: nothing reads a record around this door - not a screen, not an agent, not an export. Ask somebody who holds it to share it with you.';
+  end if;
+
+  select r.* into v_row
+    from custom.record r
+   where r.organization_id = p_organization_id and r.id = v_now and r.deleted_at is null;
+  if not found then
+    -- Only somebody the ladder has already admitted reaches this sentence, so it now tells a
+    -- person who holds the record that it is in the trash — and tells a stranger nothing.
+    raise exception 'There is no such record in this organization.' using errcode = '02000', hint = 'It was deleted, or it never existed here.',
+            detail = jsonb_build_object('record_id', p_record_id)::text;
+  end if;
+  v_table := v_row.table_id;
+  v_wv_values := v_row.data -> '_values';
+  v_wv_sources := v_row.data -> '_sources';
+  -- custom.record_values_of(r), with the Table's plan carried from record to record.
+  select * into v_vs from custom.record_values_step(v_row, o_cache);
+  v_doc := v_vs.o_doc;
+  o_cache := v_vs.o_cache;
+
+  -- THE ONE FACT. `custom.read_mask` is the whole of what this door used to work out privately.
+  v_mask := custom.read_mask_at(v_now, v_known, (p_levels -> v_now::text ->> 'l')::public.permission_level, 'read');
+  -- STORE-READ-PERF-2 / DOOR-N-5: id-keyed on request means EVERY declared Field's key, as the
+  -- page doors have always done — not only the hidden ones.
+  v_key_ids := coalesce(v_mask -> 'all_key_ids', v_mask -> 'key_ids');
+  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_visible
+    from jsonb_array_elements(v_mask -> 'visible') x;
+  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_declared
+    from jsonb_array_elements(v_mask -> 'declared') x;
+
+  v_out := custom.mask_document(v_doc, v_visible, v_mask -> 'notices', p_by_id,
+                                v_key_ids, v_declared);
+
+  -- CHOICE-VALUE. Rendered AFTER masking, so a field this reader may not see keeps its notice
+  -- and is never resolved.
+  if v_table is not null then
+    v_ck := 'cr:' || p_organization_id::text || ':' || v_table::text;
+    if not (o_cache ? v_ck) then
+      o_cache := o_cache || jsonb_build_object(v_ck, custom.choice_render_plan(p_organization_id, v_table));
+    end if;
+    v_out := custom.choice_render_with(p_organization_id, v_table, v_out, o_cache -> v_ck);
+  end if;
+
+  -- BIG-VALUES-READERS. A value too big for one cell keeps its first words here and its whole
+  -- text in a file; the pointer (`_values.<key>.src` -> `_sources.<ptr>`, the file fields only)
+  -- rides along for the keys this reader may see, so a screen opens the file and an agent's
+  -- context reads the whole text. Nothing else of the provenance block is carried.
+  -- SCOPES-HANDOFF-BUDGET: asked only when the record keeps a whole value in a file. Otherwise
+  -- custom.with_whole_value_pointers hands the document back unchanged (whole_value_pointer_of is
+  -- null for every key when `_sources` is not an object or names no whole_value_in_file), but a
+  -- record with `_values` and no `_sources` took its slow arm and cost a third of a millisecond.
+  if jsonb_typeof(v_wv_values) = 'object' and jsonb_typeof(v_wv_sources) = 'object'
+     and exists (select 1 from jsonb_each(v_wv_sources) s0
+                  where s0.value ->> 'kind' = 'whole_value_in_file'
+                    and coalesce(s0.value ->> 'file_id', '') <> '') then
+    v_out := custom.with_whole_value_pointers(v_out, v_wv_values, v_wv_sources, v_visible, p_by_id,
+                                              v_key_ids);
+  end if;
+
+  -- T5 / REC-N-11. THE ALTERNATES THE MERGE KEPT — only for keys this reader may see.
+  -- SCOPES-HANDOFF-BUDGET: read from v_row, the row fetched above by its key (organization, id) —
+  -- the same row this query used to fetch a second time — and only when some value keeps one.
+  if v_wv_values is not null
+     and (jsonb_typeof(v_wv_values) <> 'object' or v_wv_values @? '$.*.alternates') then
+    select jsonb_object_agg(k, alts) into v_alts
+      from (
+        select e.key as k,
+               (select jsonb_agg(jsonb_build_object(
+                         'value',  a -> 'value',
+                         'rank',   a -> 'rank',
+                         'source', v_row.data -> '_sources' -> (a ->> 'src'))
+                       order by (a ->> 'rank')::int)
+                  from jsonb_array_elements(coalesce(e.value -> 'alternates', '[]'::jsonb)) a) as alts
+          from jsonb_each(coalesce(v_row.data -> '_values', '{}'::jsonb)) e
+         where e.key = any (v_visible)
+           and jsonb_array_length(coalesce(e.value -> 'alternates', '[]'::jsonb)) > 0
+      ) x
+     where x.alts is not null;
+  end if;
+
+  if v_alts is not null and v_alts <> '{}'::jsonb then
+    v_out := v_out || jsonb_build_object('_alternates', v_alts);
+  end if;
+
+  -- SEAT-SUITES / T5+T12. THE VALUES THE STORE KEPT AND THE DOOR THREW AWAY, masked exactly
+  -- like the value they used to be.
+  -- SCOPES-HANDOFF-BUDGET: from v_row (the same row, by its key), and only when it keeps one.
+  if v_row.data ? '_retired' then
+    select jsonb_agg(x order by x ->> 'key') into v_retired
+      from jsonb_array_elements(coalesce(v_row.data -> '_retired', '[]'::jsonb)) x
+     where ((x ->> 'key') = any (v_visible) or not ((x ->> 'key') = any (v_declared)));
+  end if;
+
+  if v_retired is not null and jsonb_array_length(v_retired) > 0 then
+    v_out := v_out || jsonb_build_object('_retired', v_retired);
+  end if;
+
+  if v_now is distinct from p_record_id then
+    v_out := v_out || jsonb_build_object(
+      '_redirected_from', p_record_id,
+      '_redirect_says', 'That record was merged into this one, so its id now answers with this record. REC-21: the merged id resolves to the survivor for good — undoing the merge puts both records and both ids back.');
+  end if;
+
+  o_doc := v_out;
+end;
+$function$;
+
+-- ── 5. THE HAND-OFF, GATHERED ONCE ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION custom.resolve_context(p_entity_type text, p_entity_id uuid, p_record_ids uuid[] DEFAULT NULL::uuid[], p_table_ids uuid[] DEFAULT NULL::uuid[], p_system_item_refs text[] DEFAULT NULL::text[])
  RETURNS jsonb
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'pg_catalog'
+ SET plan_cache_mode TO 'force_generic_plan'
 AS $function$
 declare
   v_me          uuid := custom.query_principal();
@@ -493,7 +746,21 @@ begin
     end;
 
     -- STORE-READ-PERF-3: the record's Table is looked up once per Table, not once per record.
-    v_tid := (select x.table_id from custom.record x where x.organization_id = v_org and x.id = v_rec);
+    -- SCOPES-HANDOFF-BUDGET: the record's Table id and THE TRIPLE (below) in one read of its row.
+    select x.table_id,
+           (select coalesce(jsonb_object_agg(k.key, jsonb_build_object(
+                     'value_version', coalesce((x.data -> '_values' -> k.key ->> 'ver')::integer, 1),
+                     'written_at', coalesce((x.data -> '_values' -> k.key ->> 'at')::timestamptz,
+                                            (x.data -> '_derived' -> k.key ->> 'at')::timestamptz,
+                                            (x.data -> '_computed' -> k.key ->> 'at')::timestamptz))),
+                   '{}'::jsonb)
+              from (select j.key from jsonb_object_keys(v_doc) j(key) where left(j.key, 1) <> '_'
+                    union
+                    select j.key from jsonb_object_keys(coalesce(x.data -> '_values', '{}'::jsonb)) j(key)) k)
+      into v_tid, v_versions
+      from custom.record x
+     where x.organization_id = v_org and x.id = v_rec;
+    v_versions := coalesce(v_versions, '{}'::jsonb);
     v_tbl := case when v_tid is not null then v_tcache -> (v_tid::text) end;
     if v_tbl is null then
       select r.* into v_table
@@ -523,20 +790,7 @@ begin
     -- record, and the door re-asked the organization wall, the record ladder and the whole field
     -- mask the read door had just answered — about 23 ms a record, 400 of the 850 ms a type of
     -- 17 scopes took. Proven identical on 70 live scope records before the swap.
-    select coalesce(jsonb_object_agg(k.key, jsonb_build_object(
-             'value_version', coalesce((x.data -> '_values' -> k.key ->> 'ver')::integer, 1),
-             'written_at', coalesce((x.data -> '_values' -> k.key ->> 'at')::timestamptz,
-                                    (x.data -> '_derived' -> k.key ->> 'at')::timestamptz,
-                                    (x.data -> '_computed' -> k.key ->> 'at')::timestamptz))),
-           '{}'::jsonb)
-      into v_versions
-      from custom.record x
-      cross join lateral (
-        select j.key from jsonb_object_keys(v_doc) j(key) where left(j.key, 1) <> '_'
-        union
-        select j.key from jsonb_object_keys(coalesce(x.data -> '_values', '{}'::jsonb)) j(key)
-      ) k
-     where x.organization_id = v_org and x.id = v_rec;
+    -- (read above, with the record's Table id)
     -- BIG-VALUES-READERS: this organization's cap on one context value handed to an agent
     -- (0, the default, is no cap: the agent gets the whole text, exactly as the old path does).
     if not v_caps ? v_org::text then

@@ -43,6 +43,7 @@ import { runRowAgentAction, type RowAgentActionTarget } from "@/features/unified
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
 import { RECORDS_TEXT } from "@/features/unified-data/recordsCleanText";
+import { RECORDS_REFERENCES } from "@/features/unified-data/recordsReferences";
 import {
   RecordStoreTableSurface,
   useGridContextChannel,
@@ -101,6 +102,9 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     // A value kept as a file opens at /files/f/<id>; the export reads its whole text; an
     // attachment cell attaches through the app's one file window (pickFiles).
     ...RECORDS_FILES,
+    // Every reference is a chip that opens what it names (EntityRef; a record at /o/<id>), and a
+    // value that names its own shape draws through the kind system (lane REFERENCE-CARRY).
+    ...RECORDS_REFERENCES,
     // …in the TABLE's organization: the file window lists only its files and uploads there.
     pickFiles: (ask) => RECORDS_FILES.pickFiles({ ...ask, organizationId: ports.organizationId }),
     members: ports.members,

@@ -631,7 +631,10 @@ export function UniversalSettingsProvider({
   useEffect(() => {
     if (!enabled || editingContext !== "system" || !canManageSystem) return;
     let cancelled = false;
-    const systemRequestKey = `${requestKey}|${canManageSystem}|${generation}`;
+    // The generation is deliberately NOT part of the key: a refresh re-reads
+    // the SAME destination, so its rows stay on screen until the new read
+    // lands (see `system` below).
+    const systemRequestKey = `${requestKey}|${canManageSystem}`;
     void Promise.all([fetchFeatureKnobs(), fetchTaxonomyIndex()])
       .then(([rows, taxonomy]) => {
         if (!cancelled) setSystemRows({ requestKey: systemRequestKey, rows: rows.map((row) => systemKnob(row, taxonomy)), taxonomy, error: null });
@@ -650,7 +653,12 @@ export function UniversalSettingsProvider({
   // Mask a previous organization's configuration synchronously: a stale answer
   // on screen is a lie about whose policy you are looking at.
   const current = state?.requestKey === requestKey ? state : null;
-  const system = systemRows?.requestKey === `${requestKey}|${canManageSystem}|${generation}` ? systemRows : null;
+  // A REFRESH of the same destination is different: keep the rows on screen
+  // until the re-read lands. Masking by generation emptied the register for
+  // the whole re-read after every write (the row's onChanged, the server's
+  // settings_changed directive), which unmounted every row and snapped the
+  // admin Feature Knobs register back to its top.
+  const system = systemRows?.requestKey === `${requestKey}|${canManageSystem}` ? systemRows : null;
   const knobs = editingContext === "system" ? (system?.rows ?? []) : (current?.knobs ?? []);
 
   const taxonomyStateForRequest = taxonomyState?.requestKey === `${requestKey}|${generation}` ? taxonomyState : null;

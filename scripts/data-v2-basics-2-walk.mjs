@@ -214,8 +214,10 @@ try {
     if (!r1.asked || !r2.asked) friction("the nudge did not ask both times");
     await shot("o04-nudge-asks-again");
     await open(T.supplies);
-    const r3 = await nudgeRound("Foam rollers", "Stock Status", "Backordered");
+    // The native table: a word that is none of the choices asks, and Add makes it one.
+    const r3 = await nudgeRound("Foam rollers", "Stock Status", "Special order");
     step("nudge on the native table", r3);
+    if (!r3.asked) friction(`typing "Special order" on the native table did not ask: ${JSON.stringify(r3)}`);
     await page
       .locator("[data-matrx-choice-nudge], [data-radix-popper-content-wrapper]")
       .filter({ hasText: "to the choices for" })
@@ -227,23 +229,55 @@ try {
     const added = (await (await cellOf("Foam rollers", "Stock Status")).innerText()).trim();
     await shot("o05-nudge-added");
     step("Add: the cell holds the new choice", { cell: added });
-    if (!/Backordered/.test(added)) friction(`after Add the cell reads "${added}"`);
+    if (!/Special order/.test(added)) friction(`after Add the cell reads "${added}"`);
+    // Put the row back (an existing choice: no question) and take the new choice out of the list
+    // again from the column's settings — choice editing, walked (Arman).
+    const back3 = await nudgeRound("Foam rollers", "Stock Status", "Backordered");
+    if (back3.asked) friction("typing an existing choice asked as if it were new");
+    await sleep(2000);
+    const restored = (await (await cellOf("Foam rollers", "Stock Status")).innerText()).trim();
+    {
+      // The column's settings live in the Sheet.
+      if (!(await page.locator("[data-sheet-layout]").count())) {
+        await page.getByRole("button", { name: "Sheet", exact: true }).first().click();
+        await until("the Sheet", async () => (await page.locator("[data-sheet-layout]").count()) > 0, 60000);
+        await sleep(2500);
+      }
+      const cs = await columnSettings("Stock Status");
+      const remove = cs.getByRole("button", { name: "Remove Special order", exact: true });
+      const had = await remove.count();
+      if (had) await remove.first().click();
+      await sleep(600);
+      await cs.getByRole("button", { name: "Save", exact: true }).click();
+      await sleep(3500);
+      const again = await columnSettings("Stock Status");
+      const left = await again.getByRole("button", { name: "Remove Special order", exact: true }).count();
+      await shot("o05b-choice-removed");
+      step("choice editing: the added choice removed from the column's settings", { cell_back: restored, was_listed: had, still_listed: left });
+      if (!had || left) friction(`removing the "Special order" choice from settings: listed ${had}, still ${left}`);
+      await again.getByRole("button", { name: "Cancel", exact: true }).click().catch(() => page.keyboard.press("Escape"));
+      await sleep(800);
+    }
 
     // ── 5 · a new row takes the column's default (Arman's defect) — in the Sheet layout ───────
-    await page.getByRole("button", { name: "Sheet", exact: true }).first().click();
-    await until("the Sheet", async () => (await page.locator("[data-sheet-layout]").count()) > 0, 60000);
-    await sleep(2500);
+    if (!(await page.locator("[data-sheet-layout]").count())) {
+      await page.getByRole("button", { name: "Sheet", exact: true }).first().click();
+      await until("the Sheet", async () => (await page.locator("[data-sheet-layout]").count()) > 0, 60000);
+      await sleep(2500);
+    }
     await page.getByRole("button", { name: /^Row$/ }).first().click();
     const form = page.getByRole("dialog").filter({ hasText: "Add New Row" });
     await form.waitFor({ timeout: 20000 });
     await sleep(1500);
     const prefilled = await form.innerText();
+    await shot("o06a-add-row-form-shows-the-default");
     await form.locator("#title").fill("Pinch gauges (set of 3)");
     await form.getByRole("button", { name: "Add Row", exact: true }).click();
     await sleep(4000);
     const newRow = (await rowTexts()).find((t) => t.includes("Pinch gauges")) ?? null;
     await shot("o06-row-takes-default");
     step("a new row takes the default", { form_shows_default: /In stock/.test(prefilled), row: newRow });
+    if (!/In stock/.test(prefilled)) friction(`the + Row form does not show the column's default: ${prefilled.replace(/\s+/g, " ").slice(0, 400)}`);
     if (!newRow || !/In stock/.test(newRow)) friction(`the new row does not read In stock: ${newRow}`);
 
     // ── 6 · add a column named after an old key (Arman): add "Bin N", rename it, add "Bin N" again ──
@@ -268,6 +302,9 @@ try {
     if (!hdrs.includes(bin) || !hdrs.includes(`${bin} (old shelf)`)) friction(`headers after the add: ${hdrs.join(", ")}`);
 
     // ── 7 · colours: colour by Stock Status, Cancel puts it back ───────────────────────────────
+    // Each row's paint before the dialog opens — Cancel must put back exactly this.
+    const paint = () => page.evaluate(() => [...document.querySelectorAll("tbody tr")].map((tr) => (tr.className.match(/(^|\s)bg-[\w-]+-50\b/g) ?? []).join(" ").trim()));
+    const paintBefore = await paint();
     await page.getByRole("button", { name: /^Colors/ }).first().click();
     const colors = page.getByRole("dialog").filter({ hasText: "Table colors" });
     await colors.waitFor({ timeout: 20000 });
@@ -281,8 +318,9 @@ try {
     await colors.getByRole("button", { name: "Cancel", exact: true }).click();
     await sleep(2500);
     const untinted = await page.evaluate(() => [...document.querySelectorAll("tbody tr")].filter((tr) => /(^|\s)bg-\w+-50(\s|$)/.test(tr.className)).length);
-    step("colour by Stock Status, then Cancel", { tinted_while_open: tinted, tinted_after_cancel: untinted });
-    if (untinted > 0) friction("Cancel on Table colors left the rows tinted");
+    const paintAfter = await paint();
+    step("colour by another column, then Cancel", { tinted_before: paintBefore.filter(Boolean).length, tinted_while_open: tinted, tinted_after_cancel: untinted, same_paint_as_before: JSON.stringify(paintBefore) === JSON.stringify(paintAfter) });
+    if (JSON.stringify(paintBefore) !== JSON.stringify(paintAfter)) friction(`Cancel on Table colors did not put the rows' colours back: before ${JSON.stringify(paintBefore)} after ${JSON.stringify(paintAfter)}`);
 
     // ── 8 · a type change and its Undo (on the moved table) ────────────────────────────────────
     await open(T.orders);

@@ -1,9 +1,58 @@
--- chair-step: the inverse of migrations/campaign/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql (lane SCOPES-HANDOFF-BUDGET) — puts custom.levels_of, custom._where_ids_open_with and custom.resolve_context back exactly as production held them before it (pg_get_functiondef, 2026-09-28; the same bodies on the dev clone). Nothing of anybody's data is touched.
--- based-on: custom.levels_of(uuid, uuid[]) NEW_LEVELS
--- based-on: custom._where_ids_open_with(uuid[], uuid, jsonb) NEW_WIOW
--- based-on: custom.resolve_context(text, uuid, uuid[], uuid[], text[]) NEW_RC
+-- chair-step: the inverse of migrations/campaign/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql (lane SCOPES-HANDOFF-BUDGET) — puts custom.visibility_ancestors, custom.levels_of, custom._where_ids_open_with, custom._read_record_with and custom.resolve_context back exactly as production held them before it (pg_get_functiondef, 2026-09-28; the same bodies on the dev clone). Nothing of anybody's data is touched.
+-- based-on: custom.visibility_ancestors(text, uuid) c47624f13fcc7c033728261c15fb6afe29d0aa6f36d0fdc3589af5372622f00c
+-- based-on: custom.levels_of(uuid, uuid[]) a1d15061bc7c3bcf51fa4633d1b6fa583e50846a23efa67feb9bb07edf5e89b6
+-- based-on: custom._where_ids_open_with(uuid[], uuid, jsonb) eb7d5e290b2b7dd734cfea2942aa2d0ef3538f3087b50031a375649d1602339c
+-- based-on: custom._read_record_with(uuid, uuid, boolean, jsonb, jsonb) 8e507f8aa394c42df502258f2b72c66ab853f52fe2a6ac2bba411cd8a8b216dc
+-- based-on: custom.resolve_context(text, uuid, uuid[], uuid[], text[]) 30ceb7f40a6560764721ccc4ef0cb77de3efdb4318032f575639234c4c895553
 
 set local lock_timeout = '2s';
+
+CREATE OR REPLACE FUNCTION custom.visibility_ancestors(p_item_type text, p_item_id uuid)
+ RETURNS TABLE(container_type text, container_id uuid, depth integer, max_level permission_level)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  return query
+    with recursive seed as (
+      -- THE ONE NEW FACT: which of this item's containers IS the Table it lives in. Everything
+      -- else about the walk is unchanged.
+      select e.container_type, e.container_id, e.conveys_max,
+             (p_item_type = 'record'
+              and exists (select 1 from custom.record r
+                           where r.id = p_item_id and r.table_id = e.container_id)) as is_table
+        from custom.carrying_edges_of(p_item_type, p_item_id) e
+    ), up as (
+      select s.container_type, s.container_id, 1 as depth, s.conveys_max as max_level, s.is_table,
+             array[p_item_type || ':' || p_item_id::text,
+                   s.container_type || ':' || s.container_id::text] as path
+        from seed s
+      union all
+      select e.container_type, e.container_id, u.depth + 1,
+             least(u.max_level, e.conveys_max),
+             -- LEAK-T10: THE SAME FACT, AT EVERY DEPTH. This was hard-coded `false`, so the
+             -- terminal rule held only for the row the walk started from. One step further out
+             -- a Home is a row of some Table too, and the walk climbed from that Table into ITS
+             -- Homes — the same leak, one level up, in a place no test looked.
+             (u.container_type = 'record'
+              and exists (select 1 from custom.record r
+                           where r.id = u.container_id and r.table_id = e.container_id)),
+             u.path || (e.container_type || ':' || e.container_id::text)
+        from up u
+        cross join lateral custom.carrying_edges_of(u.container_type, u.container_id) e
+       -- `not u.is_table` is the whole change: a Table is where the walk stops, because a
+       -- Table's own containers are its Homes and a Home of the Table is not a container of
+       -- every record in it.
+       where u.depth < 16
+         and not u.is_table
+         and not (e.container_type || ':' || e.container_id::text) = any (u.path)
+    )
+    select u.container_type, u.container_id, min(u.depth), max(u.max_level)
+      from up u
+     group by u.container_type, u.container_id;
+end
+$function$;
 
 CREATE OR REPLACE FUNCTION custom.levels_of(p_user_id uuid, p_ids uuid[])
  RETURNS jsonb
@@ -246,6 +295,153 @@ begin
     end if;
   end loop;
   return v_out;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom._read_record_with(p_organization_id uuid, p_record_id uuid, p_by_id boolean, p_levels jsonb, p_cache jsonb, OUT o_doc jsonb, OUT o_cache jsonb)
+ RETURNS record
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_me       uuid := auth.uid();
+  v_table    uuid;
+  v_doc      jsonb;
+  v_mask     jsonb;
+  v_visible  text[];
+  v_declared text[];
+  v_now      uuid;
+  v_alts     jsonb;
+  v_retired  jsonb;
+  v_out      jsonb;
+  v_wv_values  jsonb;
+  v_wv_sources jsonb;
+  v_row      custom.record;
+  v_vs       record;
+  v_ck       text;
+  v_known    boolean;
+  v_key_ids  jsonb;
+begin
+  o_cache := coalesce(p_cache, '{}'::jsonb);
+  if v_me is null then
+    raise exception 'Nobody is signed in, so there is nothing to read.'
+      using errcode = '42501', hint = 'DOOR-1: the read door reads the person from the session.';
+  end if;
+
+  -- ARGS-RULED (2026-09-21). THE WALL IS DECIDED FIRST, AND IT WAS NOT DECIDED AT ALL.
+  -- REC-29: "organizations are hard walls, and a door decides who may reach one before it
+  -- decides anything else" — every other door in this store obeys it and DOOR-1, the one read
+  -- door, did not. It made no membership decision about the organization it was handed.
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.read_record');
+
+  -- REC-21 / T5. THE ID A MERGE SENT SOMEWHERE ELSE — a redirect, never a silent substitution.
+  v_now := custom.resolve_id(p_organization_id, p_record_id);
+  -- STORE-READ-PERF-2: a set door that already asked the ladder about this record for the whole
+  -- set (custom.levels_of) hands the answer in; alone, the door asks it here as it always did.
+  v_known := coalesce(p_levels ? v_now::text, false);
+
+  -- AND THE LADDER BEFORE EXISTENCE. This used to raise 02000 "there is no record % in this
+  -- organization" BEFORE asking custom.has_visibility, so the two answers differed: a caller who
+  -- guessed a record uuid learned whether it existed in that organization (02000) or not
+  -- (42501). One bit per guess, and the store's own rule is that a record you may not open and a
+  -- record that is not there answer the same thing. `custom.has_visibility` answers false for an
+  -- id that is not there, so this ordering makes the two identical without a second read.
+  if not (case when v_known then (p_levels -> v_now::text ->> 's')::boolean
+               else custom.has_visibility(v_me, 'record', v_now, 'viewer') end) then
+    raise exception 'You do not have access to this record.'
+      using errcode = '42501',
+            hint = 'DOOR-1: nothing reads a record around this door - not a screen, not an agent, not an export. Ask somebody who holds it to share it with you.';
+  end if;
+
+  select r.* into v_row
+    from custom.record r
+   where r.organization_id = p_organization_id and r.id = v_now and r.deleted_at is null;
+  if not found then
+    -- Only somebody the ladder has already admitted reaches this sentence, so it now tells a
+    -- person who holds the record that it is in the trash — and tells a stranger nothing.
+    raise exception 'There is no such record in this organization.' using errcode = '02000', hint = 'It was deleted, or it never existed here.',
+            detail = jsonb_build_object('record_id', p_record_id)::text;
+  end if;
+  v_table := v_row.table_id;
+  v_wv_values := v_row.data -> '_values';
+  v_wv_sources := v_row.data -> '_sources';
+  -- custom.record_values_of(r), with the Table's plan carried from record to record.
+  select * into v_vs from custom.record_values_step(v_row, o_cache);
+  v_doc := v_vs.o_doc;
+  o_cache := v_vs.o_cache;
+
+  -- THE ONE FACT. `custom.read_mask` is the whole of what this door used to work out privately.
+  v_mask := custom.read_mask_at(v_now, v_known, (p_levels -> v_now::text ->> 'l')::public.permission_level, 'read');
+  -- STORE-READ-PERF-2 / DOOR-N-5: id-keyed on request means EVERY declared Field's key, as the
+  -- page doors have always done — not only the hidden ones.
+  v_key_ids := coalesce(v_mask -> 'all_key_ids', v_mask -> 'key_ids');
+  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_visible
+    from jsonb_array_elements(v_mask -> 'visible') x;
+  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_declared
+    from jsonb_array_elements(v_mask -> 'declared') x;
+
+  v_out := custom.mask_document(v_doc, v_visible, v_mask -> 'notices', p_by_id,
+                                v_key_ids, v_declared);
+
+  -- CHOICE-VALUE. Rendered AFTER masking, so a field this reader may not see keeps its notice
+  -- and is never resolved.
+  if v_table is not null then
+    v_ck := 'cr:' || p_organization_id::text || ':' || v_table::text;
+    if not (o_cache ? v_ck) then
+      o_cache := o_cache || jsonb_build_object(v_ck, custom.choice_render_plan(p_organization_id, v_table));
+    end if;
+    v_out := custom.choice_render_with(p_organization_id, v_table, v_out, o_cache -> v_ck);
+  end if;
+
+  -- BIG-VALUES-READERS. A value too big for one cell keeps its first words here and its whole
+  -- text in a file; the pointer (`_values.<key>.src` -> `_sources.<ptr>`, the file fields only)
+  -- rides along for the keys this reader may see, so a screen opens the file and an agent's
+  -- context reads the whole text. Nothing else of the provenance block is carried.
+  v_out := custom.with_whole_value_pointers(v_out, v_wv_values, v_wv_sources, v_visible, p_by_id,
+                                            v_key_ids);
+
+  -- T5 / REC-N-11. THE ALTERNATES THE MERGE KEPT — only for keys this reader may see.
+  select jsonb_object_agg(k, alts) into v_alts
+    from (
+      select e.key as k,
+             (select jsonb_agg(jsonb_build_object(
+                       'value',  a -> 'value',
+                       'rank',   a -> 'rank',
+                       'source', r.data -> '_sources' -> (a ->> 'src'))
+                     order by (a ->> 'rank')::int)
+                from jsonb_array_elements(coalesce(e.value -> 'alternates', '[]'::jsonb)) a) as alts
+        from custom.record r
+        cross join lateral jsonb_each(coalesce(r.data -> '_values', '{}'::jsonb)) e
+       where r.organization_id = p_organization_id and r.id = v_now
+         and e.key = any (v_visible)
+         and jsonb_array_length(coalesce(e.value -> 'alternates', '[]'::jsonb)) > 0
+    ) x
+   where x.alts is not null;
+
+  if v_alts is not null and v_alts <> '{}'::jsonb then
+    v_out := v_out || jsonb_build_object('_alternates', v_alts);
+  end if;
+
+  -- SEAT-SUITES / T5+T12. THE VALUES THE STORE KEPT AND THE DOOR THREW AWAY, masked exactly
+  -- like the value they used to be.
+  select jsonb_agg(x order by x ->> 'key') into v_retired
+    from custom.record r
+    cross join lateral jsonb_array_elements(coalesce(r.data -> '_retired', '[]'::jsonb)) x
+   where r.organization_id = p_organization_id and r.id = v_now
+     and ((x ->> 'key') = any (v_visible) or not ((x ->> 'key') = any (v_declared)));
+
+  if v_retired is not null and jsonb_array_length(v_retired) > 0 then
+    v_out := v_out || jsonb_build_object('_retired', v_retired);
+  end if;
+
+  if v_now is distinct from p_record_id then
+    v_out := v_out || jsonb_build_object(
+      '_redirected_from', p_record_id,
+      '_redirect_says', 'That record was merged into this one, so its id now answers with this record. REC-21: the merged id resolves to the survivor for good — undoing the merge puts both records and both ids back.');
+  end if;
+
+  o_doc := v_out;
 end;
 $function$;
 

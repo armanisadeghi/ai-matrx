@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-28T19:25:08.292Z",
+  "generated_at": "2026-09-28T19:38:38.982Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3872,6 +3872,12 @@
       "checksum": "75643d869e8958c82b23042809002783f3926868c03f3236157558dfb667234e",
       "applied_at": "2026-09-21 14:29:42.685017+00"
     },
+    "migrations/campaign/refcarry_a_person_can_search_what_a_reference_may_point_at.sql": {
+      "source": "matrx-frontend",
+      "filename": "refcarry_a_person_can_search_what_a_reference_may_point_at.sql",
+      "checksum": "9858f4d77d84a2c85d0f882fdd0600cfa437b9fc4ffbb8357ce7cf1675077da1",
+      "applied_at": "2026-09-28 19:38:37.444772+00"
+    },
     "migrations/campaign/registrykernel_a_level_move_bumps_the_kernel_fixture_in_its_own_transaction.sql": {
       "source": "matrx-frontend",
       "filename": "registrykernel_a_level_move_bumps_the_kernel_fixture_in_its_own_transaction.sql",
@@ -4039,6 +4045,12 @@
       "filename": "scopeshomes_every_column_a_scope_reader_uses_has_a_home_in_the_store.sql",
       "checksum": "8439f9d1d1b0805366876862ea9b4935f59c560ae7dcde995e9950ffcf072757",
       "applied_at": "2026-09-28 19:02:07.358098+00"
+    },
+    "migrations/campaign/scopeshomes_the_store_halves_keep_the_scope_columns_beside_the_side_effect_checks.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeshomes_the_store_halves_keep_the_scope_columns_beside_the_side_effect_checks.sql",
+      "checksum": "333d0f0030059aad09b1fb3294c56136102c6a57c2b7a7a4dc0f6cb1f9b67690",
+      "applied_at": "2026-09-28 19:27:45.122179+00"
     },
     "migrations/campaign/scopesrowscopied_the_scopes_switch_counts_every_row_by_id.sql": {
       "source": "matrx-frontend",
