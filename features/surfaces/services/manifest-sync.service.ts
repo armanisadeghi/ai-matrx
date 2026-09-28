@@ -17,8 +17,9 @@
  *   whose target no longer exists in any manifest. These are the "broken
  *   mappings" surfaced to admins.
  * - Applies the diff (upsert / delete) to bring DB in line with code.
- *   Deleting a stale role CASCADES its `ui_surface_agent_pref` rows; the
- *   sync result reports the swept count.
+ *   Archiving a stale role takes its `ui_surface_agent_pref` picks to Trash
+ *   with it (a DB trigger; restoring the role restores them); the sync result
+ *   reports how many went.
  *
  * Code is the source of truth. The DB is a mirror — nothing in this service
  * ever modifies code or mutates the registry.
@@ -1031,7 +1032,7 @@ export interface ApplyManifestSyncResult {
   clientToolDeleted: { surfaceName: string; toolName: string }[];
   /** Agent roles deleted (only when `deleteStale: true`). */
   roleDeleted: { surfaceName: string; roleName: string }[];
-  /** `ui_surface_agent_pref` rows swept by FK CASCADE when stale roles were deleted. */
+  /** `ui_surface_agent_pref` picks that followed archived stale roles to Trash. */
   sweptPrefCount: number;
   /** Manifests skipped because their `surfaceName` isn't in `ui_surface`. */
   skippedMissingSurface: string[];
@@ -1270,7 +1271,7 @@ export interface DeleteMirrorRowResult {
   /** The deleted row's `updated_at`, so the caller can report what it removed. */
   updatedAt: string;
   /**
-   * `ui_surface_agent_pref` rows swept by FK CASCADE. Only ever non-zero for
+   * `ui_surface_agent_pref` picks that followed the role to Trash. Only ever non-zero for
    * `ui_surface_agent_role`; reported the way `applyManifestSync` reports
    * `sweptPrefCount`, so a cascade is never silent.
    */
@@ -1363,14 +1364,7 @@ export async function deleteMirrorRow(
     );
   }
 
-  // 4. An agent role's `ui_surface_agent_pref` rows (user/org agent picks)
-  //    move to Trash with it — see archivePrefsForRole.
-  let sweptPrefCount = 0;
-  if (table === "ui_surface_agent_role") {
-    sweptPrefCount = await archivePrefsForRole(sb, surfaceName, name);
-  }
-
-  // 5. The archive, addressed by the full composite PK, and asserted to have
+  // 4. The archive, addressed by the full composite PK, and asserted to have
   //    hit exactly one row. `.select()` makes the affected set observable —
   //    without it a filter that matched two rows would succeed silently.
   const del = await byKey(
@@ -1386,6 +1380,13 @@ export async function deleteMirrorRow(
     );
   }
 
+  // 5. An agent role's picks (`ui_surface_agent_pref`) followed it to Trash in
+  //    the database — see countPicksThatFollowedRole.
+  const sweptPrefCount =
+    table === "ui_surface_agent_role"
+      ? await countPicksThatFollowedRole(sb, surfaceName, name)
+      : 0;
+
   return {
     ok: true,
     table,
@@ -1398,26 +1399,36 @@ export async function deleteMirrorRow(
 
 /**
  * An agent role's picks (`ui_surface_agent_pref`, keyed by surface + role
- * name) used to go with it through the FK's ON DELETE CASCADE. A role now
- * moves to Trash instead, and no single-column soft-delete edge can express
- * that composite key, so its live picks are archived here, explicitly.
- * Returns how many picks moved, so the result can say what went with it.
+ * name) follow the role into Trash and back out of it IN THE DATABASE: the
+ * trigger `ui._role_picks_follow_role` stamps them with the role's exact
+ * `deleted_at` and a restore brings back exactly those picks (migration
+ * delete_is_archive_text_key_edges_and_role_picks). Nothing is archived here;
+ * this only counts the picks that went with the role, so the result can say so.
  */
-async function archivePrefsForRole(
+async function countPicksThatFollowedRole(
   sb: Sb,
   surfaceName: string,
   roleName: string,
 ): Promise<number> {
-  const archived = await sb
+  const role = await sb
+    .schema("ui")
+    .from("ui_surface_agent_role")
+    .select("deleted_at")
+    .eq("surface_name", surfaceName)
+    .eq("name", roleName)
+    .maybeSingle();
+  if (role.error) throw role.error;
+  const removedAt = role.data?.deleted_at;
+  if (!removedAt) return 0;
+  const picks = await sb
     .schema("ui")
     .from("ui_surface_agent_pref")
-    .update({ deleted_at: new Date().toISOString() })
+    .select("id", { count: "exact", head: true })
     .eq("surface_name", surfaceName)
     .eq("role_name", roleName)
-    .is("deleted_at", null)
-    .select("id");
-  if (archived.error) throw archived.error;
-  return (archived.data ?? []).length;
+    .eq("deleted_at", removedAt);
+  if (picks.error) throw picks.error;
+  return picks.count ?? 0;
 }
 
 /**
@@ -1662,8 +1673,8 @@ export async function applyManifestSync(
       );
     skippedRecentRows.push(...skippedRoles);
     for (const row of rolesToDelete) {
-      sweptPrefCount += await archivePrefsForRole(sb, row.surface_name, row.name);
       await deleteByPlanKey(sb, plan, "ui_surface_agent_role", row);
+      sweptPrefCount += await countPicksThatFollowedRole(sb, row.surface_name, row.name);
       roleDeleted.push({ surfaceName: row.surface_name, roleName: row.name });
     }
   }
