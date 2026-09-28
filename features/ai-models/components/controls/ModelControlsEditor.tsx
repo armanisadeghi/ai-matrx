@@ -25,6 +25,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ExternalLink, Plus } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -415,11 +417,16 @@ export default function ModelControlsEditor({
               })}
             </SelectContent>
           </Select>
-          {!loadError && api && (
+          {api && (
             <span className="text-[10px] text-muted-foreground">
               Family <span className="font-mono">{api.name}</span> serves{" "}
               <span className="font-medium text-foreground">
-                {familyModelCount}
+                {/* A failed refresh keeps the last count, marked stale. */}
+                <UntrustedCount
+                  read={{ status: loadError ? "error" : "ready", error: loadError, hasData: true }}
+                  label="Models in this family"
+                  value={familyModelCount}
+                />
               </span>{" "}
               model{familyModelCount === 1 ? "" : "s"} — family edits affect all
               of them.
@@ -441,7 +448,14 @@ export default function ModelControlsEditor({
             </a>
           </p>
         )}
-        {loadError && (
+        {loadError && apis.length > 0 ? (
+          <StaleDataNotice
+            hasData
+            what="the rule sources"
+            detail={loadError}
+            onRetry={() => void refresh()}
+          />
+        ) : loadError && (
           <p className="text-xs text-red-600 dark:text-red-400 break-words">
             Failed to load rule sources: {loadError}
             <ErrorAlchemyMenu error={loadError} />
@@ -570,7 +584,7 @@ export default function ModelControlsEditor({
         <div className="space-y-2 pt-1.5">
           <JsonFieldEditor
             title={`Family rules — ai.api.rules${api ? ` (${api.name})` : ""}`}
-            description={`Shared wire-contract envelope — affects ${loadError ? "an unknown number of" : familyModelCount} models`}
+            description={`Shared wire-contract envelope — affects ${loadError && apis.length === 0 ? "an unknown number of" : familyModelCount} models`}
             data={api?.rules ?? null}
             onSave={async (data) => {
               if (!api)

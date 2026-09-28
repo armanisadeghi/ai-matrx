@@ -2,6 +2,8 @@
 
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1464,12 +1466,21 @@ export default function AiModelDetailPanel({
                   className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Pricing
-                  {!offeringsError && offerings.length > 0 && (
+                  {offerings.length > 0 && (
                     <Badge
                       variant="outline"
                       className="ml-1.5 text-xs h-4 px-1"
                     >
-                      {offerings.length}
+                      {/* A failed refetch keeps the last count, marked stale. */}
+                      <UntrustedCount
+                        read={readOf({
+                          loading: offeringsLoading,
+                          error: offeringsError,
+                          hasData: offerings.length > 0,
+                        })}
+                        label="Offerings"
+                        value={offerings.length}
+                      />
                     </Badge>
                   )}
                 </TabsTrigger>

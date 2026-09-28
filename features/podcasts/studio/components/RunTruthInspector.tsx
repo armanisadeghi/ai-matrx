@@ -23,6 +23,7 @@
 // unresolved id is SAID, never rendered as empty records.
 
 import { useEffect, useEffectEvent, useState } from "react";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { toast } from "@/lib/toast";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
@@ -251,6 +252,8 @@ export function RunTruthInspector({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [truth, setTruth] = useState<RunTruth | null>(null);
+  // `truth` exists only after a load that succeeded.
+  const hasLoaded = truth !== null;
 
   const loadKey = `${agentRunId ?? ""}|${episodeId ?? ""}`;
 
@@ -379,7 +382,15 @@ export function RunTruthInspector({
             step produced.
           </p>
 
-          {error ? (
+          {error && hasLoaded ? (
+            <StaleDataNotice
+              hasData
+              what="this run's record"
+              detail={error}
+              onRetry={() => void load()}
+              retrying={loading}
+            />
+          ) : error ? (
             <div className="flex items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
               <span className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
@@ -404,7 +415,8 @@ export function RunTruthInspector({
             </div>
           ) : null}
 
-          {!error && truth ? (
+          {/* A failed refresh keeps the last record on screen under the stale notice above. */}
+          {hasLoaded && truth ? (
             <>
               {/* Toolbar + summary */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-[11px] text-muted-foreground">

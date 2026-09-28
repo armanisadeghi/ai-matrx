@@ -320,7 +320,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
       )}
 
       <ArchivedDisclosure
-        count={archiveReadFailed ? undefined : archivedTypes.length}
+        count={archiveReadFailed && archivedTypes.length === 0 ? undefined : archivedTypes.length}
         open={showArchived}
         onOpenChange={setShowArchived}
         className="mt-2"

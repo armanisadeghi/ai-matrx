@@ -589,10 +589,10 @@ export function OrganizationHub({
       {/* ARCHIVED ITEMS — one click where you already are, closed by default,
           and the way back is on the row (the archived-items law, 2026-09-09). */}
       <section data-hub-archive className="rounded-lg border border-border bg-card p-3">
-        {/* read-gate-exempt: no count is shown while the archive read is troubled (readTrouble is said inside the list); archivedTables is null until it answers */}
+        {/* read-gate-exempt: a troubled first read shows no count; a troubled refresh keeps the last count while readTrouble is said inside the list */}
         <ArchivedDisclosure
           noun="tables"
-          count={archiveTrouble ? undefined : archivedTables?.length}
+          count={archiveTrouble && archivedTables === null ? undefined : archivedTables?.length}
         >
           <ArchivedTablesList
             tables={archivedTables}

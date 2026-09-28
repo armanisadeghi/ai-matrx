@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
@@ -192,7 +194,9 @@ const ColumnHeaderMenu = ({
   const [valueQuery, setValueQuery] = useState("");
 
   const attemptRef = useRef<string | null>(null);
-  const attemptKey = `${tableId ?? "local"}::${fieldName}::${searchTerm ?? ""}`;
+  // Bumped by the stale notice's retry so a failed read can be asked again.
+  const [facetAttempt, setFacetAttempt] = useState(0);
+  const attemptKey = `${tableId ?? "local"}::${fieldName}::${searchTerm ?? ""}::${facetAttempt}`;
 
   /**
    * Can this mount answer "what is in this column" over rows it cannot see?
@@ -285,6 +289,12 @@ const ColumnHeaderMenu = ({
 
   /** What the control actually renders from — local when we have it. */
   const effectiveFacets = localFacets ?? facets;
+  // Facets on screen came from a read that succeeded; a failed re-read keeps them, marked stale.
+  const facetsRead: CountRead = {
+    status: facetError ? "error" : "ready",
+    error: facetError,
+    hasData: effectiveFacets !== null,
+  };
 
   const mode: ColumnFilter["mode"] =
     filter?.mode ??
@@ -349,9 +359,15 @@ const ColumnHeaderMenu = ({
           <p className="truncate text-sm font-semibold text-foreground" title={displayName}>
             {displayName}
           </p>
-          {!facetError && effectiveFacets && (
+          {effectiveFacets && (
             <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-              {effectiveFacets.distinct_count} distinct
+              {/* A failed re-read keeps the last count, marked stale. */}
+              <UntrustedCount
+                read={facetsRead}
+                label="Distinct values"
+                value={effectiveFacets.distinct_count}
+              />{" "}
+              distinct
             </span>
           )}
         </div>
@@ -413,7 +429,15 @@ const ColumnHeaderMenu = ({
             </div>
           )}
 
-          {facetError && (
+          {facetError && effectiveFacets ? (
+            <StaleDataNotice
+              className="mb-1.5"
+              hasData
+              what="this column's values"
+              detail={facetError}
+              onRetry={() => setFacetAttempt((n) => n + 1)}
+            />
+          ) : facetError && (
             <p className="mb-1.5 text-[11px] leading-snug text-amber-600 dark:text-amber-400">
               Couldn&rsquo;t read this column&rsquo;s values, so there&rsquo;s no
               list to pick from. Text matching still works.
@@ -432,12 +456,15 @@ const ColumnHeaderMenu = ({
             </p>
           )}
 
-          {mode === "values" && !facetError && effectiveFacets && (
+          {mode === "values" && effectiveFacets && (
             <div className="flex flex-col gap-1.5">
               {effectiveFacets.truncated && (
                 <p className="text-[11px] leading-snug text-muted-foreground">
-                  Showing the {values.length} most common of{" "}
-                  {effectiveFacets.distinct_count}. Use text matching for the rest.
+                  Showing the{" "}
+                  <UntrustedCount read={facetsRead} label="Values shown" value={values.length} />{" "}
+                  most common of{" "}
+                  <UntrustedCount read={facetsRead} label="Distinct values" value={effectiveFacets.distinct_count} />.
+                  Use text matching for the rest.
                 </p>
               )}
 

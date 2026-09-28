@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { readOf } from "@/components/read-state/ReadGate";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -143,10 +146,16 @@ export default function ModelAuditDashboard() {
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             <span className="text-sm font-semibold">AI Model Data Audit</span>
-            {!loading && !error && auditResults.length > 0 && (
+            {!loading && auditResults.length > 0 && (
               <>
                 <span className="text-xs text-muted-foreground">
-                  {auditResults.length} models
+                  {/* A failed refresh keeps the last models (marked stale), never hides them. */}
+                  <UntrustedCount
+                    read={readOf({ loading, error, hasData: models.length > 0 })}
+                    label="Models"
+                    value={auditResults.length}
+                  />{" "}
+                  models
                 </span>
                 {failCount > 0 && (
                   <span className="text-xs text-destructive font-medium">
@@ -198,7 +207,16 @@ export default function ModelAuditDashboard() {
           </div>
         </div>
 
-        {error && (
+        {error && models.length > 0 ? (
+          <StaleDataNotice
+            className="m-2 shrink-0"
+            hasData
+            what="the models"
+            detail={error}
+            onRetry={() => void loadModels()}
+            retrying={loading}
+          />
+        ) : error && (
           <div className="px-4 py-2 bg-destructive/10 border-b text-destructive text-xs shrink-0">
             {error}
             <ErrorAlchemyMenu error={error} />

@@ -450,11 +450,12 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
               icon={<FileText className="w-3.5 h-3.5" />}
               label="Raw Output"
               badge={
-                !error && blockCount > 0 ? (
+                blockCount > 0 ? (
                   <Badge
                     variant="secondary"
                     className="text-[9px] px-1 py-0 h-3.5 ml-0.5"
                   >
+                    {/* read-gate-exempt: counts blocks this lab run actually received (partial when the run failed, which its error line says), not a read */}
                     {blockCount}
                   </Badge>
                 ) : undefined

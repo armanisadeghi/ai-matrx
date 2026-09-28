@@ -9,6 +9,8 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
+import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
   Monitor,
@@ -51,6 +53,9 @@ export default function LocalDevicesPage() {
   const [instances, setInstances] = useState<LocalInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // The footer counts come from the devices read: last known (marked stale) when a refresh failed.
+  const devicesRead: CountRead = { status: error ? "error" : "ready", error, hasData: instances.length > 0 };
 
   const fetchInstances = useCallback(async () => {
     setLoading(true);
@@ -95,7 +100,15 @@ export default function LocalDevicesPage() {
       </div>
 
       {/* Error */}
-      {error && (
+      {error && instances.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what="your devices"
+          detail={error}
+          onRetry={() => void fetchInstances()}
+          retrying={loading}
+        />
+      ) : error && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
@@ -224,11 +237,14 @@ export default function LocalDevicesPage() {
       </div>
 
       {/* Footer info */}
-      {!error && instances.length > 0 && (
+      {/* A failed refresh keeps the last devices on screen under the stale notice. */}
+      {instances.length > 0 && (
         <p className="text-center text-xs text-muted-foreground">
-          {instances.filter((i) => i.is_online).length} of {instances.length} device
+          <UntrustedCount read={devicesRead} label="Devices online" value={instances.filter((i) => i.is_online).length} /> of{" "}
+          <UntrustedCount read={devicesRead} label="Devices" value={instances.length} /> device
           {instances.length !== 1 ? "s" : ""} online ·{" "}
-          {instances.filter((i) => i.tunnel_active).length} with active tunnel
+          <UntrustedCount read={devicesRead} label="Devices with an active tunnel" value={instances.filter((i) => i.tunnel_active).length} />{" "}
+          with active tunnel
         </p>
       )}
     </div>

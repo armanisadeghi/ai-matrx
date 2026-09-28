@@ -20,6 +20,7 @@
 // instead of watching a progress bar start at zero and guessing.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useRouter } from "next/navigation";
 import {
@@ -268,15 +269,23 @@ export function ExportDropZone({ className }: { className?: string }) {
         )}
       </div>
 
-      {resumesFailed && stage.phase === "idle" ? (
+      {resumesFailed && stage.phase === "idle" && pendingResumes.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what="the interrupted uploads on this device"
+          onRetry={refreshResumes}
+        />
+      ) : null}
+      {resumesFailed && stage.phase === "idle" && pendingResumes.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           Couldn&apos;t check this device for interrupted uploads — dropping
           the same file again still resumes it if it can.
           <ErrorAlchemyMenu operation="List interrupted uploads on this device" />
         </p>
       ) : null}
-      {!resumesFailed && pendingResumes.length > 0 && stage.phase === "idle" && (
+      {pendingResumes.length > 0 && stage.phase === "idle" && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2.5 text-sm">
+          {/* read-gate-exempt: shown only when a check that succeeded found interrupted uploads (never a zero); a later failed check is said by the stale notice above */}
           <p className="font-medium">
             {pendingResumes.length === 1
               ? "One upload was interrupted"

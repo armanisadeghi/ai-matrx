@@ -339,12 +339,13 @@ export function GoogleDriveLibrary() {
           </p>
         </div>
       ) : null}
-      {!error && page ? (
+      {page ? (
         <section
           className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
           aria-label="Google Drive metadata results"
         >
           <div className="border-b border-border px-5 py-3 text-sm text-muted-foreground">
+            {/* read-gate-exempt: page is set only by a browse that succeeded (a failed browse clears it); `error` may be an unrelated access check, which must not hide these results */}
             {page.files.length} result{page.files.length === 1 ? "" : "s"} on
             this page
           </div>

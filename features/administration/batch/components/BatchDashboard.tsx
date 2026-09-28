@@ -21,6 +21,7 @@
  */
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -582,9 +583,14 @@ export function BatchDashboard() {
               <TabsTrigger value="items">Work items</TabsTrigger>
               <TabsTrigger value="batches">
                 Provider batches
-                {!providerError && providerBatches ? (
+                {providerBatches ? (
                   <span className="ml-1.5 font-mono text-[11px] text-muted-foreground">
-                    {providerBatches.length}
+                    {/* A failed refresh keeps the last count, marked stale. */}
+                    <UntrustedCount
+                      read={{ status: providerError ? "error" : "ready", error: providerError, hasData: true }}
+                      label="Provider batches"
+                      value={providerBatches.length}
+                    />
                   </span>
                 ) : null}
               </TabsTrigger>

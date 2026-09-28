@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import {
@@ -149,6 +150,12 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
 
   const unresolvedCount = incidents.filter((i) => !i.resolved).length;
 
+  const incidentsRead: CountRead = {
+    status: loadError ? "error" : "ready",
+    error: loadError,
+    hasData: incidents.length > 0,
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-6">
@@ -166,9 +173,10 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Incidents
           </span>
-          {!loadError && unresolvedCount > 0 && (
+          {unresolvedCount > 0 && (
             <Badge variant="destructive" className="text-[10px]">
-              {unresolvedCount} open
+              {/* A failed refresh keeps the last count, marked stale. */}
+              <UntrustedCount read={incidentsRead} label="Open incidents" value={unresolvedCount} /> open
             </Badge>
           )}
         </div>
@@ -228,9 +236,10 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
         </div>
       )}
 
-      {!loadError && totalCount > incidents.length && (
+      {totalCount > incidents.length && (
         <p className="text-xs text-center text-slate-500">
-          Showing {incidents.length} of {totalCount} incidents
+          Showing <UntrustedCount read={incidentsRead} label="Incidents shown" value={incidents.length} /> of{" "}
+          <UntrustedCount read={incidentsRead} label="Incidents" value={totalCount} /> incidents
         </p>
       )}
     </div>
