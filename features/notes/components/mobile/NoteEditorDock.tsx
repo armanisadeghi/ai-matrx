@@ -12,19 +12,17 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   FolderOpen,
-  Tag,
-  Share2,
   MoreHorizontal,
   Copy,
-  CopyPlus,
   Download,
-  Trash2,
   Loader2,
   Network,
-  Database,
-  Link2,
 } from "lucide-react";
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
+import { useRouter } from "next/navigation";
+import { ClipboardFallbackDialog } from "@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { noteActions, openNotePrintStudio } from "../note-actions/noteActionSet";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { cn } from "@/lib/utils";
 import {
@@ -58,6 +56,8 @@ interface NoteEditorDockProps {
   onDuplicate: () => void;
   onExport: () => void;
   onDelete: () => void;
+  /** Rename the note (the More sheet's Rename). */
+  onRename?: (label: string) => void;
   isDeleting?: boolean;
   /** Viewer-level sharee: hide the folder/tags mutators (their saves are
    *  RLS-rejected); copy/export/context/more stay available. */
@@ -84,6 +84,7 @@ export function NoteEditorDock({
   onDuplicate,
   onExport,
   onDelete,
+  onRename,
   isDeleting,
   readOnly = false,
 }: NoteEditorDockProps) {
@@ -98,6 +99,9 @@ export function NoteEditorDock({
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [clipboardFallbackOpen, setClipboardFallbackOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const router = useRouter();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [pill, setPill] = useState<{
@@ -125,23 +129,15 @@ export function NoteEditorDock({
       ? []
       : [
           {
+            // Folder and tags live in ONE sheet, so they are ONE dock button
+            // (two buttons opened the same sheet).
             key: "folder",
-            label: "Folder",
-            tooltip: `Folder: ${folder}`,
-            Icon: FolderOpen,
-            onPress: (index: number) => {
-              setActiveIndex(index);
-              setSheetOpen("folder-tags");
-            },
-          },
-          {
-            key: "tags",
-            label: "Tags",
+            label: "Folder & tags",
             tooltip:
               tags.length > 0
-                ? `${tags.length} tag${tags.length !== 1 ? "s" : ""}`
-                : "Tags",
-            Icon: Tag,
+                ? `Folder: ${folder} · ${tags.length} tag${tags.length !== 1 ? "s" : ""}`
+                : `Folder: ${folder}`,
+            Icon: FolderOpen,
             onPress: (index: number) => {
               setActiveIndex(index);
               setSheetOpen("folder-tags");
@@ -157,7 +153,9 @@ export function NoteEditorDock({
         navigator.clipboard
           .writeText(content)
           .then(() => toast.success("Copied to clipboard"))
-          .catch(() => toast.error("Couldn't copy the note"));
+          // The browser refused: hand the text over in a dialog to copy by
+          // hand, never a dead-end error.
+          .catch(() => setClipboardFallbackOpen(true));
       },
     },
     {
@@ -262,7 +260,8 @@ export function NoteEditorDock({
 
           {items.map((item, i) => {
             const { Icon } = item;
-            const isActive = activeIndex === i;
+            // Lit only while its sheet is open — it used to stay blue after close.
+            const isActive = sheetOpen !== null && activeIndex === i;
 
             return (
               <div
@@ -361,78 +360,78 @@ export function NoteEditorDock({
       >
         <BottomSheetHeader title="Note Actions" />
         <BottomSheetBody>
-          <div className="px-4 py-2 space-y-1">
-            <button
-              onClick={() => {
-                setSheetOpen(null);
-                openKnowledge({ noteId });
-              }}
-              className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
-            >
-              <Database className="h-5 w-5 text-muted-foreground" />
-              {ingest.state === "ingested"
-                ? "Knowledge base"
-                : "Add to knowledge base"}
-              {ingest.state === "ingested" && (
-                <span className="ml-auto inline-flex items-center gap-1 text-xs text-success">
-                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                  Indexed
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                onDuplicate();
-                setSheetOpen(null);
-              }}
-              className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
-            >
-              <CopyPlus className="h-5 w-5 text-muted-foreground" />
-              Duplicate Note
-            </button>
-            <button
-              onClick={() => {
-                setSheetOpen(null);
-                setShareOpen(true);
-              }}
-              className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
-            >
-              <Share2 className="h-5 w-5 text-muted-foreground" />
-              Share
-            </button>
-            <button
-              onClick={() => {
-                setSheetOpen(null);
+          {/* THE note actions (noteActionSet.ts) — the same rows, names and
+              order as every right-click menu on the note. */}
+          <div className="px-2 py-1">
+            {noteActions({
+              rename: readOnly ? undefined : () => setRenameOpen(true),
+              duplicate: onDuplicate,
+              moveToFolder: readOnly ? undefined : () => setSheetOpen("folder-tags"),
+              knowledge: () => openKnowledge({ noteId }),
+              knowledgeIndexed: ingest.state === "ingested",
+              exportMarkdown: onExport,
+              print: () => openNotePrintStudio(noteId),
+              versionHistory: () => router.push(`/notes/${noteId}/diff`),
+              share: () => setShareOpen(true),
+              copyReference: () =>
                 void copyReferenceFence(
                   buildRecordReferenceFence({ type: "note", id: noteId, label: noteLabel }),
                 ).then((ok) => {
                   if (ok) toast.success("Reference copied — paste it into any agent chat");
-                });
-              }}
-              className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
-            >
-              <Link2 className="h-5 w-5 text-muted-foreground" />
-              Copy reference for an agent
-            </button>
-            <div className="h-px bg-border/40 my-1" />
-            <button
-              onClick={() => {
-                setSheetOpen(null);
-                onDelete();
-              }}
-              disabled={isDeleting}
-              className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Trash2 className="h-5 w-5" />
-              )}
-              {isDeleting ? "Moving to Trash…" : "Move to Trash"}
-            </button>
+                }),
+              moveToTrash: onDelete,
+            }).map((action) => {
+              const Icon = action.icon;
+              return (
+                <div key={action.id}>
+                  {action.groupStart && <div className="mx-3 my-1 h-px bg-border" />}
+                  <button
+                    type="button"
+                    disabled={action.id === "delete" && isDeleting}
+                    onClick={() => {
+                      if (action.id !== "move-to-folder") setSheetOpen(null);
+                      action.run();
+                    }}
+                    className={cn(
+                      "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors disabled:opacity-50",
+                      action.destructive
+                        ? "text-destructive hover:bg-destructive/10"
+                        : "text-foreground hover:bg-accent",
+                    )}
+                  >
+                    {action.id === "delete" && isDeleting ? (
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                    ) : (
+                      <Icon className={cn("h-4 w-4 shrink-0", !action.destructive && "text-muted-foreground")} />
+                    )}
+                    {action.id === "delete" && isDeleting ? "Moving to Trash…" : action.label}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </BottomSheetBody>
       </BottomSheet>
+
+      <ClipboardFallbackDialog
+        open={clipboardFallbackOpen}
+        onOpenChange={setClipboardFallbackOpen}
+        url={content}
+        title="Copy the note"
+        description="Your browser blocked copying. Select the text below and copy it."
+      />
+
+      <TextInputDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        title="Rename note"
+        defaultValue={noteLabel}
+        confirmLabel="Rename"
+        onConfirm={(value) => {
+          onRename?.(value.trim());
+          setRenameOpen(false);
+        }}
+      />
 
       {shareOpen && (
         <ShareModal

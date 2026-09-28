@@ -22,7 +22,7 @@ import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/
 import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { isRichEditorMode, type EditorMode } from "../NoteEditorCore";
 import { useRememberNoteEditorMode } from "../../hooks/usePreferredDefaultEditorMode";
-import { updateNoteContent, updateNoteTags } from "../../redux/slice";
+import { updateNoteContent, updateNoteTags, updateNoteLabel } from "../../redux/slice";
 import { saveNote } from "../../redux/thunks";
 import { getReduxSyncDelay } from "../../redux/notes.types";
 import {
@@ -596,6 +596,9 @@ export default function MobileNoteEditor({
         onDuplicate={handleCopy}
         onExport={handleExport}
         onDelete={requestDelete}
+        onRename={(nextLabel) => {
+          if (nextLabel) dispatch(updateNoteLabel({ id: noteId, label: nextLabel }));
+        }}
         isDeleting={isDeleting}
       />
     </div>
