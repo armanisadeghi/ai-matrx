@@ -87,10 +87,12 @@ export default function HeaderChooseOrgButton() {
     );
   }
 
-  // Stay mounted while the picker is open: selecting an org flips
-  // `shouldPrompt` false, but the user may still want the "Set as default"
-  // switch (it only enables once an org is active).
-  if (!shouldPrompt && !open) return null;
+  // 🚨 THE ACTIVE ORGANIZATION IS ALWAYS VISIBLE ON AN ORDINARY PAGE
+  // (connected-sources judge, 2026-09-27): once one was chosen this control
+  // used to vanish, and nothing on screen said which organization the page was
+  // working in. Chosen → it names it (and opens the picker to change it); none
+  // chosen → it asks. It renders nothing only while boot is still resolving.
+  if (!organizationId && !shouldPrompt && !open) return null;
 
   // 🚨 THE ONE STATE THIS CONTROL KEEPS ITSELF ALIVE FOR IS THE ONE IT USED TO
   // LIE ABOUT. After a selection the button is still on screen — by design,

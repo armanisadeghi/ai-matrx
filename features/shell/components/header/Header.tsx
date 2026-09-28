@@ -26,8 +26,9 @@ interface HeaderProps {
  * nothing in it); a control a guest cannot use opens the auth gate (Agents,
  * Inbox). Nothing here unmounts on state, so the row never shifts.
  *
- * The one conditional element is the "Choose org" nudge, which exists only
- * while no organization is chosen (primary call-to-action tint, never alarm red).
+ * The one conditional element is the organization control: it names the active
+ * organization (and opens the picker), asks "Choose organization" while none is
+ * chosen (primary tint, never alarm red), and is absent on /administration/*.
  * Its words yield to the route: when the center cannot fit the route's own
  * controls, `HeaderCrowdingGuard` marks the header crowded and every
  * `data-header-compact-label` in the right set folds to its icon, so the chip

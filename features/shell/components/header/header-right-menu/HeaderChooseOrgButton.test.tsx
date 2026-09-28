@@ -331,3 +331,30 @@ describe("HeaderChooseOrgButton — admin pages carry no organization chooser", 
     expect(trigger().textContent).toContain("Choose organization");
   });
 });
+
+
+// ── The active organization is always visible on an ordinary page ──
+
+describe("HeaderChooseOrgButton — names the active organization", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pageOrg = require("@/features/shell/pageObjectOrganization") as typeof import("@/features/shell/pageObjectOrganization");
+  beforeEach(() => {
+    pageOrg.__resetPageObjectOrganizationForTest();
+    PATHNAME = "/connected-sources";
+    store.organization_id = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
+    store.organization_name = "admin's Workspace";
+    store.orgBootstrapResolved = true;
+    store.orgBootstrapFailure = null;
+  });
+  afterEach(() => {
+    act(() => root.unmount());
+    document.body.innerHTML = "";
+    PATHNAME = "/tasks";
+  });
+
+  it("shows the chosen organization's name without being opened first", () => {
+    mount();
+    expect(trigger().textContent).toContain("admin's Workspace");
+    expect(trigger().getAttribute("aria-label")).toBe("Organization: admin's Workspace. Change organization");
+  });
+});

@@ -45,9 +45,10 @@ Rules: a control is never unmounted on state — that is what shifted the row
 (owner, 2026-09-16: *"causes a shift in the top header buttons"*). A control
 with nothing to do is `disabled` **with a tooltip naming the reason and the
 way out**; a control a guest cannot use opens the auth gate naming the
-feature. The one conditional element is the "Choose org" nudge, which exists
-only while no organization is chosen — tinted primary as a call to action,
-never alarm red (no organization is a routine state; page-pass core 5). Guards:
+feature. The one conditional element is the organization control: it NAMES the
+active organization on every ordinary page (and opens the picker), asks "Choose
+organization" while none is chosen — tinted primary, never alarm red — and is
+absent on /administration/* (the admin seat never acts as itself). Guards:
 `features/shell/__tests__/header-right-set.test.ts` (source),
 `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx` (rendered),
 `features/shell/layout-gate/canvas-one-presentation.spec.ts` (laid out).
