@@ -124,7 +124,7 @@ export function ClassAssignmentsPanel({
                     )
                   }
                   aria-label={`Due date for ${a.title}`}
-                  className="h-7 shrink-0 rounded-md border border-border bg-background px-2 text-xs text-foreground [color-scheme:light] dark:[color-scheme:dark]"
+                  className="h-7 shrink-0 rounded-md border border-border bg-background px-2 text-xs text-foreground [color-scheme:light] dark:[color-scheme:dark] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 <Button
                   size="icon"

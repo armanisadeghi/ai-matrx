@@ -544,6 +544,12 @@ export function StudyDeck(props: StudyDeckProps) {
         return;
       }
       if (e.key === " " || e.key === "Enter") {
+        // The card itself (FlashcardItem) already flips on Enter/Space when
+        // it has focus — firing this global shortcut too would double-toggle
+        // and cancel out, so Enter would silently appear to do nothing.
+        // Only step in here when focus is elsewhere (e.g. after tabbing to
+        // a grade button, or when nothing on the card is focused).
+        if (target?.closest("[data-flashcard-card]")) return;
         e.preventDefault();
         flip();
       } else if (e.key === "ArrowRight") {
