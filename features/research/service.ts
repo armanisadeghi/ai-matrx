@@ -948,6 +948,7 @@ export async function getSourceAnalysis(
     .from("rs_analysis")
     .select("*")
     .eq("content_id", contentId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -961,6 +962,7 @@ export async function getAnalysisForSource(
     .from("rs_analysis")
     .select("*")
     .eq("source_id", sourceId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -974,6 +976,7 @@ export async function getAnalysesForTopic(
     .from("rs_analysis")
     .select("*")
     .eq("topic_id", topicId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -1390,6 +1393,7 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
           .from("rs_analysis")
           .select("source_id, status, result", { count: "exact" })
           .eq("topic_id", topicId)
+          .is("deleted_at", null)
           .order("id", { ascending: true })
           .range(from, to),
       { label: "research.rs_analysis curation" },
