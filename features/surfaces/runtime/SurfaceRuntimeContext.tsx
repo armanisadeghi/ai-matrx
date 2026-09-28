@@ -163,6 +163,27 @@ type RegistryEntry = { id: number; depth: number; value: SurfaceRuntimeValue };
 
 let nextId = 0;
 let stack: RegistryEntry[] = [];
+
+/**
+ * DORMANT subtrees register nothing: no runtime, no write handlers, no client
+ * tools, no scope contributions. A screen that shows several copies of one
+ * surface-owning component — the tiles of a board, a list of live previews —
+ * marks every copy but the one the person is working in as dormant, so the
+ * ONE-live-registration-per-surface law holds (FOUND_DEFECTS D194: two
+ * same-name registrations are a coin flip, and an agent's write lands in
+ * whichever mounted last). Flipping `active` registers / unregisters live.
+ */
+const SurfaceDormantContext = createContext(false);
+
+export function SurfaceActivity({ active, children }: { active: boolean; children: ReactNode }) {
+  const parentDormant = useContext(SurfaceDormantContext);
+  return <SurfaceDormantContext.Provider value={parentDormant || !active}>{children}</SurfaceDormantContext.Provider>;
+}
+
+/** The surface name to register under, or null inside a dormant subtree. */
+function useLiveSurfaceName(surfaceName: string | null): string | null {
+  return useContext(SurfaceDormantContext) ? null : surfaceName;
+}
 const listeners = new Set<() => void>();
 const scopeContributions = new Map<string, SurfaceScopeContribution[]>();
 
@@ -260,10 +281,11 @@ export function withScopeContributions(
 
 /** Register a descendant's latest scope fragment without re-registering it. */
 export function useSurfaceScopeContribution(
-  surfaceName: string | null,
+  declaredSurfaceName: string | null,
   owner: string,
   getScope: () => SurfaceScopePayload,
 ): void {
+  const surfaceName = useLiveSurfaceName(declaredSurfaceName);
   const getScopeRef = useRef(getScope);
   useEffect(() => {
     getScopeRef.current = getScope;
@@ -440,9 +462,10 @@ export function getRegisteredWriteHandlers(
  * every call in a safe, loud envelope.
  */
 export function useSurfaceWriteHandlers(
-  surfaceName: string | null,
+  declaredSurfaceName: string | null,
   handlers: SurfaceWriteHandlers,
 ): void {
+  const surfaceName = useLiveSurfaceName(declaredSurfaceName);
   const handlersRef = useRef(handlers);
   useEffect(() => {
     handlersRef.current = handlers;
@@ -548,9 +571,10 @@ export function getRegisteredSurfaceClientTools(
  * loud envelope.
  */
 export function useSurfaceClientTools(
-  surfaceName: string | null,
+  declaredSurfaceName: string | null,
   handlers: SurfaceClientToolHandlers,
 ): void {
+  const surfaceName = useLiveSurfaceName(declaredSurfaceName);
   const handlersRef = useRef(handlers);
   useEffect(() => {
     handlersRef.current = handlers;
@@ -639,6 +663,7 @@ export function SurfaceRuntimeProvider({
 }: SurfaceRuntimeValue & { children: ReactNode }) {
   const depth = useContext(SurfaceRuntimeDepthContext) + 1;
   const layer = useContext(SurfaceLayerContext);
+  const dormant = useContext(SurfaceDormantContext);
   const getScopeRef = useRef(getScope);
   // This is a local ref assignment, not a registry mutation. Registration
   // remains effect-owned, but its already-registered callback sees the current
@@ -666,6 +691,7 @@ export function SurfaceRuntimeProvider({
   });
 
   useEffect(() => {
+    if (dormant) return;
     return registerSurfaceRuntime(
       {
         surfaceName,
@@ -679,7 +705,7 @@ export function SurfaceRuntimeProvider({
       },
       depth,
     );
-  }, [surfaceName, isEditable, layer, depth, stableGetScope]);
+  }, [surfaceName, isEditable, layer, depth, stableGetScope, dormant]);
 
   return (
     <SurfaceRuntimeDepthContext.Provider value={depth}>
@@ -719,6 +745,7 @@ export function useSurfaceRuntimeRegistration(
   });
 
   const surfaceName = value?.surfaceName ?? null;
+  const liveSurfaceName = useLiveSurfaceName(surfaceName);
   const transferHandle = useAlchemySurfaceHandle(
     surfaceName ?? "__unbound_surface_runtime__",
     () => {
@@ -733,7 +760,7 @@ export function useSurfaceRuntimeRegistration(
   );
   const isEditable = value?.isEditable;
   useEffect(() => {
-    if (!surfaceName) return;
+    if (!surfaceName || !liveSurfaceName) return;
     return registerSurfaceRuntime(
       {
         surfaceName,
@@ -759,6 +786,6 @@ export function useSurfaceRuntimeRegistration(
       },
       depth,
     );
-  }, [surfaceName, isEditable, layer, depth]);
+  }, [surfaceName, liveSurfaceName, isEditable, layer, depth]);
   return surfaceName ? transferHandle : null;
 }
