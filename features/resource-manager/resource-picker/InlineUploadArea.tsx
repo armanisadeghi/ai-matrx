@@ -456,7 +456,9 @@ export function InlineUploadArea({
           const normalized = await upload(
             { kind: "file", file },
             {
-              ...(organizationId ? { metadata: { scope: { organization_id: organizationId } } } : {}),
+              // The handler's own owner option — it wins over the ambient active organization
+              // (a `metadata.scope` value was overwritten by the active one: review-2 lane F live).
+              ...(organizationId ? { organizationId } : {}),
               folderPath,
               visibility: "personal",
               createShareLink: true,
