@@ -5395,6 +5395,7 @@ export type Database = {
           badge: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           is_default: boolean
           is_public: boolean
@@ -5421,6 +5422,7 @@ export type Database = {
           badge?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_default?: boolean
           is_public?: boolean
@@ -5447,6 +5449,7 @@ export type Database = {
           badge?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_default?: boolean
           is_public?: boolean
@@ -56829,24 +56832,30 @@ export type Database = {
           assigned_by: string | null
           created_at: string
           custom_fields: Json
+          id: string
           industry_id: string
           is_primary: boolean
+          metadata: Json
           organization_id: string
         }
         Insert: {
           assigned_by?: string | null
           created_at?: string
           custom_fields?: Json
+          id?: string
           industry_id: string
           is_primary?: boolean
+          metadata?: Json
           organization_id: string
         }
         Update: {
           assigned_by?: string | null
           created_at?: string
           custom_fields?: Json
+          id?: string
           industry_id?: string
           is_primary?: boolean
+          metadata?: Json
           organization_id?: string
         }
         Relationships: [
@@ -56871,6 +56880,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           id: string
           member_level: string | null
           metadata: Json
@@ -56892,6 +56902,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           member_level?: string | null
           metadata?: Json
@@ -56913,6 +56924,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           member_level?: string | null
           metadata?: Json
@@ -57786,6 +57798,17 @@ export type Database = {
           token: string
         }[]
       }
+      accessible_child_parents: {
+        Args: { p_child_type: string }
+        Returns: {
+          parent_id: string
+          parent_type: string
+        }[]
+      }
+      accessible_entity_candidates: {
+        Args: { p_type: string }
+        Returns: string[]
+      }
       accessible_entity_ids:
         | {
             Args: {
@@ -57893,6 +57916,10 @@ export type Database = {
       can_access_run: { Args: { p_run: string }; Returns: boolean }
       can_decide_access_request: {
         Args: { p_id: string; p_type: string; p_user_id: string }
+        Returns: boolean
+      }
+      candidate_admits: {
+        Args: { p_id: string; p_type: string }
         Returns: boolean
       }
       canonical_certify: {
@@ -110746,7 +110773,7 @@ export type Database = {
           total_plays: number | null
           total_views_received: number | null
           total_xp: number | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string
           version: number
@@ -110776,7 +110803,7 @@ export type Database = {
           total_plays?: number | null
           total_views_received?: number | null
           total_xp?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id: string
           version?: number
@@ -110806,7 +110833,7 @@ export type Database = {
           total_plays?: number | null
           total_views_received?: number | null
           total_xp?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string
           version?: number
@@ -116626,7 +116653,7 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean
-          metadata: Json | null
+          metadata: Json
           organization_id: string
           original_file_id: string | null
           project_id: string | null
@@ -116648,7 +116675,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
-          metadata?: Json | null
+          metadata?: Json
           organization_id: string
           original_file_id?: string | null
           project_id?: string | null
@@ -116670,7 +116697,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
-          metadata?: Json | null
+          metadata?: Json
           organization_id?: string
           original_file_id?: string | null
           project_id?: string | null
@@ -118734,6 +118761,7 @@ export type Database = {
           id: string
           last_error: string | null
           max_attempts: number
+          metadata: Json
           organization_id: string
           payload: Json
           run_id: string | null
@@ -118751,6 +118779,7 @@ export type Database = {
           id?: string
           last_error?: string | null
           max_attempts?: number
+          metadata?: Json
           organization_id: string
           payload?: Json
           run_id?: string | null
@@ -118768,6 +118797,7 @@ export type Database = {
           id?: string
           last_error?: string | null
           max_attempts?: number
+          metadata?: Json
           organization_id?: string
           payload?: Json
           run_id?: string | null
