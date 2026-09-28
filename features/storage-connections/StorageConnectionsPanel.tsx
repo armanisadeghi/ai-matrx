@@ -80,11 +80,13 @@ function returnMessage(status: string): {
 }
 
 export interface StorageConnectionsPanelProps {
+  readonly provider?: "box" | "dropbox";
   readonly navigate?: (url: string) => void;
   readonly onConnectionsChange?: (connections: StorageConnection[] | "error") => void;
 }
 
 export function StorageConnectionsPanel({
+  provider: selectedProvider,
   navigate,
   onConnectionsChange,
 }: StorageConnectionsPanelProps = {}) {
@@ -210,8 +212,7 @@ export function StorageConnectionsPanel({
         </h2>
         <p className="text-sm text-muted-foreground">
           Connect an account to browse and import its files into Matrx Files.
-          Hosted MCP connections below give agents provider tools and are
-          managed separately.
+          Agent tool connections are listed and managed separately in the directory.
         </p>
       </header>
 
@@ -251,8 +252,8 @@ export function StorageConnectionsPanel({
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {(["dropbox", "box"] as const).map((provider) => {
+      <div className={selectedProvider ? "grid gap-4" : "grid gap-4 lg:grid-cols-2"}>
+        {(["dropbox", "box"] as const).filter((provider) => !selectedProvider || provider === selectedProvider).map((provider) => {
           const copy = STORAGE_PROVIDER_COPY[provider];
           const providerConnections = (connections ?? []).filter(
             (connection) => connection.provider === provider,

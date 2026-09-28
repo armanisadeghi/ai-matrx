@@ -58,16 +58,28 @@ describe("integration directory filters", () => {
 });
 
 describe("saved account summaries", () => {
-  it("excludes revoked and disconnected accounts while retaining repair-needed ones", () => {
+  it("retains every persisted account while only repair-needed accounts ask for attention", () => {
     expect(savedAccountSummary([
       { identity: "expired@example.com", status: "needs_reauth" },
       { identity: "gone@example.com", status: "revoked" },
       { identity: "old@example.com", status: "disconnected" },
-    ], false, false)).toMatchObject({ saved: true, connected: false, attention: true, status: "Needs attention", accountSummary: "expired@example.com" });
+    ], false, false)).toMatchObject({ saved: true, connected: false, attention: true, available: true, status: "Needs attention", accountSummary: "expired@example.com, gone@example.com, old@example.com" });
   });
 
-  it("does not turn a null status into a connected account", () => {
-    expect(savedAccountSummary([{ identity: "unknown@example.com", status: null }], false, false)).toMatchObject({ saved: true, connected: false, attention: true, status: "Needs attention" });
+  it("never turns unknown or unavailable statuses into connected or actionable accounts", () => {
+    expect(savedAccountSummary([{ identity: "unknown@example.com", status: null }], false, false)).toMatchObject({ saved: true, connected: false, attention: false, available: false, status: "Status unavailable" });
+    expect(savedAccountSummary([{ identity: "blocked@example.com", status: "unavailable" }], false, false)).toMatchObject({ saved: true, connected: false, attention: false, available: false, status: "Unavailable" });
+  });
+
+  it("keeps revoked-only and disconnected-only rows saved without calling them connected", () => {
+    expect(savedAccountSummary([{ identity: "revoked@example.com", status: "revoked" }], false, false)).toMatchObject({ saved: true, connected: false, attention: false, status: "Revoked" });
+    expect(savedAccountSummary([{ identity: "gone@example.com", status: "disconnected" }], false, false)).toMatchObject({ saved: true, connected: false, attention: false, status: "Disconnected" });
+  });
+
+  it("says checking or unavailable when reads are loading or failed", () => {
+    const rows = [{ identity: "me@example.com", status: "connected" }];
+    expect(savedAccountSummary(rows, true, false)).toMatchObject({ saved: true, connected: false, available: false, status: "Checking…" });
+    expect(savedAccountSummary(rows, false, true)).toMatchObject({ saved: true, connected: false, available: false, status: "Status unavailable" });
   });
 });
 
