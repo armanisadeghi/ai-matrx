@@ -198,6 +198,7 @@ export const PROFILE_SECTION_IDS = {
   billing: "profile-billing",
   work: "profile-work",
   emergency: "profile-emergency",
+  voice: "profile-voice",
   account: "profile-account",
 } as const;
 

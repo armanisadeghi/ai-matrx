@@ -256,6 +256,12 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
         description: "Brand and business guidelines every practice honors.",
         letter: "Gu",
       },
+      voice: {
+        titlePrefix: "Brand Voice",
+        description:
+          "How this brand writes, measured from real samples and enforced on every draft in its name.",
+        letter: "Bv",
+      },
       audience: {
         titlePrefix: "Audience & Personas",
         description:

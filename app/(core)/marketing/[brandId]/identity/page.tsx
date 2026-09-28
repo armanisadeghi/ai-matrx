@@ -8,6 +8,7 @@ import {
   Users,
   type LucideIcon,
   Compass,
+  PenLine,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -73,6 +74,13 @@ export default async function BrandIdentityPage({
         "How this brand must be written about and what it must never claim — the rules every agent inherits.",
       href: `${identity}/guidelines`,
       icon: ScrollText,
+    },
+    {
+      name: "Voice",
+      description:
+        "How this brand actually writes, measured from its real writing. Every pitch, reply, subject line and statement in its name is checked against it.",
+      href: `${identity}/voice`,
+      icon: PenLine,
     },
     {
       name: "Audience",
