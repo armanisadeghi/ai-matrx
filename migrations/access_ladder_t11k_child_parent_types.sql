@@ -1,3 +1,4 @@
+-- chair-step: the one DROP here is files_parent_record_shape, dropped and re-added in the same transaction WIDER (NOT VALID, validated in part l): every row the old check admitted the new one admits; nothing is removed.
 -- lane: access-ladder T-11 leak fixes, part k: the one list of record types a file may be the
 -- child of, and the shape check reads it.
 --
