@@ -13,6 +13,7 @@
  */
 
 import * as React from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
@@ -107,6 +108,10 @@ export function ChangePolicySurface({
 }) {
     const [overrides, setOverrides] = React.useState<Map<string, OrgChangePolicyRow>>(new Map());
     const [loading, setLoading] = React.useState(true);
+    // A failed read is said with a retry — never an editor claiming every type
+    // "follows the platform default" over overrides nobody could read.
+    const [loadError, setLoadError] = React.useState<unknown>(null);
+    const [loadAttempt, setLoadAttempt] = React.useState(0);
     const [busy, setBusy] = React.useState(false);
     const [showAll, setShowAll] = React.useState(false);
 
@@ -121,9 +126,11 @@ export function ChangePolicySurface({
             setLoading(true);
             try {
                 const map = await getOrgChangePolicies(orgId);
-                if (!cancelled) setOverrides(map);
+                if (cancelled) return;
+                setOverrides(map);
+                setLoadError(null);
             } catch (err) {
-                if (!cancelled) toast.error(err instanceof Error ? err.message : "Failed to load change policy");
+                if (!cancelled) setLoadError(err ?? new Error("Failed to load change policy"));
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -131,7 +138,7 @@ export function ChangePolicySurface({
         return () => {
             cancelled = true;
         };
-    }, [orgId]);
+    }, [orgId, loadAttempt]);
 
     const overrideCount = React.useMemo(
         () => CHANGE_TYPE_CATALOGUE.filter((row) => overrides.has(row.key)).length,
@@ -224,6 +231,16 @@ export function ChangePolicySurface({
                     <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
                 ))}
             </div>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <ReadFailure
+                error={loadError}
+                what="this organization's change policy"
+                onRetry={() => setLoadAttempt((n) => n + 1)}
+            />
         );
     }
 

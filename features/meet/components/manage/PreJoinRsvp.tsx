@@ -31,6 +31,7 @@ export function PreJoinRsvp({ meeting }: { meeting: MeetingRecord }) {
       .then((rows) => {
         if (live) setMine(rows.find((row) => row.userId === userId) ?? null);
       })
+      // read-gate-exempt: a guest who may not read the invitee list fails this read by design; the RSVP control is simply absent and nothing on the stage claims "not invited"
       .catch((thrown: unknown) => {
         // Not on the list, or not readable: the control stays absent, and we say why here.
         console.warn(

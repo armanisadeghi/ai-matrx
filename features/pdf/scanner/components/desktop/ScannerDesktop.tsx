@@ -19,6 +19,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
@@ -179,6 +180,9 @@ export default function ScannerDesktop() {
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [recent, setRecent] = useState<RecentScans | null>(null);
+  // A failed recent-scans read is said on the rail — never "Scans you save land here".
+  const [recentError, setRecentError] = useState<unknown>(null);
+  const [recentAttempt, setRecentAttempt] = useState(0);
   const [showAllRecent, setShowAllRecent] = useState(false);
   // THE ARCHIVED-ITEMS LAW: archived scans are hidden by default on BOTH
   // recent-scan surfaces and are exactly one click away on each. The two
@@ -201,15 +205,17 @@ export default function ScannerDesktop() {
     let cancelled = false;
     fetchRecentScans(18)
       .then((rows) => {
-        if (!cancelled) setRecent(rows);
+        if (cancelled) return;
+        setRecent(rows);
+        setRecentError(null);
       })
-      .catch(() => {
-        if (!cancelled) setRecent({ active: [], archived: [] });
+      .catch((error: unknown) => {
+        if (!cancelled) setRecentError(error ?? new Error("The recent scans read failed"));
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [recentAttempt]);
 
   const imageShots = session.items
     .filter((i) => i.kind === "image" && i.previewUrl)
@@ -371,7 +377,14 @@ export default function ScannerDesktop() {
               Recent scans
             </p>
             <div className="-mx-1 min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1">
-              {recent === null ? (
+              {recentError ? (
+                <ReadFailure
+                  className="m-1"
+                  error={recentError}
+                  what="your recent scans"
+                  onRetry={() => setRecentAttempt((n) => n + 1)}
+                />
+              ) : recent === null ? (
                 <div className="flex justify-center py-6">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />
                 </div>
@@ -531,7 +544,8 @@ export default function ScannerDesktop() {
                 </div>
 
                 {/* Recent scans */}
-                {recent &&
+                {!recentError &&
+                  recent &&
                   (recent.active.length > 0 || recent.archived.length > 0) && (
                     <>
                       <div className="mb-3.5 flex items-baseline justify-between">

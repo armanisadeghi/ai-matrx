@@ -224,7 +224,7 @@ export default function LocalDevicesPage() {
       </div>
 
       {/* Footer info */}
-      {instances.length > 0 && (
+      {!error && instances.length > 0 && (
         <p className="text-center text-xs text-muted-foreground">
           {instances.filter((i) => i.is_online).length} of {instances.length} device
           {instances.length !== 1 ? "s" : ""} online ·{" "}

@@ -450,7 +450,7 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
               icon={<FileText className="w-3.5 h-3.5" />}
               label="Raw Output"
               badge={
-                blockCount > 0 ? (
+                !error && blockCount > 0 ? (
                   <Badge
                     variant="secondary"
                     className="text-[9px] px-1 py-0 h-3.5 ml-0.5"
@@ -669,6 +669,7 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
                             <code className="font-mono">render_block</code>{" "}
                             events via{" "}
                             <code className="font-mono">MarkdownStream</code>.{" "}
+                            {/* read-gate-exempt: counts events of the lab run the person just made (a failed run sets error and shows it), not a read */}
                             {
                               processedEvents.filter(
                                 (e) => e.event === "render_block",

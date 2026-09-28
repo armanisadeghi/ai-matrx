@@ -13,6 +13,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { toast } from "@/lib/toast";
 import { Check, Copy, ExternalLink, Link, Loader2, Trash2 } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
@@ -176,7 +177,7 @@ export function ShareLinkDialogBody({
             1500,
           );
         } catch {
-          /* ignore */
+          toast.error("Couldn't copy the link — select it and copy it by hand.");
         }
       }
     },

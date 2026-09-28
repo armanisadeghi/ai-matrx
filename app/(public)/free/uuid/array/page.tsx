@@ -61,6 +61,7 @@ const UUIDArrayField = () => {
             setTimeout(() => setCopiedId(null), 2000);
         } catch (err) {
             console.error('Failed to copy:', err);
+            toast.error("Couldn't copy to the clipboard — select the UUID and copy it by hand.");
         }
     };
 

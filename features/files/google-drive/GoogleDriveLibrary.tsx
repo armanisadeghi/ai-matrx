@@ -339,7 +339,7 @@ export function GoogleDriveLibrary() {
           </p>
         </div>
       ) : null}
-      {page ? (
+      {!error && page ? (
         <section
           className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
           aria-label="Google Drive metadata results"

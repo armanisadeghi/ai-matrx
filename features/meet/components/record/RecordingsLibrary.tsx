@@ -176,7 +176,7 @@ export function RecordingsLibrary({ query }: { query: string }) {
     <div className="mt-2 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          {rows === null
+          {failure || rows === null
             ? " "
             : `${visible.length} recording${visible.length === 1 ? "" : "s"}`}
         </p>

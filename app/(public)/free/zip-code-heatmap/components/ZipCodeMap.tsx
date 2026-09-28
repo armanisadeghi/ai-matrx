@@ -228,6 +228,7 @@ export default function ZipCodeMap({
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-background/95 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg border flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-primary" />
           <span className="text-sm font-medium">
+            {/* read-gate-exempt: live geocoding progress over the person's own uploaded zip list, not a read's count */}
             {isGeocoding
               ? `Geocoding zip codes... (${zipLocations.length}/${data.length})`
               : "Loading..."}
