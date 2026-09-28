@@ -130,6 +130,7 @@ session, never you.
   so a file left uncommitted loses your authorship and message.
   It can still win the race by seconds. If it swept your edit, that is fine:
   name its commit as yours in the report and move on — never rewrite it.
+- **Never delete code to clear a check.** A flow a guard flags is fixed, not removed; deleting needs Arman's written word (unfinished-work alarm). Check `git log` first: a worker once deleted a login flow another lane had hardened 16 minutes earlier.
 - **Prove a test fails on a scratch copy, never by breaking the real file** —
   the sync sweep can commit the broken version in the seconds it sits there.
   Copy the file (or its old version from git) into your TMPDIR and point the
