@@ -1,3 +1,4 @@
+-- retired: crm.saved_view DROPPED 2026-09-27 by the database estate-reduction program wave 2 (backup /Users/armanisadeghi/db-estate-backups/2026-09-27/crm.saved_view.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- CRM smart views: `crm.saved_view` — a NAMED, RE-RUNNABLE party-list query.
 --
 -- Why a table and not a user preference: `lib/list-views` persists STYLE

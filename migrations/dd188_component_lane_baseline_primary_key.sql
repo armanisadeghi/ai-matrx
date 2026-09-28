@@ -1,3 +1,4 @@
+-- retired: iam.dd175_component_lane_baseline DROPPED 2026-09-27 by the database estate-reduction program wave 2 (backup /Users/armanisadeghi/db-estate-backups/2026-09-27/iam.dd175_component_lane_baseline.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- DD-188: `iam.dd175_component_lane_baseline` (B-60's DD-175 forcing-test harness table) was
 -- created with `create table if not exists` and no primary key. `db/generate.py` in aidream
 -- introspects every table it can see to emit ORM models/managers, and a table with no primary

@@ -100,6 +100,7 @@ export type Database = {
           metadata: Json
           name: string
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -116,6 +117,7 @@ export type Database = {
           metadata?: Json
           name: string
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -132,6 +134,7 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -215,6 +218,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           path: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           sync_base_commit: string | null
           sync_base_hash: string | null
@@ -237,6 +241,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           path: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
           sync_base_commit?: string | null
           sync_base_hash?: string | null
@@ -259,6 +264,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           path?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
           sync_base_commit?: string | null
           sync_base_hash?: string | null
@@ -363,6 +369,7 @@ export type Database = {
           name: string
           organization_id: string
           project_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           task_id: string | null
           updated_at: string
           updated_by: string | null
@@ -379,6 +386,7 @@ export type Database = {
           name?: string
           organization_id: string
           project_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -395,6 +403,7 @@ export type Database = {
           name?: string
           organization_id?: string
           project_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -419,6 +428,7 @@ export type Database = {
           rank: number | null
           rating: string | null
           request_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -439,6 +449,7 @@ export type Database = {
           rank?: number | null
           rating?: string | null
           request_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -459,6 +470,7 @@ export type Database = {
           rank?: number | null
           rating?: string | null
           request_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -510,6 +522,7 @@ export type Database = {
           rag_awareness_refreshed_at: string | null
           search_engine_indexed: boolean | null
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           skill_config: Json
           source_agent_id: string | null
           source_snapshot_at: string | null
@@ -561,6 +574,7 @@ export type Database = {
           rag_awareness_refreshed_at?: string | null
           search_engine_indexed?: boolean | null
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           skill_config?: Json
           source_agent_id?: string | null
           source_snapshot_at?: string | null
@@ -612,6 +626,7 @@ export type Database = {
           rag_awareness_refreshed_at?: string | null
           search_engine_indexed?: boolean | null
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           skill_config?: Json
           source_agent_id?: string | null
           source_snapshot_at?: string | null
@@ -929,6 +944,7 @@ export type Database = {
           position: number
           reference_artifact: Json | null
           reference_output: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source: string
           source_conversation_id: string | null
           status: string
@@ -958,6 +974,7 @@ export type Database = {
           position?: number
           reference_artifact?: Json | null
           reference_output?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source?: string
           source_conversation_id?: string | null
           status?: string
@@ -987,6 +1004,7 @@ export type Database = {
           position?: number
           reference_artifact?: Json | null
           reference_output?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source?: string
           source_conversation_id?: string | null
           status?: string
@@ -1043,6 +1061,7 @@ export type Database = {
           observed_agent_id: string | null
           observed_agent_version_id: string | null
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           surface_name: string | null
           updated_at: string
           updated_by: string | null
@@ -1063,6 +1082,7 @@ export type Database = {
           observed_agent_id?: string | null
           observed_agent_version_id?: string | null
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           surface_name?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1083,6 +1103,7 @@ export type Database = {
           observed_agent_id?: string | null
           observed_agent_version_id?: string | null
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           surface_name?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1126,6 +1147,7 @@ export type Database = {
           organization_id: string
           role: Database["public"]["Enums"]["message_role"] | null
           search_engine_indexed: boolean | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           tags: string[] | null
           updated_at: string
           updated_by: string | null
@@ -1144,6 +1166,7 @@ export type Database = {
           organization_id: string
           role?: Database["public"]["Enums"]["message_role"] | null
           search_engine_indexed?: boolean | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
@@ -1162,6 +1185,7 @@ export type Database = {
           organization_id?: string
           role?: Database["public"]["Enums"]["message_role"] | null
           search_engine_indexed?: boolean | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
@@ -1234,6 +1258,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           remediation_notes: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -1257,6 +1282,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           remediation_notes?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -1280,6 +1306,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           remediation_notes?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -1381,6 +1408,7 @@ export type Database = {
           show_definition_messages: boolean
           show_pre_execution_gate: boolean | null
           show_variable_panel: boolean
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sort_order: number
           surface_name: string | null
           updated_at: string
@@ -1427,6 +1455,7 @@ export type Database = {
           show_definition_messages?: boolean
           show_pre_execution_gate?: boolean | null
           show_variable_panel?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number
           surface_name?: string | null
           updated_at?: string
@@ -1473,6 +1502,7 @@ export type Database = {
           show_definition_messages?: boolean
           show_pre_execution_gate?: boolean | null
           show_variable_panel?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number
           surface_name?: string | null
           updated_at?: string
@@ -1537,6 +1567,7 @@ export type Database = {
           organization_id: string
           output_schema: Json | null
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_agent_id: string | null
           tags: string[]
           tool_config: Json
@@ -1570,6 +1601,7 @@ export type Database = {
           organization_id: string
           output_schema?: Json | null
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_agent_id?: string | null
           tags?: string[]
           tool_config?: Json
@@ -1603,6 +1635,7 @@ export type Database = {
           organization_id?: string
           output_schema?: Json | null
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_agent_id?: string | null
           tags?: string[]
           tool_config?: Json
@@ -1645,6 +1678,7 @@ export type Database = {
           modalities: string[]
           name: string
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_language: string | null
           updated_at: string
           updated_by: string | null
@@ -1664,6 +1698,7 @@ export type Database = {
           modalities?: string[]
           name: string
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_language?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1683,6 +1718,7 @@ export type Database = {
           modalities?: string[]
           name?: string
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_language?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -2061,6 +2097,7 @@ export type Database = {
           rag_awareness_refreshed_at: string | null
           search_engine_indexed: boolean | null
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           skill_config: Json
           source_agent_id: string | null
           source_snapshot_at: string | null
@@ -2108,6 +2145,7 @@ export type Database = {
           organization_id: string
           request_defaults: Json
           rules: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           translator_key: string
           transport: string
           updated_at: string
@@ -2128,6 +2166,7 @@ export type Database = {
           organization_id: string
           request_defaults?: Json
           rules?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           translator_key: string
           transport?: string
           updated_at?: string
@@ -2148,6 +2187,7 @@ export type Database = {
           organization_id?: string
           request_defaults?: Json
           rules?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           translator_key?: string
           transport?: string
           updated_at?: string
@@ -2175,6 +2215,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           priority: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           vendor: string
@@ -2198,6 +2239,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           priority?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           vendor: string
@@ -2221,6 +2263,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           priority?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           vendor?: string
@@ -2242,6 +2285,7 @@ export type Database = {
           model_id: string
           notes: string | null
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -2259,6 +2303,7 @@ export type Database = {
           model_id: string
           notes?: string | null
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -2276,6 +2321,7 @@ export type Database = {
           model_id?: string
           notes?: string | null
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -2338,6 +2384,7 @@ export type Database = {
           retired_at: string | null
           retry_fallback_id: string | null
           retry_max_attempts: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           speed_rating: number | null
           successor_id: string | null
           updated_at: string
@@ -2370,6 +2417,7 @@ export type Database = {
           retired_at?: string | null
           retry_fallback_id?: string | null
           retry_max_attempts?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           speed_rating?: number | null
           successor_id?: string | null
           updated_at?: string
@@ -2402,6 +2450,7 @@ export type Database = {
           retired_at?: string | null
           retry_fallback_id?: string | null
           retry_max_attempts?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           speed_rating?: number | null
           successor_id?: string | null
           updated_at?: string
@@ -2551,6 +2600,7 @@ export type Database = {
           pricing_verified_at: string | null
           priority: number
           provider_model_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           token_billed: boolean
           updated_at: string
           updated_by: string | null
@@ -2577,6 +2627,7 @@ export type Database = {
           pricing_verified_at?: string | null
           priority?: number
           provider_model_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           token_billed?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -2603,6 +2654,7 @@ export type Database = {
           pricing_verified_at?: string | null
           priority?: number
           provider_model_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           token_billed?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -2678,6 +2730,7 @@ export type Database = {
           name: string
           organization_id: string
           provider_models_cache: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           sync_policy: Json
           updated_at: string
@@ -2701,6 +2754,7 @@ export type Database = {
           name: string
           organization_id: string
           provider_models_cache?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
           sync_policy?: Json
           updated_at?: string
@@ -2724,6 +2778,7 @@ export type Database = {
           name?: string
           organization_id?: string
           provider_models_cache?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
           sync_policy?: Json
           updated_at?: string
@@ -2749,6 +2804,7 @@ export type Database = {
           key: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           ui: Json
           updated_at: string
           updated_by: string | null
@@ -2770,6 +2826,7 @@ export type Database = {
           key: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           ui?: Json
           updated_at?: string
           updated_by?: string | null
@@ -2791,6 +2848,7 @@ export type Database = {
           key?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           ui?: Json
           updated_at?: string
           updated_by?: string | null
@@ -2823,6 +2881,7 @@ export type Database = {
           quality_score: number | null
           sample_file_id: string | null
           sample_url: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sort_order: number
           style: string | null
           tags: string[]
@@ -2854,6 +2913,7 @@ export type Database = {
           quality_score?: number | null
           sample_file_id?: string | null
           sample_url?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number
           style?: string | null
           tags?: string[]
@@ -2885,6 +2945,7 @@ export type Database = {
           quality_score?: number | null
           sample_file_id?: string | null
           sample_url?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number
           style?: string | null
           tags?: string[]
@@ -3565,6 +3626,7 @@ export type Database = {
           shared_context_policies: Json | null
           shell_config: Json
           shell_kind: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slot_code: Json
           slot_overrides: Json
           slug: string
@@ -3621,6 +3683,7 @@ export type Database = {
           shared_context_policies?: Json | null
           shell_config?: Json
           shell_kind?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slot_code?: Json
           slot_overrides?: Json
           slug: string
@@ -3677,6 +3740,7 @@ export type Database = {
           shared_context_policies?: Json | null
           shell_config?: Json
           shell_kind?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slot_code?: Json
           slot_overrides?: Json
           slug?: string
@@ -5029,6 +5093,7 @@ export type Database = {
           min_tier: Database["billing"]["Enums"]["tier"]
           organization_id: string
           period: Database["billing"]["Enums"]["meter_period"] | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           usage_source: string
@@ -5045,6 +5110,7 @@ export type Database = {
           min_tier?: Database["billing"]["Enums"]["tier"]
           organization_id: string
           period?: Database["billing"]["Enums"]["meter_period"] | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           usage_source?: string
@@ -5061,6 +5127,7 @@ export type Database = {
           min_tier?: Database["billing"]["Enums"]["tier"]
           organization_id?: string
           period?: Database["billing"]["Enums"]["meter_period"] | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           usage_source?: string
@@ -5079,6 +5146,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           period: Database["billing"]["Enums"]["meter_period"]
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           tier: Database["billing"]["Enums"]["tier"]
           updated_at: string
           updated_by: string | null
@@ -5094,6 +5162,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           period: Database["billing"]["Enums"]["meter_period"]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tier: Database["billing"]["Enums"]["tier"]
           updated_at?: string
           updated_by?: string | null
@@ -5109,6 +5178,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           period?: Database["billing"]["Enums"]["meter_period"]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
           updated_by?: string | null
@@ -5326,6 +5396,7 @@ export type Database = {
           per_seat: boolean
           plan_key: string
           rank: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           tagline: string | null
           tier: Database["billing"]["Enums"]["tier"]
           updated_at: string
@@ -5351,6 +5422,7 @@ export type Database = {
           per_seat?: boolean
           plan_key: string
           rank: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tagline?: string | null
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
@@ -5376,6 +5448,7 @@ export type Database = {
           per_seat?: boolean
           plan_key?: string
           rank?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tagline?: string | null
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
@@ -5397,6 +5470,7 @@ export type Database = {
           organization_id: string
           period: Database["billing"]["Enums"]["meter_period"]
           plan_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -5413,6 +5487,7 @@ export type Database = {
           organization_id: string
           period: Database["billing"]["Enums"]["meter_period"]
           plan_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -5429,6 +5504,7 @@ export type Database = {
           organization_id?: string
           period?: Database["billing"]["Enums"]["meter_period"]
           plan_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -5456,6 +5532,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           product_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           stripe_price_id: string | null
           trial_period_days: number | null
           unit_amount: number | null
@@ -5475,6 +5552,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           product_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           stripe_price_id?: string | null
           trial_period_days?: number | null
           unit_amount?: number | null
@@ -5494,6 +5572,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           product_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           stripe_price_id?: string | null
           trial_period_days?: number | null
           unit_amount?: number | null
@@ -5522,6 +5601,7 @@ export type Database = {
           metadata: Json
           name: string
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           stripe_product_id: string | null
           tier: Database["billing"]["Enums"]["tier"]
           updated_at: string
@@ -5538,6 +5618,7 @@ export type Database = {
           metadata?: Json
           name: string
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           stripe_product_id?: string | null
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
@@ -5554,6 +5635,7 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           stripe_product_id?: string | null
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
@@ -5579,6 +5661,7 @@ export type Database = {
           period: Database["billing"]["Enums"]["meter_period"] | null
           scope: string
           scope_user_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -5599,6 +5682,7 @@ export type Database = {
           period?: Database["billing"]["Enums"]["meter_period"] | null
           scope?: string
           scope_user_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -5619,6 +5703,7 @@ export type Database = {
           period?: Database["billing"]["Enums"]["meter_period"] | null
           scope?: string
           scope_user_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -6843,6 +6928,7 @@ export type Database = {
           provenance: string
           provider_key: string | null
           recipe_version: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_finding_id: string | null
           status: string
           submit: Json
@@ -6869,6 +6955,7 @@ export type Database = {
           provenance?: string
           provider_key?: string | null
           recipe_version?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_finding_id?: string | null
           status?: string
           submit: Json
@@ -6895,6 +6982,7 @@ export type Database = {
           provenance?: string
           provider_key?: string | null
           recipe_version?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_finding_id?: string | null
           status?: string
           submit?: Json
@@ -7393,6 +7481,7 @@ export type Database = {
           resets_on: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_url: string | null
           timeout_type: string | null
           updated_at: string
@@ -7425,6 +7514,7 @@ export type Database = {
           resets_on?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_url?: string | null
           timeout_type?: string | null
           updated_at?: string
@@ -7457,6 +7547,7 @@ export type Database = {
           resets_on?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_url?: string | null
           timeout_type?: string | null
           updated_at?: string
@@ -7804,6 +7895,7 @@ export type Database = {
           parent_canvas_id: string | null
           project_id: string | null
           session_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_id: string | null
           source_message_id: string | null
           source_system: string | null
@@ -7840,6 +7932,7 @@ export type Database = {
           parent_canvas_id?: string | null
           project_id?: string | null
           session_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_id?: string | null
           source_message_id?: string | null
           source_system?: string | null
@@ -7876,6 +7969,7 @@ export type Database = {
           parent_canvas_id?: string | null
           project_id?: string | null
           session_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_id?: string | null
           source_message_id?: string | null
           source_system?: string | null
@@ -8138,6 +8232,7 @@ export type Database = {
           search_engine_indexed: boolean | null
           search_vector: unknown
           share_count: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           tags: string[] | null
           thumbnail_url: string | null
           title: string
@@ -8183,6 +8278,7 @@ export type Database = {
           search_engine_indexed?: boolean | null
           search_vector?: unknown
           share_count?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tags?: string[] | null
           thumbnail_url?: string | null
           title: string
@@ -8228,6 +8324,7 @@ export type Database = {
           search_engine_indexed?: boolean | null
           search_vector?: unknown
           share_count?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
@@ -8449,6 +8546,7 @@ export type Database = {
           organization_id: string
           request: Json
           result: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           total_cost: number
           updated_at: string
@@ -8471,6 +8569,7 @@ export type Database = {
           organization_id: string
           request?: Json
           result?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           total_cost?: number
           updated_at?: string
@@ -8493,6 +8592,7 @@ export type Database = {
           organization_id?: string
           request?: Json
           result?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           total_cost?: number
           updated_at?: string
@@ -11256,6 +11356,7 @@ export type Database = {
           organization_id: string
           parent_folder_id: string | null
           project_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sort_order: number | null
           updated_at: string
           updated_by: string | null
@@ -11278,6 +11379,7 @@ export type Database = {
           organization_id: string
           parent_folder_id?: string | null
           project_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number | null
           updated_at?: string
           updated_by?: string | null
@@ -11300,6 +11402,7 @@ export type Database = {
           organization_id?: string
           parent_folder_id?: string | null
           project_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number | null
           updated_at?: string
           updated_by?: string | null
@@ -11337,6 +11440,7 @@ export type Database = {
           repository_id: string | null
           s3_bucket: string | null
           s3_key: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           tags: string[]
           task_id: string | null
           updated_at: string
@@ -11364,6 +11468,7 @@ export type Database = {
           repository_id?: string | null
           s3_bucket?: string | null
           s3_key?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tags?: string[]
           task_id?: string | null
           updated_at?: string
@@ -11391,6 +11496,7 @@ export type Database = {
           repository_id?: string | null
           s3_bucket?: string | null
           s3_key?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tags?: string[]
           task_id?: string | null
           updated_at?: string
@@ -11437,6 +11543,7 @@ export type Database = {
           root_folder_id: string | null
           s3_bucket: string | null
           s3_prefix: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sync_error: string | null
           sync_status: string
           updated_at: string
@@ -11465,6 +11572,7 @@ export type Database = {
           root_folder_id?: string | null
           s3_bucket?: string | null
           s3_prefix?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sync_error?: string | null
           sync_status?: string
           updated_at?: string
@@ -11493,6 +11601,7 @@ export type Database = {
           root_folder_id?: string | null
           s3_bucket?: string | null
           s3_prefix?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sync_error?: string | null
           sync_status?: string
           updated_at?: string
@@ -12236,6 +12345,7 @@ export type Database = {
           printer_make: string
           printer_model: string
           result_notes: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           template_id: string
           updated_at: string
@@ -12257,6 +12367,7 @@ export type Database = {
           printer_make: string
           printer_model: string
           result_notes?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           template_id: string
           updated_at?: string
@@ -12278,6 +12389,7 @@ export type Database = {
           printer_make?: string
           printer_model?: string
           result_notes?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           template_id?: string
           updated_at?: string
@@ -12303,6 +12415,7 @@ export type Database = {
           poll_interval_seconds: number
           provider: string
           root_path: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sync_status: string
           updated_at: string
           updated_by: string | null
@@ -12324,6 +12437,7 @@ export type Database = {
           poll_interval_seconds?: number
           provider: string
           root_path?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sync_status?: string
           updated_at?: string
           updated_by?: string | null
@@ -12345,6 +12459,7 @@ export type Database = {
           poll_interval_seconds?: number
           provider?: string
           root_path?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sync_status?: string
           updated_at?: string
           updated_by?: string | null
@@ -12462,6 +12577,7 @@ export type Database = {
           organization_id: string
           parent_category_id: string | null
           path: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -12483,6 +12599,7 @@ export type Database = {
           organization_id: string
           parent_category_id?: string | null
           path?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -12504,6 +12621,7 @@ export type Database = {
           organization_id?: string
           parent_category_id?: string | null
           path?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -12525,6 +12643,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           required_aspect_names: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           tree_version: string | null
           updated_at: string
           updated_by: string | null
@@ -12546,6 +12665,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           required_aspect_names?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tree_version?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -12567,6 +12687,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           required_aspect_names?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tree_version?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -12588,6 +12709,7 @@ export type Database = {
           marketplace_id: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           tree_version: string
           updated_at: string
           updated_by: string | null
@@ -12604,6 +12726,7 @@ export type Database = {
           marketplace_id: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tree_version: string
           updated_at?: string
           updated_by?: string | null
@@ -12620,6 +12743,7 @@ export type Database = {
           marketplace_id?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tree_version?: string
           updated_at?: string
           updated_by?: string | null
@@ -13221,6 +13345,7 @@ export type Database = {
           organization_id: string
           payload: Json
           policy_kind: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -13238,6 +13363,7 @@ export type Database = {
           organization_id: string
           payload?: Json
           policy_kind: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -13255,6 +13381,7 @@ export type Database = {
           organization_id?: string
           payload?: Json
           policy_kind?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -13362,6 +13489,7 @@ export type Database = {
           name: string
           observed_payload: Json | null
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           verification_token_ref: string | null
@@ -13380,6 +13508,7 @@ export type Database = {
           name: string
           observed_payload?: Json | null
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           verification_token_ref?: string | null
@@ -13398,6 +13527,7 @@ export type Database = {
           name?: string
           observed_payload?: Json | null
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           verification_token_ref?: string | null
@@ -13578,6 +13708,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           scope: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           supported_payloads: Json | null
           topic_id: string
           topic_status: string | null
@@ -13599,6 +13730,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           scope?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           supported_payloads?: Json | null
           topic_id: string
           topic_status?: string | null
@@ -13620,6 +13752,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           scope?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           supported_payloads?: Json | null
           topic_id?: string
           topic_status?: string | null
@@ -14499,6 +14632,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           received_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           stream_kind: string
           updated_at: string
@@ -14520,6 +14654,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           received_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           stream_kind: string
           updated_at?: string
@@ -14541,6 +14676,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           received_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           stream_kind?: string
           updated_at?: string
@@ -14563,6 +14699,7 @@ export type Database = {
           printed_at: string | null
           purpose: string | null
           requested_count: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: string
           template_id: string
           updated_at: string
@@ -14582,6 +14719,7 @@ export type Database = {
           printed_at?: string | null
           purpose?: string | null
           requested_count: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           template_id: string
           updated_at?: string
@@ -14601,6 +14739,7 @@ export type Database = {
           printed_at?: string | null
           purpose?: string | null
           requested_count?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           template_id?: string
           updated_at?: string
@@ -14715,6 +14854,7 @@ export type Database = {
           selling_limit_amount: number | null
           selling_limit_currency: string | null
           selling_limit_quantity: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           store_description: string | null
           store_name: string | null
           store_subscription_level: string | null
@@ -14750,6 +14890,7 @@ export type Database = {
           selling_limit_amount?: number | null
           selling_limit_currency?: string | null
           selling_limit_quantity?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           store_description?: string | null
           store_name?: string | null
           store_subscription_level?: string | null
@@ -14785,6 +14926,7 @@ export type Database = {
           selling_limit_amount?: number | null
           selling_limit_currency?: string | null
           selling_limit_quantity?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           store_description?: string | null
           store_name?: string | null
           store_subscription_level?: string | null
@@ -14975,6 +15117,7 @@ export type Database = {
           remaining: number | null
           reset_at: string | null
           resource_name: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           time_window_seconds: number
           updated_at: string
           updated_by: string | null
@@ -14996,6 +15139,7 @@ export type Database = {
           remaining?: number | null
           reset_at?: string | null
           resource_name: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           time_window_seconds: number
           updated_at?: string
           updated_by?: string | null
@@ -15017,6 +15161,7 @@ export type Database = {
           remaining?: number | null
           reset_at?: string | null
           resource_name?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           time_window_seconds?: number
           updated_at?: string
           updated_by?: string | null
@@ -15326,6 +15471,7 @@ export type Database = {
           refunded_at: string | null
           shipping_address: Json
           shipping_level: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           status_message: string | null
           stripe_checkout_session_id: string | null
@@ -15367,6 +15513,7 @@ export type Database = {
           refunded_at?: string | null
           shipping_address: Json
           shipping_level: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           status_message?: string | null
           stripe_checkout_session_id?: string | null
@@ -15408,6 +15555,7 @@ export type Database = {
           refunded_at?: string | null
           shipping_address?: Json
           shipping_level?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           status_message?: string | null
           stripe_checkout_session_id?: string | null
@@ -15445,6 +15593,7 @@ export type Database = {
           msrp: number | null
           organization_id: string
           quantity_on_hand: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_note: string | null
           status: string
           target_price: number | null
@@ -15477,6 +15626,7 @@ export type Database = {
           msrp?: number | null
           organization_id: string
           quantity_on_hand?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_note?: string | null
           status?: string
           target_price?: number | null
@@ -15509,6 +15659,7 @@ export type Database = {
           msrp?: number | null
           organization_id?: string
           quantity_on_hand?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_note?: string | null
           status?: string
           target_price?: number | null
@@ -16412,6 +16563,7 @@ export type Database = {
           organization_id: string
           room_name: string
           settled_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: string
           updated_at: string
           updated_by: string | null
@@ -16436,6 +16588,7 @@ export type Database = {
           organization_id: string
           room_name: string
           settled_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           updated_at?: string
           updated_by?: string | null
@@ -16460,6 +16613,7 @@ export type Database = {
           organization_id?: string
           room_name?: string
           settled_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           updated_at?: string
           updated_by?: string | null
@@ -16635,6 +16789,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -16671,6 +16826,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes?: number | null
           scheduled_for?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at?: string | null
           time_zone?: string
@@ -16707,6 +16863,7 @@ export type Database = {
           room_name?: string
           scheduled_duration_minutes?: number | null
           scheduled_for?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string
           started_at?: string | null
           time_zone?: string
@@ -17215,6 +17372,7 @@ export type Database = {
           quiet_hours_enabled: boolean
           quiet_hours_end: string
           quiet_hours_start: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           timezone: string | null
           updated_at: string
           updated_by: string | null
@@ -17240,6 +17398,7 @@ export type Database = {
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           timezone?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -17265,6 +17424,7 @@ export type Database = {
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           timezone?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -17287,6 +17447,7 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -17304,6 +17465,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -17321,6 +17483,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -17343,6 +17506,7 @@ export type Database = {
           label: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -17362,6 +17526,7 @@ export type Database = {
           label: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -17381,6 +17546,7 @@ export type Database = {
           label?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -17400,6 +17566,7 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           user_id: string
@@ -17417,6 +17584,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           user_id: string
@@ -17434,6 +17602,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           user_id?: string
@@ -17508,6 +17677,7 @@ export type Database = {
           opted_out_at: string | null
           organization_id: string
           phone_number: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -17532,6 +17702,7 @@ export type Database = {
           opted_out_at?: string | null
           organization_id: string
           phone_number: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -17556,6 +17727,7 @@ export type Database = {
           opted_out_at?: string | null
           organization_id?: string
           phone_number?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -17947,6 +18119,7 @@ export type Database = {
           quiet_hours_enabled: boolean
           quiet_hours_end: string
           quiet_hours_start: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sms_enabled: boolean
           system_alerts: boolean
           task_notifications: boolean
@@ -17979,6 +18152,7 @@ export type Database = {
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sms_enabled?: boolean
           system_alerts?: boolean
           task_notifications?: boolean
@@ -18011,6 +18185,7 @@ export type Database = {
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sms_enabled?: boolean
           system_alerts?: boolean
           task_notifications?: boolean
@@ -18050,6 +18225,7 @@ export type Database = {
           reference_type: string | null
           scheduled_for: string | null
           sent_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -18075,6 +18251,7 @@ export type Database = {
           reference_type?: string | null
           scheduled_for?: string | null
           sent_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -18100,6 +18277,7 @@ export type Database = {
           reference_type?: string | null
           scheduled_for?: string | null
           sent_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -18137,6 +18315,7 @@ export type Database = {
           provider: string
           provider_account_id: string | null
           released_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           twilio_sid: string
           updated_at: string
           updated_by: string | null
@@ -18163,6 +18342,7 @@ export type Database = {
           provider?: string
           provider_account_id?: string | null
           released_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           twilio_sid: string
           updated_at?: string
           updated_by?: string | null
@@ -18189,6 +18369,7 @@ export type Database = {
           provider?: string
           provider_account_id?: string | null
           released_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           twilio_sid?: string
           updated_at?: string
           updated_by?: string | null
@@ -19147,6 +19328,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -19192,6 +19374,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -19238,6 +19421,7 @@ export type Database = {
           organization_id: string
           room_name: string
           settled_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: string
           updated_at: string
           updated_by: string | null
@@ -19280,6 +19464,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -19347,6 +19532,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -19393,6 +19579,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -19517,6 +19704,7 @@ export type Database = {
           organization_id: string
           room_name: string
           settled_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: string
           updated_at: string
           updated_by: string | null
@@ -19640,6 +19828,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -19696,6 +19885,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -19788,6 +19978,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -19864,6 +20055,7 @@ export type Database = {
           organization_id: string
           room_name: string
           settled_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: string
           updated_at: string
           updated_by: string | null
@@ -19911,6 +20103,7 @@ export type Database = {
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           started_at: string | null
           time_zone: string
@@ -20257,6 +20450,7 @@ export type Database = {
           published_at: string | null
           published_content_version: number | null
           sealed_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
           source_uri: string | null
@@ -20295,6 +20489,7 @@ export type Database = {
           published_at?: string | null
           published_content_version?: number | null
           sealed_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
           source_hash?: string | null
           source_uri?: string | null
@@ -20333,6 +20528,7 @@ export type Database = {
           published_at?: string | null
           published_content_version?: number | null
           sealed_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
           source_hash?: string | null
           source_uri?: string | null
@@ -20713,6 +20909,7 @@ export type Database = {
           published_at: string | null
           published_content_version: number | null
           sealed_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
           source_uri: string | null
@@ -20800,6 +20997,7 @@ export type Database = {
           published_at: string | null
           published_content_version: number | null
           sealed_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
           source_uri: string | null
@@ -20851,6 +21049,7 @@ export type Database = {
           published_at: string | null
           published_content_version: number | null
           sealed_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
           source_uri: string | null
@@ -20898,6 +21097,7 @@ export type Database = {
           published_at: string | null
           published_content_version: number | null
           sealed_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
           source_uri: string | null
@@ -21246,6 +21446,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           sample_data: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           variants: Json
@@ -21271,6 +21472,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           sample_data?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           variants?: Json
@@ -21296,6 +21498,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           sample_data?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           variants?: Json
@@ -21514,6 +21717,7 @@ export type Database = {
           kind_version: number
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           title: string | null
           updated_at: string
           updated_by: string | null
@@ -21542,6 +21746,7 @@ export type Database = {
           kind_version: number
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -21570,6 +21775,7 @@ export type Database = {
           kind_version?: number
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -22555,6 +22761,7 @@ export type Database = {
           parent_scope_id: string | null
           scope_type_id: string
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           sort_order: number
           updated_at: string
@@ -22575,6 +22782,7 @@ export type Database = {
           parent_scope_id?: string | null
           scope_type_id: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           sort_order?: number
           updated_at?: string
@@ -22595,6 +22803,7 @@ export type Database = {
           parent_scope_id?: string | null
           scope_type_id?: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string
           sort_order?: number
           updated_at?: string
@@ -22638,6 +22847,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           sensitivity: Database["public"]["Enums"]["context_sensitivity"]
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sort_order: number
           updated_at: string
           updated_by: string | null
@@ -22664,6 +22874,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number
           updated_at?: string
           updated_by?: string | null
@@ -22690,6 +22901,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number
           updated_at?: string
           updated_by?: string | null
@@ -22916,6 +23128,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           sensitivity: Database["public"]["Enums"]["context_sensitivity"]
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sort_order: number
           updated_at: string
           updated_by: string | null
@@ -22960,6 +23173,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           sensitivity: Database["public"]["Enums"]["context_sensitivity"]
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sort_order: number
           updated_at: string
           updated_by: string | null
@@ -23271,6 +23485,7 @@ export type Database = {
           organization_id: string
           party_id: string | null
           reason: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source: string
           subject_kind: string
           subject_value: string
@@ -23290,6 +23505,7 @@ export type Database = {
           organization_id: string
           party_id?: string | null
           reason?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source?: string
           subject_kind: string
           subject_value: string
@@ -23309,6 +23525,7 @@ export type Database = {
           organization_id?: string
           party_id?: string | null
           reason?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source?: string
           subject_kind?: string
           subject_value?: string
@@ -23522,6 +23739,7 @@ export type Database = {
           phone_country: string | null
           platform_slug: string | null
           profile_url: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_disclosed_at: string | null
           subscriber_kind: string
           suppressed_at: string | null
@@ -23573,6 +23791,7 @@ export type Database = {
           phone_country?: string | null
           platform_slug?: string | null
           profile_url?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_disclosed_at?: string | null
           subscriber_kind?: string
           suppressed_at?: string | null
@@ -23624,6 +23843,7 @@ export type Database = {
           phone_country?: string | null
           platform_slug?: string | null
           profile_url?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_disclosed_at?: string | null
           subscriber_kind?: string
           suppressed_at?: string | null
@@ -23663,6 +23883,7 @@ export type Database = {
           pipeline_id: string
           primary_party_id: string | null
           probability: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sort_order: number | null
           source: string | null
           source_detail: string | null
@@ -23695,6 +23916,7 @@ export type Database = {
           pipeline_id: string
           primary_party_id?: string | null
           probability?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number | null
           source?: string | null
           source_detail?: string | null
@@ -23727,6 +23949,7 @@ export type Database = {
           pipeline_id?: string
           primary_party_id?: string | null
           probability?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_order?: number | null
           source?: string | null
           source_detail?: string | null
@@ -23831,6 +24054,7 @@ export type Database = {
           request: Json
           response: Json
           result_count: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -23857,6 +24081,7 @@ export type Database = {
           request?: Json
           response?: Json
           result_count?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -23883,6 +24108,7 @@ export type Database = {
           request?: Json
           response?: Json
           result_count?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -24139,6 +24365,7 @@ export type Database = {
           requires_postal_address: boolean
           requires_role_relevance: boolean
           requires_source_disclosure: boolean
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           unsubscribe_validity_days: number
           updated_at: string
           updated_by: string | null
@@ -24168,6 +24395,7 @@ export type Database = {
           requires_postal_address?: boolean
           requires_role_relevance?: boolean
           requires_source_disclosure?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           unsubscribe_validity_days?: number
           updated_at?: string
           updated_by?: string | null
@@ -24197,6 +24425,7 @@ export type Database = {
           requires_postal_address?: boolean
           requires_role_relevance?: boolean
           requires_source_disclosure?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           unsubscribe_validity_days?: number
           updated_at?: string
           updated_by?: string | null
@@ -24357,6 +24586,7 @@ export type Database = {
           paused_by: string | null
           paused_by_kind: string | null
           sending_identity_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           started_at: string | null
           status: string
           updated_at: string
@@ -24389,6 +24619,7 @@ export type Database = {
           paused_by?: string | null
           paused_by_kind?: string | null
           sending_identity_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           started_at?: string | null
           status?: string
           updated_at?: string
@@ -24421,6 +24652,7 @@ export type Database = {
           paused_by?: string | null
           paused_by_kind?: string | null
           sending_identity_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           started_at?: string | null
           status?: string
           updated_at?: string
@@ -24586,6 +24818,7 @@ export type Database = {
           rating_id: string | null
           record_class: string
           registration_number: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           sort_name: string | null
           source: string | null
           source_detail: string | null
@@ -24650,6 +24883,7 @@ export type Database = {
           rating_id?: string | null
           record_class?: string
           registration_number?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_name?: string | null
           source?: string | null
           source_detail?: string | null
@@ -24714,6 +24948,7 @@ export type Database = {
           rating_id?: string | null
           record_class?: string
           registration_number?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           sort_name?: string | null
           source?: string | null
           source_detail?: string | null
@@ -24987,6 +25222,7 @@ export type Database = {
           people_skipped_no_identifier: number
           requests_made: number
           run_count: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_slug: string
           started_at: string | null
           status: string
@@ -25023,6 +25259,7 @@ export type Database = {
           people_skipped_no_identifier?: number
           requests_made?: number
           run_count?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_slug: string
           started_at?: string | null
           status?: string
@@ -25059,6 +25296,7 @@ export type Database = {
           people_skipped_no_identifier?: number
           requests_made?: number
           run_count?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_slug?: string
           started_at?: string | null
           status?: string
@@ -25094,6 +25332,7 @@ export type Database = {
           rate_limit_per_second: number
           refresh_cadence_days: number
           review_due_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           terms_url: string
           terms_version: string
@@ -25126,6 +25365,7 @@ export type Database = {
           rate_limit_per_second?: number
           refresh_cadence_days?: number
           review_due_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           terms_url: string
           terms_version: string
@@ -25158,66 +25398,10 @@ export type Database = {
           rate_limit_per_second?: number
           refresh_cadence_days?: number
           review_due_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string
           terms_url?: string
           terms_version?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      saved_view: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          definition: Json
-          deleted_at: string | null
-          description: string | null
-          id: string
-          last_used_at: string | null
-          list_key: string
-          metadata: Json
-          name: string
-          organization_id: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          definition?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          last_used_at?: string | null
-          list_key?: string
-          metadata?: Json
-          name: string
-          organization_id: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          definition?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          last_used_at?: string | null
-          list_key?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -25403,6 +25587,7 @@ export type Database = {
           resumed_by: string | null
           send_weekends: boolean
           sending_domain: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           spf_pass: boolean | null
           status: string
           status_changed_at: string | null
@@ -25468,6 +25653,7 @@ export type Database = {
           resumed_by?: string | null
           send_weekends?: boolean
           sending_domain: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           spf_pass?: boolean | null
           status?: string
           status_changed_at?: string | null
@@ -25533,6 +25719,7 @@ export type Database = {
           resumed_by?: string | null
           send_weekends?: boolean
           sending_domain?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           spf_pass?: boolean | null
           status?: string
           status_changed_at?: string | null
@@ -25641,6 +25828,7 @@ export type Database = {
           postal_region: string | null
           postal_verified_at: string | null
           privacy_notice_url: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -25672,6 +25860,7 @@ export type Database = {
           postal_region?: string | null
           postal_verified_at?: string | null
           privacy_notice_url?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -25703,6 +25892,7 @@ export type Database = {
           postal_region?: string | null
           postal_verified_at?: string | null
           privacy_notice_url?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -26081,6 +26271,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           processed_document_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           started_at: string | null
           status: string
           total: number | null
@@ -26105,6 +26296,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           processed_document_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           started_at?: string | null
           status?: string
           total?: number | null
@@ -26129,6 +26321,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           processed_document_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           started_at?: string | null
           status?: string
           total?: number | null
@@ -26179,6 +26372,7 @@ export type Database = {
           rag_boost: number | null
           scope_pages: number[] | null
           shortcut_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_variations: Json
           updated_at: string
           updated_by: string | null
@@ -26217,6 +26411,7 @@ export type Database = {
           rag_boost?: number | null
           scope_pages?: number[] | null
           shortcut_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_variations?: Json
           updated_at?: string
           updated_by?: string | null
@@ -26255,6 +26450,7 @@ export type Database = {
           rag_boost?: number | null
           scope_pages?: number[] | null
           shortcut_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_variations?: Json
           updated_at?: string
           updated_by?: string | null
@@ -26310,6 +26506,7 @@ export type Database = {
           raw_response: string | null
           request_id: string | null
           run_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           started_at: string | null
           status: string
           tokens: number | null
@@ -26341,6 +26538,7 @@ export type Database = {
           raw_response?: string | null
           request_id?: string | null
           run_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           started_at?: string | null
           status?: string
           tokens?: number | null
@@ -26372,6 +26570,7 @@ export type Database = {
           raw_response?: string | null
           request_id?: string | null
           run_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           started_at?: string | null
           status?: string
           tokens?: number | null
@@ -26685,6 +26884,7 @@ export type Database = {
           parent_processed_id: string | null
           rag_boost: number
           replace_reason: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_hash: string
           source_id: string
           source_kind: string
@@ -26734,6 +26934,7 @@ export type Database = {
           parent_processed_id?: string | null
           rag_boost?: number
           replace_reason?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_hash: string
           source_id: string
           source_kind: string
@@ -26783,6 +26984,7 @@ export type Database = {
           parent_processed_id?: string | null
           rag_boost?: number
           replace_reason?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_hash?: string
           source_id?: string
           source_kind?: string
@@ -26875,6 +27077,7 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_id: string | null
           source_kind: string | null
           source_title: string | null
@@ -26901,6 +27104,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_id?: string | null
           source_kind?: string | null
           source_title?: string | null
@@ -26927,6 +27131,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_id?: string | null
           source_kind?: string | null
           source_title?: string | null
@@ -27153,6 +27358,7 @@ export type Database = {
           organization_id: string
           resource_id: string
           resource_type: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -27171,6 +27377,7 @@ export type Database = {
           organization_id: string
           resource_id: string
           resource_type: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -27189,6 +27396,7 @@ export type Database = {
           organization_id?: string
           resource_id?: string
           resource_type?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -27275,6 +27483,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           personal_notes: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           topic: string | null
           updated_at: string
           updated_by: string | null
@@ -27296,6 +27505,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           personal_notes?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           topic?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -27317,6 +27527,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           personal_notes?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           topic?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -27414,6 +27625,7 @@ export type Database = {
           name: string
           organization_id: string
           search_engine_indexed: boolean | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           topic: string | null
           updated_at: string
           updated_by: string | null
@@ -27434,6 +27646,7 @@ export type Database = {
           name: string
           organization_id: string
           search_engine_indexed?: boolean | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           topic?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -27454,6 +27667,7 @@ export type Database = {
           name?: string
           organization_id?: string
           search_engine_indexed?: boolean | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           topic?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -27474,6 +27688,7 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -27490,6 +27705,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -27506,6 +27722,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -27533,6 +27750,7 @@ export type Database = {
           room_id: string | null
           score: number
           session_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_kind: string | null
           source_set_id: string | null
           source_title: string | null
@@ -27560,6 +27778,7 @@ export type Database = {
           room_id?: string | null
           score?: number
           session_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_kind?: string | null
           source_set_id?: string | null
           source_title?: string | null
@@ -27587,6 +27806,7 @@ export type Database = {
           room_id?: string | null
           score?: number
           session_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_kind?: string | null
           source_set_id?: string | null
           source_title?: string | null
@@ -27610,6 +27830,7 @@ export type Database = {
           join_code: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_kind: string
           source_set_id: string | null
           source_title: string | null
@@ -27632,6 +27853,7 @@ export type Database = {
           join_code: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_kind?: string
           source_set_id?: string | null
           source_title?: string | null
@@ -27654,6 +27876,7 @@ export type Database = {
           join_code?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_kind?: string
           source_set_id?: string | null
           source_title?: string | null
@@ -27754,6 +27977,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           retrievability: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           stability: number | null
           streak: number
           struggle_flag: boolean
@@ -27786,6 +28010,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           retrievability?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           stability?: number | null
           streak?: number
           struggle_flag?: boolean
@@ -27818,6 +28043,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           retrievability?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           stability?: number | null
           streak?: number
           struggle_flag?: boolean
@@ -27842,6 +28068,7 @@ export type Database = {
           metadata: Json
           opted_in: boolean
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -27861,6 +28088,7 @@ export type Database = {
           metadata?: Json
           opted_in?: boolean
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -27880,6 +28108,7 @@ export type Database = {
           metadata?: Json
           opted_in?: boolean
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -27904,6 +28133,7 @@ export type Database = {
           related: Json
           search_engine_indexed: boolean | null
           sections: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           subject: string | null
           summary: string
@@ -27928,6 +28158,7 @@ export type Database = {
           related?: Json
           search_engine_indexed?: boolean | null
           sections?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           subject?: string | null
           summary: string
@@ -27952,6 +28183,7 @@ export type Database = {
           related?: Json
           search_engine_indexed?: boolean | null
           sections?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string
           subject?: string | null
           summary?: string
@@ -28023,6 +28255,7 @@ export type Database = {
           problem_statement: Json
           related_content: Json | null
           resources: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           solutions: Json
           sort_order: number | null
           title: string
@@ -28049,6 +28282,7 @@ export type Database = {
           problem_statement: Json
           related_content?: Json | null
           resources?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           solutions: Json
           sort_order?: number | null
           title: string
@@ -28075,6 +28309,7 @@ export type Database = {
           problem_statement?: Json
           related_content?: Json | null
           resources?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           solutions?: Json
           sort_order?: number | null
           title?: string
@@ -28100,6 +28335,7 @@ export type Database = {
           organization_id: string
           quiz_content_hash: string | null
           quiz_metadata: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: Json
           title: string | null
           updated_at: string
@@ -28120,6 +28356,7 @@ export type Database = {
           organization_id: string
           quiz_content_hash?: string | null
           quiz_metadata?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state: Json
           title?: string | null
           updated_at?: string
@@ -28140,6 +28377,7 @@ export type Database = {
           organization_id?: string
           quiz_content_hash?: string | null
           quiz_metadata?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: Json
           title?: string | null
           updated_at?: string
@@ -28178,6 +28416,7 @@ export type Database = {
           score: Json | null
           score_value: number | null
           session_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -28211,6 +28450,7 @@ export type Database = {
           score?: Json | null
           score_value?: number | null
           session_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -28244,6 +28484,7 @@ export type Database = {
           score?: Json | null
           score_value?: number | null
           session_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -28268,6 +28509,7 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           target_date: string | null
           title: string
@@ -28284,6 +28526,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           target_date?: string | null
           title: string
@@ -28300,6 +28543,7 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           target_date?: string | null
           title?: string
@@ -28329,6 +28573,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           run_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_id: string | null
           source_kind: string | null
           source_title: string | null
@@ -28358,6 +28603,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           run_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_id?: string | null
           source_kind?: string | null
           source_title?: string | null
@@ -28387,6 +28633,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           run_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_id?: string | null
           source_kind?: string | null
           source_title?: string | null
@@ -28419,6 +28666,7 @@ export type Database = {
           organization_id: string
           rationale: string | null
           rest_days: number[]
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           start_date: string
           status: string
           title: string
@@ -28445,6 +28693,7 @@ export type Database = {
           organization_id: string
           rationale?: string | null
           rest_days?: number[]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           start_date: string
           status?: string
           title: string
@@ -28471,6 +28720,7 @@ export type Database = {
           organization_id?: string
           rationale?: string | null
           rest_days?: number[]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           start_date?: string
           status?: string
           title?: string
@@ -28667,6 +28917,7 @@ export type Database = {
           is_rest_day: boolean
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           studied_today: boolean
           studied_yesterday: boolean
           timezone: string | null
@@ -28689,6 +28940,7 @@ export type Database = {
           is_rest_day?: boolean
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           studied_today?: boolean
           studied_yesterday?: boolean
           timezone?: string | null
@@ -28711,6 +28963,7 @@ export type Database = {
           is_rest_day?: boolean
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           studied_today?: boolean
           studied_yesterday?: boolean
           timezone?: string | null
@@ -28737,6 +28990,7 @@ export type Database = {
           metadata: Json
           occurrence_key: string
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           title: string
           updated_at: string
@@ -28760,6 +29014,7 @@ export type Database = {
           metadata?: Json
           occurrence_key: string
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           title: string
           updated_at?: string
@@ -28783,6 +29038,7 @@ export type Database = {
           metadata?: Json
           occurrence_key?: string
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           title?: string
           updated_at?: string
@@ -28810,6 +29066,7 @@ export type Database = {
           session_review: Json | null
           session_transcript: string | null
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_kind: string | null
           source_query: Json | null
           source_set_id: string | null
@@ -28835,6 +29092,7 @@ export type Database = {
           session_review?: Json | null
           session_transcript?: string | null
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_kind?: string | null
           source_query?: Json | null
           source_set_id?: string | null
@@ -28860,6 +29118,7 @@ export type Database = {
           session_review?: Json | null
           session_transcript?: string | null
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_kind?: string | null
           source_query?: Json | null
           source_set_id?: string | null
@@ -29266,6 +29525,7 @@ export type Database = {
           opened_at: string | null
           organization_id: string
           sensitivity: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           signed_count: number
           status: string
           title: string
@@ -29298,6 +29558,7 @@ export type Database = {
           opened_at?: string | null
           organization_id: string
           sensitivity?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           signed_count?: number
           status?: string
           title: string
@@ -29330,6 +29591,7 @@ export type Database = {
           opened_at?: string | null
           organization_id?: string
           sensitivity?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           signed_count?: number
           status?: string
           title?: string
@@ -29441,6 +29703,7 @@ export type Database = {
           locale: string
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           superseded_by_id: string | null
           title: string
           updated_at: string
@@ -29462,6 +29725,7 @@ export type Database = {
           locale?: string
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           superseded_by_id?: string | null
           title: string
           updated_at?: string
@@ -29483,6 +29747,7 @@ export type Database = {
           locale?: string
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           superseded_by_id?: string | null
           title?: string
           updated_at?: string
@@ -29517,6 +29782,7 @@ export type Database = {
           retention_trigger: string | null
           sensitivity: string
           sent_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           signing_order: string
           source_id: string | null
           source_type: string | null
@@ -29553,6 +29819,7 @@ export type Database = {
           retention_trigger?: string | null
           sensitivity?: string
           sent_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           signing_order?: string
           source_id?: string | null
           source_type?: string | null
@@ -29589,6 +29856,7 @@ export type Database = {
           retention_trigger?: string | null
           sensitivity?: string
           sent_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           signing_order?: string
           source_id?: string | null
           source_type?: string | null
@@ -30168,6 +30436,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           provider_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -30186,6 +30455,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           provider_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -30204,6 +30474,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           provider_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -30475,6 +30746,7 @@ export type Database = {
           name: string
           organization_id: string
           parameter_names: string[]
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           start_url: string
           step_count: number
           updated_at: string
@@ -30496,6 +30768,7 @@ export type Database = {
           name?: string
           organization_id: string
           parameter_names?: string[]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           start_url?: string
           step_count?: number
           updated_at?: string
@@ -30517,6 +30790,7 @@ export type Database = {
           name?: string
           organization_id?: string
           parameter_names?: string[]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           start_url?: string
           step_count?: number
           updated_at?: string
@@ -30602,6 +30876,7 @@ export type Database = {
           mode: string
           organization_id: string
           page_title: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           text: string | null
           updated_at: string
           updated_by: string | null
@@ -30624,6 +30899,7 @@ export type Database = {
           mode?: string
           organization_id: string
           page_title?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           text?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -30646,6 +30922,7 @@ export type Database = {
           mode?: string
           organization_id?: string
           page_title?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           text?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -30675,6 +30952,7 @@ export type Database = {
           name: string
           organization_id: string
           route_pattern: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           target_user_table_id: string | null
           updated_at: string
           updated_by: string | null
@@ -30700,6 +30978,7 @@ export type Database = {
           name: string
           organization_id: string
           route_pattern?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           target_user_table_id?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -30725,6 +31004,7 @@ export type Database = {
           name?: string
           organization_id?: string
           route_pattern?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           target_user_table_id?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -30749,6 +31029,7 @@ export type Database = {
           organization_id: string
           recipe_key: string
           routes: string[] | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -30770,6 +31051,7 @@ export type Database = {
           organization_id: string
           recipe_key: string
           routes?: string[] | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -30791,6 +31073,7 @@ export type Database = {
           organization_id?: string
           recipe_key?: string
           routes?: string[] | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -30817,6 +31100,7 @@ export type Database = {
           page_title: string | null
           page_url_canonical: string
           page_url_full: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source: string
           updated_at: string
           updated_by: string | null
@@ -30841,6 +31125,7 @@ export type Database = {
           page_title?: string | null
           page_url_canonical: string
           page_url_full: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source?: string
           updated_at?: string
           updated_by?: string | null
@@ -30865,6 +31150,7 @@ export type Database = {
           page_title?: string | null
           page_url_canonical?: string
           page_url_full?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source?: string
           updated_at?: string
           updated_by?: string | null
@@ -30887,6 +31173,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           recommendations: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           signals: Json
           updated_at: string
           updated_by: string | null
@@ -30907,6 +31194,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           recommendations?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           signals: Json
           updated_at?: string
           updated_by?: string | null
@@ -30927,6 +31215,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           recommendations?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           signals?: Json
           updated_at?: string
           updated_by?: string | null
@@ -30975,6 +31264,7 @@ export type Database = {
           rate_limit_downloads_per_min: number | null
           rate_limit_general_per_min: number | null
           rate_limit_uploads_per_min: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           tier_key: string
           updated_at: string
           updated_by: string | null
@@ -31002,6 +31292,7 @@ export type Database = {
           rate_limit_downloads_per_min?: number | null
           rate_limit_general_per_min?: number | null
           rate_limit_uploads_per_min?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tier_key: string
           updated_at?: string
           updated_by?: string | null
@@ -31029,6 +31320,7 @@ export type Database = {
           rate_limit_downloads_per_min?: number | null
           rate_limit_general_per_min?: number | null
           rate_limit_uploads_per_min?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tier_key?: string
           updated_at?: string
           updated_by?: string | null
@@ -31395,6 +31687,7 @@ export type Database = {
           parent_record_id: string | null
           parent_record_type: string | null
           provider_session_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           size_bytes: number | null
           storage_uri: string
           updated_at: string
@@ -31430,6 +31723,7 @@ export type Database = {
           parent_record_id?: string | null
           parent_record_type?: string | null
           provider_session_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           size_bytes?: number | null
           storage_uri: string
           updated_at?: string
@@ -31465,6 +31759,7 @@ export type Database = {
           parent_record_id?: string | null
           parent_record_type?: string | null
           provider_session_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           size_bytes?: number | null
           storage_uri?: string
           updated_at?: string
@@ -31510,6 +31805,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           parent_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -31526,6 +31822,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           parent_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -31542,6 +31839,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           parent_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -31608,6 +31906,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           prefix: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -31626,6 +31925,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           prefix: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -31644,6 +31944,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           prefix?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -32011,6 +32312,7 @@ export type Database = {
           local_path_display: string | null
           metadata: Json
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: string
           state_changed_at: string | null
           state_reason: string | null
@@ -32039,6 +32341,7 @@ export type Database = {
           local_path_display?: string | null
           metadata?: Json
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           state_changed_at?: string | null
           state_reason?: string | null
@@ -32067,6 +32370,7 @@ export type Database = {
           local_path_display?: string | null
           metadata?: Json
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           state_changed_at?: string | null
           state_reason?: string | null
@@ -32653,6 +32957,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           pipe_policy: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           site_id: string
           started_at: string
           status: string
@@ -32677,6 +32982,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           pipe_policy?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           site_id: string
           started_at?: string
           status?: string
@@ -32701,6 +33007,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           pipe_policy?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           site_id?: string
           started_at?: string
           status?: string
@@ -32823,6 +33130,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           schema_name: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status_column: string | null
           table_name: string
           updated_at: string
@@ -32843,6 +33151,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           schema_name: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status_column?: string | null
           table_name: string
           updated_at?: string
@@ -32863,6 +33172,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           schema_name?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status_column?: string | null
           table_name?: string
           updated_at?: string
@@ -32950,6 +33260,7 @@ export type Database = {
           next_eligible_at: string | null
           organization_id: string
           review_every_n: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           subject_id: string | null
           subject_kind: string
@@ -32979,6 +33290,7 @@ export type Database = {
           next_eligible_at?: string | null
           organization_id: string
           review_every_n?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           subject_id?: string | null
           subject_kind: string
@@ -33008,6 +33320,7 @@ export type Database = {
           next_eligible_at?: string | null
           organization_id?: string
           review_every_n?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           subject_id?: string | null
           subject_kind?: string
@@ -33145,6 +33458,7 @@ export type Database = {
           organization_id: string
           origin: string
           origin_finding_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           snapshot_id: string
           status: string
           title: string
@@ -33177,6 +33491,7 @@ export type Database = {
           organization_id: string
           origin?: string
           origin_finding_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           snapshot_id: string
           status?: string
           title?: string
@@ -33209,6 +33524,7 @@ export type Database = {
           organization_id?: string
           origin?: string
           origin_finding_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           snapshot_id?: string
           status?: string
           title?: string
@@ -33376,6 +33692,7 @@ export type Database = {
           replay_group_id: string
           sample_count: number
           samples: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           snapshot_id: string
           started_at: string | null
           status: string
@@ -33411,6 +33728,7 @@ export type Database = {
           replay_group_id: string
           sample_count?: number
           samples?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           snapshot_id: string
           started_at?: string | null
           status?: string
@@ -33446,6 +33764,7 @@ export type Database = {
           replay_group_id?: string
           sample_count?: number
           samples?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           snapshot_id?: string
           started_at?: string | null
           status?: string
@@ -35499,6 +35818,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           role_key: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -35520,6 +35840,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           role_key: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -35541,6 +35862,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           role_key?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -35855,6 +36177,7 @@ export type Database = {
           scope_id: string | null
           scope_kind: string
           set_by_employment_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -35883,6 +36206,7 @@ export type Database = {
           scope_id?: string | null
           scope_kind?: string
           set_by_employment_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -35911,6 +36235,7 @@ export type Database = {
           scope_id?: string | null
           scope_kind?: string
           set_by_employment_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -36347,6 +36672,7 @@ export type Database = {
           replacement_cost: number | null
           retired_on: string | null
           serial_number: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -36383,6 +36709,7 @@ export type Database = {
           replacement_cost?: number | null
           retired_on?: string | null
           serial_number?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -36419,6 +36746,7 @@ export type Database = {
           replacement_cost?: number | null
           retired_on?: string | null
           serial_number?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -36803,6 +37131,7 @@ export type Database = {
           raises_exception_kind: string
           scope_id: string | null
           scope_kind: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           trigger_kind: string
           updated_at: string
           updated_by: string | null
@@ -36832,6 +37161,7 @@ export type Database = {
           raises_exception_kind?: string
           scope_id?: string | null
           scope_kind?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           trigger_kind: string
           updated_at?: string
           updated_by?: string | null
@@ -36861,6 +37191,7 @@ export type Database = {
           raises_exception_kind?: string
           scope_id?: string | null
           scope_kind?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           trigger_kind?: string
           updated_at?: string
           updated_by?: string | null
@@ -37932,6 +38263,7 @@ export type Database = {
           published_at: string | null
           show_departments: boolean
           show_locations: boolean
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: string
           tagline: string | null
           updated_at: string
@@ -37967,6 +38299,7 @@ export type Database = {
           published_at?: string | null
           show_departments?: boolean
           show_locations?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           tagline?: string | null
           updated_at?: string
@@ -38002,6 +38335,7 @@ export type Database = {
           published_at?: string | null
           show_departments?: boolean
           show_locations?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           tagline?: string | null
           updated_at?: string
@@ -38337,6 +38671,7 @@ export type Database = {
           metadata: Json
           name: string
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -38361,6 +38696,7 @@ export type Database = {
           metadata?: Json
           name: string
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -38385,6 +38721,7 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -38878,6 +39215,7 @@ export type Database = {
           provider_name: string | null
           recertification_window_days: number | null
           requires_assessment: boolean
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -38911,6 +39249,7 @@ export type Database = {
           provider_name?: string | null
           recertification_window_days?: number | null
           requires_assessment?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -38944,6 +39283,7 @@ export type Database = {
           provider_name?: string | null
           recertification_window_days?: number | null
           requires_assessment?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string
           updated_at?: string
           updated_by?: string | null
@@ -39204,6 +39544,7 @@ export type Database = {
           organization_id: string
           required_credential_ids: string[]
           route_definition: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -39230,6 +39571,7 @@ export type Database = {
           organization_id: string
           required_credential_ids?: string[]
           route_definition?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -39256,6 +39598,7 @@ export type Database = {
           organization_id?: string
           required_credential_ids?: string[]
           route_definition?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -39308,6 +39651,7 @@ export type Database = {
           name: string
           organization_id: string
           provider_ref: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -39328,6 +39672,7 @@ export type Database = {
           name: string
           organization_id: string
           provider_ref?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -39348,6 +39693,7 @@ export type Database = {
           name?: string
           organization_id?: string
           provider_ref?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -39396,6 +39742,7 @@ export type Database = {
           name: string
           organization_id: string
           parent_department_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -39417,6 +39764,7 @@ export type Database = {
           name: string
           organization_id: string
           parent_department_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -39438,6 +39786,7 @@ export type Database = {
           name?: string
           organization_id?: string
           parent_department_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -39724,6 +40073,7 @@ export type Database = {
           multiplier: number | null
           name: string
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -39752,6 +40102,7 @@ export type Database = {
           multiplier?: number | null
           name: string
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -39780,6 +40131,7 @@ export type Database = {
           multiplier?: number | null
           name?: string
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -40057,6 +40409,7 @@ export type Database = {
           pronouns: string | null
           record_class_key: string
           retention_trigger_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -40096,6 +40449,7 @@ export type Database = {
           pronouns?: string | null
           record_class_key?: string
           retention_trigger_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -40135,6 +40489,7 @@ export type Database = {
           pronouns?: string | null
           record_class_key?: string
           retention_trigger_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -40341,6 +40696,7 @@ export type Database = {
           organization_id: string
           primary_address: Json
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -40369,6 +40725,7 @@ export type Database = {
           organization_id: string
           primary_address?: Json
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -40397,6 +40754,7 @@ export type Database = {
           organization_id?: string
           primary_address?: Json
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -40965,6 +41323,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           policy: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           target_token: string
           updated_at: string
           updated_by: string | null
@@ -40983,6 +41342,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           policy: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           target_token: string
           updated_at?: string
           updated_by?: string | null
@@ -41001,6 +41361,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           policy?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           target_token?: string
           updated_at?: string
           updated_by?: string | null
@@ -41143,6 +41504,7 @@ export type Database = {
           name: string
           organization_id: string
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -41161,6 +41523,7 @@ export type Database = {
           name: string
           organization_id: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -41179,6 +41542,7 @@ export type Database = {
           name?: string
           organization_id?: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -41899,6 +42263,7 @@ export type Database = {
           purpose: string | null
           questions: Json
           rating_scale: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -41924,6 +42289,7 @@ export type Database = {
           purpose?: string | null
           questions?: Json
           rating_scale?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -41949,6 +42315,7 @@ export type Database = {
           purpose?: string | null
           questions?: Json
           rating_scale?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -41986,6 +42353,7 @@ export type Database = {
           organization_id: string
           pay_range_max: number | null
           pay_range_min: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -42013,6 +42381,7 @@ export type Database = {
           organization_id: string
           pay_range_max?: number | null
           pay_range_min?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -42040,6 +42409,7 @@ export type Database = {
           organization_id?: string
           pay_range_max?: number | null
           pay_range_min?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string
           updated_at?: string
           updated_by?: string | null
@@ -42063,6 +42433,7 @@ export type Database = {
           name: string
           organization_id: string
           parent_key: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -42082,6 +42453,7 @@ export type Database = {
           name: string
           organization_id: string
           parent_key?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -42101,6 +42473,7 @@ export type Database = {
           name?: string
           organization_id?: string
           parent_key?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -42133,6 +42506,7 @@ export type Database = {
           organization_id: string
           parameters: Json
           rule_class_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_scope: string
           status: string
           supersedes_id: string | null
@@ -42158,6 +42532,7 @@ export type Database = {
           organization_id: string
           parameters?: Json
           rule_class_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_scope?: string
           status?: string
           supersedes_id?: string | null
@@ -42183,6 +42558,7 @@ export type Database = {
           organization_id?: string
           parameters?: Json
           rule_class_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_scope?: string
           status?: string
           supersedes_id?: string | null
@@ -42241,6 +42617,7 @@ export type Database = {
           parameter_schema: Json
           precedence_mode: string
           produces_money: boolean
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           supports_preemption: boolean
           updated_at: string
@@ -42265,6 +42642,7 @@ export type Database = {
           parameter_schema?: Json
           precedence_mode: string
           produces_money?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           supports_preemption?: boolean
           updated_at?: string
@@ -42289,6 +42667,7 @@ export type Database = {
           parameter_schema?: Json
           precedence_mode?: string
           produces_money?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string
           supports_preemption?: boolean
           updated_at?: string
@@ -42312,6 +42691,7 @@ export type Database = {
           reason: string | null
           rule_class_id: string
           rule_id_at_decision: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -42330,6 +42710,7 @@ export type Database = {
           reason?: string | null
           rule_class_id: string
           rule_id_at_decision?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -42348,6 +42729,7 @@ export type Database = {
           reason?: string | null
           rule_class_id?: string
           rule_id_at_decision?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -42494,6 +42876,7 @@ export type Database = {
           require_geo: boolean
           require_photo: boolean
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           trust_state: string
           updated_at: string
           updated_by: string | null
@@ -42522,6 +42905,7 @@ export type Database = {
           require_geo?: boolean
           require_photo?: boolean
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           trust_state?: string
           updated_at?: string
           updated_by?: string | null
@@ -42550,6 +42934,7 @@ export type Database = {
           require_geo?: boolean
           require_photo?: boolean
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           trust_state?: string
           updated_at?: string
           updated_by?: string | null
@@ -43292,6 +43677,7 @@ export type Database = {
           reinstate_on_rehire_within_days: number | null
           requires_approval: boolean
           schedule_class_scope: string[]
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           statutory_basis_rule_class: string | null
           statutory_jurisdiction_id: string | null
           updated_at: string
@@ -43336,6 +43722,7 @@ export type Database = {
           reinstate_on_rehire_within_days?: number | null
           requires_approval?: boolean
           schedule_class_scope?: string[]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           statutory_basis_rule_class?: string | null
           statutory_jurisdiction_id?: string | null
           updated_at?: string
@@ -43380,6 +43767,7 @@ export type Database = {
           reinstate_on_rehire_within_days?: number | null
           requires_approval?: boolean
           schedule_class_scope?: string[]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           statutory_basis_rule_class?: string | null
           statutory_jurisdiction_id?: string | null
           updated_at?: string
@@ -43756,6 +44144,7 @@ export type Database = {
           name: string
           organization_id: string
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           tz: string
           updated_at: string
           updated_by: string | null
@@ -43782,6 +44171,7 @@ export type Database = {
           name: string
           organization_id: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tz: string
           updated_at?: string
           updated_by?: string | null
@@ -43808,6 +44198,7 @@ export type Database = {
           name?: string
           organization_id?: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           tz?: string
           updated_at?: string
           updated_by?: string | null
@@ -44559,6 +44950,7 @@ export type Database = {
           organization_id: string
           scope_id: string | null
           scope_kind: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           threshold_kind: string
           threshold_value: number
           updated_at: string
@@ -44585,6 +44977,7 @@ export type Database = {
           organization_id: string
           scope_id?: string | null
           scope_kind?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           threshold_kind: string
           threshold_value: number
           updated_at?: string
@@ -44611,6 +45004,7 @@ export type Database = {
           organization_id?: string
           scope_id?: string | null
           scope_kind?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           threshold_kind?: string
           threshold_value?: number
           updated_at?: string
@@ -44851,6 +45245,7 @@ export type Database = {
           pay_date_rule: Json
           pay_frequency: string
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           timesheet_required: boolean
           updated_at: string
           updated_by: string | null
@@ -44877,6 +45272,7 @@ export type Database = {
           pay_date_rule?: Json
           pay_frequency: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           timesheet_required?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -44903,6 +45299,7 @@ export type Database = {
           pay_date_rule?: Json
           pay_frequency?: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           timesheet_required?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -45742,6 +46139,7 @@ export type Database = {
           pay_transparency_required: boolean
           published_at: string | null
           requisition_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           state: string
           summary: string | null
@@ -45777,6 +46175,7 @@ export type Database = {
           pay_transparency_required?: boolean
           published_at?: string | null
           requisition_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           state?: string
           summary?: string | null
@@ -45812,6 +46211,7 @@ export type Database = {
           pay_transparency_required?: boolean
           published_at?: string | null
           requisition_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string
           state?: string
           summary?: string | null
@@ -45950,6 +46350,7 @@ export type Database = {
           provider_key: string
           seam: string
           server_version_pin: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -45973,6 +46374,7 @@ export type Database = {
           provider_key: string
           seam: string
           server_version_pin?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -45996,6 +46398,7 @@ export type Database = {
           provider_key?: string
           seam?: string
           server_version_pin?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -46579,6 +46982,7 @@ export type Database = {
           organization_id: string
           sensitivity_tier: string
           separate_storage_required: boolean
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           storage_note: string | null
           trigger_event: string
           updated_at: string
@@ -46603,6 +47007,7 @@ export type Database = {
           organization_id: string
           sensitivity_tier: string
           separate_storage_required?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           storage_note?: string | null
           trigger_event: string
           updated_at?: string
@@ -46627,6 +47032,7 @@ export type Database = {
           organization_id?: string
           sensitivity_tier?: string
           separate_storage_required?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           storage_note?: string | null
           trigger_event?: string
           updated_at?: string
@@ -47099,6 +47505,7 @@ export type Database = {
           replacing_employment_id: string | null
           requisition_number: string
           retention_trigger_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: string
           state_reason_category_id: string | null
           state_reason_note: string | null
@@ -47140,6 +47547,7 @@ export type Database = {
           replacing_employment_id?: string | null
           requisition_number: string
           retention_trigger_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           state_reason_category_id?: string | null
           state_reason_note?: string | null
@@ -47181,6 +47589,7 @@ export type Database = {
           replacing_employment_id?: string | null
           requisition_number?: string
           retention_trigger_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           state_reason_category_id?: string | null
           state_reason_note?: string | null
@@ -47400,6 +47809,7 @@ export type Database = {
           organization_id: string
           retention_expression: string | null
           retention_months: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_citation: string
           source_url: string | null
           supersedes_id: string | null
@@ -47425,6 +47835,7 @@ export type Database = {
           organization_id: string
           retention_expression?: string | null
           retention_months?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_citation: string
           source_url?: string | null
           supersedes_id?: string | null
@@ -47450,6 +47861,7 @@ export type Database = {
           organization_id?: string
           retention_expression?: string | null
           retention_months?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_citation?: string
           source_url?: string | null
           supersedes_id?: string | null
@@ -47612,6 +48024,7 @@ export type Database = {
           published_at: string | null
           published_by_employment_id: string | null
           schedule_kind: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_template_id: string | null
           state: string
           updated_at: string
@@ -47647,6 +48060,7 @@ export type Database = {
           published_at?: string | null
           published_by_employment_id?: string | null
           schedule_kind?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_template_id?: string | null
           state?: string
           updated_at?: string
@@ -47682,6 +48096,7 @@ export type Database = {
           published_at?: string | null
           published_by_employment_id?: string | null
           schedule_kind?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_template_id?: string | null
           state?: string
           updated_at?: string
@@ -47963,6 +48378,7 @@ export type Database = {
           priority: number
           scope_id: string | null
           sensitivity_ceiling: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           title: string | null
           updated_at: string
           updated_by: string | null
@@ -47990,6 +48406,7 @@ export type Database = {
           priority?: number
           scope_id?: string | null
           sensitivity_ceiling?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -48017,6 +48434,7 @@ export type Database = {
           priority?: number
           scope_id?: string | null
           sensitivity_ceiling?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -48056,6 +48474,7 @@ export type Database = {
           organization_id: string
           pattern_kind: string
           rotation_weeks: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -48076,6 +48495,7 @@ export type Database = {
           organization_id: string
           pattern_kind?: string
           rotation_weeks?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -48096,6 +48516,7 @@ export type Database = {
           organization_id?: string
           pattern_kind?: string
           rotation_weeks?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -49045,6 +49466,7 @@ export type Database = {
           published_at: string | null
           reminder_offsets_days: number[]
           retired_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           state: string
           survey_kind: string
           trigger_kind: string
@@ -49075,6 +49497,7 @@ export type Database = {
           published_at?: string | null
           reminder_offsets_days?: number[]
           retired_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           survey_kind: string
           trigger_kind?: string
@@ -49105,6 +49528,7 @@ export type Database = {
           published_at?: string | null
           reminder_offsets_days?: number[]
           retired_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           state?: string
           survey_kind?: string
           trigger_kind?: string
@@ -50965,6 +51389,7 @@ export type Database = {
           reminder_cadence_hours: number
           reminder_max: number
           retired_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           skip_absent_approver: boolean
           sla_hours: number | null
           status: string
@@ -50993,6 +51418,7 @@ export type Database = {
           reminder_cadence_hours?: number
           reminder_max?: number
           retired_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           skip_absent_approver?: boolean
           sla_hours?: number | null
           status?: string
@@ -51021,6 +51447,7 @@ export type Database = {
           reminder_cadence_hours?: number
           reminder_max?: number
           retired_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           skip_absent_approver?: boolean
           sla_hours?: number | null
           status?: string
@@ -51220,6 +51647,7 @@ export type Database = {
           requires_reason_on_approve: boolean
           result_fn: unknown
           sensitivity_tier: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           target_token: string
           updated_at: string
           updated_by: string | null
@@ -51255,6 +51683,7 @@ export type Database = {
           requires_reason_on_approve?: boolean
           result_fn?: unknown
           sensitivity_tier?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           target_token: string
           updated_at?: string
           updated_by?: string | null
@@ -51290,6 +51719,7 @@ export type Database = {
           requires_reason_on_approve?: boolean
           result_fn?: unknown
           sensitivity_tier?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           target_token?: string
           updated_at?: string
           updated_by?: string | null
@@ -53016,6 +53446,7 @@ export type Database = {
               reinstate_on_rehire_within_days: number | null
               requires_approval: boolean
               schedule_class_scope: string[]
+              shown_to: Database["platform"]["Enums"]["shown_to"] | null
               statutory_basis_rule_class: string | null
               statutory_jurisdiction_id: string | null
               updated_at: string
@@ -53069,6 +53500,7 @@ export type Database = {
               reinstate_on_rehire_within_days: number | null
               requires_approval: boolean
               schedule_class_scope: string[]
+              shown_to: Database["platform"]["Enums"]["shown_to"] | null
               statutory_basis_rule_class: string | null
               statutory_jurisdiction_id: string | null
               updated_at: string
@@ -55278,42 +55710,6 @@ export type Database = {
         }
         Relationships: []
       }
-      _share_people_conversion: {
-        Row: {
-          classified: string
-          converted_at: string
-          created_row: boolean
-          level_before: Database["public"]["Enums"]["permission_level"] | null
-          org_permission_id: string
-          organization_id: string
-          person_id: string | null
-          person_permission_id: string | null
-          status_before: string | null
-        }
-        Insert: {
-          classified: string
-          converted_at?: string
-          created_row: boolean
-          level_before?: Database["public"]["Enums"]["permission_level"] | null
-          org_permission_id: string
-          organization_id: string
-          person_id?: string | null
-          person_permission_id?: string | null
-          status_before?: string | null
-        }
-        Update: {
-          classified?: string
-          converted_at?: string
-          created_row?: boolean
-          level_before?: Database["public"]["Enums"]["permission_level"] | null
-          org_permission_id?: string
-          organization_id?: string
-          person_id?: string | null
-          person_permission_id?: string | null
-          status_before?: string | null
-        }
-        Relationships: []
-      }
       access_audit: {
         Row: {
           action: string
@@ -55338,6 +55734,7 @@ export type Database = {
           request_context: Json
           request_id: string | null
           row_count: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           subject_user_id: string | null
           target_ids: string[]
           target_token: string
@@ -55369,6 +55766,7 @@ export type Database = {
           request_context?: Json
           request_id?: string | null
           row_count?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           subject_user_id?: string | null
           target_ids?: string[]
           target_token: string
@@ -55400,6 +55798,7 @@ export type Database = {
           request_context?: Json
           request_id?: string | null
           row_count?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           subject_user_id?: string | null
           target_ids?: string[]
           target_token?: string
@@ -55516,6 +55915,7 @@ export type Database = {
           requested_level: string
           resource_id: string
           resource_type: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -55539,6 +55939,7 @@ export type Database = {
           requested_level?: string
           resource_id: string
           resource_type: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -55562,6 +55963,7 @@ export type Database = {
           requested_level?: string
           resource_id?: string
           resource_type?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -55595,6 +55997,7 @@ export type Database = {
           revoked_at: string | null
           secret_hash: string
           service_user_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -55617,6 +56020,7 @@ export type Database = {
           revoked_at?: string | null
           secret_hash: string
           service_user_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -55639,6 +56043,7 @@ export type Database = {
           revoked_at?: string | null
           secret_hash?: string
           service_user_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -55705,90 +56110,6 @@ export type Database = {
           },
         ]
       }
-      dd171_containment_baseline: {
-        Row: {
-          axis: string
-          measured_at: string
-          phase: string
-          principal: string
-          reads_others_personal: number
-          token: string
-        }
-        Insert: {
-          axis: string
-          measured_at?: string
-          phase: string
-          principal: string
-          reads_others_personal: number
-          token: string
-        }
-        Update: {
-          axis?: string
-          measured_at?: string
-          phase?: string
-          principal?: string
-          reads_others_personal?: number
-          token?: string
-        }
-        Relationships: []
-      }
-      dd175_cast: {
-        Row: {
-          token: string
-          why: string
-        }
-        Insert: {
-          token: string
-          why: string
-        }
-        Update: {
-          token?: string
-          why?: string
-        }
-        Relationships: []
-      }
-      dd175_component_lane_baseline: {
-        Row: {
-          component_table: string
-          component_token: string
-          fk_column: string
-          measured_at: string
-          parent_ids_admitted: number
-          parent_ids_refused: number
-          parent_type: string
-          phase: string
-          principal_email: string
-          probe_error: string | null
-          rows_readable_under_refused_parent: number
-        }
-        Insert: {
-          component_table: string
-          component_token: string
-          fk_column: string
-          measured_at?: string
-          parent_ids_admitted: number
-          parent_ids_refused: number
-          parent_type: string
-          phase: string
-          principal_email: string
-          probe_error?: string | null
-          rows_readable_under_refused_parent: number
-        }
-        Update: {
-          component_table?: string
-          component_token?: string
-          fk_column?: string
-          measured_at?: string
-          parent_ids_admitted?: number
-          parent_ids_refused?: number
-          parent_type?: string
-          phase?: string
-          principal_email?: string
-          probe_error?: string | null
-          rows_readable_under_refused_parent?: number
-        }
-        Relationships: []
-      }
       definer_class_exemption: {
         Row: {
           declared_at: string
@@ -55837,6 +56158,7 @@ export type Database = {
           purpose: string
           request_expires_at: string
           requested_by: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           subject_user_id: string | null
           target_id: string
@@ -55863,6 +56185,7 @@ export type Database = {
           purpose: string
           request_expires_at: string
           requested_by: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           subject_user_id?: string | null
           target_id: string
@@ -55889,6 +56212,7 @@ export type Database = {
           purpose?: string
           request_expires_at?: string
           requested_by?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           subject_user_id?: string | null
           target_id?: string
@@ -55921,6 +56245,7 @@ export type Database = {
           name: string
           organization_id: string
           parent_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           sort_order: number
           updated_at: string
@@ -55940,6 +56265,7 @@ export type Database = {
           name: string
           organization_id: string
           parent_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           sort_order?: number
           updated_at?: string
@@ -55959,6 +56285,7 @@ export type Database = {
           name?: string
           organization_id?: string
           parent_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string
           sort_order?: number
           updated_at?: string
@@ -56700,6 +57027,7 @@ export type Database = {
           metadata: Json
           name: string
           organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -56716,6 +57044,7 @@ export type Database = {
           metadata?: Json
           name: string
           organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -56732,6 +57061,7 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -58232,6 +58562,7 @@ export type Database = {
           purpose: string | null
           respondent_user_id: string
           settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source: string
           status: string
           subtitle: string | null
@@ -58255,6 +58586,7 @@ export type Database = {
           purpose?: string | null
           respondent_user_id: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source?: string
           status?: string
           subtitle?: string | null
@@ -58278,6 +58610,7 @@ export type Database = {
           purpose?: string | null
           respondent_user_id?: string
           settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source?: string
           status?: string
           subtitle?: string | null
@@ -58872,177 +59205,6 @@ export type Database = {
   }
   legal: {
     Tables: {
-      _stage_dockets_966c18eca7: {
-        Row: {
-          appeal_from_id: string | null
-          appeal_from_str: string | null
-          appellate_case_type_information: string | null
-          appellate_fee_status: string | null
-          assigned_to_id: string | null
-          assigned_to_str: string | null
-          blocked: string | null
-          case_name: string | null
-          case_name_full: string | null
-          case_name_short: string | null
-          cause: string | null
-          court_id: string | null
-          date_argued: string | null
-          date_blocked: string | null
-          date_cert_denied: string | null
-          date_cert_granted: string | null
-          date_created: string | null
-          date_filed: string | null
-          date_last_filing: string | null
-          date_last_index: string | null
-          date_modified: string | null
-          date_reargued: string | null
-          date_reargument_denied: string | null
-          date_terminated: string | null
-          docket_number: string | null
-          docket_number_core: string | null
-          docket_number_raw: string | null
-          docket_number_source: string | null
-          federal_defendant_number: string | null
-          federal_dn_case_type: string | null
-          federal_dn_judge_initials_assigned: string | null
-          federal_dn_judge_initials_referred: string | null
-          federal_dn_office_code: string | null
-          filepath_ia: string | null
-          filepath_ia_json: string | null
-          filepath_local: string | null
-          ia_date_first_change: string | null
-          ia_needs_upload: string | null
-          ia_upload_failure_count: string | null
-          id: string | null
-          idb_data_id: string | null
-          jurisdiction_type: string | null
-          jury_demand: string | null
-          mdl_status: string | null
-          nature_of_suit: string | null
-          originating_court_information_id: string | null
-          pacer_case_id: string | null
-          panel_str: string | null
-          parent_docket_id: string | null
-          referred_to_id: string | null
-          referred_to_str: string | null
-          slug: string | null
-          source: string | null
-          view_count: string | null
-        }
-        Insert: {
-          appeal_from_id?: string | null
-          appeal_from_str?: string | null
-          appellate_case_type_information?: string | null
-          appellate_fee_status?: string | null
-          assigned_to_id?: string | null
-          assigned_to_str?: string | null
-          blocked?: string | null
-          case_name?: string | null
-          case_name_full?: string | null
-          case_name_short?: string | null
-          cause?: string | null
-          court_id?: string | null
-          date_argued?: string | null
-          date_blocked?: string | null
-          date_cert_denied?: string | null
-          date_cert_granted?: string | null
-          date_created?: string | null
-          date_filed?: string | null
-          date_last_filing?: string | null
-          date_last_index?: string | null
-          date_modified?: string | null
-          date_reargued?: string | null
-          date_reargument_denied?: string | null
-          date_terminated?: string | null
-          docket_number?: string | null
-          docket_number_core?: string | null
-          docket_number_raw?: string | null
-          docket_number_source?: string | null
-          federal_defendant_number?: string | null
-          federal_dn_case_type?: string | null
-          federal_dn_judge_initials_assigned?: string | null
-          federal_dn_judge_initials_referred?: string | null
-          federal_dn_office_code?: string | null
-          filepath_ia?: string | null
-          filepath_ia_json?: string | null
-          filepath_local?: string | null
-          ia_date_first_change?: string | null
-          ia_needs_upload?: string | null
-          ia_upload_failure_count?: string | null
-          id?: string | null
-          idb_data_id?: string | null
-          jurisdiction_type?: string | null
-          jury_demand?: string | null
-          mdl_status?: string | null
-          nature_of_suit?: string | null
-          originating_court_information_id?: string | null
-          pacer_case_id?: string | null
-          panel_str?: string | null
-          parent_docket_id?: string | null
-          referred_to_id?: string | null
-          referred_to_str?: string | null
-          slug?: string | null
-          source?: string | null
-          view_count?: string | null
-        }
-        Update: {
-          appeal_from_id?: string | null
-          appeal_from_str?: string | null
-          appellate_case_type_information?: string | null
-          appellate_fee_status?: string | null
-          assigned_to_id?: string | null
-          assigned_to_str?: string | null
-          blocked?: string | null
-          case_name?: string | null
-          case_name_full?: string | null
-          case_name_short?: string | null
-          cause?: string | null
-          court_id?: string | null
-          date_argued?: string | null
-          date_blocked?: string | null
-          date_cert_denied?: string | null
-          date_cert_granted?: string | null
-          date_created?: string | null
-          date_filed?: string | null
-          date_last_filing?: string | null
-          date_last_index?: string | null
-          date_modified?: string | null
-          date_reargued?: string | null
-          date_reargument_denied?: string | null
-          date_terminated?: string | null
-          docket_number?: string | null
-          docket_number_core?: string | null
-          docket_number_raw?: string | null
-          docket_number_source?: string | null
-          federal_defendant_number?: string | null
-          federal_dn_case_type?: string | null
-          federal_dn_judge_initials_assigned?: string | null
-          federal_dn_judge_initials_referred?: string | null
-          federal_dn_office_code?: string | null
-          filepath_ia?: string | null
-          filepath_ia_json?: string | null
-          filepath_local?: string | null
-          ia_date_first_change?: string | null
-          ia_needs_upload?: string | null
-          ia_upload_failure_count?: string | null
-          id?: string | null
-          idb_data_id?: string | null
-          jurisdiction_type?: string | null
-          jury_demand?: string | null
-          mdl_status?: string | null
-          nature_of_suit?: string | null
-          originating_court_information_id?: string | null
-          pacer_case_id?: string | null
-          panel_str?: string | null
-          parent_docket_id?: string | null
-          referred_to_id?: string | null
-          referred_to_str?: string | null
-          slug?: string | null
-          source?: string | null
-          view_count?: string | null
-        }
-        Relationships: []
-      }
       citations: {
         Row: {
           cited_opinion_id: number
@@ -62255,30 +62417,6 @@ export type Database = {
   }
   ops: {
     Tables: {
-      _bak_organization_name_dd043: {
-        Row: {
-          backfilled_at: string
-          new_name: string
-          organization_id: string
-          previous_description: string | null
-          previous_name: string
-        }
-        Insert: {
-          backfilled_at?: string
-          new_name: string
-          organization_id: string
-          previous_description?: string | null
-          previous_name: string
-        }
-        Update: {
-          backfilled_at?: string
-          new_name?: string
-          organization_id?: string
-          previous_description?: string | null
-          previous_name?: string
-        }
-        Relationships: []
-      }
       api_field_warnings: {
         Row: {
           created_at: string
@@ -62976,27 +63114,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      path_drift_repair_2026_09: {
-        Row: {
-          file_id: string
-          old_file_name: string
-          old_file_path: string
-          repaired_at: string
-        }
-        Insert: {
-          file_id: string
-          old_file_name: string
-          old_file_path: string
-          repaired_at?: string
-        }
-        Update: {
-          file_id?: string
-          old_file_name?: string
-          old_file_path?: string
-          repaired_at?: string
-        }
-        Relationships: []
       }
       proof_check: {
         Row: {
@@ -64329,93 +64446,6 @@ export type Database = {
   }
   platform: {
     Tables: {
-      _bak_assoc_file_processed_document_20260812: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          id: string | null
-          label: string | null
-          metadata: Json | null
-          organization_id: string | null
-          payload: Json | null
-          payload_kind: string | null
-          position: number | null
-          role: string | null
-          source_id: string | null
-          source_type: string | null
-          target_id: string | null
-          target_type: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          id?: string | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          payload?: Json | null
-          payload_kind?: string | null
-          position?: number | null
-          role?: string | null
-          source_id?: string | null
-          source_type?: string | null
-          target_id?: string | null
-          target_type?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          id?: string | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          payload?: Json | null
-          payload_kind?: string | null
-          position?: number | null
-          role?: string | null
-          source_id?: string | null
-          source_type?: string | null
-          target_id?: string | null
-          target_type?: string | null
-        }
-        Relationships: []
-      }
-      _bak_assoc_type_file_processed_document_20260812: {
-        Row: {
-          container_side: string | null
-          conveys_max: Database["public"]["Enums"]["permission_level"] | null
-          created_at: string | null
-          is_active: boolean | null
-          label: string | null
-          notes: string | null
-          source_type: string | null
-          target_type: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          container_side?: string | null
-          conveys_max?: Database["public"]["Enums"]["permission_level"] | null
-          created_at?: string | null
-          is_active?: boolean | null
-          label?: string | null
-          notes?: string | null
-          source_type?: string | null
-          target_type?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          container_side?: string | null
-          conveys_max?: Database["public"]["Enums"]["permission_level"] | null
-          created_at?: string | null
-          is_active?: boolean | null
-          label?: string | null
-          notes?: string | null
-          source_type?: string | null
-          target_type?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       _base_entity: {
         Row: {
           created_at: string
@@ -64637,75 +64667,6 @@ export type Database = {
           expires_at?: string
           handoff_hash?: string
           oauth_client_id?: string
-        }
-        Relationships: []
-      }
-      _policy_overlap_backup: {
-        Row: {
-          check_expr: string | null
-          dropped_at: string
-          polcmd: unknown
-          polname: string
-          polpermissive: boolean
-          polroles: string[]
-          qual_expr: string | null
-          restore_sql: string
-          sch: string
-          tbl: string
-        }
-        Insert: {
-          check_expr?: string | null
-          dropped_at?: string
-          polcmd: unknown
-          polname: string
-          polpermissive: boolean
-          polroles: string[]
-          qual_expr?: string | null
-          restore_sql: string
-          sch: string
-          tbl: string
-        }
-        Update: {
-          check_expr?: string | null
-          dropped_at?: string
-          polcmd?: unknown
-          polname?: string
-          polpermissive?: boolean
-          polroles?: string[]
-          qual_expr?: string | null
-          restore_sql?: string
-          sch?: string
-          tbl?: string
-        }
-        Relationships: []
-      }
-      _policy_overlap_probe: {
-        Row: {
-          err: string | null
-          identity: string
-          phase: string
-          probed_at: string
-          sch: string
-          tbl: string
-          visible: number | null
-        }
-        Insert: {
-          err?: string | null
-          identity: string
-          phase: string
-          probed_at?: string
-          sch: string
-          tbl: string
-          visible?: number | null
-        }
-        Update: {
-          err?: string | null
-          identity?: string
-          phase?: string
-          probed_at?: string
-          sch?: string
-          tbl?: string
-          visible?: number | null
         }
         Relationships: []
       }
@@ -73652,16 +73613,6 @@ export type Database = {
         }
         Returns: Json
       }
-      _policy_overlap_run_probe: {
-        Args: {
-          p_label: string
-          p_limit?: number
-          p_offset?: number
-          p_phase: string
-          p_user: string
-        }
-        Returns: number
-      }
       _provision_says_the_kernel_was_rerecorded: {
         Args: { p_answer: Json }
         Returns: Json
@@ -76026,6 +75977,26 @@ export type Database = {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: Json
       }
+      shown_to_context: { Args: { p_token: string }; Returns: Json }
+      shown_to_default: {
+        Args: { p_organization_id: string; p_token: string; p_user_id?: string }
+        Returns: Database["platform"]["Enums"]["shown_to"]
+      }
+      shown_to_default_system: {
+        Args: { p_token: string }
+        Returns: Database["platform"]["Enums"]["shown_to"]
+      }
+      shown_to_lists: {
+        Args: {
+          p_created_by: string
+          p_ctx: Json
+          p_organization_id: string
+          p_shown_to: Database["platform"]["Enums"]["shown_to"]
+          p_viewer: string
+          p_visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Returns: boolean
+      }
       sign_in_freeze_grab_ms: { Args: never; Returns: number }
       soft_delete_orphan_census: {
         Args: never
@@ -76394,6 +76365,7 @@ export type Database = {
       confirmation: "unconfirmed" | "confirmed"
       data_class: "private" | "confidential" | "organization" | "public"
       list_scope: "mine" | "organization"
+      shown_to: "only_me" | "my_team" | "everyone" | "everyone_on_ai_matrx"
       visibility: "personal" | "internal" | "link" | "public"
     }
     CompositeTypes: {
@@ -78490,7 +78462,7 @@ export type Database = {
         Returns: Json
       }
       _saved_view_json: {
-        Args: { p_row: Database["crm"]["Tables"]["saved_view"]["Row"] }
+        Args: { p_row: Database["platform"]["Tables"]["saved_view"]["Row"] }
         Returns: Json
       }
       _schema_template_write_denied_message: { Args: never; Returns: string }
@@ -92327,30 +92299,6 @@ export type Database = {
   }
   runtime: {
     Tables: {
-      _org_repair_0253_backup: {
-        Row: {
-          conversation_id: string
-          new_organization_id: string
-          old_organization_id: string | null
-          repaired_at: string
-          request_id: string
-        }
-        Insert: {
-          conversation_id: string
-          new_organization_id: string
-          old_organization_id?: string | null
-          repaired_at?: string
-          request_id: string
-        }
-        Update: {
-          conversation_id?: string
-          new_organization_id?: string
-          old_organization_id?: string | null
-          repaired_at?: string
-          request_id?: string
-        }
-        Relationships: []
-      }
       execution_event_cursor: {
         Row: {
           last_seq: number
@@ -94144,15 +94092,18 @@ export type Database = {
           coverage_tracker_id: string | null
           created_at: string
           created_by: string | null
+          current_version_id: string | null
           custom_fields: Json
           declared_by: string
           declared_ref: Json
           dedupe_key: string
           deleted_at: string | null
+          design_run_id: string | null
           engines: string[]
           id: string
           is_active: boolean
           key_messages: Json
+          lanes: string[]
           last_error: string | null
           last_run_at: string | null
           last_run_cost_usd: number | null
@@ -94162,8 +94113,11 @@ export type Database = {
           name: string
           organization_id: string
           prompts: Json
+          repeats: number
           run_count: number
           site_id: string
+          status: string
+          tier: string
           updated_at: string
           updated_by: string | null
           version: number
@@ -94175,15 +94129,18 @@ export type Database = {
           coverage_tracker_id?: string | null
           created_at?: string
           created_by?: string | null
+          current_version_id?: string | null
           custom_fields?: Json
           declared_by?: string
           declared_ref?: Json
           dedupe_key: string
           deleted_at?: string | null
+          design_run_id?: string | null
           engines?: string[]
           id?: string
           is_active?: boolean
           key_messages?: Json
+          lanes?: string[]
           last_error?: string | null
           last_run_at?: string | null
           last_run_cost_usd?: number | null
@@ -94193,8 +94150,11 @@ export type Database = {
           name: string
           organization_id: string
           prompts?: Json
+          repeats?: number
           run_count?: number
           site_id: string
+          status?: string
+          tier?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -94206,15 +94166,18 @@ export type Database = {
           coverage_tracker_id?: string | null
           created_at?: string
           created_by?: string | null
+          current_version_id?: string | null
           custom_fields?: Json
           declared_by?: string
           declared_ref?: Json
           dedupe_key?: string
           deleted_at?: string | null
+          design_run_id?: string | null
           engines?: string[]
           id?: string
           is_active?: boolean
           key_messages?: Json
+          lanes?: string[]
           last_error?: string | null
           last_run_at?: string | null
           last_run_cost_usd?: number | null
@@ -94224,8 +94187,11 @@ export type Database = {
           name?: string
           organization_id?: string
           prompts?: Json
+          repeats?: number
           run_count?: number
           site_id?: string
+          status?: string
+          tier?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -94245,27 +94211,39 @@ export type Database = {
           analysis: Json
           answer_pattern: string | null
           answer_text: string
+          candidate_id: string | null
+          canonical_cell_id: string | null
           citation_count: number
+          citation_payload_hash: string | null
           claim_count: number
           command_run_id: string
           confidence: number | null
+          configuration_hash: string | null
           created_at: string
           created_by: string
           custom_fields: Json
           decision_signal_count: number
           engine: string
+          entities_mentioned: Json | null
           error: Json | null
           id: string
           keyword_id: string
+          lane: string | null
           metadata: Json
           model_name: string | null
           observed_at: string
+          order_seed: number | null
           organization_id: string
+          panel_id: string | null
+          panel_version_id: string | null
+          parser_version: string | null
           provider_metadata: Json
           provider_run_id: string | null
           query: string
           recommendation_count: number
           recommendation_strength: number | null
+          repeat_index: number | null
+          response_payload_hash: string | null
           site_id: string
           status: string
           target_citation_ordinal: number | null
@@ -94273,32 +94251,46 @@ export type Database = {
           target_mentioned: boolean
           unverified_influential_count: number
           updated_at: string
+          validity_status: string | null
+          wave_id: string | null
         }
         Insert: {
           analysis?: Json
           answer_pattern?: string | null
           answer_text?: string
+          candidate_id?: string | null
+          canonical_cell_id?: string | null
           citation_count?: number
+          citation_payload_hash?: string | null
           claim_count?: number
           command_run_id: string
           confidence?: number | null
+          configuration_hash?: string | null
           created_at?: string
           created_by: string
           custom_fields?: Json
           decision_signal_count?: number
           engine: string
+          entities_mentioned?: Json | null
           error?: Json | null
           id?: string
           keyword_id: string
+          lane?: string | null
           metadata?: Json
           model_name?: string | null
           observed_at: string
+          order_seed?: number | null
           organization_id: string
+          panel_id?: string | null
+          panel_version_id?: string | null
+          parser_version?: string | null
           provider_metadata?: Json
           provider_run_id?: string | null
           query: string
           recommendation_count?: number
           recommendation_strength?: number | null
+          repeat_index?: number | null
+          response_payload_hash?: string | null
           site_id: string
           status?: string
           target_citation_ordinal?: number | null
@@ -94306,32 +94298,46 @@ export type Database = {
           target_mentioned?: boolean
           unverified_influential_count?: number
           updated_at?: string
+          validity_status?: string | null
+          wave_id?: string | null
         }
         Update: {
           analysis?: Json
           answer_pattern?: string | null
           answer_text?: string
+          candidate_id?: string | null
+          canonical_cell_id?: string | null
           citation_count?: number
+          citation_payload_hash?: string | null
           claim_count?: number
           command_run_id?: string
           confidence?: number | null
+          configuration_hash?: string | null
           created_at?: string
           created_by?: string
           custom_fields?: Json
           decision_signal_count?: number
           engine?: string
+          entities_mentioned?: Json | null
           error?: Json | null
           id?: string
           keyword_id?: string
+          lane?: string | null
           metadata?: Json
           model_name?: string | null
           observed_at?: string
+          order_seed?: number | null
           organization_id?: string
+          panel_id?: string | null
+          panel_version_id?: string | null
+          parser_version?: string | null
           provider_metadata?: Json
           provider_run_id?: string | null
           query?: string
           recommendation_count?: number
           recommendation_strength?: number | null
+          repeat_index?: number | null
+          response_payload_hash?: string | null
           site_id?: string
           status?: string
           target_citation_ordinal?: number | null
@@ -94339,6 +94345,8 @@ export type Database = {
           target_mentioned?: boolean
           unverified_influential_count?: number
           updated_at?: string
+          validity_status?: string | null
+          wave_id?: string | null
         }
         Relationships: [
           {
@@ -96198,6 +96206,8 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           url: string
+          verdict: string | null
+          verdict_reason: string | null
           version: number
         }
         Insert: {
@@ -96247,6 +96257,8 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           url: string
+          verdict?: string | null
+          verdict_reason?: string | null
           version?: number
         }
         Update: {
@@ -96296,6 +96308,8 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           url?: string
+          verdict?: string | null
+          verdict_reason?: string | null
           version?: number
         }
         Relationships: [
@@ -96352,6 +96366,7 @@ export type Database = {
           slack_credential_item_id: string | null
           sources: string[] | null
           standing: string[]
+          term_meanings: Json
           timespan: string
           topics: string[]
           updated_at: string
@@ -96403,6 +96418,7 @@ export type Database = {
           slack_credential_item_id?: string | null
           sources?: string[] | null
           standing?: string[]
+          term_meanings?: Json
           timespan?: string
           topics?: string[]
           updated_at?: string
@@ -96454,6 +96470,7 @@ export type Database = {
           slack_credential_item_id?: string | null
           sources?: string[] | null
           standing?: string[]
+          term_meanings?: Json
           timespan?: string
           topics?: string[]
           updated_at?: string
@@ -98534,6 +98551,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pr_moment: {
+        Row: {
+          brand_id: string
+          country_code: string | null
+          created_at: string
+          created_by: string | null
+          date_basis: string
+          deleted_at: string | null
+          ends_on: string | null
+          id: string
+          industries: string[]
+          metadata: Json
+          organization_id: string
+          organizer: string | null
+          sensitivity: string
+          source_capture_id: string | null
+          source_url: string | null
+          starts_on: string
+          title: string
+          type: string
+          updated_at: string
+          updated_by: string | null
+          verification: string | null
+          verified_at: string | null
+          version: number
+        }
+        Insert: {
+          brand_id: string
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_basis: string
+          deleted_at?: string | null
+          ends_on?: string | null
+          id?: string
+          industries?: string[]
+          metadata?: Json
+          organization_id: string
+          organizer?: string | null
+          sensitivity?: string
+          source_capture_id?: string | null
+          source_url?: string | null
+          starts_on: string
+          title: string
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+          verification?: string | null
+          verified_at?: string | null
+          version?: number
+        }
+        Update: {
+          brand_id?: string
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_basis?: string
+          deleted_at?: string | null
+          ends_on?: string | null
+          id?: string
+          industries?: string[]
+          metadata?: Json
+          organization_id?: string
+          organizer?: string | null
+          sensitivity?: string
+          source_capture_id?: string | null
+          source_url?: string | null
+          starts_on?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+          verification?: string | null
+          verified_at?: string | null
+          version?: number
+        }
+        Relationships: []
       }
       provider_call: {
         Row: {
@@ -109137,51 +109232,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_bookmarks: {
-        Row: {
-          canvas_id: string
-          created_at: string | null
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          canvas_id: string
-          created_at?: string | null
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          canvas_id?: string
-          created_at?: string | null
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: []
-      }
       user_email_preferences: {
         Row: {
           browser_handoff_notifications: boolean
@@ -118875,6 +118925,7 @@ export const Constants = {
       confirmation: ["unconfirmed", "confirmed"],
       data_class: ["private", "confidential", "organization", "public"],
       list_scope: ["mine", "organization"],
+      shown_to: ["only_me", "my_team", "everyone", "everyone_on_ai_matrx"],
       visibility: ["personal", "internal", "link", "public"],
     },
   },

@@ -1,3 +1,4 @@
+-- retired: platform._policy_overlap_backup + platform._policy_overlap_probe DROPPED 2026-09-27 by the database estate-reduction program wave 2 (backup /Users/armanisadeghi/db-estate-backups/2026-09-27/platform._policy_overlap_backup.dump, /Users/armanisadeghi/db-estate-backups/2026-09-27/platform._policy_overlap_probe.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- Policy-overlap campaign — reversibility + equivalence harness.
 --
 -- WHY THIS EXISTS: Postgres OR's every permissive policy applying to a

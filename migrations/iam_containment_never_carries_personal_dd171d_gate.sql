@@ -1,3 +1,4 @@
+-- retired: iam.dd171_containment_baseline DROPPED 2026-09-27 by the database estate-reduction program wave 2 (backup /Users/armanisadeghi/db-estate-backups/2026-09-27/iam.dd171_containment_baseline.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- iam_containment_never_carries_personal_dd171d_gate — THE ACCESS DELTA, THE PROOFS AND THE
 -- END-STATE ASSERTION (DD-171).
 --

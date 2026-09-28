@@ -1,3 +1,4 @@
+-- retired: iam._share_people_conversion DROPPED 2026-09-27 by the database estate-reduction program wave 2 (backup /Users/armanisadeghi/db-estate-backups/2026-09-27/iam._share_people_conversion.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- INVERSE of migrations/campaign/sharepeople_a_share_names_a_person.sql (lane SHARE-PEOPLE-ONLY).
 -- Puts every converted row back exactly (from iam._share_people_conversion), restores the four
 -- bodies byte-for-byte, drops the guard, the door, the arm and the column.

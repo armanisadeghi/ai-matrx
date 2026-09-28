@@ -1,3 +1,4 @@
+-- retired: users.user_bookmarks DROPPED 2026-09-27 by the database estate-reduction program wave 2 (backup /Users/armanisadeghi/db-estate-backups/2026-09-27/users.user_bookmarks.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- user_bookmarks base retrofit
 -- Strategy: personal (user_id owner); 0 rows; no org col currently
 -- Simple join-like table (user_id + canvas_id), but personal = add org

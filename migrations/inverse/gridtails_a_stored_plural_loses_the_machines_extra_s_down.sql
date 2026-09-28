@@ -1,3 +1,4 @@
+-- retired: campaign_watch.gridtails_plural_repair DROPPED 2026-09-27 by the database estate-reduction program wave 2 (backup /Users/armanisadeghi/db-estate-backups/2026-09-27/campaign_watch.gridtails_plural_repair.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- chair-step: the inverse of gridtails_a_stored_plural_loses_the_machines_extra_s.sql. It puts back the EXACT prior `label_plural` of every Table that file changed, read from campaign_watch.gridtails_plural_repair, and only where the plural is still the value that file wrote (a plural somebody changed since is theirs and is left alone). Then it drops that list, which only the up file wrote and only this file read. Every row goes through custom.record's own triggers (history captures each one).
 -- lane: GRID-TAILS
 -- lock: custom

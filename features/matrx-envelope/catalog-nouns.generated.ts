@@ -41,6 +41,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "workbench.working_documents",
   "title_column": "title"
  },
+ "document": {
+  "table": "content.document",
+  "title_column": "title"
+ },
  "rulebook": {
   "table": "platform.rulebook",
   "title_column": "name"
@@ -183,11 +187,11 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  },
  "dataset": {
   "table": "workbench.udt_datasets",
-  "title_column": "description"
+  "title_column": "table_name"
  },
  "fc_card": {
   "table": "education.fc_card",
-  "title_column": null
+  "title_column": "front"
  },
  "fc_detail": {
   "table": "education.fc_detail",
@@ -481,10 +485,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "workspace.war_rooms",
   "title_column": "title"
  },
- "wbx_capture": {
-  "table": "extend.wbx_capture",
-  "title_column": "title"
- },
  "wbx_pattern": {
   "table": "extend.wbx_pattern",
   "title_column": "name"
@@ -569,6 +569,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Agent Template",
   "family": "Agents"
  },
+ "agent_term_list": {
+  "label": "Term List",
+  "family": "Agents"
+ },
  "agent_usage": {
   "label": "Agent Usage",
   "family": "Agents"
@@ -650,7 +654,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Conversations"
  },
  "working_document": {
-  "label": "Working Documents",
+  "label": "Working Document",
   "family": "Conversations"
  },
  "anon_form": {
@@ -713,6 +717,22 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Record",
   "family": "Custom Data"
  },
+ "document": {
+  "label": "Markdown document",
+  "family": "Documents"
+ },
+ "document_version": {
+  "label": "Document Version",
+  "family": "Documents"
+ },
+ "message_template_detail": {
+  "label": "Message Template Detail",
+  "family": "Documents"
+ },
+ "univer_payload": {
+  "label": "Univer Payload",
+  "family": "Documents"
+ },
  "rulebook": {
   "label": "Rulebook",
   "family": "Knowledge"
@@ -721,12 +741,20 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Masterwork Run",
   "family": "Masterwork"
  },
+ "team": {
+  "label": "Team",
+  "family": "Organizations"
+ },
  "conversation": {
   "label": "Conversation",
   "family": "Outputs"
  },
  "skill": {
   "label": "Skill",
+  "family": "Skills"
+ },
+ "skill_detail": {
+  "label": "Skill Detail",
   "family": "Skills"
  },
  "skill_render_definition": {
@@ -1831,10 +1859,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "crm_registry_source": {
   "label": "Registry Source",
-  "family": "Other"
- },
- "crm_saved_view": {
-  "label": "Smart View",
   "family": "Other"
  },
  "crm_sending_event": {
@@ -2982,7 +3006,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Other"
  },
  "mandate": {
-  "label": "Mandate Definition (new)",
+  "label": "Mandate",
   "family": "Other"
  },
  "mandate_advance_batch_row": {
@@ -2991,6 +3015,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "mandate_binding": {
   "label": "Mandate Binding (new)",
+  "family": "Other"
+ },
+ "mandate_goal_clauses": {
+  "label": "Mandate Goal Clauses",
   "family": "Other"
  },
  "mandate_observation": {
@@ -3077,12 +3105,24 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Call Invite",
   "family": "Other"
  },
+ "meet_chat_message": {
+  "label": "Meeting Chat Message",
+  "family": "Other"
+ },
+ "meet_invitee": {
+  "label": "Meeting Invitee",
+  "family": "Other"
+ },
  "meet_meeting": {
   "label": "Meeting",
   "family": "Other"
  },
  "meet_note": {
   "label": "Meeting Note",
+  "family": "Other"
+ },
+ "meet_occurrence_override": {
+  "label": "Meeting Occurrence Override",
   "family": "Other"
  },
  "meet_participant": {
@@ -3165,6 +3205,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Notification Preference",
   "family": "Other"
  },
+ "notification_submission": {
+  "label": "Self notification submission",
+  "family": "Other"
+ },
  "notify_outsider_door_baseline": {
   "label": "Notify Outsider Door Baseline",
   "family": "Other"
@@ -3179,6 +3223,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "opinions": {
   "label": "Opinions",
+  "family": "Other"
+ },
+ "ops_check_item": {
+  "label": "Check Item",
+  "family": "Other"
+ },
+ "ops_check_run": {
+  "label": "Check Run",
   "family": "Other"
  },
  "ops_issue_class": {
@@ -3349,6 +3401,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Plan Vertical Profile",
   "family": "Other"
  },
+ "platform_action_request": {
+  "label": "Action Request",
+  "family": "Other"
+ },
  "platform_actor_session": {
   "label": "Actor session",
   "family": "Other"
@@ -3395,6 +3451,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "platform_schema": {
   "label": "Schema",
+  "family": "Other"
+ },
+ "platform_secure_delivery": {
+  "label": "Secure Delivery",
   "family": "Other"
  },
  "platform_share_link": {
@@ -3499,6 +3559,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "rate_limit_buckets": {
   "label": "Rate Limit Buckets",
+  "family": "Other"
+ },
+ "reachability_pending": {
+  "label": "Reachability pending",
   "family": "Other"
  },
  "recompute_queue": {
@@ -3681,6 +3745,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Scrape Retry Queue",
   "family": "Other"
  },
+ "search_item": {
+  "label": "Search item",
+  "family": "Other"
+ },
  "seo_ai_capability": {
   "label": "SEO AI capability",
   "family": "Other"
@@ -3729,6 +3797,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Page Measurement Health",
   "family": "Other"
  },
+ "seo_pr_moment": {
+  "label": "PR Moment",
+  "family": "Other"
+ },
  "seo_serp_mention": {
   "label": "SERP Prospect Mention",
   "family": "Other"
@@ -3775,6 +3847,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "seo_story_angle": {
   "label": "SEO Story Angle",
+  "family": "Other"
+ },
+ "seo_tracker_story": {
+  "label": "Monitor Story",
   "family": "Other"
  },
  "shareable_resource_registry": {
@@ -3831,6 +3907,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "source_authority": {
   "label": "Source authority",
+  "family": "Other"
+ },
+ "spatial_board": {
+  "label": "Spatial Board",
   "family": "Other"
  },
  "stage_ref_kind": {
@@ -3961,10 +4041,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "System Orgs",
   "family": "Other"
  },
- "system_personal_org_failure": {
-  "label": "System Personal Org Failure",
-  "family": "Other"
- },
  "system_write_failure": {
   "label": "System Write Failure",
   "family": "Other"
@@ -3987,6 +4063,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "templates": {
   "label": "Templates",
+  "family": "Other"
+ },
+ "test_handset_inbox": {
+  "label": "Test Handset Inbox",
+  "family": "Other"
+ },
+ "test_handset_verification": {
+  "label": "Test Handset Verification",
   "family": "Other"
  },
  "thread": {
@@ -4038,7 +4122,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Other"
  },
  "udt_document": {
-  "label": "Document",
+  "label": "Cloud document",
   "family": "Other"
  },
  "udt_document_snapshot": {
@@ -4073,6 +4157,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "UI Surface Config",
   "family": "Other"
  },
+ "ui_surface_item_type": {
+  "label": "UI surface item type",
+  "family": "Other"
+ },
  "ui_surface_value": {
   "label": "UI surface value",
   "family": "Other"
@@ -4099,10 +4187,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "user_analysis_preference": {
   "label": "User Analysis Preference",
-  "family": "Other"
- },
- "user_bookmark": {
-  "label": "User Bookmark",
   "family": "Other"
  },
  "user_email_preference": {
@@ -4179,10 +4263,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "war_room": {
   "label": "War Room",
-  "family": "Other"
- },
- "wbx_capture": {
-  "label": "Extension Web Capture",
   "family": "Other"
  },
  "wbx_demo": {
@@ -4299,6 +4379,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "web_location_listing": {
   "label": "Location Listing",
+  "family": "Other"
+ },
+ "web_news_item": {
+  "label": "News Item",
   "family": "Other"
  },
  "web_offering_template": {

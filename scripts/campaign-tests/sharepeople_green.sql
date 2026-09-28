@@ -1,3 +1,4 @@
+-- retired: iam._share_people_conversion DROPPED 2026-09-27 by the database estate-reduction program wave 2 (backup /Users/armanisadeghi/db-estate-backups/2026-09-27/iam._share_people_conversion.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- LANE SHARE-PEOPLE-ONLY — THE GREEN SUITE. A share names a person, never an organization.
 --
 -- THE REAL USE CASE: admin@admin.com keeps a working agent ("Primary-Care Desk") and a table in

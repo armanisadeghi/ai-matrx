@@ -110,7 +110,6 @@ const CENSUS = {
   // crm.*
   crm_blocklist_entry: "UNMEASURED",
   crm_registry_source: "UNMEASURED",
-  crm_saved_view: "UNMEASURED",
   // education.*
   learn_doc: "UNMEASURED",
   // esign.*
