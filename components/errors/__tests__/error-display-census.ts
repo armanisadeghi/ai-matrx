@@ -994,6 +994,9 @@ function readDerivedNames(fn: ts.FunctionLikeDeclaration, alsoNotARead: RegExp |
     return /^use[A-Z]/.test(callee) && !NON_READ_HOOK.test(callee) && !(alsoNotARead?.test(callee) ?? false);
   };
   for (const d of decls) if (isReadCall(d.initializer!)) bind(d.name);
+  // Rows KEPT IN useState and filled by a fetch are a read too (RC-B12 r13,
+  // the system-apps shape: `useEffect(() => { load().then(setItems).catch(console.error) })`).
+  for (const name of promiseFilledStateNames(fn)) names.add(name);
   // Derived values (const visible = items.filter(…)), to a fixpoint.
   for (let changed = true; changed; ) {
     changed = false;
@@ -1007,6 +1010,157 @@ function readDerivedNames(fn: ts.FunctionLikeDeclaration, alsoNotARead: RegExp |
     }
   }
   return names;
+}
+
+/**
+ * `const [items, setItems] = useState(...)` pairs in `fn` (its own scope).
+ */
+function useStatePairs(fn: ts.FunctionLikeDeclaration): Array<{ value: string; setter: string }> {
+  const out: Array<{ value: string; setter: string }> = [];
+  const body = fn.body;
+  if (!body) return out;
+  const visit = (n: ts.Node) => {
+    if (
+      ts.isVariableDeclaration(n) &&
+      n.initializer &&
+      ts.isCallExpression(n.initializer) &&
+      /(?:^|\.)useState$/.test(n.initializer.expression.getText()) &&
+      ts.isArrayBindingPattern(n.name) &&
+      n.name.elements.length >= 2
+    ) {
+      const [a, b] = n.name.elements;
+      // Only DATA state (rows, a record, a map) — a boolean/number/string flag
+      // (`copied`, `count`, `mode`) is UI state, not a read's answer.
+      const init = n.initializer.arguments[0];
+      const initText = init ? init.getText() : "undefined";
+      const dataShaped =
+        !init ||
+        /^(?:\[|\{|null$|undefined$|new (?:Map|Set)\b|\(\) =>)/.test(initText) ||
+        /\[\]\s*>|Record<|Map<|\| null>/.test(n.initializer.typeArguments?.map((t) => t.getText()).join(",") ?? "");
+      if (dataShaped && a && b && ts.isBindingElement(a) && ts.isBindingElement(b) && ts.isIdentifier(a.name) && ts.isIdentifier(b.name)) {
+        out.push({ value: a.name.text, setter: b.name.text });
+      }
+    }
+    if (n !== body && (ts.isFunctionDeclaration(n) || ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && !ts.isCallExpression(n.parent) && ts.isVariableDeclaration(n.parent) && /^[A-Z]/.test(n.parent.name.getText())))) return;
+    n.forEachChild(visit);
+  };
+  visit(body);
+  return out;
+}
+
+/** Is this node inside a `.then(...)` callback or after an `await` in an async function (a fetch's answer)? */
+function fedByPromise(call: ts.Node, stop: ts.Node): boolean {
+  let child: ts.Node = call;
+  let cur: ts.Node | undefined = call.parent;
+  while (cur && cur !== stop) {
+    if (ts.isCallExpression(cur) && ts.isPropertyAccessExpression(cur.expression) && cur.expression.name.text === "then" && cur.arguments.includes(child as ts.Expression)) return true;
+    if ((ts.isArrowFunction(cur) || ts.isFunctionExpression(cur) || ts.isFunctionDeclaration(cur)) && cur.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword)) {
+      // setX(...) after an `await` in the same async function.
+      const at = call.getStart();
+      let awaited = false;
+      const find = (n: ts.Node) => { if (awaited) return; if (ts.isAwaitExpression(n) && n.getEnd() <= at) awaited = true; n.forEachChild(find); };
+      if (cur.body) find(cur.body);
+      if (awaited) return true;
+    }
+    child = cur;
+    cur = cur.parent;
+  }
+  return false;
+}
+
+/** useState values whose setter receives a fetch's answer (`.then(setItems)`, `setItems(await …)`). */
+function promiseFilledStateNames(fn: ts.FunctionLikeDeclaration): Set<string> {
+  const names = new Set<string>();
+  const body = fn.body;
+  if (!body) return names;
+  const pairs = useStatePairs(fn);
+  if (pairs.length === 0) return names;
+  const bySetter = new Map(pairs.map((p) => [p.setter, p.value]));
+  const visit = (n: ts.Node) => {
+    // `.then(setItems)`
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === "then") {
+      for (const arg of n.arguments) if (ts.isIdentifier(arg) && bySetter.has(arg.text)) names.add(bySetter.get(arg.text)!);
+    }
+    // `setItems(x)` inside a then-callback or after an await — x a value, not a literal reset
+    const arg0 = ts.isCallExpression(n) ? n.arguments[0] : undefined;
+    const literalArg =
+      !arg0 ||
+      arg0.kind === ts.SyntaxKind.NullKeyword ||
+      arg0.kind === ts.SyntaxKind.TrueKeyword ||
+      arg0.kind === ts.SyntaxKind.FalseKeyword ||
+      ts.isNumericLiteral(arg0) ||
+      ts.isStringLiteral(arg0) ||
+      (ts.isArrayLiteralExpression(arg0) && arg0.elements.length === 0) ||
+      (ts.isIdentifier(arg0) && arg0.text === "undefined");
+    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && bySetter.has(n.expression.text) && !literalArg && fedByPromise(n, body)) {
+      names.add(bySetter.get(n.expression.text)!);
+    }
+    n.forEachChild(visit);
+  };
+  visit(body);
+  return names;
+}
+
+/** A catch body that only logs (console.* / logger.*), or is empty. */
+function onlyLogs(block: ts.Node | undefined): boolean {
+  if (!block) return true;
+  if (ts.isBlock(block)) {
+    return block.statements.every(
+      (st) => ts.isExpressionStatement(st) && ts.isCallExpression(st.expression) && /^(?:console|logger|log)\.\w+$/.test(st.expression.expression.getText()),
+    );
+  }
+  // `.catch(console.error)` / `.catch(() => console.warn(e))` / `.catch(() => {})`
+  if (ts.isPropertyAccessExpression(block)) return /^(?:console|logger)\.\w+$/.test(block.getText());
+  if (ts.isArrowFunction(block) || ts.isFunctionExpression(block)) {
+    if (ts.isBlock(block.body)) return onlyLogs(block.body);
+    return ts.isCallExpression(block.body) && /^(?:console|logger|log)\.\w+$/.test(block.body.expression.getText());
+  }
+  return false;
+}
+
+/**
+ * A READ whose failure is only logged (RC-B12 r13 — the system-apps bug
+ * class): a component fills `useState` rows from a fetch and its `.catch(…)` /
+ * `catch {}` only logs, recording no error state — the view then shows those
+ * rows' empty/zero state as if the read succeeded. Returns the catch lines.
+ */
+export function findSilentReadCatches(source: string, fileName = "file.tsx"): number[] {
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const sourceLines = source.split("\n");
+  const lines = new Set<number>();
+  const components: ts.FunctionLikeDeclaration[] = [];
+  const collect = (n: ts.Node) => {
+    if ((ts.isFunctionDeclaration(n) && n.name && /^(?:[A-Z]|use[A-Z])/.test(n.name.text)) ||
+        ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && ts.isVariableDeclaration(n.parent) && /^(?:[A-Z]|use[A-Z])/.test(n.parent.name.getText()))) {
+      components.push(n as ts.FunctionLikeDeclaration);
+    }
+    n.forEachChild(collect);
+  };
+  collect(sf);
+  for (const fn of components) {
+    const body = fn.body;
+    if (!body) continue;
+    const filled = promiseFilledStateNames(fn);
+    if (filled.size === 0) continue;
+    const setters = new Set(useStatePairs(fn).filter((p) => filled.has(p.value)).map((p) => p.setter));
+    const settersRe = new RegExp(`\\b(?:${[...setters].join("|")})\\b`);
+    const flag = (node: ts.Node) => {
+      const line = sf.getLineAndCharacterOfPosition(node.getStart()).line + 1;
+      if (!isExempt(sourceLines, line)) lines.add(line);
+    };
+    const visit = (n: ts.Node) => {
+      // promise chain: x.then(setItems…).catch(onlyLogs)
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === "catch" && n.arguments.length === 1) {
+        const chain = n.expression.expression.getText();
+        if (settersRe.test(chain) && onlyLogs(n.arguments[0])) flag(n.expression.name);
+      }
+      // try { …setItems(await …)… } catch { only logs }
+      if (ts.isTryStatement(n) && n.catchClause && settersRe.test(n.tryBlock.getText()) && onlyLogs(n.catchClause.block)) flag(n.catchClause);
+      n.forEachChild(visit);
+    };
+    visit(body);
+  }
+  return [...lines].sort((a, b) => a - b);
 }
 
 /** Does a condition above the empty view test data a read hook produced? */

@@ -28,6 +28,7 @@ import {
   findUngatedEmptyStates,
   findUngatedEmptyStateProps,
   findUngatedCounts,
+  findSilentReadCatches,
   findSoftFailureToasts,
   findOrphanMenus,
   carriersFromFacts,
@@ -419,13 +420,14 @@ describe("an empty view is an answer only after a read that succeeded (RC-B12 ro
   it("no file gained an ungated empty view, emptyState prop, or count — and the burn-down only shrinks", () => {
     const baseline = JSON.parse(
       fs.readFileSync(path.join(__dirname, "empty-state-gate.baseline.json"), "utf8"),
-    ) as Record<"emptyViews" | "emptyStateProps" | "counts", Record<string, number>>;
+    ) as Record<"emptyViews" | "emptyStateProps" | "counts" | "silentCatches", Record<string, number>>;
     const files: string[] = [];
     for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
     const finders = {
       emptyViews: findUngatedEmptyStates,
       emptyStateProps: findUngatedEmptyStateProps,
       counts: findUngatedCounts,
+      silentCatches: findSilentReadCatches,
     } as const;
     const report: Record<string, { grew: Array<[string, number]>; shrank: Array<[string, number]> }> = {};
     for (const [kind, find] of Object.entries(finders) as Array<[keyof typeof finders, (source: string, fileName: string) => number[]]>) {
@@ -447,7 +449,30 @@ describe("an empty view is an answer only after a read that succeeded (RC-B12 ro
       emptyViews: { grew: [], shrank: [] },
       emptyStateProps: { grew: [], shrank: [] },
       counts: { grew: [], shrank: [] },
+      silentCatches: { grew: [], shrank: [] },
     });
+  });
+});
+
+describe("rows kept in useState and filled by a fetch are a read (RC-B12 r13 — the system-apps shape)", () => {
+  const SHAPE = (catcher: string) => `import { useEffect, useState } from "react";
+export function SystemApps() {
+  const [apps, setApps] = useState<string[]>([]);
+  useEffect(() => { listApps().then(setApps)${catcher}; }, []);
+  return (<div><span>{apps.length} apps</span>{apps.length === 0 ? <p>No system apps match</p> : <ul />}<MatrxDataTable data={apps} emptyState={{ title: "No apps yet" }} /></div>);
+}`;
+  it("self-test: the empty view, the table emptyState and the count over those rows are candidates", () => {
+    const src = SHAPE(".catch(console.error)");
+    expect(findUngatedEmptyStates(src).length).toBe(1);
+    expect(findUngatedEmptyStateProps(src).length).toBe(1);
+    expect(findUngatedCounts(src).length).toBe(1);
+  });
+  it("self-test: a catch that only logs is itself a finding; one that records the failure is not", () => {
+    expect(findSilentReadCatches(SHAPE(".catch(console.error)")).length).toBe(1);
+    expect(findSilentReadCatches(SHAPE(".catch(() => {})")).length).toBe(1);
+    expect(findSilentReadCatches(SHAPE(".catch((e) => setError(e))")).length).toBe(0);
+    // A UI flag set after a write is not a read.
+    expect(findSilentReadCatches(`export function C() { const [copied, setCopied] = useState(false); const copy = async () => { try { await navigator.clipboard.writeText("x"); setCopied(true); } catch (e) { console.error(e); } }; return null; }`).length).toBe(0);
   });
 });
 
