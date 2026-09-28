@@ -474,7 +474,9 @@ export function NoteEditorCore({
           ref={setPreviewScrollRef}
           className={cn(
             // pt-5 + the renderer's own pt-1 = the 24px Write and Plain start at.
-            "h-full overflow-y-auto max-w-3xl mx-auto pt-5 pb-6 px-6",
+            // 51rem - 2 × 1.5rem = the same 48rem column Plain and Write use, so
+            // the text starts at one x in every view.
+            "h-full overflow-y-auto max-w-[51rem] mx-auto pt-5 pb-6 px-6",
             bottomPad,
             previewScrollbarClass,
             previewClassName,
@@ -517,7 +519,10 @@ export function NoteEditorCore({
         // Write reads in the same font and size as Read and Plain (14px app
         // sans) — `!` because the editor's own prose-base is also a utility.
         // rich-editor.css neutralises Toast UI's global 13px Open Sans rule.
-        <div className="absolute inset-0 w-full h-full [&_.ProseMirror]:font-sans [&_.ProseMirror]:text-sm!">
+        // One column in every view: the editor's own side padding is dropped
+        // (its 48rem container already centres it where Plain and Read start),
+        // and lists indent 24px as Read's do.
+        <div className="absolute inset-0 w-full h-full [&_.ProseMirror]:font-sans [&_.ProseMirror]:text-sm! [&_.ProseMirror]:px-0! [&_.ProseMirror_ul]:pl-6! [&_.ProseMirror_ol]:pl-6! [&_.ProseMirror_li]:pl-0!">
           <RichEditor
             key={resetKey}
             value={content}

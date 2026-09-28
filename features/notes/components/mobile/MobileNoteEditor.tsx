@@ -466,7 +466,8 @@ export default function MobileNoteEditor({
           onTextInsertBefore={(text) => richRef.current?.insertText(text, "before")}
           onTextInsertAfter={(text) => richRef.current?.insertText(text, "after")}
         >
-          <div className="relative min-h-0 flex-1">
+          {/* One text inset on a phone: Plain's 16px, not the editor's 32px. */}
+          <div className="relative min-h-0 flex-1 [&_.ProseMirror]:px-4! [&_.ProseMirror_ul]:pl-6! [&_.ProseMirror_ol]:pl-6! [&_.ProseMirror_li]:pl-0!">
             <RichEditor
               key={noteId}
               value={localContent}
