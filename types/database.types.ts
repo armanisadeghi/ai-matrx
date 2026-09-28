@@ -109763,6 +109763,7 @@ export type Database = {
           announcement_type: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           is_active: boolean
           message: string
@@ -109781,6 +109782,7 @@ export type Database = {
           announcement_type?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           message: string
@@ -109799,6 +109801,7 @@ export type Database = {
           announcement_type?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           message?: string

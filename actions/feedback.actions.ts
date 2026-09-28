@@ -1094,7 +1094,8 @@ export async function getActiveAnnouncements(): Promise<{
       .schema("users")
       .from("system_announcements")
       .select("*")
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .is("deleted_at", null);
     query = user
       ? query.or(`target_user_id.is.null,target_user_id.eq.${user.id}`)
       : query.is("target_user_id", null);
@@ -1143,6 +1144,7 @@ export async function getAllAnnouncements(): Promise<{
       .schema("users")
       .from("system_announcements")
       .select("*")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -1264,7 +1266,8 @@ export async function updateAnnouncement(
 }
 
 /**
- * Delete announcement (admin only)
+ * Move an announcement to Trash (admin only). Delete means archive: the row
+ * gets deleted_at and is restorable from its author's /trash (entity_undelete).
  */
 export async function deleteAnnouncement(
   announcementId: string,
@@ -1279,15 +1282,23 @@ export async function deleteAnnouncement(
       return { success: false, error: "User not authenticated" };
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .schema("users")
       .from("system_announcements")
-      .delete()
-      .eq("id", announcementId);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", announcementId)
+      .is("deleted_at", null)
+      .select("id");
 
     if (error) {
-      console.error("Error deleting announcement:", error);
+      console.error("Error archiving announcement:", error);
       return { success: false, error: error.message };
+    }
+    if (!data || data.length === 0) {
+      return {
+        success: false,
+        error: "This announcement is already in Trash or you cannot change it. Reload the list.",
+      };
     }
 
     return { success: true };

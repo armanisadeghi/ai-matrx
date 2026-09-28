@@ -93,12 +93,12 @@ export default function AnnouncementTable() {
         
         const result = await deleteAnnouncement(announcementToDelete);
         if (result.success) {
-            toast.success('Announcement deleted successfully');
+            toast.success('Announcement moved to Trash');
             loadAnnouncements();
             setDeleteDialogOpen(false);
             setAnnouncementToDelete(null);
         } else {
-            toast.error('Failed to delete announcement: ' + result.error);
+            toast.error('Could not move the announcement to Trash: ' + result.error);
         }
     };
 
@@ -238,7 +238,7 @@ export default function AnnouncementTable() {
                     window={{ enabled: false }}
                     coverage={{ answeredBy: 'client', noun: 'system announcement' }}
                     toolbar={{ search: true, searchPlaceholder: 'Search announcements…' }}
-                    rowActions={(announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><CopyButtons size="xs" label={`Announcement "${announcement.title}"`} human={() => announcementSummary(announcement)} json={() => announcement} agent={() => ({ kind: 'system-announcement', location: LOCATION, description: 'One system announcement row.', data: announcement, summary: announcementSummary(announcement), attributes: { id: announcement.id, type: announcement.announcement_type, active: announcement.is_active } })} /><Button variant="ghost" size="sm" onClick={() => handleView(announcement)} className="h-7 px-2" title="View details"><Eye className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete announcement"><Trash2 className="w-4 h-4" /></Button></div>}
+                    rowActions={(announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><CopyButtons size="xs" label={`Announcement "${announcement.title}"`} human={() => announcementSummary(announcement)} json={() => announcement} agent={() => ({ kind: 'system-announcement', location: LOCATION, description: 'One system announcement row.', data: announcement, summary: announcementSummary(announcement), attributes: { id: announcement.id, type: announcement.announcement_type, active: announcement.is_active } })} /><Button variant="ghost" size="sm" onClick={() => handleView(announcement)} className="h-7 px-2" title="View details"><Eye className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" title="Move announcement to Trash"><Trash2 className="w-4 h-4" /></Button></div>}
                 />
             </Card>
 
@@ -327,9 +327,9 @@ export default function AnnouncementTable() {
             <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setAnnouncementToDelete(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Move this announcement to Trash?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete this announcement. This action cannot be undone.
+                            It stops showing to people and leaves this list. Its author can restore it from Trash.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -337,7 +337,7 @@ export default function AnnouncementTable() {
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                            Delete
+                            Move to Trash
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
