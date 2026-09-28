@@ -389,7 +389,7 @@ export function SpatialViewport({
         <div
           ref={gridRef}
           aria-hidden
-          className="pointer-events-none absolute -bottom-40 -right-40 left-0 top-0 [background-image:radial-gradient(hsl(var(--muted-foreground)/0.28)_1px,transparent_1.2px)]"
+          className="pointer-events-none absolute -bottom-40 -right-40 left-0 top-0 max-w-none [background-image:radial-gradient(hsl(var(--muted-foreground)/0.28)_1px,transparent_1.2px)]"
         />
         {/* World items are absolutely placed in a zero-width box, so the
             global mobile rule `* { max-width: 100% }` (globals.css) would
