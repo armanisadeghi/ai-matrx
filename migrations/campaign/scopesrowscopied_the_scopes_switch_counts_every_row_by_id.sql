@@ -1,4 +1,4 @@
--- additive: yes
+-- chair-step: one NEW read-only function (platform.cutover_scope_rows_copied) closed to client roles — REVOKE from PUBLIC, anon and authenticated, GRANT EXECUTE to service_role only, which the additive allow-list refuses by name — plus two replaced function bodies (same signatures, grants kept). No DROP, no data touched, no table DDL.
 -- based-on: platform._cutover_seam_readiness(text, uuid) bdb96b9be2bbd55ab8047959000c18b541585b0b369a8e0ada5fddb0d1630f15
 -- based-on: platform._final_switch_readiness() 4a30c98c55f363aaef082ab5bec0f0515c93d23b98b12f4cfe77cfe1ca9010b0
 -- lane: SCOPES-ROWS-COPIED
