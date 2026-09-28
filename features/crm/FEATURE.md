@@ -1085,6 +1085,19 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
 
 ## Change log
 
+- page-pass 2026-09-28 round 8 (/crm/[partyId]), after a blind "mediocre":
+  type single-record, posture sharp after Linear. Desktop header shows every
+  action (Add/Send email, Copy link, Log an activity, then Move to trash… after
+  a divider) — no "…" menu; the phone keeps the name, with Log an activity as
+  a 44px icon and the rest in the ⋮ sheet. Log an activity focuses Subject
+  (never Minutes). Copy link falls back to the manual-copy dialog. Paid
+  search confirm is "Find contact info?" and quotes points, never dollars.
+  Files/Tasks render as cards without the grid's loose SOURCES/WORKSPACES
+  labels. People add form labels Title and Start date; Addresses' button is
+  "Add", enabled once a street or city is typed. "Add to contacts" and the
+  provenance line read the same at every width. Phone identity rows are
+  label | value inline. Shared: the ⋮ sheet restyles page rows to shell rows;
+  Surface Context counts empty values as supplied ("53/63 supplied (32 empty)").
 - page-pass 2026-09-27 round 7 (/crm/[partyId]): phone record actions are
   one-tap rows in the shell's ⋮ sheet (RouteHeader contract, no nested menu);
   desktop header is primary action then one "…"; agent targets
