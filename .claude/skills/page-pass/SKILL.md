@@ -96,7 +96,7 @@ session, never you.
 | | **Local lane** (a Mac session) | **Cloud lane** (a cloud container) |
 |---|---|---|
 | Server | none needed to look; `pnpm preview:start` (the ONE shared server, `http://<session>.localhost:3001`) only when you must see an unreleased change | **none** — a container cannot run a dev server and a type check together |
-| Look and prove | `TMPDIR=/tmp/pl-<you> pnpm page:look --route <route> --commit <sha>` against `https://aimatrx.com` after the release carrying your commit (about hourly; exit 3 = not live yet — work on something else) | same |
+| Look and prove | `TMPDIR=/tmp/pl-<you> pnpm page:look --route <route> --commit <sha>` against `https://aimatrx.com` (admin routes are served from `https://manage.aimatrx.com` — check the commit there) after the release carrying your commit (about hourly; exit 3 = not live yet — work on something else) | same |
 | Agent surface proof | `TMPDIR=/tmp/pp-<you> pnpm surface:probe --surface <name> --route <route> --commit <sha> --out <file>` (a window/dialog surface: add `--open 'SELECTOR=>TEXT'` so it is opened before the read) (+ `--agent '<request>'` for write targets) | same |
 | A view you cannot see | `deferred-visual` with the exact step | same |
 
