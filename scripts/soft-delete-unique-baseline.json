@@ -320,6 +320,21 @@
       "index": "web.news_item:news_item_org_url_key_uq",
       "reason": "url_key is the URL identity of an ingested news item within an organization, an EXTERNAL REFERENCE: the same URL re-ingested must map to the same row, archived or not, or every crawl after a removal would create a duplicate of the item the person removed. Not a name anybody re-creates by hand; there is no client write path on this table.",
       "ruled": "CI-FIX on ai-matrx#249, 2026-09-28"
+    },
+    {
+      "index": "context.template_context_items:unique_item_key_per_template_type",
+      "reason": "key is a PLATFORM TEMPLATE SCHEMA IDENTITY within one template scope type, not a person-created name: the template resolver materializes each scope field by this key and the catalogue is platform-admin-written only. An archived catalogue field must keep its key so an attempted re-seed cannot create two incompatible definitions for the same field in one template type.",
+      "ruled": "CI-FIX integration intake, 2026-09-28 — types and D31 template guard confirm this is a platform-owned catalogue identity"
+    },
+    {
+      "index": "context.template_scope_types:unique_type_key_per_template",
+      "reason": "key is a PLATFORM TEMPLATE SCHEMA IDENTITY within one template, not a person-created name: scope application and the template guard address a type by this stable key, while writes are platform-admin-only. Releasing an archived type key would let a re-seed create a second structural definition that readers cannot distinguish.",
+      "ruled": "CI-FIX integration intake, 2026-09-28 — types and D31 template guard confirm this is a platform-owned catalogue identity"
+    },
+    {
+      "index": "ui.ui_surface_item_type:ui_surface_item_type_key",
+      "reason": "(surface_name, name) is the SYSTEM SURFACE SCHEMA IDENTITY used by the manifest sync upsert, not a reusable person-created label. The defining migration explicitly sets p_soft_delete=false and the parent surface FK cascades deletion; retaining uniqueness prevents an archived ghost from becoming a second item type for the same manifest identity.",
+      "ruled": "CI-FIX integration intake, 2026-09-28 — alchemy_declare_columns_and_item_key.sql defines the sync identity and non-soft-delete contract"
     }
   ]
 }
