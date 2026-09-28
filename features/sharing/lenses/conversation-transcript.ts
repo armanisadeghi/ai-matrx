@@ -7,9 +7,8 @@
  * `access_ladder_t19_shared_chat_shows_its_messages.sql`, extended by
  * `access_ladder_t19b_shared_chat_files_tools_blocks.sql`). The database has
  * ALREADY narrowed it to what a link holder may see: visible user/assistant
- * messages; text; each tool step as its CLEANED record (arguments and output
- * passed through `platform.share_redact`; credential / raw-log tools withheld
- * to name + status); media with a `file_id` the token-scoped byte route
+ * messages; text; each tool step as written (no masking pass — access-ladder
+ * law; credential / raw-log / coding-session tools withheld to name + status); media with a `file_id` the token-scoped byte route
  * serves (or a public-CDN URL); decision-question / decision-answer /
  * speech-script payloads. This module only validates the shape and groups
  * consecutive assistant messages into one turn, the way the chat itself reads.

@@ -314,13 +314,14 @@ direct client call runs under the caller's own RLS; its reach exists only inside
 (`is_visible_to_user`, status active/edited, not deleted) user + assistant messages, first 500;
 thinking blocks and their provider signatures never. Per part (T-19b,
 `migrations/access_ladder_t19b_shared_chat_files_tools_blocks.sql` +
-`access_ladder_t19b2_coding_session_steps_withheld.sql`):
+`access_ladder_t19b2_coding_session_steps_withheld.sql` +
+`access_ladder_t19b3_shared_chat_no_masking.sql`):
 - **text** verbatim.
 - **tool_call** → the chat's `chat.tool_call` row (joined on conversation + call id): name, status,
-  error, timestamps, and arguments + output passed through **`platform.share_redact`** — the one
-  cleaner: secret-named keys (password, token, api/private/access/secret key, authorization,
-  cookie, credential, OTP, SSN, env, …) lose their values; provider keys, JWTs, bearer values, PEM
-  private keys, URL passwords and `SECRET_NAME=value` assignments are scrubbed from strings. Output
+  error, timestamps, arguments and output **as written — no masking pass** (the access-ladder law
+  forbids scrubbing; `platform.share_redact` was removed in T-19b3). A secret a person pasted or a
+  tool printed is served as written; that exposure is named in `common-docs/operations/go-live-gates.md`
+  ("Protected content written in plain text") and closes with encrypt-before-write (T-23). Output
   over 60,000 chars falls back to `output_preview` (`output_truncated`). **Withheld** (name + status
   only, `withheld: true`): `platform.share_tool_is_withheld(name)` (credential_login, vault*,
   secure_delivery*, *secret*, *credential*, *password*, coding_session*, env tools) and every
@@ -432,6 +433,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 
 - `2026-09-28` — **Access ladder T-19b: a shared chat shows its files, its cleaned tool results and its decision / speech-script blocks.** Projection extended (`platform.share_redact`, withheld credential and coding-session steps); new token-scoped child-file byte route authorized by `public.share_link_child_file`; the lens renders tool steps through the chat's own tool cards. **Evidence (admin@admin.com, a real conversation with an uploaded menu-board image, a PDF cost sheet, and 10 research_web / cloud_browser steps):** against the files service run locally on this commit — chat A's token + chat A's image → 200 image/jpeg inline; + chat A's PDF `?inline=false` → 200 `attachment`; chat A's token + chat B's image, chat B's token + chat A's image or PDF, chat A's token + the owner's own upload not referenced by the chat, a bogus token, a junk id → all 404. Signed-out `/s/<token>` SSR HTML carries `noindex`, the image and PDF child URLs, the PDF card and the "10 tool calls" line. Until the files service deploys this route, the image shows the honest "could not be loaded" line.
+- `2026-09-28` — **Access ladder T-19b3: no masking pass on shared chats.** `platform.share_redact` (regex / key-name scrubbing of tool arguments and outputs) dropped — the access-ladder law forbids partial scrubbing. Type-based withholding stays (credential/vault/secret/env tools, every coding-session step → name + status). Exposure named in go-live-gates "Protected content written in plain text" (T-23). `migrations/access_ladder_t19b3_shared_chat_no_masking.sql`.
 - `2026-09-27` — **Access ladder T-19: a shared AI chat shows its messages.** `resolve_share_token` now attaches `children` from the new `platform.share_link_children` after every token check; the `conversation` lens renders the narrowed transcript signed-out, SSR, noindex, with a continue-this-chat CTA. `/s/[token]` resolves once per request (a view no longer counts twice against `max_uses`) and drops the doubled brand from its title. **Localhost evidence (admin@admin.com, conversation `c282678f…`):** link created in the Share dialog's Public tab; opened on a fresh signed-out host — title, 5-message count, the user prompt, "Used Fs write / Fs patch / Fs read", the full answer, the CTA card; SSR HTML carries the answer text and `noindex, nofollow`; no thinking signature in the HTML; no horizontal overflow at 375px; after "Turn off share link" the same URL shows "This link has been turned off by its owner."
 
 - `2026-09-26` — **Access ladder T-9: sharing reaches every type.** 127 more types became link-shareable (public_columns derived from display column names; types with nothing to show stay off). Personal-variant RLS emits the owner-grant arm, 8 personal tables registered for direct sharing (TS mirror + snapshot synced, plus `agent_term_list`/`document` drift from other lanes). Billing customer/subscription/connect_account re-registered Organization (ledger variant: member read, server-only writes). Proven live in rolled-back transactions: admin shares an `mcp_user_conn` row with test@test.com through `share_resource_with_user` → test reads 1, a third user 0, kernel agrees; anon resolves `create_share_link` tokens for a conversation, podcast episode and skill.

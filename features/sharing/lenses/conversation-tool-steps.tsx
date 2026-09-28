@@ -8,8 +8,8 @@
  * exactly as a reader of the chat sees it. A run of consecutive steps folds
  * into the chat's `ToolCallBatch` line.
  *
- * What reaches this component was cleaned in the database
- * (`platform.share_redact`); a credential or raw-log tool arrives withheld
+ * What reaches this component is the step as written (no masking pass — the
+ * access-ladder law); a credential, raw-log or coding-session tool arrives withheld
  * (name + status only) and says so under its line.
  *
  * Loaded through `next/dynamic` from `./conversation-lens.tsx` so the tool
