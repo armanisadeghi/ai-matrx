@@ -43,6 +43,7 @@ function makeBrand(overrides: Partial<MarketingBrand> = {}): MarketingBrand {
     notes: null,
     status: "active",
     visibility: "internal",
+    shown_to: null,
     profile: {},
     settings: {},
     integrations: {},
@@ -81,6 +82,7 @@ function makeSite(overrides: Partial<MarketingSite> = {}): MarketingSite {
     settings: {},
     status: "active",
     visibility: "internal",
+    shown_to: null,
     plan_profile_id: null,
     ...overrides,
   };

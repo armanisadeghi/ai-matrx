@@ -121,6 +121,7 @@ function topic(id: string, name: string): ResearchTopic {
     version: 1,
     videos_per_keyword: 2,
     visibility: "personal",
+    shown_to: null,
   } satisfies Database["research"]["Tables"]["rs_topic"]["Row"]);
 }
 

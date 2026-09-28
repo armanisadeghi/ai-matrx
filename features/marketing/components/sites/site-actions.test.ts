@@ -40,6 +40,7 @@ const site: SiteListRow = {
   updated_by: "user-1",
   version: 1,
   visibility: "internal",
+  shown_to: null,
   health_score: 92.5,
   scored_pages: 17,
   page_count: 20,

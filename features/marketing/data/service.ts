@@ -266,7 +266,7 @@ export function assertMutated(
 
 /** Every `web.site` column — ONE list so selects can never drift per call site. */
 export const SITE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id, shown_to";
 
 /**
  * VIEW LAW: listSites / listSiteOptions are DELIBERATE org-browse surfaces,
@@ -2783,7 +2783,7 @@ export async function dismissDiscoveredItem(itemId: string): Promise<void> {
 // ============================================================================
 
 const BRAND_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, integrations, profile";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, integrations, profile, shown_to";
 
 export async function listBrands(
   state: MatrxDataTableQueryState,
@@ -4278,7 +4278,7 @@ const BUSINESS_LOCATION_COLUMNS =
   "id, organization_id, brand_id, name, status, is_primary, street_address, address_line2, locality, region, postal_code, country_code, phone, email, website_url, latitude, longitude, business_type, categories, opening_hours, special_hours, attributes, identifiers, description, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields";
 
 const LISTING_PUBLISHER_COLUMNS =
-  "id, organization_id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata";
+  "id, organization_id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, shown_to";
 
 const LOCATION_LISTING_COLUMNS =
   "id, organization_id, location_id, publisher_id, status, listing_url, observed, nap_match, match_score, last_checked_at, source, notes, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields";

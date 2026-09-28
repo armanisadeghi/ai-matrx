@@ -66,6 +66,7 @@ const row: SiteListRow = {
   updated_by: "user-1",
   version: 3,
   visibility: "internal",
+  shown_to: null,
 };
 
 const controls: MatrxDataTableMobileCardControls = {

@@ -34,6 +34,7 @@ const node = (overrides: Partial<PlanNodeRow> = {}): PlanNodeRow => ({
   updated_by: null,
   version: 1,
   visibility: "personal",
+  shown_to: null,
   ...overrides,
 });
 

@@ -647,6 +647,7 @@ function buildAngles(now: number): StoryAngle[] {
       metadata: {},
       custom_fields: {},
       visibility: "internal",
+      shown_to: null,
     } satisfies StoryAngle;
   });
 }
@@ -826,6 +827,7 @@ function buildRequests(now: number, angles: readonly StoryAngle[]): SourceReques
     metadata: {},
     custom_fields: {},
     visibility: "internal",
+    shown_to: null,
   })) satisfies SourceRequest[];
 }
 
@@ -939,6 +941,9 @@ function buildCoverage(now: number, angles: readonly StoryAngle[]): CoverageMent
           seed.angleIndex === null ? null : (angles[seed.angleIndex]?.id ?? null),
       },
       custom_fields: {},
+      // Not yet judged by the relevance pass.
+      verdict: null,
+      verdict_reason: null,
     } satisfies CoverageMention;
   });
 }

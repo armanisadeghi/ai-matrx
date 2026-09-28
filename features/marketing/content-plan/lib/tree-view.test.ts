@@ -43,6 +43,7 @@ function planNode(
     updated_by: null,
     version: 1,
     visibility: "internal",
+    shown_to: null,
   };
 }
 

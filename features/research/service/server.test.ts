@@ -56,6 +56,7 @@ const TOPIC_ROW: Database["research"]["Tables"]["rs_topic"]["Row"] = {
   version: 1,
   videos_per_keyword: 0,
   visibility: "personal",
+  shown_to: null,
 };
 
 const mockResolveAccess = jest.mocked(resolveAccess);
