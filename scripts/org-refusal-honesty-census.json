@@ -10,9 +10,7 @@
     "features/agent-comparison/service/comparisonSetsService.ts",
     "features/agent-comparison/service/responseFeedbackService.ts",
     "features/agent-connections/redux/skl/thunks.ts",
-    "features/agents/agent-creators/services/agentBuilderService.ts",
     "features/agents/components/memory/service/agent-memory.service.ts",
-    "features/agents/redux/agent-shortcuts/thunks.ts",
     "features/agents/redux/agent-shortcuts/thunks/createShortcutFromAgentSurface.thunk.ts",
     "features/agents/samples/service.ts",
     "features/agents/ui-first-tools/service/agent-plan.service.ts",
@@ -25,11 +23,9 @@
     "features/education/onboard/useKitGeneration.ts",
     "features/education/publishing/verifyGeneratedDeck.ts",
     "features/education/study/service/planService.ts",
-    "features/education/study/service/studyService.ts",
     "features/files/virtual-sources/adapters/code-files.ts",
     "features/files/virtual-sources/adapters/notes.ts",
     "features/flashcards/components/set-detail/AddMoreCardsButton.tsx",
-    "features/flashcards/data/fcService.ts",
     "features/image-studio/api/python.ts",
     "features/kg-suggestions/hooks/useAutoRagPreference.ts",
     "features/marketing/search-console/data-class-rules.ts",
@@ -51,7 +47,6 @@
     "features/tool-registry/shared/toolBindings.service.ts",
     "features/transcripts/service/transcriptsService.ts",
     "hooks/canvas/useCanvasLike.ts",
-    "lib/api/hr-contract-client.ts",
-    "lib/api/matrx-transport.ts"
+    "lib/api/hr-contract-client.ts"
   ]
 }
