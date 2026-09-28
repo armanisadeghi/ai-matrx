@@ -1,4 +1,4 @@
--- chair-step: INVERSE of udt_row_in_trash_refusal_is_a_409.sql — the two writers raise the in-Trash sentence with SQLSTATE 55000 again (HTTP 500 through PostgREST) and workbench.udt_refuse_row_in_trash is dropped once nothing else calls it.
+-- chair-step: INVERSE of udt_row_in_trash_refusal_is_a_conflict.sql — the two writers raise the in-Trash sentence with SQLSTATE 55000 again (HTTP 500 through PostgREST) and workbench.udt_refuse_row_in_trash is dropped once nothing else calls it.
 -- based-on: public.udt_upsert_row(uuid, uuid, jsonb) 386a199c4b29aa190edee6e329b53555d12a6c4c46f5f1f8a17869b9805bf54b
 -- based-on: public.udt_upsert_cell(uuid, uuid, text, jsonb) 706fc824eb9fcf6ac24651ac53854cd607b1904116b399b79980d57219963589
 --
