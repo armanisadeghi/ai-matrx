@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 /*
- * "Save Content" with no workspace chosen used to do nothing: the transport
+ * "Save Content" with no organization chosen used to do nothing: the transport
  * threw OrganizationContextError into an unhandled rejection and the dialog
  * sat there. It must ask for a workspace first and say out loud when nothing
  * was added.
@@ -43,10 +43,13 @@ jest.mock("@/lib/toast", () => ({
 
 import { PasteContentModal } from "../PasteContentModal";
 
+import { OrganizationContextError } from "@/lib/api/organization-context";
+
 function contextError() {
-  const e = new Error("Select an organization before sending this request.");
-  e.name = "OrganizationContextError";
-  return e;
+  return new OrganizationContextError(
+    "organization_context_required",
+    "Select an organization before sending this request.",
+  );
 }
 
 let host: HTMLDivElement;
@@ -95,13 +98,16 @@ async function typeAndSave(onSaved: () => void) {
   return save;
 }
 
-it("says 'Nothing was added: choose a workspace first' instead of failing silently", async () => {
+it("says no organization is selected, with the remedy, instead of failing silently", async () => {
   mockEnsureOrgId.mockRejectedValue(contextError());
   mockPaste.mockRejectedValue(contextError());
   const onSaved = jest.fn();
   const save = await typeAndSave(onSaved);
   expect(mockToastError).toHaveBeenCalledWith(
-    "Nothing was added: choose a workspace first",
+    "Choose an organization first",
+    expect.objectContaining({
+      description: expect.stringContaining("Nothing was saved because no organization is selected."),
+    }),
   );
   expect(onSaved).not.toHaveBeenCalled();
   expect(save.disabled).toBe(false);

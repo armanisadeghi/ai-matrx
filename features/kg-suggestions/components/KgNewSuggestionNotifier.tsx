@@ -20,6 +20,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import { Lightbulb, X } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
@@ -92,9 +93,13 @@ export default function KgNewSuggestionNotifier() {
                 for (const sid of unseenIds) next.add(sid);
                 return next;
               });
-              void ackSuggestions(userId, unseenIds).catch(() => {
+              void ackSuggestions(userId, unseenIds).catch((error: unknown) => {
                 // Best-effort: a failed durable ack just means it may resurface
                 // on a later session — never block the dismissal on the write.
+                // Except the one refusal the person can fix: the dismissal is
+                // filed in an organization, and with none selected it was not
+                // kept, so "don't show again" would silently not hold.
+                presentOrganizationRefusal(error, { subject: "Your \"don't show again\"", act: "saved" });
               });
             }}
           />

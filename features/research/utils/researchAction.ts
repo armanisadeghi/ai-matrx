@@ -10,26 +10,18 @@
  * uses), then runs the action. Every outcome is said out loud:
  *   - the person closes the picker → nothing happened, by their choice; the
  *     platform treats that answer as silence (no toast), and so do we;
- *   - the picker cannot be shown at all → "Nothing was added: choose a
- *     workspace first";
+ *   - no organization could be had → the platform's one refusal
+ *     (`presentOrganizationRefusal`): "Nothing was saved because no
+ *     organization is selected", with the remedy;
  *   - the action itself fails → the server's own sentence (a 4xx carries
  *     the door's words, never the generic envelope text).
  * Returns the action's result, or `null` when it did not run or failed.
  */
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import { toast } from "@/lib/toast";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
-
-export const NO_WORKSPACE_SENTENCE = "Nothing was added: choose a workspace first";
-
-function isOrganizationContextError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { name?: unknown }).name === "OrganizationContextError"
-  );
-}
 
 export async function runResearchAction<T>(
   failureTitle: string,
@@ -40,10 +32,9 @@ export async function runResearchAction<T>(
     return await action();
   } catch (error) {
     if (isOrganizationSelectionCancelled(error)) return null;
-    if (isOrganizationContextError(error)) {
-      toast.error(NO_WORKSPACE_SENTENCE);
-      return null;
-    }
+    // The platform's one refusal sentence, with the remedy — for the client
+    // kernel's refusal AND the server's `organization_required`.
+    if (presentOrganizationRefusal(error, { act: "saved" })) return null;
     toast.error(`${failureTitle}: ${sourceRefusalSentence(error)}`);
     return null;
   }

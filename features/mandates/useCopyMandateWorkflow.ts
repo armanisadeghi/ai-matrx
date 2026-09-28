@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast";
 import { duplicateWorkflow } from "@/features/workflow-runtime/browse/service";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 
 export function useCopyMandateWorkflow(): {
   copyingWorkflow: boolean;
@@ -38,9 +39,9 @@ export function useCopyMandateWorkflow(): {
       window.location.assign(`/workflows/${copy.id}`);
       return copy.id;
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        toast.error(`Could not copy the workflow: ${extractErrorMessage(error)}`);
-      }
+      if (isOrganizationSelectionCancelled(error)) return null;
+      if (presentOrganizationRefusal(error, { subject: "The workflow copy", act: "made" })) return null;
+      toast.error(`Could not copy the workflow: ${extractErrorMessage(error)}`);
       return null;
     } finally {
       setCopying(false);

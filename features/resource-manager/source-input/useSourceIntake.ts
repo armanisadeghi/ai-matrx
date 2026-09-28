@@ -51,6 +51,9 @@ import {
   type SourceLandingBody,
 } from "@/features/sources/api/sourcesApi";
 import { buildPastedTextLanding } from "@/features/sources/api/pastedText";
+// Every `ensureOrgId` here lands in a catch that fails the card with `addFailureSentence`,
+// which says the organization refusal in the platform's words, with the remedy.
+// org-refusal-presented-by: features/sources/addFailure.ts
 import { addFailureSentence } from "@/features/sources/addFailure";
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import { isAssociationTargetType } from "@ai-matrx/associations";

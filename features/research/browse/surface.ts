@@ -18,6 +18,7 @@ import {
 } from "@/features/surfaces/manifests/research-topics.manifest";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { createTopic, updateTopic, updateTopicMeta } from "../service";
 import { archiveTopic, restoreTopic } from "./actions";
 import type { ResearchTopicListRow } from "./types";
@@ -112,7 +113,9 @@ export function createResearchTopicsWriteHandlers(list: List) {
         refusalFor: (error: unknown) =>
           isOrganizationSelectionCancelled(error)
             ? "The person closed the organization picker, so no topics were created. Ask which organization the topics belong in."
-            : undefined,
+            : isOrganizationRequiredError(error)
+              ? "No organization is selected, so no topics were created. Ask the person to choose the organization the topics belong in, then create them again."
+              : undefined,
       },
       update: {
         parse: (value: unknown) => parseUpdateTopics(value, list.rows),

@@ -63,6 +63,11 @@ import { selectOrganizationId, selectOrganizationName } from "@/lib/redux/slices
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import {
+  organizationRefusalMessage,
+  presentOrganizationRefusal,
+} from "@/lib/organizations/organizationRefusalToast";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { archiveRecord } from "@/features/trash/service";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
@@ -593,7 +598,16 @@ export function KnowledgeHubPage({
 
   const saveNewView = async (values: SaveViewValues) => {
     if (sample) throw new Error(SAMPLE_WRITE_REFUSAL);
-    const organizationId = await ensureOrgId(activeOrgId);
+    let organizationId: string;
+    try {
+      organizationId = await ensureOrgId(activeOrgId);
+    } catch (err) {
+      // A saved view is filed in an organization. The dialog prints what it catches, so it
+      // gets the platform's sentence with the remedy — never the transport's.
+      if (isOrganizationRequiredError(err))
+        throw new Error(organizationRefusalMessage({ subject: "This view", act: "saved" }));
+      throw err;
+    }
     const { id, pinError } = await createHubView({
       name: values.name,
       organizationId,
@@ -623,6 +637,8 @@ export function KnowledgeHubPage({
       recordToast.success(ref, done);
       afterViewWrite();
     } catch (err) {
+      // "Duplicate" files the copy in an organization; with none selected, say so with the remedy.
+      if (presentOrganizationRefusal(err, { subject: `"${v.name}"`, act: "changed" })) return;
       recordToast.error(ref, err instanceof Error ? err.message : "The view was not changed.");
     }
   };

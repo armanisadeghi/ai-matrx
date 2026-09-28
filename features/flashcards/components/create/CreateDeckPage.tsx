@@ -58,6 +58,11 @@ import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import {
+  organizationRefusalMessage,
+  presentOrganizationRefusal,
+} from "@/lib/organizations/organizationRefusalToast";
 import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import type { Depth } from "@/features/education/assessment/data/types";
@@ -285,6 +290,13 @@ export function CreateDeckPage() {
       if (hasSources) await runFromSources();
       else await runFromTopic();
     } catch (e) {
+      // "Not now" at the organization picker: nothing happened, nothing to say.
+      if (isOrganizationSelectionCancelled(e)) return;
+      // A deck is filed in an organization; with none selected, say so with the remedy.
+      if (presentOrganizationRefusal(e, { subject: "The deck", act: "made" })) {
+        setRunError(organizationRefusalMessage({ subject: "The deck", act: "made" }));
+        return;
+      }
       const message =
         e instanceof Error ? e.message : "The deck could not be made. Try again.";
       setRunError(message);

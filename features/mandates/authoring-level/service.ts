@@ -18,10 +18,11 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import { parseCallApiError } from "@/lib/api/errors";
+import { OrganizationContextError } from "@/lib/api/organization-context";
+import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { createClient } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "@/features/mandates/service";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { CreateMandateInput, DraftInput } from "@/features/mandates/authoring/service";
 import type { MandateListLevel } from "@/features/mandates/member-list/types";
 
@@ -75,10 +76,12 @@ export async function createSoftMandate(
   input: CreateSoftMandateInput,
 ): Promise<CreatedSoftMandate> {
   await requireAuthenticatedSupabaseSession(createClient());
-  // Where the request is filed. An organization mandate names its organization; a user-level
-  // mandate is filed in the organization the person has selected (asked when none is).
-  const home =
-    input.level === "organization" ? (input.organizationId ?? null) : await ensureOrgId(null);
+  // Where the request is filed. An organization mandate names its organization. A user-level
+  // mandate is homed by the server in the request's active organization, which `callApi`
+  // carries itself: with none selected, the write the person pressed is HELD and they are
+  // asked (the canonical organization gate), and a refusal it could not ask about is announced
+  // there with the remedy. Resolving it here too would only duplicate that one path.
+  const home = input.level === "organization" ? (input.organizationId ?? null) : null;
   const result = await dispatch(
     callApi({
       path: "/mandates/soft",
@@ -87,6 +90,11 @@ export async function createSoftMandate(
       ...(home ? { scopeOverrides: { organization_id: home } } : {}),
     }),
   );
+  // The organization gate's two answers keep their identity, so the page can tell "not now"
+  // (nothing happened) and "no organization" (say so, with the remedy) from a server refusal.
+  if (result.error?.code === "organization_selection_cancelled") throw new OrganizationSelectionCancelled();
+  if (result.error?.code === "organization_context_required")
+    throw new OrganizationContextError("organization_context_required", result.error.message);
   // The BackendApiError itself (its message IS the server's user message), so a
   // caller can tell a 409 "key taken" from any other refusal.
   if (result.error) throw parseCallApiError(result.error);

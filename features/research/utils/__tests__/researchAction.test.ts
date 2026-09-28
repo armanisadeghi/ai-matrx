@@ -13,12 +13,26 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { NO_WORKSPACE_SENTENCE, runResearchAction } from "../researchAction";
+import { OrganizationContextError } from "@/lib/api/organization-context";
+import { runResearchAction } from "../researchAction";
 
 function contextError() {
-  const e = new Error("Select an organization before sending this request.");
-  e.name = "OrganizationContextError";
-  return e;
+  return new OrganizationContextError(
+    "organization_context_required",
+    "Select an organization before sending this request.",
+  );
+}
+
+/** The platform's one refusal: a title, and the sentence with its remedy — never the kernel's words. */
+function expectOrganizationRefusal() {
+  expect(mockToastError).toHaveBeenCalledTimes(1);
+  expect(mockToastError).toHaveBeenCalledWith(
+    "Choose an organization first",
+    expect.objectContaining({
+      description: expect.stringContaining("Nothing was saved because no organization is selected."),
+    }),
+  );
+  expect(JSON.stringify(mockToastError.mock.calls)).not.toContain("Select an organization before");
 }
 
 beforeEach(() => {
@@ -41,20 +55,28 @@ it("asks for a workspace before the action runs, then runs it", async () => {
   expect(mockToastError).not.toHaveBeenCalled();
 });
 
-it("says 'choose a workspace first' when no workspace can be had — never a silent log", async () => {
+it("says no organization is selected, with the remedy, when none can be had — never a silent log", async () => {
   mockEnsureOrgId.mockRejectedValue(contextError());
   const action = jest.fn();
   expect(await runResearchAction("Couldn't re-read", action)).toBeNull();
   expect(action).not.toHaveBeenCalled();
-  expect(mockToastError).toHaveBeenCalledWith(NO_WORKSPACE_SENTENCE);
+  expectOrganizationRefusal();
 });
 
-it("says the same when the action itself is refused for a missing workspace", async () => {
+it("says the same when the action itself is refused for a missing organization", async () => {
   mockEnsureOrgId.mockResolvedValue("org1");
   await runResearchAction("Couldn't save", async () => {
     throw contextError();
   });
-  expect(mockToastError).toHaveBeenCalledWith(NO_WORKSPACE_SENTENCE);
+  expectOrganizationRefusal();
+});
+
+it("says the same when the SERVER refuses for a missing organization (organization_required)", async () => {
+  mockEnsureOrgId.mockResolvedValue("org1");
+  await runResearchAction("Couldn't save", async () => {
+    throw Object.assign(new Error("organization required"), { code: "organization_required" });
+  });
+  expectOrganizationRefusal();
 });
 
 it("treats closing the picker as the person's answer: nothing runs, nothing shouts", async () => {

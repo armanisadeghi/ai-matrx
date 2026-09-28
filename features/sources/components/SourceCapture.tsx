@@ -43,6 +43,9 @@ import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotice";
 import { landSource, sourceRefusalSentence, type LandingNotice } from "@/features/sources/api/sourcesApi";
 import { buildPastedTextLanding } from "@/features/sources/api/pastedText";
+// Both `ensureOrgId` paths (paste link, paste text) land in a catch that prints
+// `addFailureSentence`, which says the organization refusal with its remedy.
+// org-refusal-presented-by: features/sources/addFailure.ts
 import { addFailureSentence } from "@/features/sources/addFailure";
 import { SaveSourcePanel, type SaveSourceItem } from "@/features/sources/SaveSourcePanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

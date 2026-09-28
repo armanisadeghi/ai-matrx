@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import {
   Webhook as WebhookIcon,
   Plus,
@@ -443,6 +444,9 @@ export function WebhooksManager() {
       toast.success("Webhook created");
       await reload();
     } catch (e) {
+      // A webhook is filed in an organization; with none selected the create
+      // asked (or could not ask) — say so with the remedy, never the kernel's sentence.
+      if (presentOrganizationRefusal(e, { subject: "The webhook", act: "created" })) return;
       toast.error(e instanceof Error ? e.message : "Create failed");
     } finally {
       setSubmitting(false);

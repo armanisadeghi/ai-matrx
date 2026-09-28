@@ -32,9 +32,24 @@ import { readAllRows } from "@ai-matrx/data/db";
 
 import { supabase } from "@/utils/supabase/client";
 import { postGoogleBackend } from "@/features/marketing/google/service";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 import type { ChannelAnalyticsDayRow, YouTubeVideoRow } from "./types";
+
+/**
+ * The organization every door here acts in is the BRAND's own — carried on its
+ * bound channel (`BrandChannelPanel`: `bound.organizationId`), never the
+ * header's selection. So nothing here resolves one or asks the person for one:
+ * the selection plays no part, and "select an organization" would be a lie.
+ * An absent id is a caller that has not loaded the brand yet (the panel only
+ * enables these calls once it has), refused in words.
+ */
+function brandOrganizationId(organizationId: string | null | undefined): string {
+  const id = organizationId?.trim();
+  if (!id) {
+    throw new Error("This brand's organization is not loaded yet, so the channel was not read. Try again in a moment.");
+  }
+  return id;
+}
 
 /** Every column: the Detail renders the row and the panel shares the read. */
 const VIDEO_COLUMNS = "*";
@@ -66,7 +81,7 @@ export async function readChannelVideos(args: {
   channelResourceId?: string | null;
   signal?: AbortSignal;
 }): Promise<YouTubeVideoRow[]> {
-  const organizationId = requireOrganizationContext(args.organizationId);
+  const organizationId = brandOrganizationId(args.organizationId);
   return readAllRows<YouTubeVideoRow>(
     ({ from, to }) => {
       let query = supabase
@@ -126,7 +141,7 @@ export async function readChannelAnalytics(args: {
   lane: "channel" | "video";
   signal?: AbortSignal;
 }): Promise<ChannelAnalyticsDayRow[]> {
-  const organizationId = requireOrganizationContext(args.organizationId);
+  const organizationId = brandOrganizationId(args.organizationId);
   return readAllRows<ChannelAnalyticsDayRow>(
     ({ from, to }) => {
       let query = supabase
@@ -187,7 +202,7 @@ export async function refreshYouTubeChannel(args: {
   startDate: string;
   endDate: string;
 }): Promise<YouTubeRefreshResult> {
-  const organizationId = requireOrganizationContext(args.organizationId);
+  const organizationId = brandOrganizationId(args.organizationId);
   const response = await postGoogleBackend(
     REFRESH_PATH,
     {
