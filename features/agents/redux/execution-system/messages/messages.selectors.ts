@@ -442,7 +442,7 @@ export function extractFlatText(
 
 function hasDocumentKindMarker(
   value: unknown,
-): value is Record<string, unknown> {
+): value is Record<string, unknown> & { __kind: string } {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -497,7 +497,8 @@ export function extractAnswerDocumentText(
       const part = entry.part;
       if (NON_ANSWER_BLOCK_TYPES.has(part.type)) continue;
       if (part.type === "text") {
-        textRun.push(part.text);
+        // `text` is optional on the wire contract; an absent run adds nothing.
+        if (part.text !== undefined) textRun.push(part.text);
         continue;
       }
       const structured = stringifyDocumentPart(part);

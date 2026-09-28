@@ -226,6 +226,10 @@ describe("recoveredAssistantAnswerText", () => {
       usage: { input_tokens: 10, output_tokens: 5 },
       cost_usd: 0.001,
     };
+    const persistedContent = [
+      { type: "thinking", text: "private" },
+      structuredResult,
+    ];
     const state = {
       messages: {
         byConversationId: {
@@ -235,10 +239,7 @@ describe("recoveredAssistantAnswerText", () => {
               assistant: {
                 id: "assistant",
                 role: "assistant",
-                content: [
-                  { type: "thinking", text: "private" },
-                  structuredResult,
-                ],
+                content: persistedContent,
               },
             },
           },
@@ -249,8 +250,10 @@ describe("recoveredAssistantAnswerText", () => {
     expect(recoveredAssistantAnswerText(state, "cleanup")).toBe(
       JSON.stringify(structuredResult),
     );
-    expect(
-      state.messages.byConversationId.cleanup.byId.assistant.content,
-    ).toEqual([{ type: "thinking", text: "private" }, structuredResult]);
+    // Reading the answer never rewrites the persisted parts.
+    expect(persistedContent).toEqual([
+      { type: "thinking", text: "private" },
+      structuredResult,
+    ]);
   });
 });

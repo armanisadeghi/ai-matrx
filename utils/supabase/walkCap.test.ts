@@ -235,8 +235,11 @@ describe("walk-cap dev endpoint framing and safe parking", () => {
   let endpointState: { registry: WalkRegistry; listeners: Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>; readKnobs: () => Promise<WalkKnobs> };
 
   beforeEach(() => {
-    process.env.NODE_ENV = "development";
-    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://db.matrxserver.com";
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: "development",
+      NEXT_PUBLIC_SUPABASE_URL: "https://db.matrxserver.com",
+    };
     nowSpy = jest.spyOn(Date, "now").mockReturnValue(T0);
     endpointState = {
       registry: registryWith([]),

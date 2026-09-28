@@ -122,26 +122,19 @@ export async function fetchAgentOutputSchemas(
   // `agent.definition` is a signed-in read; a guest (a public app at
   // /p/<slug>) can read no agent's schema, so it has none — not a failure.
   // Decided INSIDE the shared read so concurrent callers still dedupe on it.
-  const query = hasBrowserSession()
-    .then((signedIn) =>
-      signedIn
-        ? supabase
-            .schema("agent")
-            .from("definition")
-            .select("id, output_schema")
-            .in("id", misses)
-        : { data: [], error: null },
-    )
-    .then(({ data, error }) => {
+  const query = (async () => {
+    if (!(await hasBrowserSession())) {
+      return misses.map((id) => ({ id, value: null }));
+    }
+    const { data, error } = await supabase
+      .schema("agent")
+      .from("definition")
+      .select("id, output_schema")
+      .in("id", misses);
     if (error) throw error;
-    const byId = new Map(
-      (data ?? []).map((row) => [
-        row.id,
-        (row as { output_schema?: unknown }).output_schema ?? null,
-      ]),
-    );
+    const byId = new Map(data.map((row) => [row.id, row.output_schema]));
     return misses.map((id) => ({ id, value: byId.get(id) ?? null }));
-  });
+  })();
   for (const id of misses) {
     inFlight.set(
       id,

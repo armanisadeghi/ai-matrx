@@ -20,7 +20,8 @@ it("gives each group of a submenu's rows its own section", async () => {
     sections: [
       {
         id: "extra:grid-row",
-        group: "extra",
+        // Extra sections are built with group "surface" (menu-model.ts).
+        group: "surface",
         nodes: [
           {
             kind: "submenu",

@@ -19,7 +19,9 @@ const registry = {
   },
   subscribe: (l: () => void) => {
     listeners.add(l);
-    return () => listeners.delete(l);
+    return () => {
+      listeners.delete(l);
+    };
   },
 };
 jest.mock("@ai-matrx/alchemy/react/host", () => ({ useAlchemyActions: () => ({ registry }) }));

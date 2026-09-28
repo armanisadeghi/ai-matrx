@@ -43,16 +43,19 @@ export default function CmsHtmlPageResultBlock({
       </div>
       {pages.length ? (
         <ul className="mt-3 divide-y divide-border rounded-lg border border-border">
-          {pages.map((page, index) => (
-            <li key={String(page.id ?? index)} className="px-3 py-2">
-              <div className="text-sm font-medium">{label(page)}</div>
-              {typeof page.slug === "string" ? (
-                <div className="text-xs text-muted-foreground">
-                  /{page.slug}
-                </div>
-              ) : null}
-            </li>
-          ))}
+          {pages.map((page, index) => {
+            // A page is open JSON: its fields are read as unknown and narrowed here.
+            const fields: Record<string, unknown> = page;
+            const slug = fields.slug;
+            return (
+              <li key={String(fields.id ?? index)} className="px-3 py-2">
+                <div className="text-sm font-medium">{label(fields)}</div>
+                {typeof slug === "string" ? (
+                  <div className="text-xs text-muted-foreground">/{slug}</div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="mt-3 text-sm text-muted-foreground">No pages returned.</p>

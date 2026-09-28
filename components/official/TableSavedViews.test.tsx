@@ -40,8 +40,14 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
 
 import { TableSavedViews } from "./TableSavedViews";
 
-const snapshot = { pageSize: 10 } as TableViewSnapshot;
-const otherSnapshot = { pageSize: 20 } as TableViewSnapshot;
+const viewSnapshot = (pageSize: number): TableViewSnapshot => ({
+  __kind: "matrx-table-view",
+  version: 1,
+  query: { pageSize, search: "", anyOf: "", columnFilters: {}, sort: null },
+  columns: { order: [], hidden: [] },
+});
+const snapshot = viewSnapshot(10);
+const otherSnapshot = viewSnapshot(20);
 const view = (id: string, name: string, version = 1) => ({ id, name, version, snapshot });
 function deferred<T>() {
   let resolve!: (value: T) => void;

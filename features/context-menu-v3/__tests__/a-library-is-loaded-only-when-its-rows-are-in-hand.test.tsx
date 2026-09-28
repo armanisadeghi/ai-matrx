@@ -17,30 +17,24 @@ import React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
-import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import { configureStore } from "@reduxjs/toolkit";
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema: () => ({ from: () => ({ select: () => ({ in: () => new Promise(() => undefined) }) }) }) },
 }));
 
-import agentShortcutReducer, { setShortcutScopeLoaded } from "@/features/agents/redux/agent-shortcuts/slice";
-import agentShortcutCategoryReducer from "@/features/agents/redux/agent-shortcut-categories/slice";
-import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
-import userAuthReducer from "@/lib/redux/slices/userAuthSlice";
+import { setShortcutScopeLoaded } from "@/features/agents/redux/agent-shortcuts/slice";
+import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { useUnifiedAgentContextMenu } from "../hooks/useUnifiedAgentContextMenu";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// The app's own root reducer, so the store's dispatch accepts the app's thunks as typed.
 function makeStore() {
   return configureStore({
-    reducer: combineReducers({
-      agentShortcut: agentShortcutReducer,
-      agentShortcutCategory: agentShortcutCategoryReducer,
-      skl: sklReducer,
-      userAuth: userAuthReducer,
-    }),
+    reducer: createSlimRootReducer(),
     middleware: (gdm) => gdm({ serializableCheck: false, immutableCheck: false }),
   });
 }
