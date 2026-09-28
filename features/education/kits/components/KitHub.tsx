@@ -356,10 +356,10 @@ export function KitHub({
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
             <AGENT_ICON className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Nothing has been made from this material yet.
+              This material has no study kit grouping yet.
             </p>
             <Button asChild size="sm" className="gap-1.5">
-              <Link href="/education/start" data-tap-target>
+              <Link href="/education/kits/new" data-tap-target>
                 <AGENT_ICON className="h-4 w-4" />
                 Create a study kit
               </Link>
@@ -478,6 +478,7 @@ export function KitHub({
             addTarget={addTarget}
             onConverted={() => setRefreshKey((key) => key + 1)}
           />
+          <Button asChild variant="outline" size="sm"><Link href={`/education/kits/new?source=${encodeURIComponent(kit.sourceId)}`}>Add saved aid</Link></Button>
           <Button
             variant="outline"
             size="sm"

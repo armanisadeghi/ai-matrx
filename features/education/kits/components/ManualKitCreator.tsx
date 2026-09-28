@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
@@ -21,6 +21,8 @@ const PAGE_SIZE = 25;
 
 export function ManualKitCreator() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const existingSourceId = searchParams.get("source");
   const [title, setTitle] = useState("");
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [sourceName, setSourceName] = useState<string | null>(null);
@@ -34,6 +36,10 @@ export function ManualKitCreator() {
   const [loading, setLoading] = useState(true);
   const [recoveryReady, setRecoveryReady] = useState(false);
   const draftKey = "manual-study-kit-draft";
+
+  useEffect(() => {
+    if (existingSourceId && !sourceId) queueMicrotask(() => setSourceId(existingSourceId));
+  }, [existingSourceId, sourceId]);
 
   useEffect(() => {
     let active = true;
@@ -83,7 +89,7 @@ export function ManualKitCreator() {
     current.some((item) => item.id === row.id) ? current.filter((item) => item.id !== row.id) : [...current, row]);
   const save = async () => {
     setSaving(true); setError(null);
-    try { await createManualKit({ sourceId: sourceId ?? "", title, artifacts: selected }); sessionStorage.removeItem(draftKey); router.push(kitHref("file", sourceId ?? "")); }
+    try { await createManualKit({ sourceId: sourceId ?? "", title, artifacts: selected, allowExisting: !!existingSourceId }); sessionStorage.removeItem(draftKey); router.push(kitHref("file", sourceId ?? "")); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create this kit."); }
     finally { setSaving(false); }
   };
@@ -109,10 +115,10 @@ export function ManualKitCreator() {
     nameOf: (plan) => plan.title,
   } }, refuseSurfaceWrite);
   return <SurfaceRuntimeProvider surfaceName={EDUCATION_KITS_SURFACE_NAME} getScope={getScope} getWriteHandlers={getWriteHandlers}><main className="mx-auto w-full max-w-3xl space-y-5 p-4">
-    <h1 className="text-xl font-semibold">Create a study kit</h1>
+    <h1 className="text-xl font-semibold">{existingSourceId ? "Add saved aids" : "Create a study kit"}</h1>
     <p className="text-sm text-muted-foreground">Group saved study aids under one saved source file. Your aids are not copied or changed.</p>
     <label className="block text-sm font-medium">Kit title<Input className="mt-1" value={title} onChange={(event) => setTitle(event.target.value)} /></label>
-    <Button variant="outline" onClick={() => void chooseFile()}>{sourceId ? "Change source file" : "Choose source file"}</Button>
+    {!existingSourceId && <Button variant="outline" onClick={() => void chooseFile()}>{sourceId ? "Change source file" : "Choose source file"}</Button>}
     {sourceId && <p className="text-xs text-muted-foreground">Source: <a className="underline" href={`/files/f/${sourceId}`}>{sourceName ?? "Selected file"}</a></p>}
     <label className="block text-sm font-medium">Find saved study aids<Input className="mt-1" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} /></label>
     <div className="space-y-2 rounded-xl border border-border p-3">
@@ -122,6 +128,6 @@ export function ManualKitCreator() {
     </div>
     <div className="flex justify-between"><Button variant="outline" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</Button><span className="text-sm text-muted-foreground">{page * PAGE_SIZE < total ? "More results available" : "End of results"}</span><Button variant="outline" disabled={page * PAGE_SIZE >= total} onClick={() => setPage((value) => value + 1)}>Next</Button></div>
     {error && <p role="alert" className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
-    <div className="flex gap-2"><Button variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.push("/education/kits"); }}>Cancel</Button><Button disabled={saving} onClick={() => void save()}>{saving ? "Creating…" : "Create kit"}</Button></div>
+    <div className="flex gap-2"><Button variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.push("/education/kits"); }}>Cancel</Button><Button disabled={saving} onClick={() => void save()}>{saving ? "Saving…" : existingSourceId ? "Add saved aids" : "Create kit"}</Button></div>
   </main></SurfaceRuntimeProvider>;
 }
