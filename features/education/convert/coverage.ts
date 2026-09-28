@@ -160,6 +160,24 @@ function splitOversizedUnit(unit: string, targetChars: number): string[] {
   return pieces;
 }
 
+/** A real grounding header from the Source resolver: `### Chunk <id> (page N)`. */
+const CHUNK_HEADER_RE = /^### Chunk \S+(?: \(page \d+\))?[ \t]*$/;
+const MARKED_TEXT_RE = /(^|\n)### Chunk \S/;
+
+/**
+ * An oversized unit that starts with a real `### Chunk <id>` header is split
+ * into pieces; every continuation piece carries the same header so the agent
+ * can still cite the real id (a headerless piece could cite nothing).
+ */
+function withChunkHeader(unit: string, pieces: string[]): string[] {
+  if (pieces.length < 2) return pieces;
+  const header = unit.trim().split("\n", 1)[0]?.trim() ?? "";
+  if (!CHUNK_HEADER_RE.test(header)) return pieces;
+  return pieces.map((piece, i) =>
+    i === 0 || piece.startsWith(header) ? piece : `${header}\n${piece}`,
+  );
+}
+
 /** The first heading-ish line of a unit, cleaned up for a label. */
 function unitLabel(unit: string): string {
   const first = unit.split("\n", 1)[0]?.trim() ?? "";
@@ -190,7 +208,10 @@ function packSegments(
     labels = [];
   };
   for (const rawUnit of units) {
-    const pieces = splitOversizedUnit(rawUnit, targetChars);
+    const pieces = withChunkHeader(
+      rawUnit,
+      splitOversizedUnit(rawUnit, targetChars),
+    );
     const baseLabel = unitLabel(rawUnit);
     for (const [pieceIndex, unit] of pieces.entries()) {
       const projected = buf.reduce((n, u) => n + u.length + 2, 0) + unit.length;
@@ -243,6 +264,9 @@ export function markForGrounding(text: string, idPrefix: string): string {
   // would replace real citation ids with local markers and make the resulting
   // citation unable to open the retrieved passage.
   if (text.includes("[GROUNDING_PASSAGE ")) return text;
+  // Text the Source resolver already grounded (`### Chunk <real id>`) is
+  // never re-chunked either: its ids are what make a citation open the page.
+  if (MARKED_TEXT_RE.test(text)) return text;
   const paras = text
     .split(/\n{2,}/)
     .map((p) => p.trim())
