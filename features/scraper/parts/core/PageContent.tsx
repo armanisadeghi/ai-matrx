@@ -22,6 +22,7 @@ import SEOAnalysisPage from "@/features/scraper/parts/SEOAnalysisPage";
 import HeaderAnalysis from "../HeaderAnalysis";
 import FactChecker from "../agent-analysis/FactChecker";
 import KeywordAnalysis from "../agent-analysis/KeywordAnalysis";
+import { pageAnalysisOfferValues } from "../agent-analysis/page-analysis-offer-values";
 import FeatureDisabledPlaceholder from "../reusable/FeatureDisabledPlaceholder";
 import ImageGallery from "../tabs/images/ImageGallery";
 import { ScrapedContentPretty } from "../ScrapedContentPretty";
@@ -172,6 +173,21 @@ const PageContentBody: React.FC<PageContentProps> = ({
     [extractedData],
   );
 
+  // The scrape's real facts for the analysis tabs, by the
+  // `scraper.page_analysis` provision's declared names.
+  const analysisOfferValues = useMemo(
+    () =>
+      extractedData.isError
+        ? {}
+        : pageAnalysisOfferValues({
+            overview: extractedData.overview,
+            structuredData: extractedData.structuredData,
+            links: extractedData.links,
+            scrapedAt: extractedData.scrapedAt,
+          }),
+    [extractedData],
+  );
+
   if (extractedData.isError) {
     return (
       <Alert className="m-4">
@@ -270,7 +286,11 @@ const PageContentBody: React.FC<PageContentProps> = ({
               className="m-0 h-full overflow-auto"
             >
               {featureToggles.keywordAnalysis ? (
-                <KeywordAnalysis value={value} overview={overview} />
+                <KeywordAnalysis
+                  value={value}
+                  overview={overview}
+                  offerValues={analysisOfferValues}
+                />
               ) : (
                 <FeatureDisabledPlaceholder
                   featureName="Keyword Analysis"
@@ -284,7 +304,11 @@ const PageContentBody: React.FC<PageContentProps> = ({
               className="m-0 h-full overflow-auto"
             >
               {featureToggles.factChecker ? (
-                <FactChecker value={value} overview={overview} />
+                <FactChecker
+                  value={value}
+                  overview={overview}
+                  offerValues={analysisOfferValues}
+                />
               ) : (
                 <FeatureDisabledPlaceholder
                   featureName="Fact Checker"

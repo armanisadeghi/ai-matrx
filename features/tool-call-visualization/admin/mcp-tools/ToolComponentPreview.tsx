@@ -47,6 +47,7 @@ import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { buildToolComponentGenerationOffer } from "@/features/tool-call-visualization/admin/toolComponentGenerationOffer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -320,7 +321,10 @@ export function ToolComponentPreview({
     agent.reset();
     setLastRevision(null);
 
-    const variables: Record<string, string> = {
+    const variables: Record<string, unknown> = {
+      // `tool_viz.component_generation` mapped-only offers — dropped by the
+      // mandate door unless a binding maps them.
+      ...buildToolComponentGenerationOffer(tool, [selectedSample]),
       complete_tool_object: JSON.stringify(tool, null, 2),
       output_schema: JSON.stringify(tool.output_schema ?? {}, null, 2),
       sample_stream: JSON.stringify(

@@ -165,6 +165,8 @@ export interface ConceptItem {
   label: string;
   description: string | null;
   confidence: number | null;
+  /** Column order key — the list read orders by `created_at` (redux/studioOrder). */
+  createdAt: string;
 }
 
 export interface ModuleSegment {
@@ -177,6 +179,8 @@ export interface ModuleSegment {
   tStart: number | null;
   tEnd: number | null;
   payload: unknown;
+  /** Column order key — the list read orders by `created_at` (redux/studioOrder). */
+  createdAt: string;
 }
 
 export interface AgentRun {

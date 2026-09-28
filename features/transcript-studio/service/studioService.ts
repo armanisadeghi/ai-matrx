@@ -1261,6 +1261,7 @@ export interface ConceptItemRow {
   label: string;
   description: string | null;
   confidence: number | null;
+  created_at: string;
 }
 
 export function rowToConceptItem(
@@ -1287,6 +1288,7 @@ export function rowToConceptItem(
     label: row.label,
     description: row.description,
     confidence: row.confidence,
+    createdAt: row.created_at,
   };
 }
 
@@ -1421,6 +1423,7 @@ export interface ModuleSegmentRow {
   t_start: number | string | null;
   t_end: number | string | null;
   payload: unknown;
+  created_at: string;
 }
 
 export function rowToModuleSegment(
@@ -1446,6 +1449,7 @@ export function rowToModuleSegment(
           ? Number(row.t_end)
           : row.t_end,
     payload: row.payload,
+    createdAt: row.created_at,
   };
 }
 

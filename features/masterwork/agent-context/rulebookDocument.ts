@@ -289,3 +289,50 @@ export function renderRulebookDocument(rulebook: Rulebook): string {
 
   return lines.filter(Boolean).join("\n");
 }
+
+/**
+ * The Rulebook's own facts that the Masterwork provisions offer BY NAME
+ * (`masterwork.conduct`, `masterwork.scout_interview`) — read from the same
+ * loaded Rulebook the document is rendered from, never a second read. These
+ * are mapped-only offers: the mandate door drops them on the default pin, and
+ * the live Holders declare none of these names, so current Holders receive
+ * exactly what they did before. Absent facts are omitted.
+ */
+export interface RulebookOfferFacts {
+  rulebook_name: string;
+  rulebook_status?: string;
+  rulebook_version?: number;
+  rule_count: number;
+  /** Rejected rules plus change requests (rules carrying review feedback). */
+  open_review_count: number;
+  /** The same open reviews as a markdown list; absent when there are none. */
+  open_feedback?: string;
+}
+
+export function rulebookOfferFacts(rulebook: Rulebook): RulebookOfferFacts {
+  const rules = rulebook.rules ?? [];
+  const open = rules.filter(
+    (r) =>
+      ruleState(r) !== "retired" &&
+      (r.rejected === true || Boolean(r.feedback?.trim())),
+  );
+  const facts: RulebookOfferFacts = {
+    rulebook_name: rulebook.name,
+    rule_count: rules.length,
+    open_review_count: open.length,
+  };
+  if (typeof rulebook.status === "string" && rulebook.status)
+    facts.rulebook_status = rulebook.status;
+  if (typeof rulebook.version === "number")
+    facts.rulebook_version = rulebook.version;
+  if (open.length > 0) {
+    facts.open_feedback = open
+      .map((r) => {
+        const kind = r.rejected === true ? "rejected" : "change requested";
+        const note = r.feedback?.trim();
+        return `- **${r.name}** [${r.id}] (${kind})${note ? `: ${note}` : ""}`;
+      })
+      .join("\n");
+  }
+  return facts;
+}

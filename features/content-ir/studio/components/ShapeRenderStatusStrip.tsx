@@ -45,7 +45,7 @@ import {
   type ShapeRenderStatus,
 } from "@/features/content-ir/studio/shape-render-status";
 import { SHAPES_SURFACE_NAME, SHAPE_COMPONENT_ROLE } from "@/features/content-ir/studio/constants";
-import { composeKindAgentIntent } from "@/features/content-ir/studio/kind-agent-intents";
+import { composeComponentAuthoringIntent } from "@/features/content-ir/studio/component-authoring-offer";
 import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 import type { Json } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -263,11 +263,22 @@ export default function ShapeRenderStatusStrip({
                 disabled={artisanLaunching}
                 onClick={() =>
                   void launchArtisan(
-                    composeKindAgentIntent({
+                    composeComponentAuthoringIntent({
                       kind,
                       label,
-                      part: "component",
                       emittedJsonSchema,
+                      // Refine the Shape's own default component in place
+                      // when one exists; the generic viewer is never refined.
+                      componentKey:
+                        switchableCandidates.find(
+                          (c) =>
+                            c.isDefault &&
+                            c.componentKey !== GENERIC_STRUCTURED_COMPONENT_KEY,
+                        )?.componentKey ?? null,
+                      renderProblems: status.problems,
+                      componentCandidates: switchableCandidates.map(
+                        (c) => c.componentKey,
+                      ),
                     }),
                   )
                 }

@@ -37,6 +37,10 @@ import type { PcEpisode, PcEpisodeChapter } from "@/features/podcasts/types";
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import {
+  chapteringOfferVariables,
+  type ChapteringEpisodeFacts,
+} from "./chapteringOffer";
 
 const CHAPTER_MARKER_MANDATE_KEY = MANDATE_KEYS.podcast__chapter_marker;
 
@@ -58,10 +62,10 @@ export interface UseEpisodeChapters {
 }
 
 export function useEpisodeChapters(
-  episode: Pick<
-    PcEpisode,
-    "id" | "script" | "duration_seconds" | "chapters"
-  > | null,
+  episode:
+    | (Pick<PcEpisode, "id" | "script" | "duration_seconds" | "chapters"> &
+        ChapteringEpisodeFacts)
+    | null,
 ): UseEpisodeChapters {
   const { run } = useLiveAgentRun();
   const openLiveRunWindow = useOpenLiveRunWindow();
@@ -106,6 +110,8 @@ export function useEpisodeChapters(
           episode_script: episode.script,
           duration_hint: formatDurationHint(episode.duration_seconds),
           granularity_hint: "",
+          // Mapped-only offered facts (dropped on the default pin).
+          ...chapteringOfferVariables(episode),
         },
         onConversationCreated: (conversationId) => {
           windowRef.current?.update({ conversationId, pending: false });

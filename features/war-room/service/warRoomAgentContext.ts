@@ -25,6 +25,7 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
+import type { WarRoomThreadContextOffer } from "@/types/python-generated/provision-offers";
 import type { AssistantContextEntry } from "@/features/transcript-studio/service/assistantContextBuilder";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { selectProjectById } from "@/features/agent-context/redux/projectsSlice";
@@ -371,4 +372,78 @@ export function buildThreadAgentContextEntries(
     buildWarRoomContextEntry(model),
     ...buildThreadSessionTranscriptEntries(state, threadId),
   ];
+}
+
+/**
+ * The MAPPED-ONLY offered values of Provision `war_room.thread_context`
+ * (mandate `war_room.thread`, declared `pass_by_name=False` in aidream
+ * `client_mandates.py`) for one thread — the same facts the `war_room` context
+ * entry already renders, as separate names, read from the same state and the
+ * same room resolution as `buildThreadAgentContextEntries`.
+ *
+ * Sent as HOST-wired variables on a brand-new thread conversation only. The
+ * caller is the AGENT door; the live Holder neither declares nor references
+ * any of these names (checked 2026-09-28), so they change nothing it renders
+ * and become mappable after a door switch. Absent facts are omitted.
+ */
+export function buildThreadOfferedValues(
+  state: RootState,
+  threadId: string,
+  delegationMode: string,
+): Pick<
+  WarRoomThreadContextOffer,
+  | "room_title"
+  | "project_name"
+  | "thread_title"
+  | "thread_task_title"
+  | "thread_task_status"
+  | "thread_note"
+  | "sibling_thread_titles"
+  | "attached_resource_titles"
+  | "delegation_mode"
+> {
+  const thread = selectThreadById(threadId)(state);
+  if (!thread) return { delegation_mode: delegationMode };
+
+  const roomId = selectActiveSessionId(state);
+  const room = roomId ? selectSessionById(roomId)(state) : null;
+  const roomTitle = room?.title?.trim();
+  const projectId = roomId
+    ? selectEffectiveThreadProjectId(threadId, roomId)(state)
+    : null;
+  const projectName = projectId
+    ? selectProjectById(state, projectId)?.name?.trim()
+    : undefined;
+
+  const siblingIds = roomId ? selectThreadIdsForRoom(roomId)(state) : [];
+  // Same ordering (and so the same fallback labels) as the context entry.
+  const threadIds = siblingIds.includes(threadId)
+    ? siblingIds
+    : [threadId, ...siblingIds];
+  const model = threadToThreadModel(state, thread, threadIds.indexOf(threadId), true);
+  const siblingTitles = threadIds
+    .map((id, index) => {
+      if (id === threadId) return null;
+      const t = selectThreadById(id)(state);
+      return t ? threadToThreadModel(state, t, index, false).title : null;
+    })
+    .filter((t): t is string => Boolean(t && t.trim()));
+  const noteId = selectActiveNoteId(threadId)(state);
+  const note = noteId ? selectNoteById(noteId)(state) : undefined;
+  const noteContent = (note?.content ?? "").trim();
+  const resourceTitles = (model.resources ?? [])
+    .map((r) => r.title?.trim())
+    .filter((t): t is string => Boolean(t));
+
+  return {
+    ...(roomTitle ? { room_title: roomTitle } : {}),
+    ...(projectName ? { project_name: projectName } : {}),
+    ...(model.title?.trim() ? { thread_title: model.title.trim() } : {}),
+    ...(model.taskTitle?.trim() ? { thread_task_title: model.taskTitle.trim() } : {}),
+    ...(model.taskStatus ? { thread_task_status: String(model.taskStatus) } : {}),
+    ...(noteContent ? { thread_note: noteContent } : {}),
+    ...(siblingTitles.length > 0 ? { sibling_thread_titles: siblingTitles } : {}),
+    ...(resourceTitles.length > 0 ? { attached_resource_titles: resourceTitles } : {}),
+    delegation_mode: delegationMode,
+  } satisfies Partial<WarRoomThreadContextOffer>;
 }

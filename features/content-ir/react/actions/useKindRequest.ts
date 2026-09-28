@@ -32,7 +32,7 @@ export interface KindRequestInput {
    */
   mandateKey?: AnyMandateKey;
   /** Variable values keyed by the agent's variable NAME. */
-  variables: Record<string, string>;
+  variables: Record<string, unknown>;
   /** Stamped as `__kind` on the result if the agent didn't emit one. */
   expectedKind?: string;
   /**

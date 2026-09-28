@@ -42,6 +42,7 @@ import {
   reactivateComponent,
 } from "./fixit-actions";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { buildKindAuthoringOffer } from "@/features/content-ir/studio/kind-authoring-offer";
 
 export interface KindFixItBarProps {
   kind: string;
@@ -162,7 +163,20 @@ const KindFixItBarInner: React.FC<KindFixItBarProps> = ({ kind, value }) => {
         openRun({
           initialAgentId: resolved.agentId,
           initialDraftText: seed.draftText,
-          initialVariableValues: seed.variables,
+          initialVariableValues: {
+            // `content_ir.kind_authoring` mapped-only offers (agent door; the
+            // live Holder declares none of these names).
+            ...buildKindAuthoringOffer({
+              kindSlug: diagnosis.kind,
+              kindLabel: diagnosis.kindLabel,
+              authoringPart: brief === "component" ? "component" : null,
+              renderGapState: diagnosis.state,
+              kindIsActive: diagnosis.kindDefinitionId
+                ? diagnosis.kindActive
+                : null,
+            }),
+            ...seed.variables,
+          },
         });
       })
       .catch((error: unknown) => {

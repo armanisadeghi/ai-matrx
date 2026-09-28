@@ -1,4 +1,5 @@
 import type { MandateKey } from "@ai-matrx/agents/mandates";
+import { buildCodeEditorSessionOffer } from "@/features/code-editor/utils/codeEditorSessionOffer";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { shallowEqual } from "react-redux";
@@ -214,7 +215,12 @@ export function useAICodeEditor({
         showVariablePanel: false,
       },
       runtime: {
-        variables: initialVariables,
+        variables: {
+          // Provision `code_editor.session` mapped-only offer — dropped by the
+          // mandate door unless a binding maps it.
+          ...buildCodeEditorSessionOffer({ language }),
+          ...initialVariables,
+        },
         applicationScope: {
           context: {
             current_code: currentCode,

@@ -22,6 +22,7 @@ import {
   coerceEndowmentPortfolio,
   type EndowmentPortfolio,
 } from "@/features/marketing/local/endowment-portfolio";
+import type { EndowmentLocationFacts } from "@/features/marketing/local/endowment-offer-values";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
@@ -42,12 +43,16 @@ export function EndowmentAnalysisCard({
   defaultIndustry,
   brandId,
   organizationId,
+  locationFacts,
 }: {
   defaultCompany?: string;
   defaultIndustry?: string;
   brandId: string;
   /** The brand's org — artifact tasks belong to it, not the ambient active org. */
   organizationId: string;
+  /** The location's real profile facts by their declared provision names
+   *  (mapped-only offers — payload-neutral on the mandate door). */
+  locationFacts?: EndowmentLocationFacts;
 }) {
   const dispatch = useAppDispatch();
   const openLiveRun = useOpenLiveRunWindow();
@@ -66,6 +71,7 @@ export function EndowmentAnalysisCard({
     industry: industry.trim(),
     location: location.trim(),
     context_notes: notes.trim(),
+    ...locationFacts,
   });
 
   const hasSubject = () => {

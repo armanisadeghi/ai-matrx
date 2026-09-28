@@ -44,7 +44,7 @@ import {
   SHAPES_SURFACE_NAME,
   SHAPE_COMPONENT_ROLE,
 } from "@/features/content-ir/studio/constants";
-import { composeKindAgentIntent } from "@/features/content-ir/studio/kind-agent-intents";
+import { composeComponentAuthoringIntent } from "@/features/content-ir/studio/component-authoring-offer";
 import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -246,11 +246,11 @@ export default function ShapeActivationControl({
             disabled={artisanLaunching}
             onClick={() =>
               void launchArtisan(
-                composeKindAgentIntent({
+                composeComponentAuthoringIntent({
                   kind,
                   label: label ?? kind,
-                  part: "component",
                   emittedJsonSchema,
+                  activationReasons: blockers,
                 }),
               )
             }

@@ -15,7 +15,7 @@ import { Brush, Loader2, Play, RotateCcw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   selectVoicePadEntries,
@@ -49,6 +49,7 @@ export default function TranscriptionCleanup({
   instanceId,
 }: TranscriptionCleanupProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const entries = useAppSelector((s) =>
     selectVoicePadEntries(s, OVERLAY_ID, instanceId),
   );
@@ -108,6 +109,13 @@ export default function TranscriptionCleanup({
   // the textarea and the AI input.
   const baseTextRef = useRef(baseText);
   baseTextRef.current = baseText;
+  // Offered-fact refs (latest rendered values) for the async launch paths.
+  const entriesRef = useRef(entries);
+  entriesRef.current = entries;
+  const draftTextRef = useRef(draftText);
+  draftTextRef.current = draftText;
+  const allTextRef = useRef(allText);
+  allTextRef.current = allText;
 
   const handleClose = useCallback(() => {
     dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId }));
@@ -123,6 +131,10 @@ export default function TranscriptionCleanup({
       // draftText) and append the new transcript to it. This exact string is
       // both rendered in the textarea and sent to the agent.
       const previous = baseTextRef.current;
+      // Whether the Expert had hand-edited the transcript before this append.
+      const wasEdited =
+        draftTextRef.current !== null &&
+        draftTextRef.current !== allTextRef.current;
       const combined = previous ? previous + "\n\n" + trimmed : trimmed;
 
       dispatch(addTranscriptEntry({ overlayId: OVERLAY_ID, instanceId, text }));
@@ -143,9 +155,16 @@ export default function TranscriptionCleanup({
         agent,
         transcript: combined,
         context: contextRef.current,
+        facts: {
+          // Read from the store AFTER the append so the new entry (and its
+          // real timestamp) is included.
+          entries: selectVoicePadEntries(store.getState(), OVERLAY_ID, instanceId),
+          wasEdited,
+          previousCleanedText: responseRef.current,
+        },
       });
     },
-    [ai, dispatch, instanceId],
+    [ai, dispatch, instanceId, store],
   );
 
   const handleLiveTranscript = useCallback((text: string) => {
@@ -185,6 +204,13 @@ export default function TranscriptionCleanup({
       agent: selectedAgent,
       transcript,
       context: contextRef.current,
+      facts: {
+        entries: entriesRef.current,
+        wasEdited:
+          draftTextRef.current !== null &&
+          draftTextRef.current !== allTextRef.current,
+        previousCleanedText: responseRef.current,
+      },
     });
   }, [ai, selectedAgent]);
 

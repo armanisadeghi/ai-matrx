@@ -59,6 +59,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { buildToolComponentGenerationOffer } from "@/features/tool-call-visualization/admin/toolComponentGenerationOffer";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -808,7 +809,10 @@ export function ToolUiComponentGenerator({
     setParseError(null);
     setStep("generate");
 
-    const variables: Record<string, string> = {
+    const variables: Record<string, unknown> = {
+      // `tool_viz.component_generation` mapped-only offers — dropped by the
+      // mandate door unless a binding maps them.
+      ...buildToolComponentGenerationOffer(selectedTool, selectedSamples),
       complete_tool_object: JSON.stringify(selectedTool, null, 2),
       output_schema: JSON.stringify(selectedTool.output_schema ?? {}, null, 2),
       sample_stream: JSON.stringify(

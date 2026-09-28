@@ -1,5 +1,6 @@
 "use client";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
+import { buildCodeEditorSessionOffer } from "@/features/code-editor/utils/codeEditorSessionOffer";
 
 /**
  * ContextAwareCodeEditorModal (V3)
@@ -161,6 +162,13 @@ export function ContextAwareCodeEditorModal({
       },
       runtime: {
         variables: {
+          // Provision `code_editor.session` mapped-only offers — dropped by the
+          // mandate door unless a binding maps them.
+          ...buildCodeEditorSessionOffer({
+            language,
+            editorTitle: title,
+            contextVersion: currentVersionRef.current,
+          }),
           [DYNAMIC_CONTEXT_VARIABLE]: code,
           current_code: code,
           content: code,
@@ -197,6 +205,7 @@ export function ContextAwareCodeEditorModal({
     selection,
     context,
     language,
+    title,
     launchMandate,
   ]);
 

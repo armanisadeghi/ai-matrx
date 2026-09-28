@@ -5,8 +5,6 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { toast } from "@/lib/toast";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectDisplayName } from "@/lib/redux/slices/userSlice";
 import type {
   SubmitScoreRequest,
   SubmitScoreResponse,
@@ -16,7 +14,6 @@ import type {
 export function useCanvasScore(canvasId: string) {
   const supabase = createClient();
   const queryClient = useQueryClient();
-  const displayName = useAppSelector(selectDisplayName);
 
   // Get user's best score
   const { data: bestScore } = useQuery({
@@ -42,79 +39,49 @@ export function useCanvasScore(canvasId: string) {
   // Submit score mutation
   const submitScoreMutation = useMutation({
     mutationFn: async (request: Omit<SubmitScoreRequest, "canvas_id">) => {
-      const userId = requireUserId();
+      requireUserId();
 
-      // Get attempt number
-      let attemptNumber = 1;
-      const { count } = await supabase
-        .schema("canvas").from("canvas_scores")
-        .select("*", { count: "exact", head: true })
-        .is("deleted_at", null)
-        .eq("canvas_id", canvasId)
-        .eq("user_id", userId);
-
-      attemptNumber = (count || 0) + 1;
-
-      // Insert score
-      const { data: score, error } = await supabase
-        .schema("canvas").from("canvas_scores")
-        .insert({
-          canvas_id: canvasId,
-          user_id: userId,
-          // A score that silently fails to record is the worst possible
-          // lie on a leaderboard — the person played and the board forgot.
-          organization_id: await withOrganizationRefusalShown(
-            "recorded",
-            () => ensureOrgId(undefined),
-            { subject: "Your score" },
-          ),
-          username: displayName,
-          display_name: displayName,
-          score: request.score,
-          max_score: request.max_score,
-          time_taken: request.time_taken,
-          completed: request.completed,
-          attempt_number: attemptNumber,
-          data: request.data || {},
-        })
-        .select()
-        .single();
+      // canvas.canvas_scores refuses client writes (SECURITY-SWEEP 2026-09-21);
+      // canvas.submit_canvas_score is the one door. The attempt is always the
+      // caller's own (and carries the name from their own profile), on a canvas
+      // they can see, in the organization named here. Rank, high score and
+      // personal best come back from the door, which sees every score — the
+      // browser can read only its own rows.
+      const organizationId = await withOrganizationRefusalShown(
+        // A score that silently fails to record is the worst possible
+        // lie on a leaderboard — the person played and the board forgot.
+        "recorded",
+        () => ensureOrgId(undefined),
+        { subject: "Your score" },
+      );
+      const { data, error } = await supabase
+        .schema("canvas")
+        .rpc("submit_canvas_score", {
+          p_canvas_id: canvasId,
+          p_score: request.score,
+          p_max_score: request.max_score,
+          p_completed: request.completed,
+          p_organization_id: organizationId,
+          p_time_taken: request.time_taken,
+          p_data: request.data || {},
+        });
 
       if (error) throw error;
-
-      // Get rank
-      const { count: rankCount } = await supabase
-        .schema("canvas").from("canvas_scores")
-        .select("*", { count: "exact", head: true })
-        .is("deleted_at", null)
-        .eq("canvas_id", canvasId)
-        .gt("score", request.score);
-
-      const rank = (rankCount || 0) + 1;
-
-      // Check if high score
-      const { data: canvas } = await supabase
-        .schema("canvas").from("shared_canvas_items")
-        .select("high_score")
-        .is("deleted_at", null)
-        .eq("id", canvasId)
-        .single();
-
-      const isHighScore =
-        !canvas?.high_score || request.score > canvas.high_score;
-      const isNewBest = !bestScore || request.score > bestScore.score;
+      if (!isScoreDoorResult(data)) {
+        throw new Error("The score was recorded but the result came back unreadable.");
+      }
 
       // Calculate XP (simplified)
       let xpEarned = 5; // Base XP for playing
       if (request.completed) xpEarned += 10;
-      if (isHighScore) xpEarned += 50;
-      if (rank <= 10) xpEarned += 25;
+      if (data.is_high_score) xpEarned += 50;
+      if (data.rank <= 10) xpEarned += 25;
 
       return {
-        score,
-        rank,
-        is_high_score: isHighScore,
-        is_personal_best: isNewBest,
+        score: data.score,
+        rank: data.rank,
+        is_high_score: data.is_high_score,
+        is_personal_best: data.beats_own_best,
         xp_earned: xpEarned,
         achievements_unlocked: [],
       } as SubmitScoreResponse;
@@ -147,4 +114,25 @@ export function useCanvasScore(canvasId: string) {
     isSubmitting: submitScoreMutation.isPending,
     scoreResult: submitScoreMutation.data,
   };
+}
+
+/** The jsonb canvas.submit_canvas_score returns. */
+interface ScoreDoorResult {
+  score: CanvasScore;
+  rank: number;
+  is_high_score: boolean;
+  beats_own_best: boolean;
+  attempt_number: number;
+}
+
+function isScoreDoorResult(value: unknown): value is ScoreDoorResult {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    !!v.score &&
+    typeof v.score === "object" &&
+    typeof v.rank === "number" &&
+    typeof v.is_high_score === "boolean" &&
+    typeof v.beats_own_best === "boolean"
+  );
 }

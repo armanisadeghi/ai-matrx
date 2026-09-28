@@ -78,6 +78,8 @@ import {
   type ConductorSession,
   type MasterworkAttachment,
 } from "./service";
+import { conductorOfferVariables } from "./offerVariables";
+import type { MasterworkConductOffer } from "@/types/python-generated/provision-offers";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
@@ -134,6 +136,7 @@ function NewConductorSession({
   rulebookName,
   attachments,
   rulebookDocument,
+  offerVariables,
   agentId,
   freshSessionKey,
 }: {
@@ -142,6 +145,8 @@ function NewConductorSession({
   attachments: MasterworkAttachment[];
   /** The Rulebook itself, already loaded — see ConductorContent. */
   rulebookDocument: string;
+  /** Offered facts sent by name beside the three by-name variables. */
+  offerVariables: Partial<MasterworkConductOffer>;
   agentId: string;
   freshSessionKey: number;
 }) {
@@ -179,6 +184,8 @@ function NewConductorSession({
         rulebook_id: rulebookId,
         attachments: attachmentsVariable(attachments),
         [RULEBOOK_DOCUMENT_VARIABLE]: rulebookDocument,
+        // Offered facts by name (masterwork.conduct) — only ADDED keys.
+        ...offerVariables,
       },
     },
     config: { responseDensity: "compact" },
@@ -619,10 +626,15 @@ export function ConductorContent({
   const sessionAttachments = attachments ?? [
     { entityToken: "rulebook", id: rulebookId, name: rulebookName },
   ];
+  const offerVariables = conductorOfferVariables(
+    rulebookDoc.facts,
+    sessionAttachments,
+  );
   const launchVariables = {
     rulebook_id: rulebookId,
     attachments: attachmentsVariable(sessionAttachments),
     [RULEBOOK_DOCUMENT_VARIABLE]: rulebookDoc.document ?? "",
+    ...offerVariables,
   };
   const missing = missingRequiredVariables(mandate.contract, launchVariables);
   if (rulebookDoc.error || missing.length > 0) {
@@ -674,6 +686,7 @@ export function ConductorContent({
       rulebookName={rulebookName}
       attachments={sessionAttachments}
       rulebookDocument={rulebookDoc.document ?? ""}
+      offerVariables={offerVariables}
       agentId={mandate.agentId}
       freshSessionKey={choice.key}
     />

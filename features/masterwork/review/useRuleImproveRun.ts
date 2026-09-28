@@ -30,6 +30,10 @@ import {
   type RuleImproveResult,
 } from "../agent-context/ruleImprove";
 import { RULE_CONTENT_FIELDS, type RulebookSections } from "../types";
+import {
+  ruleImproveOfferVariables,
+  type RuleImproveOfferInput,
+} from "./ruleImproveOffer";
 
 /** The rule content handed to the Mandate — any rule-shaped object. */
 export type RuleImproveFields = Partial<
@@ -68,6 +72,12 @@ export interface RuleImproveRunRequest<T> {
    */
   onDurableResult?: (result: RuleImproveResult) => void;
   failureMessages?: { noJson?: string; timeout?: string };
+  /**
+   * Real facts the caller holds (Rulebook, the rule under edit, a Checkup
+   * suggestion) — offered by name by `masterwork.rule_improve`, mapped-only,
+   * so they only ADD keys beside the three by-name variables.
+   */
+  offer?: RuleImproveOfferInput;
 }
 
 export interface UseRuleImproveRun {
@@ -111,6 +121,8 @@ export function useRuleImproveRun(
           : "",
         expert_input: request.expertInput.trim(),
         rulebook_context: request.context,
+        // Mapped-only offered facts (dropped on the default pin).
+        ...ruleImproveOfferVariables(request.offer ?? {}),
       },
       expect: "json",
       timeoutMs: 120_000,

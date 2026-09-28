@@ -77,6 +77,7 @@ import { CodeOrDiffColumn } from "./parts/CodeOrDiffColumn";
 import { FilesPanel } from "./parts/FilesPanel";
 import { TerminalPlaceholder } from "./parts/TerminalPlaceholder";
 import { SMART_CODE_EDITOR_SURFACE_KEY } from "../constants";
+import { buildCodeEditorSessionOffer } from "@/features/code-editor/utils/codeEditorSessionOffer";
 import type { CodeEditorAgentConfig } from "../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
@@ -383,7 +384,24 @@ export function SmartCodeEditor({
             displayMode: "direct",
             autoRun: false,
             allowChat: true,
-            defaultVariables: { [agent.codeVariableKey]: code },
+            defaultVariables: {
+              // Provision `code_editor.session` mapped-only offers — dropped by
+              // the mandate door unless a binding maps them.
+              ...buildCodeEditorSessionOffer({
+                language: activeLanguage,
+                // Single-file mode's path is synthetic; only a real path is sent.
+                filePath: isMultiFile ? currentFile?.path : filePath,
+                diagnostics,
+                workspaceName,
+                gitBranch,
+                gitStatus,
+                otherFiles: isMultiFile
+                  ? currentFiles.filter((f) => f.path !== activeTab)
+                  : undefined,
+                editorTitle: title,
+              }),
+              [agent.codeVariableKey]: code,
+            },
           },
           runtime: {
             widgetHandleId,
@@ -412,7 +430,24 @@ export function SmartCodeEditor({
         toast.error(`Could not start a ${agent.name} draft: ${reason}`);
       }
     },
-    [agents, code, launchMandate, widgetHandleId, store],
+    [
+      agents,
+      code,
+      launchMandate,
+      widgetHandleId,
+      store,
+      activeLanguage,
+      isMultiFile,
+      currentFile?.path,
+      filePath,
+      diagnostics,
+      workspaceName,
+      gitBranch,
+      gitStatus,
+      currentFiles,
+      activeTab,
+      title,
+    ],
   );
 
   // ── Select an existing conversation (mirrors AgentRunnerPage URL-sync) ────

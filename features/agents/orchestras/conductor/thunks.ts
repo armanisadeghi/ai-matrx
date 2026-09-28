@@ -30,6 +30,7 @@ import {
 } from "@/features/agents/redux/orchestras/thunks";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { OrchestraMember } from "../types";
+import { buildMemberRosterOffer } from "./roleDescriberOffer";
 import {
   conductorService,
   parseRoleDescriberOutput,
@@ -234,6 +235,9 @@ export function syncConductorPrompt(args: {
             },
             runtime: {
               variables: {
+                // `orchestras.member_roster` mapped-only offers — dropped by
+                // the mandate door unless a binding maps them.
+                ...buildMemberRosterOffer(getState().orchestras, args.conductorId),
                 [ROLE_DESCRIBER_INPUT_VAR]: JSON.stringify(dump, null, 2),
               },
             },

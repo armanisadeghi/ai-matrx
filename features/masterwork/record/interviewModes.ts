@@ -32,6 +32,9 @@
 // owns every default; see `useInterviewSettings.ts`. There is no code default
 // anywhere in this file on purpose.
 
+import type { MasterworkScoutInterviewOffer } from "@/types/python-generated/provision-offers";
+import type { RulebookOfferFacts } from "@/features/masterwork/agent-context/rulebookDocument";
+
 /** What the interviewer is handed before its first question. */
 export type InterviewContextMode = "primed" | "blank_slate";
 
@@ -189,6 +192,23 @@ export interface InterviewLaunchInput {
    * doing.
    */
   rulebookDocument: string | null;
+  /**
+   * Real facts the launching surface holds, offered BY NAME by the
+   * `masterwork.scout_interview` provision as mapped-only values. Every live
+   * Holder neither declares nor templates these names (checked live
+   * 2026-09-28), so the interviewer's payload is unchanged. Absent → omitted.
+   */
+  offer?: InterviewOfferFacts;
+}
+
+export interface InterviewOfferFacts {
+  /** The Expert's real name — never a stand-in like "The expert". */
+  expertName?: string | null;
+  /** The loaded Rulebook's facts. Sent in `primed` mode ONLY. */
+  rulebookFacts?: RulebookOfferFacts | null;
+  voiceOn?: boolean;
+  seedText?: string | null;
+  priorInterviewCount?: number;
 }
 
 export type InterviewLaunchVariables = {
@@ -199,7 +219,20 @@ export type InterviewLaunchVariables = {
   expert_goal: string;
   /** Present in `primed` mode ONLY — the key is absent in `blank_slate`. */
   rulebook_document?: string;
-};
+} & Pick<
+  Partial<MasterworkScoutInterviewOffer>,
+  | "expert_name"
+  | "rulebook_name"
+  | "rulebook_status"
+  | "rulebook_version"
+  | "rule_count"
+  | "interview_probe_list"
+  | "closing_surprises_on"
+  | "voice_on"
+  | "seed_text"
+  | "open_review_count"
+  | "prior_interview_count"
+>;
 
 /**
  * THE LAUNCH PAYLOAD — the one place the mode becomes something the interviewer
@@ -237,7 +270,39 @@ export function buildInterviewLaunchVariables(
     }
     base.rulebook_document = input.rulebookDocument;
   }
-  return base;
+  return { ...base, ...interviewOfferVariables(input, probes) };
+}
+
+/**
+ * The mapped-only offered values. Mode-safe: the Rulebook's own facts (status,
+ * version, counts) ride ONLY in `primed` mode — a blank-slate interview keeps
+ * its promise that the interviewer starts knowing nothing but the name and goal.
+ */
+function interviewOfferVariables(
+  input: InterviewLaunchInput,
+  probes: readonly InterviewProbe[],
+): Partial<InterviewLaunchVariables> {
+  const out: Partial<InterviewLaunchVariables> = {
+    rulebook_name: input.rulebookName,
+    interview_probe_list: [...probes],
+    closing_surprises_on: input.closingSurprises,
+  };
+  const offer = input.offer;
+  if (!offer) return out;
+  if (offer.expertName?.trim()) out.expert_name = offer.expertName.trim();
+  if (typeof offer.voiceOn === "boolean") out.voice_on = offer.voiceOn;
+  if (offer.seedText?.trim()) out.seed_text = offer.seedText;
+  if (typeof offer.priorInterviewCount === "number")
+    out.prior_interview_count = offer.priorInterviewCount;
+  const facts = offer.rulebookFacts;
+  if (input.mode === "primed" && facts) {
+    out.rule_count = facts.rule_count;
+    out.open_review_count = facts.open_review_count;
+    if (facts.rulebook_status) out.rulebook_status = facts.rulebook_status;
+    if (facts.rulebook_version !== undefined)
+      out.rulebook_version = facts.rulebook_version;
+  }
+  return out;
 }
 
 /**

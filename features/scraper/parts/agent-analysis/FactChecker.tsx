@@ -44,6 +44,7 @@ import {
 } from "@/features/scraper/constants/analysis-agents";
 import { useMandate } from "@/features/mandates/useMandate";
 import { AnalysisMandateGate } from "./AnalysisMandateGate";
+import type { PageAnalysisFacts } from "./page-analysis-offer-values";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FactCheckerPageProps {
@@ -54,6 +55,9 @@ interface FactCheckerPageProps {
     url?: string;
     website?: string;
   };
+  /** The scrape's real facts by the provision's declared names (mapped-only
+   *  offers — payload-neutral on the mandate door). */
+  offerValues?: PageAnalysisFacts;
 }
 
 const MANDATE_KEY = SCRAPER_ANALYSIS_MANDATES.factChecker;
@@ -62,6 +66,7 @@ const SURFACE_KEY = "scraper:fact-check";
 const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   value,
   overview = {},
+  offerValues,
 }) => {
   const { run, isRunning, error, conversationId, hasLiveRun } =
     useLiveAgentRun();
@@ -86,8 +91,11 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   // the auto-run would re-fire forever. The launch effect keys on the mandate
   // + the content only, and reaches the current launcher through this ref.
   const runRef = useRef(run);
+  // Same reason: the facts ride along with the content but never re-fire the run.
+  const offerValuesRef = useRef(offerValues);
   useEffect(() => {
     runRef.current = run;
+    offerValuesRef.current = offerValues;
   });
 
   useEffect(() => {
@@ -104,7 +112,10 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
       sourceFeature: "scraper",
       initiation: "auto",
       expect: "text",
-      variables: { [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: value },
+      variables: {
+        [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: value,
+        ...offerValuesRef.current,
+      },
       signal: controller.signal,
       // Stale text from the previous run must never survive into this one.
       // Cleared here (a callback fired by the run, before the stream) rather

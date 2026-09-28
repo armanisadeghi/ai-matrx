@@ -185,6 +185,10 @@ export function CheckupSuggestionDialog({
         expertInput: guidance.trim(),
         context,
         fallbackSection: proposal.section,
+        offer: {
+          rulebook,
+          suggestion: { evidence: finding.evidence, reason: finding.reason },
+        },
         apply: (result) => ({
           name: result.name.trim(),
           statement: result.statement.trim(),

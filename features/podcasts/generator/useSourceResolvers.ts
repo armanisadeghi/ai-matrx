@@ -34,6 +34,7 @@ import {
   MIN_SCRAPE_CHARS,
 } from "./constants";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { webSourceOfferVariables } from "./webSourceOffer";
 
 export interface UseSourceResolvers {
   /** Scrape a URL, then run the Web Content Extractor agent. Returns cleaned text. */
@@ -139,6 +140,8 @@ export function useSourceResolvers(): UseSourceResolvers {
           // The cleaned text IS the product — no JSON middleman.
           expect: "text",
           variables: {
+            // Mapped-only offered facts (dropped on the default pin).
+            ...webSourceOfferVariables(url, scraped, raw),
             scraped_content: raw,
             focus_area: DEFAULT_EXTRACTOR_FOCUS,
           },

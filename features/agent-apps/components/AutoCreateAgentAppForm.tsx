@@ -37,6 +37,10 @@ import {
   DisplayMode,
   ResponseMode,
 } from "../config-instructions";
+import {
+  buildAutoCreateFormOffer,
+  type AutoCreateFormOffer,
+} from "../auto-create-offer-values";
 import Link from "next/link";
 import {
   useAutoCreateApp,
@@ -389,7 +393,20 @@ function AutoCreateAgentAppFormWithAgent({
     );
 
     // Create the app using the hook
-    await launchCreate(builtinVariables);
+    await launchCreate(
+      builtinVariables,
+      buildAutoCreateFormOffer({
+        agent,
+        format: finalFormat,
+        displayMode: finalDisplayMode,
+        responseMode: finalResponseMode,
+        includedVariables: creationMode === "select" ? includedVariables : {},
+        colorMode: finalColorMode,
+        primaryColor: finalColorMode === "custom" ? primaryColor : undefined,
+        creatorInstructions: finalCustomInstructions,
+        creationMode,
+      }),
+    );
   };
 
   /**
@@ -401,6 +418,7 @@ function AutoCreateAgentAppFormWithAgent({
     builtinVariables: Parameters<
       typeof createApp
     >[0]["builtinVariables"],
+    formOffer?: AutoCreateFormOffer,
   ) => {
     if (!isAgentPayloadReady(agent)) {
       setError(EMPTY_PAYLOAD_ERROR);
@@ -413,6 +431,7 @@ function AutoCreateAgentAppFormWithAgent({
       await createApp({
         agent,
         builtinVariables,
+        formOffer,
         mode: useLightningMode ? "lightning" : "standard",
       });
     } catch (err) {
@@ -462,8 +481,20 @@ function AutoCreateAgentAppFormWithAgent({
       builtinVariables,
     );
 
-    // Create the app using the hook
-    await launchCreate(builtinVariables);
+    // Create the app using the hook. The auto path's instructions are the
+    // form's own default, not something the creator typed — so no
+    // creator_instructions / creation_mode offer is sent for it.
+    await launchCreate(
+      builtinVariables,
+      buildAutoCreateFormOffer({
+        agent,
+        format: finalFormat,
+        displayMode: finalDisplayMode,
+        responseMode: finalResponseMode,
+        includedVariables: {},
+        colorMode: finalColorMode,
+      }),
+    );
   };
 
   // Show loading screen while creating app

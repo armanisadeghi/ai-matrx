@@ -5,7 +5,12 @@ import { usePathname } from "next/navigation";
 import { AudioLines, Keyboard, Mic, MicOff, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import { ambientAssistantMandateChain } from "./ambientAssistantMandates";
+import {
+  ambientAssistantMandateChain,
+  ambientPageGuidanceValues,
+  type AmbientPageGuidanceValues,
+} from "./ambientAssistantMandates";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { useMandate } from "@/features/mandates/useMandate";
 import { useMandateChain } from "@/features/mandates/useMandateChain";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -21,6 +26,7 @@ import { VOICE_COMMUNICATOR_MANDATE_KEY } from "@/features/voice-agent/relay/use
 import { VoiceOrb } from "@/features/voice-agent/components/VoiceOrb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import { cn } from "@/lib/utils";
@@ -28,6 +34,10 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ActiveAmbientVoiceAssistantProps {
   primaryAgentId: string;
+  /** The page-guide rung that answered — the text turn runs through its mandate door. */
+  primaryMandateKey: MandateKey;
+  /** The page facts the guide's provision declares (see ambientPageGuidanceValues). */
+  guidanceValues: AmbientPageGuidanceValues;
   communicatorAgentId: string;
   surfaceKey: string;
   sourceFeature: SourceFeature;
@@ -128,6 +138,8 @@ function GuestAmbientVoiceAssistant({
 
 function ActiveAmbientVoiceAssistant({
   primaryAgentId,
+  primaryMandateKey,
+  guidanceValues,
   communicatorAgentId,
   surfaceKey,
   sourceFeature,
@@ -143,9 +155,11 @@ function ActiveAmbientVoiceAssistant({
   const { conversationId } = useAgentLauncher(primaryAgentId, {
     surfaceKey,
     sourceFeature,
+    mandateKey: primaryMandateKey,
     retainOnUnmount: true,
     preferFresh: true,
     config: { allowChat: true, responseDensity: "compact" },
+    runtime: { variables: guidanceValues },
   });
   const submissionPhase = useAppSelector(
     selectSubmissionPhase(conversationId ?? ""),
@@ -206,11 +220,15 @@ function ActiveAmbientVoiceAssistant({
 /** Text only — used when the voice agent cannot be resolved. */
 function AmbientTextOnlyAssistant({
   primaryAgentId,
+  primaryMandateKey,
+  guidanceValues,
   surfaceKey,
   sourceFeature,
   onDismiss,
 }: {
   primaryAgentId: string;
+  primaryMandateKey: MandateKey;
+  guidanceValues: AmbientPageGuidanceValues;
   surfaceKey: string;
   sourceFeature: SourceFeature;
   onDismiss: () => void;
@@ -218,9 +236,11 @@ function AmbientTextOnlyAssistant({
   const { conversationId } = useAgentLauncher(primaryAgentId, {
     surfaceKey,
     sourceFeature,
+    mandateKey: primaryMandateKey,
     retainOnUnmount: true,
     preferFresh: true,
     config: { allowChat: true, responseDensity: "compact" },
+    runtime: { variables: guidanceValues },
   });
   return (
     <div className="ambient-assistant-dock fixed left-1/2 z-[35] w-[min(470px,calc(100vw-2rem))] -translate-x-1/2">
@@ -413,7 +433,18 @@ function AuthenticatedAmbientVoiceAssistant({
   /** Resolve the assistant again (remounts this component). */
   onRetry: () => void;
 }) {
-  const primary = useMandateChain(ambientAssistantMandateChain(pathname));
+  const chain = ambientAssistantMandateChain(pathname);
+  const primary = useMandateChain(chain);
+  const runtime = useSurfaceRuntime();
+  const organizationId = useAppSelector(selectOrganizationId);
+  const guidanceValues = ambientPageGuidanceValues({
+    pathname,
+    chain,
+    resolvedKey: primary.mandateKey,
+    surfaceName: runtime?.surfaceName,
+    sourceFeature,
+    organizationId,
+  });
   const communicator = useMandate(VOICE_COMMUNICATOR_MANDATE_KEY);
   // Pending on an organization says which of the states it is (see the text launcher).
   const { organizationState, retry: retryOrganization } = useOrganizationRequired();
@@ -482,6 +513,8 @@ function AuthenticatedAmbientVoiceAssistant({
     return (
       <AmbientTextOnlyAssistant
         primaryAgentId={primaryMandate.agentId}
+        primaryMandateKey={primary.mandateKey}
+        guidanceValues={guidanceValues}
         surfaceKey={surfaceKey}
         sourceFeature={sourceFeature}
         onDismiss={onDismiss}
@@ -492,6 +525,8 @@ function AuthenticatedAmbientVoiceAssistant({
   return (
     <ActiveAmbientVoiceAssistant
       primaryAgentId={primaryMandate.agentId}
+      primaryMandateKey={primary.mandateKey}
+      guidanceValues={guidanceValues}
       communicatorAgentId={communicatorMandate.agentId}
       surfaceKey={surfaceKey}
       sourceFeature={sourceFeature}

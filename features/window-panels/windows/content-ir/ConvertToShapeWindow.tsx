@@ -27,6 +27,7 @@ import {
 import { loadShapeReadiness } from "@/features/content-ir/studio/shape-readiness-service";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { buildKindAuthoringOffer } from "@/features/content-ir/studio/kind-authoring-offer";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -131,7 +132,22 @@ function ConvertToShapeWindowContent({
     openRun({
       initialAgentId: agentId,
       initialDraftText: seed.draftText,
-      initialVariableValues: seed.variables,
+      initialVariableValues: {
+        // `content_ir.kind_authoring` mapped-only offers (agent door; the live
+        // Holder declares none of these names).
+        ...buildKindAuthoringOffer({
+          kindSlug: readiness.rootKind,
+          kindLabel: readiness.definition?.label,
+          renderGapState:
+            readiness.component.state === "inactive" ||
+            readiness.component.state === "generic" ||
+            readiness.component.state === "missing"
+              ? readiness.component.state
+              : null,
+          kindIsActive: readiness.definition?.isActive ?? null,
+        }),
+        ...seed.variables,
+      },
     });
     onClose();
   };

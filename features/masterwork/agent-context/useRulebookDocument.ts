@@ -17,7 +17,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getRulebook } from "../service";
-import { renderRulebookDocument } from "./rulebookDocument";
+import {
+  renderRulebookDocument,
+  rulebookOfferFacts,
+  type RulebookOfferFacts,
+} from "./rulebookDocument";
 
 export interface RulebookDocumentState {
   /** The rendered Rulebook. Never an empty string once `loading` is false. */
@@ -29,6 +33,8 @@ export interface RulebookDocumentState {
    * (organization is tenancy, never permission).
    */
   organizationId: string | null;
+  /** The Rulebook's offered facts, from the SAME load (no second read). */
+  facts: RulebookOfferFacts | null;
   loading: boolean;
   /** Set means REFUSE to launch — say this to the Expert and offer Retry. */
   error: string | null;
@@ -41,16 +47,29 @@ export function useRulebookDocument(
   const [state, setState] = useState<{
     document: string | null;
     organizationId: string | null;
+    facts: RulebookOfferFacts | null;
     loading: boolean;
     error: string | null;
-  }>({ document: null, organizationId: null, loading: true, error: null });
+  }>({
+    document: null,
+    organizationId: null,
+    facts: null,
+    loading: true,
+    error: null,
+  });
   const [epoch, setEpoch] = useState(0);
 
   const reload = useCallback(() => setEpoch((n) => n + 1), []);
 
   useEffect(() => {
     if (!rulebookId) {
-      setState({ document: null, organizationId: null, loading: false, error: null });
+      setState({
+        document: null,
+        organizationId: null,
+        facts: null,
+        loading: false,
+        error: null,
+      });
       return;
     }
     let cancelled = false;
@@ -63,6 +82,7 @@ export function useRulebookDocument(
           setState({
             document: null,
             organizationId: null,
+            facts: null,
             loading: false,
             error:
               "We couldn't open this Rulebook, so there is nothing to work from. " +
@@ -73,6 +93,7 @@ export function useRulebookDocument(
         setState({
           document: renderRulebookDocument(rulebook),
           organizationId: rulebook.organization_id ?? null,
+          facts: rulebookOfferFacts(rulebook),
           loading: false,
           error: null,
         });
@@ -87,6 +108,7 @@ export function useRulebookDocument(
         setState({
           document: null,
           organizationId: null,
+          facts: null,
           loading: false,
           error:
             "We couldn't load your rules just now, so we've stopped rather than " +

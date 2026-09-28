@@ -27,7 +27,8 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 interface BaseExtractionPayload {
   /** System agent key (e.g. `prompt-app-auto-create`) — maps to a mandate key. */
   builtinKey: SystemAgentKey;
-  variables: Record<string, string>;
+  /** Native JSON values (string lists, numbers, booleans) pass through as-is. */
+  variables: Record<string, unknown>;
   timeoutMs?: number;
   pollingIntervalMs?: number;
   /** Called once `requestId` is known (legacy name: taskId). */

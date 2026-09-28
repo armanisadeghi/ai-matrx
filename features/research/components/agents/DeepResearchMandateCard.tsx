@@ -22,7 +22,8 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { getSources } from "../../service";
-import type { ResearchTopic } from "../../types";
+import type { ResearchSource, ResearchTopic } from "../../types";
+import { deepResearchOfferValues } from "./deep-research-offer-values";
 
 export const DEEP_RESEARCH_MANDATE = MANDATE_KEYS.research__topic_deep_research;
 
@@ -38,6 +39,8 @@ export function DeepResearchMandateCard({ topic }: { topic: ResearchTopic }) {
   const launcher = useAgentLauncher();
   const [question, setQuestion] = useState("");
   const [sources, setSources] = useState<string[] | null>(null);
+  /** The same included-source rows, kept for the provision's named facts. */
+  const [sourceRows, setSourceRows] = useState<ResearchSource[] | null>(null);
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +50,7 @@ export function DeepResearchMandateCard({ topic }: { topic: ResearchTopic }) {
     getSources(topic.id, { is_included: true, limit: MAX_SOURCES })
       .then((rows) => {
         if (cancelled) return;
+        setSourceRows(rows);
         setSources(
           rows.map((row) =>
             row.title?.trim() ? `${row.title.trim()} — ${row.url}` : row.url,
@@ -57,6 +61,7 @@ export function DeepResearchMandateCard({ topic }: { topic: ResearchTopic }) {
       .catch((reason: unknown) => {
         if (cancelled) return;
         setSources(null);
+        setSourceRows(null);
         setSourcesError(
           reason instanceof Error ? reason.message : String(reason),
         );
@@ -91,6 +96,8 @@ export function DeepResearchMandateCard({ topic }: { topic: ResearchTopic }) {
             topic: topicText(topic),
             sources: (sources ?? []).join("\n"),
             question: asked,
+            // Mapped-only facts by the provision's declared names.
+            ...deepResearchOfferValues(topic, sourceRows),
           },
         },
       });

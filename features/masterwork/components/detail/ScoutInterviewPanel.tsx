@@ -70,6 +70,7 @@ import {
   blankSlateScopeOverride,
   buildInterviewLaunchVariables,
   contextModeOption,
+  type InterviewOfferFacts,
 } from "@/features/masterwork/record/interviewModes";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -171,11 +172,14 @@ function InterviewConversation({
   agentId,
   seedText,
   freshSessionKey,
+  offer,
 }: {
   rulebookId: string;
   rulebookName: string;
   /** The Rulebook itself, already loaded — see ScoutInterviewContent. */
   rulebookDocument: string;
+  /** Offered facts (masterwork.scout_interview) — must match the refusal check. */
+  offer: InterviewOfferFacts;
   /** The Expert's own name — half of everything a blank-slate session gets. */
   expertName: string;
   /** What the Expert picked on the start screen (mode, probes, closing, voice). */
@@ -253,6 +257,7 @@ function InterviewConversation({
         probes: choice.probes,
         closingSurprises: choice.closingSurprises,
         rulebookDocument,
+        offer,
       }),
     },
     config: { responseDensity: "compact" },
@@ -613,6 +618,13 @@ export function ScoutInterviewContent({
       s.userProfile?.userMetadata?.name ??
       "The expert",
   );
+  // The offered `expert_name` is the REAL name only — never the stand-in.
+  const realExpertName = useAppSelector(
+    (s) =>
+      s.userProfile?.userMetadata?.fullName ??
+      s.userProfile?.userMetadata?.name ??
+      null,
+  );
   // THE DOCUMENT COMES FIRST — loaded before any conversation is minted, so
   // the Scout's first turn already holds the intake answers, the rules so far,
   // and the Expert's open review feedback (disease D4).
@@ -832,6 +844,13 @@ export function ScoutInterviewContent({
   // actually promises. In `primed` that is still disease D4's cure: the whole
   // Rulebook, bound before turn 1. In `blank_slate` the missing document is the
   // POINT, so the check runs against the payload the mode really sends.
+  const offer: InterviewOfferFacts = {
+    expertName: realExpertName,
+    rulebookFacts: rulebookDoc.facts,
+    voiceOn: choice.picked.voiceOn,
+    seedText,
+    priorInterviewCount: interviews.length,
+  };
   const launchVariables = buildInterviewLaunchVariablesSafely({
     rulebookId,
     expertName,
@@ -840,6 +859,7 @@ export function ScoutInterviewContent({
     probes: choice.picked.probes,
     closingSurprises: choice.picked.closingSurprises,
     rulebookDocument: rulebookDoc.document,
+    offer,
   });
   const missing = launchVariables
     ? missingRequiredVariables(mandate.contract, launchVariables)
@@ -882,6 +902,7 @@ export function ScoutInterviewContent({
       agentId={mandate.agentId}
       seedText={seedText}
       freshSessionKey={choice.key}
+      offer={offer}
     />
   );
 }

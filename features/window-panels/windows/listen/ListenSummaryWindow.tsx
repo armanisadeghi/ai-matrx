@@ -58,6 +58,7 @@ import { TTS_DEFAULT_SPEED } from "@/lib/cartesia/config";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SettingDoor } from "@/features/settings/doors/SettingDoor";
 import { VOICE_SETTING_DOORS } from "@/features/settings/tabs/voices/voiceSettingDoors";
+import type { AmbientListenSummaryWindowOffer } from "@/types/python-generated/provision-offers";
 
 const SUMMARY_STYLE_DEFAULT = "Extremely Concise Summary";
 
@@ -132,7 +133,16 @@ function ListenSummaryWindowInner({
       sourceFeature: "chat",
       initiation: "user",
       expect: "text",
-      variables: { content: sourceText, style },
+      // `live_playback` is a mapped-only offered value of Provision
+      // `ambient.listen_summary_window` (pass_by_name=False). This is the
+      // AGENT door: the live Holder neither declares nor references it
+      // (checked 2026-09-28), so it reaches the payload without changing
+      // what that agent renders; it becomes mappable after a door switch.
+      variables: {
+        content: sourceText,
+        style,
+        live_playback: autoPlay,
+      } satisfies Partial<AmbientListenSummaryWindowOffer>,
       onConversationCreated: (cid) => {
         conversationRef.current = cid;
         if (autoPlay) {

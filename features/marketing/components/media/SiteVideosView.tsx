@@ -53,6 +53,7 @@ import {
 } from "@/features/marketing/data/hooks";
 import { youTubeThumbnail, youtubeId } from "@/lib/media/youtube";
 import { generateVideoMetadata } from "@/features/marketing/lib/generate-video-metadata";
+import type { VideoMetadataFacts } from "@/features/marketing/lib/video-metadata-offer-values";
 import { MARKETING_SITE_SURFACE_NAME } from "@/features/marketing/lib/scopes/site-surface-base";
 import type { SiteVideoAsset } from "@/features/marketing/lib/snapshot-video";
 import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
@@ -180,16 +181,61 @@ export function SiteVideosView({
       .filter(Boolean)
       .join(" ");
 
+  /**
+   * The real facts this view holds about one video, by the
+   * `marketing.video_metadata` provision's declared names. The YouTube
+   * identity comes from the index this view already loaded for its cards.
+   */
+  const videoFacts = (
+    asset: BrandAsset,
+    crawledVideo: SiteVideoAsset | null,
+  ): VideoMetadataFacts => {
+    const ytId =
+      crawledVideo?.provider === "youtube"
+        ? crawledVideo.videoId
+        : asset.source_url
+          ? youtubeId(asset.source_url)
+          : null;
+    const identity = ytId ? youtubeIdentityForId(ytId) : undefined;
+    return {
+      video_url: crawledVideo?.url ?? asset.source_url ?? undefined,
+      provider: crawledVideo
+        ? crawledVideo.provider
+        : ytId
+          ? "youtube"
+          : undefined,
+      provider_video_id: crawledVideo?.videoId ?? ytId ?? undefined,
+      embedded_on_paths: crawledVideo?.pages.map(
+        (page) => page.path ?? page.url,
+      ),
+      published_at:
+        identity?.published_at ??
+        crawledVideo?.publishedAt ??
+        videoPublishDateFromMetadata(asset.data) ??
+        undefined,
+      duration: identity?.duration ?? undefined,
+      channel_title: identity?.channel_title ?? undefined,
+      view_count: identity?.view_count ?? undefined,
+      existing_title: asset.title ?? undefined,
+      existing_notes: asset.notes ?? undefined,
+      site_name: site.name,
+      site_url: site.root_url,
+      media_standards_notes: standards.notes || undefined,
+    };
+  };
+
   /** Persist an agent metadata result onto an existing asset row. */
   const saveMetadata = async (
     asset: BrandAsset,
     videoContext: string,
+    crawledVideo: SiteVideoAsset | null = null,
   ): Promise<void> => {
     const outcome = await dispatch(
       generateVideoMetadata({
         videoContext,
         siteContext,
         surfaceKey: MARKETING_SITE_SURFACE_NAME,
+        facts: videoFacts(asset, crawledVideo),
       }),
     );
     if (!outcome.ok) {
@@ -275,7 +321,7 @@ export function SiteVideosView({
       );
       const asset = existing ?? (await promoteToLibrary(video));
       if (!asset) return;
-      await saveMetadata(asset, crawledVideoContext(video));
+      await saveMetadata(asset, crawledVideoContext(video), video);
     } catch (error) {
       toast.error("Could not save the metadata", {
         description: error instanceof Error ? error.message : undefined,

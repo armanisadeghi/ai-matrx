@@ -223,6 +223,7 @@ export function AddRulePanel({
         expertInput: describe.trim(),
         context: rulebookContext(rulebook),
         fallbackSection,
+        offer: { rulebook },
         apply: (value) => value,
         failureMessages: {
           timeout: "Drafting took too long. Your words are still here.",
@@ -249,6 +250,7 @@ export function AddRulePanel({
         expertInput: refineInput.trim(),
         context: rulebookContext(rulebook),
         fallbackSection: aiDraft.section,
+        offer: { rulebook },
         apply: (value) => value,
         failureMessages: {
           timeout: "The rewrite took too long. Your draft is unchanged.",

@@ -9,6 +9,7 @@
  * arriving at `GET /mandates/{key}/resolution` as a 404 the user never sees.
  */
 import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
+import type { AmbientPageGuidanceOffer } from "@/types/python-generated/provision-offers";
 
 const SYSTEM_AMBIENT_MANDATE = MANDATE_KEYS.ambient__page_guidance;
 
@@ -77,4 +78,52 @@ export function ambientAssistantMandateChain(
         ? EDUCATION_SECTION_MANDATES[sectionSlug]
         : undefined,
   };
+}
+
+// ── THE OFFER: what the page guide's position knows, by declared name ───────
+//
+// Provision `ambient.page_guidance` (aidream client_mandates.py) declares what
+// this position can hand a guide. Until 2026-09-28 the launcher sent NOTHING,
+// so no binding could ever map a page fact. These are the facts the launcher
+// holds at launch, named exactly as declared (the generated
+// `AmbientPageGuidanceOffer` pins the spelling).
+//
+// Current Holders receive nothing new: the launch now runs through the mandate
+// door, where `resolved_mandate_tier` / `source_feature` (mapped-only) are
+// dropped on the default pin, and the by-name values land only on a variable
+// the Holder declares — every live guide Holder (all 33 mandates) declares
+// none. The page's LIVE values (selection, text around it, the page scope,
+// the record in view) keep riding the surface scope as context at submit time;
+// they are not launch-time facts.
+
+export type AmbientPageGuidanceValues = Omit<
+  Partial<AmbientPageGuidanceOffer>,
+  "__kind"
+>;
+
+export function ambientPageGuidanceValues(input: {
+  pathname: string;
+  chain: AmbientAssistantMandateChain;
+  resolvedKey: MandateKey;
+  surfaceName?: string | null;
+  sourceFeature?: string | null;
+  organizationId?: string | null;
+}): AmbientPageGuidanceValues {
+  const segments = input.pathname.split("/").filter(Boolean);
+  const tier =
+    input.resolvedKey === input.chain.page
+      ? "page"
+      : input.resolvedKey === input.chain.module
+        ? "module"
+        : "system";
+  const values: AmbientPageGuidanceValues = {
+    page_route: input.pathname,
+    resolved_mandate_tier: tier,
+  };
+  if (segments[0]) values.module_slug = segments[0];
+  if (segments[1]) values.section_slug = segments[1];
+  if (input.surfaceName) values.surface_name = input.surfaceName;
+  if (input.sourceFeature) values.source_feature = input.sourceFeature;
+  if (input.organizationId) values.organization_id = input.organizationId;
+  return values;
 }

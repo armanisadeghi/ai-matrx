@@ -114,13 +114,38 @@ export function rowAgentOffer(args: {
   return offer;
 }
 
+/**
+ * The Provision's MAPPED-ONLY values (declared `pass_by_name=False`): the reader's level on the
+ * table, the table's organization, and which fields the read door hid from this reader. They
+ * ride `variables` ONLY — never the named context the offer also rides — so the mandate door
+ * delivers them solely where a binding's consumption map names them and no current Holder's
+ * payload changes. Absent facts are omitted, never sent blank.
+ */
+export function rowAgentMappedValues(args: {
+  level: PermissionLevel | null;
+  organizationId: string;
+  document: Record<string, unknown>;
+}): Pick<DataTableRowActionOffer, "acting_person_level" | "organization_id" | "hidden_field_keys"> {
+  const hidden = args.document._hidden;
+  const hiddenKeys =
+    hidden && typeof hidden === "object" && !Array.isArray(hidden) ? Object.keys(hidden) : [];
+  return {
+    ...(args.level ? { acting_person_level: args.level } : {}),
+    ...(args.organizationId ? { organization_id: args.organizationId } : {}),
+    ...(hiddenKeys.length > 0 ? { hidden_field_keys: hiddenKeys } : {}),
+  } satisfies Partial<DataTableRowActionOffer>;
+}
+
 /** The launch the older grid makes, for this row — `data.row_action` in the flexible panel. */
 export function rowAgentLaunch(
   target: RowAgentActionTarget,
   offer: Offer,
   /** The TABLE's organization (the page's resolver), never the active one (ACCESS-FIX-18). */
   organizationId: string,
+  /** `rowAgentMappedValues` — added to `variables` only, never to `context`. */
+  mapped?: ReturnType<typeof rowAgentMappedValues>,
 ): ManagedAgentOptions {
+  const variables = mapped && Object.keys(mapped).length > 0 ? { ...offer, ...mapped } : offer;
   return {
     surfaceKey: `data-v2-row-action:${target.tableId}:${target.recordId}`,
     // The run is filed in the organization the row lives in; unnamed, the launcher took the
@@ -135,7 +160,7 @@ export function rowAgentLaunch(
     },
     runtime: {
       userInput: target.prompt.trim() || target.action,
-      variables: offer,
+      variables,
       context: offer,
       surfaceName: "matrx-user/data-tables",
     },
@@ -205,7 +230,15 @@ export async function runRowAgentAction(args: {
     actingPersonCanEdit: target.level !== null && WRITES.has(target.level),
   });
   try {
-    await args.launchMandate(MANDATE_KEYS.data__row_action, rowAgentLaunch(target, offer, args.organizationId));
+    const mapped = rowAgentMappedValues({
+      level: target.level,
+      organizationId: args.organizationId,
+      document: target.document as Record<string, unknown>,
+    });
+    await args.launchMandate(
+      MANDATE_KEYS.data__row_action,
+      rowAgentLaunch(target, offer, args.organizationId, mapped),
+    );
   } catch (e) {
     args.onRefused(
       `Could not start "${target.action}"`,

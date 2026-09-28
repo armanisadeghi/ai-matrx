@@ -172,6 +172,20 @@ export function GenerateMediaView({
             // One window per brand's asset desk — a re-order replaces the run
             // in the window the user is already watching.
             liveInstanceId: `brand-assets-image:${brandId}`,
+            // The order's real facts by their declared provision names
+            // (mapped-only offers — payload-neutral by default).
+            facts: {
+              image_description: subject.trim(),
+              image_type: preset.label,
+              site_name: brandName,
+              site_url: brandUrl ?? undefined,
+              width_px:
+                Number.isFinite(width) && width > 0 ? width : resolved.width,
+              height_px:
+                Number.isFinite(height) && height > 0 ? height : resolved.height,
+              file_format: resolved.format ?? undefined,
+              site_media_rules: standards.notes || undefined,
+            },
           }),
         ),
         new Promise<PageImageResult>((resolve) =>

@@ -52,6 +52,10 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import type { AiPostProcessAgent } from "../ai-agents";
+import {
+  cleanupOfferVariables,
+  type CleanupSessionFacts,
+} from "../cleanupOffer";
 
 export type AiProcessPhase =
   | "idle"
@@ -85,6 +89,11 @@ interface ProcessArgs {
   agent: AiPostProcessAgent;
   transcript: string;
   context: string;
+  /**
+   * Real facts about this cleanup session, offered by name by the agent's
+   * mandate (mapped-only; dropped on the default pin). Optional.
+   */
+  facts?: Omit<CleanupSessionFacts, "transcript" | "context">;
 }
 
 const FALLBACK_CONTEXT_KEY = "user_context";
@@ -129,7 +138,7 @@ export function useAiPostProcess() {
     phase === "streaming" ||
     phase === "awaiting-tools";
 
-  async function process({ agent, transcript, context }: ProcessArgs) {
+  async function process({ agent, transcript, context, facts }: ProcessArgs) {
     // Do not expose a prior run's answer/error during this launch gap.
     setConversationId(null);
     setLaunchError(null);
@@ -161,7 +170,11 @@ export function useAiPostProcess() {
       const contextValue = context.trim();
       const hasContext = contextValue.length > 0;
 
-      const variableValues: Record<string, string> = {
+      const variableValues: Record<string, unknown> = {
+        // Offered facts first; the by-name values below always win.
+        ...(facts
+          ? cleanupOfferVariables(agent, { ...facts, transcript, context })
+          : {}),
         [agent.transcriptVariableKey]: transcript,
       };
       if (hasContext && agent.contextVariableKey) {

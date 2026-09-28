@@ -179,6 +179,7 @@ export function ImproveRuleDialog({
         expertInput: feedback.trim(),
         context: getSurfaceScope(),
         fallbackSection: target.section,
+        offer: { rule: target },
         apply: (result) => applyRuleImprove(target, result),
       });
       // Land immediately as a DRAFT revision — the rewrite must never live

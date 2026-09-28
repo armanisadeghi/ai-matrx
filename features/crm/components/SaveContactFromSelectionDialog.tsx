@@ -45,6 +45,10 @@ import {
   type ParsedContactSelection,
 } from "../agent-context/parseContactSelection";
 import type { PartyKind } from "../types";
+import {
+  saveContactOfferedValues,
+  type SaveContactPageFacts,
+} from "../agent-context/saveContactOfferedValues";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SaveContactFromSelectionDialogProps {
@@ -95,6 +99,17 @@ export function SaveContactFromSelectionDialog({
     parseContactSelection(selection),
   );
   const [saving, setSaving] = useState(false);
+  // The page the dialog opened on — the page the selection was made on. Read
+  // once at open; offered to the job as mapped-only values.
+  const [pageFacts] = useState<SaveContactPageFacts>(() =>
+    typeof window === "undefined"
+      ? {}
+      : {
+          pagePath: window.location.pathname,
+          pageUrl: window.location.href,
+          sourceTitle: document.title,
+        },
+  );
 
   // A new selection re-parses; the dialog is reused per instance.
   useEffect(() => {
@@ -150,6 +165,9 @@ export function SaveContactFromSelectionDialog({
             headline: draft.headline.trim(),
           }),
           origin: origin ?? "Saved from a selection in the app",
+          // Mapped-only (pass_by_name=False): the mandate door delivers these
+          // only where a binding's consumption map names them.
+          ...saveContactOfferedValues(draft, pageFacts),
         },
         coerce: coerceResult,
       });

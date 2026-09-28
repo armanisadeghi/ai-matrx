@@ -19,6 +19,10 @@ import {
 } from "@/features/marketing/lib/generate-page-image";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { soleFence } from "@/lib/markdown/code-ranges";
+import {
+  videoMetadataOfferValues,
+  type VideoMetadataFacts,
+} from "@/features/marketing/lib/video-metadata-offer-values";
 
 /**
  * The Mandate that decides WHICH agent writes video metadata (system default:
@@ -87,6 +91,8 @@ export interface GenerateVideoMetadataArgs {
   /** Site + brand grounding (name, root URL, standards notes). */
   siteContext: string;
   surfaceKey: string;
+  /** Real facts about the video, sent as mapped-only offers by name. */
+  facts?: VideoMetadataFacts;
 }
 
 /**
@@ -108,6 +114,7 @@ export function generateVideoMetadata(args: GenerateVideoMetadataArgs) {
           variables: {
             video_context: args.videoContext,
             site_context: args.siteContext,
+            ...videoMetadataOfferValues(args.facts),
           },
         },
         (requestId) => waitForAnswerText(getState, requestId),

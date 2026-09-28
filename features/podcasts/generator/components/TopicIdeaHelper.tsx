@@ -23,6 +23,22 @@ import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentP
 import { podcastService } from "@/features/podcasts/service";
 import { topicFromIdea } from "@/features/podcasts/generator/topic-idea";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import type { PodcastClientTopicIdeaRequestOffer } from "@/types/python-generated/provision-offers";
+
+/** How many ideas one request asks for (the by-name `idea_count`). */
+const IDEA_COUNT = 5;
+
+/** The offered facts a caller may add (mapped-only; dropped on the default pin). */
+export type TopicIdeaOfferFacts = Pick<
+  Partial<PodcastClientTopicIdeaRequestOffer>,
+  | "show_title"
+  | "show_description"
+  | "existing_topic_ideas"
+  | "episode_format"
+  | "language"
+  | "host_count"
+  | "target_audience"
+>;
 
 /** Bank the whole generated batch on the show (D151). Never throws at the UI. */
 const bankTopicIdeas = (showId: string, value: unknown): Promise<void> =>
@@ -42,9 +58,16 @@ export function TopicIdeaHelper({
   onPick,
   seedConcept,
   showId,
+  offerFacts,
 }: {
   onPick: (topic: string) => void;
   seedConcept?: string;
+  /**
+   * Real facts the generator form holds (show, format, language, hosts,
+   * audience), offered by name by `podcast_client.topic_idea_request`. Sent on
+   * the MANDATE door beside the three by-name values, which they never replace.
+   */
+  offerFacts?: TopicIdeaOfferFacts;
   /**
    * The show these ideas are for. With it (D151) the WHOLE generated batch is
    * banked on `pc_shows.metadata.topic_ideas` the instant it lands, so the four
@@ -104,7 +127,13 @@ export function TopicIdeaHelper({
             required: true,
           },
         ]}
-        fixedVariables={{ content_format: "podcast", idea_count: "5" }}
+        fixedVariables={{
+          ...(offerFacts ?? {}),
+          idea_count_number: IDEA_COUNT,
+          // By-name values last — they always win.
+          content_format: "podcast",
+          idea_count: String(IDEA_COUNT),
+        }}
         expectedKind="topic_ideas"
         uiOptions={{ selectionMode: "single" }}
         {...(showId ? { onBatch: (value: unknown) => bankTopicIdeas(showId, value) } : {})}

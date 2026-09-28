@@ -8487,6 +8487,15 @@ export type Database = {
         Returns: string
       }
       _require_actor: { Args: { p_user_id: string }; Returns: string }
+      record_canvas_view: {
+        Args: {
+          p_canvas_id: string
+          p_organization_id: string
+          p_referrer?: string
+          p_session_id?: string
+        }
+        Returns: boolean
+      }
       set_canvas_like: {
         Args: {
           p_canvas_id: string
@@ -8494,6 +8503,18 @@ export type Database = {
           p_organization_id?: string
         }
         Returns: number
+      }
+      submit_canvas_score: {
+        Args: {
+          p_canvas_id: string
+          p_completed: boolean
+          p_data?: Json
+          p_max_score: number
+          p_organization_id: string
+          p_score: number
+          p_time_taken?: number
+        }
+        Returns: Json
       }
     }
     Enums: {

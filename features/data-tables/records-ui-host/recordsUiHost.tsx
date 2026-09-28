@@ -52,6 +52,7 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
+import type { DataBuildOrAskOffer } from "@/types/python-generated/provision-offers";
 
 import { useMergedGridKnob } from "./mergedGridKnob";
 
@@ -203,10 +204,17 @@ export function useRecordsUiPorts({
             records_wanted: ask.kind,
             records_suggested_wording: ask.suggestion,
           },
+          // Who is asking — a mapped-only offered value of Provision
+          // `data.build_or_ask`: it rides `variables` (never context), so the
+          // mandate door delivers it only where a binding's consumption map
+          // names it. Omitted when no one is signed in.
+          ...(userId
+            ? { variables: { asker_user_id: userId } satisfies Partial<DataBuildOrAskOffer> }
+            : {}),
         },
       });
     },
-    [launchMandate, organizationId],
+    [launchMandate, organizationId, userId],
   );
 
   /** A TABLE'S AGENT BUTTON (`runAgentAction`): the same `data.row_action` job the older grid starts. */

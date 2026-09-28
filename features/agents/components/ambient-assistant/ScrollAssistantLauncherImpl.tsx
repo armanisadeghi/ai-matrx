@@ -5,7 +5,10 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import { ambientAssistantMandateChain } from "./ambientAssistantMandates";
+import {
+  ambientAssistantMandateChain,
+  ambientPageGuidanceValues,
+} from "./ambientAssistantMandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useMandateChain } from "@/features/mandates/useMandateChain";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -15,6 +18,7 @@ import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedA
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { cn } from "@/lib/utils";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
@@ -72,9 +76,10 @@ function AuthenticatedAmbientAssistant({
 }: ScrollAssistantLauncherImplProps & { onRetry: () => void }) {
   const pathname = usePathname();
   const runtime = useSurfaceRuntime();
-  const { mandate, loading, error, organizationPending } = useMandateChain(
-    ambientAssistantMandateChain(pathname),
-  );
+  const chain = ambientAssistantMandateChain(pathname);
+  const { mandate, mandateKey, loading, error, organizationPending } =
+    useMandateChain(chain);
+  const organizationId = useAppSelector(selectOrganizationId);
   // Pending on an organization says which of the states it is: still
   // resolving, none chosen, or the read failed — never "choose" during a race.
   const { organizationState, retry: retryOrganization } = useOrganizationRequired();
@@ -91,12 +96,26 @@ function AuthenticatedAmbientAssistant({
   const { conversationId, close } = useAgentLauncher(mandate?.agentId ?? "", {
     surfaceKey,
     sourceFeature,
+    // THE MANDATE DOOR: the run goes to `/ai/mandates/{key}` for the rung that
+    // answered, so the page facts below reach a binding's consumption map.
+    // `agentId` still paints the input bar from the chain's own resolution.
+    mandateKey,
     ready: Boolean(mandate) && !dismissed,
     retainOnUnmount: true,
     preferFresh: true,
     config: {
       allowChat: true,
       responseDensity: "compact",
+    },
+    runtime: {
+      variables: ambientPageGuidanceValues({
+        pathname,
+        chain,
+        resolvedKey: mandateKey,
+        surfaceName: runtime?.surfaceName,
+        sourceFeature,
+        organizationId,
+      }),
     },
   });
   const submissionPhase = useAppSelector(

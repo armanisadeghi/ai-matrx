@@ -179,8 +179,9 @@ export interface KindRequestDialogProps {
   description?: string;
   /** Input fields collected from the user (name === agent variable name). */
   fields: KindRequestField[];
-  /** Variables sent on every run regardless of input (e.g. content_format). */
-  fixedVariables?: Record<string, string>;
+  /** Variables sent on every run regardless of input (e.g. content_format).
+   *  Native JSON values are allowed (offered facts: numbers, lists, booleans). */
+  fixedVariables?: Record<string, unknown>;
   /** The kind the agent returns; stamped on the result if it lacks `__kind`. */
   expectedKind: string;
   /** Dictated to the result component — `{ selectionMode: "single" }` etc. */

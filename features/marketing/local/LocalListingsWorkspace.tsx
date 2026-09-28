@@ -83,6 +83,7 @@ import {
 } from "@/features/marketing/local/profile-autofill";
 import { checkGoogleListing } from "@/features/marketing/local/data";
 import { EndowmentAnalysisCard } from "@/features/marketing/local/EndowmentAnalysisCard";
+import { endowmentLocationOfferValues } from "@/features/marketing/local/endowment-offer-values";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { recordToast, toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -382,6 +383,10 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
     [publishersQuery.data, listingsQuery.data],
   );
   const coverage = useMemo(() => computeCitationCoverage(matrix), [matrix]);
+  const endowmentFacts = useMemo(
+    () => endowmentLocationOfferValues(location, matrix),
+    [location, matrix],
+  );
   const gaps = useMemo(() => findProfileGaps(location), [location]);
 
   const napScores = useMemo(() => {
@@ -480,6 +485,7 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
         organizationId={location.organization_id}
         defaultCompany={location.name}
         defaultIndustry={location.business_type ?? ""}
+        locationFacts={endowmentFacts}
       />
     </div>
   );

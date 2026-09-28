@@ -48,7 +48,10 @@ import { messageRecordToText } from "../service/messageText";
 import { openWatch } from "@/features/war-room/redux/watchSlice";
 import { loadWarRoomSession } from "@/features/war-room/redux/thunks";
 import { listRoomIdsForThread } from "@/features/war-room/service/associations";
-import { buildThreadAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
+import {
+  buildThreadAgentContextEntries,
+  buildThreadOfferedValues,
+} from "@/features/war-room/service/warRoomAgentContext";
 import { selectThreadById } from "@/features/war-room/redux/selectors";
 import { WAR_ROOM_THREAD_AGENT_MANDATE } from "@/features/war-room/constants";
 import { resolveMandate } from "@/features/mandates/service";
@@ -59,7 +62,10 @@ import {
   setContextEntries,
   removeContextEntry,
 } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import {
+  setHostVariableValues,
+  setUserVariableValues,
+} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { ThunkDispatch } from "redux-thunk";
@@ -269,6 +275,18 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
         setUserVariableValues({
           conversationId,
           values: { thread_message: args.message },
+        }),
+      );
+      // Provision `war_room.thread_context`'s mapped-only values — the facts
+      // the `war_room` context entry already renders, as separate names.
+      // HOST-wired (never shown as words a person said). AGENT door: the live
+      // Holder neither declares nor references these names (checked
+      // 2026-09-28), so its rendered payload is unchanged; they become
+      // mappable after a door switch. Same brand-new-instance safety as above.
+      dispatch(
+        setHostVariableValues({
+          conversationId,
+          values: buildThreadOfferedValues(getState(), thread.id, mode),
         }),
       );
 

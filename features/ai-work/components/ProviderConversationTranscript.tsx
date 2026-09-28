@@ -599,6 +599,7 @@ export function ProviderConversationTranscript({
           <ConversationAnalyzePanel
             conversationId={conversation.id}
             conversationTitle={title}
+            conversation={conversation}
           />
         </TabsContent>
 

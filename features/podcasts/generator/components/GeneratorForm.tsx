@@ -83,6 +83,7 @@ import {
 } from "../featureImageStyles";
 import { SourceResolverPanel } from "./SourceResolverPanel";
 import { TopicIdeaHelper } from "./TopicIdeaHelper";
+import { topicIdeaOfferFacts } from "../topicIdeaOffer";
 import {
   SOURCE_OPTIONS,
   LANGUAGE_OPTIONS,
@@ -692,6 +693,13 @@ export function GeneratorForm({
             seedConcept={text}
             onPick={setText}
             showId={showId}
+            offerFacts={topicIdeaOfferFacts({
+              show: shows.find((s) => s.id === showId) ?? null,
+              format,
+              language,
+              hostCount,
+              targetAudience,
+            })}
           />
         )}
       </section>

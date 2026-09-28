@@ -42,6 +42,7 @@ import {
 } from "@/features/scraper/constants/analysis-agents";
 import { useMandate } from "@/features/mandates/useMandate";
 import { AnalysisMandateGate } from "./AnalysisMandateGate";
+import type { PageAnalysisFacts } from "./page-analysis-offer-values";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface KeywordAnalysisPageProps {
@@ -52,6 +53,9 @@ interface KeywordAnalysisPageProps {
     url?: string;
     website?: string;
   };
+  /** The scrape's real facts by the provision's declared names (mapped-only
+   *  offers — payload-neutral on the mandate door). */
+  offerValues?: PageAnalysisFacts;
 }
 
 const MANDATE_KEY = SCRAPER_ANALYSIS_MANDATES.keywordAnalysis;
@@ -60,6 +64,7 @@ const SURFACE_KEY = "scraper:keyword-analysis";
 const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
   value,
   overview,
+  offerValues,
 }) => {
   const { run, isRunning, error, conversationId, hasLiveRun } =
     useLiveAgentRun();
@@ -80,8 +85,11 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
   // the auto-run would re-fire forever. The launch effect keys on the mandate
   // + the content only, and reaches the current launcher through this ref.
   const runRef = useRef(run);
+  // Same reason: the facts ride along with the content but never re-fire the run.
+  const offerValuesRef = useRef(offerValues);
   useEffect(() => {
     runRef.current = run;
+    offerValuesRef.current = offerValues;
   });
 
   useEffect(() => {
@@ -101,7 +109,10 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
       sourceFeature: "scraper",
       initiation: "auto",
       expect: "json",
-      variables: { [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: value },
+      variables: {
+        [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: value,
+        ...offerValuesRef.current,
+      },
       signal: controller.signal,
       failureMessages: {
         noJson:

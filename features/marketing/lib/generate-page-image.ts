@@ -55,6 +55,12 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { resolveMandate } from "@/features/mandates/service";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import {
+  allInOneOfferValues,
+  imagePromptOfferValues,
+  pageImageOfferValues,
+  type PageImageFacts,
+} from "@/features/marketing/lib/page-image-offer-values";
 
 /**
  * WHO runs each step is a MANDATE (`agent.mandate`), never an agent id in this
@@ -206,8 +212,10 @@ export type HeadlessRunArgs = HeadlessRunTarget & {
   surfaceKey: string;
   /** User-message text (some agents key entirely off runtime variables). */
   userText: string;
-  /** Passed straight to the run as runtime variables (imageGrading pattern). */
-  variables?: Record<string, string>;
+  /** Passed straight to the run as runtime variables (imageGrading pattern).
+   *  Native JSON values — a provision's declared `integer` / `string_list`
+   *  offers ride as numbers / arrays, never stringified. */
+  variables?: Record<string, unknown>;
   /**
    * Float this run in the canonical `LiveRunWindow` instead of hiding it behind
    * the caller's spinner (THE FLOATING LAW). Pass the SAME `instanceId` for
@@ -432,6 +440,8 @@ export interface GeneratePageImageTwoStepArgs {
   surfaceKey: string;
   /** Per-subject live-window id (see GeneratePageImageArgs). */
   liveInstanceId?: string;
+  /** Real facts about the ordered image, sent as mapped-only offers. */
+  facts?: PageImageFacts;
 }
 
 /**
@@ -461,6 +471,7 @@ export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
           variables: {
             intent_or_content: args.spec,
             style: args.style || "No specific style — pick the best fit.",
+            ...imagePromptOfferValues(args.facts),
           },
           live: { instanceId: liveInstanceId, label: "Writing the image prompt" },
         },
@@ -495,7 +506,10 @@ export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
           mandateKey: PAGE_IMAGE_MANDATE_KEY,
           surfaceKey: args.surfaceKey,
           userText: "Generate the image now.",
-          variables: { image_description: imagePrompt },
+          variables: {
+            image_description: imagePrompt,
+            ...pageImageOfferValues(args.facts, args.spec, args.style),
+          },
           live: { instanceId: liveInstanceId, label: "Rendering the image" },
         },
         (requestId) => waitForImage(getState, requestId),
@@ -525,6 +539,8 @@ export interface GeneratePageImageAllInOneArgs {
   surfaceKey: string;
   /** Per-subject live-window id (see GeneratePageImageArgs). */
   liveInstanceId?: string;
+  /** Real facts about the ordered image, sent as mapped-only offers. */
+  facts?: PageImageFacts;
 }
 
 /**
@@ -550,6 +566,7 @@ export function generatePageImageAllInOne(args: GeneratePageImageAllInOneArgs) {
             intent_or_content: args.spec,
             style: args.style || "No specific style — pick the best fit.",
             count: "1",
+            ...allInOneOfferValues(args.facts),
           },
           live: {
             instanceId: liveWindowId(args.surfaceKey, args.liveInstanceId),

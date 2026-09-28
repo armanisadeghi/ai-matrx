@@ -111,6 +111,7 @@ export function MatrxConversationDetail({
           <ConversationAnalyzePanel
             conversationId={conversation.id}
             conversationTitle={title}
+            conversation={conversation}
           />
         </TabsContent>
         <TabsContent value="organize" className="mt-4">

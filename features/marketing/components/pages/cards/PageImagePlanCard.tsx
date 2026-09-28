@@ -216,6 +216,16 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
         style: entry.style ?? "",
         surfaceKey: MARKETING_PAGE_SURFACE_NAME,
         liveInstanceId: `page-image:${entry.id}`,
+        // The page + plan-entry facts this card holds, by their declared
+        // provision names (mapped-only offers — payload-neutral by default).
+        facts: {
+          page_url: page.url,
+          page_path: page.path ?? undefined,
+          page_target_keyword: page.target_keyword ?? undefined,
+          image_description: entry.description,
+          alt_text: entry.alt,
+          placement: entry.placement,
+        },
       };
       const result: PageImageResult = await dispatch(
         mode === "all-in-one"

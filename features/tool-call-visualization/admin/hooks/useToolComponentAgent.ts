@@ -42,7 +42,8 @@ import { TOOL_UI_COMPONENT_GENERATOR_MANDATE_KEY } from "../tool-ui-generator-pr
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ExecuteParams {
-  variables: Record<string, string>;
+  /** Native JSON values (string lists, booleans) pass through as-is. */
+  variables: Record<string, unknown>;
   userInput?: string;
 }
 

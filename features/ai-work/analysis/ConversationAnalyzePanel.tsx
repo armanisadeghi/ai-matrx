@@ -31,6 +31,10 @@ import {
   CONVERSATION_ANALYSIS_KINDS,
   type ConversationAnalysisKind,
 } from "./catalog";
+import {
+  buildConversationAnalysisOffer,
+  type ConversationAnalysisFacts,
+} from "./conversationAnalysisOffer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
@@ -44,11 +48,17 @@ type RunState =
 export function ConversationAnalyzePanel({
   conversationId,
   conversationTitle,
+  conversation,
 }: {
   /** The conversation being analyzed (AI Matrx chat or provider mirror). */
   conversationId: string;
   /** Used only to label the floating run window and result doors. */
   conversationTitle?: string;
+  /**
+   * The conversation row the host page already loaded. Its facts ride the
+   * launch as `conversation.analysis` mapped-only offers.
+   */
+  conversation?: ConversationAnalysisFacts;
 }) {
   const dispatch = useAppDispatch();
   const openLiveRun = useOpenLiveRunWindow();
@@ -69,7 +79,12 @@ export function ConversationAnalyzePanel({
           surfaceKey: `conversation-analysis:${conversationId}:${kind.key}`,
           apiEndpointMode: "agent",
           config: { displayMode: "direct", autoRun: true, allowChat: true },
-          runtime: { variables: { conversation_id: conversationId } },
+          runtime: {
+            variables: {
+              ...buildConversationAnalysisOffer(conversation),
+              conversation_id: conversationId,
+            },
+          },
           onConversationCreated: (id) =>
             handle.update({ conversationId: id, pending: false }),
         }),

@@ -70,6 +70,11 @@ import { resolveBundle } from "../../resources/resolve";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import {
+  reportOutputOfferValues,
+  type ReportOutputFacts,
+  type ReportSource,
+} from "./report-output-offer-values";
 
 /** Research content-engine generators run through AGENT MANDATES — the mandate is the
  *  identity, never a hardcoded agent id. The system default is managed in the
@@ -86,10 +91,14 @@ const SEO_MANDATE = MANDATE_KEYS.research_client__output_seo;
 function buildGeneratorVariables(
   reportMarkdown: string,
   toneProfile: string,
-): Record<string, string> {
+  facts: ReportOutputFacts = {},
+): Record<string, unknown> {
   return {
     report_markdown: reportMarkdown,
     voice_lens: toneProfile.trim(),
+    // Mapped-only facts by the provision's declared names — payload-neutral
+    // on the mandate door unless a binding maps them.
+    ...facts,
   };
 }
 
@@ -112,6 +121,8 @@ export default function OutputsStudio() {
   // not been seeded must still generate a podcast), and says so out loud rather
   // than silently rendering "no report yet".
   const [reportMarkdown, setReportMarkdown] = useState("");
+  /** Which path produced `reportMarkdown` (a provision fact for the generators). */
+  const [reportSource, setReportSource] = useState<ReportSource | null>(null);
   // Loading + fallback are DERIVED from the fetch lifecycle (keyed by which
   // topic the last completed fetch / fallback was for) — no synchronous
   // setState inside the effect.
@@ -149,6 +160,7 @@ export default function OutputsStudio() {
           const md = resolved.variables.research_report ?? "";
           if (md.trim()) {
             setReportMarkdown(md);
+            setReportSource("resource_bundle");
             return;
           }
         } else if (!cancelled) {
@@ -165,8 +177,10 @@ export default function OutputsStudio() {
         const synth: ResearchSynthesis[] =
           synthRead.status === "fulfilled" ? synthRead.value : [];
         let md = "";
+        let source: ReportSource | null = null;
         if (doc?.content?.trim()) {
           md = doc.content;
+          source = "research_document";
         } else {
           // PHASE-4 COMPAT: legacy rows carry scope="project" (= topic-wide).
           const list = synth.filter(
@@ -176,6 +190,7 @@ export default function OutputsStudio() {
             list.find((s) => s.is_current && s.result?.trim()) ??
             list.find((s) => s.result?.trim());
           md = current?.result ?? "";
+          if (md.trim()) source = "topic_synthesis";
         }
         // No report found AND a read failed: that is not "no report yet".
         const failed =
@@ -186,9 +201,11 @@ export default function OutputsStudio() {
               : null;
         if (!md.trim() && failed) throw failed;
         setReportMarkdown(md);
+        setReportSource(source);
       } catch (err) {
         if (!cancelled) {
           setReportMarkdown("");
+          setReportSource(null);
           setReportFailure({
             key: reportKey,
             error: err ?? new Error("The report read failed"),
@@ -205,6 +222,11 @@ export default function OutputsStudio() {
 
   const hasReport = reportMarkdown.trim().length > 0;
   const outputs = useMemo(() => parseOutputs(topic?.outputs), [topic?.outputs]);
+  /** Topic + report facts shared by the three publishing generators. */
+  const reportFacts = useMemo(
+    () => reportOutputOfferValues(topic, reportSource, []),
+    [topic, reportSource],
+  );
 
   // Append a freshly generated asset to the topic's outputs index. Goes
   // through the row-locked `rs_topic_append_output` RPC — a client-side
@@ -305,6 +327,7 @@ export default function OutputsStudio() {
           toneProfile={topic?.tone_profile ?? ""}
           defaultTitle={topic?.name ?? "Research"}
           existing={assetsFor(outputs, "blog")}
+          reportFacts={reportFacts}
           onPersisted={(asset) => persistOutput("blog", asset)}
         />
         <SlidesOutputCard
@@ -315,6 +338,7 @@ export default function OutputsStudio() {
           toneProfile={topic?.tone_profile ?? ""}
           defaultTitle={topic?.name ?? "Research"}
           existing={assetsFor(outputs, "slides")}
+          reportFacts={reportFacts}
           onPersisted={(asset) => persistOutput("slides", asset)}
         />
 
@@ -324,6 +348,7 @@ export default function OutputsStudio() {
           hasReport={hasReport}
           toneProfile={topic?.tone_profile ?? ""}
           existing={assetsFor(outputs, "seo")}
+          reportFacts={reportFacts}
           onPersisted={(asset) => persistOutput("seo", asset)}
         />
 
@@ -937,6 +962,7 @@ function BlogOutputCard({
   toneProfile,
   defaultTitle,
   existing,
+  reportFacts,
   onPersisted,
 }: {
   topicId: string;
@@ -946,6 +972,8 @@ function BlogOutputCard({
   toneProfile: string;
   defaultTitle: string;
   existing: OutputAsset[];
+  /** Topic + report facts (mapped-only provision offers). */
+  reportFacts?: ReportOutputFacts;
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
   // Resolution is read here only to DISABLE the affordance and say why; the
@@ -973,7 +1001,14 @@ function BlogOutputCard({
         mandateKey: BLOG_MANDATE,
         surfaceKey: `research-outputs-blog:${topicId}`,
         sourceFeature: "research",
-        variables: buildGeneratorVariables(reportMarkdown, toneProfile),
+        variables: buildGeneratorVariables(reportMarkdown, toneProfile, {
+          ...reportFacts,
+          ...reportOutputOfferValues(
+            null,
+            null,
+            existing.map((asset) => asset.title),
+          ),
+        }),
         organizationId,
         contextAnchor: {
           resource_type: "research_topic",
@@ -1203,6 +1238,7 @@ function SlidesOutputCard({
   toneProfile,
   defaultTitle,
   existing,
+  reportFacts,
   onPersisted,
 }: {
   topicId: string;
@@ -1212,6 +1248,8 @@ function SlidesOutputCard({
   toneProfile: string;
   defaultTitle: string;
   existing: OutputAsset[];
+  /** Topic + report facts (mapped-only provision offers). */
+  reportFacts?: ReportOutputFacts;
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
   // Resolution is read here only to DISABLE the affordance and say why; the
@@ -1233,7 +1271,14 @@ function SlidesOutputCard({
         mandateKey: SLIDES_MANDATE,
         surfaceKey: `research-outputs-slides:${topicId}`,
         sourceFeature: "research",
-        variables: buildGeneratorVariables(reportMarkdown, toneProfile),
+        variables: buildGeneratorVariables(reportMarkdown, toneProfile, {
+          ...reportFacts,
+          ...reportOutputOfferValues(
+            null,
+            null,
+            existing.map((asset) => asset.title),
+          ),
+        }),
         organizationId,
         contextAnchor: {
           resource_type: "research_topic",
@@ -1408,6 +1453,7 @@ function SeoOutputCard({
   hasReport,
   toneProfile,
   existing,
+  reportFacts,
   onPersisted,
 }: {
   topicId: string;
@@ -1416,6 +1462,8 @@ function SeoOutputCard({
   hasReport: boolean;
   toneProfile: string;
   existing: OutputAsset[];
+  /** Topic + report facts (mapped-only provision offers). */
+  reportFacts?: ReportOutputFacts;
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
   // Resolution is read here only to DISABLE the affordance and say why; the
@@ -1441,7 +1489,14 @@ function SeoOutputCard({
         },
         // NO user turn — see BlogOutputCard's identical comment: the rebuilt
         // agent's own authored user turn carries the request (wave 4, D2).
-        variables: buildGeneratorVariables(reportMarkdown, toneProfile),
+        variables: buildGeneratorVariables(reportMarkdown, toneProfile, {
+          ...reportFacts,
+          ...reportOutputOfferValues(
+            null,
+            null,
+            existing.map((asset) => asset.title),
+          ),
+        }),
         coerce: coerceSeoPackage,
       });
       const asset: OutputAsset = {

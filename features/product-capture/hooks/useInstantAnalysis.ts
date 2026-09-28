@@ -68,6 +68,7 @@ import { extractFirstJson } from "@/utils/json/extract-json";
 
 import type { CaptureItem } from "../types";
 import { listItemFiles, markProcessed } from "../service";
+import { instantAnalysisOfferedValues } from "../instantAnalysisOfferedValues";
 import {
   listPayloads,
   loadPipelineItem,
@@ -385,9 +386,15 @@ export function useInstantAnalysis({
         sourceFeature: INSTANT_SOURCE_FEATURE,
         organizationId: target.organizationId,
         initiation: "user",
-        // The agent's one declared variable; omit entirely when empty so the
-        // agent's own "None provided." default applies.
-        ...(notes ? { variables: { dock_notes: notes } } : {}),
+        // The agent's one declared variable; omitted when empty so the
+        // agent's own "None provided." default applies. Beside it, the
+        // Provision's mapped-only item facts (pass_by_name=False) — the
+        // mandate door delivers those only where a binding's consumption map
+        // names them.
+        variables: {
+          ...(notes ? { dock_notes: notes } : {}),
+          ...instantAnalysisOfferedValues(target, files),
+        },
         messageParts: parts,
         failureMessages: {
           noJson:

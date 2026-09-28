@@ -26,6 +26,13 @@ import type {
   StudioSession,
 } from "../types";
 import type { ColumnId } from "../constants";
+import {
+  compareByCreatedAt,
+  compareCleanedSegments,
+  compareRawSegments,
+  compareRecordingSegments,
+  placeInOrder,
+} from "./studioOrder";
 
 // ── State shape ───────────────────────────────────────────────────────
 
@@ -291,20 +298,16 @@ const slice = createSlice({
       for (const seg of segments) {
         if (byId[seg.id]) continue; // de-duplicate (race on retry)
         byId[seg.id] = seg;
-        ids.push(seg.id);
+        placeInOrder(ids, byId, seg.id, compareRawSegments);
       }
-      // Keep ordered by tStart, with chunkIndex as a deterministic tie-breaker.
+      // Ordered by tStart, with chunkIndex as a deterministic tie-breaker
+      // (compareRawSegments in ./studioOrder).
       // Without the tie-breaker, pasted segments and live recording chunks can
       // collide on tStart (paste's `nextTStart = maxTEnd` snapshots a moment
       // when a recorder chunk has the same tStart) and the relative order
       // becomes whichever the comparator-returns-0 path leaves them in. Using
       // chunkIndex (monotonic per inserter) restores the user's mental model:
       // earlier insert wins.
-      ids.sort((a, b) => {
-        const dt = byId[a]!.tStart - byId[b]!.tStart;
-        if (dt !== 0) return dt;
-        return byId[a]!.chunkIndex - byId[b]!.chunkIndex;
-      });
     },
     rawSegmentsCleared(state, action: PayloadAction<{ sessionId: string }>) {
       delete state.rawById[action.payload.sessionId];
@@ -391,7 +394,7 @@ const slice = createSlice({
       // Insert new segment.
       byId[segment.id] = segment;
       survivingIds.push(segment.id);
-      survivingIds.sort((a, b) => byId[a]!.tStart - byId[b]!.tStart);
+      survivingIds.sort((a, b) => compareCleanedSegments(byId[a]!, byId[b]!));
       state.cleanedIdsBySession[sessionId] = survivingIds;
     },
     cleanedSegmentsCleared(
@@ -425,9 +428,8 @@ const slice = createSlice({
         state.cleanedIdsBySession[sessionId] = [];
       const byId = state.cleanedById[sessionId]!;
       const ids = state.cleanedIdsBySession[sessionId]!;
-      if (!byId[segment.id]) ids.push(segment.id);
       byId[segment.id] = segment;
-      ids.sort((x, y) => byId[x]!.tStart - byId[y]!.tStart);
+      placeInOrder(ids, byId, segment.id, compareCleanedSegments);
     },
     cleanedSegmentRemoved(
       state,
@@ -514,10 +516,11 @@ const slice = createSlice({
         state.conceptIdsBySession[sessionId] = [];
       const byId = state.conceptsById[sessionId]!;
       const ids = state.conceptIdsBySession[sessionId]!;
+      // Restored-from-Trash rows land at their created_at position, not the end.
       for (const it of items) {
         if (byId[it.id]) continue;
         byId[it.id] = it;
-        ids.push(it.id);
+        placeInOrder(ids, byId, it.id, compareByCreatedAt);
       }
     },
     conceptsCleared(state, action: PayloadAction<{ sessionId: string }>) {
@@ -568,10 +571,11 @@ const slice = createSlice({
         state.moduleSegmentIdsBySession[sessionId] = [];
       const byId = state.moduleSegmentsById[sessionId]!;
       const ids = state.moduleSegmentIdsBySession[sessionId]!;
+      // Restored-from-Trash rows land at their created_at position, not the end.
       for (const s of segments) {
         if (byId[s.id]) continue;
         byId[s.id] = s;
-        ids.push(s.id);
+        placeInOrder(ids, byId, s.id, compareByCreatedAt);
       }
     },
     moduleSegmentsCleared(state, action: PayloadAction<{ sessionId: string }>) {
@@ -646,10 +650,8 @@ const slice = createSlice({
         state.recordingSegmentIdsBySession[sessionId] = [];
       const byId = state.recordingSegmentsById[sessionId]!;
       const ids = state.recordingSegmentIdsBySession[sessionId]!;
-      const isNew = !byId[segment.id];
       byId[segment.id] = segment;
-      if (isNew) ids.push(segment.id);
-      ids.sort((a, b) => byId[a]!.segmentIndex - byId[b]!.segmentIndex);
+      placeInOrder(ids, byId, segment.id, compareRecordingSegments);
     },
     recordingSegmentRemoved(
       state,

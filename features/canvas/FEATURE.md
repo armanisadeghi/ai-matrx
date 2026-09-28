@@ -125,9 +125,17 @@ the rules an agent editing THIS directory must obey.
   needs a plain string; `CanvasContent.metadata.title` is deliberately `string | ReactNode`.
 - **No `writeTargets` on the `matrx-user/canvas` surface, by design** — the pane owns no authored
   text, and its artifacts' own surfaces are strictly closer to the content.
-- **`canvas_views` direct inserts require an authenticated actor and explicit organization.**
-  Guest share-token access is recorded by the canonical share-link resolver; knowing the shared
-  canvas organization never authorizes an anonymous entity insert.
+- **Views go through `canvas.record_canvas_view(p_canvas_id, p_organization_id, p_session_id, p_referrer)` only**,
+  signed-in viewers only, in the organization the viewer has SELECTED (`getActiveOrgId`; a passive
+  page view never prompts, so no selection = no view). At most one row per (canvas, viewer) per hour;
+  `trigger_canvas_view_count` moves `view_count`. Guests record nothing — guest share-token access is
+  recorded by the canonical share-link resolver, and an anonymous definer insert would let anyone
+  inflate a public canvas's count by rotating session ids.
+- **Scores go through `canvas.submit_canvas_score(...)` only.** An attempt ledger: every submit is a
+  new row owned by the caller (leaderboard name from their own profile, never a parameter), in the
+  organization they name; returns `{score, rank, is_high_score, beats_own_best, attempt_number}`
+  computed where every score is visible. `canvas_views`/`canvas_scores` refuse every client write
+  (SECURITY-SWEEP 2026-09-21). Live proof: `scripts/canvas-score-view/live-proof.mjs`.
 - **Likes go through `canvas.set_canvas_like(p_canvas_id, p_liked, p_organization_id)` only.**
   `canvas.canvas_likes` refuses every client write (SECURITY-SWEEP 2026-09-21: its `user_id` is
   unpinned by the generated policies). The door makes the like the caller's own, requires a canvas
@@ -151,6 +159,7 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-28` — **Submitting a score and recording a view work again.** `hooks/canvas/useCanvasScore.ts` and `hooks/canvas/useSharedCanvas.ts` wrote `canvas.canvas_scores` / `canvas.canvas_views` directly, closed by the same 2026-09-21 sweep; they now call the new `canvas.submit_canvas_score` / `canvas.record_canvas_view` doors (migration `canvas_score_and_view_doors.sql`). Rank and high score now come from the door (the browser could only count its own scores).
 - `2026-09-28` — **Liking a canvas works again.** `hooks/canvas/useCanvasLike.ts` wrote `canvas.canvas_likes` directly, which the 2026-09-21 security sweep had closed (its census missed `hooks/`); it now calls the new `canvas.set_canvas_like` door (migration `canvas_set_canvas_like_door.sql`).
 - `2026-09-27` — **Chat beside a canvas** landed as `workspace/` (`ChatCanvasWorkspace`): the ONE layout where a canvas takes the page and the chat docks at 440px or floats — read [`workspace/FEATURE.md`](./workspace/FEATURE.md). The global side sheet stands down (⌘\\) on canvas-chrome pages.
 - `2026-09-25` — **Canvas controls stay clickable when the sheet opens.**

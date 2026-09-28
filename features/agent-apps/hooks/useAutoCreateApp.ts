@@ -45,6 +45,11 @@ import {
 } from "../services/auto-create-draft";
 import { getDefaultImportsForNewApps } from "../utils/allowed-imports";
 import type { AppMetadata } from "../types";
+import {
+  buildCodeRunVariables,
+  buildMetadataRunVariables,
+  type AutoCreateFormOffer,
+} from "../auto-create-offer-values";
 
 export type AutoCreateMode = "standard" | "lightning";
 
@@ -97,6 +102,11 @@ interface AutoCreateAppData {
     color_pallet_options: string;
     custom_instructions: string;
   };
+  /**
+   * The raw form choices behind the rendered strings, sent by name as the
+   * provision's mapped-only offers (see `../auto-create-offer-values`).
+   */
+  formOffer?: AutoCreateFormOffer;
   mode?: AutoCreateMode;
 }
 
@@ -285,9 +295,14 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
         const metadataResult = await dispatch(
           executeBuiltinWithJsonExtraction({
             builtinKey: "prompt-app-metadata-generator",
-            variables: {
-              prompt_config: data.builtinVariables.prompt_object,
-            },
+            variables: buildMetadataRunVariables({
+              promptConfig: data.builtinVariables.prompt_object,
+              agent: data.agent,
+              pageLayoutFormat: data.builtinVariables.page_layout_format,
+              responseDisplayMode: data.builtinVariables.response_display_mode,
+              creatorInstructions: data.formOffer?.creator_instructions,
+              builderMode: data.mode ?? "standard",
+            }),
             timeoutMs: 180000,
             onTaskId: (id) => setMetadataTaskId(id),
           }),
@@ -386,7 +401,13 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
         const codeResult = await dispatch(
           executeBuiltinWithCodeExtraction({
             builtinKey: codeBuiltinKey,
-            variables: data.builtinVariables,
+            variables: buildCodeRunVariables({
+              builtinVariables: data.builtinVariables,
+              formOffer: data.formOffer,
+              builderMode: data.mode ?? "standard",
+              metadata,
+              slug: selectedSlug,
+            }),
             timeoutMs: 300000,
             onTaskId: (id) => setCodeTaskId(id),
           }),

@@ -2,7 +2,7 @@
  * TABLE-PARITY M3 on /data-v2: an agent button hands the row to `data.row_action` exactly as
  * the older grid does. Cedar Ridge Veterinary Clinic's Appointments table, "Draft reminder".
  */
-import { rowAgentLaunch, rowAgentOffer, type RowAgentActionTarget } from "../rowAgentAction";
+import { rowAgentLaunch, rowAgentMappedValues, rowAgentOffer, type RowAgentActionTarget } from "../rowAgentAction";
 
 const target: RowAgentActionTarget = {
   tableId: "5b1d6f0e-2c47-4a8e-9f1b-7d3c2a9e4b10",
@@ -80,6 +80,30 @@ describe("an agent button on the new table page", () => {
     expect(launch.runtime?.context).toBe(offer);
     expect(launch.config?.displayMode).toBe("flexible-panel");
     expect(launch.runtime?.userInput).not.toContain("Tango");
+  });
+});
+
+describe("the Provision's mapped-only values (wave 4)", () => {
+  it("ride variables only — the context the Holder sees is byte-for-byte the offer it saw before", () => {
+    const offer = rowAgentOffer({ target, tableName: "Appointments", columns, document, actingPersonId: null, actingPersonCanEdit: false });
+    const before = JSON.stringify(offer);
+    const mapped = rowAgentMappedValues({ level: "viewer", organizationId: "org-cedar-ridge-veterinary", document });
+    expect(mapped).toEqual({
+      acting_person_level: "viewer",
+      organization_id: "org-cedar-ridge-veterinary",
+      hidden_field_keys: ["owner_phone"],
+    });
+    const launch = rowAgentLaunch(target, offer, "org-cedar-ridge-veterinary", mapped);
+    expect(launch.runtime?.context).toBe(offer);
+    expect(JSON.stringify(launch.runtime?.context)).toBe(before);
+    expect(Object.keys(launch.runtime?.variables ?? {}).sort()).toEqual(
+      [...Object.keys(offer), "acting_person_level", "organization_id", "hidden_field_keys"].sort(),
+    );
+    expect(launch.runtime?.variables).toMatchObject(offer);
+  });
+
+  it("absent facts are omitted, never sent blank", () => {
+    expect(rowAgentMappedValues({ level: null, organizationId: "", document: {} })).toEqual({});
   });
 });
 

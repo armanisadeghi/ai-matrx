@@ -406,6 +406,7 @@ function RuleEditorForm({
         expertInput: "",
         context,
         fallbackSection: before.section,
+        offer: { rule: initial ?? null },
         apply: (result) => applyRuleTidy(before, result),
         onDurableResult: (result) => {
           dispatch(
