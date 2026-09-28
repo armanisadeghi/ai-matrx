@@ -178,7 +178,7 @@ function InlineField({
           type="button"
           onClick={start}
           className={cn(
-            "group/field flex min-h-11 min-w-0 flex-1 items-start gap-1 rounded px-1.5 py-0.5 text-left text-sm hover:bg-accent/50 sm:min-h-0",
+            "group/field flex min-h-11 min-w-0 flex-1 items-center gap-1 sm:items-start rounded px-1.5 py-0.5 text-left text-sm hover:bg-accent/50 sm:min-h-0",
             value ? "text-foreground" : "text-muted-foreground/60",
             saving && "opacity-60",
           )}

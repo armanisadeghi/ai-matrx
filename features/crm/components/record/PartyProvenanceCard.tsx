@@ -288,7 +288,9 @@ export function PartyProvenanceCard({
             ) : (
               <UserPlus className="h-3.5 w-3.5" />
             )}
-            Add to my contacts
+            {/* Short on a phone so the header stays one row. */}
+            <span className="max-sm:hidden">Add to my contacts</span>
+            <span className="sm:hidden">Add to contacts</span>
           </Button>
         ) : undefined
       }
