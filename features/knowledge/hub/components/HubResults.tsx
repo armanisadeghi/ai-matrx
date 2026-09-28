@@ -41,7 +41,7 @@ import {
   titleLinesFor,
   type ResultHandlers,
 } from "@/features/knowledge/hub/components/HubResultRow";
-import { dateInGroup, groupByDate, type DatedItem } from "@/features/knowledge/hub/dateGroups";
+import { dateGroupOf, dateInGroup, groupByDate, type DatedItem } from "@/features/knowledge/hub/dateGroups";
 
 // ─── shared pieces ──────────────────────────────────────────────────────────
 
@@ -234,6 +234,14 @@ type ListItem = DatedItem<KnowledgeHit>;
  * current section pinned quietly at the top while you scroll.
  */
 const END_H = 40;
+
+type MoreState = { has: boolean; loading: boolean; error: string | null; load: () => void };
+
+/** A scrolled container near its end reads the next page (board and gallery). */
+function nearEnd(el: HTMLElement, more?: MoreState) {
+  if (!more?.has || more.loading || more.error) return;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - REACH_END_PX) more.load();
+}
 /** Start reading the next page this far before the end — the reader never waits at a button. */
 const REACH_END_PX = 600;
 
@@ -249,7 +257,7 @@ function VirtualList({
   handlers: ResultHandlers;
   groupByDate?: boolean;
   /** Infinite scroll: the next page, its state, and a failure's retry. */
-  more?: { has: boolean; loading: boolean; error: string | null; load: () => void };
+  more?: MoreState;
   /** Where the list was when the person left it (Back restores it). */
   initialScrollTop?: number;
   onScrollTop?: (top: number) => void;
@@ -405,27 +413,36 @@ const STAGE_SORT_ORDER = ["Failed", "Couldn't read status", "Index stale", "Inde
  * Filed under). Every column sorts by clicking its header (the design
  * system's local sort) and filters from its header menu.
  */
-export function hubTableColumns(stage?: HubStageColumn, handlers?: ResultHandlers): MatrxColumnDef<KnowledgeHit>[] {
+export function hubTableColumns(
+  stage?: HubStageColumn,
+  handlers?: ResultHandlers,
+  hits?: KnowledgeHit[],
+): MatrxColumnDef<KnowledgeHit>[] {
   const when = (h: KnowledgeHit) => h.updated_at ?? h.created_at ?? "";
+  // A column no loaded row has a value for is absent, never a column of "Not reported".
+  const any = (has: (h: KnowledgeHit) => boolean) => !hits || hits.some(has);
+  const single = hits ? oneKind(hits) : false;
   return [
     {
       id: "title",
       header: "Name",
+      // The name takes the room; the rest are narrow facts.
+      width: "45%",
+      minWidth: 280,
       accessorFn: (h) => h.title,
       sortValue: (h) => h.title.toLowerCase(),
       cell: (h) =>
         handlers ? (
-          <div className="flex min-w-0 items-center gap-1">
-            <HitTitle hit={h} handlers={handlers} className="min-w-0 flex-1 truncate font-medium" />
-            {handlers.rowMenu?.(h)}
-          </div>
+          <HitTitle hit={h} handlers={handlers} className="min-w-0 truncate font-medium" />
         ) : (
           <span className="font-medium">{h.title}</span>
         ),
       filter: "text",
     },
-    { id: "kind", header: "Kind", accessorFn: (h) => kindLabel(h), filter: "select" },
-    { id: "captured_by", header: "Captured by", accessorFn: (h) => capturedByLabel(h), filter: "select" },
+    ...(single ? [] : [{ id: "kind", header: "Kind", accessorFn: (h: KnowledgeHit) => kindLabel(h), filter: "select" as const }]),
+    ...(any((h) => Boolean(h.captured_by?.name))
+      ? [{ id: "captured_by", header: "Captured by", accessorFn: (h: KnowledgeHit) => capturedByLabel(h), filter: "select" as const }]
+      : []),
     ...(stage
       ? [
           {
@@ -450,13 +467,19 @@ export function hubTableColumns(stage?: HubStageColumn, handlers?: ResultHandler
       cell: (h) => (when(h) ? formatRelativeTime(when(h)) : "—"),
       filter: "date",
     },
-    { id: "origin", header: "Origin", accessorFn: (h) => originLabel(h.origin), filter: "select" },
-    {
-      id: "filed",
-      header: "Filed under",
-      accessorFn: (h) => (h.filed_under ?? []).map((f) => f.name ?? "").filter(Boolean).join(", "),
-      filter: "text",
-    },
+    ...(any((h) => Boolean(h.origin))
+      ? [{ id: "origin", header: "Origin", accessorFn: (h: KnowledgeHit) => originLabel(h.origin), filter: "select" as const }]
+      : []),
+    ...(any((h) => Boolean(h.filed_under?.length))
+      ? [
+          {
+            id: "filed",
+            header: "Filed under",
+            accessorFn: (h: KnowledgeHit) => (h.filed_under ?? []).map((f) => f.name ?? "").filter(Boolean).join(", "),
+            filter: "text" as const,
+          },
+        ]
+      : []),
   ];
 }
 
@@ -475,7 +498,7 @@ function TableLayout({
   onRetry: () => void;
   stage?: HubStageColumn;
 }) {
-  const columns = hubTableColumns(stage, handlers);
+  const columns = hubTableColumns(stage, handlers, hits);
   return (
     <div className="min-h-0 flex-1 overflow-hidden">
       <MatrxDataTable<KnowledgeHit>
@@ -508,27 +531,59 @@ function TableLayout({
         }}
         onRowOpen={(h) => handlers.onOpen(h)}
         detail={{ enabled: false }}
+        // The hub pages its own rows (one pager: the list's infinite read); the table shows every loaded row.
+        pageSize={0}
+        // The row's own menu (Open, Keep, Archive, Tag, File to, Copy, Trash) in the Actions column.
+        copy={false}
+        rowActions={handlers.rowMenu ? (h) => handlers.rowMenu?.(h) : undefined}
       />
     </div>
   );
 }
 
-function BoardLayout({ hits, handlers }: { hits: KnowledgeHit[]; handlers: ResultHandlers }) {
-  const groups = new Map<string, KnowledgeHit[]>();
-  for (const h of hits) {
-    const k = kindLabel(h);
-    groups.set(k, [...(groups.get(k) ?? []), h]);
+/**
+ * The board's columns: the first grouping that actually splits the rows — by
+ * kind, then by what the record says it is (a recording, a YouTube video…),
+ * then by origin, then by day. One column of everything is never a board.
+ */
+export function boardGroups(hits: KnowledgeHit[], handlers: ResultHandlers): { by: string; groups: [string, KnowledgeHit[]][] } {
+  const now = new Date();
+  const candidates: [string, (h: KnowledgeHit) => string][] = [
+    ["kind", (h) => kindLabel(h)],
+    ["type", (h) => handlers.rowContent?.(h)?.group ?? kindLabel(h)],
+    ["origin", (h) => (h.origin ? originLabel(h.origin) : "Not reported")],
+    ["date", (h) => dateGroupOf(hitWhen(h), now).label],
+  ];
+  let fallback: { by: string; groups: [string, KnowledgeHit[]][] } | null = null;
+  for (const [by, of] of candidates) {
+    const groups = new Map<string, KnowledgeHit[]>();
+    for (const h of hits) {
+      const k = of(h);
+      groups.set(k, [...(groups.get(k) ?? []), h]);
+    }
+    const out = { by, groups: [...groups.entries()] };
+    if (groups.size > 1) return out;
+    fallback ??= out;
   }
+  return fallback ?? { by: "kind", groups: [] };
+}
+
+function BoardLayout({ hits, handlers, more }: { hits: KnowledgeHit[]; handlers: ResultHandlers; more?: MoreState }) {
+  const { by, groups } = boardGroups(hits, handlers);
+  const hideKind = oneKind(hits);
   return (
-    <div className="min-h-0 flex-1 overflow-auto" role="listbox" aria-label="Results by kind">
-      <div className="flex min-h-full gap-3 p-1 max-md:flex-col md:w-max">
+    <div
+      className="min-h-0 flex-1 overflow-auto"
+      role="listbox"
+      aria-label={`Results by ${by}`}
+      onScroll={(e) => nearEnd(e.currentTarget, more)}
+    >
+      <div className="flex min-h-full gap-3 max-md:flex-col md:w-max">
         {[...groups.entries()].map(([label, items]) => (
           <section key={label} className="flex w-full flex-col gap-2 md:w-72" aria-label={label}>
-            <h3 className="flex items-baseline gap-2 px-1 text-xs font-medium text-muted-foreground">
-              {label} <span className="tabular-nums">{items.length}</span>
-            </h3>
+            <h3 className="px-1 text-xs font-medium text-muted-foreground">{label}</h3>
             {items.map((h) => (
-              <ResultCard key={hitKey(h)} hit={h} handlers={handlers} />
+              <ResultCard key={hitKey(h)} hit={h} handlers={handlers} hideKind={hideKind} />
             ))}
           </section>
         ))}
@@ -537,12 +592,18 @@ function BoardLayout({ hits, handlers }: { hits: KnowledgeHit[]; handlers: Resul
   );
 }
 
-function GalleryLayout({ hits, handlers }: { hits: KnowledgeHit[]; handlers: ResultHandlers }) {
+function GalleryLayout({ hits, handlers, more }: { hits: KnowledgeHit[]; handlers: ResultHandlers; more?: MoreState }) {
+  const hideKind = oneKind(hits);
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden" role="listbox" aria-label="Results">
-      <div className="grid grid-cols-1 gap-3 p-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+    <div
+      className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+      role="listbox"
+      aria-label="Results"
+      onScroll={(e) => nearEnd(e.currentTarget, more)}
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {hits.map((h) => (
-          <ResultCard key={hitKey(h)} hit={h} handlers={handlers} tall />
+          <ResultCard key={hitKey(h)} hit={h} handlers={handlers} tall hideKind={hideKind} />
         ))}
       </div>
     </div>
@@ -551,6 +612,48 @@ function GalleryLayout({ hits, handlers }: { hits: KnowledgeHit[]; handlers: Res
 
 export function browseHits(sections: SectionState[]): KnowledgeHit[] {
   return orderedSearchHits(sections.filter((s) => s.key !== "top_hit" && s.key !== "segments"));
+}
+
+/**
+ * Search results as the view's items: every matching item once, in the order
+ * the service ranked them, and a matching PASSAGE folded into the item it
+ * belongs to (its text becomes the row's snippet, so the match shows) — a
+ * passage whose item is not listed yet becomes that item's row.
+ */
+export function searchHitsByItem(sections: SectionState[]): KnowledgeHit[] {
+  const out: KnowledgeHit[] = [];
+  const at = new Map<string, number>();
+  for (const s of sections) {
+    for (const h of s.section?.items ?? []) {
+      if (h.entity === "segment" && h.segment?.source_id) {
+        const key = `processed_document:${h.segment.source_id}`;
+        const i = at.get(key);
+        if (i !== undefined) {
+          if (!out[i].matched) out[i] = { ...out[i], snippet: h.snippet ?? out[i].snippet, matched: true } as KnowledgeHit;
+          continue;
+        }
+        at.set(key, out.length);
+        out.push({
+          entity: "processed_document",
+          id: h.segment.source_id,
+          title: h.segment.source_title || h.title,
+          snippet: h.snippet,
+          source_kind: h.segment.source_kind ?? null,
+          origin: h.origin ?? null,
+          organization_id: h.organization_id ?? null,
+          created_at: h.created_at ?? null,
+          updated_at: h.updated_at ?? null,
+          matched: true,
+        } as KnowledgeHit);
+        continue;
+      }
+      const key = hitKey(h);
+      if (at.has(key)) continue;
+      at.set(key, out.length);
+      out.push(h);
+    }
+  }
+  return out;
 }
 
 export function BrowseResults({
@@ -564,6 +667,8 @@ export function BrowseResults({
   stage,
   emptyExtra,
   groupByDate = false,
+  highlight = "",
+  restore,
 }: {
   layout: HubLayout;
   sections: SectionState[];
@@ -577,8 +682,15 @@ export function BrowseResults({
   emptyExtra?: React.ReactNode;
   /** The hits are newest first: the list layout sections them by date. */
   groupByDate?: boolean;
+  /** What was typed: marked in titles and passages. */
+  highlight?: string;
+  /** Back to the list: its scroll position, and where to keep it as it changes. */
+  restore?: { scrollTop?: number; onScrollTop: (top: number) => void };
 }) {
-  const relevant = sections.filter((s) => s.key !== "top_hit" && s.key !== "segments");
+  const searching = Boolean(highlight.trim());
+  const h = searching ? { ...handlers, highlight } : handlers;
+  // Searching: the passages lane is part of the answer (its failure is said, its "more" pages).
+  const relevant = sections.filter((s) => s.key !== "top_hit" && (searching || s.key !== "segments"));
   const loading = relevant.some((s) => s.status === "loading");
   const failed = relevant.filter((s) => s.status === "error" && s.section?.error);
   const more = relevant.filter((s) => s.section?.next_cursor);
@@ -597,6 +709,13 @@ export function BrowseResults({
     </div>
   ) : null;
 
+  const moreState: MoreState = {
+    has: more.length > 0,
+    loading: loadingMore,
+    error: relevant.find((s) => s.moreError)?.moreError ?? null,
+    load: () => more.forEach((s) => onShowMore(s.key)),
+  };
+  // The table keeps one quiet "Load more" under it; list, board and gallery read on as you scroll.
   const footer =
     more.length || loadingMore ? (
       <div className="flex shrink-0 justify-center py-2">
@@ -620,7 +739,7 @@ export function BrowseResults({
         {hits.length > 0 ? failures : null}
         <TableLayout
           hits={hits}
-          handlers={handlers}
+          handlers={h}
           loading={loading && hits.length === 0}
           error={failed.length && !hits.length ? failed.map((s) => s.section?.error?.message).join(" ") : null}
           onRetry={() => failed.forEach((s) => onRetry(s.key))}
@@ -642,14 +761,36 @@ export function BrowseResults({
       ) : null}
       {hits.length ? (
         layout === "board" ? (
-          <BoardLayout hits={hits} handlers={handlers} />
+          <BoardLayout hits={hits} handlers={h} more={moreState} />
         ) : layout === "gallery" ? (
-          <GalleryLayout hits={hits} handlers={handlers} />
+          <GalleryLayout hits={hits} handlers={h} more={moreState} />
         ) : (
-          <VirtualList hits={hits} handlers={handlers} groupByDate={groupByDate} />
+          <VirtualList
+            hits={hits}
+            handlers={h}
+            groupByDate={groupByDate}
+            more={moreState}
+            initialScrollTop={restore?.scrollTop}
+            onScrollTop={restore?.onScrollTop}
+          />
         )
       ) : null}
-      <div className={cn(!hits.length && "hidden")}>{footer}</div>
+      {hits.length && layout !== "list" && (moreState.loading || moreState.error) ? (
+        <div className="flex shrink-0 items-center justify-center gap-2 py-2 text-xs text-muted-foreground" role="status">
+          {moreState.error ? (
+            <>
+              <span className="text-destructive">{moreState.error}</span>
+              <button type="button" className="font-medium text-foreground hover:underline" onClick={moreState.load}>
+                Try again
+              </button>
+            </>
+          ) : (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading more…
+            </>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

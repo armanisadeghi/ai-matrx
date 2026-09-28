@@ -107,7 +107,15 @@ import {
   uniqueTargets,
   type FileUnderContainer,
 } from "@/features/knowledge/hub/hubActions";
-import { TRANSCRIPT_MEDIA_ICON, hitKey, openFullHref, tokenLabel } from "@/features/knowledge/hub/hubPresentation";
+import {
+  TRANSCRIPT_MEDIA_ICON,
+  TRANSCRIPT_MEDIA_LABEL,
+  hitKey,
+  openFullHref,
+  tokenLabel,
+} from "@/features/knowledge/hub/hubPresentation";
+import { useTranscriptList } from "@/features/knowledge/hub/transcripts/useTranscriptList";
+import { listRestoreKey, useListRestore } from "@/features/knowledge/hub/hooks/useListRestore";
 import {
   HUB_PRESETS,
   expandAnyContainers,
@@ -137,9 +145,9 @@ import { HubSearchBox } from "@/features/knowledge/hub/components/HubSearchBox";
 import { HubFilterMenu } from "@/features/knowledge/hub/components/HubFilterMenu";
 import {
   BrowseResults,
-  SearchSections,
+  searchHitsByItem,
   browseHits,
-  orderedSearchHits,
+
 } from "@/features/knowledge/hub/components/HubResults";
 import { HubPeek } from "@/features/knowledge/hub/components/HubPeek";
 import { FileUnderDialog } from "@/features/knowledge/hub/components/FileUnderDialog";
@@ -223,6 +231,7 @@ import {
   transcriptRowHref,
   transcriptRowFacts,
   type HubTranscriptKind,
+  type TranscriptFacet,
   type TranscriptMenuAction,
 } from "@/features/knowledge/hub/transcripts/transcriptRows";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
@@ -746,11 +755,26 @@ export function KnowledgeHubPage({
     recordToast.success(ref, on ? `Added "${target.title}" to Favorites.` : `Removed "${target.title}" from Favorites.`);
   };
 
+  // Opening the peek is a step in history (Back closes it, never leaves the page); moving it
+  // from row to row replaces that step; closing it steps back when we pushed it.
+  const peekPushed = useRef(false);
+  useEffect(() => {
+    if (!state.peek) peekPushed.current = false;
+  }, [state.peek]);
   const openPeek = (hit: KnowledgeHit) => {
     setFocusedKey(hitKey(hit));
-    write({ peek: { entity: hit.entity, id: hit.id } }, { replace: true });
+    const fresh = !state.peek;
+    write({ peek: { entity: hit.entity, id: hit.id } }, { replace: !fresh });
+    if (fresh) peekPushed.current = true;
   };
-  const closePeek = () => write({ peek: null }, { replace: true });
+  const closePeek = () => {
+    if (peekPushed.current) {
+      peekPushed.current = false;
+      window.history.back();
+      return;
+    }
+    write({ peek: null }, { replace: true });
+  };
   const openFull = (hit: KnowledgeHit) => {
     const href = openFullHref(hit);
     if (!href) {
@@ -926,6 +950,36 @@ export function KnowledgeHubPage({
     }
   };
 
+  // The passages that matched a search, by the Source they belong to (first, best-ranked, wins).
+  const passageBySource = new Map<string, string>();
+  if (searching)
+    for (const sec of results.sections)
+      for (const h of sec.section?.items ?? [])
+        if (h.entity === "segment" && h.segment?.source_id && h.snippet && !passageBySource.has(h.segment.source_id))
+          passageBySource.set(h.segment.source_id, h.snippet);
+
+  // Back to the list: keep how deep it was loaded and which row had the cursor.
+  useEffect(() => {
+    if (hits.length) listRestore.save({ depth: hits.length, focusedKey });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hits.length, focusedKey]);
+  const restoredFocus = useRef(false);
+  useEffect(() => {
+    if (restoredFocus.current || !listRestore.saved?.focusedKey || !hits.length) return;
+    restoredFocus.current = true;
+    if (!focusedKey && byKey.has(listRestore.saved.focusedKey)) setFocusedKey(listRestore.saved.focusedKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hits.length]);
+  // Views read by the search service reload page by page to the depth the person had reached.
+  useEffect(() => {
+    const want = listRestore.saved?.depth ?? 0;
+    if (serverTranscripts || !want || hits.length >= want) return;
+    if (listSections.some((s) => s.status === "loading" || s.loadingMore)) return;
+    const next = listSections.filter((s) => s.key !== "top_hit" && s.section?.next_cursor);
+    next.forEach((s) => results.showMore(s.key));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hits.length, listSections.map((s) => `${s.status}${s.loadingMore}`).join()]);
+
   const handlers: ResultHandlers = {
     selected,
     focusedKey,
@@ -941,7 +995,15 @@ export function KnowledgeHubPage({
     rowContent: (h) => {
       if (!isTranscriptHit(h)) return undefined;
       const c = transcriptFacts.contentFor(h);
-      return c ? { ...c, icon: TRANSCRIPT_MEDIA_ICON[c.mediaKind] } : undefined;
+      if (!c) return undefined;
+      // Searching: the passage that matched (the Segments lane, folded into its transcript).
+      const passage = searching ? passageBySource.get(transcriptFacts.sourceIdFor(h) ?? "") : undefined;
+      return {
+        ...c,
+        snippet: passage ?? c.snippet,
+        icon: TRANSCRIPT_MEDIA_ICON[c.mediaKind],
+        group: TRANSCRIPT_MEDIA_LABEL[c.mediaKind],
+      };
     },
     renamingKey,
     onRenameCommit: (h, title) => void commitRename(h, title),
@@ -1065,6 +1127,14 @@ export function KnowledgeHubPage({
   };
 
   /** `#tag` → filter by it (the chip resolves to the tag scope when the query runs). */
+  /** Back to the view as defined: its own filters, no facets, no Stage — what was typed stays. */
+  const clearFilters = () =>
+    write({
+      query: normalizeQuery({ ...viewBaseQuery, mode: state.query.mode, text: state.query.text }),
+      group: {},
+      stage: [],
+    });
+
   const filterByTag = (name: string) => {
     setSelected(new Set());
     setFocusedKey(null);
@@ -1792,10 +1862,15 @@ export function KnowledgeHubPage({
             onRetry={triageView ? triage.refresh : serverTranscripts ? () => transcriptList.retry() : results.retry}
             stage={stageColumn}
             groupByDate={dateOrdered}
+            restore={{ scrollTop: listRestore.saved?.scrollTop, onScrollTop: (top) => listRestore.save({ scrollTop: top }) }}
             emptyExtra={
               state.view.kind === "everything" && !sample ? (
                 <HubGettingStarted />
-              ) : transcriptsView && !viewFiltered && !hasFacetSelection(facetSel) ? (
+              ) : viewFiltered || hasFacetSelection(facetSel) || state.stage.length ? (
+                <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={clearFilters}>
+                  <X className="h-4 w-4" /> Clear filters
+                </Button>
+              ) : transcriptsView ? (
                 <Button asChild size="sm" className="h-8 gap-1.5">
                   <Link href="/transcripts/new">
                     <Plus className="h-4 w-4" /> Record, upload or paste a transcript

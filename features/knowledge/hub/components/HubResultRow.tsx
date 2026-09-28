@@ -33,6 +33,8 @@ export interface RowContent {
   title?: string | null;
   /** The channel it came from — said instead of the origin ("Veritasium", not "YouTube · Veritasium"). */
   channel?: string | null;
+  /** What the record says it is ("Recording", "YouTube") — the board's columns when every row is one kind. */
+  group?: string | null;
 }
 
 export interface ResultHandlers {
@@ -360,14 +362,22 @@ export function titleLinesFor(title: string, paneWidth: number, compact: boolean
   return title.length > perLine ? 2 : 1;
 }
 
+/**
+ * A board or gallery card: a video's poster across the top (gallery), the
+ * kind's own glyph, title, snippet and one line of facts; the row menu and the
+ * selection box on hover.
+ */
 export function ResultCard({
   hit,
   handlers,
   tall = false,
+  hideKind = false,
 }: {
   hit: KnowledgeHit;
   handlers: ResultHandlers;
   tall?: boolean;
+  /** Every card in view is the same kind — the kind word is noise. */
+  hideKind?: boolean;
 }) {
   const key = hitKey(hit);
   const base = hitIcon(hit);
@@ -375,42 +385,53 @@ export function ResultCard({
   const Icon = content?.icon ?? base.Icon;
   const isSelected = handlers.selected.has(key);
   const isFocused = handlers.focusedKey === key;
+  const snippet = aroundMatch(cleanSnippet(hit.snippet || content?.snippet), handlers.highlight);
+  const facts = metaParts(hit, { hideKind: true, hideOrigin: Boolean(content?.channel), facts: handlers.rowFacts?.(hit) });
+  const when = hitWhen(hit);
   return (
     <div
       role="option"
       aria-selected={isFocused}
       data-hit-key={key}
       className={cn(
-        "group relative flex min-w-0 cursor-default flex-col gap-1.5 rounded-lg border border-border bg-card p-3 text-sm shadow-sm",
+        "group relative flex min-w-0 cursor-default flex-col gap-1.5 overflow-hidden rounded-lg border border-border bg-card text-sm shadow-sm",
         isFocused ? "ring-2 ring-ring" : "hover:border-foreground/20",
         tall && "min-h-36",
       )}
       {...clickHandlers(hit, handlers)}
     >
-      <div className="flex items-center gap-2">
-        <Icon className={cn("h-4 w-4 shrink-0 text-muted-foreground", !content?.icon && base.className)} />
-        <span className="truncate text-xs text-muted-foreground">{kindLabel(hit)}</span>
-        <div className="ml-auto">{handlers.rowMenu?.(hit)}</div>
-        <div
-          className={cn( isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => handlers.onToggleSelect(hit)}
-            aria-label={`Select ${hit.title}`}
-          />
-        </div>
-      </div>
-      <HitTitle hit={hit} handlers={handlers} className="line-clamp-2 font-medium text-foreground" />
-      {cleanSnippet(hit.snippet || content?.snippet) ? (
-        <div className={cn("text-xs text-muted-foreground", tall ? "line-clamp-4" : "line-clamp-2")}>
-          {cleanSnippet(hit.snippet || content?.snippet)}
-        </div>
+      {tall && content?.thumbnailUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- remote YouTube CDN poster, no loader configured for i.ytimg.com
+        <img src={content.thumbnailUrl} alt="" loading="lazy" className="aspect-video w-full bg-muted object-cover" />
       ) : null}
-      <TagChips tags={hitTags(hit)} onFilter={handlers.onFilterTag} />
-      <div className="mt-auto flex min-w-0 text-xs text-muted-foreground">
-        <ResultMeta hit={hit} facts={handlers.rowFacts?.(hit)} />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3 pt-2.5">
+        <div className="flex items-center gap-2">
+          <Icon className={cn("h-4 w-4 shrink-0 text-muted-foreground", !content?.icon && base.className)} />
+          {hideKind ? null : <span className="truncate text-xs text-muted-foreground">{kindLabel(hit)}</span>}
+          <div className="ml-auto opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 has-[[data-state=open]]:opacity-100">
+            {handlers.rowMenu?.(hit)}
+          </div>
+          <div
+            className={cn(isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => handlers.onToggleSelect(hit)}
+              aria-label={`Select ${hit.title}`}
+            />
+          </div>
+        </div>
+        <HitTitle hit={hit} handlers={handlers} className="line-clamp-2 font-medium text-foreground" />
+        {snippet ? (
+          <div className={cn("text-xs text-muted-foreground", tall ? "line-clamp-3" : "line-clamp-2")}>
+            <Highlight text={snippet} query={handlers.highlight} />
+          </div>
+        ) : null}
+        <TagChips tags={hitTags(hit)} onFilter={handlers.onFilterTag} />
+        <div className="mt-auto flex min-w-0 text-xs text-muted-foreground">
+          <span className="truncate">{[...facts, when ? formatRelativeTime(when) : null].filter(Boolean).join(" · ")}</span>
+        </div>
       </div>
     </div>
   );

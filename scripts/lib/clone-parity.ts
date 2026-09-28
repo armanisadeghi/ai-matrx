@@ -102,7 +102,14 @@ export async function openProductionReadOnly(expectRef: string): Promise<Product
   let refused = false;
   try {
     await client.query("begin read only");
-    await client.query(`create table public.clone_parity_readonly_probe_${process.pid} (i int)`);
+    // THE PROBE IS DML, NEVER DDL (lane SCOPES-ROWS-COPIED, 2026-09-28). It was `create table …`,
+    // and connectDirect's production guard now refuses every CREATE on live before it is sent (a
+    // CREATE fires the DDL event triggers, which lock auth/storage/realtime relations even inside
+    // a rolled-back transaction — incident 2026-09-27). That refusal is not the server's, so this
+    // check failed every rehearsal. An UPDATE matching no row is refused by the SERVER in a read
+    // only transaction ("cannot execute UPDATE in a read-only transaction") before it looks for
+    // rows, and in a writable one it changes nothing — so the proof stays a proof.
+    await client.query(`update public._schema_migrations set filename = filename where false`);
   } catch (err) {
     refused = /read-only transaction/i.test(String((err as Error)?.message ?? err));
   } finally {
