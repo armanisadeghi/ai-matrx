@@ -21,6 +21,7 @@ import { RunControlsMenu } from "./RunControlsMenu";
 import { InputButton } from "./InputActionButtons";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import { DesktopPresenceIndicator } from "./DesktopPresenceIndicator";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import {
   selectShowVariablePanel,
   selectShowAttachments,
@@ -152,7 +153,6 @@ export function SingleRowActionButtons({
         <Button
           onClick={handleStop}
           className="h-6 w-6 p-0 shrink-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
-          tabIndex={-1}
           title="Stop the run (everything streamed so far is kept)"
           aria-label="Stop the run"
         >
@@ -165,7 +165,6 @@ export function SingleRowActionButtons({
           onClick={handleSend}
           disabled={isSendDisabled}
           className={sendBtnClass}
-          tabIndex={-1}
           title={
             isExecuting
               ? "Queue message — sends when the agent finishes (⌘Enter steers in now, ⌘⇧Enter interrupts)"
@@ -192,7 +191,9 @@ export function SingleRowActionButtons({
       {!minimal && showSendButton && (
         <button
           type="button"
-          tabIndex={-1}
+          // Same tracked promise as the full action bar's Live audio control
+          // (InputActionButtons) — a button that does nothing is a dead end.
+          onClick={() => void announceComingSoon("chat.live-audio")}
           title="Live audio"
           aria-label="Live audio"
           className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

@@ -283,7 +283,6 @@ export function ContextDocsMenu({ conversationId }: ContextDocsMenuProps) {
   const triggerButton = (
     <button
       type="button"
-      tabIndex={-1}
       title="Documents & context"
       aria-label="Documents & context"
       onClick={isMobile ? () => setOpen(true) : undefined}

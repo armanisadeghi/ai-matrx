@@ -70,7 +70,6 @@ export function SmartAgentResourcePickerButton({
   const defaultTrigger = (
     <button
       type="button"
-      tabIndex={-1}
       title="Chat options"
       aria-label="Chat options"
       className={cn(
@@ -93,7 +92,6 @@ export function SmartAgentResourcePickerButton({
         ) : (
           <button
             type="button"
-            tabIndex={-1}
             title="Attach resource"
             aria-label="Attach resource"
             onClick={() => setIsOpen(true)}

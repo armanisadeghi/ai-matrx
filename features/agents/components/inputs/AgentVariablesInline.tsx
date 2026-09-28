@@ -476,8 +476,8 @@ export function AgentVariablesInline({
                 type="button"
                 onClick={() => handleExpand(variable.name)}
                 className="shrink-0 h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
-                tabIndex={-1}
                 title="Expand to full editor"
+                aria-label="Expand to full editor"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
