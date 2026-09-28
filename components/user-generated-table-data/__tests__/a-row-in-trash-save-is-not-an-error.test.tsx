@@ -36,6 +36,7 @@ jest.mock("@/components/official/ProTextarea", () => ({
 }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
+import { mapPgError } from "@ai-matrx/records/core";
 import EditRowModal from "../EditRowModal";
 
 const TRASH = "This row is in Trash. Restore it from Trash to edit it.";
@@ -99,6 +100,20 @@ it("a refused save of a row in Trash shows the sentence and logs no console.erro
     success: false,
     error: TRASH,
     refusal: { code: "internal", message: TRASH, sqlstate: "55000", hint: "Open Trash, restore the row, then edit it." },
+  });
+  await saveOnce();
+  expect(document.body.textContent).toContain(TRASH);
+  expect(saveErrors()).toEqual([]);
+  expect(infoSpy).toHaveBeenCalled();
+});
+
+it("the 409 shape (code row_in_trash, udt_row_in_trash_refusal_is_a_conflict.sql) is the same expected refusal", async () => {
+  // What supabase-js hands the service for PostgREST's custom 409: the JSON MESSAGE's fields.
+  const pgError = { code: "row_in_trash", message: TRASH, details: null, hint: "Open Trash, restore the row, then edit it." };
+  upsertRow.mockResolvedValue({
+    success: false,
+    error: TRASH,
+    refusal: mapPgError(pgError as never, "the older data tables"),
   });
   await saveOnce();
   expect(document.body.textContent).toContain(TRASH);
