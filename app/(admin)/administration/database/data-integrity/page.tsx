@@ -527,7 +527,7 @@ export default function DataIntegrityPage() {
   const t = report?.totals;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 px-4 py-4 sm:px-6">
+    <div className="flex h-full min-h-0 flex-col gap-3 px-4 pt-4 pb-0 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-5 w-5 text-primary" />
@@ -658,6 +658,7 @@ export default function DataIntegrityPage() {
           ]}
         >
           <MatrxDataTable
+            tableId="data-integrity"
           window={{ renderView: (row) => <CheckDetail row={row} />, renderEdit: false, defaultTab: "view" }}
             urlState={{ id: "data-integrity", selectedRow: false }}
             data={rows}

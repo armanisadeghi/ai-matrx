@@ -82,6 +82,17 @@ export async function updatePersonalTableView(actor: TableViewActor, tableId: st
   return decode(data as unknown as ViewRow);
 }
 
+export async function renamePersonalTableView(actor: TableViewActor, tableId: string, view: PersonalTableView, name: string, signal: AbortSignal) {
+  if (!name.trim()) throw new Error("Give this view a name.");
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: surfaceKey(tableId), p_id: view.id, p_expected_version: view.version,
+    p_name: name.trim(),
+  }).abortSignal(signal).setHeader("Authorization", `Bearer ${actor.accessToken}`);
+  if (error) throw error;
+  if (!data) throw new Error("This view changed elsewhere or is no longer available. Reload views before renaming it.");
+  return decode(data as unknown as ViewRow);
+}
+
 // ─── ANY LIST SURFACE (not only package tables) ─────────────────────────────
 //
 // The same `platform.saved_view` store and the same two doors

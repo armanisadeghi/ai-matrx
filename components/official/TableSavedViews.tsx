@@ -6,7 +6,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  createPersonalTableView, listPersonalTableViews, updatePersonalTableView,
+  createPersonalTableView, listPersonalTableViews, renamePersonalTableView, updatePersonalTableView,
   type PersonalTableView, type TableViewActor,
 } from "./table-saved-views-service";
 
@@ -19,26 +19,30 @@ export function TableSavedViews(props: TableSavedViewsProps) {
   return <PersonalViews key={`${userId}:${props.tableId}`} {...props} actor={{ userId, accessToken, organizationId }} />;
 }
 
-function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, actor }: TableSavedViewsProps & { actor: TableViewActor }) {
+function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentation, related, actor }: TableSavedViewsProps & { actor: TableViewActor }) {
   const [views, setViews] = useState<PersonalTableView[]>([]);
   // Pin the exact version the user selected. A list reload never silently advances it.
   const [active, setActive] = useState<PersonalTableView | null>(null);
+  const activeRef = useRef<PersonalTableView | null>(null);
+  const selectionRevision = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const requestKey = `${actor.accessToken}:${reloadKey}`;
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const loading = loadedKey !== requestKey;
   const pendingWrites = useRef(new Set<AbortController>());
+  const completedWriteRevision = useRef(0);
   useEffect(() => {
     const writes = pendingWrites.current;
     return () => { for (const request of writes) request.abort(); };
   }, []);
   useEffect(() => {
     const request = new AbortController();
+    const startedAtRevision = completedWriteRevision.current;
     void listPersonalTableViews(actor, tableId, request.signal).then((next) => {
-      if (!request.signal.aborted) { setViews(next); setError(null); }
+      if (!request.signal.aborted && startedAtRevision === completedWriteRevision.current) { setViews(next); setError(null); }
     }).catch((cause: unknown) => {
-      if (!request.signal.aborted) setError(cause instanceof Error ? cause.message : "Could not load saved views. Try reloading them.");
+      if (!request.signal.aborted && startedAtRevision === completedWriteRevision.current) setError(cause instanceof Error ? cause.message : "Could not load saved views. Try reloading them.");
     }).finally(() => { if (!request.signal.aborted) setLoadedKey(requestKey); });
     return () => request.abort();
     // Organization changes do not change personal view ownership or list scope.
@@ -49,17 +53,38 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, actor }: T
     pendingWrites.current.add(request);
     // Capture the initiating actor, organization and current layout before I/O.
     const capturedSnapshot = snapshot;
-    const baseline = active;
+    const baseline = activeRef.current;
+    const startedAtSelection = selectionRevision.current;
     try {
       const saved = name === undefined && baseline
         ? await updatePersonalTableView(actor, tableId, baseline, capturedSnapshot, request.signal)
         : await createPersonalTableView(actor, tableId, name ?? "New view", capturedSnapshot, request.signal);
       if (request.signal.aborted) throw new Error("The view save was interrupted. Reload saved views before trying again.");
+      completedWriteRevision.current += 1;
       setViews((previous) => [...previous.filter((view) => view.id !== saved.id), saved]);
-      setActive(saved);
+      if (startedAtSelection === selectionRevision.current) { activeRef.current = saved; setActive(saved); }
       setError(null);
+      setReloadKey((key) => key + 1);
     } catch (cause) {
       if (!request.signal.aborted) setError(cause instanceof Error ? cause.message : "Could not save this view. Your layout is unchanged.");
+      throw cause;
+    } finally { pendingWrites.current.delete(request); }
+  };
+  const rename = async (id: string, name: string) => {
+    const baseline = views.find((view) => view.id === id);
+    if (!baseline) throw new Error("This view is no longer available. Reload views before renaming it.");
+    const request = new AbortController();
+    pendingWrites.current.add(request);
+    try {
+      const saved = await renamePersonalTableView(actor, tableId, baseline, name, request.signal);
+      if (request.signal.aborted) throw new Error("The rename was interrupted. Reload views before trying again.");
+      completedWriteRevision.current += 1;
+      setViews((previous) => previous.map((view) => view.id === id ? saved : view));
+      if (activeRef.current?.id === id) { activeRef.current = saved; setActive(saved); }
+      setError(null);
+      setReloadKey((key) => key + 1);
+    } catch (cause) {
+      if (!request.signal.aborted) setError(cause instanceof Error ? cause.message : "Could not rename this view.");
       throw cause;
     } finally { pendingWrites.current.delete(request); }
   };
@@ -75,11 +100,16 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, actor }: T
         const selected = id === null ? null : views.find((view) => view.id === id);
         if (selected === undefined) throw new Error("This view is no longer available. Reload saved views.");
         onApply(selected?.snapshot ?? defaultSnapshot);
+        selectionRevision.current += 1;
+        activeRef.current = selected;
         setActive(selected);
         setError(null);
       } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not apply this view. Your layout is unchanged."); }
     }}
     onSaveNew={(name) => save(name)}
+    onRename={rename}
+    related={related}
+    {...(presentation ? { presentation } : {})}
     {...(active ? { onUpdate: () => save() } : {})}
   />;
 }

@@ -87,6 +87,7 @@ jest.mock("@/utils/supabase/client", () => {
 import {
   createPersonalTableView,
   listPersonalTableViews,
+  renamePersonalTableView,
   updatePersonalTableView,
 } from "./table-saved-views-service";
 
@@ -323,6 +324,23 @@ describe("table saved view transport contract", () => {
     ).resolves.toMatchObject({ id: "view-a", version: 3 });
 
     expect(requests).toHaveLength(1);
+  });
+
+  it("renames a durable tab through the existing version-guarded view door", async () => {
+    responses.push({ body: { ...savedRow("view-a", 3), name: "Checks" } });
+    await expect(renamePersonalTableView(actor, tableId,
+      { id: "view-a", name: "Old", version: 2, snapshot }, " Checks ",
+      new AbortController().signal)).resolves.toMatchObject({ id: "view-a", name: "Checks", version: 3 });
+    expect(requests).toHaveLength(1);
+    const request = requests[0];
+    if (!request) throw new Error("Missing recorded rename request");
+    expect(request.url.pathname).toBe("/rest/v1/rpc/saved_view_save");
+    expectCapturedIdentity(request, "public");
+    expect(request.body).toEqual(expect.objectContaining({
+      p_surface_key: "matrx/table/sandboxes/active", p_id: "view-a",
+      p_expected_version: 2, p_name: "Checks",
+    }));
+    expect(request.body).not.toHaveProperty("p_definition");
   });
 
   it("binds the supplied abort signal before the terminal create request", async () => {
