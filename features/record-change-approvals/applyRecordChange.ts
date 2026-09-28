@@ -36,6 +36,7 @@
  * NOTHING FAILS SILENTLY. Every refusal comes back in the store's own words.
  */
 
+import { standingFromDecidedOnce, standingSentence } from "./approvalDecision";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
@@ -153,6 +154,10 @@ async function decide(
   )) as { data?: DecisionAnswer | null; error?: unknown };
 
   if (response.error) {
+    // DECIDED ONCE — by somebody, somewhere, already. Said as what happened, not as a refusal.
+    const decided = standingFromDecidedOnce(response.error);
+    const said = decided ? standingSentence(decided) : null;
+    if (said) return { status: "already", detail: said };
     return { status: "refused", detail: sentenceFor(response.error) };
   }
   const answer = (response.data ?? {}) as DecisionAnswer;

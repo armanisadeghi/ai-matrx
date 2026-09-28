@@ -69,7 +69,7 @@ begin
 
   perform set_config('role', 'authenticated', true);
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','Treatment Rooms','slug','treatment-rooms','type','entity',
+    'name','Treatment Rooms','slug','treatment_rooms','type','entity',
     'label_singular','Treatment Room','label_plural','Treatment Rooms','title_field','name','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

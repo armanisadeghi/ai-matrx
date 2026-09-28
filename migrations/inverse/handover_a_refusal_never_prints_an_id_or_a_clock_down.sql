@@ -1,4 +1,79 @@
 -- Inverse of handover_a_refusal_never_prints_an_id_or_a_clock.sql: the 75 bodies it replaced, byte for byte.
+-- based-on: custom._action_check(uuid, uuid, jsonb) 0eb64113311fab8fdcbfef2354c889ad9deec1606bad2db8e89894fe42d4f07b
+-- based-on: custom._doc_signature_immutable() fcca545403b0070341b396d26cc5d34e437183c40a14a2c870caa8b008d25605
+-- based-on: custom._read_record_with(uuid, uuid, boolean, jsonb, jsonb) 8bf31b77b73800a4ff938342112363f1088d07b8cd5ce398003e6617125f1592
+-- based-on: custom.action_run(uuid, uuid, uuid[]) 5df6f9799ef6b3a7920f271f4a6dffe0ff9d66402fa7a3a19c58bd72b0a1e29a
+-- based-on: custom.agg_digest_assemble(uuid, uuid, timestamp with time zone, timestamp with time zone) 778ef9b4a7f3dabaa3438d3662753921ea7dcfd98437761ff568be6b680c9841
+-- based-on: custom.anon_publish(uuid, uuid, boolean) 782b6808ed9d3ca9d0ff0e4c5f3741e17f79f0584563e4b04fde8903ca8bb341
+-- based-on: custom.anon_rate_take(uuid, uuid, text, uuid) 65a75f9dfce4ca58a46b9682d0c172251ed3afb04bcfd3794a8678b74671207c
+-- based-on: custom.anon_token_issue(uuid, text, jsonb, uuid, uuid, uuid, timestamp with time zone) 646ca8c86fa46e09b0334eb65bf661bd2f070f9a98de6b2076b0dfe7d7ca18b9
+-- based-on: custom.anon_token_verify(text, text, text) d124735f21e5c4fec831875b738052c2ba6c16d1ce26b745b126c5c72b563954
+-- based-on: custom.booking_declare(uuid, uuid, text, jsonb, jsonb, jsonb, integer, uuid, uuid, uuid, text, uuid) daa60da66cb442d1e1f42444f86b671588de39761ae5f3a3bc1988334ffe8edc
+-- based-on: custom.capture_publish(uuid, uuid, boolean) d5fd2e0393d69db52b1cb8bc4a827a73c50461c3a6453d06373251f5c88fa89f
+-- based-on: custom.context_item_write(uuid, uuid, jsonb) f26d4aecd864dcab2ba87fe73b85821ed8af7ab2adffaf9aea4f60e0dab6c526
+-- based-on: custom.context_template_apply(uuid, uuid) a777712ad700cdb1449dd681370bced894d20d175f549a5692cd92c1dafb37ff
+-- based-on: custom.conversation_scope_bind(uuid, uuid, uuid) c3ce02d9250f9fb017371337c76b7b6d44fa9f12f2f4a806e7e52b0bbc9adf8a
+-- based-on: custom.dashboard_declare(uuid, uuid, text, jsonb, jsonb, uuid) e47f19a09082757df4e1bc233fda1e16cdfdf751a930b6575460c876e83171ed
+-- based-on: custom.dashboard_delete(uuid, uuid) cf92fb3667a02eecd342d0574ef8194ec08da55bf8ccbac6bd800e56b053a1b4
+-- based-on: custom.dashboard_restore(uuid, uuid) 1fee010963f3f508d8438e42bdb58a796fd9ec2a6cbc67468d48f5ccc4a02ed1
+-- based-on: custom.dashboard_run(uuid, uuid, jsonb, jsonb, text) 78bdf5b2d69aacebea2647f3011a716f627bc5579c7e3f96dc3df9e48cc71c26
+-- based-on: custom.doc_render_body(uuid, uuid, uuid) b2ce1db8e700cdbe86193d2ffafc96a35f418ee9bd39a22fc5612cdb6389beda
+-- based-on: custom.doc_render_document(uuid, uuid, uuid) 97c0bda76b870c85d15f4de1f0d4eebb4affdfdcd6a05e479d481621be22cc35
+-- based-on: custom.doc_render_read(uuid, uuid) a0b2a079ac9caee58fbccc7d52e1d111ca58c5edd540cb6f7ded608d260d0689
+-- based-on: custom.doc_sign(uuid, uuid, text, text, uuid) 1cb5c8d2e9eb0521ec6175518ed04e52dec3943b512e0968dfae1c5be4fc36d6
+-- based-on: custom.doc_signature_intact(uuid, uuid) 3231aaeaf7e6740adf7c0716c4826d6bc37380fbde9ff73a2ae45fc6f931fbb8
+-- based-on: custom.doc_signature_read(uuid, uuid) 8cd848c3532de1ba46ce51a76b7a87ea479722139de0efe564e58011931726a2
+-- based-on: custom.doc_signature_write(uuid, uuid, uuid, text, text, uuid, text, integer) d575a2554614ff7a06961868d6376ac4a100fd180620e2bd36451be92c274ede
+-- based-on: custom.doc_template_delete(uuid, uuid) 0e64a81a458c3b8a1b6f07624c70a3160e79ef3b755326d8ac22cb7aafe1cbdd
+-- based-on: custom.doc_template_read(uuid, uuid) ddacd2bf330f85cd578c20a7ead3e8c81843eb0806a3d9f510a78ccc97782351
+-- based-on: custom.doc_template_restore(uuid, uuid) c24ccc5efd4508eb7049e6e89a02e97a5d8fc5cbceb441e31cf2eeec6e71b30d
+-- based-on: custom.doc_template_save(uuid, uuid, text, text, uuid) d86a4d78da2dc26b12239d3e41bc7687e1d75c457fae6772e0b7a4b228d03fa4
+-- based-on: custom.enrich_pin(uuid, uuid, text, boolean) 65eac6b1d587984a206da03494185de56e2a08610eec9cc92e408602194b3358
+-- based-on: custom.external_history_event(uuid, uuid, text) 542853074ef7e1c375639766cacdfa60e5746d5978c1c2967acae8d5645d48ec
+-- based-on: custom.external_rows(uuid, uuid) a91a674cadaa149b1e9871df7be7e4861e4787c4108f8a6f4ade617c4e7f08ed
+-- based-on: custom.external_stub_upsert(uuid, uuid, uuid, text, text, text) cb5c6cc2c97da8079a67cf9dafce8ccc1a2684a3cbe6b2ecc94a608bc55dee00
+-- based-on: custom.external_write_through(uuid, uuid, jsonb) 227fc664968d84823227ea01aecb20bff720faaa21da83705629b81927228561
+-- based-on: custom.external_writes_set(uuid, uuid, boolean) 7083314995be411e83c1e5f28217098f477f942c55dcdd0d9ba8a22c2a4072dd
+-- based-on: custom.form_declare(uuid, uuid, text, jsonb, jsonb, integer, uuid, uuid, uuid, text) e854dc1aeac2c11ea9d978ce727e093bd663fa2ca322b320c3a1338fc013f403
+-- based-on: custom.grid_layout(uuid, uuid, uuid) 222aa7ae2fbecb182dfc43828e8fac39a21b9a02e86d2cb8aa8fa5cc504701f3
+-- based-on: custom.io_comment_write(uuid, uuid, text, jsonb, uuid) f4d44ce291dac1279b062a0afea27a7e7d67c6d3a1e481d3f17049a4e213c4db
+-- based-on: custom.io_import_rows(uuid, uuid, jsonb, jsonb) 8210c8c9f72d678ef0600ca7f2534c6ca8b4aaecf256ed89dd6e8c616af67132
+-- based-on: custom.io_proposal_accept(uuid, uuid, text, text, text) ca727e1464f563584b7c6f5d979ba626b10d1649110895e48adac0a825758dfa
+-- based-on: custom.migrate_delete(uuid, uuid, text) a04b9297c06dc739d80a8b9e243f87d00e5168407d301c8774b22b1eab198dfb
+-- based-on: custom.migrate_extract_parent(uuid, uuid, uuid, text[], text) a1bb131a16e0444cc253b2a009bb2bcda22301397717d057ec9c5d27970328e5
+-- based-on: custom.migrate_reclass(uuid, uuid, text, text) 7e7ed37b49b27a7562f764e3c43d02244f94613a418f0ff51398a9be1bf6413e
+-- based-on: custom.migrate_rename(uuid, uuid, text, text) caeb22704d4114b9091721a9ad2c539e60397c9831f3fc335a6802633598f84e
+-- based-on: custom.migrate_reparent(uuid, uuid, uuid, text) c98574893717cc42ba2b84c307285bcf080028410604b4dc3a4230bd83e86c7a
+-- based-on: custom.migrate_retype(uuid, uuid, text, text) 2a1ee031c7e08d1977730a62585ef70747747c948cd73a0edd0d1f66e446cee3
+-- based-on: custom.migrate_split(uuid, uuid, text[], text) a50b1dc33fbf655858fe20af83b48c84f2ca6e04e4d2f16fc4365c5c8f7617a1
+-- based-on: custom.migrate_undo(uuid, uuid) e62c8be9ced4b5fe1b0aa0e2b74eb0f8685846267db879aa5a6cd22fdd708adb
+-- based-on: custom.organization_clear(uuid, text, boolean) d9017757b477575df5495ad1e33fc234cb5daf0cb35f844cf0a0ba6926b6910e
+-- based-on: custom.read_records_in_view_order(uuid, uuid, boolean, integer, integer, jsonb) 18ec7ead8b1279d83f8d70567f86f980496fb5e4fd9e8c290d0d0dbd62465f53
+-- based-on: custom.read_records_page(uuid, uuid, jsonb, text, jsonb, uuid, boolean, integer, integer) 67cb15328375da7c6a9983e0c757ff092c7d3c909cc364afef26f8101b10c916
+-- based-on: custom.record_delete(uuid, uuid) 93794b4c52f131b8c3705b1060b33306898b12e51842bc7454eb37311cd3df1e
+-- based-on: custom.record_restore(uuid, uuid) c816b39b78c3a14ee258022d9a877092c6b9406234da6ae8bf49a28fb70476aa
+-- based-on: custom.record_table(uuid, uuid) 8a1962344dee43951b28e72a4044cc8f664062435315645fb74239d91803aed2
+-- based-on: custom.record_update(uuid, uuid, jsonb, integer) f7c0d7515fe21200c0291177808a3b1e526b3ebcaea195862b5ca1b7f9e03a93
+-- based-on: custom.record_write_graph(uuid, uuid, jsonb, jsonb, jsonb) 6723c9553f24f283665bb5f68f9cea71941f6e7a2599dea0a7e369380785ee5e
+-- based-on: custom.relation_halves_repair(uuid, uuid) 444428b8a50c1bfe9c0500ead8871137e56e0cdc8d7356f06bf2aa17d932a559
+-- based-on: custom.relation_own(uuid, uuid, uuid) fdb1201fd44728e4ae5b895b394cb082013878377e493f46ce7898190034b6c4
+-- based-on: custom.rule_declare(uuid, jsonb, uuid) 19866b39c3263bcd15e42fab1168d30987fa4a7d9ddc73337537f055c6d007b7
+-- based-on: custom.sign_request_cancel(uuid, uuid, text) 0d9820e49613ee35cc8e801775b77ce13f7f1ce3b043e3543fb71eb291c7b05f
+-- based-on: custom.sign_request_create(uuid, uuid, text, text, text, interval) 84eff6ed66303f75a0243249b63859740d155a85a84cd1fcd7eeb2e0e0459d0b
+-- based-on: custom.sign_request_remind(uuid, uuid) ff2b261999d8b3f2f008ec2ce439a8a5cec4a8d0d08ddef2d93ab9f5fdf9fa59
+-- based-on: custom.sign_request_unchanged(uuid, uuid) 1e8bc4d6a706b589d4a250372b40ce72bbc8c0dbb044fb9c651896cbef2b9a7d
+-- based-on: custom.subscription_mute(uuid, uuid, boolean) bae8788e0b0cec5236e3aaae6d45707d5f88d11ae64784ee1b447126c3a860bf
+-- based-on: custom.subscription_preview(uuid, uuid) d3d4c3dd6c05661b4ce64a5d1fc13f547796b007cb8f1aadb9bd0c0a33a63366
+-- based-on: custom.table_archive(uuid, uuid, integer, boolean) 521e2eee35d2e14c737d5fac99bd5af0a3ccf442d483f86a1ce9d79d89de2b99
+-- based-on: custom.table_webhook_archive(uuid, uuid) c78e263db4f557edad5a379360f85f2f0ed3126e2ed85c6f497d78f23d0f5a60
+-- based-on: custom.view_declare(uuid, uuid, jsonb) d941e70bcd0f0d3094964c0c544a12b8d50210453819ec5631050139949fd21e
+-- based-on: custom.view_designate(uuid, uuid, uuid, text) 6b2affc7213b7ab0ba392e3ccdbb810c10e9687e190322f78f56ce1fcd73a929
+-- based-on: custom.view_look_set(uuid, uuid, uuid, jsonb) 6a4d7c3d69c84d7944de1e1c4bf20f8b85d324db7eabb2fcacc6501ceecf15ed
+-- based-on: custom.view_record_order_set(uuid, uuid, uuid[]) 22c9eb39e249a07b318d61915f551bdcc7bf2ae8361d891f1a5973c2001b5d30
+-- based-on: custom.visibility_as_of(uuid, uuid, timestamp with time zone) f9553cf388dcff107127b6d7a46f11ecd54a7d09846b90be28e6aa0edd42b31c
+-- based-on: custom.whole_value_complete(uuid, uuid, text, uuid) 757548f2985ddcc0ea2df205a5e4dfeffcdbca20f3a5fcadf1415a00e83ce893
+-- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) d6131be3a46b05f3eeac95c8c06e0ccc81479d7a0b4ccd209038e3a4b9add8d0
+-- based-on: custom.work_approval_read(uuid, uuid) 63f0ce3ec11ba36202f5c56be7cf5067180121cdb413b322f100216c168bf9ee
 -- chair-step: restores the 75 custom.* bodies whose refusals printed an id or a clock (handover_a_refusal_never_prints_an_id_or_a_clock.sql)
 CREATE OR REPLACE FUNCTION custom._action_check(p_organization_id uuid, p_table_id uuid, p_actions jsonb)
  RETURNS jsonb

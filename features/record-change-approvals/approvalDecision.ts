@@ -23,7 +23,7 @@
 
 import { useEffect, useState } from "react";
 
-import { recordsDataSource } from "@ai-matrx/records-ui";
+import { recordsDataSource, whenWords } from "@ai-matrx/records-ui";
 import { createClient } from "@/utils/supabase/client";
 
 /** Where an approval row stands. `pending` is the only state still waiting. */
@@ -40,10 +40,16 @@ function dataSource(): ReturnType<typeof recordsDataSource> {
   return sharedDataSource;
 }
 
-/** Where an approval row stands, and when it was decided (null while pending). */
+/** Where an approval row stands, when it was decided (null while pending) and by whom. */
 export interface ApprovalStanding {
   state: ApprovalState;
   decidedAt: string | null;
+  /** The decider's name as the store says it; null when it could not say. */
+  decidedByName?: string | null;
+}
+
+function text(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
 }
 
 /** The row's standing, or null when it cannot be read (the caller keeps its fallback). */
@@ -55,12 +61,15 @@ export async function readApprovalStanding(
     "work_approval_read",
     { p_organization_id: organizationId, p_approval_id: approvalId },
     { schema: "custom" },
-  )) as { data?: { state?: unknown; decided_at?: unknown } | null; error?: unknown };
+  )) as { data?: { state?: unknown; decided_at?: unknown; decided_by_name?: unknown } | null; error?: unknown };
   if (read.error) return null;
   const state = read.data?.state;
   if (typeof state !== "string" || !KNOWN.has(state)) return null;
-  const decidedAt = read.data?.decided_at;
-  return { state: state as ApprovalState, decidedAt: typeof decidedAt === "string" && decidedAt ? decidedAt : null };
+  return {
+    state: state as ApprovalState,
+    decidedAt: text(read.data?.decided_at),
+    decidedByName: text(read.data?.decided_by_name),
+  };
 }
 
 /** The row's state, or null when it cannot be read (the caller keeps its fallback). */
@@ -72,19 +81,39 @@ export async function readApprovalState(
 }
 
 /**
- * What a card says about a decision somebody already took — here, in another tab, on the
- * table's page or the run page (lane HANDOVER, 2026-09-27: a reopened chat offered Approve on a
- * change approved minutes earlier, and pressing it answered "That was already approved").
+ * The decide door's "decided once" refusal (23505) as a standing. Its DETAIL is the structured
+ * answer {state, decided_at, decided_by, decided_by_name}; the sentence carries no clock (lane
+ * HANDOVER, 2026-09-27: it read "That was already approved, on 2026-09-28T01:23:12.271Z.").
  */
-export function standingSentence(standing: ApprovalStanding): string | null {
-  const at = standing.decidedAt ? new Date(standing.decidedAt) : null;
-  const on =
-    at && !Number.isNaN(at.getTime())
-      ? ` on ${at.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
-      : "";
-  if (standing.state === "approved") return `Approved${on}. The change was made.`;
-  if (standing.state === "declined") return `Refused${on}. Nothing was changed.`;
-  if (standing.state === "withdrawn") return "This request was withdrawn, so nothing was changed.";
+export function standingFromDecidedOnce(error: unknown): ApprovalStanding | null {
+  const e = error as { code?: unknown; details?: unknown } | null;
+  if (!e || e.code !== "23505" || typeof e.details !== "string") return null;
+  let detail: Record<string, unknown>;
+  try {
+    detail = JSON.parse(e.details) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+  const state = detail.state;
+  if (typeof state !== "string" || !KNOWN.has(state) || state === "pending") return null;
+  return {
+    state: state as ApprovalState,
+    decidedAt: text(detail.decided_at),
+    decidedByName: text(detail.decided_by_name),
+  };
+}
+
+/**
+ * What a card says about a decision somebody already took — here, in another tab, on the
+ * table's page or the run page: "Approved by admin 12 minutes ago. The change was made." Who, in
+ * the store's words; when, in the reader's own clock (lane HANDOVER, 2026-09-27).
+ */
+export function standingSentence(standing: ApprovalStanding, now: Date = new Date()): string | null {
+  const by = standing.decidedByName ? ` by ${standing.decidedByName}` : "";
+  const when = standing.decidedAt ? ` ${whenWords(standing.decidedAt, now)}` : "";
+  if (standing.state === "approved") return `Approved${by}${when}. The change was made.`;
+  if (standing.state === "declined") return `Refused${by}${when}. Nothing was changed.`;
+  if (standing.state === "withdrawn") return `This request was withdrawn${when}, so nothing was changed.`;
   return null;
 }
 
