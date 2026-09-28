@@ -148,21 +148,6 @@
   display: none;
 }
 
-/* Toast UI's global stylesheet (still loaded by other screens) sets every
-   `.ProseMirror` to 13px Open Sans, unlayered — so it beats every Tailwind
-   utility, prose sizes included. revert-layer hands both back to the layered
-   cascade: the app's font and the editor's own prose size.
-   (page-pass /notes, 2026-09-27) */
-.rich-editor-visual .ProseMirror {
-  /* Every property Toast UI's global `.ProseMirror` rule sets. Its
-     `color: #222` made Write's text near-invisible in dark mode. */
-  font-family: revert-layer;
-  font-size: revert-layer;
-  color: hsl(var(--foreground));
-  overflow-x: revert-layer;
-  overflow-y: revert-layer;
-  height: revert-layer;
-}
 .rich-editor-visual .ProseMirror .placeholder {
   color: hsl(var(--muted-foreground));
 }

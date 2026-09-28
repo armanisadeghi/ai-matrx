@@ -1,7 +1,7 @@
 # components/rich-editor — THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source + shared-renderer preview)
 
 Rich-content PLAN decisions 5, 6, 11 (`../../../common-docs/projects/rich-content-unification/PLAN.md`), register row RC-B4.
-Verified against code 2026-09-25. Hosts: `/markdown-studio` (Editor mode), in-place answer editing (RC-B5), and **Notes** — Write mode on desktop and phone (2026-09-27; Toast UI is gone from notes). Other Toast UI mounts remain (see the rich-content inventory baseline).
+Verified against code 2026-09-25. Hosts: `/markdown-studio` (Editor mode), in-place answer editing (RC-B5), **Notes** (Write on desktop and phone), the full-screen markdown editor (Write + Source tabs), the official ContentEditor (Write + Source modes) and the HTML page editor (Source + Write tabs). **Toast UI is gone from the app** (2026-09-27) — guard `__tests__/toast-ui-never-returns.test.ts` (any `@toast-ui` import or dependency fails).
 
 ## The contract — the stored text is the truth
 
@@ -39,6 +39,7 @@ Page breaks use `@ai-matrx/print/directives` (`PAGE_BREAK_MARKDOWN`, `isPageBrea
 
 ## Change Log
 
+- 2026-09-27 — Toast UI removed from the whole app: the full-screen markdown editor, the official ContentEditor and the HTML page editor (and its tabs) now mount this editor with `chrome="bare"` + `controllerRef` (hosts flush before Save / a view switch); `TuiEditorContent`, `@toast-ui/*` and the CSS counter-rule that undid Toast UI's global `.ProseMirror` styles are deleted. App-wide guard `__tests__/toast-ui-never-returns.test.ts` (red on a scratch copy of the pre-removal tree, green now).
 - 2026-09-27 — Notes host (Write mode). Added for every host: controlled `view`/`onViewChange`, `chrome="bare"`, `hostContextMenu`, `controllerRef` (`RichEditorController`), `data-rich-editor`. Fixed for every host: the visual view cleared its pending report timer on unmount and dropped the last ~120 ms of typing whenever a host unmounted it without flushing (a mode switch, a tab close) — it now delivers that report as it unmounts. Notes corpus on the dev clone: 4,451/4,451 rows pass (no-edit, view switch, save gate, 3,664 exact edits, 3,318 moves).
 - 2026-09-26 — The table bubble (`visual/TableToolbar.tsx`) is deleted: its tools are registry actions of the ONE selection toolbar (`visual/format-actions.ts`), shown while the caret or a selection is in a table (the editor zone's caret mode anchors it above the table; align and delete sit under More). A selected code block (island) opens the toolbar on its source.
 - 2026-09-26 — The formatting bubble (`visual/SelectionToolbar.tsx`, a Tiptap BubbleMenu) is deleted. Formatting is now a provider of the ONE selection toolbar (`components/selection-toolbar`): `visual/format-actions.ts` declares bold / italic / strike / code / link / H1 / H2 / quote / list / variable as Alchemy registry actions, and `VisualEditor` registers its element as an editable selection zone carrying the `richEditor` host half. Same verbs, same shortcuts; the old bubble no longer stacks under the context menu's floating icon (also deleted).
