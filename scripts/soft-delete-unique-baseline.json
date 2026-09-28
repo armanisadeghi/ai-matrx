@@ -371,6 +371,41 @@
       "ruled": "Owner lifetime-identity ruling, 2026-09-28 — lib/sms/test-handset-inbox duplicate writer behavior covered by focused regression"
     },
     {
+      "index": "billing.price:price_stripe_price_id_key",
+      "reason": "stripe_price_id is Stripe's immutable external price identity, not a customer-reusable name. There is no current mirror writer: retaining this full key prevents an archived local record from becoming a second representation of the same Stripe price.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — server-unique-writer-proof.md verified the external-ID contract and no current mirror writer"
+    },
+    {
+      "index": "billing.product:product_stripe_product_id_key",
+      "reason": "stripe_product_id is Stripe's immutable external product identity, not a customer-reusable name. There is no current mirror writer: retaining this full key prevents an archived local record from becoming a second representation of the same Stripe product.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — server-unique-writer-proof.md verified the external-ID contract and no current mirror writer"
+    },
+    {
+      "index": "communication.notification:notification_dedupe_key_uidx",
+      "reason": "dedupe_key is the deterministic event-and-channel delivery identity. aidream/services/notifications/service.py:434-482 builds it and uses insert_ignore, so an archived notification must retain the key to prevent a retry from redelivering the same event through the same channel.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — server-unique-writer-proof.md records the canonical notification writer"
+    },
+    {
+      "index": "communication.notification_submission:notification_submission_actor_org_key_uq",
+      "reason": "(actor, organization, caller key) is one durable self-service submission receipt. aidream/services/notifications/self_service.py:116-179 takes the exact tuple lock, reads archived rows, fingerprint-compares, and returns the original receipt before enqueue; a duplicate never re-enqueues work.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — server-unique-writer-proof.md records exact lookup, fingerprint, and no-reenqueue behavior"
+    },
+    {
+      "index": "seo.collection_run:collection_run_idempotency_key_key",
+      "reason": "idempotency_key is a lifetime collection-run identity, not a reusable label. matrx-seo/orm_repository.py:420-552 uses insert_ignore, reads the original row including archived history, and reclaims that same ID; it must not start a second provider run.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — server-unique-writer-proof.md records canonical insert-ignore/read/reclaim behavior"
+    },
+    {
+      "index": "ops.app_log_muted_pattern:app_log_muted_pattern_signature_key",
+      "reason": "signature is one permanent muted-pattern identity. The accepted 518fbdea writer takes an advisory transaction lock for that signature, revives an archived same-signature row, uses insert_ignore for the first write, and rereads the exact canonical row so concurrent calls never create a second mute receipt.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — mute-lifecycle-acceptance.md records accepted 518fbdea advisory-lock and revive proof"
+    },
+    {
+      "index": "iam.industries:industries_slug_key",
+      "reason": "slug is the permanent admin-curated platform taxonomy identity, not an organization-reusable name. public.industry_upsert is the sole canonical writer; its full-key conflict update explicitly clears deleted_at and sets is_active true, restoring the same archived industry row under its existing admin gate and system organization.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — clone archive-to-upsert proof passed transactionally; migration industry_upsert_revives_archived_taxonomy_identity.sql preserves captured live body"
+    },
+    {
       "index": "extend.extension_auth_codes:extension_auth_codes_code_key",
       "reason": "code is a generated 128-bit, short-lived extension credential rather than a reusable human name. The full key protects the same credential while its row is retained; it does not claim lifetime non-replay after a physical deletion.",
       "ruled": "CI-FIX extension exchange correction, 2026-09-28 — generate-code and fail-closed atomic exchange paths inspected"
