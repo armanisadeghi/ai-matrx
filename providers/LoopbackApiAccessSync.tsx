@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setLoopbackApiTargetsAdminUnlock } from "@/lib/api/service-routing";
 import { setLoopbackAccess } from "@/lib/redux/slices/apiConfigSlice";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 
 /**
  * Bridges admin sign-in into loopback (localhost) API target access.
@@ -25,7 +25,9 @@ import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
  */
 export function LoopbackApiAccessSync() {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsAdmin);
+  // ADMIN IDENTITY: the admin-lane gate (selectIsAdmin) is false on every user
+  // page, which silently turned localhost routing off outside /administration.
+  const isAdmin = useAppSelector(selectIsAdminPerson);
 
   useEffect(() => {
     setLoopbackApiTargetsAdminUnlock(isAdmin);

@@ -77,6 +77,11 @@ const IDENTITY_ALLOWED = new Set([
   "components/cost/useCostDisplay.ts",
   "components/cost/costUnit.ts",
   "features/shell/components/header/header-right-menu/CostUnitMenuItem.tsx",
+  // The admin's own API server target (Production / Localhost) — routes only
+  // THIS browser's traffic, grants no data power, and must work on every page
+  // so an admin can test the user app against a local aidream (Arman, 2026-09-28).
+  "features/shell/components/controls/SidebarEnvToggle.tsx",
+  "providers/LoopbackApiAccessSync.tsx",
 ]);
 
 const SCAN_DIRS = ["app", "components", "features", "hooks", "lib", "utils", "providers", "actions"];

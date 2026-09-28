@@ -18,7 +18,7 @@ import {
   type ApiService,
   type ServiceEnvironment,
 } from "@/lib/api/service-routing";
-import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +37,9 @@ const UNHEALTHY_CHECK_INTERVAL_MS = 15_000;
 
 export default function SidebarEnvToggle() {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsAdmin);
+  // ADMIN IDENTITY, not lane power: the server target is the admin's own
+  // browser routing and must be reachable on user pages too.
+  const isAdmin = useAppSelector(selectIsAdminPerson);
   const loopbackAllowed = useAppSelector(selectLoopbackTargetsAllowed);
   const activeServer = useAppSelector(selectActiveServer);
   const activeHealth = useAppSelector(selectActiveServerHealth);
