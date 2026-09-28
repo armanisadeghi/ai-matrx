@@ -66,6 +66,16 @@ export const DOORLESS_REASONS = {
     "A working route exists but addresses the record by its KEY, not by its id " +
     "(`/mandates/[mandateKey]`), so an id-only `hrefFor` would 404. The door is " +
     "a resolver route or a peek, and neither is built yet.",
+  /**
+   * The record's page is its ORGANIZATION's page (a team is managed in its
+   * organization's settings, Manage › Teams), addressed by the organization —
+   * not by the record's id. An id-only door needs a resolver (record →
+   * organization) that is not built yet. Measured, and a door is OWED.
+   */
+  LIVES_UNDER_ITS_ORGANIZATION:
+    "Managed on its organization's settings page (Manage › Teams), which is " +
+    "addressed by the organization, not by this record's id; an id-only door " +
+    "needs a team → organization resolver that is not built yet. A door is owed.",
 } as const;
 
 export type DoorlessReason = keyof typeof DOORLESS_REASONS;
@@ -151,6 +161,7 @@ const CENSUS = {
   hr_workflow_instance: "UNMEASURED",
   // iam.*
   iam_api_key: "UNMEASURED",
+  team: "LIVES_UNDER_ITS_ORGANIZATION",
   // interview.*
   interview_decision_interview: "UNMEASURED",
   interview_session: "UNMEASURED",
@@ -199,4 +210,7 @@ export const DOORLESS_LISTED_ENTITIES: Readonly<DoorlessCensus> = Object.freeze(
  * door — or someone must lower this number by giving an old one its door in the
  * same change.
  */
-export const DOORLESS_BASELINE = 79;
+// 80 (was 79): `team` (iam.team, 2026-09-26) joined the listed entities with
+// no door — measured, owed (LIVES_UNDER_ITS_ORGANIZATION). `spatial_board` got
+// its door instead (entityRegistry.ts), page-pass /notes 2026-09-28.
+export const DOORLESS_BASELINE = 80;

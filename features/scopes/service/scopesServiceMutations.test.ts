@@ -138,6 +138,7 @@ const scopeRow = {
   parent_scope_id: null,
   scope_type_id: TYPE_ID,
   settings: { tier: "gold" },
+  shown_to: null,
   slug: "acme-co",
   sort_order: 1,
   updated_at: STAMP,
@@ -355,7 +356,7 @@ describe("scope type mutations", () => {
 
     expect(res).toMatchObject({
       ok: false,
-      error: { code: "forbidden_org", message: "Permission denied" },
+      error: { code: "forbidden_org", message: "You do not have permission to do this." },
     });
   });
 });
@@ -422,7 +423,7 @@ describe("scope mutations", () => {
     ]);
     expect(res).toMatchObject({
       ok: false,
-      error: { code: "forbidden_org", message: "Permission denied" },
+      error: { code: "forbidden_org", message: "You do not have permission to do this." },
     });
   });
 

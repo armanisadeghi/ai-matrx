@@ -410,6 +410,13 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Notes",
     hrefFor: (id) => `/notes?active=${id}`,
   },
+  // A board opens at its own page (app/(core)/board/[id]) — THE DOOR LAW
+  // census found it listed with no door (page-pass /notes, 2026-09-28).
+  spatial_board: {
+    Icon: Frame,
+    labelPlural: "Boards",
+    hrefFor: (id) => `/board/${id}`,
+  },
   udt_document: {
     Icon: FileText,
     // "Cloud documents", not "Documents": content.document (Markdown Studio) is also a document, and

@@ -211,7 +211,21 @@ describe("FileAssociationPickerImpl pick routing (QA F1)", () => {
     );
   });
 
-  it("routes a pick of an already-attached file to onDetach and screams on failure", async () => {
+  // Since the window shows attached files checked (49bb8fed90), an UNCHECK is the
+  // detach door (`attached.onDetach`); a pick of an already-attached file is a no-op.
+  it("a pick of an already-attached file does nothing (it is already checked)", async () => {
+    const props = makeProps({ attachedIds: new Set([selection.fileId]) });
+    renderPicker(props);
+
+    await act(async () => {
+      await capturedWindow().onPick(selection);
+    });
+
+    expect(props.onAttach).not.toHaveBeenCalled();
+    expect(props.onDetach).not.toHaveBeenCalled();
+  });
+
+  it("routes an uncheck of an attached file to onDetach and screams on failure", async () => {
     const props = makeProps({
       attachedIds: new Set([selection.fileId]),
       onDetach: jest.fn(async () => ({
@@ -221,8 +235,9 @@ describe("FileAssociationPickerImpl pick routing (QA F1)", () => {
     });
     renderPicker(props);
 
+    expect(capturedWindow().attached?.ids.has(selection.fileId)).toBe(true);
     await act(async () => {
-      await capturedWindow().onPick(selection);
+      await capturedWindow().attached!.onDetach(selection.fileId, "hr-photo-probe.png");
     });
 
     expect(props.onDetach).toHaveBeenCalledWith(selection.fileId);
