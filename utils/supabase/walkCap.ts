@@ -386,7 +386,7 @@ function scheduleIdleExpiry(state: WalkCapGlobal, knobs: WalkKnobs, now = Date.n
     if (expired.length) console.log(`[walk-cap] IDLE EVICTED ${expired.join(", ")}`);
     scheduleIdleExpiry(state, knobs, current);
   }, delay);
-  state.idleTimer.unref?.();
+  (state.idleTimer as ReturnType<typeof setTimeout> & { unref?: () => void }).unref?.();
 }
 
 /** Test-only seam for timer behavior; production callers use the gate wrapper. */
@@ -432,7 +432,7 @@ function isDevProductionLocalhost(host: string | null): boolean {
 
 function parkedPage(returnTo: string): string {
   const safe = escapeHtml(returnTo);
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preview paused</title><style>body{font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:48px auto;padding:0 16px;color:#1a1a1a;background:#fff}button{font:inherit;padding:9px 14px;border:1px solid currentColor;border-radius:6px;background:transparent;color:inherit;cursor:pointer}@media (prefers-color-scheme:dark){body{color:#eee;background:#141414}}</style></head><body><main><h1>This preview was paused</h1><p>Another preview session took this slot because this session was idle. This tab has stopped loading the app and its live database activity.</p><form method="post" action="/__dev-walk"><input type="hidden" name="returnTo" value="${safe}"><button type="submit">Resume this preview</button></form></main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preview paused</title><style>body{font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:48px auto;padding:0 16px;color:#1a1a1a;background:#fff}button{font:inherit;padding:9px 14px;border:1px solid currentColor;border-radius:6px;background:transparent;color:inherit;cursor:pointer}@media (prefers-color-scheme:dark){body{color:#eee;background:#141414}}</style></head><body><main><h1>This preview was paused</h1><p>This preview was paused because it was idle or its slot was needed by another session. This tab has stopped loading the app and its live database activity.</p><form method="post" action="/__dev-walk"><input type="hidden" name="returnTo" value="${safe}"><button type="submit">Resume this preview</button></form></main></body></html>`;
 }
 
 function safeReturnTo(value: string | null): string {
@@ -514,6 +514,12 @@ export async function walkCapDevEndpoint(request: Request): Promise<Response | n
     if (url.searchParams.get("activity") === "1") {
       const origin = request.headers.get("origin");
       if (!isSameOrigin(origin, normalizedHost, url.protocol)) return new Response("same-origin required", { status: 403 });
+      if (state.registry.evicted.has(normalizedHost)) {
+        return new Response("Walk evicted; resume explicitly to reclaim a production preview slot.", {
+          status: 409,
+          headers: { "cache-control": "no-store", [WALK_CAP_HEADER]: "evicted" },
+        });
+      }
       // A signed-out/login tab can mount the monitor before its first admitted
       // document request. Its clicks are a no-op, never an implicit admission.
       if (!state.registry.admitted.has(normalizedHost)) return new Response(null, { status: 204, headers: { "cache-control": "no-store" } });

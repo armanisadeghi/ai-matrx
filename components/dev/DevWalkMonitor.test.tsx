@@ -69,4 +69,14 @@ describe("DevWalkMonitor", () => {
     stop();
     nestedScrollArea.remove();
   });
+
+  it("parks when an activity response carries the eviction header", async () => {
+    const park = jest.fn();
+    const fetchEvicted = jest.fn(async () => new Response(null, { status: 409, headers: { "x-matrx-walk-cap": "evicted" } }));
+    const stop = installDevWalkMonitor({ window, EventSource: FakeEventSource as unknown as typeof EventSource, fetch: fetchEvicted, park });
+    window.dispatchEvent(new Event("pointerdown"));
+    await Promise.resolve();
+    expect(park).toHaveBeenCalledWith(expect.stringContaining("/__dev-walk?parked=1"));
+    stop();
+  });
 });

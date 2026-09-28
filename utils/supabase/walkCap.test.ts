@@ -279,6 +279,19 @@ describe("walk-cap dev endpoint framing and safe parking", () => {
     expect(stream?.status).toBe(200);
   });
 
+  it("returns the eviction signal for a tombstoned activity host, while unknown activity stays a no-op", async () => {
+    endpointState.registry.evicted.add("old.localhost:3001");
+    const tombstoned = await walkCapDevEndpoint(new Request("http://old.localhost:3001/__dev-walk?activity=1", {
+      method: "POST", headers: { host: "old.localhost:3001", origin: "http://old.localhost:3001" },
+    }));
+    const unknown = await walkCapDevEndpoint(new Request("http://new.localhost:3001/__dev-walk?activity=1", {
+      method: "POST", headers: { host: "new.localhost:3001", origin: "http://new.localhost:3001" },
+    }));
+    expect(tombstoned?.status).toBe(409);
+    expect(tombstoned?.headers.get(WALK_CAP_HEADER)).toBe("evicted");
+    expect(unknown?.status).toBe(204);
+  });
+
   it("notifies every same-host stream on LRU eviction and never lets it reacquire automatically", async () => {
     const registry = registryWith([
       ["old.localhost:3001", T0 - 4 * MIN], ["b.localhost:3001", T0 - 3 * MIN],

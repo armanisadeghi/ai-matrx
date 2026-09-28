@@ -282,6 +282,11 @@ const config: Config = {
     // this is telling you something and should say so with its own
     // `jest.setTimeout`.
     testTimeout: 30_000,
+    // Concurrent agent runs previously let each Jest invocation spawn 31
+    // workers. Keep ordinary runs bounded and recycle oversized idle workers;
+    // callers can still override either setting on the CLI when justified.
+    maxWorkers: 2,
+    workerIdleMemoryLimit: "1GB",
 };
 
 export default config;
