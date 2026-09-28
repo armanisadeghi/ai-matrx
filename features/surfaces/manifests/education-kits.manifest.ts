@@ -1,22 +1,22 @@
 /**
  * Surface manifest — Study Kits (`matrx-user/education-kits`).
  *
- * A study kit is one piece of the learner's material plus every study aid made
- * from it (flashcards, summary, quiz, practice test, mind map, memory aids,
- * notes, audio). The kit has no table: its id IS the source material's id and
- * its members are the material's incoming `source` edges
+ * A study kit groups saved study aids with one piece of the learner's material.
+ * Generated aids retain their incoming `source` edges; manually grouped aids
+ * use flagged incoming `member` edges. The kit has no table: its id IS the
+ * source material's id and its members are those association edges
  * (`features/education/kits/FEATURE.md`). Before this manifest existed both
  * routes fell through the `/education` prefix to the generic education hub
  * surface, which describes none of this (fleet wave, 2026-09-27).
  *
- * TWO views behind one surface, mirroring `education-summaries.manifest.ts`:
+ * THREE views behind one surface:
  *
  *   list    /education/kits             KitsHome — every kit the learner has
  *   detail  /education/kits/[sourceId]  KitHub   — one kit and its study path
+ *   new     /education/kits/new         ManualKitCreator — create a kit or add saved aids to one
  *
- * Creation stays with the existing ingest flow at `/education/start`: a kit has
- * no independent row. This surface owns the association-backed rename and
- * delete writes; Make more remains the canonical generation door.
+ * This surface owns manual grouping plus association-backed rename, membership
+ * changes, and delete writes. Make more remains the generation door.
  */
 
 import type {
@@ -36,7 +36,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Kit view",
     sortOrder: 100,
     description:
-      "Which of the two views the learner is in (list / detail) — read first; it decides which other groups are populated.",
+      "Which of the three views the learner is in (list / detail / new) — read first; it decides which other groups are populated.",
   },
   {
     key: "kit_library",
@@ -58,7 +58,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "view",
     label: "Current view",
     description:
-      'Which view the learner is in: "list" (every kit) or "detail" (one kit open). Always present.',
+      'Which view the learner is in: "list" (every kit), "detail" (one kit open), or "new" (manual creation or adding saved aids). Always present.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 6,
@@ -263,7 +263,7 @@ You are on Study Kits at /education/kits. A study kit is one piece of the learne
 
 Read \`view\` first. In "list" the learner is choosing a kit: kits is every kit they have. In "detail" one kit is open: study_aids lists its aids along the page's study path (understand, make it stick, prove it), each with its real practice evidence, kit_totals the headline numbers, and next_challenge what the page suggests doing next.
 
-Progress numbers are measured from the learner's actual practice; explain them, never invent them. A kit has no independent record: create one through the existing /education/start material workflow. On an open kit, update_kits renames the grouping and delete_kits removes the grouping only; it never deletes source material or study aids. New aids come from Make more, which runs the generator on the same material.
+Progress numbers are measured from the learner's actual practice; explain them, never invent them. A kit has no independent record: create or add to one through the manual Kit creator, which uses source and member associations. On an open kit, update_kits renames the grouping, add_kit_members and remove_kit_members change its saved-aid membership, and delete_kits removes the grouping only; none delete source material or study aids. Make more runs the generator on the same material.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
