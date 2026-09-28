@@ -259,9 +259,10 @@ export function EntityListToolbar<TRow>({
             type="button"
             aria-label="Display options"
             title="Display options"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground sm:hidden"
+            className="inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:hidden"
           >
             <Settings2 className="h-3.5 w-3.5" />
+            <span>View</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52 sm:hidden">

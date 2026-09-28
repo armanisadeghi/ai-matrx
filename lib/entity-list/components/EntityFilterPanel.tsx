@@ -284,7 +284,8 @@ export function EntityFilterPanel<TRow>({
           )}
         >
           <SlidersHorizontal className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Filters</span>
+          {/* Named on a phone too (page-pass 2026-09-27: three bare icons). */}
+          <span>Filters</span>
           {activeCount > 0 && (
             <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
               {activeCount}
