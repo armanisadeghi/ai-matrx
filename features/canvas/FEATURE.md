@@ -128,6 +128,11 @@ the rules an agent editing THIS directory must obey.
 - **`canvas_views` direct inserts require an authenticated actor and explicit organization.**
   Guest share-token access is recorded by the canonical share-link resolver; knowing the shared
   canvas organization never authorizes an anonymous entity insert.
+- **Likes go through `canvas.set_canvas_like(p_canvas_id, p_liked, p_organization_id)` only.**
+  `canvas.canvas_likes` refuses every client write (SECURITY-SWEEP 2026-09-21: its `user_id` is
+  unpinned by the generated policies). The door makes the like the caller's own, requires a canvas
+  the caller can see, stamps the organization the caller names, archives on unlike and revives
+  the same row on re-like, and returns `like_count`. Live proof: `scripts/canvas-like/live-proof.mjs`.
 - `search_vector` and `trending_score` on `shared_canvas_items` are trigger-maintained; never write
   them from app code.
 - **Verifying the canvas surface:** `/canvas` is not a route, and on a MAPPED route the route
@@ -146,6 +151,7 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-28` — **Liking a canvas works again.** `hooks/canvas/useCanvasLike.ts` wrote `canvas.canvas_likes` directly, which the 2026-09-21 security sweep had closed (its census missed `hooks/`); it now calls the new `canvas.set_canvas_like` door (migration `canvas_set_canvas_like_door.sql`).
 - `2026-09-27` — **Chat beside a canvas** landed as `workspace/` (`ChatCanvasWorkspace`): the ONE layout where a canvas takes the page and the chat docks at 440px or floats — read [`workspace/FEATURE.md`](./workspace/FEATURE.md). The global side sheet stands down (⌘\\) on canvas-chrome pages.
 - `2026-09-25` — **Canvas controls stay clickable when the sheet opens.**
   The profile menu lives in the bottom-left `ShellUserBlock`; the retired

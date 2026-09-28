@@ -8487,6 +8487,14 @@ export type Database = {
         Returns: string
       }
       _require_actor: { Args: { p_user_id: string }; Returns: string }
+      set_canvas_like: {
+        Args: {
+          p_canvas_id: string
+          p_liked: boolean
+          p_organization_id?: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

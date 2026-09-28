@@ -32,23 +32,17 @@ export function useCanvasLike(canvasId: string) {
     // Like mutation
     const likeMutation = useMutation({
         mutationFn: async () => {
-            const userId = requireUserId();
-            
-
-            // (canvas_id, user_id) is a FULL unique index, so a like that was
-            // moved to Trash by an unlike still holds the pair: upsert on it
-            // with deleted_at null revives that row instead of colliding.
+            // canvas.canvas_likes refuses client writes; canvas.set_canvas_like is
+            // the one door: the like is always the caller's own, on a canvas they
+            // can see, stamped with the organization named here. A like that an
+            // unlike archived is revived (same row), never duplicated.
             const { error } = await supabase
-                .schema('canvas').from('canvas_likes')
-                .upsert(
-                    {
-                        canvas_id: canvasId,
-                        user_id: userId,
-                        organization_id: await ensureOrgId(undefined),
-                        deleted_at: null
-                    },
-                    { onConflict: 'canvas_id,user_id' }
-                );
+                .schema('canvas')
+                .rpc('set_canvas_like', {
+                    p_canvas_id: canvasId,
+                    p_liked: true,
+                    p_organization_id: await ensureOrgId(undefined)
+                });
 
             if (error) throw error;
         },
@@ -97,17 +91,11 @@ export function useCanvasLike(canvasId: string) {
     // Unlike mutation
     const unlikeMutation = useMutation({
         mutationFn: async () => {
-            const userId = requireUserId();
-            
-
-            // Delete means archive: the like moves to Trash (deleted_at); the
-            // like_count trigger counts live likes only.
+            // Delete means archive: the door archives the caller's like
+            // (deleted_at); the like_count trigger counts live likes only.
             const { error } = await supabase
-                .schema('canvas').from('canvas_likes')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('canvas_id', canvasId)
-                .eq('user_id', userId)
-                .is('deleted_at', null);
+                .schema('canvas')
+                .rpc('set_canvas_like', { p_canvas_id: canvasId, p_liked: false });
 
             if (error) throw error;
         },
@@ -148,8 +136,7 @@ export function useCanvasLike(canvasId: string) {
     });
 
     const toggleLike = async () => {
-        const userId = requireUserId();
-        
+        requireUserId();
         if (hasLiked) {
             unlikeMutation.mutate();
         } else {
