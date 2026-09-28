@@ -177,6 +177,8 @@ export async function saveMonitorSchedule(
 export interface MonitorRunStarted {
   /** The workflow run the person can open, when the stream named it. */
   runId: string | null;
+  /** When Run now was pressed: a monitor whose last run is older is still running. */
+  startedAt: string;
 }
 
 /** Run now: the "News monitor run" workflow, streamed (Lane C). The editor
@@ -186,6 +188,7 @@ export async function runMonitorNow(
   trackerId: string,
   organizationId: string,
 ): Promise<MonitorRunStarted> {
+  const startedAt = new Date().toISOString();
   let runId: string | null = null;
   const outcome = await dispatch(
     callApi({
@@ -208,5 +211,5 @@ export async function runMonitorNow(
   if (outcome.error) {
     throw new Error(outcome.error.message ?? "The run could not start.");
   }
-  return { runId };
+  return { runId, startedAt };
 }

@@ -295,7 +295,18 @@ export function MonitorSetupEditor() {
   const brand = useBrand(brandCtx.id);
   const sites = useBrandSites(brandCtx.id);
   const facts = useBusinessFacts(brandCtx.id);
-  const tracker = useTracker(trackerParam);
+  const [run, setRun] = useState<MonitorRunStarted | null>(null);
+  const [polling, setPolling] = useState(false);
+  const tracker = useTracker(trackerParam, polling ? 5000 : false);
+  // Stop re-reading the monitor once the run it started has written its result.
+  const lastRunAt = tracker.data?.last_run_at ?? null;
+  useEffect(() => {
+    if (!polling || !run || !lastRunAt) return;
+    if (new Date(lastRunAt).getTime() >= new Date(run.startedAt).getTime()) {
+      setPolling(false);
+      setRunKey((k) => k + 1);
+    }
+  }, [polling, run, lastRunAt]);
   const brief = useBriefNote(tracker.data?.brief_source_id ?? null);
 
   const [setup, setSetup] = useState<SetupFacts | null>(null);
@@ -306,7 +317,6 @@ export function MonitorSetupEditor() {
   const [proposal, setProposal] = useState<ProposalResult | null>(null);
   const [proposing, setProposing] = useState<string | null>(null);
   const [saving, setSaving] = useState<"save" | "run" | null>(null);
-  const [run, setRun] = useState<MonitorRunStarted | null>(null);
   const [schedule, setSchedule] = useState<ScheduleView | null>(null);
   const [runKey, setRunKey] = useState(0);
   const [newSpokesperson, setNewSpokesperson] = useState({
@@ -554,6 +564,7 @@ export function MonitorSetupEditor() {
         brandRow.organization_id,
       );
       setRun(result);
+      setPolling(true);
       setRunKey((k) => k + 1);
       void invalidate();
     } catch (error) {
@@ -600,6 +611,12 @@ export function MonitorSetupEditor() {
 
   const topicWords = beatsOutsideWordRange(draft.topics, counts.topic_words);
   const savedMonitor = tracker.data;
+  const runStillGoing = Boolean(
+    run &&
+    (!savedMonitor?.last_run_at ||
+      new Date(savedMonitor.last_run_at).getTime() <
+        new Date(run.startedAt).getTime()),
+  );
   const runSummary = (savedMonitor?.last_run_summary ?? null) as Record<
     string,
     unknown
@@ -1378,8 +1395,13 @@ export function MonitorSetupEditor() {
               data-surface-value="monitor_run_view"
             >
               <h2 className="text-sm font-semibold text-foreground">The run</h2>
-              {savedMonitor?.last_run_status === "failed" &&
-              savedMonitor.last_error ? (
+              {runStillGoing ? (
+                <p className="mt-1 text-sm text-foreground">
+                  Running now — the news monitor run takes a few minutes. This
+                  updates when it finishes.
+                </p>
+              ) : savedMonitor?.last_run_status === "failed" &&
+                savedMonitor.last_error ? (
                 <p className="mt-1 text-sm text-destructive">
                   {savedMonitor.last_error}
                 </p>

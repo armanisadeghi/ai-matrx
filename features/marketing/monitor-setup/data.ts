@@ -94,11 +94,16 @@ export function useBrandTrackers(brandId: string) {
   });
 }
 
-export function useTracker(trackerId: string | null) {
+/** `pollMs` re-reads the monitor while a run it started is still going. */
+export function useTracker(
+  trackerId: string | null,
+  pollMs: number | false = false,
+) {
   return useQuery({
     queryKey: monitorSetupKeys.tracker(trackerId ?? ""),
     queryFn: ({ signal }) => getTracker(trackerId ?? "", signal),
     enabled: Boolean(trackerId),
+    refetchInterval: pollMs,
   });
 }
 
