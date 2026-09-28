@@ -15,7 +15,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
@@ -27,10 +27,27 @@ import {
   TrendingUp,
   Wifi,
   WifiOff,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import {
+  SurfaceRuntimeProvider,
+  useSurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationGameScope } from "@/features/surfaces/manifests/education-game.manifest";
 import { useGamePlay } from "../../data/useGamePlay";
 import { useGameChannel } from "../../realtime/useGameChannel";
 import {
@@ -50,6 +67,9 @@ import { PlaySurface } from "../play/PlaySurface";
 import { ResultsSummary } from "../results/ResultsSummary";
 import type { BadgeKey } from "../../engine/badges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { parseLobbyRoomCancellation } from "../../gameRoomAgentWrites";
+
+const SURFACE_NAME = "matrx-user/education-game";
 
 export function MultiplayerGameImpl({
   roomId,
@@ -73,6 +93,7 @@ export function MultiplayerGameImpl({
   const [verificationError, setVerificationError] = useState<string | null>(
     null,
   );
+  const [cancelling, setCancelling] = useState(false);
 
   const startedRef = useRef(false);
 
@@ -193,13 +214,58 @@ export function MultiplayerGameImpl({
 
   const exit = () => router.push("/education/game");
 
+  const cancelLobby = async (): Promise<{ id: string; status: string }> => {
+    if (!room || !isHost || room.status !== "lobby") {
+      throw new Error(
+        "Only the host can cancel a room while it is waiting to start.",
+      );
+    }
+    setCancelling(true);
+    const res = await gameService.cancelLobbyRoom(roomId);
+    setCancelling(false);
+    if (res.error) {
+      throw new Error(res.error);
+    }
+    channel.broadcastEnd();
+    toast.success("Room cancelled");
+    router.replace("/education/game");
+    return { id: roomId, status: "ended" };
+  };
+
+  const cancelLobbyFromUi = async (): Promise<void> => {
+    try {
+      await cancelLobby();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not cancel room",
+      );
+    }
+  };
+
+  const buildScope = () =>
+    createEducationGameScope({
+      view: "play",
+      room_id: room?.id,
+      room_phase: room?.status,
+      room_player_count: room ? channel.players.length : undefined,
+      owned_game_rooms:
+        room && isHost ? [{ id: room.id, status: room.status }] : [],
+    });
+
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <Centered>
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Joining room…</p>
-      </Centered>
+      <GameRoomSurface
+        buildScope={buildScope}
+        room={room}
+        isHost={isHost}
+        cancelLobby={cancelLobby}
+      >
+        <Centered>
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Joining room…</p>
+        </Centered>
+      </GameRoomSurface>
     );
   }
   if (!room) {
@@ -207,64 +273,140 @@ export function MultiplayerGameImpl({
     // equally be live and closed to this player, or the session may have
     // expired — the gate asks the platform which it is.
     return (
-      <AccessGate
-        token="game_room"
-        id={roomId}
-        error={loadError}
-        onRetry={() => setReloadKey((k) => k + 1)}
-        fallbackHref="/education/game"
-        fallbackLabel="Back to games"
-      />
+      <GameRoomSurface
+        buildScope={buildScope}
+        room={room}
+        isHost={isHost}
+        cancelLobby={cancelLobby}
+      >
+        <AccessGate
+          token="game_room"
+          id={roomId}
+          error={loadError}
+          onRetry={() => setReloadKey((k) => k + 1)}
+          fallbackHref="/education/game"
+          fallbackLabel="Back to games"
+        />
+      </GameRoomSurface>
     );
   }
 
   // Finished → results with the room scoreboard.
   if (game.status === "finished" && finalOutcome) {
     return (
-      <div className="scroll-page-end-space h-full overflow-y-auto px-4">
-        <ResultsSummary
-          outcome={finalOutcome}
-          newBadges={newBadges}
-          scoreboard={scoreboard}
-          currentUserId={userId}
-          verified={verified}
-          verificationError={verificationError}
-          onRetryVerification={() => void verifyOutcome(finalOutcome)}
-          onExit={exit}
-        />
-      </div>
+      <GameRoomSurface
+        buildScope={buildScope}
+        room={room}
+        isHost={isHost}
+        cancelLobby={cancelLobby}
+      >
+        <div className="scroll-page-end-space h-full overflow-y-auto px-4">
+          <ResultsSummary
+            outcome={finalOutcome}
+            newBadges={newBadges}
+            scoreboard={scoreboard}
+            currentUserId={userId}
+            verified={verified}
+            verificationError={verificationError}
+            onRetryVerification={() => void verifyOutcome(finalOutcome)}
+            onExit={exit}
+          />
+        </div>
+      </GameRoomSurface>
     );
   }
 
   // Playing → the game + live scoreboard.
   if (game.status === "playing") {
     return (
-      <div className="flex h-full gap-3 p-4">
-        <div className="min-h-0 flex-1">
-          <PlaySurface game={game} />
+      <GameRoomSurface
+        buildScope={buildScope}
+        room={room}
+        isHost={isHost}
+        cancelLobby={cancelLobby}
+      >
+        <div className="flex h-full gap-3 p-4">
+          <div className="min-h-0 flex-1">
+            <PlaySurface game={game} />
+          </div>
+          <LiveScoreboard
+            players={channel.players}
+            currentUserId={userId}
+            connected={channel.connected}
+          />
         </div>
-        <LiveScoreboard
-          players={channel.players}
-          currentUserId={userId}
-          connected={channel.connected}
-        />
-      </div>
+      </GameRoomSurface>
     );
   }
 
   // Lobby (or loading the queue) → roster + host controls.
   return (
-    <Lobby
-      code={code}
-      players={channel.players}
+    <GameRoomSurface
+      buildScope={buildScope}
+      room={room}
       isHost={isHost}
-      connected={channel.connected}
-      queueReady={game.status === "ready"}
-      queueError={game.status === "error" ? game.error : null}
-      onCopy={copyCode}
-      onStart={onHostStart}
-      onExit={exit}
-    />
+      cancelLobby={cancelLobby}
+    >
+      <Lobby
+        code={code}
+        players={channel.players}
+        isHost={isHost}
+        connected={channel.connected}
+        queueReady={game.status === "ready"}
+        queueError={game.status === "error" ? game.error : null}
+        onCopy={copyCode}
+        onStart={onHostStart}
+        onCancel={cancelLobbyFromUi}
+        cancelling={cancelling}
+        onExit={exit}
+      />
+    </GameRoomSurface>
+  );
+}
+
+function GameRoomSurface({
+  buildScope,
+  room,
+  isHost,
+  cancelLobby,
+  children,
+}: {
+  buildScope: () => ReturnType<typeof createEducationGameScope>;
+  room: JoinableRoom | null;
+  isHost: boolean;
+  cancelLobby: () => Promise<{ id: string; status: string }>;
+  children: ReactNode;
+}) {
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    delete_game_rooms: {
+      validate: (value) => {
+        parseLobbyRoomCancellation(value, room?.id ?? null);
+        if (!isHost || room?.status !== "lobby") {
+          throw new Error(
+            "Only the host can cancel a room while it is waiting to start. Nothing was changed.",
+          );
+        }
+      },
+      apply: async (value) => {
+        const roomId = parseLobbyRoomCancellation(value, room?.id ?? null);
+        if (!isHost || room?.status !== "lobby") {
+          throw new Error(
+            "Only the host can cancel a room while it is waiting to start. Nothing was changed.",
+          );
+        }
+        const cancelled = await cancelLobby();
+        return {
+          summary: `Cancelled waiting room ${roomId}. Its join code no longer works.`,
+          data: cancelled,
+        };
+      },
+    },
+  });
+
+  return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+      {children}
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -277,6 +419,8 @@ function Lobby({
   queueError,
   onCopy,
   onStart,
+  onCancel,
+  cancelling,
   onExit,
 }: {
   code: string;
@@ -287,6 +431,8 @@ function Lobby({
   queueError: string | null;
   onCopy: () => void;
   onStart: () => void;
+  onCancel: () => Promise<void>;
+  cancelling: boolean;
   onExit: () => void;
 }) {
   return (
@@ -338,25 +484,63 @@ function Lobby({
         </ul>
       </div>
 
-      {queueError && <p className="text-sm text-destructive">{queueError} <ErrorAlchemyMenu /></p>}
+      {queueError && (
+        <p className="text-sm text-destructive">
+          {queueError} <ErrorAlchemyMenu />
+        </p>
+      )}
 
       {isHost ? (
-        <Button
-          size="lg"
-          disabled={!queueReady}
-          onClick={onStart}
-          className="gap-2"
-        >
-          {queueReady ? (
-            <>
-              <Play className="h-4 w-4" /> Start game
-            </>
-          ) : (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Preparing…
-            </>
-          )}
-        </Button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
+            size="lg"
+            disabled={!queueReady || cancelling}
+            onClick={onStart}
+            className="gap-2"
+          >
+            {queueReady ? (
+              <>
+                <Play className="h-4 w-4" /> Start game
+              </>
+            ) : (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Preparing…
+              </>
+            )}
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="lg"
+                disabled={cancelling}
+                className="gap-2"
+              >
+                <X className="h-4 w-4" /> Cancel room
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel this room?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This ends the waiting room and invalidates its join code. No
+                  new players can join after you confirm.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={cancelling}>
+                  Keep room
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => void onCancel()}
+                  disabled={cancelling}
+                >
+                  {cancelling ? "Cancelling…" : "Cancel room"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       ) : (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Waiting for the host to

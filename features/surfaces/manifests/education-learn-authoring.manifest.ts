@@ -345,13 +345,25 @@ const surfaceSpecific: SurfaceValue[] = [
  *     the admin types it.
  *   • publish / unpublish — shipping content to the public web is the human's
  *     call, and the editor's own Save & publish button is where it is made.
- *   • delete — destructive, stays human.
+ *   • permanent deletion — the target below only performs the page's soft delete.
  *   • the Updated date — it exists to tell readers when the CONTENT genuinely
  *     changed; letting an agent stamp it is a claim about the world, not
  *     authored content.
  *   • `preview_visible` — a mechanical toggle nobody asks an agent to flip.
  */
 const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "start_learn_doc_draft",
+    label: "Start a study-guide draft",
+    description:
+      "Opens a new blank draft in the authoring editor. Value must be true. This does not save or publish the guide; use the content targets to stage its fields, then the admin reviews and presses Save draft.",
+    valueType: "boolean",
+    updatesValue: "editor_open",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "doc_content",
+    sortOrder: 90,
+  },
   {
     name: "doc_metadata",
     label: "Guide metadata",
@@ -400,6 +412,18 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "doc_content",
     sortOrder: 130,
   },
+  {
+    name: "delete_learn_docs",
+    label: "Move study guides to Trash",
+    description:
+      "Soft-deletes 1-10 guides currently present in learn_docs after the admin approves. Value is an array of guide ids from learn_docs. Published guides immediately stop appearing on the public site. This is the same action as Delete in the authoring list.",
+    valueType: "array",
+    updatesValue: "learn_docs",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "doc_content",
+    sortOrder: 140,
+  },
 ];
 
 export const educationLearnAuthoringManifest: SurfaceManifest = {
@@ -410,13 +434,13 @@ export const educationLearnAuthoringManifest: SurfaceManifest = {
     "Study guide authoring — the super-admin editor behind the public /education/learn library (/education/learn/admin).",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter + the four write targets (doc_metadata, doc_sections, add_sections, doc_related) are shipped, DB-synced, and verified end-to-end against a live Badass Agent run on /education/learn/admin: ask-per-target, Apply landing visibly in the inputs and the live preview, decline staging nothing, an undeclared target refused, a handler throw reaching the agent verbatim, and a clean Error Inspector. Not yet stamped verified: no agent roles are declared, and the PUBLIC reader half of the /education/learn prefix (the index and the [...slug] article, still mapped to the manifest-less matrx-user/education-learn) has no surface of its own yet.",
+    "The four content draft targets were verified in a live agent run. Start-draft and soft-delete targets are implemented through the authoring page and still need live agent acceptance. Publishing stays with the admin. The public reader routes have their own partial surface.",
   label: "Study guide authoring",
   urlPattern: "/education/learn/admin",
   intro: `<surface_intro>
 You are on the study-guide AUTHORING page at /education/learn/admin — the super-admin editor behind the public /education/learn library. These are SEO study guides: long-form, free-to-read explainers that rank in search and funnel readers into the app. You are not on the public article, and you are not in a study session.
 The page has two states. Check editor_open first. While it is false you are on the library list: learn_docs holds every guide including drafts, and there is nothing staged to write into — every write target here refuses until the admin opens a guide (or creates one). While it is true, one guide is open and the draft_* values are what its inputs hold RIGHT NOW, saved or not.
-Writing is the point of this surface. doc_metadata sets the title, summary, subject, badge and keywords; doc_sections replaces the whole article body; add_sections appends to it; doc_related sets the cross-links. Drafting a guide from a topic, tightening a summary into a meta description that actually earns the click, or adding an FAQ section is exactly the work this surface exists for. Read draft_sections before replacing the body — doc_sections replaces the FULL set, so anything you leave out is gone from the draft.
+Writing is the point of this surface. start_learn_doc_draft opens a blank editor; doc_metadata sets the title, summary, subject, badge and keywords; doc_sections replaces the whole article body; add_sections appends to it; doc_related sets the cross-links. delete_learn_docs moves selected existing guides to Trash after approval, including published guides. Read draft_sections before replacing the body — doc_sections replaces the FULL set, so anything you leave out is gone from the draft.
 Everything you write is STAGED, never published. It lands in the editor and the live preview, and the admin presses Save. Two things stay entirely theirs: the slug, because it is the guide's public URL and changing it breaks inbound links, and publishing itself. If editor_doc_status is 'published', the guide is live on the public web right now — say so plainly when you propose a rewrite, because the admin's next save ships it to real readers.
 </surface_intro>`,
   groups,
