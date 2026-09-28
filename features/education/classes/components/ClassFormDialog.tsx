@@ -273,7 +273,7 @@ export function ClassFormDialog({
                   className="w-32"
                 />
               </div>
-              <p className="text-[11px] leading-snug text-muted-foreground">
+              <p className="text-xs leading-snug text-muted-foreground">
                 Students pay this once for full access. You keep 80%; the platform
                 fee is 20%. Payouts require connecting Stripe on your creator page.
               </p>

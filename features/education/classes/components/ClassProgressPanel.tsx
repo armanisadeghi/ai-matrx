@@ -129,7 +129,7 @@ export function ClassProgressPanel({ classId }: { classId: string }) {
                         <div className="flex flex-col items-center gap-1">
                           <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                           <span
-                            className="max-w-[6rem] truncate text-[11px] font-medium text-foreground"
+                            className="max-w-[6rem] truncate text-xs font-medium text-foreground"
                             title={titleFor({ token: a.token, id: a.resourceId })}
                           >
                             {titleFor({ token: a.token, id: a.resourceId })}

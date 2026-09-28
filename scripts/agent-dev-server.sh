@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
 #
-# agent-dev-server.sh — provider-neutral lifecycle for the ONE shared preview.
+# agent-dev-server.sh — provider-neutral lifecycle for the TWO named shared previews.
 #
 # Claude and Codex both call this through:
-#   pnpm preview:start
-#   pnpm preview:stop
+#   pnpm preview:start            live database   port 3001  http://<session>.localhost:3001
+#   pnpm preview:start --clone    the clone only  port 3002  http://<session>-clone.localhost:3002
+#   pnpm preview:stop [--clone]
+#   pnpm preview:status           (both servers; --clone for the clone alone)
+#
+# The clone preview exists because the live database has a walk cap
+# (utils/supabase/walkCap.ts, knob ops.agent_walks.production_concurrent_cap):
+# agents over it work on the nightly copy of production instead (Arman,
+# 2026-09-27). It REFUSES to start unless the local aidream it bakes in as its
+# Python server (http://localhost:8200) proves it is wired to the same clone —
+# otherwise one page would write half to the clone and half to live. The
+# environment and the proof: scripts/clone-preview/clone-preview-env.cjs.
 #
 # The server is detached and registered in one machine-wide state directory.
 # Browser tooling is deliberately separate. `preview:start` prints the owning
@@ -25,18 +35,42 @@ GUARD="$REPO_ROOT/scripts/agent-harness/matrx-preview-ports.sh"
 # opens this same server at <label>.localhost instead. Sourcing starts nothing.
 # shellcheck source=scripts/agent-harness/preview-session.sh
 source "$REPO_ROOT/scripts/agent-harness/preview-session.sh"
+# shellcheck source=scripts/agent-harness/shared-servers.sh
+source "$REPO_ROOT/scripts/agent-harness/shared-servers.sh"
+CLONE_ENV_TOOL="$REPO_ROOT/scripts/clone-preview/clone-preview-env.cjs"
+
+# Which named server this invocation addresses. `--clone` may appear anywhere
+# after the subcommand (warm/monitor receive it from cmd_start as well).
+CMD="${1:-}"
+SERVER=live
+SERVER_ARG_EXPLICIT=0
+POSITIONAL=()
+for arg in "${@:2}"; do
+  case "$arg" in
+    --clone) SERVER=clone; SERVER_ARG_EXPLICIT=1 ;;
+    --live) SERVER=live; SERVER_ARG_EXPLICIT=1 ;;
+    *) POSITIONAL+=("$arg") ;;
+  esac
+done
+
+select_server() {
+  SERVER="$1"
+  SERVER_FLAG="$(shared_server_flag "$SERVER")"
+  SESSION_HOST="$(shared_server_host "$SERVER" "$SESSION_LABEL")"
+  PORT="$(shared_server_port "$SERVER")"
+  DISTDIR="$(shared_server_distdir "$SERVER")"
+  BASE="$STATE_DIR/$(shared_server_state_stem "$SERVER")"
+  META="$BASE.meta"
+  LOG="$BASE.log"
+  READY="$BASE.ready"
+  JAR="$BASE.jar"
+  LOCK="$BASE.lock"
+  FAILED="$BASE.failed"
+}
+
 SESSION_LABEL="$(preview_session_label "$REPO_ROOT")"
-SESSION_HOST="$(preview_session_host "$REPO_ROOT")"
 SESSION_RAW="$(preview_session_raw "$REPO_ROOT")"
-PORT=3001
-DISTDIR=".next-preview"
-BASE="$STATE_DIR/shared-next-dev"
-META="$BASE.meta"
-LOG="$BASE.log"
-READY="$BASE.ready"
-JAR="$BASE.jar"
-LOCK="$BASE.lock"
-FAILED="$BASE.failed"
+select_server "$SERVER"
 # Runaway watchdog, NOT a budget. Raised 8 -> 192 GB on 2026-08-15, MEASURED.
 #
 # 8 GB did not catch runaways; it guaranteed that NO agent could ever verify
@@ -180,7 +214,20 @@ announce_session_url() {
     log "derived from the checkout path — two sessions in THIS checkout would share it."
     log "Set MATRX_PREVIEW_SESSION=<a name> to claim your own hostname."
   fi
-  log "sign in: pnpm dev-login   (mints a nonce for THIS host and prints the URL)"
+  log "sign in: pnpm dev-login$SERVER_FLAG   (mints a nonce for THIS host and prints the URL)"
+  announce_database
+}
+
+# One line, every time: which database a page on this server reads and writes.
+announce_database() {
+  if [[ "$SERVER" == "clone" ]]; then
+    local ref
+    ref="$(meta_value CLONE_REF)"
+    [[ -n "$ref" ]] || ref="${CLONE_REF:-unknown}"
+    log "DATABASE: the CLONE $ref (https://$ref.supabase.co) + server http://localhost:8200 (aidream wired to the same clone) — writes never reach live"
+  else
+    log "DATABASE: LIVE production (db.matrxserver.com) — every write is real; over the walk cap? use pnpm preview:start --clone"
+  fi
 }
 
 # Mint the single-use nonce /api/dev-login accepts. This used to scrape
@@ -210,8 +257,10 @@ killtree() {
   kill -"$signal" "$pid" 2>/dev/null || true
 }
 
+# The first dev server occupying THIS named server's slot: anything except the
+# other named server on its own port (shared_server_slot_occupants).
 running_server() {
-  "$GUARD" list-any 2>/dev/null | head -1
+  "$GUARD" list-any 2>/dev/null | shared_server_slot_occupants "$SERVER" | head -1
 }
 
 clear_stale_state() {
@@ -232,12 +281,30 @@ reuse_managed_meta() {
   owner="$(meta_value ROOT)"
   [[ -n "$owner" ]] || owner="$(server_cwd "$pid")"
   if [[ "$owner" != "$REPO_ROOT" ]]; then
-    fail "preview lease is owned by the session '$(meta_value OWNER_SESSION)' in checkout '$owner' (pid $pid, port $port). A process is running from that checkout, not yours. This repo uses the shared main checkout: put your scoped change there and use its existing preview. A checkout mismatch alone does not prove localhost unavailable; check the route before reporting a server failure. Never start a second server."
+    fail "preview lease is owned by the session '$(meta_value OWNER_SESSION)' in checkout '$owner' (pid $pid, port $port). A process is running from that checkout, not yours. This repo uses the shared main checkout: put your scoped change there and use its existing preview. A checkout mismatch alone does not prove localhost unavailable; check the route before reporting a server failure. Never start another server."
   fi
-  log "reusing the managed preview (pid $pid, port $port)"
+  [[ "$SERVER" != "clone" ]] || reverify_clone_pairing
+  log "reusing the managed $SERVER preview (pid $pid, port $port)"
   announce_session_url "$port"
   log "it may still be compiling"
   return 0
+}
+
+# A running clone preview is only reusable while (a) CLONE-REF still names the
+# clone it was started for and (b) the server it bakes in still answers as that
+# clone. The clone rotates nightly; a stale preview would read yesterday's copy.
+reverify_clone_pairing() {
+  local out status started current
+  started="$(meta_value CLONE_REF)"
+  out="$(node "$CLONE_ENV_TOOL" pair)"
+  status=$?
+  current="$(printf '%s\n' "$out" | sed -n 's/^CLONE_REF=//p')"
+  if [[ -n "$started" && -n "$current" && "$current" != "$started" ]]; then
+    fail "the running clone preview was started for the clone $started, but CLONE-REF now names $current (the nightly clone rotated). Restart it: pnpm preview:stop --clone && pnpm preview:start --clone"
+  fi
+  if (( status != 0 )); then
+    fail "the running clone preview's server is no longer paired with the clone ${started:-$current} (the reason is printed above). Its pages would call a server that is down or wired elsewhere — fix the server first, then use this preview again."
+  fi
 }
 
 acquire_start_lock() {
@@ -252,7 +319,7 @@ acquire_start_lock() {
   done
 
   # An empty lock with no live metadata after ten seconds is stale.
-  rmdir "$LOCK" 2>/dev/null || fail "another preview start is still in progress"
+  rmdir "$LOCK" 2>/dev/null || fail "another $SERVER preview start is still in progress"
   mkdir "$LOCK" 2>/dev/null || fail "could not acquire the preview start lock"
   return 0
 }
@@ -271,15 +338,21 @@ slot_occupied() {
   cwd="$(server_cwd "$pid")"
   owner_session="$(meta_value OWNER_SESSION)"
   [[ "$(meta_value PID)" == "$pid" && -n "$owner_session" ]] || owner_session="unmanaged (no lease file — started outside pnpm preview:start)"
-  if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" ]]; then
-    log "the machine-wide dev-server slot is held by $label pid $pid on port $port,"
+  local expected_label=agent-preview
+  [[ "$SERVER" == "clone" ]] && expected_label=agent-preview-clone
+  if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" && "$label" == "$expected_label" && "$port" == "$PORT" ]]; then
+    [[ "$SERVER" != "clone" ]] || reverify_clone_pairing
+    log "the $SERVER dev-server slot is held by $label pid $pid on port $port,"
     log "started by $owner_session from THIS checkout ($cwd)."
     log "That is your code, so you do not need a second server — you need your own host."
     log "Edits in this checkout hot-reload in the existing server; no restart or private preview is needed."
     announce_session_url "$port"
     return 0
   fi
-  fail "machine-wide dev-server slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. That is a DIFFERENT checkout, so its compiled code is not your diff. Put your scoped change in the shared main checkout and use its existing preview. A checkout mismatch alone does not prove localhost unavailable; check the route before reporting a server failure. Never start a second server."
+  if [[ "$label" == human-or-other || "$port" != "$PORT" ]]; then
+    fail "the $SERVER preview slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. Only the two named shared servers may run (live on 3001, clone on 3002); any other dev server blocks both. Stop it from its owning checkout, then retry. Never start another server."
+  fi
+  fail "the $SERVER preview slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. That is a DIFFERENT checkout, so its compiled code is not your diff. Put your scoped change in the shared main checkout and use its existing preview. A checkout mismatch alone does not prove localhost unavailable; check the route before reporting a server failure. Never start another server."
 }
 
 # A private worktree (`git worktree add`) has no node_modules of its own —
@@ -422,6 +495,22 @@ cmd_start() {
 
   ensure_worktree_node_modules
 
+  # THE PAIRING GATE (clone only). Regenerates .env.clone.local if CLONE-REF
+  # rotated, then proves the local aidream on :8200 answers as the same clone.
+  # A refusal here starts nothing — never an unpaired clone preview.
+  CLONE_REF=""
+  local clone_env_file=""
+  if [[ "$SERVER" == "clone" ]]; then
+    local prep
+    prep="$(node "$CLONE_ENV_TOOL" prepare)" || {
+      rmdir "$LOCK" 2>/dev/null || true
+      fail "the clone preview was NOT started (reason above). Nothing fails silently: fix the pairing, then re-run pnpm preview:start --clone."
+    }
+    CLONE_REF="$(printf '%s\n' "$prep" | sed -n 's/^CLONE_REF=//p')"
+    clone_env_file="$(printf '%s\n' "$prep" | sed -n 's/^CLONE_ENV_FILE=//p')"
+    [[ -n "$CLONE_REF" && -f "$clone_env_file" ]] || fail "clone preparation returned no ref/env file; nothing was started"
+  fi
+
   local next_bin
   next_bin="$(resolve_next_bin)" || fail "dependencies are missing; run pnpm install first"
 
@@ -457,21 +546,36 @@ cmd_start() {
   # exec_command owns and reaps its shell process group. Python's
   # start_new_session creates a real detached OS session that survives the tool
   # call while still giving us the exact root pid to track and stop.
-  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" "$next_bin" <<'PY'
+  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" "$next_bin" "$(shared_server_token "$SERVER")" "$clone_env_file" "$CLONE_REF" <<'PY'
 import os
 import shutil
 import subprocess
 import sys
 
-root, log_path, distdir, port, next_bin = sys.argv[1:]
+root, log_path, distdir, port, next_bin, token, clone_env_file, clone_ref = sys.argv[1:]
 node_exe = shutil.which("node") or "node"
 env = os.environ.copy()
 env["NODE_OPTIONS"] = "--dns-result-order=ipv4first"
 env["NEXT_DISTDIR"] = distdir
-# The ONE-SERVER token. next.config.js refuses to boot `next dev` without it,
-# so no lane, script or raw shell can start a second dev server (Arman,
-# 2026-09-24, after two memory-starvation reboots of the Mac).
-env["MATRX_SHARED_PREVIEW"] = "1"
+# The NAMED-SERVER token. next.config.js refuses to boot `next dev` without one
+# of the two (live "1", clone "clone"), so no lane, script or raw shell can
+# start a third dev server (Arman, 2026-09-24, after two memory-starvation
+# reboots of the Mac; the clone preview allowed 2026-09-27).
+env["MATRX_SHARED_PREVIEW"] = token
+env.pop("MATRX_CLONE_PAIRED", None)
+if clone_env_file:
+    # Process env beats every .env* file Next loads, so these values — the
+    # clone's Supabase URL/keys and every backend URL pointed at the paired
+    # clone server — win over .env.local's live ones.
+    with open(clone_env_file) as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                env[key] = value
+    # Proven by clone-preview-env.cjs a moment ago; next.config.js re-checks it
+    # against NEXT_PUBLIC_SUPABASE_URL before a single worker spawns.
+    env["MATRX_CLONE_PAIRED"] = clone_ref
 # Node's own fetch() (undici) ignores HTTPS_PROXY/HTTP_PROXY by default — it
 # only honors the env proxy vars once NODE_USE_ENV_PROXY=1 is set (Node
 # 22.12+/24.x). This dev server's own /api/dev-login route falls back to a
@@ -520,21 +624,23 @@ PY
     echo "NM_FINGERPRINT=$(nm_fingerprint)"
     echo "OWNER_SESSION=$SESSION_RAW"
     echo "OWNER_HOST=$SESSION_HOST"
+    echo "SERVER=$SERVER"
+    [[ -z "$CLONE_REF" ]] || echo "CLONE_REF=$CLONE_REF"
   } >"$META"
   rm -f "$READY" "$JAR" "$FAILED"
 
   # exec_command reaps ordinary child process groups even under `nohup`.
   # Detach helpers exactly like Next itself or the watchdog silently vanishes
   # as soon as `preview:start` returns.
-  /usr/bin/python3 - "$REPO_ROOT" "$REPO_ROOT/scripts/agent-dev-server.sh" "$pid" <<'PY'
+  /usr/bin/python3 - "$REPO_ROOT" "$REPO_ROOT/scripts/agent-dev-server.sh" "$pid" "--$SERVER" <<'PY'
 import os
 import subprocess
 import sys
 
-root, script, pid = sys.argv[1:]
+root, script, pid, server_flag = sys.argv[1:]
 for mode in ("warm", "monitor"):
     subprocess.Popen(
-        [script, mode, pid],
+        [script, mode, pid, server_flag],
         cwd=root,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
@@ -543,7 +649,7 @@ for mode in ("warm", "monitor"):
     )
 PY
 
-  log "started the shared managed preview (pid $pid, port $PORT)"
+  log "started the shared managed $SERVER preview (pid $pid, port $PORT)"
   announce_session_url "$PORT"
   log "it is tracked, reused by Claude and Codex, and may take 30–90s to compile"
   log "profile=${MATRX_PREVIEW_PROFILE:-core} (demos routes are PARKED — for /demos/* use: MATRX_PREVIEW_PROFILE=user pnpm preview:start)"
@@ -661,6 +767,19 @@ cmd_monitor() {
 }
 
 cmd_status() {
+  if (( SERVER_ARG_EXPLICIT == 0 )); then
+    local s
+    for s in live clone; do
+      select_server "$s"
+      log "── $s preview (port $PORT) ──"
+      cmd_status_one
+    done
+    return 0
+  fi
+  cmd_status_one
+}
+
+cmd_status_one() {
   clear_stale_state
   if [[ -f "$META" ]]; then
     local pid port owner rss_kb
@@ -688,7 +807,7 @@ cmd_status() {
     local cwd
     cwd="$(server_cwd "$pid")"
     log "UNMANAGED/BLOCKING pid=$pid port=$port owner=$owner cwd=${cwd:-unknown}"
-    if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" ]]; then
+    if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" && "$port" == "$PORT" ]]; then
       log "it serves THIS checkout, so you can use it — at your own hostname:"
       announce_session_url "$port"
     fi
@@ -696,7 +815,7 @@ cmd_status() {
     report_previous_failure
     log "STOPPED — fix the reported cause, then run pnpm preview:start"
   else
-    log "no machine-wide managed preview is running"
+    log "no managed $SERVER preview is running (start: pnpm preview:start$SERVER_FLAG)"
   fi
 }
 
@@ -706,10 +825,10 @@ cmd_stop() {
     local running
     running="$(running_server)"
     if [[ -n "$running" ]]; then
-      log "no tracked lease belongs to this checkout; another dev server still occupies the machine-wide slot"
+      log "no tracked $SERVER lease belongs to this checkout; another dev server still occupies the $SERVER slot"
       return 1
     fi
-    log "no managed preview is running"
+    log "no managed $SERVER preview is running"
     return 0
   fi
 
@@ -721,7 +840,7 @@ cmd_stop() {
   [[ "$owner" == "$REPO_ROOT" ]] || fail "preview lease belongs to '$owner'; stop it from its owning checkout"
 
   if alive "$pid"; then
-    log "stopping managed preview pid $pid"
+    log "stopping managed $SERVER preview pid $pid"
     killtree "$pid" TERM
     for _ in 1 2 3 4 5 6; do
       alive "$pid" || break
@@ -732,19 +851,19 @@ cmd_stop() {
 
   rm -f "$META" "$LOG" "$READY" "$JAR" "$FAILED"
   rmdir "$LOCK" 2>/dev/null || true
-  log "managed preview stopped; build cache $DISTDIR was preserved"
+  log "managed $SERVER preview stopped; build cache $DISTDIR was preserved"
 }
 
 # Only dispatch when executed. Sourcing this file exposes the helpers (the log
 # rotation bound has a forcing test that calls `rotate_oversized_log` directly)
 # without starting or stopping anything.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  case "${1:-}" in
+  case "$CMD" in
     start) cmd_start ;;
     stop) cmd_stop ;;
     status) cmd_status ;;
-    warm) cmd_warm "${2:-}" ;;
-    monitor) cmd_monitor "${2:-}" ;;
-    *) echo "usage: $0 {start|stop|status}" >&2; exit 2 ;;
+    warm) cmd_warm "${POSITIONAL[0]:-}" ;;
+    monitor) cmd_monitor "${POSITIONAL[0]:-}" ;;
+    *) echo "usage: $0 {start|stop|status} [--clone]" >&2; exit 2 ;;
   esac
 fi

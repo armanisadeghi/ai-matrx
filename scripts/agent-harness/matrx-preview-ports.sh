@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# matrx-preview-ports.sh — enforce one managed preview server on this machine.
+# matrx-preview-ports.sh — enforce the managed preview servers on this machine: the two
+# NAMED shared servers (live on 3001, clone on 3002 — Arman, 2026-09-24 and 2026-09-27) and
+# never a third or a per-agent one. Self-contained on purpose: install.sh copies this file
+# alone into ~/.claude/hooks, so it may not source a sibling.
 #
 # Why this exists: Claude's named preview_start and raw shell launches each create
 # an untracked Next.js tree. Codex does not expose preview_start at all. Both agents
@@ -78,16 +81,34 @@ list_any_dev_servers() {
         pgid=$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ')
         if printf '%s\n' "$dev_pgids" | grep -qx "$pgid"; then
           # Label it so the deny message can tell the agent whose server it is.
-          if ps -Ao pgid=,command= 2>/dev/null | awk -v g="$pgid" '$1==g' | grep -q '\.next-preview'; then
-            echo "$pgid $pid $port agent-preview"
-          else
-            echo "$pgid $pid $port human-or-other"
-          fi
+          echo "$pgid $pid $port $(ps -Ao pgid=,command= 2>/dev/null | awk -v g="$pgid" '$1==g' | label_for_argv)"
         fi
       done |
     sort -k1,1n -k3,3n |
     awk '!seen[$1]++ { print $2, $3, $4 }'
 }
+
+# Label one dev-server process group from the argv text of its processes (stdin): the two
+# named shared servers by their dist dir, everything else human-or-other. Twin of the table in
+# scripts/agent-harness/shared-servers.sh; scripts/__tests__/shared-dev-servers.test.ts pins it.
+label_for_argv() {
+  local text
+  text="$(cat)"
+  if printf '%s' "$text" | grep -q '\.next-preview-clone'; then
+    echo agent-preview-clone
+  elif printf '%s' "$text" | grep -qE '\.next-preview([^-]|$)'; then
+    echo agent-preview
+  else
+    echo human-or-other
+  fi
+}
+
+# One sentence naming every running dev server, for the deny messages.
+describe_running() {
+  printf '%s\n' "$1" | awk 'NF>=3 { printf "%s%s on port %s (pid %s)", (n++ ? ", " : ""), $3, $2, $1 } END { if (!n) printf "none" }'
+}
+
+TWO_SERVERS="The only dev servers allowed on this machine are the two shared ones: pnpm preview:start (live database, port 3001) and pnpm preview:start --clone (the clone only, port 3002). A third or per-agent server is refused: extra dev servers exhausted memory and rebooted the Mac twice."
 
 # Kill a preview server and its whole process tree (workers + pnpm/next wrappers).
 # Kills the server's process group for a clean sweep, but NEVER the group this hook
@@ -125,9 +146,7 @@ case "${1:-}" in
     # browser launch separate from server launch for both providers.
     running=$(list_any_dev_servers)
     if [ -n "$running" ]; then
-      port=$(printf '%s' "$running" | head -1 | awk '{print $2}')
-      owner=$(printf '%s' "$running" | head -1 | awk '{print $3}')
-      reason="A Next.js dev server is already running on this machine (port ${port}, ${owner}). Do NOT start a second or certify a different worktree against it. Wait for its explicit release; if it is genuinely stale, stop it deliberately from its owning checkout, then run pnpm preview:start."
+      reason="Running now: $(describe_running "$running"). ${TWO_SERVERS} Use the running one at your own hostname (pnpm preview:start [--clone] prints it); never certify a different worktree against it."
       /usr/bin/python3 - "$reason" <<'PY'
 import json, sys
 print(json.dumps({
@@ -140,7 +159,7 @@ print(json.dumps({
 PY
       exit 0
     fi
-    reason="Named preview_start is a Claude-only, untracked server launcher and is not the shared Matrx path. Run pnpm preview:start instead, then open http://localhost:3001 in the in-app browser."
+    reason="Named preview_start is a Claude-only, untracked server launcher and is not the shared Matrx path. ${TWO_SERVERS} Run one of those and open the <session> URL it prints in the in-app browser."
     /usr/bin/python3 - "$reason" <<'PY'
 import json, sys
 print(json.dumps({
@@ -172,9 +191,7 @@ PY
 
     running=$(list_any_dev_servers)
     if [ -n "$running" ]; then
-      port=$(printf '%s' "$running" | head -1 | awk '{print $2}')
-      owner=$(printf '%s' "$running" | head -1 | awk '{print $3}')
-      reason="A Next.js dev server is ALREADY running on this machine (port ${port}, ${owner}). This box has 16GB and a second dev server is a reliable hard crash — the cap is ONE, machine-wide. Do NOT launch another or certify a different worktree against it. Wait for explicit release. Only if it is genuinely stale, stop it from its owning checkout and then run pnpm preview:start."
+      reason="Running now: $(describe_running "$running"). ${TWO_SERVERS} Do NOT launch another or certify a different worktree against a running one. Only if one is genuinely stale, stop it from its owning checkout (pnpm preview:stop [--clone]) and start it again."
       /usr/bin/python3 - "$reason" <<'PY'
 import json, sys
 print(json.dumps({
@@ -195,7 +212,7 @@ print(json.dumps({
     "hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": "deny",
-        "permissionDecisionReason": "Raw pnpm/npm/yarn/bun/next dev launches are untracked. Run pnpm preview:start instead; it starts or reuses the one managed server on port 3001.",
+        "permissionDecisionReason": "Raw pnpm/npm/yarn/bun/next dev launches are untracked and would be a third server. Run pnpm preview:start (live database, port 3001) or pnpm preview:start --clone (the clone, port 3002); each starts or reuses its one managed server.",
     }
 }))
 PY
@@ -204,6 +221,11 @@ PY
 
   list-any)
     list_any_dev_servers
+    ;;
+
+  label)
+    # stdin: argv text of one process group. Exposed for the Jest guard.
+    label_for_argv
     ;;
 
   reap)
@@ -232,7 +254,7 @@ PY
     ;;
 
   *)
-    echo "usage: matrx-preview-ports.sh {list|list-any|guard|guard-bash|reap}" >&2
+    echo "usage: matrx-preview-ports.sh {list|list-any|label|guard|guard-bash|reap}" >&2
     exit 2
     ;;
 esac

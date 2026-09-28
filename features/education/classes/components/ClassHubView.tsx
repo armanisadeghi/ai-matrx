@@ -117,6 +117,26 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
     );
   }
 
+  // The OWNER's own class, but `useClasses()` (which needs a workspace) hasn't
+  // resolved it — never fall through to the plain member view here (no Edit,
+  // no Archive, no roster/assignment management, and no "Assigned to you",
+  // since the RPC has no assignment to show its own owner): ask for the
+  // workspace instead, the same held-not-failed pattern the list page uses.
+  if (access.state?.isOwner && !orgReady) {
+    return (
+      <>
+        <EducationToolHeader title={access.state.name} />
+        <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
+          <BackToClasses />
+          <OrganizationContextNotice
+            state={organizationState}
+            what="This class (you own it — choose the workspace to manage it)"
+          />
+        </div>
+      </>
+    );
+  }
+
   if (access.state) {
     return <MemberClassView access={access} />;
   }
@@ -305,7 +325,7 @@ function ClassHubBody({
                     <div className="truncate text-sm font-medium text-foreground">
                       {exam.title}
                     </div>
-                    <div className="text-[11px] text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       {exam.date}
                       {!past && ` · in ${days}d`}
                       {past && " · past"}

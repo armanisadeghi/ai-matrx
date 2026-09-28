@@ -84,7 +84,7 @@ function ClassRow({
           <AccessModeBadge mode={settings.accessMode} />
         </div>
         {meta && (
-          <div className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1 truncate text-xs text-muted-foreground">
             <User className="h-3 w-3" />
             {meta}
           </div>
@@ -92,7 +92,7 @@ function ClassRow({
       </div>
       {statusChip}
       {!statusChip && next && (
-        <span className="flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+        <span className="flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
           <CalendarClock className="h-3 w-3" />
           {next.title} in {Math.max(0, daysUntil(next.date, today))}d
         </span>
@@ -351,7 +351,7 @@ export function ClassesHome() {
                   settings={{ ...c.settings, accessMode: c.accessMode }}
                   statusChip={
                     JOINED_STATUS_LABEL[c.myStatus] ? (
-                      <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                      <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
                         {JOINED_STATUS_LABEL[c.myStatus]}
                       </span>
                     ) : undefined

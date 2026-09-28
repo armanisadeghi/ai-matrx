@@ -115,7 +115,9 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
     // Handle ESC key press
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape" && isOpen && closeOnEsc) {
+            // One Escape closes ONE layer: a menu, sheet or dialog open inside
+            // this sheet already took it (Radix marks it defaultPrevented).
+            if (e.key === "Escape" && isOpen && closeOnEsc && !e.defaultPrevented) {
                 onClose();
             }
         };

@@ -377,3 +377,21 @@ describe("process-global idle expiry", () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 });
+
+describe("walkCapGate refusal page — names the way out", () => {
+  it("a refused walk is told to use the clone preview, which now exists", async () => {
+    const response = await walkCapGate({
+      host: "late.localhost:3001",
+      env: { NODE_ENV: "development", NEXT_PUBLIC_SUPABASE_URL: "https://db.matrxserver.com" },
+      readKnobs: jest.fn(async () => ({ cap: 0, windowMinutes: 10 })),
+      registry: registryWith([]),
+      now: T0,
+      log: jest.fn(),
+    });
+    expect(response?.status).toBe(503);
+    const html = (await response?.text()) ?? "";
+    expect(html).toContain("pnpm preview:start --clone");
+    expect(html).toContain("pnpm dev-login --clone");
+    expect(html).not.toMatch(/not built|waiting is the only path/);
+  });
+});

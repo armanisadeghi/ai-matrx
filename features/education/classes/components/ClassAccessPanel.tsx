@@ -164,7 +164,7 @@ export function ClassAccessPanel({
                 )}
                 {priceLabel ? `Enroll — ${priceLabel}` : "Enroll"}
               </Button>
-              <p className="text-[11px] leading-snug text-muted-foreground">
+              <p className="text-xs leading-snug text-muted-foreground">
                 Secure checkout by Stripe. Free preview material stays open.
               </p>
             </>

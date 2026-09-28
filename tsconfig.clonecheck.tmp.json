@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.typecheck.json", "include": [], "files": ["utils/supabase/walkCap.ts","utils/supabase/walkCap.test.ts","scripts/__tests__/shared-dev-servers.test.ts","scripts/__tests__/clone-preview-env.test.ts"] }

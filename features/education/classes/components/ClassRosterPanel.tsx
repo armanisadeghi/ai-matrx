@@ -27,7 +27,7 @@ function memberLabel(m: ClassRosterMember): string {
 function StatusChip({ member }: { member: ClassRosterMember }) {
   if (member.role === "owner") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
         <Crown className="h-3 w-3" />
         Owner
       </span>
@@ -35,20 +35,20 @@ function StatusChip({ member }: { member: ClassRosterMember }) {
   }
   if (member.status === "pending") {
     return (
-      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
         Requested
       </span>
     );
   }
   if (member.status === "entitled") {
     return (
-      <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-[10px] font-medium text-sky-600 dark:text-sky-400">
+      <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs font-medium text-sky-600 dark:text-sky-400">
         Purchased
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
       Member
     </span>
   );

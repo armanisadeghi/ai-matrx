@@ -65,4 +65,7 @@ it("lists the record's actions directly in the shell sheet — no second 'More' 
   const buttons = [...host.querySelectorAll("button")].map((b) => b.textContent?.trim() || b.getAttribute("aria-label"));
   expect(buttons).toContain("Rename");
   expect(buttons).not.toContain("More");
+  // The rows are the ⋮ sheet's content, never drawn in the header row (c397bcf4a7
+  // kept the lone "primary" in the row — here that painted the whole list there).
+  expect(el.querySelector("[data-entity-sheet-rows]")).toBeNull();
 });

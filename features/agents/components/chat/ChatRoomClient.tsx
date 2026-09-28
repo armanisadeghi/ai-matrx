@@ -1,4 +1,5 @@
 "use client";
+import { logAgentLoadFailure } from "@/features/agents/redux/agent-definition/agent-not-readable";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
@@ -332,10 +333,7 @@ export function ChatRoomClient({
           }
         }
       } catch (err) {
-        console.error(
-          "[ChatRoomClient] fetchAgentExecutionMinimal failed",
-          err,
-        );
+        logAgentLoadFailure("[ChatRoomClient] fetchAgentExecutionMinimal failed", err);
         if (!cancelled) setAgentLoadFailure({ agentId, error: err });
       } finally {
         if (!cancelled) setIsInitializing(false);

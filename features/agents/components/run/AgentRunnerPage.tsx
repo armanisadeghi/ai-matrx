@@ -10,6 +10,7 @@
  * This page only renders the header strip, conversation area, and mobile drawers.
  */
 
+import { logAgentLoadFailure } from "@/features/agents/redux/agent-definition/agent-not-readable";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -146,7 +147,7 @@ export function AgentRunnerPage({
           await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
         }
       } catch (err) {
-        console.error("Failed to load agent execution payload:", err);
+        logAgentLoadFailure("[AgentRunnerPage] Failed to load agent execution payload:", err);
         if (!cancelled) {
           setInitError(
             err instanceof Error ? err.message : "Failed to load agent.",

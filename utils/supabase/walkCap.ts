@@ -246,7 +246,7 @@ code{background:#f1f1f1;padding:1px 5px;border-radius:4px}
 <p>${active.length} agent sessions are already signed in against production (the cap is ${knobs.cap}):</p>
 <ul>${list}</ul>
 <p>Wait until one of them goes idle for ${knobs.windowMinutes} minutes, then reload this page.</p>
-<p>The clone preview (<code>pnpm preview:start --clone</code>, port ${CLONE_PORT}, a copy of production for walks) is not built yet: it needs a second development server, and this machine allows exactly one. Until it exists, waiting is the only path.</p>
+<p>Or work on the clone instead — a nightly copy of production with no cap: run <code>pnpm preview:start --clone</code> (port ${CLONE_PORT}), then <code>pnpm dev-login --clone</code> and open the URL it prints. If it refuses, it names the one command that starts its paired server.</p>
 <p><small>Host refused: <code>${escapeHtml(host)}</code>. Knobs: <code>${WALK_CAP_FEATURE}.${CAP_KEY}</code> and <code>${WALK_CAP_FEATURE}.${WINDOW_KEY}</code>. This check runs only in local development against the live database.</small></p>
 </body></html>`;
 }

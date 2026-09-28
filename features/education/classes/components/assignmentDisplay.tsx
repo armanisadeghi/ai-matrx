@@ -82,7 +82,7 @@ export function ProgressCell({
     <div className="flex flex-col items-center justify-center gap-0.5" title={m.label}>
       <span className={cn("h-2.5 w-2.5 rounded-full", m.dot)} />
       {scorePct != null && (
-        <span className="text-[10px] tabular-nums text-muted-foreground">
+        <span className="text-xs tabular-nums text-muted-foreground">
           {scorePct}%
         </span>
       )}
@@ -100,7 +100,7 @@ export function DueDateLabel({
 }) {
   if (!dueDate) {
     return (
-      <span className={cn("text-[11px] text-muted-foreground", className)}>
+      <span className={cn("text-xs text-muted-foreground", className)}>
         No due date
       </span>
     );
@@ -114,7 +114,7 @@ export function DueDateLabel({
         ? "text-red-600 dark:text-red-400"
         : "text-muted-foreground";
   return (
-    <span className={cn("text-[11px]", tone, className)}>
+    <span className={cn("text-xs", tone, className)}>
       Due {dueDate}
       {days < 0 ? " · past" : days === 0 ? " · today" : ` · in ${days}d`}
     </span>

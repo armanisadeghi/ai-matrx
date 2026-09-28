@@ -8,49 +8,30 @@
  * that already exist.
  */
 
-export interface ResourcePromotion {
-  representation: string;
-  max_chars?: number;
-}
+import {
+  createSourceRef,
+  type ResourcePromotion,
+  type SourceRef,
+  type SourceRefOptions,
+} from "@ai-matrx/agents/sources";
 
-export interface AgentResourceReference {
-  __kind: "resource_ref";
-  resource_type: string;
-  resource_id: string;
-  /** Omitted means the server's canonical Clean -> Raw -> original fallback. */
-  representation?: string;
-  promote?: ResourcePromotion | ResourcePromotion[];
-  exclude?: string[];
-}
+export type { ResourcePromotion };
 
-export interface ResourceReferenceOptions {
-  representation?: string;
-  promote?: ResourcePromotion | ResourcePromotion[];
-  exclude?: string[];
-}
+/**
+ * The pointer IS `SourceRef` from `@ai-matrx/agents/sources` (the one Source
+ * payload, contract v1) — never a second pointer type. This alias keeps the
+ * agent-context vocabulary for existing callers.
+ */
+export type AgentResourceReference = SourceRef;
+
+export type ResourceReferenceOptions = SourceRefOptions;
 
 export function createResourceReference(
   resourceType: string,
   resourceId: string,
   options: ResourceReferenceOptions = {},
 ): AgentResourceReference {
-  const exclude = Array.from(
-    new Set(
-      (options.exclude ?? [])
-        .map((value) => value.trim().toLowerCase())
-        .filter(Boolean),
-    ),
-  );
-  return {
-    __kind: "resource_ref",
-    resource_type: resourceType,
-    resource_id: resourceId,
-    ...(options.representation
-      ? { representation: options.representation }
-      : {}),
-    ...(options.promote ? { promote: options.promote } : {}),
-    ...(exclude.length ? { exclude } : {}),
-  };
+  return createSourceRef(resourceType, resourceId, options);
 }
 
 export function promoteResource(
@@ -80,8 +61,7 @@ export function suppressResourceRepresentations(
     reference.resource_type,
     reference.resource_id,
     {
-      representation: reference.representation,
-      promote: reference.promote,
+      ...reference,
       exclude: [...(reference.exclude ?? []), ...representations],
     },
   );
