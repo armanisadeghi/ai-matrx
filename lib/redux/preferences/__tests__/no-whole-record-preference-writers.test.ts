@@ -3,19 +3,14 @@
  * as a whole record. The one sanctioned writer is the sync policy's
  * compare-and-swap key merge (userPreferencesSlice → preferencePatch). A new
  * `.update({ preferences … })` / `.upsert(…)` on that table anywhere else is
- * the 2026-09-27 stale-tab overwrite class coming back.
+ * the 2026-09-27 stale-tab overwrite class coming back. (The last one, the
+ * unmounted providers/usePreferenceSync.ts upsert, was deleted 2026-09-27 on
+ * Arman's word.)
  */
 import fs from "node:fs";
 import path from "node:path";
 
 const ROOTS = ["app", "lib", "features", "components", "providers", "hooks", "utils"];
-/**
- * Known and NOT sanctioned — each needs its owner's ruling, never a silent pass.
- *  - providers/usePreferenceSync.ts: an unmounted whole-record upsert (no
- *    importer on 2026-09-27). Deleting it is Arman's call (unfinished-work alarm).
- */
-const KNOWN_UNMOUNTED = new Set(["providers/usePreferenceSync.ts"]);
-
 function* files(dir: string): Generator<string> {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
@@ -57,23 +52,8 @@ it("no browser code writes the whole preferences record outside the CAS merge", 
   for (const root of ROOTS) {
     for (const file of files(path.join(cwd, root))) {
       const rel = path.relative(cwd, file);
-      if (KNOWN_UNMOUNTED.has(rel)) continue;
       if (wholeRecordWriters(fs.readFileSync(file, "utf8")) > 0) offenders.push(rel);
     }
   }
   expect(offenders).toEqual([]);
-});
-
-it("the known unmounted writer is still unmounted", () => {
-  const cwd = process.cwd();
-  const importers: string[] = [];
-  for (const root of ROOTS) {
-    for (const file of files(path.join(cwd, root))) {
-      const rel = path.relative(cwd, file);
-      if (rel === "providers/usePreferenceSync.ts") continue;
-      const src = fs.readFileSync(file, "utf8");
-      if (/^\s*import\s[^;]*?\b(usePreferenceSync|PreferenceSyncProvider)\b[^;]*?from\s|<PreferenceSyncProvider\b|\busePreferenceSync\(\)/m.test(src)) importers.push(rel);
-    }
-  }
-  expect(importers).toEqual([]);
 });

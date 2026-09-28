@@ -52,7 +52,6 @@
     "features/transcripts/service/transcriptsService.ts",
     "hooks/canvas/useCanvasLike.ts",
     "lib/api/hr-contract-client.ts",
-    "lib/api/matrx-transport.ts",
-    "providers/usePreferenceSync.ts"
+    "lib/api/matrx-transport.ts"
   ]
 }
