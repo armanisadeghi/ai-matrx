@@ -37,6 +37,8 @@ import type {
 } from "@/types/python-generated/stream-events";
 import type { ShortcutContext } from "@/features/agents/redux/agent-shortcuts/types";
 import { selectHasMessages } from "../messages/messages.selectors";
+import { selectHasUnsentResources } from "../instance-resources/instance-resources.selectors";
+import { selectInputCharCount } from "../instance-user-input/instance-user-input.selectors";
 import {
   deriveAnswerText,
   deriveDecisionResultText,
@@ -604,6 +606,25 @@ export const selectShouldShowVariables =
 
     return true;
   };
+
+/**
+ * THE ONE "is there something to send" rule — the Send button shows exactly
+ * when this is true, and Enter sends exactly when this is true. Text, an
+ * attachment not yet sent, a variables form (an agent whose inputs ARE the
+ * message), or a live run (Enter then queues/steers, and that path refuses an
+ * empty draft itself).
+ *
+ * Enter used to skip it: an empty Enter (a draft lost to a composer that had
+ * not hydrated yet) sent a turn with no message, the provider refused it
+ * ("at least one message is required") and a failed turn stayed in the chat.
+ */
+export const selectComposerHasSomethingToSend =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    selectInputCharCount(conversationId)(state) > 0 ||
+    selectHasUnsentResources(conversationId)(state) ||
+    selectShouldShowVariables(conversationId)(state) ||
+    selectIsExecuting(conversationId)(state);
 
 // =============================================================================
 // Conversation → Instance Lookup

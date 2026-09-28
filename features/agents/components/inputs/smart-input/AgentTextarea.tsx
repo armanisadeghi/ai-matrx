@@ -34,7 +34,10 @@ import {
   selectSubmitOnEnter,
   selectInputPlaceholder,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import {
+  selectComposerHasSomethingToSend,
+  selectIsExecuting,
+} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import {
   composerKeyIntent,
@@ -156,6 +159,10 @@ export function AgentTextarea({
   const isSubmitting = submissionPhase === "pending";
   const visibleText = isSubmitting ? "" : inputText;
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
+  // Enter sends exactly when the Send button would show (one rule).
+  const hasSomethingToSend = useAppSelector(
+    selectComposerHasSomethingToSend(conversationId),
+  );
   const reduxPlaceholder = useAppSelector(
     selectInputPlaceholder(conversationId),
   );
@@ -253,6 +260,8 @@ export function AgentTextarea({
       if (!intentTakesTheKey(intent)) return;
       e.preventDefault();
       if (disableSend) return;
+      // Nothing to send: Enter does nothing, exactly as the hidden Send button.
+      if (!hasSomethingToSend) return;
       if (intent === "interrupt") handleInterruptSend();
       else if (intent === "steer") handleSteerSend();
       else handleSend();
@@ -260,6 +269,7 @@ export function AgentTextarea({
     [
       submitOnEnter,
       disableSend,
+      hasSomethingToSend,
       isExecuting,
       handleSend,
       handleSteerSend,

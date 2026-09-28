@@ -39,6 +39,7 @@ import {
   toggleVariablePanel,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
+  selectComposerHasSomethingToSend,
   selectShouldShowVariables,
   selectShouldShowAutoClearToggle,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -49,8 +50,6 @@ import {
   cancelExecution,
 } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { selectInputCharCount } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectHasUnsentResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
 
@@ -429,10 +428,9 @@ function ComposerSendSlot({
   always: boolean;
   children: React.ReactNode;
 }) {
-  const charCount = useAppSelector(selectInputCharCount(conversationId));
-  const hasUnsentResources = useAppSelector(
-    selectHasUnsentResources(conversationId),
+  const hasSomethingToSend = useAppSelector(
+    selectComposerHasSomethingToSend(conversationId),
   );
-  if (!always && charCount === 0 && !hasUnsentResources) return null;
+  if (!always && !hasSomethingToSend) return null;
   return <>{children}</>;
 }
