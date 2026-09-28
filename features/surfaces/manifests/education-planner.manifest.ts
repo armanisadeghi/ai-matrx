@@ -14,7 +14,7 @@
  *   study_plan    The active day-by-day plan and how far through it they are
  *   plan_setup    The generation form's live values, while it is on screen
  *
- * Write half (read/write v1): FOUR targets, all `ask`. Three author goals
+ * Write half: FIVE targets, all `ask`. Four author goals
  * through the shared canonical path (`features/education/study/planner/
  * goalWrites.ts` → `studyService`, the same functions the editor dialog calls),
  * and one stages the plan-generation form. What is deliberately NOT writable:
@@ -23,8 +23,6 @@
  *    groups is DERIVED EVIDENCE computed from the study spine. An agent that
  *    could write a mastery percentage would forge the very measurement the
  *    planner exists to produce.
- *  - Deleting a goal stays human (destructive), so no delete target exists and
- *    `goalWrites.ts` deliberately exposes no delete helper for one to call.
  *  - Marking a plan BLOCK done/skipped is the learner's own record of what they
  *    actually studied. An agent ticking it off would be a lie about their
  *    behaviour, and it feeds mastery — so the agenda is read-only.
@@ -227,7 +225,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * Goal authoring is the surface's strongest case for an agent: "I want to be
  * ready for the biology midterm in three weeks" carries a title, a date and a
  * topic, and turning that sentence into a tracked goal is exactly the
- * decomposition an agent does well. All three goal targets are `entity` — a
+ * decomposition an agent does well. All four goal targets are `entity` — a
  * goal is a small, visible, fully reversible row the learner can edit or
  * archive in one click, and staging it as a draft would mean inventing an
  * editor state the page does not have. They are `ask`, so the learner still
@@ -238,6 +236,17 @@ const surfaceSpecific: SurfaceValue[] = [
  * "Generate plan" button stays human-pressed.
  */
 const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "delete_goal",
+    label: "Remove study goal",
+    description: 'Soft-deletes a goal using the same operation as the goal list. Value is { goal_id: string }, using an id from study_goals. The goal leaves the active list; its record is retained. Only the person who created the goal can remove it.',
+    valueType: "object",
+    updatesValue: "study_goals",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "goals",
+    sortOrder: 230,
+  },
   {
     name: "create_goal",
     label: "New study goal",
@@ -266,7 +275,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "goal_status",
     label: "Goal status",
     description:
-      'Moves an existing goal through its lifecycle, saved immediately. Value is an OBJECT: { goal_id: string (required — the `id` of the entry in study_goals), status: "active" | "achieved" | "archived" }. "achieved" is for a goal the learner has actually met; "archived" retires one they are no longer working toward. Both remove it from the active list. This is not a delete — deleting a goal is destructive and stays a human action.',
+      'Moves an existing goal through its lifecycle, saved immediately. Value is an OBJECT: { goal_id: string (required — the `id` of the entry in study_goals), status: "active" | "achieved" | "archived" }. "achieved" is for a goal the learner has actually met; "archived" retires one they are no longer working toward. Both remove it from the active list. To remove a goal use delete_goal.',
     valueType: "object",
     updatesValue: "study_goals",
     mode: "entity",
@@ -302,7 +311,7 @@ export const educationPlannerManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on the Study Planner at /education/planner. It holds two views, and active_tab tells you which one the learner is looking at.
 
-The GOALS view is the learner's exam targets: study_goals lists them most-urgent-first, each carrying its own derived progress — matched_items, avg_mastery_pct and struggling_count come from their real attempt history, not a guess. top_priority_goal is what the planner's heuristic surfaces first (soonest target date, weighted up by struggle). You can author goals here: create_goal turns "I have a biology midterm in three weeks" into a tracked row, update_goal edits one by its id, and goal_status retires one. Deleting stays with the learner.
+The GOALS view is the learner's exam targets: study_goals lists them most-urgent-first, each carrying its own derived progress — matched_items, avg_mastery_pct and struggling_count come from their real attempt history, not a guess. top_priority_goal is what the planner's heuristic surfaces first (soonest target date, weighted up by struggle). You can author goals here: create_goal turns "I have a biology midterm in three weeks" into a tracked row, update_goal edits one by its id, and goal_status retires one. delete_goal removes a goal through the same soft-delete operation as the list.
 
 The PLAN view is the day-by-day schedule. When active_plan is present, plan_agenda is the real agenda and plan_progress says how much of it has actually been done — treat overdue blocks as information, never as something to scold about; the product's whole posture toward a missed week is a gentle recovery plan, not a wall of guilt. When active_plan is absent the generation form is showing instead, plan_setup_draft mirrors its live fields, and plan_setup lets you fill them in from what the learner just told you. Filling the form does not generate anything — they press Generate themselves.
 

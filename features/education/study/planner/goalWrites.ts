@@ -12,9 +12,7 @@
 //     the agent reads back (features/surfaces/runtime/surface-writeback.ts);
 //   - the UI catches and toasts, exactly as it did when the call was inline.
 //
-// Deletion is NOT here and must not be: destructive actions stay human, so the
-// planner surface declares no delete target and there is no shared helper an
-// agent path could reach for.
+// Deletion uses the same recoverable soft-delete path for the UI and surface.
 
 import { studyService } from "../service/studyService";
 import { GOAL_STATUSES } from "../types";
@@ -158,4 +156,12 @@ export async function setStudyGoalStatus(
       `${res.error ?? `No goal matched id "${goalId}".`}${await describeAvailableGoals()}`,
     );
   return res.data;
+}
+
+export async function deleteStudyGoal(goalId: string): Promise<void> {
+  if (typeof goalId !== "string" || !goalId.trim())
+    throw new Error("goal_id is required — it says WHICH goal to remove.");
+  const result = await studyService.deleteGoal(goalId.trim());
+  if (result.error || !result.data)
+    throw new Error(result.error ?? "Removing the goal failed.");
 }

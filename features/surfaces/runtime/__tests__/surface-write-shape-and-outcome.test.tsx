@@ -243,7 +243,7 @@ describe("{ validate, apply } — the page's own check runs before the card", ()
         },
       });
       expect(result.ok).toBe(true);
-      expect(order).toEqual(["validate:array", "approval", "apply"]);
+      expect(order).toEqual(["validate:array", "approval", "validate:array", "apply"]);
     } finally {
       unregister();
     }

@@ -63,10 +63,10 @@ import {
   DrawerFooter,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { studyService } from "../service/studyService";
 import { dueLabel, rankGoals, type GoalStat } from "../planner/goalStats";
 import {
   createStudyGoal,
+  deleteStudyGoal,
   setStudyGoalStatus,
   updateStudyGoal,
 } from "../planner/goalWrites";
@@ -89,6 +89,7 @@ export function StudyPlanner({
   stats,
   error,
   onReload,
+  onEditorOpenChange,
 }: {
   backHref?: string;
   /** When embedded in the PlannerWorkspace, drop the standalone page chrome
@@ -103,6 +104,7 @@ export function StudyPlanner({
   error: string | null;
   /** Re-read the goal list after this component writes one. */
   onReload: () => void | Promise<void>;
+  onEditorOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -114,10 +116,15 @@ export function StudyPlanner({
   const [pendingDelete, setPendingDelete] = useState<StudyGoalRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const changeEditorOpen = (open: boolean) => {
+    setEditorOpen(open);
+    onEditorOpenChange?.(open);
+  };
+
   const openCreate = () => {
     setEditingGoal(null);
     setForm(EMPTY_FORM);
-    setEditorOpen(true);
+    changeEditorOpen(true);
   };
 
   const openEdit = (goal: StudyGoalRow) => {
@@ -128,7 +135,7 @@ export function StudyPlanner({
       targetDate: goal.target_date ? goal.target_date.slice(0, 10) : "",
       topic: meta?.topic ?? "",
     });
-    setEditorOpen(true);
+    changeEditorOpen(true);
   };
 
   // The canonical goal writes live in ../planner/goalWrites.ts and THROW; the
@@ -157,7 +164,7 @@ export function StudyPlanner({
     } finally {
       setSaving(false);
     }
-    setEditorOpen(false);
+    changeEditorOpen(false);
     void onReload();
   };
 
@@ -177,11 +184,13 @@ export function StudyPlanner({
   const handleDelete = async () => {
     if (!pendingDelete) return;
     setDeleting(true);
-    const res = await studyService.deleteGoal(pendingDelete.id);
-    setDeleting(false);
-    if (res.error) {
-      toast.error(res.error);
+    try {
+      await deleteStudyGoal(pendingDelete.id);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Removing the goal failed.");
       return;
+    } finally {
+      setDeleting(false);
     }
     toast.success("Goal deleted");
     setPendingDelete(null);
@@ -396,7 +405,7 @@ export function StudyPlanner({
       </div>
 
       {isMobile ? (
-        <Drawer open={editorOpen} onOpenChange={setEditorOpen}>
+        <Drawer open={editorOpen} onOpenChange={changeEditorOpen}>
           <DrawerContent className="pb-safe">
             <DrawerHeader>
               <DrawerTitle>
@@ -411,7 +420,7 @@ export function StudyPlanner({
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => setEditorOpen(false)}
+                onClick={() => changeEditorOpen(false)}
                 disabled={saving}
               >
                 Cancel
@@ -428,7 +437,7 @@ export function StudyPlanner({
           </DrawerContent>
         </Drawer>
       ) : (
-        <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+        <Dialog open={editorOpen} onOpenChange={changeEditorOpen}>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
               <DialogTitle>
@@ -442,7 +451,7 @@ export function StudyPlanner({
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => setEditorOpen(false)}
+                onClick={() => changeEditorOpen(false)}
                 disabled={saving}
               >
                 Cancel

@@ -8,7 +8,7 @@
 //
 // This is also the surface EMITTER for `matrx-user/education-planner`. It owns
 // the goal list (so goals stay readable and writable from BOTH tabs, not just
-// the one that renders them) and registers the three goal write targets; the
+// the one that renders them) and registers the four goal write targets; the
 // plan slice and the generation form publish themselves into
 // `../plannerSnapshot.ts`, which `buildEducationPlannerScope` reads
 // synchronously — the Surface Context window samples getScope every 400ms, so
@@ -16,7 +16,7 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarClock, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { buildEducationPlannerScope } from "../educationPlannerScope";
 import { resolveGoalStats, type GoalStat } from "../goalStats";
 import {
   createStudyGoal,
+  deleteStudyGoal,
   setStudyGoalStatus,
   updateStudyGoal,
 } from "../goalWrites";
@@ -101,6 +102,8 @@ export function PlannerWorkspace({ backHref }: { backHref?: string }) {
   // The goal list lives here, not in StudyPlanner, so the surface can emit
   // study_goals (and service a goal write) from either tab.
   const [goals, setGoals] = useState<StudyGoalRow[] | null>(null);
+  const currentGoals = useRef<StudyGoalRow[] | null>(null);
+  const goalEditorOpen = useRef(false);
   const [stats, setStats] = useState<Record<string, GoalStat>>({});
   const [goalsError, setGoalsError] = useState<string | null>(null);
 
@@ -112,16 +115,18 @@ export function PlannerWorkspace({ backHref }: { backHref?: string }) {
     ]);
     if (goalsRes.error) {
       setGoalsError(goalsRes.error);
+      currentGoals.current = null;
       setGoals(null);
       return;
     }
     const nextGoals = goalsRes.data ?? [];
+    currentGoals.current = nextGoals;
     setGoals(nextGoals);
     setStats(await resolveGoalStats(nextGoals, masteryRes.data ?? []));
   };
 
   useEffect(() => {
-    void loadGoals();
+    queueMicrotask(() => { void loadGoals(); });
   }, []);
 
   // Read at Run time from live render state + the module snapshot store. Kept
@@ -141,7 +146,25 @@ export function PlannerWorkspace({ backHref }: { backHref?: string }) {
     await loadGoals();
   };
 
+  const parseGoalDelete = (value: unknown) => {
+    if (goalEditorOpen.current) throw new Error("Save or cancel the open goal editor before removing a goal.");
+    if (!currentGoals.current) throw new Error("Wait for your study goals to finish loading.");
+    const record = asWriteObject("delete_goal", value, ["goal_id"]);
+    const goalId = requiredString("delete_goal", record, "goal_id").trim();
+    if (!currentGoals.current.some((goal) => goal.id === goalId))
+      throw new Error("Choose a goal from the current study_goals list.");
+    return goalId;
+  };
+
   const getWriteHandlers = () => ({
+    delete_goal: {
+      validate: (value: unknown) => { parseGoalDelete(value); },
+      apply: async (value: unknown) => {
+        await deleteStudyGoal(parseGoalDelete(value));
+        await revealGoals();
+        return { summary: "Removed the study goal." };
+      },
+    },
     create_goal: async (value: unknown) => {
       const record = asWriteObject("create_goal", value, [
         "title",
@@ -237,6 +260,7 @@ export function PlannerWorkspace({ backHref }: { backHref?: string }) {
               stats={stats}
               error={goalsError}
               onReload={loadGoals}
+              onEditorOpenChange={(open) => { goalEditorOpen.current = open; }}
             />
           )}
         </div>
