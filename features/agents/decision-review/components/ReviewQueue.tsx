@@ -50,6 +50,8 @@ import {
   type ReviewItem,
 } from "../queue";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 const ALL = "__all__";
 
@@ -166,12 +168,15 @@ export function ReviewQueue({
   const [state, setState] = useState<JudgedState | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The queue read's own failure — said in the list, never as "no answers".
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
     setItems(null);
+    setLoadError(null);
     const scope = { agentId };
     Promise.all([loadQueue(scope, filters), loadFacets(scope)])
       .then(([queue, facetRows]) => {
@@ -186,7 +191,8 @@ export function ReviewQueue({
         console.error("[decision-review] queue load failed", err);
         if (!cancelled) {
           setItems([]);
-          setError("The answers could not be loaded. Reload the page to try again.");
+          setFacets(null);
+          setLoadError(err);
         }
       });
     return () => {
@@ -335,7 +341,7 @@ export function ReviewQueue({
           />
         )}
         <span className="ml-auto font-mono text-[11px] text-muted-foreground">
-          {facets ? `${facets.labeled} / ${facets.total} labeled` : ""}
+          {facets && loadError == null ? `${facets.labeled} / ${facets.total} labeled` : ""}
         </span>
         {/* Calibration is computed per agent: the combined queue offers the
             selected answer's agent, and nothing when an API model answered. */}
@@ -383,6 +389,13 @@ export function ReviewQueue({
                 <Skeleton key={i} className="h-9 w-full" />
               ))}
             </div>
+          ) : loadError != null ? (
+            <ReadFailure
+              error={loadError}
+              what="the answers to review"
+              onRetry={() => setReloadKey((k) => k + 1)}
+              size="compact"
+            />
           ) : items.length === 0 ? (
             <p className="p-4 text-xs text-muted-foreground">
               {filters.status === "unlabeled"
@@ -427,7 +440,8 @@ export function ReviewQueue({
                 <span className="text-sm font-medium">{selected.instructions ?? "Question text not recorded"}</span>
                 <span className="font-mono text-[11px] text-muted-foreground">{selected.question}</span>
                 <span className="ml-auto font-mono text-[11px] text-muted-foreground">
-                  {selectedIndex + 1} / {items?.length ?? 0}
+                  {selectedIndex + 1} /{" "}
+                  <UntrustedCount value={items?.length ?? 0} trustworthy={loadError == null} label="Answers" />
                 </span>
               </div>
 

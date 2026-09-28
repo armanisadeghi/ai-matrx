@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import { toast } from "@/lib/toast";
 
 interface AgentExecutionTestModalProps {
   surfaceKey: string;
@@ -130,7 +131,9 @@ function DirectTestMode({
       });
       setConversationId(result.conversationId);
     } catch (err) {
-      console.error("Direct execution failed:", err);
+      toast.error("Direct run failed", {
+        description: err instanceof Error ? err.message : String(err),
+      });
     }
   }, [
     agentId,
@@ -268,7 +271,9 @@ function InlineTestMode({
       });
       setConversationId(result.conversationId);
     } catch (err) {
-      console.error("Inline execution failed:", err);
+      toast.error("Inline run failed", {
+        description: err instanceof Error ? err.message : String(err),
+      });
     }
   }, [
     agentId,
@@ -456,7 +461,9 @@ function BackgroundTestMode({
         ...prev,
       ]);
     } catch (err) {
-      console.error("Background execution failed:", err);
+      toast.error("Background run failed", {
+        description: err instanceof Error ? err.message : String(err),
+      });
     }
   }, [
     agentId,
@@ -485,6 +492,7 @@ function BackgroundTestMode({
           Run Background Task
         </Button>
         <span className="text-xs text-muted-foreground">
+          {/* read-gate-exempt: a count of background runs launched from this panel in this session, not rows from a read */}
           {tasks.length} task(s)
         </span>
       </div>

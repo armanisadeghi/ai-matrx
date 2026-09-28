@@ -56,6 +56,7 @@ import type { LibraryRow, VideoRow } from "@/features/source-library/types";
 import { fetchAgentSamples } from "@/features/agents/samples/service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /**
  * The action reads transcripts (`requires_transcripts: true` in its server
@@ -158,6 +159,10 @@ export function LoadFromLibraryDialog({
   const [chosenIds, setChosenIds] = useState<string[]>([]);
 
   const [error, setError] = useState<string | null>(null);
+  // Each read says its own failure where its answer would be (one message).
+  const [librariesError, setLibrariesError] = useState<string | null>(null);
+  const [librariesAttempt, setLibrariesAttempt] = useState(0);
+  const [videosError, setVideosError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "choosing" });
 
   const chosenLibrary = libraries.find((row) => row.id === libraryId) ?? null;
@@ -165,6 +170,7 @@ export function LoadFromLibraryDialog({
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setLibrariesError(null);
     setPhase({ kind: "choosing" });
     setLibrariesLoading(true);
     void (async () => {
@@ -172,19 +178,20 @@ export function LoadFromLibraryDialog({
         const response = await listLibraries(dispatch, { limit: 50 });
         setLibraries(response.libraries);
       } catch (caught) {
-        setError(
+        setLibrariesError(
           describeMediaError(caught, "Your Libraries could not be read."),
         );
       } finally {
         setLibrariesLoading(false);
       }
     })();
-  }, [dispatch, open]);
+  }, [dispatch, open, librariesAttempt]);
 
   const loadVideos = useCallback(
     async (id: string) => {
       setVideosLoading(true);
       setError(null);
+      setVideosError(null);
       try {
         // THE PAGE SIZE IS THE ORGANIZATION'S, AWAITED — never a constant and
         // never a stale render value. `ensureEffectiveKnob` shares the ONE
@@ -208,7 +215,7 @@ export function LoadFromLibraryDialog({
         setTotalCount(0);
         setReadyTotal(0);
         setChosenIds([]);
-        setError(
+        setVideosError(
           describeMediaError(
             caught,
             "That Library's items could not be read.",
@@ -306,6 +313,13 @@ export function LoadFromLibraryDialog({
             <Label htmlFor="samples-library">Library</Label>
             {librariesLoading ? (
               <Skeleton className="h-11 w-full" />
+            ) : librariesError ? (
+              <ReadFailure
+                error={new Error(librariesError)}
+                what="your Libraries"
+                onRetry={() => setLibrariesAttempt((n) => n + 1)}
+                size="compact"
+              />
             ) : libraries.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 You have no media Libraries yet.{" "}
@@ -350,6 +364,13 @@ export function LoadFromLibraryDialog({
               <Skeleton className="h-4 w-40" />
               <Skeleton className="h-24 w-full" />
             </div>
+          ) : chosenLibrary && videosError ? (
+            <ReadFailure
+              error={new Error(videosError)}
+              what={`${chosenLibrary.name}'s items`}
+              onRetry={() => void loadVideos(chosenLibrary.id)}
+              size="compact"
+            />
           ) : chosenLibrary && readiness && !readiness.canStart ? (
             <p className="flex items-start gap-2 text-sm text-muted-foreground">
               <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />

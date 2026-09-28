@@ -201,6 +201,7 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
             {sending ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {/* read-gate-exempt: progress of the notifications this dialog is sending right now, not a read's rows */}
                 {progress ? `Sending ${progress.done}/${progress.total}` : "Sending…"}
               </>
             ) : (

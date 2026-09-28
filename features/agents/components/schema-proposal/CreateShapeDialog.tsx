@@ -69,7 +69,8 @@ type SlugStatus =
   | "available"
   | "taken"
   | "invalid"
-  | "reserved";
+  | "reserved"
+  | "unchecked";
 
 interface CreateShapeDialogProps {
   open: boolean;
@@ -111,6 +112,8 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
   const [slugCheck, setSlugCheck] = useState<{
     slug: string;
     taken: boolean;
+    /** The availability read failed — never shown as "available". */
+    failed?: boolean;
   } | null>(null);
   /** null until the person edits the sample — until then it follows the draft. */
   const [editedSample, setEditedSample] = useState<string | null>(null);
@@ -172,7 +175,9 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
           setSlugCheck({ slug, taken: taken.length > 0 });
         })
         .catch(() => {
-          // Loud at submit time; the live hint just stays on "checking".
+          if (cancelled) return;
+          // Said in the hint; create re-checks and refuses loudly if taken.
+          setSlugCheck({ slug, taken: false, failed: true });
         });
     }, 350);
     return () => {
@@ -190,9 +195,11 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
     : plannedSlugs.some((s) => RESERVED_SHAPE_SLUGS.has(s))
       ? "reserved"
       : slugCheck?.slug === slug
-        ? slugCheck.taken
-          ? "taken"
-          : "available"
+        ? slugCheck.failed
+          ? "unchecked"
+          : slugCheck.taken
+            ? "taken"
+            : "available"
         : "checking";
 
   const parseSample = (): unknown | undefined => {
@@ -344,6 +351,8 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
   const slugHint: { text: string; tone: "muted" | "ok" | "bad" } =
     slugStatus === "checking"
       ? { text: "Checking availability…", tone: "muted" }
+      : slugStatus === "unchecked"
+        ? { text: "Couldn't check availability — it is checked again when you create", tone: "bad" }
       : slugStatus === "available"
         ? { text: "Available", tone: "ok" }
         : slugStatus === "taken"

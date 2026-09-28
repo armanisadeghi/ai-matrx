@@ -134,6 +134,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { readOf } from "@/components/read-state/ReadGate";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { toast } from "@/lib/toast";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
 
@@ -755,7 +756,9 @@ function ServerToolsTab({
         setCopiedFormat(format);
         setTimeout(() => setCopiedFormat(null), 1500);
       } catch (err) {
-        console.error("Failed to copy enabled tools", err);
+        toast.error("Couldn't copy the enabled tools", {
+          description: err instanceof Error ? err.message : String(err),
+        });
       }
     },
     [metadata, activeSet],

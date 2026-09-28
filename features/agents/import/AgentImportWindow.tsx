@@ -38,6 +38,7 @@ import {
 import { ImportQuickFixes } from "./ImportQuickFixes";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -567,17 +568,22 @@ function AgentImportWindowInner({ onClose }: { onClose: () => void }) {
 
   // ── Tool index (fetched once on mount — state so analysis re-runs when ready)
   const [toolIndex, setToolIndex] = useState<ToolIndex>(() => new Map());
+  // Without the catalog every pasted tool reads as "unresolved" — so the
+  // failure is said above the body instead of letting those warnings lie.
+  const [toolIndexError, setToolIndexError] = useState<unknown>(null);
+  const [toolIndexAttempt, setToolIndexAttempt] = useState(0);
   useEffect(() => {
     const svc = new ToolsService();
     svc
       .fetchTools()
       .then((tools) => {
         setToolIndex(buildToolIndex(tools));
+        setToolIndexError(null);
       })
-      .catch(() => {
-        // Non-fatal — converter will fall back to warning for unresolved tools
+      .catch((err: unknown) => {
+        setToolIndexError(err);
       });
-  }, []);
+  }, [toolIndexAttempt]);
 
   const pasteAnalysis = analyzeImportPaste(
     selectedSourceId,
@@ -747,6 +753,14 @@ function AgentImportWindowInner({ onClose }: { onClose: () => void }) {
       sidebarMinSize={160}
       defaultSidebarOpen
     >
+      {toolIndexError != null && (
+        <ReadFailure
+          error={toolIndexError}
+          what="the tool catalog (pasted tools can't be matched until it loads)"
+          onRetry={() => setToolIndexAttempt((n) => n + 1)}
+          size="compact"
+        />
+      )}
       {renderBody()}
     </WindowPanel>
   );

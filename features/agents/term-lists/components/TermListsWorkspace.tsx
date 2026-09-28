@@ -37,6 +37,7 @@ import {
 import { TermEntriesTable } from "./TermEntriesTable";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 function draftOf(list: TermList): TermListDraft {
   return {
@@ -65,16 +66,17 @@ export function TermListsWorkspace() {
   const params = useSearchParams();
   const selectedId = params.get("id");
   const [lists, setLists] = useState<TermList[] | null>(null);
+  // The rail's read failure, said in the rail — never "No term lists yet".
+  const [listsError, setListsError] = useState<unknown>(null);
   const [creating, setCreating] = useState(false);
 
   const reload = async () => {
     try {
       const orgId = await ensureOrgId(null);
       setLists(await listTermLists(orgId));
+      setListsError(null);
     } catch (e) {
-      if (!presentOrganizationRefusal(e, { subject: "Term lists", act: "loaded" })) {
-        toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
-      }
+      setListsError(e);
       setLists([]);
     }
   };
@@ -146,6 +148,8 @@ export function TermListsWorkspace() {
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
+          ) : listsError != null ? (
+            <ReadFailure error={listsError} what="your term lists" onRetry={() => void reload()} size="compact" />
           ) : lists.length === 0 ? (
             <button
               type="button"
@@ -213,9 +217,12 @@ export function TermListEditor({
   const [draft, setDraft] = useState<TermListDraft | null>(null);
   const [missing, setMissing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setLoadError(null);
     void getTermList(id)
       .then((list) => {
         if (!active) return;
@@ -227,15 +234,18 @@ export function TermListEditor({
         setDraft(draftOf(list));
       })
       .catch((e: unknown) => {
-        toast.error(e instanceof Error ? e.message : "Couldn't load the term list");
+        if (active) setLoadError(e);
       });
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, loadAttempt]);
 
   if (missing) {
     return <p className="p-6 text-sm text-muted-foreground">This term list was archived or does not exist.</p>;
+  }
+  if (loadError != null && (!base || !draft)) {
+    return <ReadFailure error={loadError} what="this term list" onRetry={() => setLoadAttempt((n) => n + 1)} />;
   }
   if (!base || !draft) {
     return (

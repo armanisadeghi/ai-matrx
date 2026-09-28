@@ -41,6 +41,7 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
+import { restoreFromTrash } from "@/features/trash/service";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { updateConfig } from "../redux/fastFireSlice";
@@ -290,7 +291,7 @@ export function FastFireSetup() {
   };
   const heldStart = useHeldStudyStart(launch);
   return (
-    <div className="min-h-full w-full bg-textured">
+    <div className="matrx-touch-targets min-h-full w-full bg-textured">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
         {/* Set picker */}
         <section className="mb-5 rounded-xl border border-border bg-card p-4">
@@ -328,12 +329,23 @@ export function FastFireSetup() {
               No decks yet. Create one in Flashcard Studio first.
             </div>
           ) : (
-            <FastFireSetPicker
-              id="fastfire-set-picker"
-              sets={sets}
-              value={config.setId}
-              onChange={(setId) => dispatch(updateConfig({ setId }))}
-            />
+            <>
+              <FastFireSetPicker
+                id="fastfire-set-picker"
+                sets={sets}
+                value={config.setId}
+                onChange={(setId) => dispatch(updateConfig({ setId }))}
+              />
+              {/* A link to a deck that is not in the list (archived, or not
+                  the person's to see) says so — never a silently empty picker
+                  (page-pass 2026-09-27). */}
+              {config.setId && !selectedSet && (
+                <MissingDeckNotice
+                  setId={config.setId}
+                  onRestored={retrySetsLoad}
+                />
+              )}
+            </>
           )}
         </section>
 
@@ -439,6 +451,7 @@ export function FastFireSetup() {
               Show grades as they catch up, or only at the end.
             </p>
             <Switch
+              className="matrx-tap-area"
               checked={config.liveScore}
               onCheckedChange={(checked) =>
                 dispatch(updateConfig({ liveScore: checked }))
@@ -460,6 +473,7 @@ export function FastFireSetup() {
               during the drill, not the next one.
             </p>
             <Switch
+              className="matrx-tap-area"
               checked={config.adaptive}
               onCheckedChange={(checked) =>
                 dispatch(updateConfig({ adaptive: checked }))
@@ -480,6 +494,7 @@ export function FastFireSetup() {
               then cached for instant playback.
             </p>
             <Switch
+              className="matrx-tap-area"
               checked={config.spokenFronts}
               onCheckedChange={(checked) =>
                 dispatch(updateConfig({ spokenFronts: checked }))
@@ -629,7 +644,7 @@ export function FastFireSetup() {
           <section className="mb-5 rounded-xl border border-border bg-card p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                <HelpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div>
                   <div className="text-sm font-medium text-foreground">
                     Instant help
@@ -721,7 +736,7 @@ export function FastFireSetup() {
         )}
 
         {heldStart.held && (
-          <StudyOrganizationHoldNotice what="Starting FastFire" className="mb-3 rounded-lg border border-border bg-card" />
+          <StudyOrganizationHoldNotice what="Starting Fast Fire" className="mb-3 rounded-lg border border-border bg-card" />
         )}
         <div className="mb-2 flex justify-center">
           <coppa.Gate />
@@ -741,7 +756,7 @@ export function FastFireSetup() {
           ) : (
             <>
               <Flame className="h-5 w-5" />
-              Start FastFire
+              Start Fast Fire
             </>
           )}
         </Button>
@@ -773,5 +788,72 @@ export function FastFireSetup() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** The deck a link named is not in the picker: say why, and offer Restore. */
+function MissingDeckNotice({
+  setId,
+  onRestored,
+}: {
+  setId: string;
+  onRestored: () => void;
+}) {
+  const [deck, setDeck] = useState<
+    { name: string; archived: boolean } | null | undefined
+  >(undefined);
+  const [restoring, setRestoring] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void fcService.getSetIncludingArchived(setId).then((res) => {
+      if (!cancelled) setDeck(res.data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [setId]);
+  if (deck === undefined) return null;
+  if (deck === null) {
+    return (
+      <Alert variant="warning" className="mt-3">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          The deck this link names isn&apos;t available to you. Pick another
+          deck above.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  if (!deck.archived) return null;
+  return (
+    <Alert variant="warning" className="mt-3">
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription className="flex flex-wrap items-center gap-2">
+        <span className="min-w-0 flex-1">
+          &ldquo;{deck.name}&rdquo; is archived. Restore it to drill it.
+        </span>
+        <Button
+          size="sm"
+          disabled={restoring}
+          onClick={async () => {
+            setRestoring(true);
+            try {
+              await restoreFromTrash("fc_set", setId);
+              toast.success(`Restored "${deck.name}"`);
+              onRestored();
+            } catch (e) {
+              toast.error(
+                e instanceof Error ? e.message : "The deck was not restored.",
+              );
+            } finally {
+              setRestoring(false);
+            }
+          }}
+        >
+          {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Restore
+        </Button>
+      </AlertDescription>
+    </Alert>
   );
 }

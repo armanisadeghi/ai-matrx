@@ -41,6 +41,7 @@ import {
   type CxWorkingDocument,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
 import { WorkingDocumentPanel } from "./WorkingDocumentPanel";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function ScratchpadQuickPanel({ className }: { className?: string }) {
   const dispatch = useAppDispatch();
@@ -52,6 +53,7 @@ export function ScratchpadQuickPanel({ className }: { className?: string }) {
   );
 
   const [pool, setPool] = useState<CxWorkingDocument[] | null>(null);
+  const [poolError, setPoolError] = useState<unknown>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -80,9 +82,13 @@ export function ScratchpadQuickPanel({ className }: { className?: string }) {
 
   const loadPool = useCallback(() => {
     void listUserDocuments("scratch")
-      .then(setPool)
+      .then((rows) => {
+        setPool(rows);
+        setPoolError(null);
+      })
       .catch((err: unknown) => {
         console.error("[scratchpad-panel] pool list failed", err);
+        setPoolError(err);
         setPool([]);
       });
   }, []);
@@ -94,6 +100,7 @@ export function ScratchpadQuickPanel({ className }: { className?: string }) {
       .unwrap()
       .catch((err: unknown) => {
         console.error("[scratchpad-panel] delete failed", err);
+        toast.error("Couldn't delete this scratchpad — it is still here.");
       })
       .finally(() => {
         setDeleting(false);
@@ -144,7 +151,14 @@ export function ScratchpadQuickPanel({ className }: { className?: string }) {
                 )}
               </DropdownMenuItem>
             ))}
-            {pool !== null && pool.length === 0 && (
+            {poolError != null ? (
+              <ReadFailure
+                error={poolError}
+                what="your saved scratchpads"
+                onRetry={loadPool}
+                size="compact"
+              />
+            ) : pool !== null && pool.length === 0 && (
               <div className="px-2 py-2 text-xs text-muted-foreground">
                 No saved scratchpads yet
               </div>

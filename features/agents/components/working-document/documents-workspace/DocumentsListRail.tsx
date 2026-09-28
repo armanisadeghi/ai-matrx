@@ -167,7 +167,7 @@ export function DocumentsListRail({
         {error && (
           <div className="px-2 py-4 text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
         )}
-        {docs !== null && ordered.length === 0 && (
+        {!error && docs !== null && ordered.length === 0 && (
           <div className="px-2 py-8 text-center text-xs text-muted-foreground">
             {q ? "Nothing matches." : "No documents yet."}
           </div>

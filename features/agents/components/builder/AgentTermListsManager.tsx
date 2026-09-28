@@ -19,7 +19,6 @@ import {
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { toast } from "@/lib/toast";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import {
   attachTermList,
   detachTermList,
@@ -28,6 +27,7 @@ import {
   type AttachedTermList,
 } from "@/features/agents/term-lists/service";
 import type { TermList } from "@/features/agents/term-lists/types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const EDITOR_HREF = "/resources/term-lists";
 
@@ -47,18 +47,22 @@ function SavedAgentTermListsManager({ agentId }: { agentId: string }) {
   // whether `fetched.agentId` still matches the current prop. That is what
   // lets the effect below call setState only from inside its async callbacks
   // (a real external event — the response arriving), never from its own body.
-  const [fetched, setFetched] = useState<{ agentId: string; attached: AttachedTermList[] }>({
+  const [fetched, setFetched] = useState<{ agentId: string; attached: AttachedTermList[]; error: unknown }>({
     agentId: "",
     attached: [],
+    error: null,
   });
   const loading = fetched.agentId !== agentId;
   const attached = loading ? [] : fetched.attached;
+  // The read's failure, said in the row itself — never an empty row that
+  // reads as "no term lists attached".
+  const loadError = loading ? null : fetched.error;
 
   const reload = async () => {
     try {
-      setFetched({ agentId, attached: await listAttachedTermLists(agentId) });
+      setFetched({ agentId, attached: await listAttachedTermLists(agentId), error: null });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
+      setFetched((cur) => ({ ...cur, agentId, error: e }));
     }
   };
 
@@ -70,13 +74,10 @@ function SavedAgentTermListsManager({ agentId }: { agentId: string }) {
     let active = true;
     void listAttachedTermLists(agentId)
       .then((rows) => {
-        if (active) setFetched({ agentId, attached: rows });
+        if (active) setFetched({ agentId, attached: rows, error: null });
       })
       .catch((e: unknown) => {
-        if (active) {
-          toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
-          setFetched({ agentId, attached: [] });
-        }
+        if (active) setFetched({ agentId, attached: [], error: e });
       });
     return () => {
       active = false;
@@ -101,6 +102,14 @@ function SavedAgentTermListsManager({ agentId }: { agentId: string }) {
       >
         {loading ? (
           <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+        ) : null}
+        {loadError != null ? (
+          <ReadFailure
+            error={loadError}
+            what="the attached term lists"
+            onRetry={() => void reload()}
+            size="compact"
+          />
         ) : null}
         {attached.map((item) => (
           <span
@@ -152,6 +161,8 @@ function TermListPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [lists, setLists] = useState<TermList[] | null>(null);
+  const [listsError, setListsError] = useState<unknown>(null);
+  const [listsAttempt, setListsAttempt] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -159,18 +170,22 @@ function TermListPicker({
     void ensureOrgId(null)
       .then((orgId) => listTermLists(orgId))
       .then((rows) => {
-        if (active) setLists(rows);
+        if (active) {
+          setLists(rows);
+          setListsError(null);
+        }
       })
       .catch((e: unknown) => {
-        if (!presentOrganizationRefusal(e, { subject: "Term lists", act: "loaded" })) {
-          toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
+        // Said once, inside the picker (the org refusal carries its own remedy).
+        if (active) {
+          setListsError(e);
+          setLists([]);
         }
-        if (active) setLists([]);
       });
     return () => {
       active = false;
     };
-  }, [open]);
+  }, [open, listsAttempt]);
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
@@ -192,6 +207,13 @@ function TermListPicker({
               <div className="flex justify-center p-3">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
+            ) : listsError != null ? (
+              <ReadFailure
+                error={listsError}
+                what="this organization's term lists"
+                onRetry={() => setListsAttempt((n) => n + 1)}
+                size="compact"
+              />
             ) : (
               <>
                 <CommandEmpty>No term lists in this organization.</CommandEmpty>
