@@ -57,7 +57,10 @@ jest.mock("@ai-matrx/records-ui", () => {
     recordsDataSource: () => ({}),
   };
 });
-jest.mock("@ai-matrx/records/react", () => ({ useTable: () => ({ data: { name: "Coding Accounts" }, error: null, loading: false }) }));
+jest.mock("@ai-matrx/records/react", () => ({
+  useTable: () => ({ data: { name: "Coding Accounts" }, error: null, loading: false }),
+  useRecordsClient: () => ({ config: {}, recordUpdate: async () => ({ ok: true }) }),
+}));
 jest.mock("@ai-matrx/design-system", () => ({ Button: () => null }));
 jest.mock("@ai-matrx/agents/mandates", () => ({ MANDATE_KEYS: { data__page_guidance: "data.page_guidance" } }));
 jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({ useAgentLauncher: () => ({ launchMandate: jest.fn() }) }));
@@ -99,7 +102,7 @@ jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "87a6e699-3622-486
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => null }));
 jest.mock("@/features/organizations/service", () => ({ getOrganizationMembers: jest.fn() }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({ OrganizationContextNotice: () => null }));
-jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
+jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}), supabase: { auth: {} } }));
 jest.mock("@/features/unified-data/hub/useSharedTable", () => ({ useSharedTable: () => ({ state: "none" }) }));
 jest.mock("@/features/unified-data/objectOrganization", () => ({
   useObjectOrganization: () => ({ state: "found", organizationId: ITS_ORG, retry: jest.fn() }),
@@ -124,7 +127,9 @@ jest.mock("@/lib/url-state/addressWithoutNavigating", () => ({ replaceAddressWit
 jest.mock("@/features/unified-data/recordsFiles", () => ({ RECORDS_FILES: {} }));
 jest.mock("@/components/agent-copy/page-capture/usePageCapture", () => ({ usePageCapture: () => undefined }));
 jest.mock("@/components/agent-copy/page-capture/pageCapture", () => ({ tablePageCapture: () => ({}) }));
-jest.mock("@/components/agent-copy/page-capture/PageCaptureButton", () => ({ PageCaptureButton: () => null }));
+jest.mock("@/components/agent-copy/page-capture/PageCaptureButton", () => ({
+  PageCaptureButton: () => <button type="button" data-page-capture-button="" aria-label="Copy, transform or export this page" />,
+}));
 jest.mock("@/features/unified-data/page-capture/useTableCaptureContribution", () => ({ useTableCaptureContribution: () => undefined }));
 jest.mock("@/features/unified-data/page-capture/shownViewCapture", () => ({ shownViewSelection: () => ({}) }));
 
@@ -178,6 +183,9 @@ describe("the /data-v2 table route", () => {
     expect(page.querySelector("[data-back]")).not.toBeNull();
     expect(page.querySelector("[data-table-switcher]")?.textContent).toBe("Coding Accounts");
     expect(page.querySelector("[data-table-menu]")).not.toBeNull();
+    // ONE copy/export on the page — the table toolbar's (merged-grid review 2, D6); the header drew
+    // an identical second one.
+    expect(page.querySelector("[data-page-capture-button]")).toBeNull();
   });
 
   it("declares the table's organization to the shell (lit there when it is not the active one), never showing it on the page", async () => {

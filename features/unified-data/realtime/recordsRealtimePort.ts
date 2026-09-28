@@ -114,7 +114,104 @@ export function createRecordsRealtimePort(organizationId: string): RecordsRealti
  */
 const portsByOrganization = new Map<string, RecordsRealtimePort>();
 
+/**
+ * ONE LISTENER'S SIDE OF A TABLE'S CHANNEL: its own burst coalescing, fed by the table's ONE
+ * subscription. Every hook that reads the same table (the grid, its summaries, the export, the
+ * row-actions editor, the Sheet's own hook…) is a listener; none of them joins a channel.
+ */
+interface TableListener {
+  notice(notice: StoreNotice): void;
+  backfill(): void;
+}
+
+/**
+ * 🚨 ONE CHANNEL PER TABLE, HOWEVER MANY READERS (merged-grid review 2, 2026-09-27: 124
+ * `channel.raw.*` warnings in one session). Every `useRecords` on the page — the grid, the
+ * export menu's page, the row-actions editor's sample, a second grid hook — called
+ * `subscribeRecords`, and each call opened its own holder on `custom:table:<id>`; the manager
+ * shares the wire, but each OPEN is announced, and every re-subscribe on a re-render announced
+ * again. Now the port keeps ONE manager subscription per table (opened by the first listener,
+ * closed by the last), and fans each notice out to the listeners. The spec also declares its
+ * echo test (`isOwnOp` on the notice's `op_id`) and a dedup key, so the raw wire is guarded, not
+ * merely announced as unguarded.
+ */
+interface TableChannel {
+  listeners: Set<TableListener>;
+  stop: (() => void) | null;
+  cancelled: boolean;
+}
+
+/** The notice's own identity: a redelivered notice is the same statement at the same instant. */
+export function noticeKey(notice: StoreNotice): string | undefined {
+  if (!notice.at) return undefined;
+  const ids = notice.record_ids == null ? "*" : [...notice.record_ids].sort().join(",");
+  return `${notice.table_id ?? ""}:${notice.kind ?? ""}:${notice.op ?? ""}:${notice.op_id ?? ""}:${notice.at}:${ids}`;
+}
+
 function buildRecordsRealtimePort(organizationId: string): RecordsRealtimePort {
+  const channels = new Map<string, TableChannel>();
+
+  const open = (tableId: string): TableChannel => {
+    const channel: TableChannel = { listeners: new Set(), stop: null, cancelled: false };
+    const spec = (): ChannelSpec => ({
+      topic: storeTableChannel.topic({ tableId }),
+      // Database Broadcast is authorized by RLS on realtime.messages, which is what
+      // `private` means here — the package awaits `setAuth()` before subscribing, which is
+      // the step whose absence makes a channel look healthy and deliver nothing forever.
+      private: true,
+      // The sender is Postgres, so there is no Matrx envelope to unwrap. OUR OWN WRITE is known
+      // by the op id the write door carried (`isOwnOp`) — declared to the manager, so the echo
+      // is dropped before anything else and the raw wire is guarded, not warned about.
+      wire: { mode: "raw", isOwnMessage: (payload) => isOwnOp((payload as StoreNotice | null)?.op_id) },
+      // A redelivered notice is the same statement: the manager's dedup keys it by what it says.
+      eventKey: (_source, payload) => noticeKey((payload ?? {}) as StoreNotice),
+      broadcast: [
+        {
+          event: "records.changed",
+          onMessage: (message) => {
+            const notice = (message.data ?? {}) as StoreNotice;
+            // Belt and braces: a notice the manager did not recognise as ours is still checked.
+            if (isOwnOp(notice.op_id)) return;
+            for (const listener of channel.listeners) listener.notice(notice);
+          },
+        },
+      ],
+      // A CHANNEL WITH NO RECONCILIATION IS A SCREEN THAT WILL EVENTUALLY LIE. Realtime has
+      // no replay, so everything that happened while the laptop was asleep is gone; the
+      // only correct answer on any recovery path is to read the page again.
+      onBackfill: () => {
+        for (const listener of channel.listeners) listener.backfill();
+      },
+    });
+
+    // THE ONE SWITCH THE STORE'S SCREENS READ, asked here too. It is an async door, so the
+    // join happens when it answers; `cancelled` covers the last listener leaving before it.
+    void UNIFIED_DATA_CAMPAIGN.enabled(organizationId)
+      .then((on) => {
+        if (channel.cancelled) return;
+        if (!on) {
+          // NOTHING FAILS SILENTLY. The mount already refuses to render with the store off,
+          // so reaching here means the switch moved under an open page — say which, and
+          // what to do, instead of leaving a screen labelled "Live" that hears nothing.
+          console.warn(
+            "[records/realtime] The record store is switched off for this organization, so this " +
+              `table is not live. Nothing was subscribed for ${tableId}. Reload the page — the ` +
+              "screen will say so itself once it re-reads the switch.",
+          );
+          return;
+        }
+        channel.stop = subscribeToRealtimeManager(spec);
+      })
+      .catch((error: unknown) => {
+        console.warn(
+          "[records/realtime] Could not read the record store's switch, so this table is not " +
+            `live and nothing was subscribed for ${tableId}. Reload the page to try again.`,
+          error,
+        );
+      });
+    return channel;
+  };
+
   return {
     subscribeRecords({ table_id }, sink) {
       let timer: ReturnType<typeof setTimeout> | null = null;
@@ -133,87 +230,42 @@ function buildRecordsRealtimePort(organizationId: string): RecordsRealtimePort {
         if (wholePage) sink.records(null);
         else if (ids.length > 0) sink.records(ids);
       };
-
       const nudge = () => {
         if (timer !== null) return;
         timer = setTimeout(flush, NUDGE_DEBOUNCE_MS);
       };
 
-      const spec = (): ChannelSpec => ({
-        topic: storeTableChannel.topic({ tableId: table_id }),
-        // Database Broadcast is authorized by RLS on realtime.messages, which is what
-        // `private` means here — the package awaits `setAuth()` before subscribing, which is
-        // the step whose absence makes a channel look healthy and deliver nothing forever.
-        private: true,
-        // The sender is Postgres, so there is no Matrx envelope to unwrap — and echo
-        // suppression is NOT delegated to the manager, because it cannot recognise a
-        // database's notice as ours. It is done below, by the op id the write door carried.
-        wire: { mode: "raw" },
-        broadcast: [
-          {
-            event: "records.changed",
-            onMessage: (message) => {
-              const notice = (message.data ?? {}) as StoreNotice;
-
-              // OUR OWN WRITE, ALREADY APPLIED — dropped before anything else. The writer's
-              // own column change has already ticked the package's shape revision, and its
-              // own row change already came back from the door it wrote through.
-              if (isOwnOp(notice.op_id)) return;
-
-              if (notice.kind === "field" || notice.kind === "table") {
-                // A COLUMN IS NOT A ROW. Re-reading the rows would redraw the same table
-                // without the new column in it. The PORT says so through the contract now; it
-                // no longer reaches around it into the package's react entry point.
-                sink.shape();
-              }
-              if (notice.kind === "field") return;
-              if (notice.record_ids == null) reReadWholePage = true;
-              else for (const id of notice.record_ids) pending.add(id);
-              nudge();
-            },
-          },
-        ],
-        // A CHANNEL WITH NO RECONCILIATION IS A SCREEN THAT WILL EVENTUALLY LIE. Realtime has
-        // no replay, so everything that happened while the laptop was asleep is gone; the
-        // only correct answer on any recovery path is to read the page again.
-        onBackfill: () => {
+      const listener: TableListener = {
+        notice(notice) {
+          if (notice.kind === "field" || notice.kind === "table") {
+            // A COLUMN IS NOT A ROW. Re-reading the rows would redraw the same table
+            // without the new column in it. The PORT says so through the contract now; it
+            // no longer reaches around it into the package's react entry point.
+            sink.shape();
+          }
+          if (notice.kind === "field") return;
+          if (notice.record_ids == null) reReadWholePage = true;
+          else for (const id of notice.record_ids) pending.add(id);
+          nudge();
+        },
+        backfill() {
           reReadWholePage = true;
           flush();
         },
-      });
+      };
 
-      // THE ONE SWITCH THE STORE'S SCREENS READ, asked here too. It is an async door, so the
-      // join happens when it answers; `cancelled` covers an unmount that beats it.
-      let stop: (() => void) | null = null;
-      let cancelled = false;
-      void UNIFIED_DATA_CAMPAIGN.enabled(organizationId)
-        .then((on) => {
-          if (cancelled) return;
-          if (!on) {
-            // NOTHING FAILS SILENTLY. The mount already refuses to render with the store off,
-            // so reaching here means the switch moved under an open page — say which, and
-            // what to do, instead of leaving a screen labelled "Live" that hears nothing.
-            console.warn(
-              "[records/realtime] The record store is switched off for this organization, so this " +
-                `table is not live. Nothing was subscribed for ${table_id}. Reload the page — the ` +
-                "screen will say so itself once it re-reads the switch.",
-            );
-            return;
-          }
-          stop = subscribeToRealtimeManager(spec);
-        })
-        .catch((error: unknown) => {
-          console.warn(
-            "[records/realtime] Could not read the record store's switch, so this table is not " +
-              `live and nothing was subscribed for ${table_id}. Reload the page to try again.`,
-            error,
-          );
-        });
+      const channel = channels.get(table_id) ?? open(table_id);
+      channels.set(table_id, channel);
+      channel.listeners.add(listener);
 
       return () => {
-        cancelled = true;
         if (timer !== null) clearTimeout(timer);
-        stop?.();
+        channel.listeners.delete(listener);
+        if (channel.listeners.size > 0) return;
+        // The last reader of this table left: the table's one subscription goes with it.
+        channel.cancelled = true;
+        channel.stop?.();
+        channels.delete(table_id);
       };
     },
   };

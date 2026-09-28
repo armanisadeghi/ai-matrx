@@ -54,7 +54,6 @@ import { HeldWritesOnTable } from "@/features/record-change-approvals/HeldWrites
 import { RecordStoreTableSurface, useGridContextChannel } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
 import { tablePageCapture } from "@/components/agent-copy/page-capture/pageCapture";
-import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import { useTableCaptureContribution } from "@/features/unified-data/page-capture/useTableCaptureContribution";
 import { shownViewSelection, type ShownViewLike } from "@/features/unified-data/page-capture/shownViewCapture";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -111,9 +110,9 @@ function TableRouteHeader({
           {/* A write the store held for a person, decided from here as well as from the chat.
               Absent unless something is waiting. */}
           <HeldWritesOnTable key="held" tableId={tableId} organizationId={organizationId} />
-          <span key="capture" className="hidden sm:inline-flex">
-            <PageCaptureButton size="xs" />
-          </span>
+          {/* ONE copy/export on this page (merged-grid review 2, D6: two identical buttons, header and
+              toolbar): the table's own, in its toolbar's copy/export menu. The page capture below is
+              still registered, so agents and "Copy full context" read it. */}
           {actions}
         </>
       }
