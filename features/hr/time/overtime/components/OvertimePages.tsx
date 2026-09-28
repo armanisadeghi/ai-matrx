@@ -76,6 +76,9 @@ export function OvertimeQueuePage() {
         <OvertimeQueueTable
           rows={queue.page?.rows ?? []}
           isLoading={queue.isLoading}
+          // The queue's failure is said once, above — it also empties the watchlist —
+          // so the table carries only the read's wait.
+          read={{ status: queue.isLoading && !queue.page ? "loading" : "ready", what: "overtime requests", hasData: queue.page != null }}
           hrefFor={(row) => hrTimeOvertimeRequestHref(row.id, hr.orgRef)}
         />
       </div>

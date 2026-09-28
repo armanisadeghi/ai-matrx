@@ -32,6 +32,7 @@ import {
   type OvertimeQueueState,
 } from "../overtimeVocabulary";
 import { OvertimeStateChip } from "./OvertimeStateChip";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 /**
  * The row's display state. `unapprovedOtFlagged` wins over the stored state because it is the fact
@@ -58,9 +59,11 @@ export interface OvertimeQueueTableProps {
   rows: OvertimeRequestRow[];
   isLoading: boolean;
   hrefFor: (row: OvertimeRequestRow) => string;
+  /** The queue read these rows answer (the page owns it). */
+  read?: ReadOutcome | undefined;
 }
 
-export function OvertimeQueueTable({ rows, isLoading, hrefFor }: OvertimeQueueTableProps) {
+export function OvertimeQueueTable({ rows, isLoading, hrefFor, read }: OvertimeQueueTableProps) {
   const router = useRouter();
   const [clickedRow, setClickedRow] = useState<OvertimeRequestRow | null>(null);
 
@@ -208,6 +211,7 @@ export function OvertimeQueueTable({ rows, isLoading, hrefFor }: OvertimeQueueTa
         columns={columns}
         getRowId={(row) => row.id}
         isLoading={isLoading}
+        read={read}
         zebra
         searchText={(row) => `${row.employeeDisplayName} ${row.state} ${row.reasonNote ?? ""}`}
         toolbar={{ search: true, searchPlaceholder: "Search overtime requests…" }}

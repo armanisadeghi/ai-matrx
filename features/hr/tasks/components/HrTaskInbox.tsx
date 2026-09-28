@@ -42,6 +42,7 @@ import {
     isRefusal,
 } from "@/features/hr/tasks/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const SCOPES: { key: HrInboxScope; label: string; hint: string }[] = [
     { key: "mine", label: "Mine", hint: "Waiting on you" },
@@ -198,6 +199,9 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
         }
     }
 
+    // A failed inbox read returns the one failure below; past it the tables carry the read's wait.
+    const inboxRead = readOf({ loading, error }, { what: "your HR inbox", onRetry: () => reload() });
+
     if (error) {
         return (
             <div className="p-6">
@@ -352,6 +356,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                         <HrTaskTable
                             rows={rows}
                             isLoading={loading}
+                            read={inboxRead}
                             selectedIds={selectedIds}
                             onSelectedIdsChange={setSelectedIds}
                             // A decision taken in the row window must leave this queue, exactly
@@ -489,6 +494,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                         <HrTaskTable
                             rows={scopeRows}
                             isLoading={loading}
+                            read={inboxRead}
                             showDelivery={false}
                             emptyTitle="Nothing open in this scope"
                         />

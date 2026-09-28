@@ -26,18 +26,20 @@ import { useState, type ReactNode } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  CircleAlert,
   Loader2,
 } from "lucide-react";
 import KindRenderPaths from "@/features/content-ir/render-paths/KindRenderPaths";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 interface KindExamplePreviewProps {
   kind: string;
   examples: ExamplesState;
   /** Rendered when the kind has zero examples — caller owns the copy. */
   emptyState: ReactNode;
+  /** The examples read's retry and name, for its failure (the status is `examples.status`). */
+  read?: ReadOutcome | undefined;
   /**
    * Retired 2026-08-29 — each path now states what it exercises, inline, in
    * `KindRenderPaths`. Kept so existing callers keep compiling; ignored.
@@ -49,6 +51,7 @@ export default function KindExamplePreview({
   kind,
   examples,
   emptyState,
+  read,
 }: KindExamplePreviewProps) {
   const [index, setIndex] = useState(0);
 
@@ -62,13 +65,7 @@ export default function KindExamplePreview({
   }
 
   if (examples.status === "error") {
-    return (
-      <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-700 dark:text-red-300">
-        <CircleAlert className="h-4 w-4 shrink-0" />
-        {examples.message}
-        <ErrorAlchemyMenu error={examples.message} />
-      </div>
-    );
+    return <ReadFailure error={examples.message} what={read?.what ?? "the examples"} onRetry={read?.onRetry} />;
   }
 
   const rows = examples.rows;

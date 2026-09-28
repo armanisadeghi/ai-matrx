@@ -36,6 +36,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { readOf } from "@/components/read-state/ReadGate";
 
 function statusToDocStatus(s: RichMember["status"]): DocStatus {
   if (s === "no_processing") return "pending";
@@ -302,18 +303,19 @@ export function RichMemberTable({
     </>
   );
 
-  const tableData = error ? [] : members;
-
   return (
     <>
       <MatrxDataTable<RichMember>
         tableId="rag-data-store-members"
-        data={tableData}
+        data={members}
         columns={memberColumns()}
         getRowId={memberId}
         density="condensed"
         isLoading={loading && members.length === 0}
         isFetching={loading && members.length > 0}
+        // The read's failure, said once by the table: the failure with nothing
+        // loaded, a stale notice over members kept from an earlier read.
+        read={readOf({ loading, error }, { what: "the members", ...(onRefresh ? { onRetry: onRefresh } : {}) })}
         // Search and Preview are the existing member-detail doors; opening the
         // package detail panel as well would create a second, empty detail path.
         detail={{ enabled: false }}
@@ -323,22 +325,10 @@ export function RichMemberTable({
           searchPlaceholder: "Search store members…",
           refresh: onRefresh ? { onRefresh } : undefined,
         }}
-        emptyState={
-          error
-            ? {
-                title: "Could not load members",
-                description: error,
-                action: onRefresh ? (
-                  <Button size="sm" variant="outline" onClick={onRefresh}>
-                    Retry
-                  </Button>
-                ) : undefined,
-              }
-            : {
-                title: "No members yet",
-                description: "Drag a file onto this store, or use Add Member.",
-              }
-        }
+        emptyState={{
+          title: "No members yet",
+          description: "Drag a file onto this store, or use Add Member.",
+        }}
         rowActions={(member) => actionsFor(member)}
       />
       <QuickSearchDialog

@@ -29,6 +29,7 @@ import {
   useWarRoomThreadMenuSection,
   type WarRoomThreadMenuRow,
 } from "@/features/war-room/lib/thread-actions";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 // context-menu-exempt: surfaceName — the registered matrx-user/war-room surface declares 17 per-ROOM values a cross-room table cannot emit; naming it would hand bound agents empty values
 
@@ -162,7 +163,14 @@ function OpenThreadAction({ row }: { row: ThreadTableRow }) {
   );
 }
 
-export function WarRoomThreadsTable({ isLoading }: { isLoading: boolean }) {
+export function WarRoomThreadsTable({
+  isLoading,
+  read,
+}: {
+  isLoading: boolean;
+  /** The sessions-list read these threads come from (the view owns it). */
+  read?: ReadOutcome | undefined;
+}) {
   const rows = useAppSelector(selectThreadTableRows);
 
   // ONE MENU PER PANE: the whole table gets a single v3 wrapper and the
@@ -340,6 +348,7 @@ export function WarRoomThreadsTable({ isLoading }: { isLoading: boolean }) {
             ],
           }}
           rowActions={(row) => <OpenThreadAction row={row} />}
+          read={read}
           emptyState={{
             icon: <MessagesSquare className="size-7" />,
             title: "No threads yet",

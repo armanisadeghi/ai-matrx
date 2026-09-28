@@ -105,6 +105,7 @@ import { PlanTree } from "./PlanTree";
 import { SetupView } from "../setup/components/SetupView";
 import { useCmsLink } from "../setup/hooks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 // The map chunk loads only when the user switches to it (the conditional
 // render below is the deferral; ssr:false keeps the split shape unchanged).
@@ -961,6 +962,8 @@ export function ContentPlanWorkbench({
               nodes={nodeRows}
               isLoading={nodes.isLoading}
               isFetching={nodes.isFetching}
+              // A failed plan read is answered once, by the "Could not load the plan" branch above.
+              read={readOf(nodes, { what: "the plan" })}
               cmsPageById={cmsPages.pagesByNodeId}
               cmsSiteId={resolvedCmsSiteId}
               measureByWebPageId={measure.byWebPageId}

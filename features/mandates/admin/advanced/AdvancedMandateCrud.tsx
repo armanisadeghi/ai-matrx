@@ -47,7 +47,7 @@ import {
   findRelation,
   relationKey,
 } from "./tables";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 type Row = Record<string, unknown>;
 
@@ -250,13 +250,6 @@ export function AdvancedMandateCrud() {
         )}
       </div>
 
-      {error && (
-        <div className="shrink-0 border-b border-destructive/40 bg-destructive/10 px-4 py-2 font-mono text-xs text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      )}
-
       <div className="min-h-0 flex-1 overflow-hidden px-4 py-3">
         {/* No entity: this X-ray browses whichever raw relation is selected
             (ADVANCED_RELATIONS), so there is no single registered
@@ -284,6 +277,8 @@ export function AdvancedMandateCrud() {
           getRowId={(row) => (pk ? String(row[pk]) : JSON.stringify(row))}
           isLoading={isPending && rows.length === 0}
           isFetching={isPending}
+          // The read's failure is said once, by the table.
+          read={readOf({ loading: isPending, error }, { what: relKey, onRetry: load })}
           pageSize={25}
           zebra
           emptyState={{

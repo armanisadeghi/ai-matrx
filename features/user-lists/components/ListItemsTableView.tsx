@@ -26,10 +26,13 @@ import { deleteItemAction } from "../actions/list-actions";
 import { useToastManager } from "@/hooks/useToastManager";
 import type { UserList, UserListItem, GroupedItem } from "../types";
 import { getListVisibility } from "../types";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 interface ListItemsTableViewProps {
   list: UserList;
   items: UserListItem[];
+  /** The read behind `items` (the caller owns it): the empty state waits for its success. */
+  read?: ReadOutcome;
 }
 
 function formatDate(dateStr: string | null) {
@@ -41,7 +44,7 @@ function formatDate(dateStr: string | null) {
   });
 }
 
-export function ListItemsTableView({ list, items }: ListItemsTableViewProps) {
+export function ListItemsTableView({ list, items, read }: ListItemsTableViewProps) {
   const toast = useToastManager("user-lists");
 
   const [addOpen, setAddOpen] = useState(false);
@@ -209,6 +212,7 @@ export function ListItemsTableView({ list, items }: ListItemsTableViewProps) {
         filteredItems={tableState.filteredItems}
         paginatedItems={tableState.paginatedItems}
         isLoading={false}
+        read={read}
         columns={columns}
         idField="id"
         labelField="label"

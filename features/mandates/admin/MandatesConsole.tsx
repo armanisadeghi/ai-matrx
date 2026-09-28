@@ -179,6 +179,7 @@ import {
   type UngradedReason,
 } from "./impact-cells";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 /** MandateRow → the manifest's summary shape (surface scope + agent context). */
 function toMandateSummary(r: MandateRow): MandateSummary {
@@ -353,6 +354,8 @@ export function MandatesConsole() {
     null,
   );
   const [fetching, setFetching] = useState(false);
+  /** The mandates list read's own failure — said once, by the table (never a toast beside an empty table). */
+  const [consoleError, setConsoleError] = useState<unknown>(null);
   // SELECTION LIVES IN THE URL — the table's OWN `urlState.selectedRow` key,
   // read and written here so the console's programmatic openers (the coverage
   // board, the drift strip, the right-click menu, the `?mandate=` door and the
@@ -441,12 +444,14 @@ export function MandatesConsole() {
             // failure: say it on the page, with what to do, and do not offer a
             // reload that will refuse again.
             setSystemHomeRefusal(message);
+            setConsoleError(null);
           } else {
             setSystemHomeRefusal(null);
-            toast.error(`Failed to load mandates: ${message}`);
+            setConsoleError(consoleResult.reason ?? new Error(message));
           }
         } else {
           setSystemHomeRefusal(null);
+          setConsoleError(null);
           setData(consoleResult.value);
         }
         if (truthResult.status === "rejected") {
@@ -1735,6 +1740,7 @@ export function MandatesConsole() {
               searchText={mandateConsoleSearchText}
               isLoading={loading}
               isFetching={fetching}
+              read={readOf({ loading, error: consoleError }, { what: "the mandates", onRetry: reload })}
               pageSize={50}
               emptyState={{
                 title: "No mandates yet",

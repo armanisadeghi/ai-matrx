@@ -19,9 +19,12 @@ import { deleteListAction } from "../actions/list-actions";
 import { useToastManager } from "@/hooks/useToastManager";
 import type { UserList, UserListWithItems } from "../types";
 import { getListVisibility } from "../types";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 interface ListsTableViewProps {
   lists: UserList[];
+  /** The read behind `lists` (the caller owns it): the empty state waits for its success. */
+  read?: ReadOutcome;
 }
 
 function VisibilityBadge({ list }: { list: UserList }) {
@@ -76,7 +79,7 @@ function listHref(id: string): string {
   return getEntityInfo("structured_list").hrefFor?.(id) ?? `/lists/${id}`;
 }
 
-export function ListsTableView({ lists }: ListsTableViewProps) {
+export function ListsTableView({ lists, read }: ListsTableViewProps) {
   const router = useRouter();
   const toast = useToastManager("user-lists");
   const [, startTransition] = useTransition();
@@ -225,6 +228,7 @@ export function ListsTableView({ lists }: ListsTableViewProps) {
         filteredItems={tableState.filteredItems}
         paginatedItems={tableState.paginatedItems}
         isLoading={false}
+        read={read}
         columns={columns}
         idField="id"
         labelField="list_name"

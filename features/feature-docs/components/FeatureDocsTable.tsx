@@ -33,7 +33,7 @@ import {
   buildPathFilterRules,
   matchesPathFilter,
 } from "@/features/feature-docs/utils/path-filter";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface ColumnFilters {
   pathInclude: string;
@@ -231,18 +231,13 @@ export default function FeatureDocsTable({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {error && (
-        <div className="border-b border-border px-4 py-2 text-sm text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      )}
       <MatrxDataTable<FeatureDocListRow>
         data={filteredRows}
         columns={columns}
         getRowId={(row) => row.id}
         defaultSort={{ id: "path", direction: "asc" }}
         isFetching={loading && rows.length > 0}
+        read={readOf({ loading, error }, { what: "the feature docs", onRetry: () => void load() })}
         emptyState={{
           title: "No docs in this zone match your filters.",
         }}

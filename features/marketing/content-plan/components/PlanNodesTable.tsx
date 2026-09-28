@@ -79,6 +79,7 @@ import {
 import { countBy, formatUpdated, withCounts } from "../utils";
 import type { PlanNodeRow, PlanNodeType } from "../types";
 import { PipelineProgressBadge } from "./PipelineProgressBadge";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 /** Bump `version` when a column is added/removed (lib/list-views backfill contract). */
 const SURFACE_PREFS: Partial<ListViewPrefs> = {
@@ -136,6 +137,8 @@ export interface PlanNodesTableProps {
   /** One editor body, hosted by both the canonical window and side panel. */
   renderNodePanel: (node: PlanNodeRow, onDeleted: () => void) => ReactNode;
   onReparent: (id: string, parentId: string | null) => void;
+  /** The plan-nodes read these rows answer (the workbench owns it). */
+  read?: ReadOutcome | undefined;
 }
 
 export function PlanNodesTable({
@@ -150,6 +153,7 @@ export function PlanNodesTable({
   drift,
   renderNodePanel,
   onReparent,
+  read,
 }: PlanNodesTableProps) {
   const { prefs, setPrefs } = useListViewPrefs(
     "content-plan-nodes",
@@ -951,6 +955,7 @@ export function PlanNodesTable({
           </DropdownMenu>
         ),
       }}
+      read={read}
       emptyState={{
         title: nodes.length === 0 ? "No plan yet" : "No pages match",
         description:

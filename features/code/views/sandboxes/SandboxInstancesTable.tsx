@@ -33,12 +33,15 @@ import {
   STATUS_LABELS,
 } from "@/lib/sandbox/status";
 import type { SandboxInstance } from "@/types/sandbox";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export interface SandboxInstancesTableProps {
   instances: SandboxInstance[];
   loading: boolean;
   isFetching?: boolean;
   error: string | null;
+  /** The list read's own failure (said by the table); `error` may also be an operation's. */
+  readError?: string | null;
   onRetry: () => void;
   onCreate: () => void;
   onOpen: (row: SandboxInstance) => void;
@@ -194,6 +197,7 @@ export function SandboxInstancesTable({
   loading,
   isFetching = false,
   error,
+  readError = null,
   onRetry,
   onCreate,
   onOpen,
@@ -374,7 +378,8 @@ export function SandboxInstancesTable({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
-      {error ? (
+      {/* An operation's failure; the list read's failure is the table's to say (read=), once. */}
+      {error && error !== readError ? (
         <Alert variant="destructive" className="shrink-0">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Sandbox operation failed</AlertTitle>
@@ -393,6 +398,7 @@ export function SandboxInstancesTable({
         getRowId={(row) => row.id}
         isLoading={loading}
         isFetching={isFetching}
+        read={readOf({ loading, error: readError }, { what: showingHistory ? "ended sandboxes" : "sandboxes", onRetry })}
         edit={{
           enabled: true,
           onSave: async (edits) => {

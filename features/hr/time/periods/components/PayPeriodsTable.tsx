@@ -27,6 +27,7 @@ import { formatLocalDate } from "../../shared/format";
 import type { PayPeriodRow, PayPeriodState } from "../../api/types";
 import { PERIOD_STATE_LABEL, rowProgressSentence } from "../periodStateMachine";
 import { StateBadge } from "./StateBadge";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 const PERIOD_STATES: PayPeriodState[] = [
   "open",
@@ -43,9 +44,11 @@ export interface PayPeriodsTableProps {
   isLoading: boolean;
   /** Built by `hrTimePeriodHref` — never hand-assembled, so `?org=` always travels. */
   hrefFor: (row: PayPeriodRow) => string;
+  /** The pay-periods read these rows answer (the page owns it). */
+  read?: ReadOutcome | undefined;
 }
 
-export function PayPeriodsTable({ rows, isLoading, hrefFor }: PayPeriodsTableProps) {
+export function PayPeriodsTable({ rows, isLoading, hrefFor, read }: PayPeriodsTableProps) {
   const router = useRouter();
   const [clickedRow, setClickedRow] = useState<PayPeriodRow | null>(null);
 
@@ -177,6 +180,7 @@ export function PayPeriodsTable({ rows, isLoading, hrefFor }: PayPeriodsTablePro
       columns={columns}
       getRowId={(row) => row.id}
       isLoading={isLoading}
+      read={read}
       zebra
       searchText={(row) =>
         `${row.payGroupName} ${row.periodStartOn} ${row.periodEndOn} ${row.state}`

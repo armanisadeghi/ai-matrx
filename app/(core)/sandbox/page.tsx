@@ -54,6 +54,7 @@ export default function SandboxListPage() {
     loading,
     refreshing,
     error,
+    listError,
     total,
     fetchInstances,
     createInstance,
@@ -404,6 +405,7 @@ export default function SandboxListPage() {
             isFetching={refreshing}
             showingHistory={historyOpen}
             error={error}
+            readError={listError}
             onCreate={() => setCreateOpen(true)}
             onRetry={() => {
               void fetchInstances();

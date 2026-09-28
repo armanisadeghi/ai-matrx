@@ -300,13 +300,12 @@ describe("RichMemberTable", () => {
         />,
       );
     });
-    await act(async () => {
-      (
-        Array.from(host.querySelectorAll("button")).find(
-          (button) => button.textContent === "Retry",
-        ) as HTMLButtonElement
-      ).click();
-    });
+    // The failure is the table's to say (read=), never an empty state dressed as one.
+    expect(tableProps.read).toEqual(
+      expect.objectContaining({ status: "error", error: "Could not load members" }),
+    );
+    expect(tableProps.emptyState?.title).toBe("No members yet");
+    act(() => tableProps.read?.onRetry?.());
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 });

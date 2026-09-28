@@ -20,6 +20,7 @@ import {
 } from "@/features/hr/tasks/task-step-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 /**
  * One actionable HR item, rendered once. Every row's title is a DOOR to the
@@ -37,6 +38,7 @@ export function HrTaskTable({
     emptyDescription,
     showDelivery = true,
     onRowDecided,
+    read,
 }: {
     rows: HrInboxRow[];
     isLoading?: boolean;
@@ -48,6 +50,8 @@ export function HrTaskTable({
     showDelivery?: boolean;
     /** Reload the queue after a decision taken in the row window. */
     onRowDecided?: () => void;
+    /** The inbox read these rows answer (the inbox owns it). */
+    read?: ReadOutcome | undefined;
 }) {
     /** Right-clicked row — STATE (not a ref) so the menu reads the row that
      *  was actually clicked. */
@@ -218,6 +222,7 @@ export function HrTaskTable({
             columns={columns}
             getRowId={(row) => row.step_id}
             isLoading={isLoading}
+            read={read}
             pageSize={25}
             emptyState={{ title: emptyTitle, description: emptyDescription }}
             /*

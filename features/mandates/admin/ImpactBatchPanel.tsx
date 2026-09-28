@@ -893,6 +893,9 @@ export function ImpactBatchPanel({
         </div>
       ) : null}
 
+      {/* With no grades read, the header's one sentence (the failure, or the missing
+          organization) is the whole answer — no "No pins on these agents" beneath it. */}
+      {hasScope && !impact && (error || organizationUnanswered) ? null : (
       <div className={`min-h-0 flex-1 overflow-hidden ${section !== "pins" ? "hidden" : ""}`}>
         <MatrxDataTable
           tableId={`impact-batch-${mode}`}
@@ -906,6 +909,11 @@ export function ImpactBatchPanel({
           density="condensed"
           detail={{ enabled: false }}
           copy={false}
+          read={{
+            status: hasScope && !impact && (loading || !sessionReady) ? "loading" : "ready",
+            what: "the pin grades",
+            hasData: impact != null,
+          }}
           emptyState={{
             title: hasScope ? "No pins on these agents" : "Nothing to grade",
             description: hasScope
@@ -938,6 +946,7 @@ export function ImpactBatchPanel({
           }}
         />
       </div>
+      )}
     </div>
   );
 }

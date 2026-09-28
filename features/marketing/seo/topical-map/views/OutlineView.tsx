@@ -381,6 +381,9 @@ function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
                       )
                   : undefined
               }
+              // OutlineView mounts this body only after the tree read answered (its
+              // pending/failed branches return first), so this empty is the search's.
+              read={{ status: "ready", what: "this map's topics" }}
               emptyState="No topic matches this search."
               className="min-h-0 flex-1"
             />

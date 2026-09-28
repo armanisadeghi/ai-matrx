@@ -16,6 +16,7 @@ import type { Json } from "@/types/database.types";
 import type { ShapeActivationVerdict } from "@/features/content-ir/studio/shape-authoring-service";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface ShapePreviewTabProps {
   kind: string;
@@ -156,6 +157,10 @@ export default function ShapePreviewTab({
       <KindExamplePreview
         kind={kind}
         examples={examples}
+        read={readOf(
+          { status: examples.status, error: examples.status === "error" ? examples.message : null },
+          { what: "the saved examples", onRetry: () => setExamplesRevision((revision) => revision + 1) },
+        )}
         emptyState={
           <div className="rounded-md border border-dashed border-border bg-card/50 px-4 py-8 text-center">
             <p className="text-sm font-medium text-foreground">

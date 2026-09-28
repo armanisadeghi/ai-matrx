@@ -34,6 +34,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { type Tables, type TablesUpdate } from "@/types/database.types";
 import { isJsonArray, isJsonObject, type JsonObject } from "@/types/json";
+import { readOf } from "@/components/read-state/ReadGate";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -610,6 +611,7 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
     const { toast } = useToast();
     const [samples, setSamples] = useState<ToolTestSample[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<unknown>(null);
     const [filter, setFilter] = useState<FilterType>("all");
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -629,12 +631,14 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
             // default. Keep that scan path while making each record independently
             // collapsible through the shared multi-expanded-detail contract.
             setExpandedIds(new Set(nextSamples.map((sample) => sample.id)));
+            setLoadError(null);
         } catch (err) {
-            toast({ title: "Failed to load samples", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+            // Said once, by the table (never a toast beside "No test samples saved yet").
+            setLoadError(err ?? new Error("The test samples read failed"));
         } finally {
             setLoading(false);
         }
-    }, [toolName, toolId, toast]);
+    }, [toolName, toolId]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -779,6 +783,7 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
                     detail={{ enabled: false }}
                     window={{ enabled: false }}
                     copy={false}
+                    read={readOf({ loading, error: loadError }, { what: "the test samples", onRetry: () => void load() })}
                     emptyState={{
                         title: samples.length === 0
                             ? "No test samples saved yet for this tool."

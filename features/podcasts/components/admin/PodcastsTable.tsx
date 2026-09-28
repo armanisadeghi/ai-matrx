@@ -50,6 +50,7 @@ import {
   showsHumanSummary,
 } from "@/features/podcasts/utils/copy-format";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 interface PodcastsTableProps {
   activeTab: "shows" | "episodes";
@@ -63,6 +64,8 @@ interface PodcastsTableProps {
   onRefresh: () => void;
   onDeleteShow: (id: string) => void;
   onDeleteEpisode: (id: string) => void;
+  /** The podcasts read (the container owns it): failure, stale notice, wait — said by the table. */
+  read?: ReadOutcome | undefined;
 }
 
 function CopyLinkButton({ slug }: { slug: string }) {
@@ -100,6 +103,7 @@ export function PodcastsTable({
   onRefresh,
   onDeleteShow,
   onDeleteEpisode,
+  read,
 }: PodcastsTableProps) {
   const [search, setSearch] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -399,6 +403,7 @@ export function PodcastsTable({
           columns={showColumns}
           getRowId={(show) => show.id}
           isLoading={isLoading}
+          read={read}
           density="condensed"
           copy={false}
           toolbar={{ search: false }}
@@ -460,6 +465,7 @@ export function PodcastsTable({
           columns={episodeColumns}
           getRowId={(episode) => episode.id}
           isLoading={isLoading}
+          read={read}
           density="condensed"
           copy={false}
           toolbar={{ search: false }}

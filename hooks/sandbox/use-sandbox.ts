@@ -72,6 +72,9 @@ export function useSandboxInstances(projectId?: string) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The LIST read's own failure — `error` also carries create/stop/rename
+  // failures, which are not "the list could not load" (RC-B12 r13).
+  const [listError, setListError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const hasFetchedOnce = useRef(false);
   const [listProjectId, setListProjectId] = useState(projectId);
@@ -121,6 +124,7 @@ export function useSandboxInstances(projectId?: string) {
         setRefreshing(true);
       }
       setError(null);
+      setListError(null);
       try {
         const fetchPage = async (limit: number, offset: number) => {
           const params = new URLSearchParams();
@@ -230,6 +234,7 @@ export function useSandboxInstances(projectId?: string) {
           setListProjectId(projectId);
         }
         setError(msg);
+        setListError(msg);
         return null;
       } finally {
         if (listRequestId.current === requestId && listScopeGeneration.current === scopeGeneration) {
@@ -501,6 +506,7 @@ export function useSandboxInstances(projectId?: string) {
     loading: showingCurrentProject ? loading : true,
     refreshing: showingCurrentProject ? refreshing : false,
     error: showingCurrentProject ? error : null,
+    listError: showingCurrentProject ? listError : null,
     total: showingCurrentProject ? total : 0,
     fetchInstances,
     createInstance,

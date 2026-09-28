@@ -72,6 +72,7 @@ import { MasterWatchLayerDoor as MasterWatchLayer } from "@/features/war-room/co
 import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
 import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { readOf } from "@/components/read-state/ReadGate";
 
 type WarRoomAllViewMode = "rooms" | "threads";
 
@@ -183,7 +184,10 @@ export function WarRoomAllView() {
         {view === "threads" ? (
           <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 max-w-[1600px]">
-              <WarRoomThreadsTable isLoading={isLoading} />
+              <WarRoomThreadsTable
+                isLoading={isLoading}
+                read={readOf({ status, error: listError }, { what: "your threads", onRetry: () => void dispatch(loadSessionsList()) })}
+              />
             </div>
           </div>
         ) : (

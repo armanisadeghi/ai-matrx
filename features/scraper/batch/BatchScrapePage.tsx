@@ -666,6 +666,7 @@ export default function BatchScrapePage() {
                     </Button>
                   ),
                 }}
+                // read-gate-exempt: rows are this session's own scrape jobs, each carrying its own failure and retry; no read lists them, so "No pages yet" is only "you have not pasted links"
                 emptyState={{
                   title: "No pages yet",
                   description: "Paste links above and press Scrape.",

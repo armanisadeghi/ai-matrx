@@ -27,7 +27,7 @@ import { GeneratePeriodsPanel } from "./GeneratePeriodsPanel";
 import { hrTimePeriodHref } from "@/features/hr/routes";
 import { usePayPeriods } from "../hooks/usePayPeriods";
 import { PayPeriodsTable } from "./PayPeriodsTable";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const CASES = new Set(["happy", "empty", "error", "edge", "edge2"]);
 
@@ -54,14 +54,6 @@ export function PayPeriodsPage() {
           </p>
         </header>
 
-        {failure ? (
-          // The server's sentence, verbatim.
-          <p className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
-            {failure.userMessage}
-            <ErrorAlchemyMenu error={failure.userMessage} />
-          </p>
-        ) : null}
-
         {/*
           The calendar generator. It sits ABOVE the table because an empty table is the single most
           common reason somebody opens this page, and the door that fixes that should not be below
@@ -78,6 +70,8 @@ export function PayPeriodsPage() {
         <PayPeriodsTable
           rows={page?.rows ?? []}
           isLoading={isLoading}
+          // The server's sentence, verbatim — said once, by the table.
+          read={readOf({ isLoading, error: failure?.userMessage ?? null }, { what: "the pay periods", onRetry: reload })}
           hrefFor={(row) => hrTimePeriodHref(row.id, hr.orgRef)}
         />
 

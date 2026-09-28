@@ -66,6 +66,8 @@ import type { LabelBatch, LabelCode } from "../types";
 import { formatBatchState } from "../columns";
 import { PrinterCertificationNotice } from "../printers/components/PrinterCertificationNotice";
 import { useFailedPrinterGate } from "../printers/useFailedPrinterGate";
+import { readOf } from "@/components/read-state/ReadGate";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 function stateTone(state: string): string {
   return state === "open"
@@ -164,6 +166,7 @@ export function LabelBatchDetail({
   const [batch, setBatch] = useState<LabelBatch | null>(null);
   const [codes, setCodes] = useState<LabelCodeTableRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadNonce, setReloadNonce] = useState(0);
   const [pageIndex, setPageIndex] = useState(0);
   const [pendingVoid, setPendingVoid] = useState(false);
@@ -202,9 +205,11 @@ export function LabelBatchDetail({
           if (cancelled) return;
           setBatch(reconciled);
           setCodes(loadedCodes.map((code, index) => ({ ...code, sourcePosition: index + 1 })));
+          setLoadError(null);
         } catch (err) {
           console.error("[commerce-labels] batch load failed", err);
-          toast.error("Could not load the batch.");
+          // Said once, by the codes table (stale notice over the codes on screen).
+          if (!cancelled) setLoadError(err ?? new Error("The label batch read failed"));
         } finally {
           if (!cancelled) setLoading(false);
         }
@@ -291,6 +296,10 @@ export function LabelBatchDetail({
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+  if (!batch && loadError != null) {
+    // The read failed — not "no access", not "no such batch".
+    return <ReadFailure error={loadError} what="the label batch" onRetry={() => setReloadNonce((n) => n + 1)} />;
   }
   if (!batch) {
     return (
@@ -485,6 +494,7 @@ export function LabelBatchDetail({
             total: codes.length,
             answeredBy: "client",
           }}
+          read={readOf({ loading, error: loadError }, { what: "the batch's codes", onRetry: () => setReloadNonce((value) => value + 1) })}
           emptyState={{ title: "No codes in this batch" }}
         />
 

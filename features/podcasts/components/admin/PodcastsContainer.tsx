@@ -1,7 +1,6 @@
 'use client';
 
-import { ReadFailure } from '@/components/read-state/ReadFailure';
-import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
+import { readOf } from '@/components/read-state/ReadGate';
 import React, { useState, useEffect, useCallback } from 'react';
 import { PodcastsTable } from './PodcastsTable';
 import { PodcastDetailPanel } from './PodcastDetailPanel';
@@ -144,12 +143,8 @@ export function PodcastsContainer() {
             <div className="flex flex-1 min-h-0 overflow-hidden">
                 {/* Table panel */}
                 <div className={`${panelOpen ? 'w-1/2' : 'w-full'} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}>
-                    {loadError != null && (shows.length > 0 || episodes.length > 0) && (
-                        <StaleDataNotice hasData what="the podcasts" onRetry={() => void loadData()} retrying={isLoading} className="m-2" />
-                    )}
-                    {loadError != null && shows.length === 0 && episodes.length === 0 ? (
-                        <ReadFailure error={loadError} what="the podcasts" onRetry={() => void loadData()} />
-                    ) : (
+                    {/* The read's failure is the table's to say, once: the failure with
+                        nothing loaded, a stale notice over rows kept from before. */}
                     <PodcastsTable
                         activeTab={activeTab}
                         shows={shows}
@@ -162,8 +157,8 @@ export function PodcastsContainer() {
                         onRefresh={loadData}
                         onDeleteShow={handleShowDeleted}
                         onDeleteEpisode={handleEpisodeDeleted}
+                        read={readOf({ loading: isLoading, error: loadError }, { what: "the podcasts", onRetry: () => void loadData() })}
                     />
-                    )}
                 </div>
 
                 {/* Detail panel */}
