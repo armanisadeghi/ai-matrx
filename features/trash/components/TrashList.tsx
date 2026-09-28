@@ -57,6 +57,7 @@ import {
   type MergedTrashCounts,
 } from "@/features/trash/sources";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isScopesRpcErr } from "@/features/scopes/types";
 
 /** Rows per page — per kind in personal mode, per merged page in organization mode. */
 export const TRASH_PAGE = 50;
@@ -313,7 +314,7 @@ export function TrashList({
       try {
         const res = await membershipsService.forUser("organization");
         if (!live) return;
-        if (!res.ok) {
+        if (isScopesRpcErr(res)) {
           setManagedError(res.error.message);
           return;
         }
