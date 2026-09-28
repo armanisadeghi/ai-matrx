@@ -186,6 +186,9 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
         onOpenChange={onOpenChange}
         arrangement={menuProps.menuLayout}
         density={menuProps.menuDensity}
+        // A control over a container of the thing (a note tab's "…"): its own
+        // rows first, the rest under one "<subject> ▸" (alchemy 0.8.28).
+        subjectFold={menuProps.subjectFold}
       />
     </RegroupBoundary>
   );
