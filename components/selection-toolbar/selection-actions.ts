@@ -112,11 +112,19 @@ export const SELECTION_ACTION_MODES: Readonly<Record<string, ModeRule>> = {
  * the census test checks against the providers (selection-host-kinds.test.ts):
  * a host kind is the set of host halves present on the target.
  *
- *   annotated reading  (annotation + context menu)  highlight ×5, comment, suggest, link, report, AI and more
- *   rich editor        (richEditor + context menu)   formatting, comment (when annotated), copy, AI and more;
- *                                                    table actions while the caret/selection is in a table
- *   plain reading      (context menu only)           copy, save to notes, AI and more — chat answers,
- *                                                    note preview, studio preview, window panels
+ *   annotated reading  (annotation + context menu)  highlight ×5, comment, suggest, link, report, AI and more —
+ *                                                    the study guide, document Annotate, and EVERY saved record
+ *                                                    (annotations/RecordAnnotations): a note's preview, a chat
+ *                                                    answer, the studio previewing an unedited saved document.
+ *                                                    Highlight/Link are absent on a kind with no association pair
+ *                                                    (a chat answer until its pairs are applied).
+ *   rich editor        (richEditor + context menu)   formatting, copy, AI and more; COMMENT only when the buffer
+ *                                                    is a saved record (a saved document or note) — absent for an
+ *                                                    unsaved buffer; table actions while the caret/selection is in
+ *                                                    a table. Notes' own editor modes: pending the notes migration
+ *                                                    onto the one editor (RC-A4).
+ *   plain reading      (context menu only)           copy, save to notes, AI and more — unsaved content: a stream
+ *                                                    in flight, raw text, an edited studio copy, window panels
  *   text field         (context menu, editable)      copy, save to notes, AI and more
  */
 export const SELECTION_HOST_KINDS = {

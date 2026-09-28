@@ -534,6 +534,12 @@ interface UserTableViewerProps {
    * person holds, and every refused edit says it is a preview.
    */
   previewOnly?: boolean;
+  /**
+   * A host's one-line notice about WHERE this table runs (a table in both stores still runs in the
+   * older store until its organization is switched over) — drawn beside the read-only chip, never
+   * in the toolbar's pinned controls and never as a second grid.
+   */
+  storeNotice?: React.ReactNode;
 }
 
 const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
@@ -560,6 +566,7 @@ const UserTableViewer = ({
   pageOwnsShareAndExport,
   toolbarSlot,
   previewOnly = false,
+  storeNotice,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [scheduleNavigationPending, startScheduleNavigation] = React.useTransition();
@@ -4969,17 +4976,23 @@ const UserTableViewer = ({
         </div>
       )}
 
-      {/* Read-only banner for shared tables (in the page's row the toolbar says View Only). */}
-      {isReadOnly && !inPageRow && (
-        <div
-          data-surface-value="is_read_only"
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm"
-        >
-          <Eye className="h-4 w-4" />
-          <span className="font-medium">Shared Table</span>
-          <span className="text-purple-500 dark:text-purple-400">
-            (read only)
-          </span>
+      {/* Read-only banner for shared tables (in the page's row the toolbar says View Only), and
+          the host's store notice beside it — one band, only when either has something to say. */}
+      {((isReadOnly && !inPageRow) || storeNotice) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {isReadOnly && !inPageRow && (
+            <div
+              data-surface-value="is_read_only"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm"
+            >
+              <Eye className="h-4 w-4" />
+              <span className="font-medium">{previewOnly ? "Preview" : "Shared Table"}</span>
+              <span className="text-purple-500 dark:text-purple-400">
+                (read only)
+              </span>
+            </div>
+          )}
+          {storeNotice}
         </div>
       )}
 
