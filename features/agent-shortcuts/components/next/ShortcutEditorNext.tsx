@@ -326,16 +326,16 @@ export function ShortcutEditorNext({
   const onDelete = async () => {
     if (isNew) return;
     const ok = await confirm({
-      title: "Delete shortcut?",
-      description: `This permanently removes "${form.label}". This action cannot be undone.`,
-      confirmLabel: "Delete",
+      title: "Move shortcut to Trash?",
+      description: `"${form.label}" leaves every menu. You can restore it from Trash.`,
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
     setBusy(true);
     try {
       await crud.deleteShortcut(shortcutId);
-      toast.success("Shortcut deleted");
+      toast.success("Shortcut moved to Trash");
       // agent-link-ok: shortcut editing only ever runs inside the user-shell agent route it navigates within
       router.replace(`/agents/${agentId}/shortcuts`);
     } catch (e) {

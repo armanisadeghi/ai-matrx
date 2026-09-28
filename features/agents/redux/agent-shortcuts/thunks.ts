@@ -10,7 +10,7 @@
  *   saveShortcut                 — UPDATE all dirty fields with optimistic rollback
  *   saveShortcutField            — UPDATE single field with optimistic rollback
  *   createShortcut               — INSERT a fully specified shortcut
- *   deleteShortcut               — DELETE a shortcut
+ *   deleteShortcut               — move a shortcut to Trash (deleted_at)
  *
  * RPC thunks:
  *   fetchUserShortcuts           — management page: all shortcuts the user owns/admins
@@ -669,8 +669,10 @@ export const createShortcut = createAsyncThunk<
 export const deleteShortcut = createAsyncThunk<void, string, ThunkApi>(
   "agentShortcut/delete",
   async (shortcutId, { dispatch }) => {
+    // Delete means archive: the shortcut moves to Trash (deleted_at) and
+    // leaves every live read (the view shows live rows only); Trash restores it.
     const { error } = await shortcutTable(supabase)
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", shortcutId);
 
     if (error) throw pgErrorToError(error);

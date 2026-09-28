@@ -1076,10 +1076,10 @@ export function ShortcutForm({
     <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Shortcut</AlertDialogTitle>
+          <AlertDialogTitle>Move Shortcut to Trash</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete &quot;{shortcut?.label}&quot;? This
-            cannot be undone.
+            &quot;{shortcut?.label}&quot; leaves every menu. You can restore it
+            from Trash.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -1089,7 +1089,7 @@ export function ShortcutForm({
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             disabled={deleting}
           >
-            {deleting ? "Deleting..." : "Delete"}
+            {deleting ? "Moving..." : "Move to Trash"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

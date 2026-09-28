@@ -174,9 +174,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Delete means archive: the shortcut moves to Trash and Trash restores it.
     const { error, count } = await shortcutTable(supabase)
-      .delete({ count: "exact" })
-      .eq("id", id);
+      .update({ deleted_at: new Date().toISOString() }, { count: "exact" })
+      .eq("id", id)
+      .is("deleted_at", null);
 
     if (error) {
       console.error("Error deleting agent shortcut:", error);
