@@ -68,6 +68,7 @@ import type { DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
 import {
   ALL_KINDS,
   DATA_HOME_DEFAULT_KIND_KNOB,
+  DATA_HOME_DEFAULT_ORDER_KNOB,
   DATA_HOME_DEFAULT_SCOPE_KNOB,
   DATA_HOME_SCOPES,
   DATA_HOME_SCOPE_TITLE,
@@ -78,6 +79,7 @@ import {
   kindsOnOffer,
   listingShownUnderKind,
   resolveDataHomeKind,
+  resolveDataHomeOrder,
   resolveDataHomeScope,
   visibilityOfLane,
   type DataHomeScope,
@@ -141,6 +143,7 @@ export function OrganizationHub({
   const scope: DataHomeScope = resolveDataHomeScope(searchParams.get("scope"), defaultScope);
   const defaultKind = useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_KIND_KNOB);
   const kind = resolveDataHomeKind(searchParams.get("kind"), defaultKind);
+  const order = resolveDataHomeOrder(useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_ORDER_KNOB));
   const chooseKind = useCallback(
     (next: string) => {
       const href = dataHomeKindHref(pathname, searchParams, next);
@@ -569,6 +572,8 @@ export function OrganizationHub({
           state={filtered[capability.id] ?? { phase: "reading" }}
           scope={scope}
           kind={capability.id === "tables" ? kind : ALL_KINDS}
+          order={order}
+          groupByOrganization={scope === "all"}
           /* THE TABLES LISTING IS EVERY ORGANIZATION'S (DATA-HOME-1): "this organization shows
              each member only what is shared" is one organization's setting and would be false
              over a list of eleven. It still speaks on the listings that ARE that organization's. */

@@ -75,7 +75,7 @@ async function home(query = "") {
 async function tablesListing() {
   return page.evaluate(() => {
     const section = document.querySelector('[data-hub-listing="tables"]');
-    const rows = [...(section?.querySelectorAll("li") ?? [])].map((li) => ({
+    const rows = [...(section?.querySelectorAll("li[data-hub-row]") ?? [])].map((li) => ({
       title: li.querySelector("a")?.textContent ?? "",
       organization: li.querySelector("[data-hub-row-organization]")?.textContent ?? null,
       kind: li.querySelector("[data-hub-row-kind]")?.textContent ?? null,

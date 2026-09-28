@@ -18,12 +18,23 @@
 // list standing in for a failed call.
 
 import Link from "next/link";
-import { ChevronDown, ExternalLink, TriangleAlert } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, TriangleAlert } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 
 
 import type { HubCapability, HubItem } from "./capabilities";
-import { ALL_KINDS, DATA_HOME_SCOPE_TITLE, emptyInScope, kindOne, kindTitle, type DataHomeScope } from "./dataHomeScope";
+import { useState } from "react";
+import { groupRows, isGroupCollapsed, toggleGroupCollapsed } from "@ai-matrx/design-system/data-table/grouping";
+import {
+  ALL_KINDS,
+  DATA_HOME_SCOPE_TITLE,
+  emptyInScope,
+  inDataHomeOrder,
+  kindOne,
+  kindTitle,
+  type DataHomeOrder,
+  type DataHomeScope,
+} from "./dataHomeScope";
 import type { DoorFailure } from "./doors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -39,6 +50,10 @@ export interface HubListingProps {
   scope?: DataHomeScope | undefined;
   /** The Kind filter the listing is under ("all" for every kind). */
   kind?: string | undefined;
+  /** How the rows are ordered (the knob `custom.data_home_default_order`). */
+  order?: DataHomeOrder | undefined;
+  /** Rows sit under organization headers — under All, when they span more than one organization. */
+  groupByOrganization?: boolean | undefined;
   /** This organization shows members only what is shared with them. */
   sharedOnly?: boolean | undefined;
   open: boolean;
@@ -61,7 +76,7 @@ function when(at: string | null | undefined): string | null {
 function Row({ item }: { item: HubItem }) {
   const changed = when(item.changedAt);
   return (
-    <li className="group border-t border-border first:border-t-0">
+    <li data-hub-row className="group border-t border-border first:border-t-0">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2">
         <Link
           href={item.href}
@@ -181,13 +196,29 @@ export function HubListing({
   state,
   scope = "all",
   kind = ALL_KINDS,
+  order = "updated",
+  groupByOrganization = false,
   sharedOnly,
   open,
   onOpenChange,
 }: HubListingProps) {
+  const [collapsedOrganizations, setCollapsedOrganizations] = useState<string[]>([]);
+  const ordered = state.phase === "read" ? inDataHomeOrder(state.items, order) : [];
+  // THE TABLE PAGE'S OWN GROUPING (design-system data-table/grouping): first-seen order over the
+  // ordered rows, so the organization with the latest change comes first.
+  const organizations =
+    groupByOrganization && new Set(ordered.map((i) => i.organizationName ?? "")).size > 1
+      ? groupRows({
+          rows: ordered,
+          columnId: "organization",
+          readCell: (item) => item.organizationName ?? null,
+          order: "first-seen",
+          emptyLabel: "No organization",
+        })
+      : null;
   const grouped =
     state.phase === "read" && capability.groupDuplicateTitles
-      ? groupItemsByTitle(state.items)
+      ? groupItemsByTitle(ordered)
       : null;
   // ONE COUNT FROM ONE DOOR (ACCESS-FIX-18, VERIFIER-18 M3): the header counts the TABLES, as
   // the sentence under the list and the package's own list do. It counted the grouped rows,
@@ -253,6 +284,44 @@ export function HubListing({
                   ? capability.emptyWhenSharedOnly
                   : capability.empty}
             </p>
+          ) : organizations ? (
+            <ul className="divide-y-0" data-hub-grouped-by="organization">
+              {organizations.map((group) => {
+                const collapsed = isGroupCollapsed(collapsedOrganizations, group.key);
+                const count = group.rows.length;
+                return (
+                  <li key={`${capability.id}:org:${group.key}`} data-hub-organization-group={group.label}>
+                    {/* THE TABLE PAGE'S GROUP HEADER, same shape: chevron, bold label, the count. */}
+                    <div
+                      data-matrx-table-group-row={group.key}
+                      data-matrx-table-group-collapsed={collapsed ? "true" : "false"}
+                      className="flex items-center gap-1.5 border-y border-border bg-muted/40 px-2 py-1.5"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setCollapsedOrganizations(toggleGroupCollapsed(collapsedOrganizations, group.key))}
+                        aria-expanded={!collapsed}
+                        aria-label={`${collapsed ? "Show" : "Hide"} ${group.label}`}
+                        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                      >
+                        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </button>
+                      <span className="truncate text-sm font-semibold text-foreground">{group.label}</span>
+                      <span className="whitespace-nowrap text-xs text-muted-foreground">
+                        {count.toLocaleString()} {count === 1 ? "item" : "items"}
+                      </span>
+                    </div>
+                    {collapsed ? null : (
+                      <ul className="divide-y-0">
+                        {group.rows.map((item) => (
+                          <Row key={`${capability.id}:${item.id}`} item={item} />
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           ) : grouped ? (
             <ul className="divide-y-0">
               {grouped.map((group) =>
@@ -265,7 +334,7 @@ export function HubListing({
             </ul>
           ) : (
             <ul className="divide-y-0">
-              {state.items.map((item) => (
+              {ordered.map((item) => (
                 <Row key={`${capability.id}:${item.id}`} item={item} />
               ))}
             </ul>

@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-28T09:17:00.643Z",
+  "generated_at": "2026-09-28T14:10:12.811Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -733,6 +733,12 @@
       "filename": "datahome1_c_the_data_home_default_kind_is_a_knob.sql",
       "checksum": "2504826ff92f2791dc7f717b85ea697afb917ced9873f0f415eb829adbe0cc0a",
       "applied_at": "2026-09-28 05:32:42.284307+00"
+    },
+    "migrations/campaign/datahome1_d_the_data_home_default_order_is_a_knob.sql": {
+      "source": "matrx-frontend",
+      "filename": "datahome1_d_the_data_home_default_order_is_a_knob.sql",
+      "checksum": "774da991b5c3131aabb8cd0d369854e44f11aa161283e837476b8c3ba14d6fba",
+      "applied_at": "2026-09-28 14:10:11.899699+00"
     },
     "migrations/campaign/datahome1_the_data_home_default_scope_is_a_knob.sql": {
       "source": "matrx-frontend",

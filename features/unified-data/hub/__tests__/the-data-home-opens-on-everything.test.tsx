@@ -114,13 +114,16 @@ jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
 /** The knob answers per key: the two default knobs are what the test sets; nothing else is set. */
 let defaultScopeKnob: unknown = undefined;
 let defaultKindKnob: unknown = undefined;
+let defaultOrderKnob: unknown = undefined;
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
   useEffectiveKnob: (_org: string, _user: string, ref: { key: string }) =>
     ref.key === "data_home_default_scope"
       ? defaultScopeKnob
       : ref.key === "data_home_default_kind"
         ? defaultKindKnob
-        : undefined,
+        : ref.key === "data_home_default_order"
+          ? defaultOrderKnob
+          : undefined,
 }));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => ME,
@@ -179,7 +182,7 @@ async function mount(query = "") {
 }
 
 function tableRows(): Array<{ title: string; organization: string; kind: string }> {
-  return [...container.querySelectorAll('[data-hub-listing="tables"] li')].map((li) => ({
+  return [...container.querySelectorAll('[data-hub-listing="tables"] li[data-hub-row]')].map((li) => ({
     title: li.querySelector("a")?.textContent ?? "",
     organization: li.querySelector("[data-hub-row-organization]")?.textContent ?? "",
     kind: li.querySelector("[data-hub-row-kind]")?.textContent ?? "",
@@ -197,18 +200,44 @@ afterEach(async () => {
   ROUTER.replace.mockClear();
   defaultScopeKnob = undefined;
   defaultKindKnob = undefined;
+  defaultOrderKnob = undefined;
 });
 
 describe("the data home · default is everything", () => {
-  it("opens on All — every organization's tables and every kind, each naming its kind and organization", async () => {
+  it("opens on All — every organization's tables and every kind, most recently updated first, under organization headers", async () => {
     await mount();
     expect(container.querySelector('[data-hub-scope-choice="all"]')?.getAttribute("aria-selected")).toBe("true");
+    // Rincon changed last (Status choices 15:41, Service calls 15:40), then Harbor (26 Sep), then Ojai (25 Sep).
+    const groups = [...container.querySelectorAll('[data-hub-listing="tables"] [data-hub-organization-group]')].map(
+      (g) => g.getAttribute("data-hub-organization-group"),
+    );
+    expect(groups).toEqual(["Rincon Plumbing Co", "Harbor Dental Group", "Ojai Valley Home Services"]);
     expect(tableRows()).toEqual([
-      { title: "Patient recall list", organization: "Harbor Dental Group", kind: "Table" },
-      { title: "Service calls", organization: "Rincon Plumbing Co", kind: "Table" },
-      { title: "Backflow test schedule", organization: "Ojai Valley Home Services", kind: "Table" },
       { title: "Status choices", organization: "Rincon Plumbing Co", kind: "List" },
+      { title: "Service calls", organization: "Rincon Plumbing Co", kind: "Table" },
+      { title: "Patient recall list", organization: "Harbor Dental Group", kind: "Table" },
+      { title: "Backflow test schedule", organization: "Ojai Valley Home Services", kind: "Table" },
     ]);
+  });
+
+  it("collapses an organization from its header, like a group on the table page", async () => {
+    await mount();
+    const toggle = container.querySelector(
+      '[data-hub-organization-group="Rincon Plumbing Co"] [data-matrx-table-group-row] button',
+    ) as HTMLButtonElement;
+    await act(async () => toggle.click());
+    expect(tableRows().map((r) => r.title)).toEqual(["Patient recall list", "Backflow test schedule"]);
+  });
+
+  it("orders A to Z when the order knob says name", async () => {
+    defaultOrderKnob = "name";
+    await mount("scope=orgs");
+    expect(tableRows().map((r) => r.title)).toEqual(["Patient recall list", "Service calls", "Status choices"]);
+  });
+
+  it("does not group under a filter other than All", async () => {
+    await mount("scope=orgs");
+    expect(container.querySelector("[data-hub-organization-group]")).toBeNull();
   });
 
   it("opens on the filter the knob names when the address names none", async () => {
@@ -228,7 +257,7 @@ describe("the data home · exactly five filters, each the store's fact", () => {
 
   it.each([
     ["mine", ["Patient recall list"]],
-    ["orgs", ["Patient recall list", "Service calls", "Status choices"]],
+    ["orgs", ["Status choices", "Service calls", "Patient recall list"]],
     ["shared", ["Backflow test schedule"]],
   ])("?scope=%s lists exactly what the store says", async (scope, titles) => {
     await mount(`scope=${scope}`);

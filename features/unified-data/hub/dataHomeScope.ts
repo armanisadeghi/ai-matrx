@@ -217,3 +217,39 @@ export function dataHomeKindHref(pathname: string, current: URLSearchParams, kin
   next.set("kind", kind);
   return `${pathname}?${next.toString()}`;
 }
+
+// ── THE ORDER, AND THE ORGANIZATION GROUPS (chair ruling 2026-09-27) ───────────────────────────
+//
+// A flat list of 444 tables is not a home. Rows come most recently updated first (Notion, Airtable,
+// Google Drive open this way) — or A to Z — per the Feature Knob `custom.data_home_default_order`;
+// and under All, when the list spans more than one organization, rows sit under organization
+// headers (the table page's own grouping, `@ai-matrx/design-system/data-table/grouping`), the
+// organization with the latest change first.
+
+export const DATA_HOME_ORDERS = ["updated", "name"] as const;
+export type DataHomeOrder = (typeof DATA_HOME_ORDERS)[number];
+export const DATA_HOME_DEFAULT_ORDER_KNOB = { feature: "custom", key: "data_home_default_order" } as const;
+
+export function resolveDataHomeOrder(fromKnob: unknown): DataHomeOrder {
+  return typeof fromKnob === "string" && (DATA_HOME_ORDERS as readonly string[]).includes(fromKnob)
+    ? (fromKnob as DataHomeOrder)
+    : "updated";
+}
+
+/** Sorted copy: most recent change first (a row with no known change last), or by title. */
+export function inDataHomeOrder<T extends { title: string; changedAt?: string | null | undefined }>(
+  items: readonly T[],
+  order: DataHomeOrder,
+): T[] {
+  const copy = [...items];
+  if (order === "name") return copy.sort((a, b) => a.title.localeCompare(b.title));
+  const at = (item: T) => (item.changedAt ? Date.parse(item.changedAt) : Number.NaN);
+  return copy.sort((a, b) => {
+    const x = at(a);
+    const y = at(b);
+    if (Number.isNaN(x) && Number.isNaN(y)) return a.title.localeCompare(b.title);
+    if (Number.isNaN(x)) return 1;
+    if (Number.isNaN(y)) return -1;
+    return y - x;
+  });
+}
