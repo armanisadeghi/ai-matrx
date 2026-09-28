@@ -242,6 +242,8 @@ an assist is personal and addressed to one person by design.
 
 ## Change Log
 
+- 2026-09-28 — **The floating control never covers content.** `assistClearance.ts`: the scroll area under the desktop pill or phone launcher (`data-assists-dock`) gets a bottom inset exactly as tall as the overlap, removed when the control leaves — the last row's ⋮, card answers and page ends scroll fully above it (list-shell fix D). Guard: `__tests__/the-assists-control-never-covers-content.test.ts`.
+
 - 2026-09-19 — **Browser emit no longer 409s on the pending-key index.** `emitAssist` was SELECT-then-INSERT; a second tab, remount, or RLS-hidden addressee lost `assists_dedupe_pending_key` and the generic PostgREST capture recorded HTTP 409 before the caller treated 23505 as success (captured on `/mandates` as yellow `assists-dedupe-race`). New `platform.emit_pending_assist` inserts, or refreshes the caller's own pending row, or returns NULL when the key is already addressed to someone else — the unique violation never leaves the function. Same-tab calls collapse on one in-flight promise. Guard: `features/assists/service.emit.test.ts`.
 
 - 2026-09-01 — **Expired sessions remain lifecycle pauses after the retry.** `listMyPendingAssists` preserves an unrecoverable `PGRST301` as `SessionUnavailableError`; the Redux capture boundary ignores that named pause while continuing to capture genuine assist failures.
