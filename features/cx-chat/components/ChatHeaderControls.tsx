@@ -18,7 +18,7 @@ import IconButton from "@/features/shell/components/IconButton";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectIsAuthenticated,
-  selectIsSuperAdminDebugger,
+  selectIsSuperAdmin,
 } from "@/lib/redux/slices/userSlice";
 import {
   selectIsBlockMode,
@@ -45,7 +45,7 @@ export default function ChatHeaderControls() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const isAdmin = useAppSelector(selectIsSuperAdminDebugger);
+  const isAdmin = useAppSelector(selectIsSuperAdmin);
 
   const blockMode = useAppSelector(selectIsBlockMode);
   const snapshot = useAppSelector(selectIsSnapshot);

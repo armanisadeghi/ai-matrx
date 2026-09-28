@@ -26,6 +26,23 @@ function* files(dir: string): Generator<string> {
   }
 }
 
+it("the context tool's cards and headers name an entry in words", () => {
+  const dir = join(__dirname, "..", "..", "..", "..", "tool-call-visualization");
+  const raw = [
+    /\? key : null;/, // a header subtitle handing back the key itself
+    /\{r\.key\}<\/span>/,
+    /\{data\.key\}<\/span>/,
+    /\{data\.key \|\| "context"\}/,
+    /item\.label \|\| item\.key \|\|/,
+  ];
+  const root = process.env.CONTEXT_TOOL_ROOT_UNDER_TEST ?? dir;
+  const offenders = [...files(root)].flatMap((f) => {
+    const text = readFileSync(f, "utf8");
+    return raw.filter((r) => r.test(text)).map((r) => `${f.slice(root.length + 1)} ${r.source}`);
+  });
+  expect(offenders).toEqual([]);
+});
+
 it("no agents surface names a context entry by its raw key", () => {
   // CONTEXT_LABEL_ROOT_UNDER_TEST points the guard at a copy of an older tree, to prove it fails.
   const root = process.env.CONTEXT_LABEL_ROOT_UNDER_TEST ?? join(__dirname, "..", "..", "..");

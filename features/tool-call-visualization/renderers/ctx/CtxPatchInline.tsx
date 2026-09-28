@@ -24,6 +24,7 @@ import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { PatchDiffInline } from "../working-document/PatchDiffInline";
+import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 
 /** Keys a write outcome might use to carry an echoed/previewed value. */
 const PREVIEW_KEYS = [
@@ -120,7 +121,7 @@ const CtxPatchConfirmation: React.FC<Props> = ({
         <span>
           Updating{" "}
           {data.key ? (
-            <span className="font-mono text-foreground">{data.key}</span>
+            <span className="text-foreground">{contextEntryLabel({ key: data.key })}</span>
           ) : (
             "context"
           )}
@@ -135,8 +136,8 @@ const CtxPatchConfirmation: React.FC<Props> = ({
         <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
         <span className="text-sm text-foreground">
           Updated{" "}
-          <span className="font-mono font-medium">
-            {data.key || "context"}
+          <span className="font-medium">
+            {data.key ? contextEntryLabel({ key: data.key }) : "context"}
           </span>
         </span>
         {data.command && (

@@ -11,7 +11,7 @@ import {
 } from "@/lib/redux/slices/userSlice";
 import { clearUserAuth } from "@/lib/redux/slices/userAuthSlice";
 import { createClient } from "@/utils/supabase/client";
-import { getClientClaimsUserCached } from "@/utils/supabase/clientClaimsCache";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";
 import { getFingerprint } from "@/lib/services/fingerprint-service";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
@@ -82,7 +82,7 @@ export function usePublicAuthSync() {
           const {
             data: { claimsUser },
             error: claimsError,
-          } = await getClientClaimsUserCached().then((r) => ({
+          } = await getClaimsUser(supabase).then((r) => ({
             data: { claimsUser: r.data.user },
             error: r.error,
           }));

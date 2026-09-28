@@ -122,8 +122,6 @@ function parseShareRpcResult(data: Json | null | undefined): {
   success: boolean;
   error?: string;
   message?: string;
-  /** What the one person-share writer did: shared · raised · restored · unchanged · removed. */
-  outcome?: string;
 } {
   if (
     data === null ||
@@ -137,8 +135,7 @@ function parseShareRpcResult(data: Json | null | undefined): {
   const success = o.success === true;
   const err = typeof o.error === "string" ? o.error : undefined;
   const message = typeof o.message === "string" ? o.message : undefined;
-  const outcome = typeof o.outcome === "string" ? o.outcome : undefined;
-  return { success, error: err, message, outcome };
+  return { success, error: err, message };
 }
 
 // ============================================================================
@@ -535,11 +532,6 @@ export async function shareWithUser(
         success: false,
         error: parsed.error || "Failed to share with user",
       };
-
-    // The person already held this access (or more): nothing changed, so
-    // nobody is told again.
-    if (parsed.outcome === "unchanged")
-      return { success: true, message: parsed.message };
 
     // Fire-and-forget notifications — failure doesn't affect the grant.
     void getClaimsUser(supabase).then(({ data: { user } }) => {

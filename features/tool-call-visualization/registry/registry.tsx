@@ -133,6 +133,7 @@ import {
   getCachedToolMeta,
   isKnownNoToolRenderer,
 } from "../db-renderer/toolRendererCache";
+import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO header extras — ONE helper for every `seo` action + legacy tool name.
@@ -1251,7 +1252,8 @@ export const toolRendererRegistry: ToolRegistry = {
           : null;
       if (label) return label;
       const key = getArg<string>(entry, "key");
-      return typeof key === "string" && key ? key : null;
+      // The key read aloud, never the machine's token ("row_json" -> "Row JSON").
+      return typeof key === "string" && key ? contextEntryLabel({ key }) : null;
     },
   },
 
@@ -1343,7 +1345,8 @@ export const toolRendererRegistry: ToolRegistry = {
           : null;
       if (label) return label;
       const key = getArg<string>(entry, "key");
-      return typeof key === "string" && key ? key : null;
+      // The key read aloud, never the machine's token ("row_json" -> "Row JSON").
+      return typeof key === "string" && key ? contextEntryLabel({ key }) : null;
     },
   },
 

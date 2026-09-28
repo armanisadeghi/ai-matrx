@@ -29,92 +29,6 @@ import {
 import type { ScopesRpcResult } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 
-// ─── Module-scoped in-flight dedup + short TTL cache ──────────────────
-//
-// THE SOLE CHOKEPOINT means every feature on a page (org switcher, nav
-// hierarchy tree, role checks, scopes, trash, agent-context…) independently
-// calls `forUser` / `counts` on mount. Measured on production: a single page
-// load fired `mbr_for_user` 3x and `mbr_count` 2x. Neither RPC's answer
-// changes within a render pass, so concurrent/near-concurrent callers share
-// one round-trip here — the house pattern (module-scoped
-// `Map<key, Promise>` in-flight + short-TTL `Map<key, {value, expiresAt}>`)
-// documented for `usePdfExtractor.fetchProcessedDocument` and
-// `lib/api/broker/cache.ts`. `add` / `updateRole` / `remove` below (the only
-// writers of `iam.memberships`, since this file is the sole chokepoint) drop
-// the cache for the affected container type so a role change or org switch
-// is never served stale.
-const READ_CACHE_TTL_MS = 4_000;
-
-interface ReadCacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const forUserCache = new Map<
-  string,
-  ReadCacheEntry<ScopesRpcResult<{ memberships: UserMembership[] }>>
->();
-const forUserInflight = new Map<
-  string,
-  Promise<ScopesRpcResult<{ memberships: UserMembership[] }>>
->();
-
-const countsCache = new Map<
-  string,
-  ReadCacheEntry<ScopesRpcResult<{ counts: MemberCount[] }>>
->();
-const countsInflight = new Map<
-  string,
-  Promise<ScopesRpcResult<{ counts: MemberCount[] }>>
->();
-
-function forUserKey(containerType: string): string {
-  // requireUserId() already ran in the caller; the RPC is auth.uid()-scoped
-  // so the container type alone is a safe cache key for the signed-in user.
-  return containerType;
-}
-
-function countsKey(containerType: string, containerIds: string[]): string {
-  return `${containerType}::${[...new Set(containerIds)].sort().join(",")}`;
-}
-
-/** Drop cached membership reads for `containerType` (e.g. after a write). */
-function invalidateForUserCache(containerType?: string): void {
-  if (!containerType) {
-    forUserCache.clear();
-    return;
-  }
-  forUserCache.delete(forUserKey(containerType));
-}
-
-/** Drop cached member counts for `containerType` (e.g. after a write). */
-function invalidateCountsCache(containerType?: string): void {
-  if (!containerType) {
-    countsCache.clear();
-    return;
-  }
-  for (const key of countsCache.keys()) {
-    if (key.startsWith(`${containerType}::`)) countsCache.delete(key);
-  }
-}
-
-// The caches are keyed by container type only (not user id) since a single
-// tab is always one signed-in user — but they must still die on sign-out /
-// sign-in-as-someone-else, or the next user's first read could serve the
-// previous user's cached rows for up to READ_CACHE_TTL_MS.
-let signOutHookInstalled = false;
-function installSignOutHook(): void {
-  if (signOutHookInstalled || typeof window === "undefined") return;
-  signOutHookInstalled = true;
-  supabase.auth.onAuthStateChange((event) => {
-    if (event === "SIGNED_OUT" || event === "SIGNED_IN") {
-      forUserCache.clear();
-      countsCache.clear();
-    }
-  });
-}
-installSignOutHook();
-
 // ─── Shapes ─────────────────────────────────────────────────────────
 
 export interface Membership {
@@ -319,41 +233,19 @@ export const membershipsService = {
   async forUser(
     containerType: string,
   ): Promise<ScopesRpcResult<{ memberships: UserMembership[] }>> {
-    requireUserId();
-    const key = forUserKey(containerType);
-
-    const cached = forUserCache.get(key);
-    if (cached && cached.expiresAt > Date.now()) return cached.value;
-
-    const pending = forUserInflight.get(key);
-    if (pending) return pending;
-
-    const request = (async (): Promise<
-      ScopesRpcResult<{ memberships: UserMembership[] }>
-    > => {
-      try {
-        const { data, error } = await runWithSessionRetry(() =>
-          supabase.rpc("mbr_for_user", {
-            p_container_type: containerType,
-          }),
-        );
-        if (error) return err(...mapPgErrorPair(error));
-        const rows = (Array.isArray(data) ? data : []) as MbrForUserRow[];
-        const result = ok({ memberships: rows.map(toUserMembership) });
-        // Only cache successes — a failed read must not poison retries.
-        forUserCache.set(key, {
-          value: result,
-          expiresAt: Date.now() + READ_CACHE_TTL_MS,
-        });
-        return result;
-      } catch (e) {
-        return { ok: false, error: mapPgError(e) };
-      } finally {
-        forUserInflight.delete(key);
-      }
-    })();
-    forUserInflight.set(key, request);
-    return request;
+    try {
+      requireUserId();
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("mbr_for_user", {
+          p_container_type: containerType,
+        }),
+      );
+      if (error) return err(...mapPgErrorPair(error));
+      const rows = (Array.isArray(data) ? data : []) as MbrForUserRow[];
+      return ok({ memberships: rows.map(toUserMembership) });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
   },
 
   // ──────────────────────────────────────────────────────────────────
@@ -399,48 +291,27 @@ export const membershipsService = {
     containerType: string,
     containerIds: string[],
   ): Promise<ScopesRpcResult<{ counts: MemberCount[] }>> {
-    requireUserId();
-    const ids = Array.from(new Set(containerIds));
-    if (ids.length === 0) return ok({ counts: [] });
-    const key = countsKey(containerType, ids);
-
-    const cached = countsCache.get(key);
-    if (cached && cached.expiresAt > Date.now()) return cached.value;
-
-    const pending = countsInflight.get(key);
-    if (pending) return pending;
-
-    const request = (async (): Promise<
-      ScopesRpcResult<{ counts: MemberCount[] }>
-    > => {
-      try {
-        const { data, error } = await runWithSessionRetry(() =>
-          supabase.rpc("mbr_count", {
-            p_container_type: containerType,
-            p_container_ids: ids,
-          }),
-        );
-        if (error) return err(...mapPgErrorPair(error));
-        const rows = (Array.isArray(data) ? data : []) as MbrCountRow[];
-        const result = ok({
-          counts: rows.map((r) => ({
-            containerId: r.container_id,
-            memberCount: Number(r.member_count),
-          })),
-        });
-        countsCache.set(key, {
-          value: result,
-          expiresAt: Date.now() + READ_CACHE_TTL_MS,
-        });
-        return result;
-      } catch (e) {
-        return { ok: false, error: mapPgError(e) };
-      } finally {
-        countsInflight.delete(key);
-      }
-    })();
-    countsInflight.set(key, request);
-    return request;
+    try {
+      requireUserId();
+      const ids = Array.from(new Set(containerIds));
+      if (ids.length === 0) return ok({ counts: [] });
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("mbr_count", {
+          p_container_type: containerType,
+          p_container_ids: ids,
+        }),
+      );
+      if (error) return err(...mapPgErrorPair(error));
+      const rows = (Array.isArray(data) ? data : []) as MbrCountRow[];
+      return ok({
+        counts: rows.map((r) => ({
+          containerId: r.container_id,
+          memberCount: Number(r.member_count),
+        })),
+      });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
   },
 
   // ──────────────────────────────────────────────────────────────────
@@ -478,8 +349,6 @@ export const membershipsService = {
       if (!data || typeof data !== "string") {
         return err("internal", "mbr_add returned no membership id");
       }
-      invalidateForUserCache(args.containerType);
-      invalidateCountsCache(args.containerType);
       return ok({ id: data });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
@@ -509,7 +378,6 @@ export const membershipsService = {
         p_role: args.role,
       });
       if (error) return err(...mapPgErrorPair(error));
-      invalidateForUserCache(args.containerType);
       return ok(null);
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
@@ -544,8 +412,6 @@ export const membershipsService = {
         p_user_id: args.userId,
       });
       if (error) return err(...mapPgErrorPair(error));
-      invalidateForUserCache(args.containerType);
-      invalidateCountsCache(args.containerType);
       return ok(null);
     } catch (e) {
       return { ok: false, error: mapPgError(e) };

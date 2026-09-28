@@ -1,4 +1,3 @@
--- chair-step: the created_by backfill is structural, not a revision, so only the triggers that are ON are switched off around that one UPDATE and switched back on right after (version, updated_at, knob audit/history/notify and run-lifecycle triggers must not fire for it)
 -- lane: access-ladder T-21
 -- Access ladder T-21 (2026-09-28): billing.usage_ledger moves to Organization, the level the independent table
 -- review gave it (common-docs/projects/access-ladder/table-review.md). Toward Organization/Public: no approval.
@@ -19,17 +18,7 @@ select iam.supersede_bespoke_policies('billing', 'usage_ledger', array['platform
 -- generator emits no client write lane and the client grant is read-only
 update platform.entity_types set client_read_only = true where token = 'billing_usage_ledger';
 
-select platform.retrofit_entity('billing', 'usage_ledger', 'billing_usage_ledger', 'keep', null, null, null, null, null);
-
--- created_by: the row's person when that person still has an account, otherwise the owning organization's creator
--- (a backfill is not a revision: the triggers that are ON are switched off around it and back on after;
---  a trigger that was off stays off)
-do $$ declare tg text; on_now text[]; begin
-  select coalesce(array_agg(tgname), '{}') into on_now from pg_trigger where tgrelid = 'billing.usage_ledger'::regclass and not tgisinternal and tgenabled = 'O';
-  foreach tg in array on_now loop execute format('alter table billing.usage_ledger disable trigger %I', tg); end loop;
-  update billing.usage_ledger t set created_by = coalesce((select u.id from iam.users u where u.id = t.user_id), (select o.created_by from iam.organizations o where o.id = t.organization_id)) where t.created_by is null and (coalesce((select u.id from iam.users u where u.id = t.user_id), (select o.created_by from iam.organizations o where o.id = t.organization_id))) is not null;
-  foreach tg in array on_now loop execute format('alter table billing.usage_ledger enable trigger %I', tg); end loop;
-end $$;
+select platform.retrofit_entity('billing', 'usage_ledger', 'billing_usage_ledger', 'keep', null, 'user_id', null, null, null);
 
 select set_config('t21.fq', 'billing.usage_ledger', true), set_config('t21.v', 'organization', true);
 do $$ declare r record; v_newvar text; v_hasvis boolean; v text := current_setting('t21.v'); begin
@@ -58,5 +47,5 @@ end $$;
 do $$ begin
   if not exists (select 1 from platform.entity_types where token = 'billing_usage_ledger' and data_class = 'organization'::platform.data_class) then raise exception 'T-21: billing.usage_ledger did not land on its level'; end if;
   if exists (select 1 from platform.entity_types where token = 'billing_usage_ledger' and (rls_variant in ('personal','restricted') or default_visibility = 'personal')) then raise exception 'T-21: billing.usage_ledger still owner-only'; end if;
-  if exists (select 1 from billing.usage_ledger t where t.created_by is null and (coalesce((select u.id from iam.users u where u.id = t.user_id), (select o.created_by from iam.organizations o where o.id = t.organization_id))) is not null) then raise exception 'T-21: billing.usage_ledger created_by not backfilled'; end if;
+  if exists (select 1 from billing.usage_ledger where created_by is distinct from user_id and user_id is not null) then raise exception 'T-21: billing.usage_ledger created_by not backfilled from user_id'; end if;
 end $$;

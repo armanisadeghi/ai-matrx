@@ -849,10 +849,6 @@ function ServerCard({
     entry,
     connectionPresentation,
   );
-  const directoryAvailability = catalogDirectoryAvailability(
-    entry,
-    connectionPresentation,
-  );
   const isComingSoon = actionPresentation.isComingSoon;
   const isCommunity = entry.serverStatus === "community";
   const isConnected = connectionPresentation.connected;
@@ -985,7 +981,7 @@ function ServerCard({
                   <TooltipContent>Official integration</TooltipContent>
                 </Tooltip>
               )}
-              {directoryAvailability.isFeatured && (
+              {entry.isFeatured && (
                 <Tooltip>
                   <TooltipTrigger>
                     <Zap className="h-3.5 w-3.5 text-amber-500 shrink-0" />

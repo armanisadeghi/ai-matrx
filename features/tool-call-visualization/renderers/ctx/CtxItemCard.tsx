@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
+import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 
 // ---------------------------------------------------------------------------
 // Type → icon. Keyed by the raw server `type` string (not the strict
@@ -97,7 +98,7 @@ export const CtxItemCard: React.FC<CtxItemCardProps> = ({
   className,
 }) => {
   const Icon = iconForType(item.type);
-  const label = item.label || item.key || "Context";
+  const label = item.label || (item.key ? contextEntryLabel({ key: item.key }) : "Context");
   const showKey = item.key && item.key !== label;
 
   // Prefer the returned-chars count (page mode) but fall back to the total.

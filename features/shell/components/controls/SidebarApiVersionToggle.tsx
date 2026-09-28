@@ -15,11 +15,11 @@ import {
   selectAiApiVersion,
   setAiApiVersion,
 } from "@/lib/redux/slices/apiConfigSlice";
-import { selectIsAdminDebugger } from "@/lib/redux/slices/userSlice";
+import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
 
 export default function SidebarApiVersionToggle() {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsAdminDebugger);
+  const isAdmin = useAppSelector(selectIsAdmin);
   const aiApiVersion = useAppSelector(selectAiApiVersion);
 
   if (!isAdmin) return null;

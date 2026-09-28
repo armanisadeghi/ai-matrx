@@ -34,6 +34,7 @@ import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { CtxItemCard, type CtxItem } from "./CtxItemCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 
 const INLINE_ITEM_CAP = 4;
 
@@ -184,7 +185,7 @@ export const CtxBatchInline: React.FC<Props> = ({
             >
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <div className="min-w-0">
-                <span className="font-mono font-medium">{r.key}</span>
+                <span className="font-medium">{contextEntryLabel({ key: r.key })}</span>
                 {r.errorText && (
                   <span className="text-destructive/80"> — {r.errorText} <ErrorAlchemyMenu error={r.errorText} /></span>
                 )}

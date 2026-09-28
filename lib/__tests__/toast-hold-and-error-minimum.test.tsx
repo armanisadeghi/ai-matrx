@@ -108,7 +108,6 @@ it("a toast whose copy menu is open stays until the menu closes, then gets its f
   await settle();
   // The menu trigger inside the toast reports its open popover.
   const trigger = document.createElement("button");
-  trigger.setAttribute("aria-haspopup", "dialog");
   trigger.setAttribute("aria-expanded", "true");
   toaster().appendChild(trigger);
   await act(async () => {
