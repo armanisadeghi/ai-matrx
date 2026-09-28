@@ -86,12 +86,12 @@ export function buildDatasetTableMenuSection(opts: {
     {
       kind: "item",
       id: "dataset-copy-id",
-      label: "Copy dataset ID",
+      label: "Copy table ID",
       icon: Hash,
       onSelect: () => {
         if (!row) return;
         void navigator.clipboard.writeText(row.id);
-        toast.success("Dataset ID copied");
+        toast.success("Table ID copied");
       },
       disabled: !row,
     },
