@@ -44,6 +44,7 @@ import {
   selectOwnSubmittedFirstTurnValues,
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
+import { resolvePerLaunchMappings } from "@/features/agents/redux/execution-system/thunks/surface-scope-mapping";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -262,12 +263,51 @@ describe("every launch path records authorship", () => {
     "features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
   );
 
+  // Since 960a1c040f the two agent paths first fold the per-launch mapping
+  // (`runtime.valueMappings`) into the caller's `variables` through
+  // `resolvePerLaunchMappings`, and pin THAT superset as the host's. The
+  // contract is unchanged — every launch path records the surface's values as
+  // host-wired — so the census follows each dispatched value back to
+  // `variables` instead of matching one spelling of it.
   it("the launcher dispatches the host action on all three of its create paths", () => {
-    const hostCalls =
-      source.match(
-        /setHostVariableValues\(\{ conversationId, values: variables \}\)/g,
-      ) ?? [];
+    const hostCalls = [
+      ...source.matchAll(
+        /setHostVariableValues\(\{\s*conversationId,\s*values:\s*(\w+),?\s*\}\)/g,
+      ),
+    ].map((m) => m[1]);
     expect(hostCalls).toHaveLength(3);
+    // No other spelling of the host dispatch slipped past the census.
+    expect(source.match(/setHostVariableValues\(/g) ?? []).toHaveLength(3);
+    for (const name of hostCalls) {
+      if (name === "variables") continue;
+      // Every other value is the mapping-resolved form OF `variables`.
+      const derivation = new RegExp(
+        `variables:\\s*${name},[\\s\\S]{0,120}?\\}\\s*=\\s*resolvePerLaunchMappings\\(\\{[\\s\\S]*?\\bvariables,?\\s*\\}\\)`,
+      );
+      expect(source).toMatch(derivation);
+    }
+    expect(hostCalls).toContain("variables");
+  });
+
+  it("the per-launch mapping keeps every caller value it pins as the host's", () => {
+    const caller = { rulebook_id: "rb-1", interview_probes: "story_time" };
+    expect(
+      resolvePerLaunchMappings({
+        mappings: undefined,
+        applicationScope: {},
+        variableDefinitions: [],
+        contextPolicies: [],
+        variables: caller,
+      }).variables,
+    ).toEqual(caller);
+    const mapped = resolvePerLaunchMappings({
+      mappings: { expert_goal: { mapType: "direct_value", target: "teach" } },
+      applicationScope: {},
+      variableDefinitions: [{ name: "expert_goal" }] as never,
+      contextPolicies: [],
+      variables: caller,
+    }).variables;
+    expect(mapped).toMatchObject(caller);
   });
 
   it("the launcher never writes launch variables through the user action", () => {
