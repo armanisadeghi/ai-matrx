@@ -1,5 +1,5 @@
 {
-  "about": "check:old-system-unreachable census \u2014 every place that names an old door, module or relation (content_ir.kind_instance added 2026-09-27: the routed doors' legacy halves and the readers still direct); it only shrinks (lane FINAL-SWITCH).",
+  "about": "check:old-system-unreachable census — every place that names an old door; it only shrinks (lane FINAL-SWITCH).",
   "entries": [
     "aidream:aidream/services/kind_records/children.py content_ir.kind_instance",
     "aidream:aidream/services/kind_records/routed.py content_ir.kind_instance",
@@ -39,7 +39,6 @@
     "matrx-frontend:components/user-generated-table-data/CreateTemplateModal.tsx @/utils/user-table-utls",
     "matrx-frontend:components/user-generated-table-data/EditRowModal.tsx get_full_table",
     "matrx-frontend:components/user-generated-table-data/ImportTableModal.tsx @/utils/user-table-utls",
-    "matrx-frontend:components/user-generated-table-data/PasteRowsDialog.tsx @/utils/user-table-utls",
     "matrx-frontend:components/user-generated-table-data/RowOrderingModal.tsx @/utils/user-table-utls",
     "matrx-frontend:components/user-generated-table-data/RowOrderingModal.tsx get_user_table_data_paginated_v2",
     "matrx-frontend:components/user-generated-table-data/RowOrderingModal.tsx update_user_table_row_ordering",

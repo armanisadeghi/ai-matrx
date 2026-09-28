@@ -16,7 +16,7 @@
  *
  * Pure: no React.
  */
-import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
+import { sanitizeFieldName } from "./field-name-key";
 
 export interface PasteMatchField {
   field_name: string;
