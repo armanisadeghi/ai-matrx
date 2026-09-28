@@ -1,4 +1,3 @@
--- draft: deep-lane read-lane-v2 — lands in the 2026-09-27 window after read_lane_v2_d_client_declarations
 -- read_lane_v2_e_users_client_declarations — declare, in the registry, the two client-access facts the two
 -- users.* tables already live by, so iam.apply_rls regenerates them with NO widening (chair rulings 2026-09-26):
 --   * users.integration_connections: credential_present, credential_stable, capability_health are read by

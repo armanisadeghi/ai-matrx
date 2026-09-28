@@ -1,4 +1,3 @@
--- draft: deep-lane read-lane-v2 client declarations — chair runs it in the 2026-09-27 window, after read_lane_v2_b_lock_order
 -- chair-step: adds two registry declarations (platform.entity_types.client_read_only_columns, client_deletes_refused), accepts a column-level anon grant on a component's public parent (was a false refusal), and replaces iam._apply_rls_unchecked, iam.apply_table_grants and iam.verify_canonical to honour them; no policy statement, no freeze. Nothing changes for any table until it is declared (read_lane_v2_e) and regenerated.
 -- based-on: iam._apply_rls_unchecked(text, text, text, text) 57e9b3f4119119ce6f76881a6bc728356f77ea7bd56798284fc6c1ad5458df7c
 -- based-on: iam.apply_table_grants(text, text, text) fc782fbe5edec12ca24aabcc5d2a5f879b0f4d0118ee5a4cbd45a96c9b3c1062
