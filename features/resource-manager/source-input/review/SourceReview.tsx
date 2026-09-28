@@ -21,6 +21,7 @@ import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySl
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { formatChars, formatTokens } from "@/lib/tokens/estimate";
 import { fetchSourceManifest } from "./api";
+import { deliveryPatch } from "../delivery";
 import { reviewDefaultContextTokens } from "./knobs";
 import { planSourceReview, type SourcePlan } from "./plan";
 import { SourceReviewRow } from "./SourceReviewRow";
@@ -131,7 +132,7 @@ export function SourceReview({
     if (!plan) return;
     const leftOut = new Set(plan.leftOut.map((e) => keptIndexes[e.index]!));
     setRefs((prev) =>
-      prev.map((r, i) => (leftOut.has(i) ? { ...r, delivery: "context" as const, include_segments: undefined, max_chars: undefined } : r)),
+      prev.map((r, i) => (leftOut.has(i) ? { ...r, ...deliveryPatch("context") } : r)),
     );
   };
 

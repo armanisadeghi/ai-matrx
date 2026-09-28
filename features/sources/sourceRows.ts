@@ -382,7 +382,9 @@ export const SOURCE_STAGE_LABEL: Record<SourceStage, string> = {
   not_searchable: "Not yet searchable",
   indexing: "Indexing…",
   searchable: "Searchable",
-  entities: "Searchable · entities",
+  // Plain words (V1-A): "entities" is the index's term for the people, places
+  // and ideas it picked out — a person reads "key terms found".
+  entities: "Searchable · key terms found",
   stale: "Index stale — re-index",
 };
 

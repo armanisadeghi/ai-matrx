@@ -1096,9 +1096,9 @@ export function FilesResourcePicker({
         </div>
       </div>
 
-      <div className="flex h-8 items-center gap-1.5 border-b border-border px-2">
+      <div className="flex h-9 items-center gap-1.5 border-b border-border px-2">
         <SlidersHorizontal
-          className="h-3 w-3 shrink-0 text-muted-foreground"
+          className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <label className="sr-only" htmlFor="cloud-files-filter">
@@ -1108,10 +1108,10 @@ export function FilesResourcePicker({
           id="cloud-files-filter"
           value={fileFilter}
           onChange={(event) => setFileFilter(event.target.value as FileFilter)}
-          className="h-5 min-w-0 flex-1 bg-transparent text-[10px] text-foreground outline-none"
+          className="h-7 min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none"
         >
           <option value="all">All file types</option>
-          <option value="pdf-extractor">PDF Extractor (processed)</option>
+          <option value="pdf-extractor">Already read</option>
           <option value="pdfs">PDFs</option>
           <option value="text">Text</option>
           <option value="markdown">Markdown</option>
@@ -1129,7 +1129,7 @@ export function FilesResourcePicker({
           id="cloud-files-sort"
           value={fileSort}
           onChange={(event) => setFileSort(event.target.value as FileSort)}
-          className="h-5 w-16 shrink-0 bg-transparent pr-3 text-[10px] text-muted-foreground outline-none"
+          className="h-7 w-20 shrink-0 bg-transparent pr-3 text-xs text-muted-foreground outline-none"
         >
           <option value="updated">Recent</option>
           <option value="name">Name</option>

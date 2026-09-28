@@ -37,6 +37,7 @@ import type {
 } from "@ai-matrx/agents/sources";
 import { createSourceRef, createSourceSet } from "@ai-matrx/agents/sources";
 import { estimateTokens } from "@/lib/tokens/estimate";
+import { sourceDelivery } from "../delivery";
 
 /** How close to the window counts as "Getting heavy" (the champion's 70%). */
 export const HEAVY_SHARE = 0.7;
@@ -194,7 +195,7 @@ export function planSourceReview(input: PlanInput): SourcePlan {
     if (!isUsable(entry)) {
       return { ...base, status: "unusable" as const, sentChars: 0, sentTokens: 0 };
     }
-    if (ref.delivery === "context") {
+    if (sourceDelivery(ref) === "context") {
       return { ...base, status: "on_demand" as const, sentChars: 0, sentTokens: 0 };
     }
     if (estimateTokens(sentChars + m.sentChars) > windowTokens) {

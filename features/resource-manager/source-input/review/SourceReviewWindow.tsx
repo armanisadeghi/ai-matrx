@@ -8,6 +8,12 @@
  *
  * Settles the opener's promise exactly once: applied / add_more from the
  * body, cancelled from Cancel, the close control, or any other close.
+ *
+ * It is a registered window overlay that shows a Dialog instead of a
+ * `WindowPanel`, so it acknowledges its own render to the silent-render
+ * watchdog (`useOverlaySurfaceRenderAck`) — without it the watchdog found no
+ * window geometry and toasted "“Review what goes in” didn't appear" over the
+ * open review (V1-A, verifier shot 05).
  */
 
 import { useRef } from "react";
@@ -18,8 +24,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@ai-matrx/design-system";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import { SourceReview } from "./SourceReview";
-import { settleSourceReview } from "./openSourceReview";
+import { SOURCE_REVIEW_OVERLAY_ID, settleSourceReview } from "./openSourceReview";
 import type { SourceReviewOptions, SourceReviewOutcome } from "./types";
 
 export interface SourceReviewWindowProps {
@@ -38,6 +45,7 @@ export default function SourceReviewWindow({
   options,
 }: SourceReviewWindowProps) {
   const settled = useRef(false);
+  useOverlaySurfaceRenderAck(SOURCE_REVIEW_OVERLAY_ID, isOpen && !!sourceSet);
 
   const finish = (outcome: SourceReviewOutcome) => {
     if (!settled.current && callbackId) {
