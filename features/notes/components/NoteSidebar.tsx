@@ -1552,11 +1552,13 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       className="flex min-w-0 flex-1 items-center gap-1"
                       title={orgSuffix ? `${label} — in ${orgSuffix}` : undefined}
                     >
-                      <span className="shrink-0">{label}</span>
+                      <span className="min-w-0 truncate">{label}</span>
                       {orgSuffix && (
                         // The organization is what tells same-name folders
-                        // apart, so it gets its own chip that truncates last.
-                        <span className="min-w-0 truncate rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground">
+                        // apart: its chip keeps its natural width and the
+                        // folder name truncates instead (a long folder name
+                        // used to squeeze the chip to one letter).
+                        <span className="max-w-[60%] shrink-0 truncate rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground">
                           {orgSuffix}
                         </span>
                       )}

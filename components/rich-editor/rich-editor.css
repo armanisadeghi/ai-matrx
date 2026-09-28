@@ -132,3 +132,18 @@
 .dark .cm-rich-var-undeclared { color: hsl(0 80% 75%); }
 .cm-rich-find { background: hsl(48 96% 60% / 0.45); }
 .cm-rich-find-current { background: hsl(24 95% 55% / 0.65); }
+
+/* A code fence inside the editor already has ONE frame — the island's, with its
+   language picker, copy, edit and remove. The shared renderer's own snippet
+   frame and "bash" header inside it were a box in a box with the language
+   named twice (page-pass /notes, 2026-09-27): inside an island the snippet is
+   bare code. */
+.rich-editor-island[data-island-type="fence"] .rich-editor-island-render [data-code-snippet] {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.rich-editor-island[data-island-type="fence"] .rich-editor-island-render [data-code-snippet-header] {
+  display: none;
+}

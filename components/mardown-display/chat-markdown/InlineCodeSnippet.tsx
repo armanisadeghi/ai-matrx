@@ -110,7 +110,7 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
         className,
       )}
     >
-      <div className="flex items-center justify-between px-3 py-1 border-b border-border/50">
+      <div data-code-snippet-header="" className="flex items-center justify-between px-3 py-1 border-b border-border/50">
         <span
           className={cn(
             "text-xs font-mono font-medium text-muted-foreground",
