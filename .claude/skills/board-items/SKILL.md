@@ -31,7 +31,7 @@ catalog) appears in every board's Add menu, Start panel and agent tools with no 
 | `matches(source)` | `source.kind === "entity" && source.entity === key` for records |
 | `Body` | The feature's canonical component for ONE record — never a new renderer |
 | `surface` | `{ name, Host? }` for every record item; `{ none: reason }` ONLY for board-only content (label, web page) |
-| `startNew` | Synchronous: returns the item to place NOW; the body creates the record through the feature's canonical create path (with the organization gate) |
+| `startNew` | One entry or a list (`startNewEntries()` reads both). Each is `create` — synchronous, returns the item to place NOW, the body creates the record through the feature's canonical create path (with the organization gate) — or a `Picker` (e.g. chat's "Chat with an agent" uses the one agent picker) |
 | `bringIn` | A picker built from the feature's canonical picker |
 | `href` | The record's page — no dead ends |
 
@@ -54,6 +54,10 @@ not created yet. A body changes what the tile refers to only through `onSource`.
      with the `surface-authoring` skill (a new surface is registered server-side in `ui.ui_surface`,
      or every send beside it fails 422). Done when the manifest covers every read and every action
      the page offers.
+   - Declare `briefValues` (1-5 values that say WHICH record this is and its state at a glance: a
+     note's title + first line, a table's name + row count, a task's status + due date). They are the
+     `basics` agents see for every item that is not live. Without them the first declared values are
+     used — often ids, which tell an agent nothing. `surface-declare.ts` checks the names.
 3. **Write the item** in the matching `*-items.tsx`, with `startNew` / `bringIn` / `href`.
 4. **Fit the plane.** Tiles sit in a zoomed, transformed world: `position: fixed` and components that
    assume the viewport (`WindowPanel`) break there; portals and popovers must still open usably.
@@ -62,8 +66,10 @@ not created yet. A body changes what the tile refers to only through `onSource`.
    package (THE SAME-SESSION LAW).
 5. **Prove it in the browser with real data** (docs/official/browser-testing.md): add one of each
    (new and brought in), do one real task in the tile, see the change on the feature's own page.
-   Select the tile and confirm exactly ONE registration of its surface, scoped to that record; run one
-   write target through the canonical writeback runtime (it goes through the approval flow).
+   Select the tile and confirm exactly ONE registration of its surface, scoped to that record. Then,
+   with a DIFFERENT tile live, ask the board agent to change your item: it must find it in
+   `board_items` (with its basics), read it with `board_open_item`, and change it with
+   `board_item_act` (through the approval card where the target asks first) — in one turn.
 6. **Record it:** `features/spatial/FEATURE.md` change log; the feature's FEATURE.md notes its board
    item and shared host.
 
@@ -73,8 +79,20 @@ not created yet. A body changes what the tile refers to only through `onSource`.
   `active={false}` registers nothing. The board wraps every tile; only the LIVE tile (selected, being
   worked in, or focused) registers its surface globally. So your component may register its surface
   unconditionally — never add your own "am I on a board?" switch.
-- The live tile's full surface reaches agents through the surface chain on the next turn; `board_read`
-  names every tile's `surface` and the `live_tile_id`; `board_focus` makes a tile live.
+- Every tile ALSO registers into its own capture (`SurfaceActivity capture`), live or not. That is
+  how an agent reaches any item in the same turn, in two requests:
+  1. The board's `board_items` value (always in context) lists every item: id, title, kind, surface,
+     and a dormant item's `basics` (its `briefValues`). The LIVE tile's full surface is already in
+     context through the surface chain.
+  2. `board_open_item(id)` returns that item's values, write targets and client tools, and selects
+     it; `board_item_act(id, target+value | tool+input)` applies one through the ONE writeback /
+     client-tool runtime, approval card included.
+  So an item whose surface is registered by its Body or `Host` is fully reachable with no board
+  code. Never write per-item agent tools on the board. `features/spatial/tools/item-surfaces.ts`.
+- `board_read` gives positions, excerpts, each tile's `surface` and `live_tile_id`; `board_focus`
+  makes a tile live (shows it to the person).
+- A component that registers a side door outside the surface runtime (like custom fields'
+  `registerCustomFieldsDoor`) must check `useSurfaceDormant()` so dormant copies are not offered.
 
 ## Red flags — stop
 
@@ -85,3 +103,5 @@ not created yet. A body changes what the tile refers to only through `onSource`.
 - "I'll set `surface: { none }` until the surface exists." → `none` is for board-only content only.
 - "Agents can already move and arrange the tile, that's enough." → Arranging is the board's job; the
   item's job is the feature's own reads and writes.
+- "I'll add a board tool so agents can edit my item." → Declare it on the feature's surface; the
+  bridge reaches it. A board-specific tool is a second path that drifts.
