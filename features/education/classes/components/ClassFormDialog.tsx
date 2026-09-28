@@ -113,6 +113,12 @@ export function ClassFormDialog({
   // open it. Validated whole before any setter runs, so a partly-bad value
   // stages nothing. Only useState setters and a parent callback are closed
   // over. Nothing is saved — the person presses Create.
+  // surface-write-handlers-surface: matrx-user/education-classes
+  //   `agentSurfaceName` arrives as a prop from ClassesHome (the only mount);
+  //   the static resolver cannot trace a JSX prop across the component
+  //   boundary back to the EDUCATION_CLASSES_SURFACE_NAME literal it is
+  //   passed. Live-proven on production 2026-09-26/27 (see this feature's
+  //   FEATURE.md change log): new_class_draft fills and create_classes saves.
   useSurfaceWriteHandlers(agentSurfaceName ?? null, {
     new_class_draft: {
       // Before the approval card: a bad value is refused with no card.

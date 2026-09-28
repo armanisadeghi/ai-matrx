@@ -21,6 +21,7 @@
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { withTransientRetry } from "@/lib/db/transientRetry";
 import {
   listGeneratedFrom,
   type GeneratedArtifact,
@@ -286,18 +287,27 @@ export async function listKits(): Promise<StudyKit[]> {
   // honouring them.
   const byType = new Map<string, string[]>();
   for (let pageNo = 1; ; pageNo++) {
-    const page = await fetchEducationLibraryPage(
-      {
-        ...DEFAULT_ENTITY_LIST_QUERY,
-        scope: { kind: "mine" },
-        page: pageNo,
-      },
-      {
-        sort: "created_at",
-        direction: "desc",
-        favoritesFirst: false,
-        pageSize: KIT_SCAN_PAGE,
-      },
+    // A shared preview/production server under concurrent agent-walk load
+    // occasionally cancels one PostgREST call in this scan (57014/08006-class
+    // conditions); one bad page used to fail the whole kits list with no
+    // retry, which is exactly the flakiness a person sees as "reload and it
+    // sometimes works." Read-only scan → safe to retry (repeatable default).
+    const page = await withTransientRetry(
+      "education.listKits: library page",
+      () =>
+        fetchEducationLibraryPage(
+          {
+            ...DEFAULT_ENTITY_LIST_QUERY,
+            scope: { kind: "mine" },
+            page: pageNo,
+          },
+          {
+            sort: "created_at",
+            direction: "desc",
+            favoritesFirst: false,
+            pageSize: KIT_SCAN_PAGE,
+          },
+        ),
     );
     for (const row of page.rows) {
       const token = row.kind;
@@ -319,7 +329,13 @@ export async function listKits(): Promise<StudyKit[]> {
   const kits = new Map<string, StudyKit>();
   await Promise.all(
     [...byType.entries()].map(async ([token, ids]) => {
-      const res = await associationsService.listForSources(token, ids);
+      // Same transient-condition class as the library page scan above: four
+      // of these run concurrently (one per artifact type), so a single
+      // transient failure under load used to poison the whole kits list.
+      const res = await withTransientRetry(
+        `education.listKits: assoc_for_sources(${token})`,
+        () => associationsService.listForSources(token, ids),
+      );
       if (!res.ok) {
         throw new Error(
           `Could not read ${token} origins while building your study kits. Try again.`,
