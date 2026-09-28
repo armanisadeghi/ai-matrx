@@ -475,7 +475,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
                           className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
                           <Trash className="h-4 w-4" />
-                          Delete
+                          Remove
                         </Button>
                         
                         <Button
@@ -538,9 +538,9 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Query</AlertDialogTitle>
+            <AlertDialogTitle>Remove from history</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this query? This action cannot be undone.
+              Remove this query from the history kept in this browser? Nothing in the database changes.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-md my-2">
@@ -557,7 +557,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
               onClick={handleDeleteQuery}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Delete
+              Remove
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
