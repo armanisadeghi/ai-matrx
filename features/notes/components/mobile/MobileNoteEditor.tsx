@@ -13,6 +13,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { toastErrorAlreadyCaptured } from "@/lib/toast";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { NOTE_EXCLUDED_ACTIONS } from "../../constants/noteExcludedActions";
 import { noteIdentityContentSource } from "../../richDocumentSource";
@@ -109,6 +110,13 @@ export default function MobileNoteEditor({
   const record = useAppSelector(selectNoteById(noteId));
   const reduxContent = useAppSelector(selectNoteContent(noteId)) ?? "";
   const noteLabel = useAppSelector(selectNoteLabel(noteId)) ?? note.label ?? "";
+  // Every long-press sheet and menu on this note is titled with the note's
+  // NAME ("Note: Clinic intake checklist"), never "Content: <its body>" — the
+  // same heading the desktop tab gives the note's menu. A selection still
+  // shows itself.
+  const noteMenuHeading = () => ({
+    [CONTEXT_MENU_HEADING_KEY]: { label: "Note", text: noteLabel || "Untitled note" },
+  });
   const folder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
   const tags = useAppSelector(selectNoteTags(noteId));
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
@@ -439,6 +447,7 @@ export default function MobileNoteEditor({
         <EditableContextMenu
           sourceFeature="notes"
           surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+          resolveContextOnOpen={noteMenuHeading}
           contextData={{ content: localContent }}
           contentSource={editableContentSource}
           entity={{
@@ -494,6 +503,7 @@ export default function MobileNoteEditor({
           <NonEditableContextMenu
             sourceFeature="notes"
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+            resolveContextOnOpen={noteMenuHeading}
             contextData={{ content: localContent }}
             contentSource={noteIdentityContentSource(noteId, `mobile-readonly:${noteId}`)}
             entity={{
@@ -517,6 +527,7 @@ export default function MobileNoteEditor({
           <EditableContextMenu
             sourceFeature="notes"
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+            resolveContextOnOpen={noteMenuHeading}
             contextData={{ content: localContent }}
             contentSource={editableContentSource}
             entity={{
