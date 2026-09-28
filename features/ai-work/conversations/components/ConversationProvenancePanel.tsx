@@ -480,7 +480,7 @@ export function ConversationProvenancePanel({
       </div>
 
       {/* ── Every tool on this conversation ─────────────────────────────── */}
-      {bindings.length > 0 ? (
+      {state === "ready" && bindings.length > 0 ? (
         <section className="border-t border-border pt-4">
           <h3 className="text-sm font-semibold text-foreground">
             {bindings.length === 1
@@ -523,6 +523,9 @@ export function ConversationProvenancePanel({
            Provider, session id, workspace and account are stated per binding in
            the tools list above, so they are not repeated here: what is left is
            what only the most recent delivery can answer. */}
+      {/* Every provider fact hangs off the bindings read: shown only after it
+          succeeded (a failed read is said once, just above). */}
+      {state === "ready" ? (
       <Group
         source="provider"
         note={
@@ -562,6 +565,7 @@ export function ConversationProvenancePanel({
           )}
         </Fact>
       </Group>
+      ) : null}
 
       {/* ── Native continuation, capability-gated by the user's own Mac ────
            Found by PROVIDER, not by position: after a handoff to another tool
@@ -591,12 +595,16 @@ export function ConversationProvenancePanel({
       {/* ── From AI Matrx ────────────────────────────────────────────────── */}
       <Group source="matrx">
         <Fact label="Title we derived" hint={provenance.detail}>
-          {provenance.fromProvider ? (
-            <Absent>
-              The provider supplied the title — we did not derive it
-            </Absent>
+          {state === "ready" ? (
+            provenance.fromProvider ? (
+              <Absent>
+                The provider supplied the title — we did not derive it
+              </Absent>
+            ) : (
+              conversation.title?.trim() || <Absent>No title derived</Absent>
+            )
           ) : (
-            conversation.title?.trim() || <Absent>No title derived</Absent>
+            <Absent>Unknown until the provider bindings are read</Absent>
           )}
         </Fact>
         <Fact label="Title source">{provenance.chip}</Fact>
@@ -639,7 +647,7 @@ export function ConversationProvenancePanel({
       </Group>
 
       {/* ── From the sync layer ──────────────────────────────────────────── */}
-      {current ? (
+      {state === "ready" && current ? (
         <>
           <Group
             source="sync"

@@ -827,7 +827,8 @@ function ComposerBody({
           <dd className="text-foreground">
             {homes.length > 0
               ? homes.map((home) => home.label).join(", ")
-              : "Nothing yet"}
+              : // read-gate-exempt: homes are the person's own picks in this composer (a failed saved-request restore toasts)
+                "Nothing yet"}
           </dd>
           <dt className="text-muted-foreground">Where it goes</dt>
           <dd className="text-foreground">
