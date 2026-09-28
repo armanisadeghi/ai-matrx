@@ -439,9 +439,6 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
     onClose();
   };
 
-  // ── Coming soon stubs ──────────────────────────────────────────────────────
-
-
   // ── Menu items — identical structure to MessageOptionsMenu ─────────────────
 
   const menuItems: MenuItem[] = [
