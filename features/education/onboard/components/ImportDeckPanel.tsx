@@ -238,6 +238,7 @@ export function ImportDeckPanel() {
               className="truncate"
             />
             <span className="shrink-0 text-muted-foreground">
+              {/* read-gate-exempt: card count of the deck this import just created; result is set only when the import succeeded */}
               · {result.cardCount} cards
             </span>
           </div>

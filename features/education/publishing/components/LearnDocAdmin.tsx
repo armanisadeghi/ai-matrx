@@ -87,6 +87,8 @@ import type { EduSection } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { guardedSave } from "@/lib/save/guardedSave";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 interface Props {
   initialDocs: LearnDocRecord[];
@@ -191,6 +193,8 @@ export function LearnDocAdmin({ initialDocs }: Props) {
   const [docs, setDocs] = useState<LearnDocRecord[]>(initialDocs);
   const [state, setState] = useState<EditorState>({ mode: "list" });
   const [pendingId, setPendingId] = useState<string | null>(null);
+  // A failed refresh is said over the list (stale rows) or instead of it.
+  const [refreshError, setRefreshError] = useState<unknown>(null);
   const [isPending, startTransition] = useTransition();
 
   // The editor owns the draft fields. Rather than lift all nine into this
@@ -202,8 +206,9 @@ export function LearnDocAdmin({ initialDocs }: Props) {
     try {
       const next = await listLearnDocsAdminAction();
       setDocs(next);
+      setRefreshError(null);
     } catch (e) {
-      toast.error(`Failed to refresh: ${(e as Error).message}`);
+      setRefreshError(e);
     }
   }, []);
 
@@ -371,7 +376,18 @@ export function LearnDocAdmin({ initialDocs }: Props) {
             </Button>
           </div>
 
-          {docs.length === 0 ? (
+          {refreshError != null && docs.length > 0 && (
+            <StaleDataNotice
+              hasData
+              what="the study guides"
+              onRetry={() => void refresh()}
+              detail={refreshError instanceof Error ? refreshError.message : null}
+              className="mb-3"
+            />
+          )}
+          {refreshError != null && docs.length === 0 ? (
+            <ReadFailure error={refreshError} what="the study guides" onRetry={() => void refresh()} />
+          ) : docs.length === 0 ? (
             <div
               className="rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground"
               data-surface-value="learn_docs"

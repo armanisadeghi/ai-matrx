@@ -137,7 +137,7 @@ export function AssessmentResults({
       </div>
     );
   }
-  if (!assessment || !result) {
+  if (assessmentError != null || resultError != null || !assessment || !result) {
     // Whichever row didn't arrive is the one the gate must explain; the door
     // out of a missing RESULT is the assessment itself, which they may well
     // still be able to open.

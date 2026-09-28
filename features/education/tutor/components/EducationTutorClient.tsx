@@ -94,6 +94,7 @@ import { TutorTurnTrust } from "./TutorTurnTrust";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 const SOURCE_FEATURE = "education-tutor" as const;
 const BASE_PATH = "/education/tutor/[conversationId]";
@@ -299,6 +300,10 @@ function EducationTutorClientInner({
   // context injection on the fresh route, and re-derived for an existing
   // transcript (below) so the strip is present on every tutor view.
   const [tutorTrust, setTutorTrust] = useState<TrustEnvelope | null>(null);
+  // A resumed conversation re-derives its citations; a failure is said, never
+  // left as a tutor with silently no sources.
+  const [trustError, setTrustError] = useState<unknown>(null);
+  const [trustAttempt, setTrustAttempt] = useState(0);
 
   // The last successfully assembled grounding, held in a ref so the surface
   // emitter (below) can report what the tutor was ACTUALLY given at agent-
@@ -400,14 +405,16 @@ function EducationTutorClientInner({
         if (cancelled) return;
         groundingRef.current = grounding;
         setTutorTrust(grounding.trust);
+        setTrustError(null);
       } catch (err) {
         console.error("[EducationTutorClient] trust derivation failed", err);
+        if (!cancelled) setTrustError(err);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [conversationIdProp, authReady, seed, responseLanguage]);
+  }, [conversationIdProp, authReady, seed, responseLanguage, trustAttempt]);
 
   // ── Existing-conversation load (only on /education/tutor/[id]) ────────────
   const loadAbortRef = useRef<AbortController | null>(null);
@@ -1019,6 +1026,15 @@ function EducationTutorClientInner({
         {/* Before the first answer, show the corpus-level availability strip.
           Completed answers are trusted only through their own structured
           envelope; never reconstruct an old claim from today's weak cards. */}
+        {trustError != null && (
+          <StaleDataNotice
+            hasData
+            partial
+            what="your study material's citations"
+            onRetry={() => setTrustAttempt((n) => n + 1)}
+            className="mx-3 my-2"
+          />
+        )}
         {!turnTrust && messageCount === 0 && (
           <TutorTrustStrip trust={tutorTrust} />
         )}

@@ -69,6 +69,7 @@ import type {
   CardWithDetails,
   FcSetRow,
 } from "@/features/flashcards/data/types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const ANSWER_SECONDS = 12;
 const AUDIO_REVIEW_METHOD = "audio_review";
@@ -101,6 +102,8 @@ export function AudioReviewSession({
   });
 
   const [decks, setDecks] = useState<FcSetRow[]>([]);
+  const [decksError, setDecksError] = useState<unknown>(null);
+  const [decksAttempt, setDecksAttempt] = useState(0);
   const [deckId, setDeckId] = useState(initialDeckId ?? "");
   const [adaptive, setAdaptive] = useState(true);
 
@@ -124,10 +127,14 @@ export function AudioReviewSession({
   }, [phase]);
 
   useEffect(() => {
-    fcService.listSets().then((res) => {
-      if (res.data) setDecks(res.data);
-    });
-  }, []);
+    fcService
+      .listSets()
+      .then((res) => {
+        if (res.data) setDecks(res.data);
+        setDecksError(res.error ?? null);
+      })
+      .catch((e: unknown) => setDecksError(e));
+  }, [decksAttempt]);
 
   // Clean up the mic on unmount.
   useEffect(() => {
@@ -389,6 +396,14 @@ export function AudioReviewSession({
             </option>
           ))}
         </select>
+        {decksError != null && (
+          <ReadFailure
+            error={decksError}
+            what="your decks"
+            onRetry={() => setDecksAttempt((n) => n + 1)}
+            className="m-0"
+          />
+        )}
         <label className="flex cursor-pointer items-start gap-2">
           <Checkbox
             checked={adaptive}
@@ -425,6 +440,7 @@ export function AudioReviewSession({
             Review complete
           </div>
           <div className="mt-0.5 text-sm text-muted-foreground">
+            {/* read-gate-exempt: tally of answers given in this review session, kept locally as the person answers */}
             {correct} of {results.length} correct
           </div>
         </div>
@@ -451,6 +467,7 @@ export function AudioReviewSession({
   return (
     <div className="mx-auto flex min-h-[60dvh] w-full max-w-md flex-col p-4">
       <div className="mb-4 flex items-center justify-between">
+        {/* read-gate-exempt: position in the deck this session started with; a deck that fails to load never starts a session */}
         <span className="text-xs text-muted-foreground">
           Card {index + 1} of {cards.length}
         </span>

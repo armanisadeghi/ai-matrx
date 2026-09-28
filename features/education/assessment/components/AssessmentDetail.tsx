@@ -50,6 +50,7 @@ import type {
   ResultPhase,
 } from "../data/types";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function AssessmentDetail({
   assessmentId,
@@ -71,6 +72,8 @@ export function AssessmentDetail({
   // The raw failure, never a sentence: a zero-row read is four different
   // stories and only the platform can tell them apart (see AccessGate below).
   const [loadError, setLoadError] = useState<unknown>(null);
+  // The attempts read fails on its own — never shown as "no attempts".
+  const [resultsError, setResultsError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
@@ -93,7 +96,10 @@ export function AssessmentDetail({
         setAssessment(res.data.assessment);
         setItems(res.data.items);
         const r = await assessmentService.listResults(assessmentId);
-        if (!cancelled) setResults(r.data ?? []);
+        if (!cancelled) {
+          setResults(r.data ?? []);
+          setResultsError(r.error ?? null);
+        }
       }
       setLoading(false);
     })();
@@ -113,7 +119,7 @@ export function AssessmentDetail({
     );
   }
 
-  if (!assessment) {
+  if (loadError != null || !assessment) {
     // Zero rows means denied / deleted / never existed / signed-out, and this
     // surface cannot tell them apart. The gate asks the platform, says the true
     // one, and offers the way forward (including asking the owner for access).
@@ -175,7 +181,8 @@ export function AssessmentDetail({
         : access.level !== "none"
           ? { access_level: access.level }
           : {}),
-      result_count: results.length,
+      // An unread attempts list is omitted, never reported to the agent as zero.
+      ...(resultsError == null ? { result_count: results.length } : {}),
       ...(() => {
         const best = results
           .filter((r) => r.status === "completed" && r.score_value != null)
@@ -188,7 +195,7 @@ export function AssessmentDetail({
           ? { best_score_pct: Math.round(best * 100) }
           : {};
       })(),
-      results: results.map((r) => ({
+      ...(resultsError == null ? { results: results.map((r) => ({
         id: r.id,
         status: r.status,
         phase: r.phase,
@@ -196,7 +203,7 @@ export function AssessmentDetail({
         correct_count: r.correct_count,
         total_count: r.total_count,
         created_at: r.created_at,
-      })),
+      })) } : {}),
       is_taking: start,
     });
 
@@ -408,7 +415,15 @@ export function AssessmentDetail({
         </div>
 
         {/* Results history */}
-        {results.length > 0 && (
+        {resultsError != null ? (
+          <div className="mt-8">
+            <ReadFailure
+              error={resultsError}
+              what="your attempts"
+              onRetry={() => setReloadKey((k) => k + 1)}
+            />
+          </div>
+        ) : results.length > 0 && (
           <div className="mt-8">
             <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
               <History className="h-4 w-4 text-muted-foreground" />

@@ -54,6 +54,7 @@ import {
 } from "../utils/parseSessionReview";
 import { readGradeScore } from "../utils/gradeScore";
 import { sessionModeLabel } from "../modes";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 const RESULT_META: Record<
   string,
@@ -110,6 +111,8 @@ export function SessionDetailView({
   const dispatch = useAppDispatch();
   const [data, setData] = useState<SessionWithAttempts | null>(null);
   const [labels, setLabels] = useState<Record<string, ItemLabel>>({});
+  // Labels never block the view, but their failure is said over the answers.
+  const [labelsError, setLabelsError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   // The raw failure, never a sentence — the gate decides what it means.
   const [loadError, setLoadError] = useState<unknown>(null);
@@ -146,9 +149,12 @@ export function SessionDetailView({
       if (labelResolver) {
         try {
           const resolved = await labelResolver(res.data);
-          if (!cancelled) setLabels(resolved);
-        } catch {
-          /* labels are a nicety — never block the view */
+          if (!cancelled) {
+            setLabels(resolved);
+            setLabelsError(null);
+          }
+        } catch (e) {
+          if (!cancelled) setLabelsError(e);
         }
       }
     })();
@@ -301,7 +307,7 @@ export function SessionDetailView({
               ))}
             </div>
           </>
-        ) : !session ? (
+        ) : loadError != null || !session ? (
           // "It may have been deleted" was a guess. Zero rows is equally a
           // denial, a stale link, or an expired session — the gate asks.
           <AccessGate
@@ -405,6 +411,16 @@ export function SessionDetailView({
                 No answers were recorded in this session.
               </div>
             ) : (
+              <>
+              {labelsError != null && (
+                <StaleDataNotice
+                  hasData
+                  partial
+                  what="the question text"
+                  onRetry={() => setReloadKey((k) => k + 1)}
+                  className="mb-2"
+                />
+              )}
               <ol className="space-y-2">
                 {data.attempts.map((a, i) => (
                   <AttemptRow
@@ -416,6 +432,7 @@ export function SessionDetailView({
                   />
                 ))}
               </ol>
+              </>
             )}
           </>
         )}

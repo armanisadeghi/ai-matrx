@@ -450,6 +450,7 @@ export function ExamContentPipeline() {
             {plansToGenerate.length === 1 ? "" : "s"}
           </Button>
           <p className="text-xs text-muted-foreground">
+            {/* read-gate-exempt: how many sources the person ticked (selection state); a failed source read is said in the sources panel */}
             {selectedSources.length} source
             {selectedSources.length === 1 ? "" : "s"} selected
           </p>

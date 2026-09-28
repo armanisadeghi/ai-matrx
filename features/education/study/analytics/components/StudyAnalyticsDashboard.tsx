@@ -124,6 +124,7 @@ export function StudyAnalyticsDashboard({
     try {
       const r = await narrator.narrate(a, { sessionId });
       setReport(r);
+    // read-gate-exempt: narration failure is carried by narrator.error and shown on the NarrativeCard; the numbers stand without it
     } catch {
       /* narration is optional chrome — numbers stand on their own */
     }

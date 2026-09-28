@@ -133,6 +133,7 @@ export function JoinClassView() {
             )}
             <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
               <Users className="h-3.5 w-3.5" />
+              {/* read-gate-exempt: member count from the class-code lookup the person just ran; preview is set only when the lookup found a class */}
               {preview.memberCount}{" "}
               {preview.memberCount === 1 ? "member" : "members"}
             </p>

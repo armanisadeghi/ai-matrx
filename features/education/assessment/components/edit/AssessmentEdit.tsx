@@ -112,7 +112,7 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
   const canEdit =
     access.level === "edit" || access.level === "admin" || access.isOwner;
 
-  if (!assessment) {
+  if (loadError != null || !assessment) {
     // Denied / deleted / never existed / signed-out are indistinguishable from
     // here — the gate asks the platform and offers the real next step.
     const door = assessmentListDoor(pathname);
