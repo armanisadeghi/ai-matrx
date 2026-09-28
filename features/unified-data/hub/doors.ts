@@ -287,9 +287,20 @@ export interface DataHomeTableRow {
  * DATA HOME'S FILTERS READ — `custom.data_home_tables()` (lane DATA-HOME-1). The walk is
  * `custom.tables_i_can_open()`'s own; the door adds whether she made each one, whether
  * somebody shared it with her, and — because the home hides nothing (Arman, 21:40 PT) — the
- * tables the app keeps for itself, each with its kind. It takes no organization; the door skips every organization whose
+ * tables the app keeps for itself, each with its kind. The door skips every organization whose
  * store is off, so there is no single switch to ask here.
+ *
+ * `organizationId` — THE ORGANIZATION DROPDOWN, HONOURED IN THE DOOR (lane DATA-HOME-2): named, the
+ * door walks only that organization (`p_organization_id`), in every lane and kind; null walks them
+ * all. It only narrows: it never admits an organization the walk would not.
  */
-export function dataHomeTables(dataSource: RecordsDataSource): Promise<DoorAnswer<DataHomeTableRow[]>> {
-  return call<DataHomeTableRow[]>(dataSource, "data_home_tables", {});
+export function dataHomeTables(
+  dataSource: RecordsDataSource,
+  organizationId: string | null = null,
+): Promise<DoorAnswer<DataHomeTableRow[]>> {
+  return call<DataHomeTableRow[]>(
+    dataSource,
+    "data_home_tables",
+    organizationId ? { p_organization_id: organizationId } : {},
+  );
 }

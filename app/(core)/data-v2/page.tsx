@@ -13,7 +13,7 @@
 // here, which is what the unified data ramp screen sets, once, for everybody.
 // The per-person `custom.code_paths_enabled` half is gone (lane NAV-FIX).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ActionInbox, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
@@ -24,8 +24,20 @@ import { recordStoreShare } from "@/features/sharing/components/RecordStoreShare
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectDataHomeOrganizationPick,
+  selectPreferencesLoadStatus,
+} from "@/lib/redux/preferences/userPreferenceSelectors";
+import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import {
+  ALL_ORGANIZATIONS,
+  DATA_HOME_DEFAULT_ORGANIZATION_KNOB,
+  dataHomeOrganizationHref,
+  resolveDataHomeOrganization,
+} from "@/features/unified-data/hub/dataHomeScope";
 import { useOrganizationRequired, type OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationMembers } from "@/features/organizations/service";
@@ -37,52 +49,63 @@ import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
-import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
 
 export default function UnifiedDataPage() {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const active = useOrganizationRequired();
   /**
-   * `?org=<id>` — THE LIST OF ONE NAMED ORGANIZATION (lane ACCESS-FIX-18, VERIFIER-18 H4).
+   * THE ORGANIZATION THE HOME SHOWS — the dropdown at the end of the hub's bar (lane DATA-HOME-2,
+   * Arman 2026-09-28: "with titanium selected the home still lists every organization").
    *
-   * Archiving a table from its own page came back here and read "An organization is needed for
-   * data records … pick the one you are working in", although the table page had just named
-   * its organization. The way back now carries that organization on the address, and this
-   * list shows it — named by the hub's own strip ("Showing what is in <organization> · Change
-   * · All my organizations"), which is the owner's rule for a list filtered by organization.
-   * Only an organization the person belongs to is honoured; anything else is ignored and the
-   * list is the active organization's, as before. The active organization is never moved.
+   * `?org=<id>|all` is what the person chose this visit (and the way back from a table that was
+   * just archived names its organization the same way, lane ACCESS-FIX-18); without it, their
+   * SAVED pick (userPreferences.lists.dataHomeOrganizationId — their account, every device); then
+   * the Feature Knob `custom.data_home_default_organization` (platform default All Orgs). Only an
+   * organization the person belongs to is honoured. One organization chosen, the mount — and so
+   * every listing — is bound to it and the door lists only its tables; All Orgs, the tables are
+   * every organization's and the forms and pages are the active organization's, said on the bar.
+   *
+   * 🚨 SWITCHING THE ACTIVE ORGANIZATION ELSEWHERE NEVER CHANGES THIS FILTER. The old "CHANGE MEANS
+   * CHANGE" effect dropped `?org=` whenever the active organization moved; it is gone, because the
+   * filter is the person's own choice on this page and nothing else may move it silently.
    */
   const searchParams = useSearchParams();
-  const namedOrganizationId = searchParams.get("org");
+  const dispatch = useAppDispatch();
   const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
-  const namedOrganization = namedOrganizationId
-    ? myOrganizations.find((org) => org.id === namedOrganizationId)
-    : undefined;
+  const savedPick = useAppSelector(selectDataHomeOrganizationPick);
+  const preferencesLoad = useAppSelector(selectPreferencesLoadStatus);
+  const defaultOrganizationKnob = useEffectiveKnob(active.organizationId, userId, DATA_HOME_DEFAULT_ORGANIZATION_KNOB);
+  const addressPick = searchParams.get("org");
+  const organizationFilter = resolveDataHomeOrganization(
+    addressPick,
+    savedPick,
+    defaultOrganizationKnob,
+    myOrganizationsLoading ? null : myOrganizations.map((org) => org.id),
+  );
+  const namedOrganization =
+    organizationFilter === ALL_ORGANIZATIONS ? undefined : myOrganizations.find((org) => org.id === organizationFilter);
   const organizationId: string | null = namedOrganization ? namedOrganization.id : active.organizationId;
+  // HELD, never guessed: until the person's memberships and saved pick are read, which
+  // organization the home shows is not known, and showing All Orgs for a moment would be a lie.
+  const pickUnread = !addressPick && preferencesLoad === "loading";
   const organizationState: OrganizationState = namedOrganization
     ? "ready"
-    : namedOrganizationId && myOrganizationsLoading
+    : (organizationFilter !== ALL_ORGANIZATIONS && myOrganizationsLoading) || pickUnread
       ? "resolving"
       : active.organizationState;
-  /**
-   * CHANGE MEANS CHANGE. The strip's Change opens the platform's one organization picker; when
-   * the person switches there, the list follows the switch, so the address's organization is
-   * dropped rather than left overriding what they just chose.
-   */
-  const lastActive = useRef(active.organizationId);
-  useEffect(() => {
-    const previous = lastActive.current;
-    if (previous === active.organizationId) return;
-    lastActive.current = active.organizationId;
-    // A selection arriving where there was none (the session's boot resolving) is not the
-    // person choosing; only a switch from one organization to another is.
-    if (!namedOrganizationId || previous === null) return;
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("org");
-    replaceAddressWithoutNavigating(currentPathWithSearch(next));
-  }, [active.organizationId, namedOrganizationId, searchParams]);
+  const organizationChoices = [...myOrganizations]
+    .map((org) => ({ id: org.id, name: org.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const chooseOrganization = useCallback(
+    (next: string) => {
+      // SAVED TO THE PERSON'S ACCOUNT (the synced preferences record), so the next visit lands here.
+      dispatch(setModulePreferences({ module: "lists", preferences: { dataHomeOrganizationId: next } }));
+      const href = dataHomeOrganizationHref("/data-v2", new URLSearchParams(searchParams.toString()), next);
+      router.push(href, { scroll: false });
+    },
+    [dispatch, router, searchParams],
+  );
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen. There is no second,
   // per-person switch any more (lane NAV-FIX, 19 September).
@@ -195,6 +218,9 @@ export default function UnifiedDataPage() {
               dataSource={dataSource}
               organizationName={namedOrganization?.name ?? null}
               makeAsked={makeAsked}
+              organizationFilter={organizationFilter}
+              organizationChoices={organizationChoices}
+              onChooseOrganization={chooseOrganization}
               /* WHAT IS WAITING ON THIS PERSON — one inbox for what they were
                  assigned, what needs their approval and what an agent has
                  proposed (PRODUCTS.md row 6), the store's own `custom.work_inbox`,

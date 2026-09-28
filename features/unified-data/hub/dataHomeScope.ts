@@ -107,9 +107,90 @@ export const DATA_HOME_SCOPE_EMPTY: Record<Exclude<DataHomeScope, "all">, string
   public: "None of these that you can open is public. It shows here once its owner opens it to anyone with the link.",
 };
 
-/** Under a filter other than All; under All a listing says its own empty sentence (what to do). */
-export function emptyInScope(capabilityTitle: string, scope: Exclude<DataHomeScope, "all">): string {
-  return `No ${capabilityTitle.toLowerCase()} under ${DATA_HOME_SCOPE_TITLE[scope]}. ${DATA_HOME_SCOPE_EMPTY[scope]}`;
+/** The same sentences when ONE organization is chosen in the organization dropdown (DATA-HOME-2). */
+function scopeEmptyIn(scope: Exclude<DataHomeScope, "all">, organizationName: string): string {
+  switch (scope) {
+    case "mine":
+      return `You have not made any in ${organizationName} yet. What you make there shows here.`;
+    case "orgs":
+      return `Nothing in ${organizationName} is here yet.`;
+    case "shared":
+      return `Nobody has shared any of ${organizationName}'s with you yet. When someone does, it shows here.`;
+    case "public":
+      return `None of ${organizationName}'s that you can open is public. It shows here once its owner opens it to anyone with the link.`;
+  }
+}
+
+/**
+ * Under a filter other than All; under All a listing says its own empty sentence (what to do).
+ * With one organization chosen, the sentence names it and never says "any of your organizations".
+ */
+export function emptyInScope(
+  capabilityTitle: string,
+  scope: Exclude<DataHomeScope, "all">,
+  organizationName?: string | null,
+): string {
+  const why = organizationName ? scopeEmptyIn(scope, organizationName) : DATA_HOME_SCOPE_EMPTY[scope];
+  return `No ${capabilityTitle.toLowerCase()} under ${DATA_HOME_SCOPE_TITLE[scope]}. ${why}`;
+}
+
+// ── THE ORGANIZATION DROPDOWN (lane DATA-HOME-2, Arman 2026-09-28 ~14:00 PT) ─────────────────────
+//
+// "With titanium selected, the home still lists every organization." The only organization control
+// on the bar was the ACTIVE-organization picker ("Forms and pages from … · Change"): it governed the
+// forms and pages below, and the Tables listing — read from `custom.data_home_tables()`, which took no
+// organization — ignored it. A control shown and not honoured is a lie. The ruling:
+//
+//   1. the bar reads All · Mine · My Orgs · Shared · Public, then (after Kind) an organization
+//      dropdown at the END, starting on "All Orgs";
+//   2. the dropdown is honoured always, in every lane and kind, IN THE DOOR
+//      (`custom.data_home_tables(p_organization_id)`), not only in the browser;
+//   3. a person's pick is saved to THEIR ACCOUNT (userPreferences.lists.dataHomeOrganizationId —
+//      synced per person, never per organization) so the next visit lands on it; a person who never
+//      picked opens on the Feature Knob `custom.data_home_default_organization` (platform default
+//      "all", no organization or user rung: those rungs are keyed by the active organization); and
+//      switching the active organization elsewhere in the app never changes this filter.
+//
+// Order of precedence: the address (`?org=<id>|all`, what the person chose this visit, so Back
+// undoes it) → the saved pick → the knob → All Orgs. Only an organization the person belongs to is
+// honoured; any other id falls through to the next source.
+
+export const ALL_ORGANIZATIONS = "all" as const;
+export type DataHomeOrganization = string;
+
+export const DATA_HOME_DEFAULT_ORGANIZATION_KNOB = { feature: "custom", key: "data_home_default_organization" } as const;
+
+export const ALL_ORGANIZATIONS_TITLE = "All Orgs";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Which organization the home shows. `memberIds` null = the person's memberships have not been
+ * read yet: an id is then taken on trust (the page holds the list until they are read).
+ */
+export function resolveDataHomeOrganization(
+  fromAddress: string | null | undefined,
+  fromSaved: unknown,
+  fromKnob: unknown,
+  memberIds: readonly string[] | null,
+): DataHomeOrganization {
+  for (const candidate of [fromAddress, fromSaved, fromKnob]) {
+    if (candidate === ALL_ORGANIZATIONS) return ALL_ORGANIZATIONS;
+    if (typeof candidate === "string" && UUID.test(candidate) && (memberIds === null || memberIds.includes(candidate))) {
+      return candidate;
+    }
+  }
+  return ALL_ORGANIZATIONS;
+}
+
+export function dataHomeOrganizationHref(
+  pathname: string,
+  current: URLSearchParams,
+  organization: DataHomeOrganization,
+): string {
+  const next = new URLSearchParams(current.toString());
+  next.set("org", organization);
+  return `${pathname}?${next.toString()}`;
 }
 
 // ── THE KIND FILTER (Arman, 2026-09-27 21:40 PT) ────────────────────────────────────────────────

@@ -72,7 +72,6 @@ async function render(state: HubListingState): Promise<{ host: HTMLDivElement; r
             <HubListing
                 capability={CAPABILITY}
                 state={state}
-                laneLabel={null}
                 open
                 onOpenChange={() => {}}
             />,

@@ -27,7 +27,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArchivedDisclosure, ArchivedPortals, TablesHome } from "@ai-matrx/records-ui";
 import { useRecordsClient, useTables } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
-import { Button, cn } from "@ai-matrx/design-system";
+import { cn } from "@ai-matrx/design-system";
 
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
@@ -35,7 +35,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { useUserRole } from "@/features/organizations/hooks";
-import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 
 /** What each listing's rows are, in the store's kind words — every row on the home says its kind. */
 const LISTING_KIND: Record<string, string> = {
@@ -67,6 +66,8 @@ import * as doors from "./doors";
 import type { DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
 import {
   ALL_KINDS,
+  ALL_ORGANIZATIONS,
+  ALL_ORGANIZATIONS_TITLE,
   DATA_HOME_DEFAULT_KIND_KNOB,
   DATA_HOME_DEFAULT_ORDER_KNOB,
   DATA_HOME_DEFAULT_SCOPE_KNOB,
@@ -124,6 +125,17 @@ export interface OrganizationHubProps {
    * review 2, J6); `TablesHome` opens the name box or the examples when asked.
    */
   makeAsked?: { create: number; examples: number } | undefined;
+  /**
+   * THE ORGANIZATION DROPDOWN (lane DATA-HOME-2): "all", or the id of the one organization the
+   * person chose — resolved by the page (address → their saved pick → the knob → All Orgs). The
+   * Tables listing asks the door for that organization only; the page binds the mount (and so the
+   * forms, bookings and pages below) to it.
+   */
+  organizationFilter?: string | undefined;
+  /** The organizations the dropdown offers: the ones the person belongs to. */
+  organizationChoices?: ReadonlyArray<{ id: string; name: string }> | undefined;
+  /** Picking one: the page navigates (Back undoes it) and saves the pick to the person's account. */
+  onChooseOrganization?: ((next: string) => void) | undefined;
 }
 
 export function OrganizationHub({
@@ -132,7 +144,11 @@ export function OrganizationHub({
   inbox,
   organizationName: namedOrganizationName,
   makeAsked,
+  organizationFilter = ALL_ORGANIZATIONS,
+  organizationChoices = [],
+  onChooseOrganization,
 }: OrganizationHubProps) {
+  const oneOrganization = organizationFilter === ALL_ORGANIZATIONS ? null : organizationFilter;
   const router = useRouter();
   /**
    * THE FIVE FILTERS — All · Mine · My Orgs · Shared · Public (lane DATA-HOME-1, Arman
@@ -178,14 +194,17 @@ export function OrganizationHub({
   >({ phase: "reading" });
   useEffect(() => {
     let alive = true;
-    void doors.dataHomeTables(dataSource).then((answered) => {
+    // THE DOOR IS TOLD THE ORGANIZATION (DATA-HOME-2): the listing never shows the rows of the
+    // choice before, while the new choice is read.
+    setEverywhere({ phase: "reading" });
+    void doors.dataHomeTables(dataSource, oneOrganization).then((answered) => {
       if (!alive) return;
       setEverywhere(answered.ok ? { phase: "read", rows: answered.data } : { phase: "failed", error: answered.error });
     });
     return () => {
       alive = false;
     };
-  }, [dataSource]);
+  }, [dataSource, oneOrganization]);
   const client = useRecordsClient();
   const tablesRead = useTables();
   const userIdForFacts = useAppSelector(selectUserId);
@@ -225,7 +244,6 @@ export function OrganizationHub({
     if (facts.phase !== "read") return listed;
     return withHubTableFacts(listed, facts.rows, userIdForFacts ?? null);
   }, [tablesRead.data, facts, userIdForFacts]);
-  const [pickerOpen, setPickerOpen] = useState(false);
 
   /*
    * NO "SHOW EVERYTHING" FOLD ON THIS PAGE (Arman, 2026-09-27 21:40 PT): the home hides nothing.
@@ -482,8 +500,9 @@ export function OrganizationHub({
   /**
    * THE LIST'S ONE PLACE TO NARROW IT: exactly All · Mine · My Orgs · Shared · Public, on ONE
    * row above everything (lane DATA-HOME-1). The forms, bookings and the rest below the tables
-   * are the organization the person is working in — named on the same row, with Change, which is
-   * the owner's law for a list an organization filters (2026-09-23).
+   * are the organization the person is working in — named on the same row under All Orgs, which is
+   * the owner's law for a list an organization filters (2026-09-23); the organization dropdown at the
+   * end of the row narrows everything to one organization (DATA-HOME-2).
    */
   const scopeRow = (
     <div
@@ -528,17 +547,32 @@ export function OrganizationHub({
           ))}
         </select>
       </label>
-      <span className="ml-auto inline-flex items-center gap-x-1 whitespace-nowrap text-muted-foreground">
-        Forms and pages from <span className="font-medium text-foreground">{organizationName ?? "the organization you are working in"}</span>
-        <OrganizationPickerPopover
-          open={pickerOpen}
-          onOpenChange={setPickerOpen}
-          trigger={
-            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
-              Change
-            </Button>
-          }
-        />
+      {/* THE ORGANIZATION DROPDOWN, LAST ON THE BAR (DATA-HOME-2, Arman 2026-09-28): it starts on All
+          Orgs and is honoured by the door in every lane and kind. Under All Orgs the forms and pages
+          below are still one organization's (the one being worked in) — said here, never implied. */}
+      <span className="ml-auto inline-flex items-center gap-x-2 whitespace-nowrap text-muted-foreground">
+        {oneOrganization === null && organizationName ? (
+          <span data-hub-forms-from>
+            Forms and pages: <span className="font-medium text-foreground">{organizationName}</span>
+          </span>
+        ) : null}
+        <label className="inline-flex items-center gap-1">
+          <span className="sr-only">Organization</span>
+          <select
+            data-hub-organization
+            aria-label="Organization"
+            value={organizationFilter}
+            onChange={(event) => onChooseOrganization?.(event.target.value)}
+            className="h-6 max-w-[14rem] truncate rounded-full border border-border bg-background px-2 text-xs text-foreground"
+          >
+            <option value={ALL_ORGANIZATIONS}>{ALL_ORGANIZATIONS_TITLE}</option>
+            {organizationChoices.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </span>
       {facts.phase === "failed" ? (
         /* NEVER A LIE: without the organization's facts, which of its forms and pages are yours
@@ -582,6 +616,7 @@ export function OrganizationHub({
           kind={capability.id === "tables" ? kind : ALL_KINDS}
           order={order}
           groupByOrganization={scope === "all"}
+          inOrganization={oneOrganization ? organizationName : null}
           /* THE TABLES LISTING IS EVERY ORGANIZATION'S (DATA-HOME-1): "this organization shows
              each member only what is shared" is one organization's setting and would be false
              over a list of eleven. It still speaks on the listings that ARE that organization's. */

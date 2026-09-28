@@ -54,6 +54,8 @@ export interface HubListingProps {
   order?: DataHomeOrder | undefined;
   /** Rows sit under organization headers — under All, when they span more than one organization. */
   groupByOrganization?: boolean | undefined;
+  /** The one organization the dropdown chose (DATA-HOME-2): empty sentences name it. */
+  inOrganization?: string | null | undefined;
   /** This organization shows members only what is shared with them. */
   sharedOnly?: boolean | undefined;
   open: boolean;
@@ -198,6 +200,7 @@ export function HubListing({
   kind = ALL_KINDS,
   order = "updated",
   groupByOrganization = false,
+  inOrganization = null,
   sharedOnly,
   open,
   onOpenChange,
@@ -277,9 +280,9 @@ export function HubListing({
           ) : state.items.length === 0 ? (
             <p className="px-3 py-3 text-xs text-muted-foreground">
               {kind !== ALL_KINDS
-                ? `No ${kindTitle(kind).toLowerCase()}${scope !== "all" ? ` under ${DATA_HOME_SCOPE_TITLE[scope]}` : ""} in any of your organizations.`
+                ? `No ${kindTitle(kind).toLowerCase()}${scope !== "all" ? ` under ${DATA_HOME_SCOPE_TITLE[scope]}` : ""} ${inOrganization ? `in ${inOrganization}` : "in any of your organizations"}.`
                 : scope !== "all"
-                ? emptyInScope(capability.title, scope)
+                ? emptyInScope(capability.title, scope, inOrganization)
                 : sharedOnly && capability.emptyWhenSharedOnly
                   ? capability.emptyWhenSharedOnly
                   : capability.empty}

@@ -57,7 +57,6 @@ async function render(sharedOnly: boolean): Promise<string> {
       <HubListing
         capability={TABLES}
         state={ONE_SHARED_TABLE}
-        laneLabel={null}
         sharedOnly={sharedOnly}
         open={false}
         onOpenChange={() => undefined}

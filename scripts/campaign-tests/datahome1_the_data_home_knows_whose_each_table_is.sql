@@ -31,7 +31,7 @@ begin;
 select set_config('request.jwt.claims',
   json_build_object('sub', (select id from auth.users where email = 'admin@admin.com'), 'role', 'authenticated')::text, true);
 
-select to_regprocedure('custom.data_home_tables()') is not null as door_exists \gset
+select to_regprocedure('custom.data_home_tables(uuid)') is not null as door_exists \gset
 \if :door_exists
 \else
   \echo 'A FAILED: custom.data_home_tables() does not exist'

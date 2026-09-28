@@ -246,7 +246,8 @@ export const defaultUserPreferences: UserPreferences = {
   // lib/redux/preferences/userPreferencesSlice.ts.
   listViews: {},
   // THE ARCHIVED-ITEMS LAW: the platform default hides archived rows.
-  lists: { archivedDefault: "active" },
+  // THE DATA HOME'S ORGANIZATION DROPDOWN: null = never picked (the knob decides).
+  lists: { archivedDefault: "active", dataHomeOrganizationId: null },
   assists: {
     // null = the default bottom-right corner; the user has not dragged it.
     dockPosition: null,

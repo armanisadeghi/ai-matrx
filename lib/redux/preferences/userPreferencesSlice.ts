@@ -520,6 +520,14 @@ export type ListViewsPreferences = Record<string, ListViewPrefs>;
 export interface ListsPreferences {
   /** "active" hides archived rows on arrival (platform default); "all" shows them. */
   archivedDefault: "active" | "all";
+  /**
+   * THE DATA HOME'S ORGANIZATION DROPDOWN, REMEMBERED (lane DATA-HOME-2, Arman 2026-09-28): the
+   * person's last pick — "all" or an organization id — so the next visit, on any device, lands on
+   * it. `null` = never picked, and the home opens on the knob
+   * `custom.data_home_default_organization` (platform default "all"). Per PERSON, never per
+   * organization: switching the active organization never changes it.
+   */
+  dataHomeOrganizationId?: string | null;
 }
 
 /**
@@ -1320,7 +1328,7 @@ export const initializeUserPreferencesState = (
     // Empty = every list surface falls back to its own declared defaults
     // (lib/list-views/defaults.ts). Keep in sync with defaultUserPreferences.ts.
     listViews: {},
-    lists: { archivedDefault: "active" },
+    lists: { archivedDefault: "active", dataHomeOrganizationId: null },
     assists: {
       // null = the default bottom-right corner; the user has not dragged it.
       dockPosition: null,

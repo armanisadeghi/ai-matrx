@@ -81,6 +81,8 @@ const ROWS = [
   },
 ];
 
+/** Which organization each call to the door named (null = every organization). */
+const doorAskedFor: Array<string | null> = [];
 const listArchived = jest.fn(async () => ({ ok: true as const, data: { rows: [], total: 0 } }));
 const ROUTER = { replace: jest.fn(), refresh: jest.fn(), push: jest.fn() };
 let PARAMS = new URLSearchParams();
@@ -146,7 +148,11 @@ jest.mock("../OrganizationScope", () => ({
 jest.mock("../doors", () => ({
   tableKernelId: async () => ({ ok: true, data: "kernel" }),
   tableFacts: async () => ({ ok: true, data: [] }),
-  dataHomeTables: async () => ({ ok: true, data: ROWS }),
+  // THE DOOR, AS PRODUCTION ANSWERS IT (datahome2 suite B): named one organization, only its rows.
+  dataHomeTables: async (_ds: unknown, organizationId?: string | null) => {
+    doorAskedFor.push(organizationId ?? null);
+    return { ok: true, data: organizationId ? ROWS.filter((r) => r.organization_id === organizationId) : ROWS };
+  },
   tablesICanOpen: async () => ({ ok: true, data: ROWS }),
 }));
 jest.mock("../capabilities", () => {
@@ -165,13 +171,34 @@ const { OrganizationHub } = require(HUB_UNDER_TEST) as typeof import("../Organiz
 let container: HTMLDivElement;
 let root: Root;
 
-async function mount(query = "") {
+async function mount(
+  query = "",
+  org?: { filter: string; onChoose?: (next: string) => void },
+) {
   PARAMS = new URLSearchParams(query);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
+  const bound = org && org.filter !== "all" ? org.filter : RINCON;
+  const boundName = bound === HARBOR ? "Harbor Dental Group" : "Rincon Plumbing Co";
   await act(async () => {
-    root.render(<OrganizationHub organizationId={RINCON} dataSource={{} as never} organizationName="Rincon Plumbing Co" />);
+    root.render(
+      <OrganizationHub
+        organizationId={bound}
+        dataSource={{} as never}
+        organizationName={boundName}
+        {...(org
+          ? {
+              organizationFilter: org.filter,
+              organizationChoices: [
+                { id: HARBOR, name: "Harbor Dental Group" },
+                { id: RINCON, name: "Rincon Plumbing Co" },
+              ],
+              onChooseOrganization: org.onChoose ?? (() => undefined),
+            }
+          : {})}
+      />,
+    );
   });
   for (let i = 0; i < 8; i += 1) {
     await act(async () => {
@@ -201,6 +228,7 @@ afterEach(async () => {
   defaultScopeKnob = undefined;
   defaultKindKnob = undefined;
   defaultOrderKnob = undefined;
+  doorAskedFor.length = 0;
 });
 
 describe("the data home · default is everything", () => {
@@ -316,5 +344,67 @@ describe("the data home · hides nothing, and a Kind filter narrows it", () => {
       kind.dispatchEvent(new Event("change", { bubbles: true }));
     });
     expect(ROUTER.push).toHaveBeenCalledWith("/data-v2?kind=list", { scroll: false });
+  });
+});
+
+// ── LANE DATA-HOME-2 (Arman, 2026-09-28 ~14:00 PT): "with titanium selected in the organization
+// filter, the home still lists every organization." RED on the DATA-HOME-1 hub: the bar's only
+// organization control was the active-organization picker, there was no organization dropdown, and
+// the door was asked for every organization whatever was chosen.
+describe("the data home · the organization dropdown", () => {
+  it("sits at the END of the bar, after All · Mine · My Orgs · Shared · Public, and starts on All Orgs", async () => {
+    await mount();
+    const bar = container.querySelector("[data-hub-scope]") as HTMLElement;
+    const controls = [...bar.querySelectorAll("[data-hub-scope-choice], [data-hub-kind], [data-hub-organization]")].map(
+      (el) => el.getAttribute("data-hub-scope-choice") ?? (el.hasAttribute("data-hub-kind") ? "kind" : "organization"),
+    );
+    expect(controls).toEqual(["all", "mine", "orgs", "shared", "public", "kind", "organization"]);
+    const select = bar.querySelector("[data-hub-organization]") as HTMLSelectElement;
+    expect(select.value).toBe("all");
+    expect(select.options[0]?.textContent).toBe("All Orgs");
+  });
+
+  it.each([
+    ["all", ["Patient recall list"]],
+    ["mine", ["Patient recall list"]],
+    ["orgs", ["Patient recall list"]],
+    ["shared", []],
+    ["public", []],
+  ])("under ?scope=%s with Harbor Dental chosen, only Harbor Dental's tables — the door is told", async (scope, titles) => {
+    await mount(`scope=${scope}`, { filter: HARBOR });
+    expect(doorAskedFor).toContain(HARBOR);
+    expect(doorAskedFor).not.toContain(null);
+    expect(tableRows().map((r) => r.title)).toEqual(titles);
+    expect(tableRows().every((r) => r.organization === "Harbor Dental Group")).toBe(true);
+  });
+
+  it("under a Kind, the chosen organization still holds", async () => {
+    await mount("kind=list", { filter: HARBOR });
+    expect(tableRows()).toEqual([]);
+    expect(listingText()).toMatch(/No lists in Harbor Dental Group\./);
+  });
+
+  it("an empty lane names the chosen organization, never 'any of your organizations'", async () => {
+    await mount("scope=shared", { filter: HARBOR });
+    expect(listingText()).toMatch(/No tables under Shared\. Nobody has shared any of Harbor Dental Group's with you yet\./);
+    expect(listingText()).not.toMatch(/any of your organizations/);
+  });
+
+  it("All Orgs asks the door for every organization and says whose forms and pages are below", async () => {
+    await mount("", { filter: "all" });
+    expect(doorAskedFor).toEqual([null]);
+    expect(tableRows()).toHaveLength(4);
+    expect(container.querySelector("[data-hub-forms-from]")?.textContent).toBe("Forms and pages: Rincon Plumbing Co");
+  });
+
+  it("picking an organization hands the pick to the page", async () => {
+    const onChoose = jest.fn();
+    await mount("", { filter: "all", onChoose });
+    const select = container.querySelector("[data-hub-organization]") as HTMLSelectElement;
+    await act(async () => {
+      select.value = HARBOR;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(onChoose).toHaveBeenCalledWith(HARBOR);
   });
 });
