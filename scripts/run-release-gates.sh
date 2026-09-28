@@ -749,6 +749,10 @@ if $STRICT; then
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
+        # fallback" hides an RTK SerializedError's real message (2026-09-27).
+        # Baseline ratchet: exits 1 only on a NEW site; advisory here.
+        "Hand-rolled instanceof-Error fallback (use extractErrorMessage)|pnpm check:error-message-fallback"
         # DEPRECATED ORGANIZATION FLAG — organizations are unlimited and equal (access
         # ladder, Arman 2026-09-26). Ratchet that only shrinks; exits 1 on a NEW reference.
         # Its database twin is the event trigger no_new_org_flag_reader.
@@ -1315,6 +1319,10 @@ else
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
+        # fallback" hides an RTK SerializedError's real message (2026-09-27).
+        # Baseline ratchet: exits 1 only on a NEW site; advisory here.
+        "Hand-rolled instanceof-Error fallback (use extractErrorMessage)|pnpm check:error-message-fallback"
         # DEPRECATED ORGANIZATION FLAG — organizations are unlimited and equal (access
         # ladder, Arman 2026-09-26). Ratchet that only shrinks; exits 1 on a NEW reference.
         # Its database twin is the event trigger no_new_org_flag_reader.

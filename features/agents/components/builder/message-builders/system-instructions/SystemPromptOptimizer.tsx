@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
 import { usePathname } from "next/navigation";
 // TODO(prompt-to-agent-sweep): createUserPrompt writes to public.prompts which is graveyarded.
 // Replace with agent.definition upsert once the prompt-to-agent migration completes.
@@ -114,7 +115,7 @@ export function SystemPromptOptimizer({
       .catch((err) => {
         if (cancelled) return;
         setShortcutLoadError(
-          err instanceof Error ? err.message : "Failed to load optimizer",
+          extractErrorMessage(err, "Failed to load optimizer"),
         );
       });
     return () => {
@@ -190,14 +191,8 @@ export function SystemPromptOptimizer({
       console.error("Optimization error:", error);
       toast.error("Failed to optimize", {
         // A rejected launch thunk rejects with a plain { message } object,
-        // not an Error — read its message rather than printing "Unknown error".
-        description:
-          typeof error === "object" &&
-          error !== null &&
-          "message" in error &&
-          typeof error.message === "string"
-            ? error.message
-            : "Unknown error",
+        // not an Error — extractErrorMessage reads either shape.
+        description: extractErrorMessage(error),
       });
       setConversationId(null);
     }
