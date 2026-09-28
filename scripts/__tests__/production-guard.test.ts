@@ -91,4 +91,50 @@ describe("governProduction", () => {
     await expect(c.query("begin isolation level repeatable read")).rejects.toBeInstanceOf(ProductionGuardRefusal);
     expect(c.sent).toEqual([]);
   });
+
+  it("refuses a rolled-back proof transaction before anything is sent (incident 2026-09-27)", async () => {
+    const c = governProduction(recorder(), "t");
+    await expect(
+      c.query("create temp table proof(step text, what text, val text) on commit drop; grant all on proof to authenticated"),
+    ).rejects.toThrow(/ACCESS EXCLUSIVE/);
+    expect(c.sent).toEqual([]);
+  });
+});
+
+// Rule 3 — no DDL on live, ever, rollback or not (incident 2026-09-27 22:26–22:46 PT: a rolled-back
+// agent "proof" — `create temp table proof(...) on commit drop; grant all on proof to authenticated;
+// ...` — held Supabase's policy_grants locks on auth/storage/realtime 15–27 s; Realtime waited 7–14 s).
+const DDL_REFUSED = [
+  "create temp table proof(step text, what text, val text) on commit drop;\ngrant all on proof to authenticated;\n-- BEFORE, as test\nselect 1",
+  "set local lock_timeout='3s';\ncreate temp table proof(step text, what text, val text) on commit drop;",
+  "CREATE TEMPORARY TABLE _door_name_probe (idx int) ON COMMIT DROP",
+  "create table if not exists ops.run_ledger (id int)",
+  "create or replace function public.zz() returns int language sql as $$ select 1 $$",
+  "grant execute on function context.write_context_value(uuid) to authenticated",
+  "revoke all on public.t from anon",
+  "select 1; /* then */ grant usage on schema x to authenticated",
+  "do $$ begin create temp table t(x int); end $$",
+  "do $$ begin execute 'grant all on t to authenticated'; end $$",
+  "do $$ begin execute format('create table %I (x int)', 'z'); end $$",
+];
+
+const DDL_ALLOWED = [
+  "select created_at, grantee from information_schema.role_table_grants limit 1",
+  "select 'create temp table x' as note",
+  "select * from iam.permissions where permission_level = 'grant'",
+  "-- create temp table x(y int)\nselect 1",
+  "insert into ops.notes(body) values ('please grant all on x to y')",
+];
+
+describe("productionRefusalFor — DDL", () => {
+  it.each(DDL_REFUSED)("refuses %s and names the clone", (sql) => {
+    const why = productionRefusalFor(sql);
+    expect(why).toMatch(/PRODUCTION GUARD REFUSED/);
+    expect(why).toMatch(/ACCESS EXCLUSIVE/);
+    expect(why).toMatch(/CLONE/);
+    expect(why).toMatch(/CURRENT\.md/);
+  });
+  it.each(DDL_ALLOWED)("allows %s", (sql) => {
+    expect(productionRefusalFor(sql)).toBeNull();
+  });
 });

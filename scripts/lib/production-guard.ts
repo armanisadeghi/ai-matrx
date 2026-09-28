@@ -17,7 +17,10 @@
  *      a bare statement runs in its own stamped transaction (gate-db's `governTransactions`);
  *   2. a statement that tries to loosen them — `SET`/`SET LOCAL`/`SET SESSION`/`set_config`/
  *      `ALTER … SET` above the limit, `0`, `DEFAULT`, `RESET <guc>`, `RESET ALL` — or to take
- *      `REPEATABLE READ`/`SERIALIZABLE` is refused before it is sent, naming the clone.
+ *      `REPEATABLE READ`/`SERIALIZABLE` is refused before it is sent, naming the clone;
+ *   3. any GRANT / REVOKE / CREATE (a temp table, dynamic `execute '…'` in a DO block included) is
+ *      refused before it is sent — it fires the DDL event triggers that lock auth/storage/realtime until
+ *      the transaction ends, rollback or not (incident 2026-09-27; `ddlRefusalFor`). Proofs run on the clone.
  *
  * The migration runners (`pnpm db:apply`, `pnpm db:rehearse`) set their own per-file ceilings and
  * are the one sanctioned exception: they open with `connectDirect(..., { migrationRunner: true })`.
@@ -80,9 +83,47 @@ function strongIso(value: string): boolean {
   return v === "repeatable read" || v === "serializable";
 }
 
+// Rule 3 — no DDL on live (incident 2026-09-27 22:26–22:46 PT). Any GRANT / REVOKE / CREATE — a temp
+// table included, whole migration files replayed "in a transaction that rolls back" included — fires
+// the DDL event triggers (Supabase's policy_grants; our ddl_guard / entity_types sync /
+// provision_shape_guard, which write platform.entity_types even for a bare CREATE TEMP TABLE — measured
+// on the clone 2026-09-28), holding locks on auth/storage/realtime/platform relations until the
+// transaction ends. A rolled-back agent proof held them 15–27 s four times; Realtime waited 7–14 s and
+// files.files reads hit lock timeouts. Schema changes are migrations (the runners are exempt); proofs
+// run on the clone. Mirror of aidream `db/production_guard.py` `ddl_refusal_for`.
+const DDL_VERB = String.raw`(create|grant|revoke)\b`;
+const DDL_AT_STATEMENT = new RegExp(
+  String.raw`(?:^|;|\$[a-z_]*\$|\bbegin\b|\bthen\b|\belse\b|\bloop\b)\s*${DDL_VERB}`,
+  "gi",
+);
+const DDL_DYNAMIC = new RegExp(String.raw`\bexecute\s+(?:format\s*\(\s*)?(?:e)?'\s*${DDL_VERB}`, "gi");
+
+export const DDL_REMEDY =
+  "Run the proof on the CLONE (ref, host and password file in common-docs/operations/clone/CURRENT.md); " +
+  "a schema change is a migration applied by its runner. On production run single, bounded DML/reads only.";
+
+/** Why this (comment-stripped) text may not reach live because it carries GRANT / REVOKE / CREATE. */
+export function ddlRefusalFor(text: string): string | null {
+  const unquoted = text.replace(/'(?:[^']|'')*'/g, "''"); // a word inside a string literal is not a statement
+  const verbs = new Set<string>();
+  for (const m of unquoted.matchAll(DDL_AT_STATEMENT)) verbs.add(m[1]!.toUpperCase());
+  for (const m of text.matchAll(DDL_DYNAMIC)) verbs.add(m[1]!.toUpperCase());
+  if (!verbs.size) return null;
+  return (
+    `PRODUCTION GUARD REFUSED (not sent): ${[...verbs].sort().join(" / ")} on live. Every GRANT, REVOKE and ` +
+    "CREATE on this database — a temp table included, inside a transaction that rolls back included — fires " +
+    "the DDL event triggers (Supabase's policy_grants, our ddl_guard / entity_types sync / provision_shape_guard), " +
+    "which lock — ACCESS EXCLUSIVE on auth, storage and realtime relations — and write platform tables until the " +
+    "transaction ends (incident 2026-09-27: Realtime stalled 7–14 s, files.files reads hit lock timeouts). " +
+    DDL_REMEDY
+  );
+}
+
 /** Why this statement may not be sent to production, or null when it may. Exported for the test. */
 export function productionRefusalFor(sql: string): string | null {
   const text = stripSqlComments(sql);
+  const ddl = ddlRefusalFor(text);
+  if (ddl) return ddl;
   const found: string[] = [];
   for (const re of [SET_GUC, SET_CONFIG_GUC]) {
     for (const m of text.matchAll(re)) {
