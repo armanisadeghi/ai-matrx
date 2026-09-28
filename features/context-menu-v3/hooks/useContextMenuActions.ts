@@ -20,6 +20,7 @@
 
 import { fieldLabelOf } from "../utils/field-menu-header";
 import { actionsAlreadyHere } from "../utils/already-here";
+import { editorTextAgentCallbacks } from "../utils/editor-text-agent";
 import { useEffect, useMemo } from "react";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import {
@@ -527,6 +528,11 @@ export function useContextMenuActions(
     applicationScope: scope,
     ...(props.richDocCtxExtras ?? {}),
   };
+  // ONE AI SET FOR A RECORD IN EVERY VIEW (page-pass /notes, 2026-09-28): Read
+  // (RichDocument) supplied Clean up / Help with this…, the editor views did
+  // not. An editor menu over a source that can be saved gets the shell's
+  // review-and-apply dialog unless its host already supplied one.
+  richDocCtx.callbacks = editorTextAgentCallbacks(richDocCtx.callbacks, richDocSource, richDocAdapter, props.requestTextAgentReview);
   // Never an action that targets the place this menu already is (Save to
   // Notes inside a note, Edit inside the editor). The SAME list goes to the
   // click target (AlchemyMenuContent), because the rich-document provider

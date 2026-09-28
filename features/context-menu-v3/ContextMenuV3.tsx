@@ -123,6 +123,19 @@ const AlchemyMenuContent = dynamic(() => import("./components/AlchemyMenuContent
   ssr: false,
 });
 
+// The review-and-apply dialog behind "Clean up" / "Help with this…" when the
+// menu sits over a record that can be saved (a note's Write / Plain / Split
+// view, its tab, its list row) and the host supplied no dialog of its own. It must outlive the menu that asked, so the shell owns it —
+// mounted only after the first request, like every document dialog.
+const DocumentAgentReviewLazy = dynamic(
+  () => import("@/features/rich-document/hosts/DocumentAgentReview"),
+  { ssr: false, loading: () => null },
+);
+type TextAgentReviewRequest = {
+  actionId: "cleanup" | "help" | "customAgent";
+  ctx: import("@/features/rich-document/types").RichDocumentActionContext;
+};
+
 // ── The palette opens from ANYWHERE on a surface with a menu (ALC-15) ───────
 // ⌘/Ctrl+Shift+K with focus on the page body (a read-only note) or over a grid
 // cell (cells are not focusable) opens the palette of the INNERMOST surface
@@ -242,6 +255,12 @@ export function ContextMenuV3({
   );
   const [fallbackContent, setFallbackContent] = useState<string>("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [textAgentReview, setTextAgentReview] = useState<TextAgentReviewRequest | null>(null);
+  const requestTextAgentReview = useCallback(
+    (actionId: TextAgentReviewRequest["actionId"], ctx: TextAgentReviewRequest["ctx"]) =>
+      setTextAgentReview({ actionId, ctx }),
+    [],
+  );
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -695,6 +714,8 @@ export function ContextMenuV3({
     excludedRichActions,
     recordActionsOnly,
     subjectFold,
+    // The hook adds it only where the source can be saved and no host supplied one.
+    requestTextAgentReview,
     extraRichActions,
     richDocCtxExtras,
     selectedText,
@@ -884,6 +905,13 @@ export function ContextMenuV3({
             onOpenChange={(open) => {
               if (!open) closeActive();
             }}
+          />
+        ) : null}
+        {textAgentReview ? (
+          <DocumentAgentReviewLazy
+            actionId={textAgentReview.actionId}
+            ctx={textAgentReview.ctx}
+            onClose={() => setTextAgentReview(null)}
           />
         ) : null}
       </RegistryMenuSourceProvider>

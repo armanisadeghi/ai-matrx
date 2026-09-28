@@ -520,6 +520,16 @@ export interface MenuContentProps {
   /** See `ContextMenuV3CoreProps.subjectFold`. */
   subjectFold?: string;
   /**
+   * The shell's review-and-apply dialog (Clean up / Help with this… / Custom
+   * agent). The engine hands it to the rich-document actions only when the
+   * host supplied none and the source can be saved — so a note's Write, Plain
+   * and Split views (and its tab) offer the same AI rows as Read.
+   */
+  requestTextAgentReview?: (
+    actionId: "cleanup" | "help" | "customAgent",
+    ctx: import("@/features/rich-document/types").RichDocumentActionContext,
+  ) => void;
+  /**
    * Host-specific registry actions (e.g. a surface's own "Edit note") — rendered
    * inside the ONE registry tree, in its extras group, never a parallel section.
    */
