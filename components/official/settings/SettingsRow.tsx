@@ -167,11 +167,9 @@ export function SettingsRow({
         {/* The description is printed in full under the label, so the help
             icon only exists for extra help — never to repeat the line below. */}
         {designVariant === "compact" && helpText && (
-          <CompactHelpPopover
-            label={label}
-            description={description}
-            helpText={helpText}
-          />
+          // The description is already printed under the label; the popover
+          // holds only the extra help, never a repeat of it.
+          <CompactHelpPopover label={label} helpText={helpText} />
         )}
         {helpText && designVariant !== "compact" && (
           <TooltipProvider delayDuration={150}>

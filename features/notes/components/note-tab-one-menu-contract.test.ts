@@ -26,7 +26,8 @@ describe("Note tab: one menu, opened by right-click and by the … button", () =
     expect(tab).not.toContain("DropdownMenuContent");
   });
 
-  it("keeps the Tab section operationally complete", () => {
+  it("keeps the note's menu operationally complete (tab rows + the one note-action set)", () => {
+    const menu = tab + read("note-actions/noteActionSet.ts");
     for (const id of [
       "save",
       "copy-reference",
@@ -40,7 +41,7 @@ describe("Note tab: one menu, opened by right-click and by the … button", () =
       "close-all",
       "delete",
     ]) {
-      expect(tab).toContain(`id: "${id}"`);
+      expect(menu).toContain(`id: "${id}"`);
     }
   });
 });

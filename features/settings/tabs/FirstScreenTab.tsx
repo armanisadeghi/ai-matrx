@@ -21,7 +21,7 @@
 // radius, and a locked key explained with its request door.
 
 import { useEffect, useRef } from "react";
-import { Building2, Palette, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import type { SettingsTabDef } from "../types";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
@@ -215,10 +215,12 @@ export default function FirstScreenTab() {
   });
 
   return (
-    <>
+    // One compact column: labels and their controls sit together instead of
+    // at opposite edges of a wide page.
+    <div className="mx-auto w-full max-w-3xl">
       {settings.editingContext === "system" && <RegistryCoverage />}
 
-      {settings.editingContext === "user" && <SettingsSection title="Appearance" icon={Palette}>
+      {settings.editingContext === "user" && <SettingsSection title="Appearance">
         <SettingsSelect<ThemeMode>
           label="Theme"
           description="Use your device setting, light, or dark. Saved in this browser; every open tab follows it."
@@ -235,7 +237,7 @@ export default function FirstScreenTab() {
       }
 
       {settings.editingContext === "user" && <PreferencesLoadGate what="your account defaults">
-        <SettingsSection title="Account defaults" icon={Building2}>
+        <SettingsSection title="Account defaults">
           <SettingsRow
             label="Default organization"
             description="Where you land when you sign in. You can switch organizations any time from the header."
@@ -303,7 +305,7 @@ export default function FirstScreenTab() {
 
       {ladderKnobs.length > 0 && <UniversalSettingsRows knobs={ladderKnobs} hideKey />}
 
-    </>
+    </div>
   );
 }
 

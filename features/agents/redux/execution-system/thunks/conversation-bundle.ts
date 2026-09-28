@@ -158,9 +158,12 @@ export async function fetchConversationBundle(
       p_message_limit: messageLimit,
       p_before_position: beforePosition ?? undefined,
     });
-    if (!error && data) {
-      const bundle = data as unknown as CxConversationBundle;
-      if (!bundle.conversation) {
+    if (!error) {
+      // The RPC answers NULL when the conversation has no (visible) row —
+      // a client-minted conversation before its first turn. That is an
+      // answer, not an unavailable RPC: no fallback round trips.
+      const bundle = data as unknown as CxConversationBundle | null;
+      if (!bundle?.conversation) {
         // Row doesn't exist yet (pre-first-turn conversation) — benign.
         throw Object.assign(
           new Error(recordUnavailableMessage("conversation", "unknown")),

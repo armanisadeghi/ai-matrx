@@ -26,6 +26,8 @@ import {
   SegmentedControl,
 } from "@ai-matrx/design-system";
 import { SearchInput } from "@/components/official/SearchInput";
+import { CopyTapButton } from "@ai-matrx/tap-target/buttons";
+import { toast } from "@/lib/toast";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
@@ -236,7 +238,21 @@ const AiModelsPreferences = () => {
                   id={`model-${model.id}`}
                   label={model.common_name || model.name}
                   description={factsFor(model.id, model.maker)}
-                  helpText={`Model id: ${model.name}`}
+                  helpText={
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono">{model.name}</span>
+                      <CopyTapButton
+                        variant="transparent"
+                        ariaLabel={`Copy the id of ${model.common_name || model.name}`}
+                        onClick={() =>
+                          void navigator.clipboard
+                            .writeText(model.name)
+                            .then(() => toast.success("Model id copied"))
+                            .catch(() => toast.error("Could not copy the model id"))
+                        }
+                      />
+                    </span>
+                  }
                   badge={shown ? undefined : { label: "Hidden", variant: "default" }}
                   checked={shown}
                   onCheckedChange={(next: boolean) => toggle(model.id, next)}

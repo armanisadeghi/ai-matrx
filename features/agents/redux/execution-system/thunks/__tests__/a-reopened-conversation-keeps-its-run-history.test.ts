@@ -98,6 +98,14 @@ describe("fetchConversationBundle run history", () => {
     expect(fromCalls).toEqual([]);
   });
 
+  it("treats a NULL bundle as a conversation with no row yet — no table reads", async () => {
+    rpc.mockResolvedValue({ data: null, error: null });
+    await expect(fetchConversationBundle("conv-1")).rejects.toMatchObject({
+      code: "CONVERSATION_NOT_MATERIALIZED",
+    });
+    expect(fromCalls).toEqual([]);
+  });
+
   it("keeps an RPC that already carries run history as it is", async () => {
     rpc.mockResolvedValue({
       data: { ...RPC_BUNDLE, requests: [], userRequests: [{ id: "ur-9" }] },

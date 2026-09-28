@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts","components/user-preferences/AiModelsPreferences.tsx","features/settings/tabs/FirstScreenTab.tsx","components/official/settings/SettingsRow.tsx"]}

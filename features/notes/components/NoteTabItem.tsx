@@ -17,16 +17,9 @@ import React, { useRef, useState, useCallback, useEffect } from "react";
 import {
   Save,
   Copy,
-  CopyPlus,
-  Share2,
-  Trash2,
   X,
-  Download,
   Info,
-  Bookmark,
   MoreHorizontal,
-  Database,
-  FolderInput,
   PanelTop,
   type LucideIcon,
 } from "lucide-react";
@@ -38,6 +31,7 @@ import {
   updateNoteLabel,
   updateNoteContent,
   markTabInteraction,
+  setInstanceHistoryOpen,
 } from "../redux/slice";
 import { setNoteLabelEditing } from "../utils/labelEditing";
 import {
@@ -72,6 +66,7 @@ import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import { openRecordMenu, registerRecordMenu } from "@/features/context-menu-v3/record-menu-registry";
+import { noteActionsSection, openNotePrintStudio } from "./note-actions/noteActionSet";
 import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
@@ -394,6 +389,9 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     fn: () => void;
     destructive?: boolean;
   };
+  // The tab's own rows: things about THIS TAB and the editor buffer. The
+  // note's actions are the ONE shared set (noteActionSet.ts) — the same rows,
+  // names and order in every view's right-click, the "…" and the phone sheet.
   const menuItems: (TabMenuItem | null)[] = [
     {
       id: "save",
@@ -406,54 +404,6 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       icon: Copy,
       label: "Copy note text",
       fn: handleCopyContent,
-    },
-    {
-      id: "share",
-      icon: Share2,
-      label: "Share…",
-      fn: () => setShareOpen(true),
-    },
-    {
-      id: "copy-reference",
-      icon: Bookmark,
-      label: "Copy reference",
-      fn: copyReference,
-    },
-    {
-      id: "duplicate",
-      icon: CopyPlus,
-      label: "Duplicate note",
-      fn: () => void handleDuplicate(),
-    },
-    {
-      id: "move-to-folder",
-      icon: FolderInput,
-      label: "Move to folder…",
-      fn: () => {
-        bumpTabInteraction();
-        setMoveDialogOpen(true);
-      },
-    },
-    {
-      id: "about",
-      icon: Info,
-      label: "About this note",
-      fn: () => openNoteInfo({ noteId, title: label }),
-    },
-    {
-      id: "knowledge",
-      icon: Database,
-      label:
-        ingest.state === "ingested"
-          ? "Knowledge base"
-          : "Add to knowledge base",
-      fn: () => openKnowledge({ noteId, title: label }),
-    },
-    {
-      id: "export-markdown",
-      icon: Download,
-      label: "Export as Markdown",
-      fn: handleExport,
     },
     null,
     {
@@ -474,18 +424,29 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       label: "Close all tabs",
       fn: handleCloseAllTabs,
     },
-    null,
-    {
-      id: "delete",
-      icon: Trash2,
-      label: "Delete note",
-      fn: requestDelete,
-      destructive: true,
-    },
   ];
 
-  // Every bespoke-menu item, verbatim, as ONE v3 section (THE LOSSLESS LAW).
   const tabExtraSections: ContextMenuExtraSection[] = [
+    noteActionsSection({
+      rename: () => {
+        bumpTabInteraction();
+        setTitleEditing(true);
+      },
+      duplicate: () => void handleDuplicate(),
+      moveToFolder: () => {
+        bumpTabInteraction();
+        setMoveDialogOpen(true);
+      },
+      knowledge: () => openKnowledge({ noteId, title: label }),
+      knowledgeIndexed: ingest.state === "ingested",
+      exportMarkdown: handleExport,
+      print: () => openNotePrintStudio(noteId),
+      versionHistory: () => dispatch(setInstanceHistoryOpen({ instanceId, open: true })),
+      share: () => setShareOpen(true),
+      copyReference,
+      about: () => openNoteInfo({ noteId, title: label }),
+      moveToTrash: requestDelete,
+    }),
     {
       id: "note-tab",
       label: "Tab",
