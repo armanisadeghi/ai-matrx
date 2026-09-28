@@ -695,7 +695,9 @@ export function NotesView({
         {headerNoteId && (
           // Equal columns: the control's width never depends on which view
           // is selected (a bolder selected label used to nudge it sideways).
-          <div className="matrx-glass-thin-border grid grid-cols-4 items-center gap-0.5 rounded-full p-0.5">
+          // Desktop only: the server draws this header before the phone view
+          // takes over, and a phone has its own Plain | Write switch.
+          <div className="matrx-glass-thin-border hidden grid-cols-4 items-center gap-0.5 rounded-full p-0.5 md:grid">
             {/* The four note modes, one click each, from the one
                 NOTE_VIEW_MODES list: Split (plain text left, the formatted
                 note live right — the default), Plain (quick unformatted
