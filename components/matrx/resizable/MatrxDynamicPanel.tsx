@@ -241,10 +241,12 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
   });
 
   const getPositionStyles = () => {
-    // Mobile: full screen panels, desktop: resizable panels
+    // Mobile: full screen panels, desktop: resizable panels. A side panel
+    // opens BELOW the app header (--shell-header-h), never over it — it hid
+    // the header's view switch and actions (page-pass /notes, 2026-09-28).
     const positionMap = {
       left: {
-        container: isMobile ? "fixed inset-0" : "fixed inset-y-0 left-0",
+        container: isMobile ? "fixed inset-0" : "fixed bottom-0 top-[var(--shell-header-h,0px)] left-0",
         dimensions: isMobile
           ? { width: "100dvw", height: "100dvh" }
           : { width: "100dvw" },
@@ -257,7 +259,7 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
         },
       },
       right: {
-        container: isMobile ? "fixed inset-0" : "fixed inset-y-0 right-0",
+        container: isMobile ? "fixed inset-0" : "fixed bottom-0 top-[var(--shell-header-h,0px)] right-0",
         dimensions: isMobile
           ? { width: "100dvw", height: "100dvh" }
           : { width: "100dvw" },
