@@ -1616,6 +1616,7 @@ export async function fetchCredentialDefinitions(): Promise<
     .eq("kind", "credential_definition")
     .eq("app", "matrx")
     .eq("is_active", true)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("key", { ascending: true });
   assertVaultData(data, error, "load the credential catalog");

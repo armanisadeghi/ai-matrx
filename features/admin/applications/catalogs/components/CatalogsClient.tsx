@@ -195,6 +195,8 @@ export function CatalogsClient({
     const { data, error } = await supabase
       .from("catalog_entries")
       .select("*")
+      // Archived entries are out of the catalog (delete means archive).
+      .is("deleted_at", null)
       .order("app")
       .order("kind")
       .order("sort_order")

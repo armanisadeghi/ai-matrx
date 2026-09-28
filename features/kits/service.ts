@@ -87,6 +87,7 @@ export async function fetchKits(client: Client, organizationId: string): Promise
     .eq("kind", KIT_CATALOG.kind)
     .eq("organization_id", organizationId)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("key", { ascending: true });
   if (error) return { kits: [], error: error.message };
@@ -117,6 +118,7 @@ export async function fetchKit(
     .eq("app", KIT_CATALOG.app)
     .eq("kind", KIT_CATALOG.kind)
     .eq("key", key)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) return { kit: null, error: error.message };
   if (!data) return { kit: null, error: null };

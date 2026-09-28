@@ -9,8 +9,9 @@
 // through a diff-vs-current ConfirmDialog into the ONE sanctioned write path
 // — the admin_upsert_catalog_entry SECURITY DEFINER RPC (super-admin gated,
 // optimistic concurrency via p_expected_updated_at → 40001, history
-// snapshots). Delete goes through admin_delete_catalog_entry behind a
-// destructive confirm showing the full entry JSON.
+// snapshots). Archive goes through admin_delete_catalog_entry (sets
+// deleted_at + is_active=false; delete means archive, 2026-09-27) behind a
+// confirm showing the full entry JSON. Saving the same app/kind/key revives it.
 //
 // Dual-gate activation: saving with is_active=true requires a valid payload,
 // and the confirm dialog live-probes the artifact URL. The probe prefers the
@@ -340,6 +341,7 @@ export function CatalogEntryEditor({
       .eq("app", app)
       .eq("kind", kindValue)
       .eq("key", keyValue)
+      .is("deleted_at", null)
       .maybeSingle();
     if (error || !data) {
       toast({
@@ -533,7 +535,7 @@ export function CatalogEntryEditor({
     setDeleting(false);
     if (error) {
       toast({
-        title: "Delete failed",
+        title: "Archive failed",
         description: rpcErrorMessage(error),
         variant: "destructive",
       });
@@ -541,8 +543,8 @@ export function CatalogEntryEditor({
     }
     setDeleteOpen(false);
     toast({
-      title: "Entry deleted",
-      description: `${row.app}/${row.kind}/${row.key} removed — the final state is snapshotted to history.`,
+      title: "Entry archived",
+      description: `${row.app}/${row.kind}/${row.key} archived — saving the same app/kind/key brings it back.`,
     });
     onDeleted();
   };
@@ -870,7 +872,7 @@ export function CatalogEntryEditor({
               onClick={() => setDeleteOpen(true)}
               className="text-destructive hover:text-destructive"
             >
-              <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+              <Trash2 className="mr-1.5 h-4 w-4" /> Archive
             </Button>
           ) : null}
           <Button
@@ -988,9 +990,9 @@ export function CatalogEntryEditor({
           if (!open && !deleting) setDeleteOpen(false);
         }}
         title={
-          row ? `Delete ${row.app}/${row.kind}/${row.key}?` : "Delete entry?"
+          row ? `Archive ${row.app}/${row.kind}/${row.key}?` : "Archive entry?"
         }
-        description="The entry disappears from every client on its next catalog refresh. Its final state is snapshotted to history, but there is no undo button — restoring means re-creating it."
+        description="The entry is archived and turned off: it disappears from every client on its next catalog refresh. Its final state is snapshotted to history, and saving an entry with the same app/kind/key brings it back."
         contentClassName="sm:max-w-3xl"
         content={
           row ? (
@@ -999,7 +1001,7 @@ export function CatalogEntryEditor({
             </pre>
           ) : null
         }
-        confirmLabel="Delete"
+        confirmLabel="Archive"
         variant="destructive"
         busy={deleting}
         onConfirm={commitDelete}
