@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { AlertTriangle, Check, Copy, GripVertical, Lock, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { useRichEditorContext } from "../../RichEditorContext";
 import { IslandCodeEditor } from "../../islands/IslandCodeEditor";
@@ -25,6 +26,9 @@ import {
 } from "../../islands/island-meta";
 import { consumeAutoEdit } from "../auto-edit";
 
+
+
+const PLAIN_TEXT = "__plain_text";
 
 export function IslandBlockView({ node, updateAttributes, deleteNode, selected, editor, getPos }: NodeViewProps) {
   const context = useRichEditorContext();
@@ -90,18 +94,26 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
           </span>
         )}
         {isFence && !readOnly && (
-          <select
-            className="ml-1 h-6 min-w-[5.5rem] max-w-[8rem] shrink rounded border border-border bg-background px-1 text-xs text-foreground"
-            aria-label="Code language"
-            value={fenceLanguageOf(raw)}
-            onChange={(event) => write(withFenceLanguage(raw, event.target.value))}
+          // The app's Select (not a native one). Radix needs a non-empty
+          // value, so "Plain text" rides a sentinel.
+          <Select
+            value={fenceLanguageOf(raw) || PLAIN_TEXT}
+            onValueChange={(value) => write(withFenceLanguage(raw, value === PLAIN_TEXT ? "" : value))}
           >
-            {[...new Set([fenceLanguageOf(raw), ...CODE_LANGUAGES])].map((language) => (
-              <option key={language || "plain"} value={language}>
-                {language || "Plain text"}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              aria-label="Code language"
+              className="ml-1 h-6 min-w-[5.5rem] max-w-[9rem] shrink gap-1 px-2 py-0 text-xs"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[...new Set([fenceLanguageOf(raw), ...CODE_LANGUAGES])].map((language) => (
+                <SelectItem key={language || PLAIN_TEXT} value={language || PLAIN_TEXT} className="text-xs">
+                  {language || "Plain text"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
         <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover/island:opacity-100 sm:group-focus-within/island:opacity-100">
           <button type="button" className="rounded p-1 hover:bg-muted hover:text-foreground" onClick={copy} title="Copy its exact source">
