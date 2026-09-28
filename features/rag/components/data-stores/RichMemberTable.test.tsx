@@ -304,8 +304,8 @@ describe("RichMemberTable", () => {
     expect(tableProps.read).toEqual(
       expect.objectContaining({ status: "error", error: "Could not load members" }),
     );
-    expect(tableProps.emptyState?.title).toBe("No members yet");
-    act(() => tableProps.read?.onRetry?.());
+    expect(tableProps?.emptyState?.title).toBe("No members yet");
+    act(() => tableProps?.read?.onRetry?.());
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 });

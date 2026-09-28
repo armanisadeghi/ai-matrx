@@ -606,7 +606,7 @@ export function SiteAnalyticsPanel({
             pageSizeOptions={[10, 25, 50, 100]}
             // Rendered only once the window read answered (`data`); a failed refresh
             // is said once, by InlineQueryError above the tiles — not again here.
-            read={{ status: "ready", what: "the landing pages", hasData: true }}
+            read={{ status: "ready", what: "the landing pages" }}
             emptyState={{
               title: "No landing pages in this window",
               description:

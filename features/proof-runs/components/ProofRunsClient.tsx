@@ -653,7 +653,7 @@ export default function ProofRunsClient() {
             onRowOpen={(row) => void openRunDetail(row.id)}
             // The API's failure is said once, by the strip at the top (it covers the
             // checks too); the table carries the read's wait and is not drawn when nothing loaded.
-            read={{ status: loading && runs.length === 0 ? "loading" : "ready", what: "proof runs", hasData: runs.length > 0 }}
+            read={{ status: loading && runs.length === 0 ? "loading" : "ready", what: "proof runs" }}
             emptyState={{ title: "No runs yet." }}
             toolbar={{
               title: "Recent runs",

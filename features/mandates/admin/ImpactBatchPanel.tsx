@@ -912,7 +912,6 @@ export function ImpactBatchPanel({
           read={{
             status: hasScope && !impact && (loading || !sessionReady) ? "loading" : "ready",
             what: "the pin grades",
-            hasData: impact != null,
           }}
           emptyState={{
             title: hasScope ? "No pins on these agents" : "Nothing to grade",
