@@ -470,13 +470,18 @@ export function HrOrgChart() {
                 into names on the way out.
               */
               ref={captureRef}
+              // `max-w-none` here and on the scaled layer: the phone
+              // `* { max-width: 100% }` default (globals.css) would clamp a
+              // chart wider than the screen to the viewport — cropping every
+              // export and the scroll area. The sizes are the layout's own.
+              className="max-w-none"
               style={{
                 width: layout.width * zoom,
                 height: (layout.height + NODE_HEIGHT) * zoom,
               }}
             >
               <div
-                className="relative origin-top-left"
+                className="relative max-w-none origin-top-left"
                 style={{
                   width: layout.width,
                   height: layout.height + NODE_HEIGHT,
@@ -574,7 +579,7 @@ function ChartEdges({ layout }: { layout: OrgLayout }) {
   const byId = new Map(layout.nodes.map((node) => [node.id, node]));
   return (
     <svg
-      className="pointer-events-none absolute inset-0"
+      className="pointer-events-none absolute inset-0 max-w-none"
       width={layout.width}
       height={layout.height + NODE_HEIGHT}
       aria-hidden
