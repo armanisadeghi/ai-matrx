@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useTransition } from "react";
+import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -145,6 +146,9 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
       setEpisodes((prev) => prev.filter((e) => e.id !== pendingDeleteEpId));
     } catch (e) {
       console.error("Delete failed", e);
+      toast.error(
+        `Couldn't delete the episode: ${e instanceof Error ? e.message : String(e)}`,
+      );
     } finally {
       setIsDeletingEp(false);
       setPendingDeleteEpId(null);

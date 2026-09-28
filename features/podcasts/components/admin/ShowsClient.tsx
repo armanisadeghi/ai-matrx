@@ -3,6 +3,7 @@
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useState, useEffect, useMemo, useTransition } from "react";
+import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_KNOWLEDGE_SURFACE_NAME,
@@ -111,6 +112,9 @@ export function ShowsClient() {
       setShows((prev) => prev.filter((s) => s.id !== pendingDeleteId));
     } catch (e) {
       console.error("Delete failed", e);
+      toast.error(
+        `Couldn't delete the show: ${e instanceof Error ? e.message : String(e)}`,
+      );
     } finally {
       setIsDeleting(false);
       setPendingDeleteId(null);

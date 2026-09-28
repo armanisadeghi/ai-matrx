@@ -295,7 +295,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
     );
   }
 
-  if (notFound || !show) {
+  if (loadError || notFound || !show) {
     // Denied / deleted / never existed / signed-out all read as zero rows here.
     return (
       <>

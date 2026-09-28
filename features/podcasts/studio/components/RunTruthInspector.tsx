@@ -404,7 +404,7 @@ export function RunTruthInspector({
             </div>
           ) : null}
 
-          {truth ? (
+          {!error && truth ? (
             <>
               {/* Toolbar + summary */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-[11px] text-muted-foreground">
