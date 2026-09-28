@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Popover, PopoverContent, PopoverTrigger, SelectChevron } from "@ai-matrx/design-system";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2, Globe, Check, ChevronsUpDown } from "lucide-react";
+import { Loader2, Globe, Check } from "lucide-react";
 import { useSearchConsoleAPI } from "../hooks/useSearchConsole";
 import type { SiteProperty } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -123,7 +123,7 @@ export function PropertySelector({ token, selectedProperty, onSelectProperty }: 
                             </Tooltip>
                         </TooltipProvider>
                     </div>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <SelectChevron className="ml-2" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent /* sizing: fixed — fixed-shape panel wider than the content-sizing 28rem ceiling */ className="w-[500px] p-0" align="start">
