@@ -1141,6 +1141,7 @@ const CookieManager = ({ storage }: { storage: UseLocalStorageManager }) => {
       },
       title: "Clear All Cookies",
       description:
+        // destroy-label-ok: browser cookies on this device, not a record
         "Are you sure you want to remove all cookies? This action cannot be undone.",
     });
   };

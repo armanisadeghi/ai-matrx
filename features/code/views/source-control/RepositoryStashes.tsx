@@ -206,6 +206,7 @@ export function RepositoryStashes({
           if (!open) setDropTarget(null);
         }}
         title="Discard saved changes?"
+        // destroy-label-ok: a local git stash inside a sandbox, not a platform record
         description="This permanently removes this local stash. Apply it first if you need these files."
         confirmLabel="Discard saved changes"
         onConfirm={() => {

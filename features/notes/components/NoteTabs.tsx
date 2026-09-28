@@ -345,8 +345,8 @@ export function NoteTabs({
             {
                 key: 'delete',
                 icon: Trash2,
-                label: 'Delete Note',
-                description: 'Permanently delete this note',
+                label: 'Move to Trash',
+                description: 'Move this note to Trash — restorable from there',
                 action: () => onDeleteNote(noteId),
                 iconColor: 'text-destructive',
                 category: 'Danger',

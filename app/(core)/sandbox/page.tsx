@@ -604,6 +604,7 @@ export default function SandboxListPage() {
         }
         description={
           <>
+            {/* destroy-label-ok: a compute sandbox instance, not a platform record */}
             Permanently remove{" "}
             <strong>
               {/* read-gate-exempt: the rows the person chose to delete; the dialog only opens from buttons disabled while the list read has an error */}

@@ -60,8 +60,6 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { getNoteLiveContent, setNoteLiveContent } from "../utils/noteLiveContent";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import {
@@ -484,7 +482,6 @@ export function NoteContentEditor({
   const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useNoteUndoRedo({
     noteId,
   });
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
 
   // ── Context menu handlers ─────────────────────────────────────────
   const handleSave = useCallback(() => {
@@ -582,27 +579,6 @@ export function NoteContentEditor({
     dispatch(markTabInteraction({ instanceId }));
     dispatch(removeInstanceTab({ instanceId, noteId }));
     dispatch(deleteNote(noteId));
-  }, [dispatch, instanceId, noteId]);
-
-  // Super-admin only — hard delete (bypasses soft-delete). Confirmed first.
-  const handlePermanentDelete = useCallback(async () => {
-    const ok = await confirm({
-      title: "Permanently delete note",
-      description: "Permanently delete this note? This cannot be undone.",
-      confirmLabel: "Permanently delete",
-      variant: "destructive",
-    });
-    if (!ok) return;
-    try {
-      const { permanentlyDeleteNoteThunk } =
-        await import("@/features/notes/redux/thunks");
-      await dispatch(permanentlyDeleteNoteThunk(noteId)).unwrap();
-      dispatch(markTabInteraction({ instanceId }));
-      dispatch(removeInstanceTab({ instanceId, noteId }));
-      toast.success("Note permanently deleted");
-    } catch {
-      toast.error("Failed to permanently delete note");
-    }
   }, [dispatch, instanceId, noteId]);
 
   // ── Insert agent output at the cursor (before / after the selection) ──
@@ -785,8 +761,6 @@ export function NoteContentEditor({
       ? () => void materializeNoteArtifacts()
       : undefined,
     onDelete: handleDelete,
-    isSuperAdmin,
-    onPermanentDelete: handlePermanentDelete,
   });
 
   // A deep link adds its tab before the request resolves, and a note opened

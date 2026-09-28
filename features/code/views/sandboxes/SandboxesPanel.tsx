@@ -613,6 +613,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         description={
           deleteTarget ? (
             <>
+              {/* destroy-label-ok: a compute sandbox instance, not a platform record */}
               This will permanently delete sandbox{" "}
               <span className="font-medium">
                 {sandboxDisplayName(deleteTarget)}

@@ -111,8 +111,6 @@ export function NotesDemoPanel({
     onConvertBlocksToArtifacts: () =>
       toast.success("Convert blocks to artifacts (demo)"),
     onDelete: () => toast.error("Delete note (demo)"),
-    isSuperAdmin: true,
-    onPermanentDelete: () => toast.error("Permanently delete (demo)"),
   });
 
   const replaceContent = (next: string) => {

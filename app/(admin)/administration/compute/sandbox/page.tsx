@@ -882,6 +882,7 @@ export default function AdminSandboxManagementPage() {
           title="Delete Sandbox"
           description={
             <>
+              {/* destroy-label-ok: a compute sandbox instance, not a platform record */}
               This will permanently remove this sandbox instance
               {deleteTarget &&
               ["ready", "running"].includes(deleteTarget.status)

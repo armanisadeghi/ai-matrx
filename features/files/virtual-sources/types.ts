@@ -274,13 +274,12 @@ export interface VirtualSourceAdapter {
     args: MoveArgs,
   ): Promise<{ updatedAt: string }>;
 
-  /** Soft-delete by default; pass `hard = true` for adapters that support
-   *  permanent removal (rare). */
+  /** Soft delete (archive) — never a hard delete; the row stays restorable
+   *  from Trash (Arman, 2026-09-27: delete MUST mean archive). */
   delete(
     supabase: SupabaseClient,
     userId: string,
     id: VirtualId,
-    hard?: boolean,
   ): Promise<void>;
 
   /** Optional — create a new row or folder. */

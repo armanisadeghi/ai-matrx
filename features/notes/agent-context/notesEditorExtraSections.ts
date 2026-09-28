@@ -55,9 +55,6 @@ export interface NotesEditorExtraSectionsConfig {
    */
   onConvertBlocksToArtifacts?: () => void;
   onDelete: () => void;
-  /** Super-admin only — hard delete (bypasses soft-delete). Omitted otherwise. */
-  isSuperAdmin?: boolean;
-  onPermanentDelete?: () => void;
   /**
    * The note's tab already contributes THE note actions (noteActionSet.ts —
    * Duplicate, Move, Export, Move to Trash…) to this same menu. Then this
@@ -88,8 +85,6 @@ export function createNotesEditorExtraSections(
     onCloseAllTabs,
     onConvertBlocksToArtifacts,
     onDelete,
-    isSuperAdmin,
-    onPermanentDelete,
     noteActionsFromTab = false,
   } = config;
 
@@ -213,24 +208,12 @@ export function createNotesEditorExtraSections(
     {
       kind: "item",
       id: "delete",
-      label: "Delete Note",
+      label: "Move to Trash",
       icon: Trash2,
       destructive: true,
       onSelect: onDelete,
     },
   ];
-
-  // Super-admin only: hard delete (confirmed by the host before it fires).
-  if (isSuperAdmin && onPermanentDelete) {
-    items.push({
-      kind: "item",
-      id: "permanent-delete",
-      label: "Permanently Delete",
-      icon: Trash2,
-      destructive: true,
-      onSelect: onPermanentDelete,
-    });
-  }
 
   const shared = new Set(["duplicate", "export", "move", "tabs", "delete-sep", "delete"]);
   const own = noteActionsFromTab

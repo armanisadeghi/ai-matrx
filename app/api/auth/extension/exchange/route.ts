@@ -107,11 +107,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Clean up used codes older than 1 hour
-    await supabase
-      .schema('extend').from('extension_auth_codes')
-      .delete()
-      .lt('expires_at', new Date(Date.now() - 60 * 60 * 1000).toISOString());
+    // No per-route cleanup: a claimed or expired code is refused above by
+    // `used` / `expires_at`, and removing old rows is the data-lifecycle
+    // retention policy's job, never a route's (delete means archive, 2026-09-27).
 
     return NextResponse.json({
       success: true,

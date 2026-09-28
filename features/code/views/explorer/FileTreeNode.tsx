@@ -724,6 +724,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
         title={`Delete ${isDir ? "folder" : "file"}`}
         description={
           <>
+            {/* destroy-label-ok: a file on a sandbox container's own disk, not a platform record */}
             Permanently delete{" "}
             <strong className="font-mono">{node.name}</strong>
             {isDir ? " and everything inside it" : ""}? This cannot be undone.

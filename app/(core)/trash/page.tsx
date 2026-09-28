@@ -346,6 +346,7 @@ export default function TrashPage() {
           <section className="space-y-2 pb-4">
             <div>
               <h2 className="text-foreground text-sm font-semibold">
+                {/* destroy-label-ok: the retention policy's schedule, shown honestly; no button purges */}
                 Scheduled to be deleted for good
               </h2>
               <p className="text-muted-foreground text-sm">

@@ -1,7 +1,6 @@
 {
-  "why": "THE CENSUS, not an exemption. Every entry is a client path that DESTROYS a row in a registered soft-deletable entity table - the exact defect DD-119 closed for workspace.tasks (db-rules FEATURE.md sections 8 and 8a). They are listed so the gate can fail on NEW offenders instead of being ignored, and every entry is work somebody owns. Remove an entry the moment its path moves to a soft delete; a stale entry FAILS the gate too.",
-  "measured": "2026-09-12, matrx-frontend, against the live soft-deletable population on brsgrqvjdzwihsvnfqkf.",
-  "serverLane": "app/api/** is deliberately not scanned: those routes run as service_role, the lane that IS allowed to destroy a row. Its .delete() calls are outside this census.",
+  "why": "EMPTY BY LAW. Delete means archive (Arman, 2026-09-27: \"delete MUST MEAN ARCHIVE regardless of what it's called\"). This file keeps its shape so the gate reads the same, but the gate FAILS on any entry: every entry would be a record a person can destroy.",
+  "measured": "2026-09-27, matrx-frontend, against the live soft-deletable population on brsgrqvjdzwihsvnfqkf; app/api/** is scanned too since 2026-09-27.",
   "entries": [
     {
       "file": "features/agent-apps/services/auto-create-draft.ts",
@@ -44,16 +43,6 @@
       "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Same documented rollback-of-a-just-created-row pattern as udt_documents."
     },
     {
-      "file": "features/files/virtual-sources/adapters/code-files.ts",
-      "table": "code.code_files",
-      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Behind an explicit `hard` flag; the same function soft-deletes when it is false — the retention action the owner's ruling allows."
-    },
-    {
-      "file": "features/files/virtual-sources/adapters/notes.ts",
-      "table": "workbench.notes",
-      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Same `hard`-flag path as code-files.ts, reached from deleteAny."
-    },
-    {
       "file": "features/marketing/change-tracking/data.ts",
       "table": "seo.change_set",
       "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. A catch-block rollback of a change_set whose children failed to write in the same function."
@@ -62,16 +51,6 @@
       "file": "features/memory/service/memoryService.ts",
       "table": "users.user_memory",
       "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. UNIQUE(created_by, path) and upsertMemory relies on onConflict for idempotent re-creation; the natural-key slot must be freed. Same shape as the note_folders worked example."
-    },
-    {
-      "file": "features/notes/service/notesService.ts",
-      "table": "workbench.note_folders",
-      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE, documented in place. A folder is a (created_by, name)-unique registry row notes reference by string; a deleted_at row would hold the slot invisibly and block a same-name recreate."
-    },
-    {
-      "file": "features/notes/service/notesService.ts",
-      "table": "workbench.notes",
-      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. permanentlyDeleteNote and emptyTrash both act only on already soft-deleted notes (emptyTrash filters deleted_at IS NOT NULL) — the retention action the owner's ruling allows."
     },
     {
       "file": "features/research/service.ts",

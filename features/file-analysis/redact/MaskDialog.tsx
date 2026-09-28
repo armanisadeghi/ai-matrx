@@ -183,6 +183,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
                     restore originals on the return path.
                   </SelectItem>
                   <SelectItem value="destructive" className="text-xs">
+                    {/* destroy-label-ok: redaction edits a copy's content by design; the record is not deleted */}
                     Destructive — original spans are removed for good.
                   </SelectItem>
                   <SelectItem value="annotation" className="text-xs">

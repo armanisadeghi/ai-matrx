@@ -38,8 +38,6 @@ import {
   fetchSharedNotesList,
   fetchDeletedNotes,
   restoreNote,
-  permanentlyDeleteNoteThunk,
-  emptyTrashThunk,
 } from "../../redux/thunks";
 import {
   selectOrganizationId,
@@ -426,35 +424,6 @@ export default function MobileNotesList({
                       </p>
                     ) : (
                       <>
-                        <div className="mb-1 flex justify-end px-4">
-                          <button
-                            type="button"
-                            className="text-[11px] text-destructive/80 active:text-destructive"
-                            onClick={async () => {
-                              const ok = await confirm({
-                                title: "Empty trash",
-                                description: `Permanently delete ${deletedNotes.length} note${deletedNotes.length === 1 ? "" : "s"}? This cannot be undone.`,
-                                confirmLabel: "Empty trash",
-                                variant: "destructive",
-                              });
-                              if (!ok) return;
-                              try {
-                                const count =
-                                  await dispatch(emptyTrashThunk()).unwrap();
-                                toast.success(
-                                  count
-                                    ? `Emptied trash (${count})`
-                                    : "Nothing to delete",
-                                );
-                              } catch (err) {
-                                console.error(err);
-                                toast.error("Failed to empty trash");
-                              }
-                            }}
-                          >
-                            Empty trash
-                          </button>
-                        </div>
                         <div className="divide-y divide-border/50">
                           {deletedNotes.map((note) => {
                             const deletedLabel = note.deleted_at
@@ -495,33 +464,6 @@ export default function MobileNotesList({
                                   }}
                                 >
                                   <RotateCcw size={16} />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-destructive/70 active:bg-destructive/10 active:text-destructive"
-                                  aria-label="Delete forever"
-                                  onClick={async () => {
-                                    const ok = await confirm({
-                                      title: "Permanently delete",
-                                      description: `Permanently delete "${noteDisplayLabel(note)}"? This cannot be undone.`,
-                                      confirmLabel: "Delete forever",
-                                      variant: "destructive",
-                                    });
-                                    if (!ok) return;
-                                    try {
-                                      await dispatch(
-                                        permanentlyDeleteNoteThunk(note.id),
-                                      ).unwrap();
-                                      toast.success("Note permanently deleted");
-                                    } catch (err) {
-                                      console.error(err);
-                                      toast.error(
-                                        "Failed to permanently delete",
-                                      );
-                                    }
-                                  }}
-                                >
-                                  <Trash2 size={16} />
                                 </button>
                               </div>
                             );

@@ -871,6 +871,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
         }
         description={
           activeTarget?.is_active
+            // destroy-label-ok: says hard deletes are NOT offered; the action is deactivate
             ? `The token disappears from entity_types_list() and the generated TS vocabulary (after pnpm gen:entity-types), but existing platform.associations rows referencing it remain. Hard deletes are not offered — tokens are FK targets. You can reactivate at any time.`
             : `The token returns to entity_types_list() and the generated TS vocabulary on the next pnpm gen:entity-types run.`
         }

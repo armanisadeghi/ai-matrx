@@ -1217,6 +1217,7 @@ function RepositoryPanel({
         description={
           savedAction?.action === "restore"
             ? "This replaces tracked files with the saved session version and stages them for review. Your working tree must be clean. No commit or push is created."
+            // destroy-label-ok: a local git branch inside a sandbox, not a platform record
             : "This permanently removes the local saved branch. Its files will not be applied. Any remote copy is retained."
         }
         confirmLabel={

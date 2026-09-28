@@ -66,7 +66,7 @@ const menuItems: MenuItem[] = [
     icon: Trash,
     iconColor: 'text-red-500 dark:text-red-400',
     label: 'Delete',
-    description: 'Remove permanently',
+    description: 'Move to Trash',
     category: 'Actions',
     action: () => {
       console.log('Deleted!');
@@ -165,7 +165,7 @@ const menuItems: MenuItem[] = [
       icon: Trash,
       iconColor: 'text-red-500 dark:text-red-400',
       label: 'Delete',
-      description: 'Remove permanently',
+      description: 'Move to Trash',
       category: 'Actions',
       action: () => {},
       disabled: true,

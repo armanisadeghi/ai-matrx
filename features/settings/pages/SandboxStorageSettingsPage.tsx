@@ -318,6 +318,7 @@ export default function SandboxStoragePage() {
                 : "Delete persistent storage?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
+              {/* destroy-label-ok: the files on a person's sandbox disk, not platform records */}
               This permanently deletes everything in your{" "}
               <code className="font-mono">/home/agent</code> volume on the
               hosted volume. Anything you didn&apos;t push to a git remote is

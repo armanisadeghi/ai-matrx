@@ -87,6 +87,7 @@ export function groupScheduleText({
       ? `Eligible for deletion since ${date}.`
       : "Eligible for deletion.";
   }
+  // destroy-label-ok: the retention policy's schedule, shown honestly; no button purges
   const lead = rows === 1 ? "Deleted for good" : "The first goes for good";
   const when = whenPhrase(daysLeft);
   return date ? `${lead} on ${date} (${when}).` : `${lead} ${when}.`;

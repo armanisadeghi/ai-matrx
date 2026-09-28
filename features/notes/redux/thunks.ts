@@ -1597,6 +1597,10 @@ export const saveNoteField = createAsyncThunk<
 
 /**
  * Restore a soft-deleted note — clears deleted_at and re-adds to Redux.
+ *
+ * A note removed with its folder ("Move folder to Trash") comes back into that
+ * folder: a removed folder row is revived with it. If a live folder with the
+ * same name was created in the meantime, the note joins that one instead.
  */
 export const restoreNote = createAsyncThunk<void, string>(
   "notes/restoreNote",
@@ -1610,38 +1614,52 @@ export const restoreNote = createAsyncThunk<void, string>(
       .single();
 
     if (error) throw error;
-    if (data) {
-      dispatch(upsertNoteFromServer({ note: data, fetchStatus: "full" }));
+    let restored = data;
+    if (restored?.folder_id) {
+      const { data: folder, error: folderError } = await supabase
+        .schema("workbench")
+        .from("note_folders")
+        .select("id, name, organization_id, created_by, deleted_at")
+        .eq("id", restored.folder_id)
+        .maybeSingle();
+      if (folderError) throw folderError;
+      if (folder?.deleted_at) {
+        const { error: reviveError } = await supabase
+          .schema("workbench")
+          .from("note_folders")
+          .update({ deleted_at: null })
+          .eq("id", folder.id);
+        if (reviveError?.code === "23505") {
+          // A same-name folder is live again — file the note there.
+          const { data: live, error: liveError } = await supabase
+            .schema("workbench")
+            .from("note_folders")
+            .select("id")
+            .eq("organization_id", folder.organization_id)
+            .eq("created_by", folder.created_by)
+            .eq("name", folder.name)
+            .is("deleted_at", null)
+            .maybeSingle();
+          if (liveError) throw liveError;
+          if (live) {
+            const { data: moved, error: moveError } = await supabase
+              .schema("workbench")
+              .from("notes")
+              .update({ folder_id: live.id })
+              .eq("id", noteId)
+              .select("*")
+              .single();
+            if (moveError) throw moveError;
+            restored = moved;
+          }
+        } else if (reviveError) {
+          throw reviveError;
+        }
+      }
     }
-  },
-);
-
-/**
- * Permanently delete one soft-deleted note and drop it from the store.
- */
-export const permanentlyDeleteNoteThunk = createAsyncThunk<void, string>(
-  "notes/permanentlyDeleteNote",
-  async (noteId, { dispatch }) => {
-    const { permanentlyDeleteNote } = await import("../service/notesService");
-    await permanentlyDeleteNote(noteId);
-    dispatch(removeNote(noteId));
-  },
-);
-
-/**
- * Empty the trash — hard-delete every soft-deleted note for the current user.
- */
-export const emptyTrashThunk = createAsyncThunk<number, void>(
-  "notes/emptyTrash",
-  async (_, { dispatch, getState }) => {
-    const { emptyTrash } = await import("../service/notesService");
-    const count = await emptyTrash();
-    if (count === 0) return 0;
-    const notes = (getState() as RootState).notes?.notes ?? {};
-    for (const note of Object.values(notes)) {
-      if (note.deleted_at) dispatch(removeNote(note.id));
+    if (restored) {
+      dispatch(upsertNoteFromServer({ note: restored, fetchStatus: "full" }));
     }
-    return count;
   },
 );
 

@@ -50,19 +50,19 @@ const CASES: { id: string; lines: number; description: string }[] = [
     id: "2-line",
     lines: 2,
     description:
-      "Deletes 3 notes and the folder that holds them permanently. This cannot be undone.",
+      "Moves 3 notes and the folder that holds them to Trash. You can restore them from Trash.",
   },
   {
     id: "3-line",
     lines: 3,
     description:
-      "Deletes the folder “Client research” and the 14 notes inside it permanently, including 2 notes shared with other people in your organization. Shared links stop working immediately. This cannot be undone.",
+      "Moves the folder “Client research” and the 14 notes inside it to Trash, including 2 notes shared with other people in your organization. Shared links stop working until you restore them from Trash.",
   },
   {
     id: "6-line",
     lines: 6,
     description:
-      "Deletes the folder “Client research” and the 14 notes inside it permanently, including 2 notes shared with other people in your organization. Shared links stop working immediately and anyone holding one sees a 404. Every version in each note's history is destroyed with it, so a note you edited today cannot be rolled back to yesterday. Attachments stored on those notes are released from storage and their file ids stop resolving anywhere in the platform. Any workflow, agent or scheduled task that reads from this folder will start failing on its next run. This cannot be undone.",
+      "Moves the folder “Client research” and the 14 notes inside it to Trash, including 2 notes shared with other people in your organization. Shared links stop working and anyone holding one sees a 404 until the notes are restored. Each note keeps its full version history and its attachments while it is in Trash, so restoring it brings everything back exactly as it was. Any workflow, agent or scheduled task that reads from this folder will stop finding these notes until you restore them from Trash.",
   },
 ];
 
@@ -212,9 +212,9 @@ export function ConfirmGeometryHarness() {
           key={c.id}
           open={openId === c.id}
           onOpenChange={(next) => setOpenId(next ? c.id : null)}
-          title="Delete folder and everything in it?"
+          title="Move folder and everything in it to Trash?"
           description={c.description}
-          confirmLabel="Delete forever"
+          confirmLabel="Move to Trash"
           variant="destructive"
           onConfirm={() => setOpenId(null)}
         />

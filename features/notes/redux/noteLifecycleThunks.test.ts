@@ -18,10 +18,10 @@
  *  - `moveNoteToFolder` mutating the store when admission REFUSES.
  *  - `restoreNote` clearing the wrong column, or not putting the restored row
  *    back in the store.
- *  - `emptyTrashThunk` sweeping live notes out of the store alongside the
- *    deleted ones (or, on a no-op empty, sweeping anything at all).
- *  - `permanentlyDeleteNoteThunk` leaving the row on screen after the hard
- *    delete.
+ *  - `restoreNote` leaving a note that went to Trash with its folder
+ *    outside any live folder (the folder must come back with it).
+ *  - a hard-delete door (`permanentlyDeleteNoteThunk` / `emptyTrashThunk`)
+ *    coming back: delete means archive (Arman, 2026-09-27).
  *  - `fetchSharedNotesList` letting a SLOW earlier fetch overwrite a newer
  *    one, or dropping a sharee's dirty buffer when a share is revoked.
  *  - `saveNoteField` writing the field without persisting it.
@@ -34,8 +34,6 @@ const rpc = jest.fn();
 const getSession = jest.fn();
 const persistNoteUpdate = jest.fn();
 const createFolder = jest.fn();
-const permanentlyDeleteNote = jest.fn();
-const emptyTrash = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({
   // The thunks verify the actor with `getClaimsUser(supabase)` →
@@ -55,9 +53,6 @@ jest.mock("../service/notesService", () => {
     ...actual,
     persistNoteUpdate: (...args: unknown[]) => persistNoteUpdate(...args),
     createFolder: (...args: unknown[]) => createFolder(...args),
-    permanentlyDeleteNote: (...args: unknown[]) =>
-      permanentlyDeleteNote(...args),
-    emptyTrash: (...args: unknown[]) => emptyTrash(...args),
   };
 });
 jest.mock("@/features/scopes/service/associationsService", () => ({
@@ -73,14 +68,14 @@ import { createSlimRootReducer, type RootState } from "@/lib/redux/rootReducer";
 import type { Note } from "../types";
 import { upsertNoteFromServer } from "./slice";
 import {
-  emptyTrashThunk,
   fetchSharedNotesList,
   moveNoteToFolder,
   moveNoteToNewFolder,
-  permanentlyDeleteNoteThunk,
   restoreNote,
   saveNoteField,
 } from "./thunks";
+import * as thunks from "./thunks";
+import * as notesService from "../service/notesService";
 
 enableMapSet();
 
@@ -382,57 +377,49 @@ describe("restoreNote", () => {
   });
 });
 
-describe("permanentlyDeleteNoteThunk", () => {
-  it("hard-deletes that note and takes it off the screen", async () => {
-    const configured = store([note(), note({ id: OTHER_NOTE_ID })]);
-    permanentlyDeleteNote.mockResolvedValue(undefined);
+describe("restoreNote with its folder", () => {
+  it("revives the folder that went to Trash with the note", async () => {
+    const configured = store([]);
+    const restored = note({ deleted_at: null, folder_id: FOLDER_ID });
+    const noteChain = query({ data: restored, error: null });
+    const folderRead = query({
+      data: {
+        id: FOLDER_ID,
+        name: "Draft",
+        organization_id: ORG,
+        created_by: "user-1",
+        deleted_at: "2026-09-27T00:00:00.000Z",
+      },
+      error: null,
+    });
+    const revive = Object.assign(query({ error: null }), {
+      then: (resolve: (value: unknown) => unknown) => resolve({ error: null }),
+    });
+    const from = jest
+      .fn()
+      .mockReturnValueOnce(noteChain)
+      .mockReturnValueOnce(folderRead)
+      .mockReturnValueOnce(revive);
+    schema.mockReturnValue({ from });
 
-    const result = await configured.dispatch(permanentlyDeleteNoteThunk(NOTE_ID));
+    const result = await configured.dispatch(restoreNote(NOTE_ID));
 
-    expect(permanentlyDeleteNoteThunk.fulfilled.match(result)).toBe(true);
-    expect(permanentlyDeleteNote).toHaveBeenCalledWith(NOTE_ID);
-    expect(configured.getState().notes.notes[NOTE_ID]).toBeUndefined();
-    expect(configured.getState().notes.notes[OTHER_NOTE_ID]).toBeDefined();
-  });
-
-  it("leaves the note on screen when the hard delete fails", async () => {
-    const configured = store();
-    permanentlyDeleteNote.mockRejectedValue(new Error("not the owner"));
-
-    const result = await configured.dispatch(permanentlyDeleteNoteThunk(NOTE_ID));
-
-    expect(permanentlyDeleteNoteThunk.rejected.match(result)).toBe(true);
-    expect(configured.getState().notes.notes[NOTE_ID]).toBeDefined();
+    expect(restoreNote.fulfilled.match(result)).toBe(true);
+    expect(from).toHaveBeenNthCalledWith(2, "note_folders");
+    expect(from).toHaveBeenNthCalledWith(3, "note_folders");
+    expect(revive.update).toHaveBeenCalledWith({ deleted_at: null });
+    expect(revive.eq).toHaveBeenCalledWith("id", FOLDER_ID);
+    expect(configured.getState().notes.notes[NOTE_ID]).toMatchObject({
+      folder_id: FOLDER_ID,
+      deleted_at: null,
+    });
   });
 });
 
-describe("emptyTrashThunk", () => {
-  it("drops only the soft-deleted notes from the store and reports how many rows went", async () => {
-    const configured = store([
-      note({ id: NOTE_ID, deleted_at: "2026-09-13T00:00:00.000Z" }),
-      note({ id: OTHER_NOTE_ID, deleted_at: null }),
-    ]);
-    emptyTrash.mockResolvedValue(1);
-
-    const result = await configured.dispatch(emptyTrashThunk());
-
-    expect(emptyTrashThunk.fulfilled.match(result)).toBe(true);
-    expect(result.payload).toBe(1);
-    expect(configured.getState().notes.notes[NOTE_ID]).toBeUndefined();
-    // The live note is the whole point: a sweep that took it would be data loss.
-    expect(configured.getState().notes.notes[OTHER_NOTE_ID]).toBeDefined();
-  });
-
-  it("touches nothing when the trash was already empty", async () => {
-    const configured = store([
-      note({ id: NOTE_ID, deleted_at: "2026-09-13T00:00:00.000Z" }),
-    ]);
-    emptyTrash.mockResolvedValue(0);
-
-    const result = await configured.dispatch(emptyTrashThunk());
-
-    expect(result.payload).toBe(0);
-    expect(configured.getState().notes.notes[NOTE_ID]).toBeDefined();
+describe("no hard-delete door", () => {
+  it("offers no permanent delete or empty-trash path for notes", () => {
+    const exported = [...Object.keys(thunks), ...Object.keys(notesService)];
+    expect(exported.filter((name) => /permanent|emptyTrash|purge/i.test(name))).toEqual([]);
   });
 });
 

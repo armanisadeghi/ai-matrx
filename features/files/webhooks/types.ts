@@ -125,5 +125,6 @@ export const TABLE_WEBHOOK_EVENTS: ReadonlyArray<{ value: string; label: string 
   { value: "record.updated", label: "Row changed" },
   { value: "record.archived", label: "Row archived" },
   { value: "record.restored", label: "Row restored" },
+  // destroy-label-ok: names the retention-engine purge event, not a button
   { value: "record.purged", label: "Row removed for good" },
 ];

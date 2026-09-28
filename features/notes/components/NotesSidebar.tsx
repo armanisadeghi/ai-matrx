@@ -280,16 +280,15 @@ export function NotesSidebar({
         {
             key: 'delete-all',
             icon: Trash2,
-            label: 'Delete All Notes',
-            description: `Delete all ${notesCount} note${notesCount !== 1 ? 's' : ''} in this folder`,
+            label: 'Move All Notes to Trash',
+            description: `Move all ${notesCount} note${notesCount !== 1 ? 's' : ''} in this folder to Trash`,
             action: async () => {
-                // Consequence-first, per the destructive-and-expensive-actions
-                // law: this one is NOT the soft delete a single note gets —
-                // it names the count and says nothing comes back.
+                // Delete means archive (Arman, 2026-09-27): the notes and the
+                // folder go to Trash together and come back from there.
                 const ok = await confirm({
-                    title: `Delete all ${notesCount} note${notesCount !== 1 ? 's' : ''} in \u201c${folderName}\u201d?`,
-                    description: `Every note in this folder is deleted for good \u2014 there is no Trash step and no Undo for this one, unlike deleting a single note. Their content, tags and version history go with them. The folder itself stays.`,
-                    confirmLabel: `Delete ${notesCount} note${notesCount !== 1 ? 's' : ''}`,
+                    title: `Move ${notesCount} note${notesCount !== 1 ? 's' : ''} in \u201c${folderName}\u201d to Trash?`,
+                    description: `Every note in this folder moves to Trash. Nothing is erased: you can restore them from Trash.`,
+                    confirmLabel: `Move ${notesCount} to Trash`,
                     variant: 'destructive',
                 });
                 if (!ok) return;
@@ -358,8 +357,8 @@ export function NotesSidebar({
         {
             key: 'delete',
             icon: Trash2,
-            label: 'Delete Note',
-            description: 'Permanently delete this note',
+            label: 'Move to Trash',
+            description: 'Move this note to Trash — restorable from there',
             action: () => onDeleteNote(note.id),
             iconColor: 'text-red-500',
             category: 'Danger',

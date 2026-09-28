@@ -627,6 +627,7 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
       "surviving referrer trips its `NOT EXISTS` guard. Some blocking is correct " +
       "and transient — another learner still studying a shared deck. What is NOT " +
       "correct is a row that stays blocked: the purge is the executable half of " +
+      // destroy-label-ok: admin integrity check describing the education retention purge
       "the \"we permanently delete it\" promise (COPPA / school-safe), so a row " +
       "stuck here is a deletion promise the platform is quietly not keeping, and " +
       "the hourly job reports it only as a number inside `scheduler.sch_run." +
@@ -641,6 +642,7 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
       "the fix is in that writer, not here. A referrer owned by a DIFFERENT user " +
       "is the legitimate shared-deck case and the row is correctly retained — but " +
       "it should then be re-owned or anonymized rather than left as a permanent " +
+      // destroy-label-ok: admin integrity check describing the education retention purge
       "purge failure. Handler: aidream/services/education_data_rights/.",
     sql: `
       with cutoff as (select now() - interval '30 days' as ts)

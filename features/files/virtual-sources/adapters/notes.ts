@@ -274,19 +274,8 @@ const notesAdapter: VirtualSourceAdapter = {
     return { updatedAt: data.updated_at ?? update.updated_at };
   },
 
-  async delete(supabase, userId, id, hard) {
-    if (hard) {
-      await writeOne(
-        supabase
-          .schema("workbench").from("notes")
-          .delete()
-          .eq("id", id)
-          .eq("created_by", userId)
-          .select("id"),
-        { action: "delete", noun: "note" },
-      );
-      return;
-    }
+  async delete(supabase, userId, id) {
+    // Delete means archive (Arman, 2026-09-27): soft delete only; Trash restores it.
     await writeOne(
       supabase
         .schema("workbench").from("notes")

@@ -691,49 +691,6 @@ export async function deleteNote(id: string): Promise<void> {
 }
 
 /**
- * Permanently delete a note
- */
-export async function permanentlyDeleteNote(id: string): Promise<void> {
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("notes")
-    .delete()
-    .eq("id", id)
-    .select("id");
-
-  if (error) {
-    console.error("Error permanently deleting note:", error);
-    throw error;
-  }
-  if (!data || data.length === 0) {
-    throw operationFailed(
-      "permanently delete this note — nothing was changed. It may need owner access you don't have, or the note may already be gone",
-    );
-  }
-}
-
-/**
- * Permanently delete every soft-deleted note owned by the current user.
- * Returns the number of rows removed.
- */
-export async function emptyTrash(): Promise<number> {
-  const userId = requireUserId();
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("notes")
-    .delete()
-    .eq("created_by", userId)
-    .not("deleted_at", "is", null)
-    .select("id");
-
-  if (error) {
-    console.error("Error emptying trash:", error);
-    throw error;
-  }
-  return data?.length ?? 0;
-}
-
-/**
  * Copy/duplicate a note
  * Smart labeling: If original was "New Note", auto-generate from content
  */
@@ -963,23 +920,20 @@ export async function deleteFolderNotes(folder: FolderReference): Promise<number
     throw error;
   }
 
-  // HARD-delete the folder record (not soft-delete). The folder row is a
-  // name-keyed picker-registry entry — notes reference their folder by the
-  // `folder_name` STRING, not by id, and `ensureFolderMaterialized` recreates
-  // it on demand. Soft-deleting it would leave a `deleted_at`-set row occupying
-  // the (created_by, name) slot of the FULL unique index
-  // `note_folders_created_by_name_unique` — invisible to the `authenticated`
-  // client under RLS (`deleted_at IS NULL`), so a same-name recreate could
-  // neither insert (conflict) nor see/revive it. Hard delete keeps the natural
-  // key free for reuse. (The notes themselves stay soft-deleted / recoverable.)
+  // Soft-delete the folder record too, with the SAME timestamp as its notes, so
+  // restoring a note from Trash can bring its folder back with it. Its unique
+  // index is partial on `deleted_at IS NULL`, so a removed folder no longer
+  // holds its (organization, owner, name) slot and a same-name recreate works.
+  // Delete means archive (Arman, 2026-09-27) — nothing here is destroyed.
   // write-lands-exempt: the folder registry row is materialized on demand and may not exist; the notes above are the real work
   await supabase
     .schema("workbench")
     .from("note_folders")
-    .delete()
+    .update({ deleted_at: deletedAt })
     .eq("created_by", userId)
     .eq("id", folder.id)
-    .eq("organization_id", organizationId);
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null);
 
   return count;
 }

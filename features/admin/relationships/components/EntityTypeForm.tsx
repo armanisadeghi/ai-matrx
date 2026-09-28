@@ -235,6 +235,7 @@ export function EntityTypeForm({
           [
             ["Active", "isActive", "Inactive tokens vanish from entity_types_list() and the generated TS vocabulary."],
             ["Versioned", "isVersioned", "Rows participate in the platform versioning system."],
+            // destroy-label-ok: describes the soft-delete capability flag; destroys nothing
             ["Soft delete", "hasSoftDelete", "Table carries deleted_at instead of hard deletes."],
             ["Listed", "isListed", "Appears in user-facing entity pickers and lists."],
             ["Component", "isComponent", "A sub-part of another entity, not standalone content."],

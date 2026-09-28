@@ -40,6 +40,25 @@
  * `FAIL new client hard delete … workspace.tasks` and exited 1 in strict; with
  * the soft-delete door restored it reported OK and exited 0 (2026-09-12).
  *
+ * EXTENDED 2026-09-27 (Arman: "delete MUST MEAN ARCHIVE regardless of what it's
+ * called"). The census went to ZERO — every door became a soft delete — and the
+ * gate grew three more halves, each a pattern the first version walked past:
+ *   3. THE SERVER LANE — `app/api/**` was exempt ("service_role is allowed to
+ *      destroy a row"); four routes used that to hard-delete a person's app,
+ *      artifact, group chat and tool UI. Route handlers are scanned like any
+ *      other client path now.
+ *   4. THE LABEL — a control that promises destruction ("Delete permanently",
+ *      "Delete forever", "Empty trash", "Purge", "…cannot be undone" on a delete)
+ *      is refused. Notes shipped all three while the doorway half was green,
+ *      because their `.delete()` sat on the census. A label on something that is
+ *      not a record (a sandbox's own disk, a cache) states that in place with
+ *      `// destroy-label-ok: <what is destroyed and why it is not a record>` on
+ *      the line or the line above.
+ *   5. THE RPC — `.rpc("…purge…" | "…hard_delete…" | "…permanent…" |
+ *      "…empty_trash…")` from a client is a hard-delete door by its own name.
+ * The allow-list file stays, EMPTY, only so a future lane has the same shape;
+ * adding an entry is adding a destroyed record.
+ *
  * 🚨 UNMEASURED IS NOT PASSED: if the live half cannot be read, the run is
  * UNMEASURED and strict exits 1 — same contract and same banner as
  * check-soft-delete-cascade.ts.
@@ -59,7 +78,14 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RPC = "__client_hard_delete_conformance";
 const TIMEOUT_MS = 15_000;
 const STRICT = process.argv.includes("--strict");
-const ALLOWLIST_PATH = resolve(ROOT, "scripts/client-hard-delete-allowlist.json");
+const ALLOWLIST_PATH = resolve(
+  ROOT,
+  process.env.CLIENT_HARD_DELETE_ALLOWLIST ?? "scripts/client-hard-delete-allowlist.json",
+);
+/** For the red-then-green proof on a scratch copy: scan another root. */
+const SCAN_ROOT = process.env.CLIENT_HARD_DELETE_SCAN_ROOT
+  ? resolve(process.env.CLIENT_HARD_DELETE_SCAN_ROOT)
+  : ROOT;
 
 /** The checks the deployed function is contracted to return. */
 const EXPECTED_CHECKS = [
@@ -70,12 +96,25 @@ const EXPECTED_CHECKS = [
 ] as const;
 
 /**
- * Where a browser-reachable write can live. `app/api/**` is deliberately absent:
- * those routes run as service_role on the server, which is the lane that is
- * ALLOWED to destroy a row. They are listed in the allow-list file's `serverLane`
- * note instead, so the census still records them.
+ * Where a write a person can trigger lives — route handlers under `app/api/**`
+ * included: running as service_role never made destroying a person's record
+ * right (2026-09-27).
  */
-const SCAN_DIRS = ["features", "components", "hooks", "lib", "utils"];
+const SCAN_DIRS = ["features", "components", "hooks", "lib", "utils", "app"];
+
+/**
+ * Words that promise a person their record is destroyed. Matched inside string
+ * literals and JSX text only (comments are stripped first).
+ */
+const DESTROY_LABEL =
+  /\b(?:delete|deleted|deletes|remove|removed|removes|erase|erased)\s+(?:permanently|forever|for good|outright)\b|\b(?:hard[- ]deletes?|permanently\s+(?:delete|deleted|deletes|remove|removes|erase|erases))\b|\bempty(?:ing)?\s+(?:the\s+)?trash\b|["'`>]\s*(?:Purge|Delete forever|Delete permanently)\b/i;
+/** "cannot be undone" / "can't be undone" only counts beside a delete verb. */
+const UNDONE = /\b(?:cannot|can't|can not)\s+be\s+undone\b/i;
+const DELETE_VERB = /\b(?:delet|remov|eras)/i;
+/** Copy that says the OPPOSITE ("nothing is deleted for good") is the honest kind. */
+const NEGATED = /\b(?:nothing|never|not|no)\b[^.;]{0,40}\b(?:deleted|removed|erased)\b/i;
+const LABEL_EXEMPT = /destroy-label-ok:\s*\S/;
+const HARD_RPC = /\.rpc\(\s*["'`]([A-Za-z0-9_.]*(?:purge|hard_delete|permanent|empty_trash)[A-Za-z0-9_.]*)["'`]/g;
 const SKIP_DIR = /(^|\/)(node_modules|\.next|__tests__|__mocks__|dist|build)(\/|$)/;
 const SKIP_FILE = /\.(test|spec|d)\.tsx?$/;
 
@@ -220,7 +259,20 @@ function walk(dir: string, out: string[]): void {
  * silently passed: the honest answer is "this gate could not read it".
  */
 function resolveTable(text: string, deleteIdx: number): { table: string | null; schema: string | null } {
-  const window = text.slice(Math.max(0, deleteIdx - 600), deleteIdx);
+  let window = text.slice(Math.max(0, deleteIdx - 600), deleteIdx);
+  // `.from(TABLE)` where `const TABLE = "x"` in the same file.
+  window = window.replace(/\.from\(\s*([A-Z_][A-Z0-9_]*)\s*\)/g, (whole, ident: string) => {
+    const m = text.match(new RegExp(`const\\s+${ident}\\s*=\\s*["'\`]([A-Za-z0-9_]+)["'\`]`));
+    return m ? `.from("${m[1]}")` : whole;
+  });
+  // `helper().delete()` where `function helper() { return ….schema("s").from("t"); }`.
+  const helper = window.match(/\b([a-zA-Z_][A-Za-z0-9_]*)\(\)\s*$/);
+  if (helper) {
+    const body = text.match(
+      new RegExp(`function\\s+${helper[1]}\\s*\\(\\)[^{]*\\{([\\s\\S]{0,300}?)\\}`),
+    );
+    if (body?.[1]) window = `${body[1]}${window}`;
+  }
   const froms = [...window.matchAll(/\.from\(\s*["'`]([A-Za-z0-9_]+)["'`]\s*\)/g)];
   const last = froms.at(-1);
   if (!last) return { table: null, schema: null };
@@ -232,6 +284,84 @@ function resolveTable(text: string, deleteIdx: number): { table: string | null; 
   const s = schemas.at(-1);
   const schema = s ? (s[1] ?? "").toLowerCase() : null;
   return { table: last[1] ?? null, schema };
+}
+
+
+/** Blank out comments (keeping offsets and newlines) so only code and strings remain. */
+function stripComments(text: string): string {
+  let out = "";
+  let i = 0;
+  let quote: string | null = null;
+  while (i < text.length) {
+    const c = text[i]!;
+    const n = text[i + 1];
+    if (quote) {
+      out += c;
+      if (c === "\\") {
+        out += n ?? "";
+        i += 2;
+        continue;
+      }
+      if (c === quote) quote = null;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      quote = c;
+      out += c;
+      i++;
+      continue;
+    }
+    if (c === "/" && n === "/") {
+      while (i < text.length && text[i] !== "\n") {
+        out += " ";
+        i++;
+      }
+      continue;
+    }
+    if (c === "/" && n === "*") {
+      while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) {
+        out += text[i] === "\n" ? "\n" : " ";
+        i++;
+      }
+      out += "  ";
+      i += 2;
+      continue;
+    }
+    out += c;
+    i++;
+  }
+  return out;
+}
+
+interface LabelHit {
+  readonly file: string;
+  readonly line: number;
+  readonly text: string;
+}
+
+/** Destruction promised in a label, and hard-delete RPCs by name. */
+function scanLabelsAndRpcs(file: string, rel: string): { labels: LabelHit[]; rpcs: LabelHit[] } {
+  const raw = readFileSync(file, "utf8");
+  const code = stripComments(raw);
+  const rawLines = raw.split("\n");
+  const lines = code.split("\n");
+  const labels: LabelHit[] = [];
+  const rpcs: LabelHit[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const exempt =
+      LABEL_EXEMPT.test(rawLines[i] ?? "") || LABEL_EXEMPT.test(rawLines[i - 1] ?? "");
+    const promises = DESTROY_LABEL.test(line) || (UNDONE.test(line) && DELETE_VERB.test(line));
+    if (!exempt && promises && !NEGATED.test(line)) {
+      labels.push({ file: rel, line: i + 1, text: line.trim().slice(0, 140) });
+    }
+  }
+  for (const m of code.matchAll(HARD_RPC)) {
+    const line = code.slice(0, m.index ?? 0).split("\n").length;
+    rpcs.push({ file: rel, line, text: m[1] ?? "" });
+  }
+  return { labels, rpcs };
 }
 
 /** Entry point — async so the live pull can be awaited. */
@@ -289,14 +419,14 @@ async function run(): Promise<number> {
   }
 
   const files: string[] = [];
-  for (const d of SCAN_DIRS) walk(resolve(ROOT, d), files);
+  for (const d of SCAN_DIRS) walk(resolve(SCAN_ROOT, d), files);
 
   const hits: Hit[] = [];
   const unresolved: { file: string; line: number }[] = [];
   for (const file of files) {
     const text = readFileSync(file, "utf8");
     if (!text.includes(".delete()")) continue;
-    const rel = relative(ROOT, file);
+    const rel = relative(SCAN_ROOT, file);
     let idx = text.indexOf(".delete()");
     while (idx !== -1) {
       const { table, schema } = resolveTable(text, idx);
@@ -351,6 +481,41 @@ async function run(): Promise<number> {
   console.log(
     `${TAG.info}${allow.length} known offenders still on the census; ${unresolved.length} .delete() calls whose table this gate could not read.`,
   );
+  if (allow.length > 0) {
+    console.log(
+      `${TAG.fail}the census is not empty — delete means archive (Arman, 2026-09-27); every entry is a record a person can destroy`,
+    );
+    findings += allow.length;
+  }
+
+  // ── Half 3: labels that promise destruction, and hard-delete RPCs ─────────
+  const labelHits: LabelHit[] = [];
+  const rpcHits: LabelHit[] = [];
+  for (const file of files) {
+    if (/scripts\/check-client-hard-delete/.test(file)) continue;
+    const { labels, rpcs } = scanLabelsAndRpcs(file, relative(SCAN_ROOT, file));
+    labelHits.push(...labels);
+    rpcHits.push(...rpcs);
+  }
+  if (labelHits.length === 0) {
+    console.log(`${TAG.ok}no control promises to destroy a record ("Delete permanently", "Empty trash", "Purge"…)`);
+  } else {
+    for (const h of labelHits) {
+      console.log(`${TAG.fail}destroy label — ${h.file}:${h.line}  ${C.dim}${h.text}${C.reset}`);
+    }
+    console.log(
+      `       ${C.dim}Delete means archive: say "Move to Trash" / "Archive" and that it can be restored; a purge is a lifecycle policy, never a button. Not a record? Mark the line // destroy-label-ok: <why>.${C.reset}`,
+    );
+    findings += labelHits.length;
+  }
+  if (rpcHits.length === 0) {
+    console.log(`${TAG.ok}no client call to a purge / hard-delete RPC`);
+  } else {
+    for (const h of rpcHits) {
+      console.log(`${TAG.fail}hard-delete RPC — ${h.file}:${h.line} calls ${C.bold}${h.text}${C.reset}`);
+    }
+    findings += rpcHits.length;
+  }
 
   if (findings > 0) {
     console.log(

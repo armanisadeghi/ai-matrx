@@ -323,18 +323,8 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     };
   },
 
-  async delete(supabase, _userId, id, hard) {
-    if (hard) {
-      await writeOne(
-        supabase
-          .schema("code").from("code_files")
-          .delete()
-          .eq("id", id)
-          .select("id"),
-        { action: "delete", noun: "code file" },
-      );
-      return;
-    }
+  async delete(supabase, _userId, id) {
+    // Delete means archive (Arman, 2026-09-27): soft delete only; Trash restores it.
     await writeOne(
       supabase
         .schema("code").from("code_files")
