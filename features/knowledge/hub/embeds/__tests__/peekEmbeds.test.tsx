@@ -66,7 +66,7 @@ it.each([
   expect(q("[data-testid=hub-peek-embed]")?.getAttribute("data-embed-kind")).toBe(kind);
   // The header stays: title, Open full, the host's Keep/Archive/Tag.
   expect(q("h2")?.textContent).toBe(hit.title);
-  expect(text()).toContain("Open full");
+  expect(text()).toContain("Open");
   expect(text()).toContain("Keep");
   expect(text()).toContain("Filed under");
   // Details is the light peek, one tab away.

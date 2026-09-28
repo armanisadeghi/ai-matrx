@@ -10,6 +10,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 let search = new URLSearchParams("data=sample");
 const listeners = new Set<() => void>();
+const navHistory: string[] = [];
 const navigate = (href: string) => {
   search = new URLSearchParams(href.split("?")[1] ?? "");
   listeners.forEach((l) => l());
@@ -27,7 +28,15 @@ jest.mock("next/navigation", () => {
       }, []);
       return search;
     },
-    useRouter: () => ({ push: navigate, replace: navigate, back: jest.fn() }),
+    // A faithful history: push adds a step, back returns to the one before (opening a peek is a step).
+    useRouter: () => ({
+      push: (href: string) => {
+        navHistory.push(search.toString());
+        navigate(href);
+      },
+      replace: navigate,
+      back: () => navigate(`?${navHistory.pop() ?? ""}`),
+    }),
   };
 });
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => true }));

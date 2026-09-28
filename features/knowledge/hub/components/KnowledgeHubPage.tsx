@@ -770,7 +770,7 @@ export function KnowledgeHubPage({
   const closePeek = () => {
     if (peekPushed.current) {
       peekPushed.current = false;
-      window.history.back();
+      router.back();
       return;
     }
     write({ peek: null }, { replace: true });
