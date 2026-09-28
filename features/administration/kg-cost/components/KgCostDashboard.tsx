@@ -708,7 +708,7 @@ function OrgDetailDialog({
           </div>
         )}
 
-        {detail && (
+        {!error && detail && (
           <ScrollArea className="max-h-[70dvh]">
             <div className="space-y-5 pr-3">
               {/* Header stats */}
@@ -958,7 +958,7 @@ function BatchDetailDialog({
           </div>
         )}
 
-        {detail && (
+        {!error && detail && (
           <ScrollArea className="max-h-[70dvh]">
             <div className="space-y-4 pr-3">
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">

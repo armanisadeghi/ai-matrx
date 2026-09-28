@@ -219,7 +219,9 @@ export function CanonicalizationOverview() {
         </div>
       ) : null}
 
-      {loading || !overview ? (
+      {/* A failed first read is said once by the strip above — no forever-skeleton;
+          a failed refresh keeps the last overview under that strip. */}
+      {error && !overview ? null : loading || !overview ? (
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-[68px] w-full rounded-lg" />

@@ -582,7 +582,7 @@ export function BatchDashboard() {
               <TabsTrigger value="items">Work items</TabsTrigger>
               <TabsTrigger value="batches">
                 Provider batches
-                {providerBatches ? (
+                {!providerError && providerBatches ? (
                   <span className="ml-1.5 font-mono text-[11px] text-muted-foreground">
                     {providerBatches.length}
                   </span>

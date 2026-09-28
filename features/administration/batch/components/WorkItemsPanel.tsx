@@ -112,6 +112,7 @@ export function WorkItemsPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [facetsFailed, setFacetsFailed] = useState(false);
 
   const [facets, setFacets] = useState<{
     purposes: string[];
@@ -129,11 +130,15 @@ export function WorkItemsPanel({
   useEffect(() => {
     const controller = new AbortController();
     fetchWorkItemFacets({ signal: controller.signal })
-      .then(setFacets)
+      .then((next) => {
+        setFacets(next);
+        setFacetsFailed(false);
+      })
       .catch(() => {
         // A facet list that cannot be read must not silence the table; the
-        // selects simply stay at "Any" and the table below reports its own
-        // error if the real read failed too.
+        // purpose/provider selects stay at "Any" — and a line under the
+        // filters says why they offer nothing.
+        if (!controller.signal.aborted) setFacetsFailed(true);
       });
     return () => controller.abort();
   }, [refreshTick]);
@@ -477,6 +482,13 @@ export function WorkItemsPanel({
                 options={facets.providers}
               />
             </div>
+            {facetsFailed ? (
+              <p className="text-xs text-muted-foreground">
+                Couldn&apos;t load the purpose and provider lists, so those
+                filters offer nothing to pick.
+                <ErrorAlchemyMenu operation="Load the work-item filter lists" />
+              </p>
+            ) : null}
             {activeChips.length > 0 ? (
               <div className="flex flex-wrap items-center gap-1.5">
                 {activeChips.map((chip) => (
