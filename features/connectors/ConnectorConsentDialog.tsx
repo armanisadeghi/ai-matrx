@@ -118,6 +118,9 @@ export function consentRequestSentence(
   providerName: string,
   request: ConsentRequest,
 ): string {
+  if (request.connectionPurpose === "youtube_isolated") {
+    return "Google will ask only for YouTube channel and analytics access in a separate connection for this account. Your other Google connections stay as they are.";
+  }
   const label =
     request.products.length === 1
       ? (request.products[0]?.name ?? "one product")

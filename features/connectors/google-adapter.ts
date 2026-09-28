@@ -431,7 +431,7 @@ export function useGoogleConsentRunner() {
                   organizationId: options.owner.organizationId,
                 }
               : { type: "user" },
-          connectionPurpose: "google_products",
+          connectionPurpose: request.connectionPurpose,
           options: {
             organizationContextId: workspace.organizationId,
             expectedUserId: userId ?? undefined,
@@ -473,7 +473,7 @@ export function useGoogleConsentRunner() {
                 ? { type: "organization", organizationId: options.owner.organizationId }
                 : { type: "user" },
             organizationContextId: workspace.organizationId,
-            connectionPurpose: "google_products",
+            connectionPurpose: request.connectionPurpose,
             loginHint: options.loginHint ?? undefined,
             targetConnectionId: request.targetAccountId ?? undefined,
             capabilityKeys: request.capabilityKeys,

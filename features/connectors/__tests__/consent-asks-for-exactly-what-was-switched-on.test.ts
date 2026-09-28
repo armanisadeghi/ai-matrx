@@ -33,6 +33,8 @@ const CALENDAR_LIST =
 const CALENDAR_EVENTS =
   "https://www.googleapis.com/auth/calendar.events.readonly";
 const GSC = "https://www.googleapis.com/auth/webmasters.readonly";
+const YOUTUBE = "https://www.googleapis.com/auth/youtube.readonly";
+const YOUTUBE_ANALYTICS = "https://www.googleapis.com/auth/yt-analytics.readonly";
 const OPENID = "openid";
 
 const provider = GOOGLE_CONNECTOR_PROVIDER;
@@ -126,6 +128,41 @@ describe("buildConsentPlan", () => {
     expect(plan.request?.scopes).toContain(GSC);
     // …while the person is only approving the new one.
     expect(plan.request?.addedScopes).toEqual([GSC]);
+  });
+
+  it("asks only for YouTube on a separate same-identity connection when the chosen account holds other products", () => {
+    const broadAccount = account([
+      OPENID, DRIVE_FILE, GMAIL_SEND, GMAIL_READONLY, CALENDAR_LIST,
+      CALENDAR_EVENTS, GSC,
+    ]);
+    const plan = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["youtube"],
+      account: broadAccount,
+      rollout: rollout(),
+    });
+    expect(plan.request?.connectionPurpose).toBe("youtube_isolated");
+    expect(plan.request?.targetAccountId).toBeNull();
+    expect(plan.request?.capabilityKeys).toEqual(["youtube", "youtube_analytics"]);
+    expect(new Set(plan.request?.scopes)).toEqual(new Set([
+      "openid", "email", "profile", YOUTUBE, YOUTUBE_ANALYTICS,
+    ]));
+    expect(plan.request?.scopes).not.toContain(DRIVE_FILE);
+    expect(plan.request?.scopes).not.toContain(GMAIL_READONLY);
+  });
+
+  it("does not silently drop other selections when YouTube must use a separate grant", () => {
+    const plan = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["youtube", "search_console"],
+      account: account([OPENID, DRIVE_FILE]),
+      rollout: rollout(),
+    });
+    expect(plan.request).toBeNull();
+    expect(plan.blocked.map(({ productKey }) => productKey)).toEqual([
+      "search_console", "youtube",
+    ]);
+    expect(plan.blocked[0]?.reason).toContain("separately");
   });
 
   it("asks for nothing when the selection is already granted", () => {

@@ -207,6 +207,14 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       ],
     },
     {
+      url: "/education/subjects/quick-math/admin",
+      label: "Quick Math authoring",
+      description:
+        "Super-admin catalog editor for persisted Quick Math problems; draft creation, version-checked edits, soft delete, and human-only publishing.",
+      filePath: "app/(core)/education/subjects/quick-math/admin/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/education/flashcards",
       label: "Flashcard Studio",
       description:

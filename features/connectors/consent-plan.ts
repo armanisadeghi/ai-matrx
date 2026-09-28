@@ -100,6 +100,8 @@ function blockedRefusalReason(
 }
 
 export interface ConsentRequest {
+  /** YouTube needs its own focused grant when another Google product is connected. */
+  connectionPurpose: "google_products" | "youtube_isolated";
   /** Catalog keys the hub validates the scope set against. */
   capabilityKeys: string[];
   /** Everything the request asks for: identity + existing grants + new scopes. */
@@ -223,9 +225,30 @@ export function buildConsentPlan({
     return { request: null, blocked, alreadyGranted, empty: true };
   }
 
+  // Google rejected a real Drive-file + YouTube authorization. A reconnect of
+  // an existing broad account cannot cure that by dropping its old scopes:
+  // that would replace the credential backing the person's picked files.
+  // Use a separate canonical connection for YouTube, even for the same Google
+  // identity. Never silently discard another product selected in this press.
+  const youtubeWanted = wanted.some(({ product }) => product.key === "youtube");
+  if (youtubeWanted && wanted.length > 1) {
+    return {
+      request: null,
+      blocked: wanted.map(({ product }) => ({
+        productKey: product.key,
+        productName: product.name,
+        reason: "Connect YouTube separately from the other selected Google products. Your existing connections are unchanged.",
+      })),
+      alreadyGranted,
+      empty: true,
+    };
+  }
+
   const added = [...new Set(wanted.flatMap(({ missing }) => missing))];
+  const isolatedYouTube = youtubeWanted;
   return {
     request: {
+      connectionPurpose: isolatedYouTube ? "youtube_isolated" : "google_products",
       // Every capability behind every switched-on row. The hub matches the
       // scope set against exactly these keys and refuses anything else.
       capabilityKeys: [
@@ -236,8 +259,10 @@ export function buildConsentPlan({
       scopes: [
         ...new Set([
           ...provider.identityScopes,
-          ...(account?.grantedScopes ?? []),
-          ...added,
+          ...(isolatedYouTube ? wanted.flatMap(({ product }) => product.scopes) : [
+            ...(account?.grantedScopes ?? []),
+            ...added,
+          ]),
         ]),
       ],
       addedScopes: added,
@@ -245,7 +270,7 @@ export function buildConsentPlan({
       renewals: wanted
         .filter(({ renewal }) => renewal)
         .map(({ product }) => product),
-      targetAccountId: account?.id ?? null,
+      targetAccountId: isolatedYouTube ? null : account?.id ?? null,
     },
     blocked,
     alreadyGranted,

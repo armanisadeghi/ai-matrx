@@ -82,6 +82,9 @@ export function fitColumnWidths<T>(
   columns: MatrxColumnDef<T>[],
   rows: readonly T[],
   nameColumnId: string | undefined,
+  /** A surface whose names run long may pin a wider name column
+   *  (`EntityListConfig.nameColumnMaxWidth`); default PINNED_NAME_MAX. */
+  pinnedNameMax: number = PINNED_NAME_MAX,
 ): MatrxColumnDef<T>[] {
   const nameIndex = nameColumnId
     ? columns.findIndex((c) => columnKey(c) === nameColumnId)
@@ -97,7 +100,7 @@ export function fitColumnWidths<T>(
     }
     if (canPin && index === nameIndex) {
       const declared = typeof column.width === "number" ? column.width : PINNED_NAME_WIDTH;
-      return { ...column, frozen: true, width: Math.min(declared, PINNED_NAME_MAX) };
+      return { ...column, frozen: true, width: Math.min(declared, pinnedNameMax) };
     }
     if (index === nameIndex || resolveColumnMarker(column) || column.compact) return column;
     if (typeof column.width !== "number" || column.width <= YIELD_WIDTH) return column;

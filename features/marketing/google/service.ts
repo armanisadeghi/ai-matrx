@@ -50,7 +50,8 @@ export type GoogleConnectionPurpose =
   // existing one, refusing by name any scope outside the selection and any
   // request that would drop a scope the connection already holds.
   // Contract: common-docs/projects/google-native/PLAN.md §2 + §5.2.
-  | "google_products";
+  | "google_products"
+  | "youtube_isolated";
 
 export type GoogleCapabilityKey =
   "contacts" | "calendar" | "tasks" | "tag_manager" | "youtube_analytics";

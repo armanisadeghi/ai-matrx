@@ -529,6 +529,24 @@ export function EditSetView({ setId }: { setId: string }) {
       // Positions are assigned server-side, so refetch for the true order.
       setReloadKey((k) => k + 1);
     },
+    delete_cards: async (value: unknown) => {
+      if (!data) throw new Error("delete_cards: the set has not loaded.");
+      const request = writeRecord(value, "delete_cards");
+      const id = writeText(request, "card_id", "delete_cards")?.trim();
+      if (!id || Object.keys(request).some((key) => key !== "card_id")) {
+        throw new Error("delete_cards: provide only { card_id } from this loaded set.");
+      }
+      if (!data.cards.some((card) => card.id === id)) {
+        throw new Error(`delete_cards: card ${id} is no longer in the open set.`);
+      }
+      const result = await fcService.deleteCard(id);
+      if (result.error) throw new Error(`delete_cards: ${result.error}`);
+      setData((previous) => previous ? {
+        ...previous,
+        cards: previous.cards.filter((card) => card.id !== id),
+      } : previous);
+      setReloadKey((key) => key + 1);
+    },
   });
 
   return (

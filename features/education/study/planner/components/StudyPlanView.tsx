@@ -17,10 +17,20 @@ import {
   CalendarClock,
   HeartHandshake,
   Loader2,
+  Pencil,
   RefreshCw,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -38,11 +48,25 @@ import { usePlannerAgent } from "../usePlannerAgent";
 import { publishPlannerPlanSnapshot } from "../plannerSnapshot";
 import { PlanAgenda } from "./PlanAgenda";
 import { PlanGenerateForm } from "./PlanGenerateForm";
-import type { PlanDraft, PlanInput, PlanWithDays } from "../types";
+import type {
+  PlanDraft,
+  PlanInput,
+  PlanWithDays,
+  StudyPlanBlockRow,
+  StudyPlanDayRow,
+} from "../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  collectionWriteHandlers,
+  readCollectionList,
+  refuseRepeats,
+} from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 
 const MS_PER_DAY = 86_400_000;
+const SURFACE_NAME = "matrx-user/education-planner";
 
 function daysUntil(iso: string | null): number | null {
   if (!iso) return null;
@@ -56,7 +80,10 @@ function daysUntil(iso: string | null): number | null {
 /** A warm, non-shaming one-liner describing the detected absence. */
 function absenceMessage(absence: AbsenceInfo): string {
   const parts: string[] = [];
-  if (absence.daysSinceLastSession != null && absence.daysSinceLastSession >= 1) {
+  if (
+    absence.daysSinceLastSession != null &&
+    absence.daysSinceLastSession >= 1
+  ) {
     parts.push(
       `It's been ${absence.daysSinceLastSession} day${absence.daysSinceLastSession === 1 ? "" : "s"} since your last study session`,
     );
@@ -82,6 +109,18 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
   const [stale, setStale] = useState<PlanStaleness | null>(null);
   const [liveSummary, setLiveSummary] = useState<PlanSummary | null>(null);
   const [lastSessionAt, setLastSessionAt] = useState<string | null>(null);
+  const [titleEditorOpen, setTitleEditorOpen] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [blockEditor, setBlockEditor] = useState<{
+    day: StudyPlanDayRow;
+    block: StudyPlanBlockRow | null;
+    label: string;
+    minutes: string;
+    method: string;
+    rationale: string;
+    ordering: number;
+  } | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const planner = usePlannerAgent();
 
   // Publish this view's slice for the `matrx-user/education-planner` emitter
@@ -232,10 +271,12 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
     if (!ok) return;
     setGenerating(true);
     try {
-      const summary = liveSummary ?? (await collectPlanSummary(
-        (plan.plan.config as { itemType?: string } | null)?.itemType ??
-          "fc_card",
-      ));
+      const summary =
+        liveSummary ??
+        (await collectPlanSummary(
+          (plan.plan.config as { itemType?: string } | null)?.itemType ??
+            "fc_card",
+        ));
       const draft = buildRecoveryDraft(plan, summary, new Date());
       const res = await planService.regeneratePlan(plan.plan.id, draft);
       if (res.error) {
@@ -287,6 +328,389 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
     await load();
   };
 
+  const handleSaveTitle = async () => {
+    if (!plan) return;
+    const title = titleDraft.trim();
+    if (!title) {
+      toast.error("Give your plan a title.");
+      return;
+    }
+    setSavingEdit(true);
+    const res = await planService.updatePlanTitle(plan.plan.id, title);
+    setSavingEdit(false);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    setPlan((current) => (current ? { ...current, plan: res.data! } : current));
+    setTitleEditorOpen(false);
+  };
+
+  const openAddBlock = (day: StudyPlanDayRow, ordering: number) => {
+    setBlockEditor({
+      day,
+      block: null,
+      label: "",
+      minutes: "20",
+      method: "",
+      rationale: "",
+      ordering,
+    });
+  };
+  const openEditBlock = (block: StudyPlanBlockRow) => {
+    const day = plan?.days.find((entry) => entry.day.id === block.day_id)?.day;
+    if (!day) {
+      toast.error("This block no longer has a plan day.");
+      return;
+    }
+    setBlockEditor({
+      day,
+      block,
+      label: block.label,
+      minutes: String(block.estimated_minutes),
+      method: block.method ?? "",
+      rationale: block.rationale ?? "",
+      ordering: block.ordering,
+    });
+  };
+  const handleSaveBlock = async () => {
+    if (!plan || !blockEditor) return;
+    const label = blockEditor.label.trim();
+    const minutes = Number(blockEditor.minutes);
+    if (!label) {
+      toast.error("Give this study block a label.");
+      return;
+    }
+    if (!Number.isFinite(minutes) || minutes < 1 || minutes > 480) {
+      toast.error("Minutes must be between 1 and 480.");
+      return;
+    }
+    setSavingEdit(true);
+    const res = blockEditor.block
+      ? await planService.updateBlock(blockEditor.block.id, {
+          label,
+          estimatedMinutes: minutes,
+          method: blockEditor.method.trim() || null,
+          rationale: blockEditor.rationale.trim() || null,
+        })
+      : await planService.createBlock({
+          planId: plan.plan.id,
+          dayId: blockEditor.day.id,
+          dayDate: blockEditor.day.day_date,
+          label,
+          targetKind: "review",
+          estimatedMinutes: minutes,
+          method: blockEditor.method.trim() || null,
+          rationale: blockEditor.rationale.trim() || null,
+          ordering: blockEditor.ordering,
+        });
+    setSavingEdit(false);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    await load();
+    setBlockEditor(null);
+  };
+  const handleDeleteBlock = async (block: StudyPlanBlockRow) => {
+    const ok = await confirm({
+      title: "Remove this study block?",
+      description: `Remove “${block.label}” from this plan. Its schedule entry will be hidden, while the record remains recoverable.`,
+      confirmLabel: "Remove block",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    const res = await planService.deleteBlock(block.id);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    await load();
+  };
+
+  // Agent writes use these same service methods as the compact human editors.
+  // Parse against the live plan again after approval, so a stale agent snapshot
+  // cannot edit a block that was re-planned or removed in the meantime.
+  const activeBlockIds = new Set(
+    plan?.days.flatMap((entry) => entry.blocks.map((block) => block.id)) ?? [],
+  );
+  const activeDays = new Map(
+    plan?.days.map((entry) => [entry.day.id, entry.day]) ?? [],
+  );
+  const readRecord = (
+    target: string,
+    value: unknown,
+    keys: readonly string[],
+  ) => {
+    if (value === null || typeof value !== "object" || Array.isArray(value))
+      throw new Error(`${target} entries must be objects.`);
+    const record = value as Record<string, unknown>;
+    const unknown = Object.keys(record).filter((key) => !keys.includes(key));
+    if (unknown.length)
+      throw new Error(`${target} does not accept ${unknown.join(", ")}.`);
+    return record;
+  };
+  const requiredText = (
+    target: string,
+    record: Record<string, unknown>,
+    key: string,
+  ) => {
+    const value = record[key];
+    if (typeof value !== "string" || !value.trim())
+      throw new Error(`${target}.${key} is required plain text.`);
+    return value.trim();
+  };
+  const optionalText = (
+    target: string,
+    record: Record<string, unknown>,
+    key: string,
+  ) => {
+    if (!(key in record)) return undefined;
+    const value = record[key];
+    if (value === null) return null;
+    if (typeof value !== "string")
+      throw new Error(`${target}.${key} must be plain text or null.`);
+    return value.trim() || null;
+  };
+  const minutes = (target: string, value: unknown) => {
+    if (
+      typeof value !== "number" ||
+      !Number.isFinite(value) ||
+      value < 1 ||
+      value > 480
+    )
+      throw new Error(
+        `${target}.estimated_minutes must be a number from 1 to 480.`,
+      );
+    return value;
+  };
+  const planWriteHandlers = collectionWriteHandlers(
+    {
+      plural: "study_plans",
+      singular: "study plan",
+      update: {
+        parse: (value) => {
+          if (!plan) throw new Error("Wait for the active study plan to load.");
+          const rows = readCollectionList(
+            "update_study_plans",
+            "study_plans",
+            value,
+          );
+          return rows.map((raw) => {
+            const record = readRecord("update_study_plans", raw, [
+              "id",
+              "title",
+            ]);
+            const id = requiredText("update_study_plans", record, "id");
+            if (id !== plan.plan.id)
+              throw new Error("Choose the id from active_plan.");
+            return {
+              id,
+              title: requiredText("update_study_plans", record, "title"),
+            };
+          });
+        },
+        run: async (item) => {
+          const result = await planService.updatePlanTitle(item.id, item.title);
+          if (result.error || !result.data)
+            throw new Error(result.error ?? "Could not update the plan.");
+          await load();
+          return { id: result.data.id, name: result.data.title };
+        },
+        nameOf: (item) => item.title,
+        changedOf: () => ["title"],
+      },
+    },
+    refuseSurfaceWrite,
+  );
+  const blockWriteHandlers = collectionWriteHandlers(
+    {
+      plural: "study_plan_blocks",
+      singular: "study block",
+      create: {
+        parse: (value) => {
+          if (!plan) throw new Error("Wait for the active study plan to load.");
+          const rows = readCollectionList(
+            "create_study_plan_blocks",
+            "study_plan_blocks",
+            value,
+          );
+          return rows.map((raw) => {
+            const record = readRecord("create_study_plan_blocks", raw, [
+              "day_id",
+              "day_date",
+              "label",
+              "estimated_minutes",
+              "method",
+              "rationale",
+            ]);
+            const dayId = requiredText(
+              "create_study_plan_blocks",
+              record,
+              "day_id",
+            );
+            const day = activeDays.get(dayId);
+            const date = requiredText(
+              "create_study_plan_blocks",
+              record,
+              "day_date",
+            );
+            if (!day || day.day_date !== date)
+              throw new Error(
+                "day_id and day_date must name a current plan day.",
+              );
+            return {
+              day,
+              dayId,
+              dayDate: date,
+              label: requiredText("create_study_plan_blocks", record, "label"),
+              estimatedMinutes: minutes(
+                "create_study_plan_blocks",
+                record.estimated_minutes,
+              ),
+              method: optionalText(
+                "create_study_plan_blocks",
+                record,
+                "method",
+              ),
+              rationale: optionalText(
+                "create_study_plan_blocks",
+                record,
+                "rationale",
+              ),
+            };
+          });
+        },
+        run: async (item) => {
+          const result = await planService.createBlock({
+            planId: plan!.plan.id,
+            dayId: item.dayId,
+            dayDate: item.dayDate,
+            label: item.label,
+            estimatedMinutes: item.estimatedMinutes,
+            method: item.method,
+            rationale: item.rationale,
+            ordering:
+              plan!.days.find((entry) => entry.day.id === item.dayId)?.blocks
+                .length ?? 0,
+            targetKind: "review",
+          });
+          if (result.error || !result.data)
+            throw new Error(result.error ?? "Could not add the study block.");
+          await load();
+          return { id: result.data.id, name: result.data.label };
+        },
+        nameOf: (item) => item.label,
+      },
+      update: {
+        parse: (value) =>
+          readCollectionList(
+            "update_study_plan_blocks",
+            "study_plan_blocks",
+            value,
+          ).map((raw) => {
+            const record = readRecord("update_study_plan_blocks", raw, [
+              "id",
+              "label",
+              "estimated_minutes",
+              "method",
+              "rationale",
+            ]);
+            const id = requiredText("update_study_plan_blocks", record, "id");
+            if (!activeBlockIds.has(id))
+              throw new Error("Choose an id from the current plan_agenda.");
+            const patch = {
+              ...("label" in record
+                ? {
+                    label: requiredText(
+                      "update_study_plan_blocks",
+                      record,
+                      "label",
+                    ),
+                  }
+                : {}),
+              ...("estimated_minutes" in record
+                ? {
+                    estimatedMinutes: minutes(
+                      "update_study_plan_blocks",
+                      record.estimated_minutes,
+                    ),
+                  }
+                : {}),
+              ...("method" in record
+                ? {
+                    method: optionalText(
+                      "update_study_plan_blocks",
+                      record,
+                      "method",
+                    ),
+                  }
+                : {}),
+              ...("rationale" in record
+                ? {
+                    rationale: optionalText(
+                      "update_study_plan_blocks",
+                      record,
+                      "rationale",
+                    ),
+                  }
+                : {}),
+            };
+            if (!Object.keys(patch).length)
+              throw new Error("Include at least one field to change.");
+            return { id, patch, name: id };
+          }),
+        run: async (item) => {
+          const result = await planService.updateBlock(item.id, item.patch);
+          if (result.error || !result.data)
+            throw new Error(
+              result.error ?? "Could not update the study block.",
+            );
+          await load();
+          return { id: result.data.id, name: result.data.label };
+        },
+        nameOf: (item) => item.name,
+      },
+      delete: {
+        parse: (value) => {
+          const rows = readCollectionList(
+            "delete_study_plan_blocks",
+            "study_plan_blocks",
+            value,
+          );
+          const ids = rows.map((raw) =>
+            requiredText(
+              "delete_study_plan_blocks",
+              readRecord("delete_study_plan_blocks", raw, ["id"]),
+              "id",
+            ),
+          );
+          refuseRepeats("delete_study_plan_blocks", ids, "block id");
+          ids.forEach((id) => {
+            if (!activeBlockIds.has(id))
+              throw new Error("Choose ids from the current plan_agenda.");
+          });
+          return ids.map((id) => ({ id, name: id }));
+        },
+        run: async (item) => {
+          const result = await planService.deleteBlock(item.id);
+          if (result.error || !result.data)
+            throw new Error(
+              result.error ?? "Could not remove the study block.",
+            );
+          await load();
+          return item;
+        },
+        nameOf: (item) => item.name,
+      },
+    },
+    refuseSurfaceWrite,
+  );
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    ...planWriteHandlers,
+    ...blockWriteHandlers,
+  });
+
   if (loading) {
     return (
       <div className="flex flex-col gap-3">
@@ -302,8 +726,12 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
         <AlertCircle className="h-6 w-6 text-muted-foreground" />
-        <p className="text-sm text-foreground">Couldn&apos;t load your plan <ErrorAlchemyMenu /></p>
-        <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
+        <p className="text-sm text-foreground">
+          Couldn&apos;t load your plan <ErrorAlchemyMenu />
+        </p>
+        <p className="max-w-md text-xs text-muted-foreground">
+          {error} <ErrorAlchemyMenu error={error} />
+        </p>
         <Button size="sm" variant="outline" onClick={() => void load()}>
           Try again
         </Button>
@@ -345,6 +773,18 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
               <h2 className="truncate text-base font-semibold text-foreground">
                 {plan.plan.title}
               </h2>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-muted-foreground"
+                title="Edit plan title"
+                onClick={() => {
+                  setTitleDraft(plan.plan.title);
+                  setTitleEditorOpen(true);
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
               {plan.plan.generated_by === "ai" ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
                   <AGENT_ICON className="h-3 w-3" />
@@ -424,9 +864,9 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
                 Welcome back — let&apos;s pick up where you left off
               </h3>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                {absenceMessage(absence)} No guilt, no wall of overdue cards — we&apos;ll
-                rebuild the rest of your plan with a lighter first day and put the
-                highest-value work first.
+                {absenceMessage(absence)} No guilt, no wall of overdue cards —
+                we&apos;ll rebuild the rest of your plan with a lighter first
+                day and put the highest-value work first.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Button
@@ -502,6 +942,9 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
       <PlanAgenda
         plan={plan}
         onBlockStatus={handleBlockStatus}
+        onAddBlock={openAddBlock}
+        onEditBlock={openEditBlock}
+        onDeleteBlock={(block) => void handleDeleteBlock(block)}
         busyBlockId={busyBlockId}
       />
 
@@ -514,6 +957,116 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
         variant="destructive"
         onConfirm={handleArchive}
       />
+      <Dialog open={titleEditorOpen} onOpenChange={setTitleEditorOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit plan title</DialogTitle>
+            <DialogDescription>
+              Choose a clear name for this study plan.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={titleDraft}
+            onChange={(event) => setTitleDraft(event.target.value)}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTitleEditorOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={savingEdit}
+              onClick={() => void handleSaveTitle()}
+            >
+              Save title
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={blockEditor !== null}
+        onOpenChange={(open) => !open && setBlockEditor(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {blockEditor?.block ? "Edit study block" : "Add study block"}
+            </DialogTitle>
+            <DialogDescription>
+              Set the work and its time. Completion status remains your own
+              study record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <label className="grid gap-1 text-sm font-medium">
+              What will you study?
+              <Input
+                value={blockEditor?.label ?? ""}
+                onChange={(event) =>
+                  setBlockEditor((current) =>
+                    current
+                      ? { ...current, label: event.target.value }
+                      : current,
+                  )
+                }
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              Minutes
+              <Input
+                type="number"
+                min={1}
+                max={480}
+                value={blockEditor?.minutes ?? ""}
+                onChange={(event) =>
+                  setBlockEditor((current) =>
+                    current
+                      ? { ...current, minutes: event.target.value }
+                      : current,
+                  )
+                }
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              Method (optional)
+              <Input
+                value={blockEditor?.method ?? ""}
+                onChange={(event) =>
+                  setBlockEditor((current) =>
+                    current
+                      ? { ...current, method: event.target.value }
+                      : current,
+                  )
+                }
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              Why this matters (optional)
+              <Input
+                value={blockEditor?.rationale ?? ""}
+                onChange={(event) =>
+                  setBlockEditor((current) =>
+                    current
+                      ? { ...current, rationale: event.target.value }
+                      : current,
+                  )
+                }
+              />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBlockEditor(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={savingEdit}
+              onClick={() => void handleSaveBlock()}
+            >
+              {blockEditor?.block ? "Save block" : "Add block"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
