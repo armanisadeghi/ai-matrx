@@ -119,19 +119,19 @@ begin
   --       platform.client_callable_door — replacing it demands that decision (provision_shape_guard)
   --       and revokes client EXECUTE; who may call it is its owner's access decision.
   -- Neither kind can be born any more (both guards refuse new ones), so this set only shrinks.
-  select string_agg(h.sig || ': ' || left(h.said, 80) || ' [' || h.piece || ']', E'\n' order by h.sig),
-         count(*) filter (where h.frozen)
+  select string_agg(h.sig || ': ' || left(h.said, 80) || ' [' || h.piece || ']', E'\n' order by h.sig)
+           filter (where not h.frozen),
+         count(distinct h.sig) filter (where h.frozen)
     into v_hits, v_frozen
     from (select h.*,
                  (f.body ~* 'new\s*\.\s*organization_id\s*:?=')
                  or (p.prosecdef and not exists (select 1 from platform.client_callable_door d
                                                   where d.schema_name = f.nspname and d.function_name = f.proname)) as frozen
-            from hits h join fns f on f.qname = h.fn join pg_proc p on p.oid = f.oid) h
-   where not h.frozen;
+            from hits h join fns f on f.qname = h.fn join pg_proc p on p.oid = f.oid) h;
   if v_hits is not null then
     raise exception E'1: these refusals still print an id or a clock:\n%', v_hits;
   end if;
-  raise notice '1 PASSED — no replaceable refusal anywhere a signed-in person or an agent can reach interpolates an id or a clock (% held by the two rules above).', v_frozen;
+  raise notice '1 PASSED — no replaceable refusal anywhere a signed-in person or an agent can reach interpolates an id or a clock (% functions held by the two rules above).', v_frozen;
 
   -- ── 2  THE USE CASE ──────────────────────────────────────────────────────────────────────
   perform set_config('app.actor_system', 'campaign-test/handover_a_refusal_never_prints_an_id_or_a_clock', true);
