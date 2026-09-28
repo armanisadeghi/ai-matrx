@@ -164,7 +164,6 @@ describe("useMeetPlanningKnobs", () => {
       saving = latest.setShowExternalEvents(false, "org-recycling");
       await Promise.resolve();
     });
-    expect(latest.showExternalEvents).toBe(false);
 
     const staleReads = Array.from({ length: 7 }, () =>
       deferred<{ data: boolean; error: null }>(),
@@ -179,6 +178,7 @@ describe("useMeetPlanningKnobs", () => {
       selectOrganization("org-recycling");
     });
     expect(rpc).toHaveBeenCalledTimes(14);
+    expect(latest.showExternalEvents).toBe(false);
 
     await act(async () => {
       staleReads.forEach((read) => read.resolve({ data: true, error: null }));
@@ -193,6 +193,55 @@ describe("useMeetPlanningKnobs", () => {
     });
     await waitForPlanning(() => latest.loaded && !latest.showExternalEvents);
 
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("lets organization B load while organization A's save is still pending", async () => {
+    const writeA = deferred<{ ok: true }>();
+    setKnobOverride.mockReturnValue(writeA.promise);
+    rpc.mockResolvedValue({ data: null, error: null });
+
+    let latest!: ReturnType<typeof useMeetPlanningKnobs>;
+    let selectOrganization!: (id: string) => void;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    let root!: Root;
+    function Probe() {
+      const [organizationId, setOrganizationId] = React.useState("org-a");
+      latest = useMeetPlanningKnobs(organizationId, "member-73");
+      selectOrganization = setOrganizationId;
+      return null;
+    }
+
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<Probe />);
+    });
+    await waitForPlanning(() => latest.loaded);
+
+    let savingA!: Promise<void>;
+    await act(async () => {
+      savingA = latest.setShowExternalEvents(false);
+      await Promise.resolve();
+    });
+    expect(latest.showExternalEvents).toBe(false);
+
+    rpc.mockResolvedValue({ data: true, error: null });
+    await act(async () => {
+      selectOrganization("org-b");
+    });
+    await waitForPlanning(() => latest.loaded && latest.showExternalEvents);
+    expect(latest).toMatchObject({
+      loaded: true,
+      showExternalEvents: true,
+      failure: null,
+    });
+
+    await act(async () => {
+      writeA.resolve({ ok: true });
+      await savingA;
+    });
     await act(async () => root.unmount());
     container.remove();
   });

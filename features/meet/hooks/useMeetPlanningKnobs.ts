@@ -73,19 +73,28 @@ function positive(value: unknown, fallback: number): number {
     : fallback;
 }
 
+function scopeKey(organizationId: string | null, userId: string | null) {
+  return userId === null ? null : `${userId}:${organizationId ?? "none"}`;
+}
+
 export function useMeetPlanningKnobs(
   organizationId: string | null,
   userId: string | null,
 ): MeetPlanningKnobsResult {
-  const [state, setState] = useState<MeetPlanningKnobs>(PLANNING_DEFAULTS);
+  const [states, setStates] = useState<Record<string, MeetPlanningKnobs>>({});
   const [nonce, setNonce] = useState(0);
-  const writeGeneration = useRef(0);
-  const pendingWrites = useRef(0);
+  const writeGenerations = useRef(new Map<string, number>());
+  const pendingWrites = useRef(new Map<string, number>());
+  const currentScope = scopeKey(organizationId, userId);
+  const state =
+    currentScope === null
+      ? PLANNING_DEFAULTS
+      : (states[currentScope] ?? PLANNING_DEFAULTS);
 
   useEffect(() => {
-    if (userId === null) return undefined;
+    if (userId === null || currentScope === null) return undefined;
     let live = true;
-    const readGeneration = writeGeneration.current;
+    const readGeneration = writeGenerations.current.get(currentScope) ?? 0;
     const read = (key: string) =>
       supabase.schema("platform").rpc("knob_resolve", {
         p_feature: "meet",
@@ -97,41 +106,48 @@ export function useMeetPlanningKnobs(
       ([show, start, end, days, step, count, horizon]) => {
         if (
           !live ||
-          pendingWrites.current > 0 ||
-          readGeneration !== writeGeneration.current
+          (pendingWrites.current.get(currentScope) ?? 0) > 0 ||
+          readGeneration !== (writeGenerations.current.get(currentScope) ?? 0)
         )
           return;
         const failure = [show, start, end, days, step, count, horizon].find(
           (result) => result.error,
         )?.error;
         if (failure) {
-          setState({
-            ...PLANNING_DEFAULTS,
-            failure:
-              failure.message || "Your calendar settings could not be read.",
-            showExternalEvents: false,
-          });
+          setStates((previous) => ({
+            ...previous,
+            [currentScope]: {
+              ...PLANNING_DEFAULTS,
+              failure:
+                failure.message || "Your calendar settings could not be read.",
+              showExternalEvents: false,
+            },
+          }));
           return;
         }
-        setState({
-          loaded: true,
-          failure: null,
-          showExternalEvents: typeof show.data === "boolean" ? show.data : true,
-          hours: {
-            start: parseClock(start.data, DEFAULT_WORKING_HOURS.start),
-            end: parseClock(end.data, DEFAULT_WORKING_HOURS.end),
-            days: parseWorkingDays(days.data),
+        setStates((previous) => ({
+          ...previous,
+          [currentScope]: {
+            loaded: true,
+            failure: null,
+            showExternalEvents:
+              typeof show.data === "boolean" ? show.data : true,
+            hours: {
+              start: parseClock(start.data, DEFAULT_WORKING_HOURS.start),
+              end: parseClock(end.data, DEFAULT_WORKING_HOURS.end),
+              days: parseWorkingDays(days.data),
+            },
+            stepMinutes: positive(step.data, PLANNING_DEFAULTS.stepMinutes),
+            suggestions: positive(count.data, PLANNING_DEFAULTS.suggestions),
+            horizonDays: positive(horizon.data, PLANNING_DEFAULTS.horizonDays),
           },
-          stepMinutes: positive(step.data, PLANNING_DEFAULTS.stepMinutes),
-          suggestions: positive(count.data, PLANNING_DEFAULTS.suggestions),
-          horizonDays: positive(horizon.data, PLANNING_DEFAULTS.horizonDays),
-        });
+        }));
       },
     );
     return () => {
       live = false;
     };
-  }, [organizationId, userId, nonce]);
+  }, [currentScope, nonce, organizationId, userId]);
 
   return {
     ...(userId === null ? PLANNING_DEFAULTS : state),
@@ -145,9 +161,26 @@ export function useMeetPlanningKnobs(
       if (resolvedOrganizationId === null || userId === null) {
         throw new Error("Choose an organization to save this setting.");
       }
-      writeGeneration.current += 1;
-      pendingWrites.current += 1;
-      setState((s) => ({ ...s, showExternalEvents: show, failure: null }));
+      const targetScope = scopeKey(resolvedOrganizationId, userId);
+      if (targetScope === null) {
+        throw new Error("Choose an organization to save this setting.");
+      }
+      writeGenerations.current.set(
+        targetScope,
+        (writeGenerations.current.get(targetScope) ?? 0) + 1,
+      );
+      pendingWrites.current.set(
+        targetScope,
+        (pendingWrites.current.get(targetScope) ?? 0) + 1,
+      );
+      setStates((previous) => ({
+        ...previous,
+        [targetScope]: {
+          ...(previous[targetScope] ?? PLANNING_DEFAULTS),
+          showExternalEvents: show,
+          failure: null,
+        },
+      }));
       try {
         const result = await setKnobOverride({
           feature: "meet",
@@ -159,11 +192,16 @@ export function useMeetPlanningKnobs(
         });
         if (!result.ok) throw new Error(knobRefusalSentence(result));
       } finally {
-        pendingWrites.current -= 1;
+        const pending = (pendingWrites.current.get(targetScope) ?? 1) - 1;
+        if (pending === 0) pendingWrites.current.delete(targetScope);
+        else pendingWrites.current.set(targetScope, pending);
         // Any read begun while the save was in flight is stale even if the
         // organization rerendered after the save began. Start a fresh read
         // once the authoritative write has settled.
-        writeGeneration.current += 1;
+        writeGenerations.current.set(
+          targetScope,
+          (writeGenerations.current.get(targetScope) ?? 0) + 1,
+        );
         setNonce((n) => n + 1);
       }
     },
