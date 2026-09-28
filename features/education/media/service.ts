@@ -126,7 +126,7 @@ export const studyMediaService = {
   async updateVersioned(
     id: string,
     expectedVersion: number,
-    patch: Pick<StudyMediaPatch, "title" | "ir_envelope" | "description" | "audio_file_id" | "episode_id" | "status" | "trust" | "source_kind" | "source_id" | "source_title" | "config" | "run_id" | "audio_format" | "duration_seconds">,
+    patch: Partial<Pick<StudyMediaRow, "title" | "ir_envelope" | "description" | "audio_file_id" | "episode_id" | "status" | "trust" | "source_kind" | "source_id" | "source_title" | "config" | "run_id" | "audio_format" | "duration_seconds">>,
   ): Promise<MediaResult<StudyMediaRow>> {
     try {
       const result = await guardedUpdate<StudyMediaRow>({
