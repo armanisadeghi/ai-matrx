@@ -61,6 +61,7 @@ import { isComputedColumn } from "@ai-matrx/design-system/formulas";
 import { effectiveRowLabel, isRowLabelField } from "@/features/data-tables/row-label";
 import {
   changeFieldType,
+  isRecordStoreTable,
   getChoiceUsage,
   renameColumn,
   setFieldFormat,
@@ -183,6 +184,7 @@ function ColumnSettingsForm({
     }));
   const summaryKinds = summaryKindsFor(dataType);
   const typeChanged = dataType !== field.data_type;
+  const onTheRecordStore = isRecordStoreTable(tableId);
 
   const save = async () => {
     if (!original) return;
@@ -196,10 +198,15 @@ function ColumnSettingsForm({
     let rehomedCells = 0;
     try {
       if (typeChanged) {
+        const toLabel = DATA_TYPES.find((t) => t.value === dataType)?.label ?? dataType;
         const ok = await confirmDialog({
-          title: `Change "${original.display_name}" to ${DATA_TYPES.find((t) => t.value === dataType)?.label ?? dataType}?`,
-          description:
-            "Every stored value is converted. A value that cannot be converted becomes empty; row history keeps the old one.",
+          title: `Change "${original.display_name}" to ${toLabel}?`,
+          // THE WHOLE TRUTH ABOUT A TYPE CHANGE (DATA-V2-BASICS-2 T1): on the record store a value
+          // that does not fit is set aside on its row, never deleted, and comes back when the column
+          // is changed back (custom._field_type_converts_values) — which Undo on the notice does.
+          description: onTheRecordStore
+            ? `Every value is converted to ${toLabel.toLowerCase()}. A value that does not fit is set aside on its row — never deleted — and comes back if you change the column back; Undo on the notice does that in one click.`
+            : "Every stored value is converted. A value that cannot be converted becomes empty; row history keeps the old one.",
           confirmLabel: "Change type",
           variant: "destructive",
         });
@@ -240,8 +247,31 @@ function ColumnSettingsForm({
         if (isServiceFailure(label)) throw new Error(label.error);
       }
       const undo = rehomedUndo;
+      const typedFrom = typeChanged && onTheRecordStore ? original.data_type : null;
       toast({
         title: `Saved "${trimmed}"`,
+        ...(typedFrom && !(undo && rehomedCells > 0)
+          ? {
+              description: "Values that did not fit are set aside on their rows. Undo changes the column back and brings them back.",
+              action: (
+                <ToastAction
+                  altText="Undo the type change"
+                  onClick={() =>
+                    void changeFieldType({ tableId, fieldId: original.id, newType: typedFrom as FieldDataType }).then((back) => {
+                      if (isServiceFailure(back)) {
+                        toast({ title: "Could not change the column back", description: back.error, variant: "destructive" });
+                        return;
+                      }
+                      toast({ title: `"${trimmed}" is back as it was, with its values` });
+                      onSaved();
+                    })
+                  }
+                >
+                  Undo
+                </ToastAction>
+              ),
+            }
+          : {}),
         ...(undo && rehomedCells > 0
           ? {
               description: `${rehomedCells} ${rehomedCells === 1 ? "record was" : "records were"} changed with the choices.`,
