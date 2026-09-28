@@ -46,6 +46,7 @@ import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { guardIfProduction } from "./lib/production-guard";
 
 const require_ = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -136,11 +137,11 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const client = new pg.Client({
+  const client = guardIfProduction(new pg.Client({
     host: env.host, port: env.port, user: env.user, password: env.password, database: env.database,
     ssl: { rejectUnauthorized: false }, application_name: "check:stale-rowtype-triggers",
     connectionTimeoutMillis: 20_000,
-  });
+  }), "check:stale-rowtype-triggers");
   await client.connect();
   console.log(`${C.d}${env.user}@${env.host}:${env.port}/${env.database} (credentials from ${env.from})${C.x}`);
 

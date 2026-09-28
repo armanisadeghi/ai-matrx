@@ -31,7 +31,7 @@
  *     goes RED on it, and rolls back. Nothing it writes survives the check.
  */
 
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { ceilingFor, connectCheckDirect } from "./lib/check-target";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 /** The two uses `custom._record_rule_uses` enforces on every write to the scoped table. */
@@ -77,15 +77,19 @@ function say(rows: Row[]): string[] {
 }
 
 async function main() {
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    console.error(
-      `[FAIL] no database credentials (${env.missing.join(", ")} — looked in ${env.looked.join(", ")}). Unmeasured is not passed.`,
-    );
-    exitAfterDrain(1);
-  }
   const selfTest = process.argv.includes("--self-test");
-  const client = await connectDirect(env, "check:form-rules-are-not-table-rules");
+  // WHERE (2026-09-27): the census is one bounded read of LIVE state and stays there (live ceiling).
+  // `--self-test` rewrites real rows and takes table locks inside a rolled-back transaction - that
+  // is rehearsal work and runs on the nightly clone unless `--target production` says otherwise.
+  // scripts/lib/check-target.ts.
+  const opened = await connectCheckDirect({
+    gate: "check:form-rules-are-not-table-rules",
+    defaultTarget: selfTest ? "clone" : "production",
+  }).catch((e: unknown) => {
+    console.error(`[FAIL] ${e instanceof Error ? e.message : String(e)} Unmeasured is not passed.`);
+    exitAfterDrain(1);
+  });
+  const client = opened.client;
   try {
     if (selfTest) {
       // THE FORCING FUNCTION. Put the OLD shape back on one real form, inside a
@@ -93,7 +97,7 @@ async function main() {
       // names it, and roll the whole thing away.
       await client.query("begin");
       try {
-        await client.query("set local statement_timeout = '60s'");
+        await client.query(`set local statement_timeout = '${ceilingFor(opened.target, 60_000)}'`);
         await client.query("set local lock_timeout = '20s'");
         const victim = (await client.query(
           `select f.organization_id, f.quarantine_rule_id as rule_id, rl.data as rule_data

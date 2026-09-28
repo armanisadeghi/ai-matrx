@@ -127,3 +127,18 @@ export function governProduction<T extends { query: QueryFn; end: () => Promise<
   (governed as { productionGuarded?: boolean }).productionGuarded = true;
   return governed;
 }
+
+/**
+ * For a script that builds its own `pg.Client` (a raw client reads whatever it was handed): if the
+ * client's connection is production's (`isLiveConnection` on its user/host), it gets the guard; a
+ * clone or branch client is returned untouched. Call it right after `new pg.Client(...)`, before
+ * `connect()`. `pnpm check:heavy-checks-target-the-clone` names every raw client that reaches live
+ * without it (2026-09-27, incident 2026-09-27-per-connection-memory).
+ */
+export function guardIfProduction<T extends object>(client: T, applicationName: string): T {
+  const c = client as unknown as { user?: unknown; host?: unknown };
+  if (isProductionTarget({ user: String(c.user ?? ""), host: String(c.host ?? "") })) {
+    governProduction(client as unknown as { query: QueryFn; end: () => Promise<void> }, applicationName);
+  }
+  return client;
+}

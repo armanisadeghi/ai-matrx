@@ -171,12 +171,8 @@ export function MeetingDetail({
     "Preparing the brief",
   );
   const prepare = async (m: MeetingRecord) => {
-    if (!actions.organizationId) {
-      toast.error(
-        "Choose the organization you are working in, then press Prepare again.",
-      );
-      return;
-    }
+    // The brief runs in the MEETING's own organization, carried on the record —
+    // the header's selection plays no part, so there is nothing to refuse here.
     const text = await brief.start({
       kind: "brief",
       meetingId: m.id,

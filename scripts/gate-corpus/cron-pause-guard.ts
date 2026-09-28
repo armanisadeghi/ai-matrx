@@ -59,6 +59,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { loadDbEnv } from "../lib/direct-db";
 import { loadBranchDbEnv, loadBranchRef, TargetRefusal } from "../lib/migration-target";
+import { guardIfProduction } from "../lib/production-guard";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -285,7 +286,7 @@ async function main(): Promise<number> {
   const open = async (which: "production" | "branch"): Promise<pg.Client> => {
     if (which === "branch") {
       const e = loadBranchDbEnv(ROOT, ref);
-      return new pg.Client({
+      return guardIfProduction(new pg.Client({
         host: e.host,
         port: e.port,
         user: e.user,
@@ -293,11 +294,11 @@ async function main(): Promise<number> {
         database: e.database,
         ssl: { rejectUnauthorized: false },
         application_name: "cron-pause-guard",
-      });
+      }), "cron-pause-guard");
     }
     const e = loadDbEnv();
     if ("missing" in e) throw new Error(`production credentials missing: ${e.missing.join(", ")}`);
-    return new pg.Client({
+    return guardIfProduction(new pg.Client({
       host: e.host,
       port: e.port,
       user: e.user,
@@ -305,7 +306,7 @@ async function main(): Promise<number> {
       database: e.database,
       ssl: { rejectUnauthorized: false },
       application_name: "cron-pause-guard (read only)",
-    });
+    }), "cron-pause-guard");
   };
 
   let watched: pg.Client;

@@ -125,7 +125,7 @@ const groups: SurfaceValueGroup[] = [
     label: "First screen",
     sortOrder: 380,
     description:
-      "What the Settings landing page (/user-settings) shows: the default organization, whether an organization is selected, and the AI model and voice defaults. Present only while the landing page is open.",
+      "What the Settings landing page (/user-settings) shows: the organization the person opens at sign-in, whether an organization is selected, and the AI model and voice defaults. Present only while the landing page is open.",
   },
   {
     key: "notifications",

@@ -40,6 +40,7 @@ import {
   type Proof,
   type Repo,
 } from "./integrations";
+import { guardIfProduction } from "../lib/production-guard";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
 const REPOS: Repo[] = ["matrx-frontend", "aidream", "matrx-extend", "matrx-local"];
@@ -269,7 +270,7 @@ async function connect(target: "production" | "clone"): Promise<pg.Client> {
     if ("missing" in env) throw new Error(`no database connection: ${env.missing.join(", ")} (looked in ${env.looked.join(", ")})`);
     cfg = { host: env.host, port: env.port, user: env.user, password: env.password, database: env.database };
   }
-  const client = new pg.Client({ ...cfg, ssl: { rejectUnauthorized: false }, application_name: "cutover-census", connectionTimeoutMillis: 15_000 });
+  const client = guardIfProduction(new pg.Client({ ...cfg, ssl: { rejectUnauthorized: false }, application_name: "cutover-census", connectionTimeoutMillis: 15_000 }), "cutover-census");
   await client.connect();
   // WHICH database: the clone runs no cron job (its quarantine); production does.
   const active = Number((await client.query("select count(*) as n from cron.job where active")).rows[0].n);

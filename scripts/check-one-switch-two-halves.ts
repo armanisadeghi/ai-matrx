@@ -29,7 +29,7 @@
  *     switch, proves the census goes red, and rolls the whole thing away.
  */
 
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { ceilingFor, connectCheckDirect } from "./lib/check-target";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const TRIGGER = `
@@ -62,22 +62,26 @@ const say = (r: Row) =>
   `Whichever way round, half of this organization's store is answering the opposite of what its people were told.`;
 
 async function main() {
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    console.error(
-      `[FAIL] no database credentials (${env.missing.join(", ")} — looked in ${env.looked.join(", ")}). Unmeasured is not passed.`,
-    );
-    exitAfterDrain(1);
-  }
   const selfTest = process.argv.includes("--self-test");
-  const client = await connectDirect(env, "check:one-switch-two-halves");
+  // WHERE (2026-09-27): the census is one bounded read of LIVE state and stays there (live ceiling).
+  // `--self-test` rewrites real rows and takes table locks inside a rolled-back transaction - that
+  // is rehearsal work and runs on the nightly clone unless `--target production` says otherwise.
+  // scripts/lib/check-target.ts.
+  const opened = await connectCheckDirect({
+    gate: "check:one-switch-two-halves",
+    defaultTarget: selfTest ? "clone" : "production",
+  }).catch((e: unknown) => {
+    console.error(`[FAIL] ${e instanceof Error ? e.message : String(e)} Unmeasured is not passed.`);
+    exitAfterDrain(1);
+  });
+  const client = opened.client;
   try {
     const trigger = ((await client.query(TRIGGER)) as { rows: { n: number }[] }).rows[0].n;
 
     if (selfTest) {
       await client.query("begin");
       try {
-        await client.query("set local statement_timeout = '60s'");
+        await client.query(`set local statement_timeout = '${ceilingFor(opened.target, 60_000)}'`);
         await client.query("set local lock_timeout = '20s'");
         await client.query(
           "drop trigger if exists store_switch_halves_follow_each_other_tg on platform.knob_override",

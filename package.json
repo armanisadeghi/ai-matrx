@@ -731,6 +731,8 @@
     "check:one-freshness-ceiling": "tsx scripts/check-one-freshness-ceiling.ts",
     "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test",
     "check:store-doors-decide:exhaustive": "tsx scripts/check-store-doors-decide.ts --exhaustive",
+    "check:heavy-checks-target-the-clone": "tsx scripts/check-heavy-checks-target-the-clone.ts",
+    "check:heavy-checks-target-the-clone:self-test": "tsx scripts/check-heavy-checks-target-the-clone.ts --self-test && jest scripts/__tests__/check-target.test.ts --no-coverage",
     "check:doors-only-schemas": "tsx scripts/check-doors-only-schemas.ts && tsx scripts/check-assist-emit-door.ts",
     "check:doors-only-schemas:self-test": "tsx scripts/check-doors-only-schemas.ts --self-test && tsx scripts/check-assist-emit-door.ts --self-test",
     "check:door-names-resolve": "tsx scripts/check-door-names-resolve.ts",

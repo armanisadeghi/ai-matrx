@@ -75,6 +75,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { guardIfProduction } from "./lib/production-guard";
 
 const require_ = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -218,10 +219,10 @@ export function withoutRecord(live: readonly LivePolicy[], corpus: string): Live
 }
 
 async function census(env: DbEnv): Promise<LivePolicy[]> {
-  const client = new pg.Client({
+  const client = guardIfProduction(new pg.Client({
     host: env.host, port: env.port, user: env.user, password: env.password, database: env.database,
     ssl: { rejectUnauthorized: false }, application_name: "check:policy-of-record", connectionTimeoutMillis: 20_000,
-  });
+  }), "check:policy-of-record");
   await client.connect();
   try {
     const r = await client.query(CENSUS_SQL);

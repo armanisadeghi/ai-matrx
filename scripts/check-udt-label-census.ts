@@ -44,11 +44,13 @@
  * prevent.
  */
 import process from "node:process";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { type CheckTarget, ceilingFor, connectCheckDirect } from "./lib/check-target";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const JSON_OUT = process.argv.includes("--json");
 const SELF_TEST = process.argv.includes("--self-test");
+/** Which database this run reads (set in main(); scripts/lib/check-target.ts). */
+let RUN_TARGET: CheckTarget = "production";
 
 const C = {
   reset: "[0m",
@@ -245,7 +247,7 @@ async function selfTest(client: pgClient): Promise<number> {
 
   await client.query("begin");
   try {
-    await client.query("set local statement_timeout = '60s'");
+    await client.query(`set local statement_timeout = '${ceilingFor(RUN_TARGET, 60_000)}'`);
 
     const baseline = await census(client);
     const baseLive = scopeOf(baseline.columns, baseline.offList, true);
@@ -368,17 +370,22 @@ async function selfTest(client: pgClient): Promise<number> {
 }
 
 async function main(): Promise<void> {
-  const env = loadDbEnv();
-  if ("missing" in env) {
+  // WHERE (2026-09-27): the census is a handful of bounded reads of the LIVE estate (its numbers are
+  // live-only, see the header), so it reads live at the live ceiling. `--self-test` PLANTS rows and
+  // rolls them back, which is rehearsal work: it runs on the nightly clone unless `--target
+  // production` says otherwise. scripts/lib/check-target.ts.
+  let opened: Awaited<ReturnType<typeof connectCheckDirect>>;
+  try {
+    opened = await connectCheckDirect({ gate: "check:udt-label-census", defaultTarget: SELF_TEST ? "clone" : "production" });
+  } catch (e) {
     console.error(
-      `${C.red}check:udt-label-census: cannot connect — missing ${env.missing.join(", ")}.${C.reset}\n` +
-        `  Looked in: ${env.looked.join(", ")}.\n` +
+      `${C.red}check:udt-label-census: cannot connect — ${e instanceof Error ? e.message : String(e)}${C.reset}\n` +
         `  A census guard that passes because it could not read the estate is the failure it exists to prevent, so this is exit 2.`,
     );
     return exitAfterDrain(2);
   }
-
-  const client = (await connectDirect(env, "check:udt-label-census")) as unknown as pgClient;
+  RUN_TARGET = opened.target;
+  const client = opened.client as unknown as pgClient;
   let exitCode = 0;
   try {
     if (SELF_TEST) {
@@ -402,7 +409,7 @@ async function main(): Promise<void> {
       return exitAfterDrain(drift(live, EXPECTED).length === 0 ? 0 : 1);
     }
 
-    console.log(`${C.bold}The older estate's label columns${C.reset} ${C.dim}(${env.from})${C.reset}`);
+    console.log(`${C.bold}The older estate's label columns${C.reset} ${C.dim}(${opened.target})${C.reset}`);
     for (const c of columns.filter((c) => c.live)) {
       console.log(`  ${c.table_name} · ${c.field_name}  ${C.dim}${c.fmt}, ${c.filled} filled${C.reset}`);
     }

@@ -53,6 +53,7 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { guardIfProduction } from "./lib/production-guard";
 
 const require_ = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -151,10 +152,10 @@ async function census(): Promise<Census[]> {
     console.error(`       A guard that cannot run is not a guard that passed. Supply the credentials and re-run.`);
     exitAfterDrain(1);
   }
-  const client = new pg.Client({
+  const client = guardIfProduction(new pg.Client({
     user: env.user, password: env.password, host: env.host, port: env.port,
-    database: env.database, ssl: { rejectUnauthorized: false }, statement_timeout: 60_000,
-  });
+    database: env.database, ssl: { rejectUnauthorized: false },
+  }), "check:unregistered-client-readable");
   await client.connect();
   try {
     await client.query("set session characteristics as transaction read only");

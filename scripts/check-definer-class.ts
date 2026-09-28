@@ -57,7 +57,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { ceilingFor, connectCheckDirect } from "./lib/check-target";
 import type { Client } from "pg";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -281,16 +281,21 @@ async function selfTest(db: Client): Promise<number> {
 
 async function main(): Promise<number> {
   console.log(`${C.b}THE DEFINER CLASS GUARD${C.x} ${C.d}(DD-137c / VISIBILITY-BY-CLASS §3.4 — borrowed rights do not decide what a class means)${C.x}`);
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    console.log(`  ${C.r}✗${C.x} UNMEASURED — no direct database credentials (${env.missing.join(", ")}). This is a FAILURE, not a pass.`);
+  // WHERE (2026-09-27): the call-graph walk reads every definer body in the catalog, which builds
+  // catalog caches on the backend that serves it - heavy, so it runs on the nightly clone unless the
+  // command says `--target production` (then at the live ceiling). scripts/lib/check-target.ts.
+  let opened: Awaited<ReturnType<typeof connectCheckDirect>>;
+  try {
+    opened = await connectCheckDirect({ gate: "check-definer-class", defaultTarget: "clone" });
+  } catch (e) {
+    console.log(`  ${C.r}✗${C.x} UNMEASURED — ${e instanceof Error ? e.message : String(e)}. This is a FAILURE, not a pass.`);
     return 1;
   }
-  console.log(`  ${C.d}${env.host}/${env.database} (credentials from ${env.from})${C.x}`);
-  const db = await connectDirect(env, "check-definer-class");
+  const db = opened.client;
   try {
-  // The call-graph walk needs more than the server default; 11 s measured, 120 s is headroom.
-  await db.query("set statement_timeout = '120s'");
+  // The call-graph walk needs more than the server default; 11 s measured, 120 s is headroom (on
+  // the clone; production's guard holds it to the live ceiling).
+  await db.query(`set statement_timeout = '${ceilingFor(opened.target, 120_000)}'`);
   if (SELF_TEST) return await selfTest(db);
 
   let rows: Array<Record<string, unknown>>;

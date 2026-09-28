@@ -42,7 +42,8 @@
  * under --strict and --self-test.
  */
 import process from "node:process";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import type { connectDirect } from "./lib/direct-db";
+import { type CheckTarget, ceilingFor, connectCheckDirect } from "./lib/check-target";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 type Client = Awaited<ReturnType<typeof connectDirect>>;
@@ -51,6 +52,8 @@ const STRICT = process.argv.includes("--strict");
 const SELF_TEST = process.argv.includes("--self-test");
 const ADMIN_EMAIL = "admin@admin.com";
 const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[33m", x: "\x1b[0m" };
+/** Which database this run reads: the clone unless `--target production` (set in connect()). */
+let RUN_TARGET: CheckTarget = "clone";
 
 interface Check {
   key: string;
@@ -79,14 +82,18 @@ interface Snapshot {
 }
 
 async function connect(): Promise<Client> {
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    console.error(
-      `${C.r}LIVE PULL FAILED${C.x} the offering availability round trip could not be MEASURED. Wanted ${env.missing.join(", ")} in: ${env.looked.join(", ") || "(no env file)"}`,
-    );
-    exitAfterDrain(1);
-  }
-  const client = await connectDirect(env, "check-offering-availability-round-trip");
+  // WHERE (2026-09-27): a heavy check - it runs on the nightly clone unless the command says
+  // `--target production`, and then every statement is capped at the live ceiling
+  // (scripts/lib/check-target.ts). The [TARGET] line says which database answered.
+  const { client, target } = await connectCheckDirect({ gate: "check-offering-availability-round-trip", defaultTarget: "clone" }).catch(
+    (err: unknown) => {
+      console.error(
+        `${C.r}DATABASE PULL FAILED${C.x} check-offering-availability-round-trip could not be MEASURED: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      exitAfterDrain(1);
+    },
+  );
+  RUN_TARGET = target;
   await client.query("set role none");
   return client;
 }
@@ -290,7 +297,7 @@ async function run(broken: boolean): Promise<{ fixture: Fixture; checks: Check[]
   const client = await connect();
   try {
     await client.query("begin");
-    await client.query("set local statement_timeout = '120s'");
+    await client.query(`set local statement_timeout = '${ceilingFor(RUN_TARGET, 120_000)}'`);
     if (broken) await breakTheWriter(client);
     const f = await fixture(client);
     if (!f) return null;

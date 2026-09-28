@@ -14,6 +14,9 @@
 
 "use client";
 
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
@@ -69,8 +72,15 @@ export function useFastFireLauncher(
 
   const start = async (): Promise<boolean> => {
     if (!enabled) {
-      setStartError("Choose an organization to start the drill.");
-      return false;
+      // Not ready is not "none": join boot's answer, then ASK — the press is
+      // held and continues with the person's pick. Only a real refusal is said.
+      try {
+        await ensureOrgId(null);
+      } catch (holdError) {
+        if (isOrganizationSelectionCancelled(holdError)) return false;
+        setStartError(organizationRefusalMessage({ subject: "The drill", act: "started" }));
+        return false;
+      }
     }
     if (!config.setId) {
       setStartError("Pick a flashcard set first.");

@@ -15,6 +15,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { guardIfProduction } from "../lib/production-guard";
 
 const require_ = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,7 +94,7 @@ export const CATALOG_SQL = `
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function client(env: DbEnv, applicationName: string): any {
-  return new pg.Client({
+  return guardIfProduction(new pg.Client({
     host: env.host,
     port: env.port,
     user: env.user,
@@ -102,5 +103,5 @@ export function client(env: DbEnv, applicationName: string): any {
     ssl: { rejectUnauthorized: false },
     application_name: applicationName,
     connectionTimeoutMillis: 20_000,
-  });
+  }), applicationName);
 }

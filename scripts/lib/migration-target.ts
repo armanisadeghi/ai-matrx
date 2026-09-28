@@ -329,6 +329,12 @@ export interface CloneRef {
   readonly passwordEnvVar: string;
   /** Local staging path for the clone's OWN password. Never printed, never committed. */
   readonly passwordFile: string;
+  /**
+   * When the nightly job promoted this clone (CLONE-REF `promoted`, ISO-8601), or "" when the
+   * file does not say. A check run on the clone prints it, so a clone result is never read as
+   * a live one (`scripts/lib/check-target.ts`).
+   */
+  readonly promoted: string;
   readonly path: string;
 }
 
@@ -406,6 +412,7 @@ export function loadCloneRef(root: string, overridePath?: string): CloneRef {
     parentSystemIdentifier: bag.parent_system_identifier!,
     passwordEnvVar: bag.password_env_var!,
     passwordFile: bag.password_file!,
+    promoted: bag.promoted ?? "",
     path,
   };
 }

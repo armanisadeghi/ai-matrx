@@ -12,6 +12,8 @@
 // summary asked to download a video) or on the first seek request.
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Play } from "lucide-react";
 import {
@@ -37,6 +39,8 @@ export function RecordingSeekPlayer({
   onTime?: (ms: number) => void;
 }) {
   const host = useMeetHost();
+  // No host = no organization to play the recording in, once boot has answered (see ChatLogPanel).
+  const { organizationState, retry } = useOrganizationRequired();
   const video = useRef<HTMLVideoElement | null>(null);
   const [media, setMedia] = useState<MeetFileMedia | null>(null);
   const [loading, setLoading] = useState(false);
@@ -85,7 +89,12 @@ export function RecordingSeekPlayer({
   if (host === null) {
     return (
       <div className="flex aspect-video w-full items-center justify-center rounded-lg border border-border bg-muted/40 p-4 text-center text-sm text-muted-foreground">
-        Choose an organization from the avatar menu to play this recording.
+        <OrganizationContextNotice
+          state={organizationState === "ready" ? "resolving" : organizationState}
+          what="Playing this recording"
+          compact
+          onRetry={retry}
+        />
       </div>
     );
   }

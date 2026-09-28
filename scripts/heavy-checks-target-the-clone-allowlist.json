@@ -1,0 +1,54 @@
+{
+  "_what": "Scripts `pnpm check:heavy-checks-target-the-clone` names that stay as they are, each WITH its reason. Shrink-only: an entry that no longer matches a finding fails the guard. Adding one is a decision a reviewer reads — heavy checks run on the nightly clone (scripts/lib/check-target.ts).",
+  "entries": {
+    "scripts/apply-migration.ts": {
+      "rules": [
+        "R1",
+        "R2"
+      ],
+      "reason": "The migration runner (`pnpm db:apply`): the ONE sanctioned exception to the production guard (connectDirect(..., { migrationRunner: true })), with per-file ceilings the operator names. Applying a migration is not a check."
+    },
+    "scripts/check-gate-db-sessions.ts": {
+      "rules": [
+        "R1"
+      ],
+      "reason": "False positive: the `new pg.Client` and `SUPABASE_MATRIX_` it contains are self-test fixture strings and a detector regex. It opens no database."
+    },
+    "scripts/check-podcast-article-publication.ts": {
+      "rules": [
+        "R2"
+      ],
+      "reason": "Its 45 s clock is set on the connection the script itself proves is the quarantined CLONE (readQuarantineFacts, asserted twice); production is opened only through openProductionReadOnly, which carries its own read-only proof."
+    },
+    "scripts/campaign-tests/links2_an_hr_link_names_its_employer.mjs": {
+      "rules": [
+        "R1"
+      ],
+      "reason": "Light: ONE rolled-back call of hr._wf_notify for a real live leave request, then a browser walk of a localhost app that reads live, so the row it follows must be on live. Plain node .mjs cannot import the TypeScript guard. Not converted - the owner of lane LINKS-2 decides whether it moves to the clone."
+    },
+    "scripts/campaign-tests/booking_race.sh": {
+      "rules": [
+        "R2"
+      ],
+      "reason": "NOT CONVERTED, HEAVY-ISH ON LIVE: a two-session commit race on the booking doors that commits fixtures and deletes them on exit, with a 600 s fixture clock. It is a campaign concurrency test (not a check) written for bash 3.2, and the clone helpers are zsh (scripts/night/lib-night.sh). Moving it to the clone is the next step for lane BOOKING."
+    },
+    "scripts/night/night-2026-09-22-row-versions-index.sh": {
+      "rules": [
+        "R2"
+      ],
+      "reason": "A dated one-off night MIGRATION job (an index build), not a check: it rehearses on the clone and applies to production only inside night_window_guard after night_assert_target production, with the proven inverse gated. Its 2 h clock is the index build's."
+    },
+    "scripts/night/night-2026-09-22-suite-sweep.sh": {
+      "rules": [
+        "R2"
+      ],
+      "reason": "A dated one-off night job whose production arm runs only inside night_window_guard after night_assert_target production; its 60 s PGOPTIONS clock is dropped by Supavisor on the pooler (measured 2026-09-25, scripts/lib/gate-db.ts), so the role's 30 s holds."
+    },
+    "scripts/night/w1-org-apply.sh": {
+      "rules": [
+        "R2"
+      ],
+      "reason": "A night MIGRATION apply job, not a check: rehearsed on the clone (`pnpm db:rehearse --target clone`) and applied to production only inside night_window_guard with the inverse gated."
+    }
+  }
+}

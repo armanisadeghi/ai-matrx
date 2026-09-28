@@ -11,6 +11,8 @@
 // recipient and renders every email, and queues nothing.
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useEffect, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 import {
@@ -60,6 +62,8 @@ export function RecapDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const host = useMeetHost();
+  // No host = no organization to send from, once boot has answered (see ChatLogPanel).
+  const { organizationState, retry } = useOrganizationRequired();
   const api = host?.api ?? null;
   const [draft, setDraft] = useState<FollowUpDraft | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -137,9 +141,12 @@ export function RecapDialog({
         </DialogHeader>
 
         {api === null ? (
-          <p className="text-sm text-muted-foreground">
-            Choose an organization from the avatar menu to send a recap.
-          </p>
+          <OrganizationContextNotice
+            state={organizationState === "ready" ? "resolving" : organizationState}
+            what="Sending a recap"
+            compact
+            onRetry={retry}
+          />
         ) : failure ? (
           <p role="alert" className="text-sm text-destructive">
             {failure}

@@ -18,7 +18,8 @@ import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { cn } from "@/lib/utils";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ScrollAssistantLauncherImplProps {
@@ -74,6 +75,9 @@ function AuthenticatedAmbientAssistant({
   const { mandate, loading, error, organizationPending } = useMandateChain(
     ambientAssistantMandateChain(pathname),
   );
+  // Pending on an organization says which of the states it is: still
+  // resolving, none chosen, or the read failed — never "choose" during a race.
+  const { organizationState, retry: retryOrganization } = useOrganizationRequired();
   const [dismissed, setDismissed] = useState(false);
   const openedConversationRef = useRef<string | null>(null);
   const openQuickChat = useOpenQuickChatSheet();
@@ -151,7 +155,9 @@ function AuthenticatedAmbientAssistant({
         ) : organizationPending ? (
           // Never a dead pill (page-pass 2026-09-27): no organization yet is
           // a wait with a remedy, in place.
-          <OrganizationRequiredNotice
+          <OrganizationContextNotice
+            state={organizationState === "ready" ? "resolving" : organizationState}
+            onRetry={retryOrganization}
             compact
             what="The page assistant"
             description="Pick the organization you are working in and it is ready."

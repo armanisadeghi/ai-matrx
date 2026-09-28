@@ -15,7 +15,8 @@ import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedA
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useVoiceRelaySession } from "@/features/voice-agent/relay/useVoiceRelaySession";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { VOICE_COMMUNICATOR_MANDATE_KEY } from "@/features/voice-agent/relay/useVoiceRelaySession";
 import { VoiceOrb } from "@/features/voice-agent/components/VoiceOrb";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -414,6 +415,8 @@ function AuthenticatedAmbientVoiceAssistant({
 }) {
   const primary = useMandateChain(ambientAssistantMandateChain(pathname));
   const communicator = useMandate(VOICE_COMMUNICATOR_MANDATE_KEY);
+  // Pending on an organization says which of the states it is (see the text launcher).
+  const { organizationState, retry: retryOrganization } = useOrganizationRequired();
   const loading = primary.loading || communicator.loading;
   const primaryMandate = primary.mandate;
   const communicatorMandate = communicator.mandate;
@@ -434,7 +437,9 @@ function AuthenticatedAmbientVoiceAssistant({
   if (organizationPending) {
     return (
       <div className="ambient-assistant-dock fixed left-1/2 z-[35] w-[min(470px,calc(100vw-2rem))] -translate-x-1/2">
-        <OrganizationRequiredNotice
+        <OrganizationContextNotice
+          state={organizationState === "ready" ? "resolving" : organizationState}
+          onRetry={retryOrganization}
           compact
           what="The page assistant"
           description="Pick the organization you are working in and it is ready."

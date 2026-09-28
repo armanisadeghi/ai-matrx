@@ -12,7 +12,8 @@
  *
  *   - at most GATE_DB_LIMITS.maxSessions (2) sessions open per gate process — a third is REFUSED,
  *     loudly, never queued (a queue that waits for a slot the caller itself holds is a deadlock);
- *   - every transaction carries `statement_timeout` (60 s unless the gate names a reason for more),
+ *   - every transaction carries `statement_timeout` (60 s unless the gate names a reason for more;
+ *     on the LIVE database 30 s, and never more - a heavy census runs on the clone, 2026-09-27),
  *     `lock_timeout` (3 s) and `idle_in_transaction_session_timeout` (60 s);
  *   - the transaction is stamped `application_name = gate:<name>`, so `pg_stat_activity` says
  *     which gate is holding a backend instead of "Supavisor";
@@ -33,6 +34,7 @@
  */
 import pg from "pg";
 import type { DbEnv } from "./direct-db";
+import { isLiveConnection } from "./direct-db-env";
 
 export const GATE_DB_LIMITS = {
   /** Sessions one gate process may hold open at the same moment. */
@@ -51,6 +53,15 @@ export const GATE_DB_LIMITS = {
    * A gate's statement ceiling must leave room under it.
    */
   transactionTimeoutMs: 600_000,
+  /**
+   * THE LIVE CEILING (2026-09-27, incident 2026-09-27-per-connection-memory). On a connection
+   * whose project ref is production's, a gate's statement ceiling is at most this - the role's
+   * own `statement_timeout` and the production guard's (`production-guard.ts`) - and it is also
+   * the DEFAULT there. A census that needs longer is a heavy check and runs on the clone
+   * (`scripts/lib/check-target.ts`, `--target clone`); asking for more on live is REFUSED
+   * before a socket opens, never quietly lowered.
+   */
+  liveStatementTimeoutMs: 30_000,
 } as const;
 
 export interface GateDbOptions {
@@ -202,8 +213,9 @@ export type QueryFn = (...args: unknown[]) => Promise<unknown>;
 export function governClient<T extends { query: QueryFn; end: () => Promise<void> }>(
   client: T,
   opts: GateDbOptions,
+  live = false,
 ): T {
-  const ceilingMs = resolveCeiling(opts);
+  const ceilingMs = resolveCeiling(opts, live);
   return governTransactions(client, {
     limitsSql: limitsSql(ceilingMs, opts.gate),
     refusal: (text) => refusalFor(text, ceilingMs),
@@ -302,9 +314,25 @@ export function governTransactions<T extends { query: QueryFn; end: () => Promis
   return client;
 }
 
-function resolveCeiling(opts: GateDbOptions): number {
-  const ms = opts.statementTimeoutMs ?? GATE_DB_LIMITS.statementTimeoutMs;
+/**
+ * The statement ceiling a gate gets. Exported for the unit test. `live` is true when the
+ * connection's project ref is production's (`isLiveConnection`): there the default is the live
+ * ceiling and anything above it is refused, naming the clone.
+ */
+export function resolveCeiling(opts: GateDbOptions, live = false): number {
+  const ms =
+    opts.statementTimeoutMs ??
+    (live ? GATE_DB_LIMITS.liveStatementTimeoutMs : GATE_DB_LIMITS.statementTimeoutMs);
   if (!(ms > 0)) throw new GateDbRefusal(`${opts.gate}: statementTimeoutMs must be positive.`);
+  if (live && ms > GATE_DB_LIMITS.liveStatementTimeoutMs) {
+    throw new GateDbRefusal(
+      `${opts.gate}: statementTimeoutMs ${ms} on the LIVE database. Live gates are capped at ` +
+        `${GATE_DB_LIMITS.liveStatementTimeoutMs} ms: every warm connection costs the live machine ` +
+        "~66 MB and a long census holds one for minutes (incident 2026-09-27-per-connection-memory). " +
+        "Run this check on the nightly clone (`--target clone`, scripts/lib/check-target.ts), or " +
+        "split the work into statements that each finish under the live ceiling.",
+    );
+  }
   if (ms >= GATE_DB_LIMITS.transactionTimeoutMs) {
     throw new GateDbRefusal(
       `${opts.gate}: statementTimeoutMs ${ms} is at or above the database's ${GATE_DB_LIMITS.transactionTimeoutMs} ms ` +
@@ -341,7 +369,8 @@ export async function openGateDb(
   env: Pick<DbEnv, "host" | "port" | "user" | "password" | "database">,
   opts: GateDbOptions,
 ): Promise<pg.Client> {
-  resolveCeiling(opts); // refuse a bad ceiling before a socket opens
+  const live = isLiveConnection(env.user, env.host);
+  resolveCeiling(opts, live); // refuse a bad ceiling before a socket opens
   reserveGateSession(opts.gate);
   const client = new pg.Client({
     host: env.host,
@@ -364,7 +393,7 @@ export async function openGateDb(
     console.error(`[INFO] ${opts.gate}: the database connection reported: ${err.message}`);
   });
   // Count the slot back if the connection never opens.
-  const governed = governClient(client as unknown as { query: QueryFn; end: () => Promise<void> }, opts);
+  const governed = governClient(client as unknown as { query: QueryFn; end: () => Promise<void> }, opts, live);
   try {
     await client.connect();
   } catch (err) {

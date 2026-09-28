@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-28T05:32:43.159Z",
+  "generated_at": "2026-09-28T06:50:23.340Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -391,6 +391,12 @@
       "filename": "carryingedgesperf_census_twelve_asks_the_mirror_once_per_member.sql",
       "checksum": "6b283330236f93a0b97a094cb356d68527555b588885c37eef5293a138ba5d7c",
       "applied_at": "2026-09-27 19:07:43.174016+00"
+    },
+    "migrations/campaign/carryingedgesperf_the_carrying_edges_have_their_indexes.sql": {
+      "source": "matrx-frontend",
+      "filename": "carryingedgesperf_the_carrying_edges_have_their_indexes.sql",
+      "checksum": "b5fb0c5afc831480603006ce30baa53c27cf079ed66447e29012604411dd9155",
+      "applied_at": "2026-09-27 17:55:20.328026+00"
     },
     "migrations/campaign/chairstep_doorsonly2_revoke_client_writes.sql": {
       "source": "matrx-frontend",

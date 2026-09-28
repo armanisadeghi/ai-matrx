@@ -318,7 +318,7 @@ export const FIRST_SCREEN_TAB: SettingsTabDef = {
   id: "firstScreen",
   label: "Settings",
   icon: SlidersHorizontal,
-  description: "Theme, default organization, and your default AI model and voice.",
+  description: "Theme, the organization you open at sign-in, and your default AI model and voice.",
   component: FirstScreenTab,
   persistence: "server",
 };

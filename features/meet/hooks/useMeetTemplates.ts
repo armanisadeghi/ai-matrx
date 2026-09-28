@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   fetchKnobWriteDoor,
   knobRefusalSentence,
@@ -81,15 +82,16 @@ export function useMeetTemplates(
   }, [organizationId, userId]);
 
   const write = async (scope: TemplateScope, next: MeetingTemplate[]) => {
-    if (organizationId === null || userId === null) {
-      throw new Error("Choose an organization to save templates.");
-    }
+    if (userId === null) throw new Error("Sign in to save templates.");
+    // Held until an organization is known — boot's answer first, then the
+    // person is asked; never picked for them.
+    const orgId = organizationId ?? (await ensureOrgId(null));
     const result = await setKnobOverride({
       feature: "meet",
       key: KEY[scope],
       scopeKind: scope === "personal" ? "user" : "organization",
-      scopeId: scope === "personal" ? userId : organizationId,
-      organizationId,
+      scopeId: scope === "personal" ? userId : orgId,
+      organizationId: orgId,
       value: next,
     });
     if (!result.ok) throw new Error(knobRefusalSentence(result));

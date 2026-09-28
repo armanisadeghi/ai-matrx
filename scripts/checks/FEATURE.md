@@ -106,6 +106,28 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   row, or a declared class that disagrees with detection = `[FAIL]`, exit 1) +
   `:self-test` (red on a mismatched manifest, green on the real one) — in CI
   (`marker-law` job) and as rows of `run-release-gates.sh`.
+- **Heavy checks run on the clone** (2026-09-27, incident
+  `common-docs/projects/database-workload-safety/incidents/2026-09-27-per-connection-memory.md`:
+  every warm live connection costs ~66 MB and our own censuses held them for
+  minutes). A check that scans, censuses, sweeps for equivalence, plants
+  fixtures or wants more than 30 s opens its database through
+  `scripts/lib/check-target.ts` — `openCheckDb` (gate-db) or `connectCheckDirect`
+  (connectDirect) with `defaultTarget: "clone"` — so it runs on the nightly clone
+  unless the command says `--target production`, where every statement is capped
+  at 30 s (`GATE_DB_LIMITS.liveStatementTimeoutMs`; `openGateDb` refuses more on a
+  live connection, the production guard refuses loosening). A check whose meaning
+  is live state RIGHT NOW (today's counters, the live policy set) keeps
+  `defaultTarget: "production"` and stays bounded. Every run prints ONE
+  `[TARGET]` line naming the database and the clone's `promoted` time (CLONE-REF),
+  because the clone may trail live by the migrations since; a census that trips
+  on an object the clone lacks is NOT MEASURED, never passed. A script that
+  builds its own `pg.Client` on the live credentials wraps it in
+  `guardIfProduction` (`scripts/lib/production-guard.ts`). Guard:
+  `pnpm check:heavy-checks-target-the-clone` (+ `:self-test`; `--at <rev>` judges
+  history) — R1 an unguarded raw client on live, R2 a clock above 30 s on a
+  connection that can be live without the check-target helper; exceptions live
+  WITH their reason in `scripts/heavy-checks-target-the-clone-allowlist.json`,
+  shrink-only.
 - **Rows share one checkout, so no row writes into it.** Six rows run at once
   over the same tree: a self-test that plants its RED fixture in `lib/`,
   `features/`, `migrations/`… is a fake finding for the scanner beside it (or an
@@ -172,6 +194,13 @@ the after phase; the two things that made the build — migrations and the
 push — are the ship path.
 
 ## Change log
+
+- 2026-09-27 — Heavy checks run on the clone: `scripts/lib/check-target.ts` (`openCheckDb`,
+  `connectCheckDirect`, `ceilingFor`, the `[TARGET]` line), `openGateDb` capped at 30 s on live,
+  `guardIfProduction` for raw clients, `check:store-doors-decide` + five heavy checks (and three planting self-tests) default to
+  the clone, guard `check:heavy-checks-target-the-clone` (+ `:self-test`, jest
+  `scripts/__tests__/check-target.test.ts`). 38 findings at the previous HEAD, 0 after (9
+  allowlisted with reasons).
 
 - 2026-09-26 — `run.mjs --repo-only` + `.github/workflows/repo-only-checks.yml` (checks-run-in-the-app
   PLAN decision 4): the public-repo CI leg runs only declared repo-only rows with `MATRX_ITEMS=1` and

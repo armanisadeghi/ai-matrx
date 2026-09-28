@@ -16,7 +16,15 @@
  * Neither was a bad line of SQL. Both were a door added later than the rule, which is a
  * class, so the rule is a QUERY over the live catalog and this is the guard that runs it.
  *
- * WHAT IT CHECKS - three censuses, all against the live database:
+ * WHERE IT RUNS (2026-09-27): THE NIGHTLY CLONE, BY DEFAULT. Censuses 12 and 13 ask the one
+ * ladder for every (member, record) pair and ran 4-10 minutes on live, many times a day, while
+ * the live machine was running out of memory (common-docs/projects/database-workload-safety/
+ * incidents/2026-09-27-per-connection-memory.md). The clone is production's own data, quarantined,
+ * so the verdict is the same verdict. Every run prints one [TARGET] line naming the database and
+ * the clone's promotion time; `--target production` runs on live with every statement capped at
+ * 30 s (a census past it is named NOT MEASURED, never passed). scripts/lib/check-target.ts.
+ *
+ * WHAT IT CHECKS - three censuses:
  *   1. custom.doors_not_deciding_the_caller()  - a client door taking an organization id
  *      whose body never decides the caller.
  *   2. custom.doors_not_deciding_the_record()  - a client door that takes a record or
@@ -38,8 +46,8 @@
  */
 
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { loadDbEnv } from "./lib/direct-db";
-import { openGateDb, tryGateLock } from "./lib/gate-db";
+import { openCheckDb } from "./lib/check-target";
+import { GATE_DB_LIMITS, type openGateDb, tryGateLock } from "./lib/gate-db";
 import { CONTENTION_BACKOFF, censusWithPatience, type Measured } from "./lib/census-with-patience";
 import { hostname } from "node:os";
 import { exitAfterDrain } from "./lib/exit-after-drain";
@@ -483,8 +491,12 @@ const SHARED_ONLY_CENSUS = (pretend: string | null) =>
  * transaction-scoped advisory lock on these keys means a second caller skips and says so,
  * instead of stacking a second copy on the server.
  */
-const SHARED_ONLY_LOCK = "census:custom.shared_only_disagreements";
-const LIST_DOOR_LOCK = "census:custom.list_door_disagreements";
+// The target is part of the key (2026-09-27): the advisory lock is per database anyway, but the
+// single-flight OUTCOME file census-with-patience shares between runs is on this machine, and a
+// clone run must never adopt a live run's verdict, or the other way round. Set in main().
+let RUN_TARGET: "clone" | "production" = "clone";
+const sharedOnlyLock = () => `census:custom.shared_only_disagreements@${RUN_TARGET}`;
+const listDoorLock = () => `census:custom.list_door_disagreements@${RUN_TARGET}`;
 
 /** The kinds that are never allowed, whatever else is true. */
 const SHARED_ONLY_NEVER = ["doors-disagree", "mirror-admits-more", "unmeasured"];
@@ -637,7 +649,7 @@ async function t10Probe(
 ): Promise<Row[]> {
   await client.query("begin");
   try {
-    await client.query("set local statement_timeout = '300s'");
+    await client.query(`set local statement_timeout = '${within(300_000)}'`);
     await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
     await client.query(T10_FIXTURE(visibilityKnob));
     const rows = (await client.query(
@@ -747,7 +759,7 @@ async function twoSeatProbe(
   let readAfterRevoke = false;
   await client.query("begin");
   try {
-    await client.query("set local statement_timeout = '120s'");
+    await client.query(`set local statement_timeout = '${within(120_000)}'`);
     await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
     await client.query(TWO_SEAT_FIXTURE(grantLevel, visibilityKnob));
 
@@ -861,7 +873,14 @@ async function refusalOnlyIsInstalled(client: Awaited<ReturnType<typeof openGate
  * reported unmeasured by name while every other census still prints its verdict.
  */
 const CENSUS_BUDGET_MS = 540_000;
-const CENSUS_BUDGET = `${CENSUS_BUDGET_MS / 1000}s`;
+/**
+ * The statement ceiling THIS run may use: the census budget on the clone, the live ceiling (30 s)
+ * on production, where the gate helper refuses anything more. Set in main() once the target is
+ * known; every `set local statement_timeout` in this file goes through `within`.
+ */
+let RUN_CEILING_MS = CENSUS_BUDGET_MS;
+const within = (ms: number) => `${Math.min(ms, RUN_CEILING_MS) / 1000}s`;
+const censusBudget = () => within(CENSUS_BUDGET_MS);
 
 async function main(): Promise<void> {
   const selfTest = process.argv.includes("--self-test");
@@ -870,13 +889,6 @@ async function main(): Promise<void> {
   const started = Date.now();
   const since = (mark: number) => formatDurationMs(Date.now() - mark, { style: "compact" });
 
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    fail(
-      "LIVE PULL FAILED - this check is UNMEASURED, which is a failure, not a pass.\n" +
-        `Missing: ${env.missing.join(", ")}\nLooked in: ${env.looked.join(", ")}`,
-    );
-  }
 
   // THE GATE DATABASE HELPER (2026-09-25). Its ceiling is raised BY NAME: census 12
   // (`custom.shared_only_disagreements`) measured 30 s on the clone and 53-338 s on live, and
@@ -884,16 +896,29 @@ async function main(): Promise<void> {
   // (member, record) pair, so it is a census by nature. What stops it stacking is the
   // single-flight lock, not a shorter clock. The ceiling is CENSUS_BUDGET (9 min), deliberately
   // UNDER the database's 10-minute transaction_timeout — see GATE_DB_LIMITS.transactionTimeoutMs.
+  //
+  // WHERE (2026-09-27): the clone by default, live only with `--target production` and then at the
+  // live ceiling — see the header. openCheckDb prints the [TARGET] line and proves the clone is
+  // the clone (connection ref + quarantine facts) before a census runs.
+  const checkDb = await openCheckDb({
+    gate: "check:store-doors-decide",
+    defaultTarget: "clone",
+    statementTimeoutMs: CENSUS_BUDGET_MS,
+    statementTimeoutReason:
+      "censuses 12 and 13 ask the one ladder for every (member, record) pair: 30 s on the clone, 53-338 s on live under load",
+  }).catch((error: unknown) => {
+    fail(
+      "DATABASE PULL FAILED - this check is UNMEASURED, which is a failure, not a pass.\n" +
+        (error instanceof Error ? error.message : String(error)),
+    );
+  });
+  RUN_TARGET = checkDb.target;
+  if (checkDb.target === "production") RUN_CEILING_MS = GATE_DB_LIMITS.liveStatementTimeoutMs;
   const connect = () =>
-    openGateDb(env, {
-      gate: "check:store-doors-decide",
-      statementTimeoutMs: CENSUS_BUDGET_MS,
-      statementTimeoutReason:
-        "censuses 12 and 13 ask the one ladder for every (member, record) pair: 30 s on the clone, 53-338 s on live under load",
-    }).catch((error: unknown) => {
-      fail(`LIVE PULL FAILED - could not reach the database: ${String(error)}`);
+    checkDb.reconnect().catch((error: unknown) => {
+      fail(`DATABASE PULL FAILED - could not reach the database again: ${String(error)}`);
     });
-  let client = await connect();
+  let client = checkDb.client;
 
   try {
     if (selfTest) {
@@ -1090,11 +1115,11 @@ async function main(): Promise<void> {
         await client.query("begin");
         let redShared: Row[];
         try {
-          await client.query(`set local statement_timeout = '${CENSUS_BUDGET}'`);
-          if (!(await tryGateLock(client, SHARED_ONLY_LOCK))) {
+          await client.query(`set local statement_timeout = '${censusBudget()}'`);
+          if (!(await tryGateLock(client, sharedOnlyLock()))) {
             fail(
               `SELF-TEST NOT MEASURED - another run is computing census 12 right now (advisory lock ` +
-                `"matrx-gate:${SHARED_ONLY_LOCK}"). A second copy is not started; re-run when it finishes.`,
+                `"matrx-gate:${sharedOnlyLock()}"). A second copy is not started; re-run when it finishes.`,
             );
           }
           redShared = (await client.query<Row>(SHARED_ONLY_CENSUS(pretend))).rows;
@@ -1361,13 +1386,27 @@ async function main(): Promise<void> {
         const code = (err as { code?: string }).code ?? "";
         const msg = err instanceof Error ? err.message : String(err);
         const lost = code === "25P04" || code === "57P01" || CONNECTION_LOST.test(msg);
-        if (code !== "57014" && !lost) throw err;
-        const why =
-          code === "57014"
-            ? `${name}: ran past its ${CENSUS_BUDGET} statement budget and was cancelled (57014). The ` +
-              "connection is intact and every other census still runs. The budget sits under the " +
-              "database's 10-minute transaction_timeout on purpose — above it, the server kills the " +
-              "connection instead. A census this slow is a performance finding on the functions it calls."
+        // THE CLONE TRAILS LIVE (2026-09-27). The clone is promoted nightly and may lack an object
+        // a migration added to live since; a census that trips on one (undefined function / table /
+        // column) did not measure anything. Named NOT MEASURED with the reason, never passed and
+        // never read as a door defect. On production the same error is a real defect and throws.
+        const cloneBehind =
+          checkDb.target === "clone" && (code === "42883" || code === "42P01" || code === "42703");
+        if (code !== "57014" && !lost && !cloneBehind) throw err;
+        const why = cloneBehind
+          ? `${name}: the CLONE lacks an object this census needs (${code}: ${msg}). The clone was ` +
+            "promoted before a migration live already has, so this census could not be measured on " +
+            "it. The nightly catch-up levels the clone (scripts/night/clone-catchup.sh); until then " +
+            "this census has no verdict here - not a pass, and not a door defect."
+          : code === "57014"
+            ? `${name}: ran past its ${censusBudget()} statement budget and was cancelled (57014). The ` +
+              "connection is intact and every other census still runs. " +
+              (checkDb.target === "production"
+                ? "On LIVE every statement is capped at the live ceiling; run without --target " +
+                  "production (the clone) for this census's verdict."
+                : "The budget sits under the database's 10-minute transaction_timeout on purpose — " +
+                  "above it, the server kills the connection instead. A census this slow is a " +
+                  "performance finding on the functions it calls.")
             : `${name}: the database connection died under it (${code ? `${code}: ` : ""}${msg}) after ` +
               `${since(mark)}. The guard reconnected; every census after it still runs.`;
         console.log(`[TIME] ${name}: ${since(mark)}`);
@@ -1541,9 +1580,9 @@ async function main(): Promise<void> {
           client,
           "census 12 (the three answers in every shared_only organization)",
           SHARED_ONLY_CENSUS(null),
-          CENSUS_BUDGET,
+          censusBudget(),
           CONTENTION_BACKOFF,
-          SHARED_ONLY_LOCK,
+          sharedOnlyLock(),
           { whoAmI: who("census 12") },
         );
         if (census12.unmeasured) return census12;
@@ -1577,9 +1616,9 @@ async function main(): Promise<void> {
           client,
           "census 13 (every list-shaped door)",
           LIST_DOOR_CENSUS(null, null, exhaustive),
-          CENSUS_BUDGET,
+          censusBudget(),
           CONTENTION_BACKOFF,
-          LIST_DOOR_LOCK,
+          listDoorLock(),
           { whoAmI: who("census 13") },
         ),
       true,
@@ -1626,6 +1665,7 @@ async function main(): Promise<void> {
     console.log(
       `\nEvery client door into the record store decides the caller and the row. (${since(started)})`,
     );
+    console.log(checkDb.banner);
   } finally {
     await client.end().catch(() => undefined);
   }

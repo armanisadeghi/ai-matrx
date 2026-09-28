@@ -40,6 +40,7 @@ import pg from "pg";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
 import { loadBranchDbEnv, loadBranchRef, loadCloneDbEnv, loadCloneRef } from "./lib/migration-target";
 import { judgeBody } from "./lib/plpgsql-raise";
+import { guardIfProduction } from "./lib/production-guard";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const C = { x: "\x1b[0m", b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[33m" };
@@ -67,7 +68,7 @@ async function open(target: Target): Promise<pg.Client> {
     return c;
   }
   const env = target === "clone" ? loadCloneDbEnv(ROOT, loadCloneRef(ROOT)) : loadBranchDbEnv(ROOT, loadBranchRef(ROOT));
-  const c = new pg.Client({ host: env.host, port: env.port, user: env.user, password: env.password, database: env.database, ssl: { rejectUnauthorized: false }, application_name: "check-not-found-is-honest" });
+  const c = guardIfProduction(new pg.Client({ host: env.host, port: env.port, user: env.user, password: env.password, database: env.database, ssl: { rejectUnauthorized: false }, application_name: "check-not-found-is-honest" }), "check-not-found-is-honest");
   await c.connect();
   return c;
 }

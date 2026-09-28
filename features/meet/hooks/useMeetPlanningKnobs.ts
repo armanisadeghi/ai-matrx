@@ -18,6 +18,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
 import {
   knobRefusalSentence,
   setKnobOverride,
@@ -157,13 +159,15 @@ export function useMeetPlanningKnobs(
      * screen changes at once; a refusal is thrown as the door's own sentence.
      */
     async setShowExternalEvents(show: boolean, targetOrganizationId?: string) {
-      const resolvedOrganizationId = targetOrganizationId ?? organizationId;
-      if (resolvedOrganizationId === null || userId === null) {
-        throw new Error("Choose an organization to save this setting.");
-      }
+      if (userId === null) throw new Error("Sign in to save this setting.");
+      // The press is held until an organization is known: boot's own answer is
+      // joined first, then the person is ASKED (never picked for them). A
+      // refusal comes back as the platform's one sentence, with its remedy.
+      const resolvedOrganizationId =
+        targetOrganizationId ?? organizationId ?? (await ensureOrgId(null));
       const targetScope = scopeKey(resolvedOrganizationId, userId);
       if (targetScope === null) {
-        throw new Error("Choose an organization to save this setting.");
+        throw new Error(organizationRefusalMessage({ subject: "This setting", act: "saved" }));
       }
       writeGenerations.current.set(
         targetScope,

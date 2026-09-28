@@ -52,8 +52,8 @@
  * assertion to fail with `57014` (statement timeout) or `54001` (stack depth). Then it rolls back.
  * `--self-test=dd263` installs the older pre-DD-263 body from `dd263-pre-fix-kernel.sql` instead,
  * which fails the same assertion with 54001. A guard that cannot be shown failing is not a guard.
- * It REFUSES to run against production (it replaces a function, however briefly); point it at a
- * branch with ACCESS_KERNEL_GUARD_DATABASE_URL.
+ * It REFUSES to run against production (it replaces a function, however briefly); by default the
+ * whole guard runs on the nightly clone (2026-09-27, scripts/lib/check-target.ts), where it may.
  *
  *   pnpm check:access-kernel-bounded            # loud, non-blocking (exit 0)
  *   pnpm check:access-kernel-bounded:strict     # exit 1 on any failed assertion
@@ -65,7 +65,7 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { type CheckTarget, ceilingFor, connectCheckDirect } from "./lib/check-target";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const STRICT = process.argv.includes("--strict");
@@ -73,6 +73,8 @@ const SELF_TEST = process.argv.some((a) => a === "--self-test" || a.startsWith("
 /** Which pre-fix body the self-test installs: the DD-263b one (default) or the older DD-263 one. */
 const SELF_TEST_BODY = process.argv.find((a) => a.startsWith("--self-test="))?.split("=")[1] ?? "dd263b";
 const OVERRIDE_URL = process.env.ACCESS_KERNEL_GUARD_DATABASE_URL ?? "";
+/** Which database this run reads (set in connect(); scripts/lib/check-target.ts). */
+let RUN_TARGET: CheckTarget = "clone";
 const PRODUCTION_MARKERS = ["brsgrqvjdzwihsvnfqkf", "db.matrxserver.com"];
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const PRE_FIX_KERNEL = resolve(
@@ -123,6 +125,15 @@ function record(name: string, ok: boolean, detail: string): void {
 async function connect(): Promise<{ client: pg.Client; isProduction: boolean; where: string }> {
   if (OVERRIDE_URL) {
     const isProduction = PRODUCTION_MARKERS.some((m) => OVERRIDE_URL.includes(m));
+    if (isProduction) {
+      // An ungoverned client on LIVE is exactly what the 2026-09-27 memory incident was. Live goes
+      // through `--target production`, which carries the production guard.
+      console.error(
+        `${C.red}ACCESS_KERNEL_GUARD_DATABASE_URL names the LIVE database. Refused: use --target production (guarded, live ceiling) or leave it unset for the nightly clone.${C.reset}`,
+      );
+      exitAfterDrain(2);
+    }
+    RUN_TARGET = "clone";
     const client = new pg.Client({
       connectionString: OVERRIDE_URL,
       ssl: { rejectUnauthorized: false },
@@ -131,15 +142,21 @@ async function connect(): Promise<{ client: pg.Client; isProduction: boolean; wh
     await client.connect();
     return { client, isProduction, where: new URL(OVERRIDE_URL).host };
   }
-  const env = loadDbEnv();
-  if ("missing" in env) {
+  // WHERE (2026-09-27): it PLANTS a ten-node ring and asks the kernel about it inside a
+  // rolled-back transaction with a 120 s clock - rehearsal work, so it runs on the nightly clone
+  // unless the command says `--target production` (then guarded, at the live ceiling).
+  // scripts/lib/check-target.ts.
+  let opened: Awaited<ReturnType<typeof connectCheckDirect>>;
+  try {
+    opened = await connectCheckDirect({ gate: "check-access-kernel-bounded", defaultTarget: "clone" });
+  } catch (e) {
     console.log(
-      `${C.yellow}check:access-kernel-bounded: database credentials absent (${env.missing.join(", ")}) - skipping.${C.reset}`,
+      `${C.yellow}check:access-kernel-bounded: no database to measure (${e instanceof Error ? e.message : String(e)}) - skipping.${C.reset}`,
     );
     exitAfterDrain(0);
   }
-  const client = await connectDirect(env, "check-access-kernel-bounded");
-  return { client, isProduction: true, where: env.host };
+  RUN_TARGET = opened.target;
+  return { client: opened.client, isProduction: opened.target === "production", where: opened.target };
 }
 
 /** Run one statement that is EXPECTED to raise; return the SQLSTATE, or null if it did not. */
@@ -245,7 +262,7 @@ async function main(): Promise<void> {
   let exitCode = 0;
   try {
     await client.query("begin");
-    await client.query("set local statement_timeout = '120s'");
+    await client.query(`set local statement_timeout = '${ceilingFor(RUN_TARGET, 120_000)}'`);
 
     if (SELF_TEST) {
       // Put the REAL pre-DD-263 body back, verbatim (it recurses into the five-argument signature
@@ -289,14 +306,14 @@ async function main(): Promise<void> {
       );
       ringAnswer = String(r.rows[0]?.a);
       ringOk = r.rows[0]?.a === false;
-      await client.query("set local statement_timeout = '120s'");
+      await client.query(`set local statement_timeout = '${ceilingFor(RUN_TARGET, 120_000)}'`);
     } catch (error) {
       // The pre-fix failure: the statement dies (57014 timeout, or 54001 before DD-263) and takes
       // the transaction with it. Start a new one and re-plant so the rest still runs and reports.
       ringAnswer = `${(error as { code?: string }).code ?? "?"} ${(error as Error).message}`;
       await client.query("rollback");
       await client.query("begin");
-      await client.query("set local statement_timeout = '120s'");
+      await client.query(`set local statement_timeout = '${ceilingFor(RUN_TARGET, 120_000)}'`);
     }
     record(
       `a negative question inside a real ${RING_N}-node carrying ring answers false`,

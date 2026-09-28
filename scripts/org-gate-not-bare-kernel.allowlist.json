@@ -7,7 +7,6 @@
     "lib/api/context-api.ts": "Background GET thunk (fetchContextState) that maps the refusal to rejectWithValue; a read must never open the picker.",
     "features/notes/hooks/useNewNoteOrganization.ts": "IS the notes gate: returns the active selection when one exists, waits for boot, then ASKS via ensureOrganizationContext.",
     "features/notes/hooks/useActiveNote.ts": "Background auto-create of a default note on mount (no press behind it); opening the picker there would ask with nothing to explain why.",
-    "components/agent-copy/AlchemyHost.tsx": "Package port read only while actions are offered, and actions are withheld (capabilities.actions = []) whenever no organization is selected — the control is absent, not refused.",
-    "app/(admin)/administration/compute/resilience-lab/page.tsx": "Admin resilience bench: a scenario helper takes organizationId as a parameter (the alias match is a same-named hook variable elsewhere in the module); a missing organization lands in the scenario's own result line."
+    "components/agent-copy/AlchemyHost.tsx": "Package port read only while actions are offered, and actions are withheld (capabilities.actions = []) whenever no organization is selected — the control is absent, not refused."
   }
 }

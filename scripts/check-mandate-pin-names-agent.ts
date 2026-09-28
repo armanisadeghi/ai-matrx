@@ -39,6 +39,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { guardIfProduction } from "./lib/production-guard";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -153,7 +154,7 @@ async function main(): Promise<void> {
     );
   }
   console.log(`${TAG.info}Connection variables from ${C.bold}${env.from}${C.reset}.`);
-  const client = new pg.Client({
+  const client = guardIfProduction(new pg.Client({
     host: env.host,
     port: env.port,
     user: env.user,
@@ -162,7 +163,7 @@ async function main(): Promise<void> {
     ssl: { rejectUnauthorized: false },
     application_name: "matrx-frontend check:mandate-pin-names-agent",
     connectionTimeoutMillis: 15_000,
-  });
+  }), "matrx-frontend check:mandate-pin-names-agent");
   try {
     await client.connect();
   } catch (e) {

@@ -82,6 +82,7 @@ import {
   loadBranchRef,
   type BranchRef,
 } from "../lib/migration-target";
+import { guardIfProduction } from "../lib/production-guard";
 
 const ROOT = resolve(__dirname, "..", "..");
 const OK = "[ OK ] ";
@@ -117,14 +118,14 @@ async function branchClient(ref: BranchRef): Promise<Client> {
     "branch",
     ref,
   );
-  const client = new Client({
+  const client = guardIfProduction(new Client({
     host: env.host,
     port: env.port,
     user: env.user,
     password: env.password,
     database: env.database,
     ssl: { rejectUnauthorized: false },
-  });
+  }), "gate-corpus branch-api");
   await client.connect();
   const sysid = await assertServerMatchesTarget(
     (sql) => client.query(sql),
@@ -153,14 +154,14 @@ async function productionDbSchemas(ref: BranchRef): Promise<string> {
       `Production is opened READ ONLY, for one SELECT on pg_roles, and for nothing else.`,
     ]);
   }
-  const client = new Client({
+  const client = guardIfProduction(new Client({
     host: e.SUPABASE_MATRIX_HOST,
     port: Number(e.SUPABASE_MATRIX_PORT),
     user: e.SUPABASE_MATRIX_USER,
     password: e.SUPABASE_MATRIX_PASSWORD,
     database: e.SUPABASE_MATRIX_DATABASE_NAME,
     ssl: { rejectUnauthorized: false },
-  });
+  }), "gate-corpus branch-api");
   await client.connect();
   try {
     const id = await client.query("select system_identifier::text as s from pg_control_system()");
@@ -374,14 +375,14 @@ async function prove(ref: BranchRef, target: string, asTestUser: boolean): Promi
  */
 async function syncGrants(client: Client, ref: BranchRef): Promise<void> {
   const e = { ...aidreamEnv(), ...process.env } as Record<string, string>;
-  const prod = new Client({
+  const prod = guardIfProduction(new Client({
     host: e.SUPABASE_MATRIX_HOST,
     port: Number(e.SUPABASE_MATRIX_PORT),
     user: e.SUPABASE_MATRIX_USER,
     password: e.SUPABASE_MATRIX_PASSWORD,
     database: e.SUPABASE_MATRIX_DATABASE_NAME,
     ssl: { rejectUnauthorized: false },
-  });
+  }), "gate-corpus branch-api");
   await prod.connect();
   let schemaRows: Array<{ nspname: string; rolname: string }>;
   let tableRows: Array<{ table_schema: string; table_name: string; grantee: string; privs: string }>;
@@ -462,14 +463,14 @@ async function syncGrants(client: Client, ref: BranchRef): Promise<void> {
   // Functions, by IDENTITY (schema, name, argument types) — an overload production
   // has and the branch does not is skipped and counted, never granted by name alone.
   const prodFns = await (async () => {
-    const p2 = new Client({
+    const p2 = guardIfProduction(new Client({
       host: e.SUPABASE_MATRIX_HOST,
       port: Number(e.SUPABASE_MATRIX_PORT),
       user: e.SUPABASE_MATRIX_USER,
       password: e.SUPABASE_MATRIX_PASSWORD,
       database: e.SUPABASE_MATRIX_DATABASE_NAME,
       ssl: { rejectUnauthorized: false },
-    });
+    }), "gate-corpus branch-api");
     await p2.connect();
     try {
       await p2.query("begin transaction read only");

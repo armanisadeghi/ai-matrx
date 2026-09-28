@@ -31,6 +31,7 @@ import {
 } from "./lib/migration-target";
 import { loadDbEnvFrom } from "./lib/direct-db-env";
 import { listBuildLocks, BuildLockLeaseAbsent, type LockQuery } from "./lib/build-lock";
+import { guardIfProduction } from "./lib/production-guard";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ESC = String.fromCharCode(27);
@@ -54,7 +55,7 @@ async function connectionFor(where: Where): Promise<{ client: pg.Client; label: 
     const ref = loadBranchRef(ROOT, branchRefOverride(process.argv));
     const env = loadBranchDbEnv(ROOT, ref);
     return {
-      client: new pg.Client({ ...env, ssl: { rejectUnauthorized: false }, application_name: "locks:sweep" }),
+      client: guardIfProduction(new pg.Client({ ...env, ssl: { rejectUnauthorized: false }, application_name: "locks:sweep" }), "locks:sweep"),
       label: `the rehearsal branch ${ref.branchRef}`,
     };
   }
@@ -62,7 +63,7 @@ async function connectionFor(where: Where): Promise<{ client: pg.Client; label: 
     const ref = loadCloneRef(ROOT, cloneRefOverride(process.argv));
     const env = loadCloneDbEnv(ROOT, ref);
     return {
-      client: new pg.Client({ ...env, ssl: { rejectUnauthorized: false }, application_name: "locks:sweep" }),
+      client: guardIfProduction(new pg.Client({ ...env, ssl: { rejectUnauthorized: false }, application_name: "locks:sweep" }), "locks:sweep"),
       label: `the dev clone ${ref.cloneRef}`,
     };
   }
@@ -74,7 +75,7 @@ async function connectionFor(where: Where): Promise<{ client: pg.Client; label: 
     );
   }
   return {
-    client: new pg.Client({ ...env, ssl: { rejectUnauthorized: false }, application_name: "locks:sweep" }),
+    client: guardIfProduction(new pg.Client({ ...env, ssl: { rejectUnauthorized: false }, application_name: "locks:sweep" }), "locks:sweep"),
     label: `the MAIN database (${env.host})`,
   };
 }

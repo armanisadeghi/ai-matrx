@@ -583,6 +583,20 @@ export interface ContentPlanPageBriefOffer {
   keyword_assignment: string;
   neighbours: string;
   strategy_guidance: string;
+  node_id: string;
+  site_id: string;
+  page_label: string;
+  page_route?: string;
+  node_type: string;
+  has_page_type: boolean;
+  existing_brief: string[];
+  primary_keyword_phrase?: string;
+  page_role?: string;
+  secondary_keywords?: string[];
+  supports_routes?: string[];
+  planned_links_text?: string;
+  neighbour_routes: string[];
+  research_report_present: boolean;
 }
 
 /** Offered shape of provision `content_plan.page_build` (kind `content_plan.page_build.offer`). */
@@ -822,6 +836,12 @@ export interface CrmOutreachPersonalizationWriterOffer {
   __kind?: "crm.outreach_personalization_writer.offer";
   campaign_context: string;
   targets_json: string;
+  campaign_id: string;
+  campaign_name: string;
+  campaign_description?: string;
+  campaign_context_written: boolean;
+  target_member_ids: string[];
+  target_count: number;
 }
 
 /** Offered shape of provision `crm.outreach_recipient_shortlister` (kind `crm.outreach_recipient_shortlister.offer`). */
@@ -842,6 +862,16 @@ export interface CrmOutreachReplyDrafterOffer {
   campaign_context: string;
   thread_json: string;
   record_facts?: string;
+  campaign_id: string;
+  campaign_name: string;
+  campaign_description?: string;
+  campaign_context_written: boolean;
+  member_id: string;
+  recipient_name?: string;
+  recipient_company?: string;
+  message_count: number;
+  latest_inbound_label?: string;
+  record_fact_count: number;
 }
 
 /** Offered shape of provision `crm.party_kind_judgment` (kind `crm.party_kind_judgment.offer`). */

@@ -16,6 +16,9 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
 import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
@@ -55,9 +58,16 @@ export function useGradeWork(
 
   async function grade(input: GradeWorkInput): Promise<GradedAnswer | null> {
     if (!enabled) {
-      setError("Choose an organization to grade your work.");
-      setStatus("error");
-      return null;
+      // Not ready is not "none": join boot's answer, then ASK — the press is
+      // held and continues with the person's pick. Only a real refusal is said.
+      try {
+        await ensureOrgId(null);
+      } catch (holdError) {
+        if (isOrganizationSelectionCancelled(holdError)) return null;
+        setError(organizationRefusalMessage({ subject: "Your work", act: "graded" }));
+        setStatus("error");
+        return null;
+      }
     }
     setStatus("grading");
     setError(null);

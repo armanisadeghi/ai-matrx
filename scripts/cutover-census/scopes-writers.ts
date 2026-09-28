@@ -32,6 +32,7 @@ import { resolve } from "node:path";
 import process from "node:process";
 import pg from "pg";
 import { loadDbEnvFrom } from "../lib/direct-db-env";
+import { guardIfProduction } from "../lib/production-guard";
 
 type Repo = "matrx-frontend" | "aidream" | "matrx-extend" | "matrx-local";
 const ROOT = resolve(import.meta.dirname, "..", "..");
@@ -291,7 +292,7 @@ async function connect(target: "production" | "clone"): Promise<pg.Client> {
     if ("missing" in env) throw new Error(`no database connection: ${env.missing.join(", ")}`);
     cfg = { host: env.host, port: env.port, user: env.user, password: env.password, database: env.database };
   }
-  const client = new pg.Client({ ...cfg, ssl: { rejectUnauthorized: false }, application_name: "scopes-writers-census", connectionTimeoutMillis: 15_000 });
+  const client = guardIfProduction(new pg.Client({ ...cfg, ssl: { rejectUnauthorized: false }, application_name: "scopes-writers-census", connectionTimeoutMillis: 15_000 }), "scopes-writers-census");
   await client.connect();
   const active = Number((await client.query("select count(*) as n from cron.job where active")).rows[0].n);
   if (target === "clone" && active > 0) throw new Error("--target clone reached a database with active cron jobs; nothing measured");

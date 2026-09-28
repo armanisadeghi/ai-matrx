@@ -135,6 +135,7 @@ import {
 // The TEXT half of the personal-data contract lives in the guard; this file
 // holds the MEASURED half. See `PERSONAL_DATA_TABLES`'s own header.
 import { PERSONAL_DATA_TABLES } from "./identity-shell-contract";
+import { guardIfProduction } from "../lib/production-guard";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -1469,7 +1470,7 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const prod = new pg.Client({
+  const prod = guardIfProduction(new pg.Client({
     host: prodEnv.host,
     port: prodEnv.port,
     user: prodEnv.user,
@@ -1477,8 +1478,8 @@ async function main(): Promise<number> {
     database: prodEnv.database,
     ssl: { rejectUnauthorized: false },
     application_name: "restore-graph (read only)",
-  });
-  const branch = new pg.Client({
+  }), "gate-corpus restore-graph");
+  const branch = guardIfProduction(new pg.Client({
     host: branchEnv.host,
     port: branchEnv.port,
     user: branchEnv.user,
@@ -1486,7 +1487,7 @@ async function main(): Promise<number> {
     database: branchEnv.database,
     ssl: { rejectUnauthorized: false },
     application_name: "restore-graph (branch)",
-  });
+  }), "gate-corpus restore-graph");
   await prod.connect();
   await branch.connect();
 

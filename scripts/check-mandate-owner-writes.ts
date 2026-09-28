@@ -99,7 +99,7 @@ async function main(): Promise<void> {
 
   try {
     await client.query("begin");
-    await client.query("set local statement_timeout = '60s'"); // the gate ceiling (scripts/lib/gate-db.ts)
+    await client.query("set local statement_timeout = '30s'"); // the LIVE gate ceiling (scripts/lib/gate-db.ts, 2026-09-27)
     await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
 
     const ids = await client.query<{ email: string; id: string }>(

@@ -33,7 +33,7 @@
  * exits 1 under --strict.
  */
 import process from "node:process";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { ceilingFor, connectCheckDirect } from "./lib/check-target";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const STRICT = process.argv.includes("--strict");
@@ -54,12 +54,17 @@ function finish(findings: string[], unmeasured: string | null): never {
 }
 
 async function main(): Promise<void> {
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    finish([], `missing ${env.missing.join(", ")} (looked in: ${env.looked.join(", ") || "nothing"})`);
+  // WHERE (2026-09-27): LIVE by default - "placed today" is a count of TODAY's placements, which a
+  // clone promoted yesterday does not have. So it stays on live and is bounded: every statement at
+  // the live ceiling (the refresh probe included; past it the run fails loudly, never passes).
+  // `--target clone` runs the same probe on the clone. scripts/lib/check-target.ts.
+  let opened: Awaited<ReturnType<typeof connectCheckDirect>>;
+  try {
+    opened = await connectCheckDirect({ gate: "matrx-frontend check:topic-placement-ceiling", defaultTarget: "production" });
+  } catch (e) {
+    finish([], e instanceof Error ? e.message : String(e));
   }
-  console.log(`connection variables from ${env.from}`);
-  const client = await connectDirect(env, "matrx-frontend check:topic-placement-ceiling");
+  const client = opened.client;
   const findings: string[] = [];
   try {
     // ── 2. counter ≤ truth, every enrolled site ────────────────────────────
@@ -104,7 +109,7 @@ async function main(): Promise<void> {
     }
     await client.query("begin");
     try {
-      await client.query("set local statement_timeout = '300s'");
+      await client.query(`set local statement_timeout = '${ceilingFor(opened.target, 300_000)}'`);
       const counterSql = `select placed::text from seo.fn_topic_placement_settled_since($1, ${MIDNIGHT})`;
       const before = Number((await client.query<{ placed: string }>(counterSql, [site])).rows[0]?.placed);
       await client.query("select * from seo.fn_refresh_topic_placement_queue($1, $2)", [site, windowDays]);

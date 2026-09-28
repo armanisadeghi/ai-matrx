@@ -8,6 +8,8 @@
 // a refusal from the server is shown in its own words.
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useEffect, useState } from "react";
 import {
   loadMeetingChat,
@@ -26,6 +28,10 @@ function clock(iso: string): string {
 
 export function ChatLogPanel({ meetingId }: { meetingId: MeetingId }) {
   const host = useMeetHost();
+  // No host means no organization to read the meeting in — but only once boot
+  // has answered; while it is still resolving (or the read failed) the notice
+  // says THAT, never "choose an organization".
+  const { organizationState, retry } = useOrganizationRequired();
   const [history, setHistory] = useState<MeetingChatHistory | null>(null);
   const api = host?.api ?? null;
 
@@ -42,10 +48,13 @@ export function ChatLogPanel({ meetingId }: { meetingId: MeetingId }) {
 
   if (api === null) {
     return (
-      <p className="p-4 text-sm text-muted-foreground">
-        Choose an organization from the avatar menu to read this meeting&apos;s
-        chat.
-      </p>
+      <OrganizationContextNotice
+        state={organizationState === "ready" ? "resolving" : organizationState}
+        what="This meeting's chat"
+        compact
+        onRetry={retry}
+        className="p-1"
+      />
     );
   }
   if (history === null) {
