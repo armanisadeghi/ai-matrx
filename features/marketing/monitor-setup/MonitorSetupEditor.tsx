@@ -346,18 +346,6 @@ export function MonitorSetupEditor() {
       .then((view) => {
         if (!live) return;
         setSchedule(view);
-        if (view.preset && view.preset !== "custom") {
-          setScheduleTouched(true);
-          setDraft((current) =>
-            current
-              ? {
-                  ...current,
-                  schedule: view.preset ?? "",
-                  timezone: view.timezone ?? current.timezone,
-                }
-              : current,
-          );
-        }
       })
       .catch(
         (error: unknown) =>
@@ -408,6 +396,22 @@ export function MonitorSetupEditor() {
     tracker.data,
     aliases,
   ]);
+
+  // A saved schedule preselects its choice once — whichever of the draft and
+  // the schedule read arrives last applies it.
+  const scheduleApplied = useRef(false);
+  useEffect(() => {
+    if (scheduleApplied.current || !draft || !schedule) return;
+    scheduleApplied.current = true;
+    // An inactive saved schedule reads back as "off" — preselect "No schedule".
+    if (!schedule.preset || schedule.preset === "custom") return;
+    setScheduleTouched(true);
+    setDraft({
+      ...draft,
+      schedule: schedule.preset,
+      timezone: schedule.timezone ?? draft.timezone,
+    });
+  }, [draft, schedule]);
 
   // A saved brief is read back into its four sections once.
   const briefLoaded = useRef(false);
