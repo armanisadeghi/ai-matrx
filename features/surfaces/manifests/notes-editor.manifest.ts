@@ -334,7 +334,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "editor_mode",
     label: "Editor mode",
     description:
-      'The view the open note is shown in — the header's four views. Values: "write" (Write: the formatted editor), "plain" (Plain: quick unformatted text, never auto-formatted), "split" (Split: plain text on the left, the formatted note live on the right), "preview" (Read: read-only). Lets actions adapt or refuse when the view is unsuitable (e.g. inserting at the cursor is meaningless in "preview"). Not the same thing as is_split_pane_visible (a SECOND note open beside this one).',
+      "The view the open note is shown in — the header's four views. Values: \"write\" (Write: the formatted editor), \"plain\" (Plain: quick unformatted text, never auto-formatted), \"split\" (Split: plain text on the left, the formatted note live on the right), \"preview\" (Read: read-only). Lets actions adapt or refuse when the view is unsuitable (e.g. inserting at the cursor is meaningless in \"preview\"). Not the same thing as is_split_pane_visible (a SECOND note open beside this one).",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 14,
