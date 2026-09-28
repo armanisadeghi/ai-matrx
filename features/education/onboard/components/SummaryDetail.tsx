@@ -14,7 +14,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Download, ListChecks, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, ListChecks, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
@@ -29,10 +29,17 @@ import { downloadTextFile } from "../export/download";
 import { ContentFindControl } from "@/features/rich-document/search/ContentFindControl";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationSummariesScope } from "@/features/surfaces/manifests/education-summaries.manifest";
+import { useAccess } from "@/utils/permissions/access";
+import { canEditAccess } from "@/utils/permissions/access-core";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
+import { useStudyMediaAuthReady } from "@/features/education/media/authLoad";
+import { SummaryEditor } from "./SummaryEditor";
 
 interface SummaryEnvelope {
   __kind?: string;
   title?: string;
+  trust?: unknown;
   /** Registered `study_summary` kind field (2026-08-25 on). */
   summary_markdown?: string;
   /** Pre-registration fabricated-envelope spelling — old rows only. */
@@ -40,7 +47,7 @@ interface SummaryEnvelope {
   key_points?: string[];
 }
 
-export function SummaryDetail({ id }: { id: string }) {
+export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean }) {
   const router = useRouter();
   const [row, setRow] = useState<StudyMediaRow | null>(null);
   // The raw failure, never a sentence — the gate decides what it means.
@@ -48,8 +55,12 @@ export function SummaryDetail({ id }: { id: string }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
+  const access = useAccess("study_media", id);
+  const canEdit = !access.loading && canEditAccess(access.level);
+  const authReady = useStudyMediaAuthReady();
 
   useEffect(() => {
+    if (!authReady) return undefined;
     let alive = true;
     (async () => {
       setLoading(true);
@@ -67,7 +78,7 @@ export function SummaryDetail({ id }: { id: string }) {
     return () => {
       alive = false;
     };
-  }, [id, reloadKey]);
+  }, [id, reloadKey, authReady]);
 
   if (loading) {
     return (
@@ -102,16 +113,27 @@ export function SummaryDetail({ id }: { id: string }) {
     );
   }
 
+  if (edit) return <SummaryEditor media={row} isOwner={access.isOwner} />;
+
   const env = (row.ir_envelope ?? {}) as SummaryEnvelope;
   const markdown = env.summary_markdown ?? env.markdown ?? "";
   const keyPoints = Array.isArray(env.key_points) ? env.key_points : [];
-  const trust = coerceTrustEnvelope(row.trust);
+  const trust = coerceTrustEnvelope(env.trust ?? row.trust);
 
   const onExport = () => {
     const kp = keyPoints.length
       ? `\n\n## Key points\n${keyPoints.map((k) => `- ${k}`).join("\n")}`
       : "";
     downloadTextFile(`${row.title || "summary"}.md`, `# ${row.title}\n\n${markdown}${kp}`);
+  };
+  const onDelete = async () => {
+    if (!access.isOwner) return;
+    const accepted = await confirm({ title: "Delete this summary?", description: "It will be removed from your summary library. This cannot be undone.", confirmLabel: "Delete summary", variant: "destructive" });
+    if (!accepted) return;
+    const result = await studyMediaService.softDelete(row.id);
+    if (result.error) { toast.error(result.error); return; }
+    toast.success("Summary deleted");
+    router.push("/education/summaries");
   };
 
   const getScope = () =>
@@ -158,6 +180,8 @@ export function SummaryDetail({ id }: { id: string }) {
         <Button variant="outline" size="sm" onClick={onExport}>
           <Download className="h-4 w-4" /> Markdown
         </Button>
+        {canEdit ? <Button variant="outline" size="sm" onClick={() => router.push(`/education/summaries/${row.id}/edit`)}><Pencil className="h-4 w-4" />Edit</Button> : null}
+        {access.isOwner ? <Button variant="outline" size="icon" onClick={() => { void onDelete(); }} aria-label="Delete summary"><Trash2 className="h-4 w-4" /></Button> : null}
       </div>
 
       <div ref={contentRef} className="space-y-5">

@@ -18,7 +18,7 @@ import { useRead } from "@/components/read-state/useRead";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
 import { useState } from "react";
-import { FileText } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
@@ -32,6 +32,9 @@ import {
 } from "@/features/education/components/EducationCollectionSearch";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationSummariesScope } from "@/features/surfaces/manifests/education-summaries.manifest";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { parseCreateSummaries, parseSummaryIds, parseUpdateSummaries } from "../summaryWrites";
 
 export function SummaryHome() {
   const read = useRead(
@@ -73,9 +76,43 @@ export function SummaryHome() {
             status: r.status,
           })),
     });
+  const getWriteHandlers = () => collectionWriteHandlers({
+    plural: "summaries", singular: "summary",
+    create: {
+      parse: parseCreateSummaries,
+      run: async (summary) => {
+        const result = await studyMediaService.create({ mediaKind: "summary", title: summary.title, irEnvelope: summary, status: "ready" });
+        if (result.error || !result.data) throw new Error(result.error ?? "Could not create summary.");
+        await read.retry();
+        return { id: result.data.id, name: result.data.title };
+      }, nameOf: (summary) => summary.title,
+    },
+    update: {
+      parse: (value) => parseUpdateSummaries(value, rows),
+      run: async (plan) => {
+        const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.summary.title, ir_envelope: plan.summary });
+        if (result.error || !result.data) throw new Error(result.error ?? "Could not update summary.");
+        await read.retry();
+        return { id: result.data.id, name: result.data.title };
+      }, nameOf: (plan) => plan.summary.title, changedOf: (plan) => plan.changed,
+    },
+    delete: {
+      parse: (value) => parseSummaryIds(value, "delete_summaries", rows).map((id) => {
+        const row = rows.find((candidate) => candidate.id === id);
+        if (!row) throw new Error(`Summary ${id} is no longer available.`);
+        return row;
+      }),
+      run: async (row) => {
+        const result = await studyMediaService.softDelete(row.id);
+        if (result.error) throw new Error(result.error);
+        await read.retry();
+        return { id: row.id, name: row.title };
+      }, nameOf: (row) => row.title,
+    },
+  }, refuseSurfaceWrite);
 
   return (
-    <SurfaceRuntimeProvider surfaceName="matrx-user/education-summaries" getScope={getScope}>
+    <SurfaceRuntimeProvider surfaceName="matrx-user/education-summaries" getScope={getScope} getWriteHandlers={getWriteHandlers}>
       <EducationToolHeader title="Study Summaries" />
       <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -84,12 +121,7 @@ export function SummaryHome() {
             onValueChange={setSearch}
             label="study summaries"
           />
-          <Button asChild size="sm" className="gap-1.5">
-            <Link href="/education/start">
-              <AGENT_ICON className="h-4 w-4" />
-              Summarize something
-            </Link>
-          </Button>
+          <div className="flex gap-2"><Button asChild size="sm" variant="outline"><Link href="/education/start"><AGENT_ICON className="h-4 w-4" />Summarize something</Link></Button><Button asChild size="sm"><Link href="/education/summaries/new"><Plus className="h-4 w-4" />New summary</Link></Button></div>
         </div>
 
         {loading ? (
@@ -112,6 +144,7 @@ export function SummaryHome() {
                 Create a study kit
               </Link>
             </Button>
+            <Button asChild size="sm" variant="outline"><Link href="/education/summaries/new"><Plus className="h-4 w-4" />Write a summary</Link></Button>
           </div>
         ) : filteredRows.length === 0 ? (
           <EducationCollectionNoResults
