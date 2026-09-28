@@ -8,6 +8,7 @@
  * Adding a feature to every board = one entry in the matching file:
  *   work-items.tsx     chat · note · file
  *   feature-items.tsx  task · War Room · meeting · workflow run · research…
+ *   data-items.tsx     data table · data record (the record store, /data-v2)
  *   content-items.tsx  web page · image · write-up · label
  */
 
@@ -16,8 +17,9 @@ import type { BoardItemType } from "./types";
 import { WORK_ITEMS } from "./work-items";
 import { FEATURE_ITEMS } from "./feature-items";
 import { CONTENT_ITEMS } from "./content-items";
+import { DATA_ITEMS } from "./data-items";
 
-export const BOARD_ITEM_TYPES: readonly BoardItemType[] = [...WORK_ITEMS, ...FEATURE_ITEMS, ...CONTENT_ITEMS];
+export const BOARD_ITEM_TYPES: readonly BoardItemType[] = [...WORK_ITEMS, ...DATA_ITEMS, ...FEATURE_ITEMS, ...CONTENT_ITEMS];
 
 export function itemTypeFor(source: NodeSource): BoardItemType | null {
   return BOARD_ITEM_TYPES.find((t) => t.matches(source)) ?? null;

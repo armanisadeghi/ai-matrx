@@ -153,7 +153,7 @@ function DoorButton({ href, children, primary }: { href: string; children: React
  * the read's outcome goes through the canonical `ReadGate` so a failed read is
  * never shown as "nothing here".
  */
-function RecordList<T>({
+export function RecordList<T>({
   rows,
   read,
   rowKey,

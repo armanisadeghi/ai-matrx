@@ -10,53 +10,27 @@
 
 import { use, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RecordsMount, TablePage, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { useTable } from "@ai-matrx/records/react";
 import type { PageView } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
-import { Button } from "@ai-matrx/design-system";
 
-import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { TableTransferOffer } from "@/features/sharing/components/TableTransferOffer";
-import {
-  PendingTableInvitation,
-  usePendingTableInvitation,
-} from "@/features/sharing/outside/PendingTableInvitation";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TableSwitcher } from "@/features/unified-data/components/TableSwitcher";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { createClient } from "@/utils/supabase/client";
-import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
-import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
-import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
-import { recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
-import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/mergedGridKnob";
-import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { copyAgain } from "@/features/unified-data/cutover/copyAgain";
-import {
-  ROW_CHANGE_AGENT_LABEL,
-  useRowChangeAgentOffer,
-} from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
-import { tableCopyEvaluation, useTableCopyEvaluation } from "@/features/unified-data/tableCopyEvaluation";
 import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
 import { HeldWritesOnTable } from "@/features/record-change-approvals/HeldWritesOnTable";
-import { RecordStoreTableSurface, useGridContextChannel } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
 import { tablePageCapture } from "@/components/agent-copy/page-capture/pageCapture";
 import { useTableCaptureContribution } from "@/features/unified-data/page-capture/useTableCaptureContribution";
 import { shownViewSelection, type ShownViewLike } from "@/features/unified-data/page-capture/shownViewCapture";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  UnifiedTableBody,
+  filterFromAddress,
+  useUnifiedTable,
+  type TableAddress,
+} from "@/features/unified-data/table-page/UnifiedTable";
 
 /**
  * THE PAGE'S HEADER — the app's standard one (lane TABLE-PAGE-CHROME, owner 2026-09-25: "Align with
@@ -144,28 +118,6 @@ function TableCapture({
   return null;
 }
 
-/**
- * The address's `?filter=` as the store's filter shape, or null (see the route's own note on why a
- * half-read filter is dropped). A module function, never inline in the component: a `try`/`catch`
- * with a value block inside the component makes the React Compiler SKIP the whole route
- * (`Support value blocks … within a try/catch statement`), and a skipped route rebuilt the
- * records client, the realtime port and the host on every render — lane RENDER-AUDIT, measured
- * with `scripts/react-compiler-bailouts.mjs`.
- */
-function filterFromAddress(rawFilter: string | null): RecordFilter | null {
-  if (!rawFilter) return null;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawFilter);
-  } catch {
-    return null;
-  }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-  const entries = Object.entries(parsed as Record<string, unknown>);
-  if (entries.length === 0) return null;
-  return Object.fromEntries(entries) as RecordFilter;
-}
-
 export default function UnifiedDataTableRoute({
   params,
 }: {
@@ -173,190 +125,64 @@ export default function UnifiedDataTableRoute({
 }) {
   const { tableId } = use(params);
   const router = useRouter();
-  // AN AGENT'S ANSWER ENDS IN A LINK, AND THE LINK HAS TO LAND. `dashboard_propose`
-  // builds the whole canvas in one call and hands back `?dashboard=<id>`; without this
-  // line the person arrives at the records, has to find the Dashboards button, and then
-  // has to guess which of several dashboards the agent meant — which is the link not
-  // finishing the sentence the agent started. Absent, the page opens exactly as before.
-  const searchParams = useSearchParams();
-  const activeDashboardId = searchParams.get("dashboard");
-  // THE INBOX'S OWN LINK. `ActionInbox` routes every Open to
-  // `/data-v2/<table>?record=<record>` — an approval, an assignment, an agent's proposal, a
-  // checklist step — and until records-ui 0.44.0 nothing read it, so pressing Open landed
-  // here with the record still shut. Same shape as `?dashboard=`: a link a queue produced has
-  // to finish the sentence it started.
-  const activeRecordId = searchParams.get("record");
   /**
-   * WHICH VIEW THE ADDRESS NAMES — grid, kanban, calendar, gallery, dashboards.
+   * THE ADDRESS IS THE PAGE'S STATE, AND EVERY LINK HAS TO LAND. Each of these was once a dead
+   * link of the same shape — in the address and read by nothing (`?dashboard=` from
+   * `dashboard_propose`, `?record=` from the ActionInbox's Open, `?view=` VERIFIER-8 HIGH-2,
+   * `?rail=&item=` VERIFIER-14 item 2, `?filter=` lane DRILL). Every word is passed RAW to
+   * `TablePage`, which says on screen when it does not know one; a `?filter=` that is not a JSON
+   * object is dropped rather than half-applied. `?grid=merged` forces the merged grid for a walk;
+   * otherwise the `data_tables.merged_grid` knob decides. `?org=` only matters while
+   * `custom.where_id_opens` is absent — the table names its own organization.
    *
-   * 🚨 THE THIRD DEAD LINK OF THE SAME SHAPE (VERIFIER-8 HIGH-2, 2026-09-21).
-   * `?view=kanban` returned 200 and rendered the grid, because — exactly like
-   * `?dashboard=` and `?record=` before it — the parameter was in the address
-   * and nothing read it. A person who bookmarks a board or sends one to a
-   * colleague got a grid, silently.
-   *
-   * It is passed RAW: a word this build has no view for is something the person
-   * must be told about, and `TablePage` says it. The route does not parse and
-   * it does not substitute.
-  */
-  const activeView = searchParams.get("view");
-  // THE ONE-GRID MERGE, WALKED BEHIND ITS SWITCH (merge steps 5-8): `?grid=merged` draws the
-  // package grid with the older /data grid's controls on it; without it the grid is as it was.
-  // `?grid=merged` forces it for a walk; otherwise the `data_tables.merged_grid` Feature Knob
-  // decides, for the TABLE's organization and this person (merge step 7; default off until step 8).
-  const gridForced = searchParams.get("grid") === "merged";
-  // THE AGENT'S VIEW OF THE MERGED GRID (merge 6l): the grid tells the channel, the surface reads it.
-  const gridContext = useGridContextChannel();
-  /**
-   * WHICH RAIL, AND WHICH THING IN IT — `?rail=forms&item=<form>`, and the same
-   * for notifications, portals and share (records-ui 0.82.0).
-   *
-   * 🚨 THE FOURTH DEAD LINK OF THE SAME SHAPE (VERIFIER-14 item 2, 2026-09-23).
-   * The organization hub's Forms, Digests, Portals and Shared-outside rows all
-   * opened this page on the GRID, because nothing below the layout could be
-   * addressed. Passed RAW, like `?view=`: a word the page has no rail for is
-   * said on the screen by `TablePage`, never parsed away here.
+   * Everything below the address — where the table lives, the store switch, the mount, the
+   * agent surface — is `useUnifiedTable` / `UnifiedTableBody`, the SAME component a Board tile
+   * renders (`features/spatial/items/data-items.tsx`). This route adds only its chrome.
    */
-  const activeRail = searchParams.get("rail");
-  const activeItemId = searchParams.get("item");
-  /** Which field the board's columns are, when a dashboard number sent them here. */
-  const activeGroupField = searchParams.get("group");
+  const searchParams = useSearchParams();
+  const rawFilter = searchParams.get("filter");
+  const filter = useMemo(() => filterFromAddress(rawFilter), [rawFilter]);
+  const address: TableAddress = {
+    dashboard: searchParams.get("dashboard"),
+    record: searchParams.get("record"),
+    view: searchParams.get("view"),
+    rail: searchParams.get("rail"),
+    item: searchParams.get("item"),
+    group: searchParams.get("group"),
+    from: searchParams.get("from"),
+    filter,
+    gridForced: searchParams.get("grid") === "merged",
+    askedOrganizationId: searchParams.get("org"),
+  };
+  const mount = useUnifiedTable({ tableId, address });
+  const { object, shared, knownOrganizationName, readingOrganizationId, allTablesHref, whereItLives } = mount;
+  const { organizations: myOrganizations } = useUserOrganizations();
   /**
    * THE VIEW AS DRAWN (V24-TAILS): TablePage reports the saved view with the person's look laid
    * over it, so the capture names "grouped by Trade (your own look)" and never "not chosen".
    */
   const [shownView, setShownView] = useState<ShownViewLike | null>(null);
-  // Passed as a named object: `onShownViewChange` is records-ui Unreleased (aidream e7d629b1bb);
-  // a build without it ignores the key and the capture says the grouping is not known yet.
-  // TODO(V24-TAILS): pass it by name once the lockfile carries the published records-ui.
-  const shownViewReport: { onShownViewChange?: (shown: ShownViewLike) => void } = {
-    onShownViewChange: setShownView,
-  };
-  /** The number they clicked, so the board can say where they came from. */
-  const cameFrom = searchParams.get("from");
   /**
-   * WHICH RECORDS THE NUMBER WAS COUNTED OVER — the store's one filter shape,
-   * carried in the address as JSON so the link can be bookmarked and sent.
-   *
-   * 🚨 THIS IS THE HALF THAT DID NOT EXIST YESTERDAY (lane DRILL, 2026-09-22).
-   * TAILS-6 wired the click and had to throw the filter away, because
-   * `custom.read_records` took no filter: the address kept only `group` and
-   * `from`, so a bar saying 27 opened all 41 records with a sentence
-   * apologising for it. `custom.read_records_matching` takes the filter now, so
-   * the address carries it and `TablePage` narrows the grid AND the board with
-   * it.
-   *
-   * A parameter that is not JSON, or is JSON that is not an object, is DROPPED
-   * rather than half-applied: a filter half-read is a screen quietly showing a
-   * different set of records than its own sentence claims. The board still says
-   * where the person came from, and the whole table is what they see — which is
-   * exactly the honest fallback, and it is the same one an old TAILS-6 link
-   * (which carries no `filter` at all) lands on.
+   * AND THE ADDRESS FOLLOWS THEM. `replace` rather than `push`, and a history write, not
+   * `router.replace`: switching a layout is bookkeeping on this page, never a server round trip
+   * (lane URL-STATE). Read at change time, never closed over `searchParams` (lane RENDER-AUDIT).
    */
-  const rawFilter = searchParams.get("filter");
-  const filter = useMemo(() => filterFromAddress(rawFilter), [rawFilter]);
-  /**
-   * AND THE ADDRESS FOLLOWS THEM. Half a deep link is a link that works when
-   * you arrive and lies when you copy it out of the bar afterwards. `replace`
-   * rather than `push`, because which view you are looking at is not a place
-   * you want the Back button to walk you through one layout at a time. And a
-   * history write, not `router.replace`: switching a layout is bookkeeping on
-   * this page, never a server round trip (lane URL-STATE).
-   */
-  // The address is read when the view changes, not when the page rendered: a handler that closed
-  // over `searchParams` was a new function on every parameter move (the Sheet's own search writes
-  // one per keystroke), and the table page re-rendered for it (lane RENDER-AUDIT).
   const onViewChanged = useCallback((view: PageView | string) => {
     const next = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
     next.set("view", view);
     replaceAddressWithoutNavigating(currentPathWithSearch(next));
   }, []);
-  const userId = useAppSelector(selectUserId);
-  /**
-   * THE ONE DATA SEAM, built once. It was built inline in `config` before,
-   * which made a new client on every render and gave this route no way to ask
-   * the store anything of its own.
-   */
-  const dataSource = useMemo(() => recordsDataSource(createClient()), []);
-  /**
-   * WHOSE TABLE THIS IS — `?org=`, the platform's own way of making a link name
-   * its organization (`platform.link_carries_its_organization`).
-   *
-   * 🚨 THE DEAD ROW THIS CLOSES (VERIFIER-14 item 2). The hub's "Shared with me"
-   * listing shows tables ANOTHER organization gave the person signed in, and
-   * every one of its rows opened here and hit "This table is not here. This
-   * table is not in the organization you are working in" — because this route
-   * mounted the store for whichever organization the person had picked, which
-   * by definition is not the one that owns a shared-in table. The address now
-   * says whose it is; `useSharedTable` asks the store's own door whether the
-   * share is real before a single byte is read as that organization; and the
-   * person's own organization selection is never touched.
-   */
-  const askedOrganizationId = searchParams.get("org");
-  /**
-   * WHOSE TABLE THIS IS, ASKED OF THE TABLE — ACCESS IS PERSONAL (owner, 2026-09-23).
-   *
-   * 🚨 THE DEFECT THIS CLOSES (VERIFIER-15 M8, VERIFIER-16 verdict 2). This page mounted the
-   * store for the organization the person had PICKED, and every door decides the organization
-   * wall first — so a member of Rincon Plumbing Co, working in another of her organizations,
-   * opened a Rincon table and read "This table is not in the organization you are working in …
-   * or it may have been deleted". The access was hers; the page handed the door the wrong
-   * organization. "The permission is to the person, not the org. ALWAYS … For any RECORD I try
-   * to see, the active org is meaningless."
-   *
-   * So the page asks `custom.where_id_opens(<table>)` — the organization the table lives
-   * in, answered only when this person may open it — and reads as THAT. Switching
-   * organization never re-decides whether this opens; the active organization is not read here
-   * at all (`pnpm check:object-pages-read-the-objects-organization`). `?org=` is no longer
-   * trusted or needed: the table names its own organization.
-   */
-  const object = useObjectOrganization(dataSource, tableId);
-  /**
-   * The NAME of the table's organization while `custom.table_home` has not answered (or is not
-   * on this database): the person's own organization list matched by the id the TABLE named,
-   * else — for a table shared with her from outside — the owner organization the share door
-   * names. Never the active organization.
-   */
-  const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
-  /**
-   * A TABLE ANOTHER ORGANIZATION GAVE THIS PERSON. The store already admitted her (the door
-   * above answered); `useSharedTable` asks `custom.tables_shared_with_me`, which lists only
-   * organizations she is NOT a member of — so "shared" here means "an outsider, let in by a
-   * share", and it adds whose it is and at what level for the one line that says so. Only
-   * while the door is absent from a database (the stand-in) does `?org=` still carry a share,
-   * exactly as it did before this lane.
-   */
-  const shareHint =
-    object.state === "found"
-      ? object.organizationId
-      : object.state === "stand-in"
-        ? askedOrganizationId
-        : null;
-  const shared = useSharedTable(
-    dataSource,
-    tableId,
-    shareHint,
-    object.state === "stand-in" ? object.activeOrganizationId : null,
-  );
-  /** A table shared with her from outside and not yet opened says so, rather than "not given". */
-  const pendingInvitation = usePendingTableInvitation(tableId, object.state === "not-given");
-  const knownOrganizationName =
-    object.state === "found"
-      ? (myOrganizations.find((o) => o.id === object.organizationId)?.name ??
-        (shared.state === "shared" ? shared.organizationName : null))
-      : null;
   /**
    * THE SHELL HEADER BELIEVES THE TABLE (GATES-TAIL, VERIFIER-21 #7). The table named its own
-   * organization and the title row shows it, so the header's red "Choose org" would be a lie:
-   * nothing here waits for a choice. The declaration silences it for as long as this page is up.
+   * organization, so the header's red "Choose org" would be a lie: nothing here waits for a choice.
    */
   useDeclarePageObjectOrganization(
     object.state === "found"
       ? {
           organizationId: object.organizationId,
           name: knownOrganizationName,
-          // TABLE-PAGE-CHROME: the page no longer names its organization on a line of its own; the
-          // shell's indicator does, lit when it is not the one she works in, and switches on click.
+          // TABLE-PAGE-CHROME: the shell's indicator names the organization, lit when it is not
+          // the one she works in, and switches on click.
           shownByPage: false,
           member:
             shared.state === "shared"
@@ -367,203 +193,26 @@ export default function UnifiedDataTableRoute({
         }
       : null,
   );
-  /** The organization this page reads as: the TABLE'S. */
-  const readingOrganizationId: string | null =
-    object.state === "found"
-      ? object.organizationId
-      : object.state === "stand-in"
-        ? shared.state === "shared"
-          ? shared.organizationId
-          : object.activeOrganizationId
-        : null;
-  const readingState: OrganizationState =
-    object.state === "stand-in" ? object.organizationState : readingOrganizationId ? "ready" : "resolving";
-  /**
-   * She reads it as a member of its organization (her roster is hers to read) — known only
-   * once the share door has said this is NOT a share of an outsider's.
-   */
-  const readsAsMember = shared.state === "none";
-  // A SHARED VIEWER READS NO ORGANIZATION'S SETTINGS (lane HANDOVER, 2026-09-27): the knob snapshot is
-  // gated on membership by design, so asking it for the table's organization as an outsider answered
-  // 403 and a console error on every shared table. An outsider gets the platform's own value.
-  const knobMergedGrid = useMergedGridKnob(readsAsMember ? readingOrganizationId : null);
-  const mergedGrid = gridForced || knobMergedGrid;
-  // ONE SWITCH: does THIS organization keep its data in the record store? Set
-  // once, for everybody, on the unified data ramp screen. There is no second,
-  // per-person switch any more (lane NAV-FIX, 19 September).
-  const campaign = useUnifiedDataCampaign({
-    // The switch is asked of the organization whose store this page reads.
-    // `platform.unified_data_store_on` already admits somebody a table was
-    // shared with (its own body checks `custom.portal_admits` beside
-    // `iam.has_org_access`), so a shared table asks the OWNER's switch and gets
-    // a real answer rather than "you are not in that organization".
-    organizationId: readingOrganizationId,
-    organizationState: readingState,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-  });
-
-  /**
-   * THE PORTS THE PACKAGE ASKS THIS APP FOR — members (FLD-11), a number clicking through
-   * (lane DRILL), "ask an agent" (onAskForOne) and a table's agent button (runAgentAction). Built
-   * by the ONE host binding every record-store table shares (one-grid merge, step 7), so the
-   * window, the overlay, the artifact, the quick sheet and the picker bind exactly these.
-   */
-  const ports = useRecordsUiPorts({ organizationId: readingOrganizationId, dataSource, readsAsMember });
-
-  /** TABLE-PARITY N2, in the table's one menu: absent until the store says a row change reaches a schedule. */
-  const rowChangeOffer = useRowChangeAgentOffer({
-    tableId,
-    tableName: null,
-    organizationId: campaign.state === "on" && object.state === "found" ? object.organizationId : null,
-    userId: userId ?? null,
-  });
-  /**
-   * WHERE THIS TABLE LIVES, AT THE FOOT OF THE TITLE'S OWN LIST (lane TABLE-PAGE-CHROME). It was a
-   * line beside the title; the owner asked for no organization line in the header. The one builder
-   * every object page renders (records-ui's `WhereItLives`, with Move), and, for a table another
-   * organization shared in, the level it was shared at.
-   */
-  const whereItLives =
-    object.state === "found" ? (
-      <span className="flex min-w-0 flex-col gap-1" data-table-lives-in="">
-        <WhereItLives
-          tableId={tableId}
-          knownOrganizationName={knownOrganizationName}
-          onMoved={() => object.retry()}
-          variant="row"
-        />
-        {shared.state === "shared" ? (
-          <span className="text-muted-foreground">Shared with you &middot; {shared.levelLabel}</span>
-        ) : null}
-      </span>
-    ) : null;
-  const allTablesHref = readingOrganizationId
-    ? `/data-v2?org=${encodeURIComponent(readingOrganizationId)}`
-    : "/data-v2";
-  /**
-   * THE HEADER, WITH THE TABLE PAGE'S OWN ACTIONS (records-ui `TablePage.header`, TABLE-PAGE-CHROME).
-   * Passed as a named object until the lockfile carries that records-ui: an installed build without
-   * `header` ignores the key and keeps Share and its menu in its own row, and the fallback header
-   * below still gives the page its back button and title switcher.
-   */
-  const pageHeader: { header?: (chrome: { actions: ReactNode }) => ReactNode } = {
-    header: ({ actions }) => (
-      <TableRouteHeader
-        tableId={tableId}
-        organizationId={readingOrganizationId}
-        actions={actions}
-        allTablesHref={allTablesHref}
-        switcherFooter={whereItLives}
-      />
-    ),
-  };
-  /**
-   * THE TABLE MENU'S EXTRA ITEM: "When a row changes, run an agent" — absent unless the store
-   * offers it; a refusal says why. The organization rides the page header beside the name, so the
-   * table's own row takes no `leading` (lane DATA-V2-FACE-2).
-   */
-  /**
-   * A TEST COPY SAYS SO IN THE TABLE MENU, NOT IN A BANNER (lane COPY-WRITABLE, 2026-09-25). While the
-   * organization's Data tables switch is off this page shows the copy of a live older table: people
-   * may test it end to end, agents and integrations keep writing the older table, and the switch
-   * replaces the test edits with the older table's rows. Absent for every other table.
-   */
-  const [copyVersion, setCopyVersion] = useState(0);
-  const copyEvaluation = useTableCopyEvaluation(object.state === "found" ? tableId : null, copyVersion);
-  const dispatchCopy = useAppDispatch();
-  /** "Copy this table again" (lane COPY-AGAIN-DOOR): the mover's rerun for this one table. */
-  const copyThisTableAgain = () => {
-    const id = toast.loading("Copying this table again from the older table…");
-    void copyAgain(
-      dispatchCopy,
-      { tableId, ...(object.state === "found" ? { organizationId: object.organizationId } : {}) },
-      (p) => toast.loading(p.says, { id }),
-    ).then((answer) => {
-      if (answer.ok) toast.success(answer.says, { id });
-      else toast.error("This table was not copied again", { id, description: answer.says });
-      setCopyVersion((v) => v + 1);
-    });
-  };
-  const testCopyExtras =
-    copyEvaluation.state === "test-copy"
-      ? [
-          {
-            key: "test-copy",
-            label: copyEvaluation.says,
-            onSelect: () => {
-              void tableCopyEvaluation(createClient(), tableId).then((now) => {
-                const said = now.state === "test-copy" ? now : copyEvaluation;
-                toast.info(said.says, {
-                  description: said.detail,
-                  ...(object.state === "found"
-                    ? {
-                        action: {
-                          label: "Data switch",
-                          onClick: () => router.push(`/organizations/${object.organizationId}/settings#data`),
-                        },
-                      }
-                    : {}),
-                });
-              });
-            },
-          },
-          { key: "copy-again", label: "Copy this table again", onSelect: copyThisTableAgain },
-        ]
-      : [];
-  const rowChangeExtras =
-      rowChangeOffer.state === "offered"
-        ? [
-            {
-              key: "row-change-agent",
-              label: ROW_CHANGE_AGENT_LABEL,
-              onSelect: () => router.push((rowChangeOffer as { href: string }).href),
-            },
-          ]
-        : rowChangeOffer.state === "refused"
-          ? [
-              {
-                key: "row-change-agent",
-                label: ROW_CHANGE_AGENT_LABEL,
-                onSelect: () =>
-                  toast.error("Running an agent when a row changes is not available", {
-                    description: (rowChangeOffer as { why: string }).why,
-                  }),
-              },
-            ]
-          : [];
-  const menuExtras = [...testCopyExtras, ...rowChangeExtras];
 
   // ── The alchemy capture: this table page, what the address chose (view, rail, record,
   //    dashboard, filter), whose table it is, and why it did not open when it did not. ──
-  const pageSays: string | null =
-    object.state === "resolving" || (object.state === "not-given" && pendingInvitation === undefined)
-      ? "Opening the table…"
-      : object.state === "not-given" && pendingInvitation
-        ? "A pending invitation to this table is shown."
-        : object.state === "not-given"
-          ? "You have not been given this table."
-          : object.state === "unavailable"
-            ? `We could not find out where this table is. ${object.why}`
-            : object.state === "stand-in" && shared.state === "not-shared"
-              ? `This shared table cannot open right now. ${shared.why}`
-              : campaign.state !== "on"
-                ? `The record store is not on for this organization (${campaign.state}).`
-                : null;
+  const pageSays = mount.says;
+  const pendingInvitation = mount.pendingInvitation;
   usePageCapture(() =>
     tablePageCapture({
       title: "Data table",
       route: `/data-v2/${tableId}`,
       table: { id: tableId, name: null },
-      view: activeView ?? "the table's default view (none named in the address)",
+      view: address.view ?? "the table's default view (none named in the address)",
       selection: {
         Organization: { id: readingOrganizationId, name: knownOrganizationName },
         "Shared with you": shared.state === "shared" ? shared.levelLabel : null,
-        Rail: activeRail,
-        "Rail item": activeItemId,
-        "Open record": activeRecordId,
-        Dashboard: activeDashboardId,
-        ...shownViewSelection(shownView, activeGroupField),
-        "Came from": cameFrom,
+        Rail: address.rail,
+        "Rail item": address.item,
+        "Open record": address.record,
+        Dashboard: address.dashboard,
+        ...shownViewSelection(shownView, address.group),
+        "Came from": address.from,
         Filter: filter ? JSON.stringify(filter) : rawFilter ? `ignored (not a JSON object): ${rawFilter}` : null,
       },
       errors: [
@@ -577,7 +226,7 @@ export default function UnifiedDataTableRoute({
           role: "data",
           value: {
             table_opens: object.state,
-            record_store_switch: campaign.state,
+            record_store_switch: mount.campaign.state,
             says: pageSays ?? "The table is open.",
           },
         },
@@ -585,34 +234,24 @@ export default function UnifiedDataTableRoute({
     }),
   );
 
-  /** The table itself is on screen (the store answered, the switch is on). */
-  const mountsTheTable =
-    object.state !== "resolving" &&
-    object.state !== "not-given" &&
-    object.state !== "unavailable" &&
-    !(object.state === "stand-in" && (object.organizationState !== "ready" || shared.state !== "shared" && shared.state !== "none")) &&
-    campaign.state === "on";
-
-  /**
-   * THE MOUNT'S CONFIG AND HOST, EACH ITS OWN VALUE (lane RENDER-AUDIT, 2026-09-26). Written inline
-   * in the JSX below, the React Compiler put them in ONE memo scope with the whole conditional tree
-   * — 28 inputs, `onViewChanged` and `menuExtras` among them — so every search-parameter move and
-   * every render that rebuilt the table menu handed `RecordsMount` a new config and a new host, and
-   * the table page, its view bar and every cell rendered again. As their own statements each is
-   * rebuilt only when what it is made of changes. Null until the table can mount.
-   */
-  /** Archiving leaves to the table's organization's list (its own statement: its own memo scope). */
+  /** Archiving leaves to the table's organization's list (ACCESS-FIX-18, VERIFIER-18 H4). */
   const leaveTable = () => router.push(allTablesHref);
+  /** THE HEADER, WITH THE TABLE PAGE'S OWN ACTIONS (records-ui `TablePage.header`, TABLE-PAGE-CHROME). */
+  const header = ({ actions }: { actions: ReactNode }) => (
+    <TableRouteHeader
+      tableId={tableId}
+      organizationId={readingOrganizationId}
+      actions={actions}
+      allTablesHref={allTablesHref}
+      switcherFooter={whereItLives}
+    />
+  );
   /**
-   * WHAT THE MOUNT HOLDS, AS ITS OWN VALUE (lane RENDER-AUDIT): the fallback header, the capture
-   * and the table page. Inline in the JSX below it was rebuilt with the whole conditional tree on
-   * every render of this route, and a new element re-renders the table page even when every prop
-   * is the same. Built here, it is new only when something the table page is handed changes.
+   * Above the table page: the header before records-ui hands over its actions (and, on an older
+   * build that never calls `header`, the header itself), and the record-store half of the capture.
    */
-  const mountedTable = mountsTheTable ? (
+  const before = (
     <>
-      {/* The header before records-ui hands over its actions (and, on an older build that
-          never calls `header`, the header itself): back, the title switcher, the capture. */}
       <TableRouteHeader
         fallback
         tableId={tableId}
@@ -620,98 +259,16 @@ export default function UnifiedDataTableRoute({
         allTablesHref={allTablesHref}
         switcherFooter={whereItLives}
       />
-      <TableCapture tableId={tableId} filter={filter} recordId={activeRecordId} />
-      {/* A new record lands in the TABLE'S organization: the shell's organization indicator
-          lights when the table lives somewhere other than the organization she works in,
-          and switches on one click (TABLE-PAGE-CHROME — no notice row on the page). */}
-      {/* SIDE BY SIDE IS A FACT, NOT A BANNER (owner, 2026-09-24): no notice that this table
-          also lives in the older system, and no "shared with you" paragraph — the table's
-          row names its organization and the level it was shared at. */}
-      {/* A table this organization cannot see says so and offers the way
-          back — never the blank frame the 19 September verdict found. */}
-      {/* `activeDashboardId` is a DECLARED prop of TablePage from
-          records-ui 0.38.0 onwards. It used to ride through a spread
-          because 0.16.1 did not declare it and the excess-property check
-          does not judge a spread — which meant the compiler could not
-          tell us if the prop was ever renamed. It is passed by name now,
-          so a rename is a build failure instead of a dashboard that
-          silently stops opening. */}
-      <RecordStoreTableSurface channel={gridContext} enabled={mergedGrid}>
-        <TablePage
-          tableId={tableId}
-          /* THE WAY BACK NAMES THE TABLE'S ORGANIZATION (ACCESS-FIX-18, VERIFIER-18 H4).
-             Archiving calls this; it used to land on the bare list, which reads the ACTIVE
-             organization and, with none picked, said "An organization is needed for data
-             records" about a table that had just named its own. */
-          onLeave={leaveTable}
-          activeDashboardId={activeDashboardId}
-          activeRecordId={activeRecordId}
-          activeView={activeView}
-          activeGroupField={activeGroupField}
-          {...shownViewReport}
-          cameFrom={cameFrom}
-          filter={filter}
-          onViewChanged={onViewChanged}
-          activeRail={activeRail}
-          activeItemId={activeItemId}
-          menuExtras={menuExtras}
-          {...pageHeader}
-        />
-      </RecordStoreTableSurface>
+      <TableCapture tableId={tableId} filter={filter} recordId={address.record} />
     </>
-  ) : null;
-  const recordsConfig = mountsTheTable
-    ? {
-          dataSource,
-          actor: personActor(userId),
-          organizationId: readingOrganizationId!,
-          // LIVE UPDATES. The grid's "Not live: this host bound no realtime port" banner
-          // was naming exactly this seam. The port joins the private topic the database
-          // broadcasts a NOTICE on and re-reads through the read door; `undefined` when
-          // the store's switch is off, and the honest banner comes back.
-          realtime: createRecordsRealtimePort(readingOrganizationId!),
-        }
-    : null;
-  const recordsHost = mountsTheTable
-    ? recordsUiHostFor({
-      ports,
-      merged: mergedGrid,
-      gridContext,
-      // THE SHEET. The classic /data grid, ported onto the one data seam, is the
-      // fifth layout of this one table page (owner's ruling 2026-09-23: no switch
-      // on /data, no new route). It reads and writes the record store only.
-      layouts: [
-        {
-          id: "sheet",
-          label: "Sheet",
-          render: (args) => (
-            <SheetLayout
-              tableId={args.tableId}
-              organizationId={readingOrganizationId!}
-              userId={userId ?? null}
-              // The page's own export, handed over by records-ui 0.85+ (absent before it).
-              openExport={(args as { openExport?: () => void }).openExport}
-              // TABLE-PAGE-CHROME: the page's one toolbar row and where the view's footer sits,
-              // handed by the next records-ui (absent before it: the Sheet draws as today).
-              {...((args as { toolbarSlot?: HTMLElement | null }).toolbarSlot !== undefined
-                ? { toolbarSlot: (args as { toolbarSlot?: HTMLElement | null }).toolbarSlot }
-                : {})}
-              {...((args as { footer?: "sticky" | "inline" }).footer
-                ? { footer: (args as { footer?: "sticky" | "inline" }).footer }
-                : {})}
-            />
-          ),
-        },
-      ],
-    })
-    : null;
+  );
 
   return (
     <>
       {/* THE BODY IS BOUNDED (core-route-headers): the table page fills it, so a sticky footer
           has a height to sit at the bottom of; the states before the table opens scroll. */}
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-        {mountsTheTable ? null : (
+        {mount.mountsTheTable ? null : (
           <RouteHeader
             fallback
             left={
@@ -722,73 +279,15 @@ export default function UnifiedDataTableRoute({
             }
           />
         )}
-        {/* Scrollable either way: the table page fills this exactly when its footer is sticky (the
-            rows scroll inside it), and an older records-ui that does not fill still scrolls here. */}
-        <div className={mountsTheTable ? "h-full overflow-y-auto px-3 pb-2 pt-1" : "h-full overflow-y-auto p-4"}>
-        {object.state === "resolving" ? (
-          <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>
-        ) : object.state === "not-given" && pendingInvitation === undefined ? (
-          <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>
-        ) : object.state === "not-given" && pendingInvitation ? (
-          <PendingTableInvitation invitation={pendingInvitation} />
-        ) : object.state === "not-given" ? (
-          /* THE CANONICAL NO ACCESS PAGE. A Table is a record of the store (token `record`,
-             custom.record), so `access_denied_context` answers which of the four it really is —
-             not shared with you, deleted, never there, or signed out — and offers the ask to
-             whoever can grant it (the table's creator; the organization's admins for a shared
-             one). Grants land on the same ladder `custom.where_id_opens` reads. */
-          <AccessGate
-            token="record"
-            id={tableId}
-            onRetry={object.retry}
-            fallbackHref="/data-v2"
-            fallbackLabel="Back to your tables"
-            // SHARE-LANE-2: an organization owner or admin who is not named gets the one thing
-            // the role allows — an audited transfer — and never a silent read.
-            footer={<TableTransferOffer tableId={tableId} onTransferred={object.retry} />}
+        <div className={mount.mountsTheTable ? "h-full overflow-y-auto px-3 pb-2 pt-1" : "h-full overflow-y-auto p-4"}>
+          <UnifiedTableBody
+            mount={mount}
+            before={before}
+            header={header}
+            onLeave={leaveTable}
+            onViewChanged={onViewChanged}
+            onShownViewChange={setShownView}
           />
-        ) : object.state === "unavailable" ? (
-          <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
-            <p className="text-sm font-medium">We could not find out where this table is <ErrorAlchemyMenu /></p>
-            <p className="max-w-prose text-xs text-muted-foreground">
-              The record store did not answer, so nothing was opened. This is not an answer about
-              your access. {object.why}
-            </p>
-            <Button size="sm" variant="outline" onClick={object.retry}>
-              Try again
-            </Button>
-          </div>
-        ) : object.state === "stand-in" && object.organizationState !== "ready" ? (
-          <OrganizationContextNotice state={object.organizationState} what="Data records" />
-        ) : object.state === "stand-in" && shared.state === "checking" ? (
-          /* The address says this table belongs to another organization. Until
-             the store has said whether that share is real, nothing is mounted —
-             mounting the person's own organization meanwhile is exactly the
-             "This table is not here" flash this whole change removes. */
-          <p className="text-sm text-muted-foreground">
-            Opening the table&hellip;
-          </p>
-        ) : object.state === "stand-in" && shared.state === "not-shared" ? (
-          <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
-            <p className="text-sm font-medium">This shared table cannot open right now</p>
-            <p className="max-w-prose text-xs text-muted-foreground">{shared.why}</p>
-            <Button size="sm" variant="outline" onClick={() => router.push("/data-v2")}>
-              Back to your tables
-            </Button>
-          </div>
-        ) : campaign.state !== "on" ? (
-          /* THE ONE NOTICE — resolving, could-not-check and off are three
-             different things (lane SHARE-OUT, item 3). */
-          <UnifiedDataSwitchNotice gate={campaign} what="Data records" />
-        ) : (
-          <RecordsMount
-            letTheStoreDecideRights
-            config={recordsConfig!}
-            host={recordsHost!}
-          >
-            {mountedTable}
-          </RecordsMount>
-        )}
         </div>
       </div>
     </>
