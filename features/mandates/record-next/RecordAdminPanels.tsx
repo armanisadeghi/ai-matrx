@@ -93,6 +93,7 @@ export function RecordAdminPanels({
     Record<string, MandateCodeTruth>
   >({});
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [codeTruthFailed, setCodeTruthFailed] = useState(false);
   const [outputSchemas, setOutputSchemas] = useState<Record<
     string,
     unknown
@@ -151,9 +152,11 @@ export function RecordAdminPanels({
         setCodeTruthByKey(
           Object.fromEntries(report.mandates.map((m) => [m.mandate_key, m])),
         );
+        setCodeTruthFailed(false);
       })
       .catch((err: unknown) => {
         console.warn("[mandate-record-next] code truth unavailable", err);
+        if (!cancelled) setCodeTruthFailed(true);
       });
     return () => {
       cancelled = true;
@@ -242,6 +245,13 @@ export function RecordAdminPanels({
         <p className="text-sm text-destructive">Mandate unavailable</p>
       ) : (
         <>
+        {codeTruthFailed ? (
+          <p className="mb-2 text-xs text-muted-foreground">
+            What the code declares for this job could not be read, so the code
+            diagnostics below are incomplete.
+            <ErrorAlchemyMenu />
+          </p>
+        ) : null}
         {schemasFailed ? (
           <p className="mb-2 text-xs text-muted-foreground">
             The agent&apos;s output contract could not be read, so the contract

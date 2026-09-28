@@ -42,8 +42,14 @@ export function useDefinitionRights(
         if (live) setRights(answer);
       })
       .catch((error: unknown) => {
-        // Absent, never dead: no edit affordance — and said loudly for us.
+        // Absent, never dead: no edit affordance — and said, for us AND for the
+        // person, whose edit pencils would otherwise vanish without a word.
         console.error("[mandates] definition rights could not be read", mandateKey, error);
+        if (live) {
+          toast.error(
+            "Couldn't check whether you can edit this job, so its edit controls are hidden. Reload to try again.",
+          );
+        }
       });
     return () => {
       live = false;

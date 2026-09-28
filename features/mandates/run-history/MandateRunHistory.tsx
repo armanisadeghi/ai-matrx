@@ -204,7 +204,7 @@ export function MandateRunHistory({
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h3 className="shrink-0 text-sm font-semibold text-foreground">Runs</h3>
           <span className="shrink-0 text-xs text-muted-foreground" aria-live="polite">
-            {page ? `${total.toLocaleString()} ${total === 1 ? "run" : "runs"}` : " "}
+            {page && !error ? `${total.toLocaleString()} ${total === 1 ? "run" : "runs"}` : " "}
           </span>
           <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
             {view === "platform" ? (
@@ -318,7 +318,7 @@ export function MandateRunHistory({
       )}
 
       {compact ? (
-        page && total > 0 && seeAllHref ? (
+        page && !error && total > 0 && seeAllHref ? (
           <div className="flex min-w-0 items-center justify-between gap-2 text-xs">
             <span className="text-muted-foreground">
               {total > page.rows.length ? `Last ${page.rows.length} of ${total.toLocaleString()}` : `${total} ${total === 1 ? "run" : "runs"}`}
@@ -328,7 +328,7 @@ export function MandateRunHistory({
             </Link>
           </div>
         ) : null
-      ) : page && total > limit ? (
+      ) : page && !error && total > limit ? (
         <div className="flex min-w-0 items-center justify-end gap-2 text-xs text-muted-foreground">
           <span>
             {offset + 1}–{Math.min(offset + limit, total)} of {total.toLocaleString()}

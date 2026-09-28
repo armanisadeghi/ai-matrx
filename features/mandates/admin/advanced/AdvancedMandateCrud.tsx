@@ -12,6 +12,7 @@
 // no second grid in this feature.
 
 import { useCallback, useEffect, useState, useTransition } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { AlertTriangle, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
@@ -210,6 +211,8 @@ export function AdvancedMandateCrud() {
     load();
   };
 
+  const rowsRead = readOf({ loading: isPending, error }, { what: relKey, onRetry: load });
+
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       <div className="shrink-0 border-b border-border bg-card px-4 py-3">
@@ -278,7 +281,7 @@ export function AdvancedMandateCrud() {
           isLoading={isPending && rows.length === 0}
           isFetching={isPending}
           // The read's failure is said once, by the table.
-          read={readOf({ loading: isPending, error }, { what: relKey, onRetry: load })}
+          read={rowsRead}
           pageSize={25}
           zebra
           emptyState={{
@@ -312,7 +315,9 @@ export function AdvancedMandateCrud() {
             actions: (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
-                  {rows.length} of {total} row{total === 1 ? "" : "s"}
+                  <UntrustedCount read={rowsRead} label="Rows shown" value={rows.length} /> of{" "}
+                  <UntrustedCount read={rowsRead} label="Total rows" value={total} /> row
+                  {total === 1 ? "" : "s"}
                 </span>
                 <Button size="sm" variant="outline" onClick={load} disabled={isPending}>
                   <RefreshCw className="mr-1 h-3 w-3" />

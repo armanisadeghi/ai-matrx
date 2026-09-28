@@ -13,6 +13,7 @@
 // that discloses its jobs only has to drop `<IntelligenceIndicator feature=… />`.
 
 import { useEffect, useState } from "react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight } from "lucide-react";
@@ -133,6 +134,8 @@ export function IntelligenceIndicator({
 
   const [open, setOpen] = useState(false);
   const [identities, setIdentities] = useState<Record<string, MandateIdentity>>({});
+  // Names fall back to the keys when their read fails — and the popover says so.
+  const [identitiesFailed, setIdentitiesFailed] = useState(false);
   const keyList = keys.join("|");
   useEffect(() => {
     if (!pageOnly || !resolvedFeature) return;
@@ -147,10 +150,13 @@ export function IntelligenceIndicator({
     let cancelled = false;
     fetchMandateIdentities(keyList.split("|"))
       .then((next) => {
-        if (!cancelled) setIdentities(next);
+        if (cancelled) return;
+        setIdentities(next);
+        setIdentitiesFailed(false);
       })
       .catch((error: unknown) => {
         console.error("[intelligence-indicator] names could not be read", error);
+        if (!cancelled) setIdentitiesFailed(true);
       });
     return () => {
       cancelled = true;
@@ -249,6 +255,13 @@ export function IntelligenceIndicator({
               );
             })}
           </ul>
+        ) : null}
+        {identitiesFailed && keys.length > 0 ? (
+          <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+            Couldn&apos;t read these jobs&apos; names, so they&apos;re named from
+            their keys.
+            <ErrorAlchemyMenu operation="Read the intelligence job names" />
+          </p>
         ) : null}
         <Link
           href={pageHref}

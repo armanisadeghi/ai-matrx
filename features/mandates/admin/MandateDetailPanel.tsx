@@ -1214,6 +1214,8 @@ function FactsPanel({
   const [offeredNames, setOfferedNames] = useState<string[] | undefined>(
     undefined,
   );
+  // A failed offer read falls back to the provision key — and says so.
+  const [offerFailed, setOfferFailed] = useState(false);
   const factProvisionKey = wave1.provisionKey;
   useEffect(() => {
     if (!factProvisionKey) {
@@ -1225,9 +1227,12 @@ function FactsPanel({
       .then((offer) => {
         if (cancelled) return;
         setOfferedNames(offer ? offer.values.map((v) => v.name) : undefined);
+        setOfferFailed(false);
       })
       .catch(() => {
-        // The cell names the provision key instead — still true.
+        // The cell names the provision key instead — still true — and the
+        // note under it says the offer itself could not be read.
+        if (!cancelled) setOfferFailed(true);
       });
     return () => {
       cancelled = true;
@@ -1515,6 +1520,13 @@ function FactsPanel({
               maxChips={8}
               offeredValues={offeredNames}
             />
+            {offerFailed && factProvisionKey ? (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Couldn&apos;t read this provision&apos;s offer, so its key is
+                shown instead of the values it offers.
+                <ErrorAlchemyMenu operation="Read the provision offer" />
+              </p>
+            ) : null}
           </Fact>
           <Fact label="Output">
             <MandateOutputCell row={row} maxChips={8} />

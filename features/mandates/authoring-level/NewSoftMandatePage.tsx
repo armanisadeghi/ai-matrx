@@ -524,7 +524,8 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
                 ? keyIsAuto
                   ? "Finding a free key for this name…"
                   : "Not yet — that key belongs to a live job; change it and this works."
-                : "No agent or workflow needed yet — bind one whenever it exists."}
+                : // read-gate-exempt: guidance that creation needs no bound runner, not an empty list
+                  "No agent or workflow needed yet — bind one whenever it exists."}
           </span>
         </div>
       </div>

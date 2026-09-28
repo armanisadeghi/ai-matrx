@@ -546,7 +546,7 @@ export function MandateReferenceBoardView() {
         </div>
       ) : null}
 
-      {board ? (
+      {board && !error ? (
         <>
           {/* TOP OF THE BOARD, deliberately: the patrol is what keeps everything
               below it true, and its cost is what Arman asked to be able to see.

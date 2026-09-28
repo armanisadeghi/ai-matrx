@@ -58,7 +58,12 @@ type ComposerState =
   | { status: "error"; message: string }
   | { status: "missing" }
   | { status: "kind-form"; offer: ProvisionOffer; offerKind: string }
-  | { status: "scaffold"; offer: ProvisionOffer };
+  | {
+      status: "scaffold";
+      offer: ProvisionOffer;
+      /** The offer kind's lookup FAILED — the scaffold is a stand-in and says so. */
+      kindLookupError?: string;
+    };
 
 export function ProvisionOfferComposer({
   provisionKey,
@@ -87,6 +92,7 @@ export function ProvisionOfferComposer({
         // Path decision: use the canonical KindInputForm when the derived
         // offer kind resolves in the catalog; otherwise scaffold from the
         // offered values.
+        let kindLookupError: string | undefined;
         if (offer.offerKindSlug) {
           try {
             const contract = await getKindInputContractBySlug(
@@ -106,9 +112,11 @@ export function ProvisionOfferComposer({
               `[mandates] bench: offer kind "${offer.offerKindSlug}" lookup failed — scaffolding from the provision instead`,
               error,
             );
+            kindLookupError =
+              error instanceof Error ? error.message : String(error);
           }
         }
-        if (!cancelled) setState({ status: "scaffold", offer });
+        if (!cancelled) setState({ status: "scaffold", offer, kindLookupError });
       } catch (error) {
         if (!cancelled) {
           setState({
@@ -184,7 +192,21 @@ export function ProvisionOfferComposer({
     );
   }
 
-  return <ScaffoldForm offer={state.offer} onApply={onApply} />;
+  return (
+    <>
+      {state.kindLookupError ? (
+        <p className="mb-1 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+          <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
+          Couldn&apos;t look up the offer kind{" "}
+          <code className="font-mono">{state.offer.offerKindSlug}</code>, so
+          these fields are scaffolded from the provision instead:{" "}
+          {state.kindLookupError}
+          <ErrorAlchemyMenu error={state.kindLookupError} />
+        </p>
+      ) : null}
+      <ScaffoldForm offer={state.offer} onApply={onApply} />
+    </>
+  );
 }
 
 /** Fallback fields scaffolded straight from the provision's offered values —

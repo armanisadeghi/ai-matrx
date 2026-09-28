@@ -427,7 +427,8 @@ export function NewMandatePage() {
               ? `Not yet — this mandate still needs ${missing.join(", ")}.`
               : keyIsTaken
                 ? "Not yet — that key belongs to a live job; change it and this works."
-                : "No agent or workflow needed yet — bind one whenever it exists."}
+                : // read-gate-exempt: guidance that creation needs no bound runner, not an empty list
+                  "No agent or workflow needed yet — bind one whenever it exists."}
           </span>
         </div>
       </div>
