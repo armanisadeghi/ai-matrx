@@ -34,8 +34,11 @@ hydration errors.
 - 2026-09-27 — **A queued-reveal boundary (`$~`) counts as unhydrated.** React 19
   marks a streamed boundary `$~` while its reveal waits for a frame; boot used to
   treat only `$?` as pending, so the warm-cached org could land first and the
-  composer's context chip hydrated as "Context: <org>" over "Set context". Open:
-  the D345 5s cap still boots past a pending boundary under heavy load.
+  composer's context chip hydrated as "Context: <org>" over "Set context". The
+  class is closed at the Provider: `StoreProvider` passes each client store's
+  pre-boot state as react-redux `serverState`, so every `useAppSelector`
+  hydrates against the server's values whenever boot runs (the D345 cap
+  included). Guard: `providers/__tests__/warm-cache-never-changes-what-hydrates.test.tsx`.
 - 2026-09-27 (review) — **A failed remote write is never dropped.** It stays
   pending (so no refresh lands over it) and re-arms itself at 2s, 4s, 8s, 16s,
   then every 30s; at 3 consecutive failures the person gets a toast with
