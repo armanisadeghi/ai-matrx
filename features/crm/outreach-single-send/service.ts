@@ -30,7 +30,16 @@ export interface OutreachProblem {
   unresolved: string[];
 }
 
+/*
+ * 🚨 Every call below names the CAMPAIGN's organization (`organizationId`).
+ * The draft, the campaign and the send all belong to that organization; relying
+ * on whichever organization happens to be selected refused every call with
+ * "Select an organization before sending this request" whenever none was
+ * selected (2026-09-28). Guard: __tests__/every-call-carries-the-campaign-organization.test.ts.
+ */
 export async function createOutreachDraft(input: {
+  /** The organization that owns the campaign (`outreach_list.organization_id`). */
+  organizationId: string;
   outreachListId: string;
   memberId: string;
   templateId: string;
@@ -43,30 +52,34 @@ export async function createOutreachDraft(input: {
     template_id: input.templateId,
     reputation_case_id: input.reputationCaseId ?? null,
     backlink_id: input.backlinkId ?? null,
-  });
+  }, { organizationId: input.organizationId });
   return data;
 }
 
 export async function approveOutreachDraft(
   draftId: string,
+  organizationId: string,
 ): Promise<OutreachDraft> {
   const { data } = await apiPost(
     buildPath("/outreach/single/drafts/{draft_id}/approve", {
       draft_id: draftId,
     }),
     {},
+    { organizationId },
   );
   return data;
 }
 
 export async function sendOutreachDraft(
   draftId: string,
+  organizationId: string,
 ): Promise<OutreachSendResult> {
   const { data } = await apiPost(
     buildPath("/outreach/single/drafts/{draft_id}/send", {
       draft_id: draftId,
     }),
     {},
+    { organizationId },
   );
   return data;
 }
@@ -101,10 +114,12 @@ export interface OutreachApproveBatchResult {
  */
 export async function approveOutreachDrafts(
   draftIds: string[],
+  organizationId: string,
 ): Promise<OutreachApproveBatchResult> {
   const { data } = await postJson<OutreachApproveBatchResult>(
     "/outreach/single/drafts/approve",
     { draft_ids: draftIds },
+    { organizationId },
   );
   return data;
 }
@@ -126,10 +141,12 @@ export async function approveOutreachDrafts(
 export async function reviseOutreachPersonalization(
   draftId: string,
   fields: Record<string, string>,
+  organizationId: string,
 ): Promise<OutreachDraft> {
   const { data } = await postJson<OutreachDraft>(
     `/outreach/single/drafts/${encodeURIComponent(draftId)}/personalization`,
     { fields },
+    { organizationId },
   );
   return data;
 }
@@ -142,11 +159,13 @@ export async function reviseOutreachPersonalization(
  */
 export async function rejectOutreachDraft(
   draftId: string,
+  organizationId: string,
   reason?: string,
 ): Promise<OutreachRejectResult> {
   const { data } = await postJson<OutreachRejectResult>(
     `/outreach/single/drafts/${encodeURIComponent(draftId)}/reject`,
     { reason: reason?.trim() || null },
+    { organizationId },
   );
   return data;
 }

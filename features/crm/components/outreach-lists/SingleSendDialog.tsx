@@ -166,6 +166,7 @@ export function SingleSendDialog({
     try {
       setDraft(
         await createOutreachDraft({
+          organizationId: list.organization_id,
           outreachListId: list.id,
           memberId: member.id,
           templateId,
@@ -186,7 +187,7 @@ export function SingleSendDialog({
     setBusy("approve");
     setProblem(null);
     try {
-      setDraft(await approveOutreachDraft(draft.id));
+      setDraft(await approveOutreachDraft(draft.id, list.organization_id));
       toast.success("Exact message approved");
     } catch (error) {
       setProblem(readOutreachProblem(error));
@@ -204,7 +205,7 @@ export function SingleSendDialog({
         entityType: "crm_interaction",
         entityId: draft.id,
       });
-      const result = await sendOutreachDraft(draft.id);
+      const result = await sendOutreachDraft(draft.id, list.organization_id);
       setDraft(result.draft);
       toast.success(`Email sent to ${result.draft.recipient}`);
       onSent();

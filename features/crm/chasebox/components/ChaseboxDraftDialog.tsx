@@ -237,6 +237,9 @@ export function ChaseboxDraftDialog({
   }, [draft, approvedAt, personalization, reply, onDraftLoaded]);
 
   const draftId = draft ? readOutreachDraftId(draft.id, draft.attributes) : null;
+  // The organization that owns THIS draft — every governed call names it, never
+  // the globally selected one (outreach-single-send/service.ts header).
+  const draftOrgId = draft?.organization_id ?? row?.organization_id ?? null;
   // THE PR FLOOR on the held draft under review (pitch advisories E1–E17): the
   // same panel every outreach surface shows. It never gates Approve or Send;
   // sending records that the reviewer saw the warnings.
@@ -271,11 +274,11 @@ export function ChaseboxDraftDialog({
   );
 
   const approve = useCallback(async () => {
-    if (!draftId || busy) return;
+    if (!draftId || !draftOrgId || busy) return;
     setBusy("approve");
     setProblem(null);
     try {
-      const result = await approveOutreachDraft(draftId);
+      const result = await approveOutreachDraft(draftId, draftOrgId);
       setApprovedAt(result.approved_at ?? new Date().toISOString());
       toast.success("Exact message approved");
     } catch (error) {
@@ -283,15 +286,15 @@ export function ChaseboxDraftDialog({
     } finally {
       setBusy(null);
     }
-  }, [draftId, busy]);
+  }, [draftId, draftOrgId, busy]);
 
   const send = useCallback(async () => {
-    if (!draftId || busy || !approvedAt) return;
+    if (!draftId || !draftOrgId || busy || !approvedAt) return;
     setBusy("send");
     setProblem(null);
     try {
       await advisories.recordGoAhead({ entityType: "crm_interaction", entityId: draftId });
-      const result = await sendOutreachDraft(draftId);
+      const result = await sendOutreachDraft(draftId, draftOrgId);
       toast.success(`Email sent to ${result.draft.recipient}`);
       if (row) setResolvedIds((ids) => [...ids, row.id]);
       onResolved();
@@ -301,14 +304,14 @@ export function ChaseboxDraftDialog({
     } finally {
       setBusy(null);
     }
-  }, [draftId, busy, approvedAt, row, onResolved, advance, advisories]);
+  }, [draftId, draftOrgId, busy, approvedAt, row, onResolved, advance, advisories]);
 
   const reject = useCallback(async () => {
-    if (!draftId || busy) return;
+    if (!draftId || !draftOrgId || busy) return;
     setBusy("reject");
     setProblem(null);
     try {
-      await rejectOutreachDraft(draftId, rejectReason);
+      await rejectOutreachDraft(draftId, draftOrgId, rejectReason);
       toast.success("Message rejected — the contact left this campaign");
       if (row) setResolvedIds((ids) => [...ids, row.id]);
       onResolved();
@@ -319,10 +322,10 @@ export function ChaseboxDraftDialog({
     } finally {
       setBusy(null);
     }
-  }, [draftId, busy, rejectReason, row, onResolved, advance]);
+  }, [draftId, draftOrgId, busy, rejectReason, row, onResolved, advance]);
 
   const saveEdits = useCallback(async () => {
-    if (!draftId || busy || !personalization) return;
+    if (!draftId || !draftOrgId || busy || !personalization) return;
     const changed: Record<string, string> = {};
     for (const field of personalization.fields) {
       const next = (edits[field.name] ?? field.text).trim();
@@ -335,7 +338,7 @@ export function ChaseboxDraftDialog({
     setBusy("save");
     setProblem(null);
     try {
-      await reviseOutreachPersonalization(draftId, changed);
+      await reviseOutreachPersonalization(draftId, changed, draftOrgId);
       toast.success("Line saved — approve the new message to send it");
       if (interactionId) load(interactionId);
     } catch (error) {
@@ -343,18 +346,18 @@ export function ChaseboxDraftDialog({
     } finally {
       setBusy(null);
     }
-  }, [draftId, busy, personalization, edits, interactionId, load]);
+  }, [draftId, draftOrgId, busy, personalization, edits, interactionId, load]);
 
   /** The drafts the reviewer has read and not already resolved. */
   const pendingRead = readDraftIds.filter((id) => !resolvedIds.includes(id));
 
   const approveRest = useCallback(async () => {
-    if (busy || pendingRead.length === 0) return;
+    if (busy || !draftOrgId || pendingRead.length === 0) return;
     setBusy("approve-rest");
     setProblem(null);
     setBatchOutcomes([]);
     try {
-      const result = await approveOutreachDrafts(pendingRead);
+      const result = await approveOutreachDrafts(pendingRead, draftOrgId);
       const refused = result.outcomes.filter((outcome) => !outcome.approved);
       setBatchOutcomes(refused);
       if (result.approved > 0) {
@@ -377,7 +380,7 @@ export function ChaseboxDraftDialog({
     } finally {
       setBusy(null);
     }
-  }, [busy, pendingRead, draftId, onResolved]);
+  }, [busy, draftOrgId, pendingRead, draftId, onResolved]);
 
   // Keyboard triage. Never fires while the reviewer is typing — an editor that
   // eats your keystrokes as commands is worse than no shortcuts at all.
