@@ -15,6 +15,7 @@ import { targetForKey } from "@/features/mandates/feature-intelligence/placement
 import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 import { fetchMandateIdentities, type MandateIdentity } from "@/features/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The page's management doors, after agents and conversations in the menu. */
 export function PageIntelligenceSection({ onOpened }: { onOpened?: () => void }) {
@@ -22,6 +23,7 @@ export function PageIntelligenceSection({ onOpened }: { onOpened?: () => void })
   const doors = usePageIntelligenceDoors();
   const live = useLiveSurfaceMandates();
   const [identities, setIdentities] = useState<Record<string, MandateIdentity>>({});
+  const [namesError, setNamesError] = useState<unknown>(null);
 
   const byKey = new Map<string, string>();
   for (const key of declaredKeysForRoute(pathname)) {
@@ -52,10 +54,14 @@ export function PageIntelligenceSection({ onOpened }: { onOpened?: () => void })
     let cancelled = false;
     fetchMandateIdentities(keyList.split("|"))
       .then((next) => {
-        if (!cancelled) setIdentities(next);
+        if (!cancelled) {
+          setIdentities(next);
+          setNamesError(null);
+        }
       })
       .catch((error: unknown) => {
         console.error("[page-intelligence] names could not be read", error);
+        if (!cancelled) setNamesError(error);
       });
     return () => {
       cancelled = true;
@@ -70,6 +76,12 @@ export function PageIntelligenceSection({ onOpened }: { onOpened?: () => void })
         <INTELLIGENCE_ICON className="h-3 w-3" aria-hidden />
         Page intelligence
       </div>
+      {namesError != null && (
+        <p className="flex items-center gap-1 px-2 pb-1 text-[10px] text-muted-foreground">
+          Names couldn&apos;t be read — showing each job&apos;s key.
+          <ErrorAlchemyMenu error={namesError} size="xs" operation="Read the page's job names" />
+        </p>
+      )}
       <ul className="space-y-0.5">
         {entries.map(([key, href]) => (
           <li key={key}>

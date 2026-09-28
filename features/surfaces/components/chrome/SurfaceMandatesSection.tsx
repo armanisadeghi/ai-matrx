@@ -55,6 +55,7 @@ import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPa
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SurfaceMandatesSectionProps {
   /** The surface the user is standing on. */
@@ -120,6 +121,7 @@ export function SurfaceMandatesSection({
   // that then renames itself ("Prepare Content" → "Alchemy Content
   // Distillation", page-pass 2026-09-27).
   const [settledFor, setSettledFor] = useState<string | null>(null);
+  const [namesError, setNamesError] = useState<unknown>(null);
   const [openNotesFor, setOpenNotesFor] = useState<string | null>(null);
   const [discoveredOpen, setDiscoveredOpen] = useState(false);
   // THE DERIVED HALF (#16). Same gate as the context menu — never a second one.
@@ -133,11 +135,15 @@ export function SurfaceMandatesSection({
     // ONE batched read for every key in the menu — never one per row.
     fetchMandateIdentities(keys)
       .then((next) => {
-        if (!cancelled) setIdentities(next);
+        if (!cancelled) {
+          setIdentities(next);
+          setNamesError(null);
+        }
       })
       .catch((err: unknown) => {
-        // Listing survives without labels; the failure is still loud.
+        // Listing survives without labels; the failure is said under the header.
         console.error("[surface-mandates] identity read failed", err);
+        if (!cancelled) setNamesError(err);
       })
       .finally(() => {
         if (!cancelled) setSettledFor(keyList);
@@ -161,6 +167,12 @@ export function SurfaceMandatesSection({
             AI doing jobs here
           </span>
         </div>
+      )}
+      {rows.length > 0 && namesError != null && (
+        <p className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+          Names and on/off state couldn&apos;t be read — showing each job&apos;s key.
+          <ErrorAlchemyMenu error={namesError} size="xs" operation="Read these jobs' names" />
+        </p>
       )}
       <ul className="min-w-0 space-y-1">
         {rows.map((row) => {

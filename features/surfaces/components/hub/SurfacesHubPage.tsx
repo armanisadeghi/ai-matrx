@@ -127,7 +127,7 @@ export function SurfacesHubPage() {
                 Loading surfaces…
               </div>
             )}
-            {rows && rows.length === 0 && (
+            {!error && rows && rows.length === 0 && (
               <p className="px-1 py-6 text-sm text-muted-foreground">
                 No configurable surfaces are active yet.
               </p>

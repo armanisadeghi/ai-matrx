@@ -194,7 +194,8 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
           </div>
         )}
 
-        {result && (
+        {/* The sync's own report — set only when the sync returned. */}
+        {result && !error && (
           <div className="space-y-2 text-xs">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
