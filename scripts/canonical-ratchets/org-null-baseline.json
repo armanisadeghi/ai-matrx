@@ -5,7 +5,6 @@
   "nullable_org_columns": [
     "dictionary.dict_entries",
     "education.study_structured_section",
-    "platform._bak_assoc_file_processed_document_20260812",
     "platform.assists",
     "platform.associations",
     "platform.share_links",

@@ -5,8 +5,8 @@
 // /crm/deals — the deals surface: a dense server-paginated LIST (MatrxDataTable,
 // saved-view capable) and a kanban BOARD (drag-to-stage), one toggle apart.
 // QUERY lives in useDealList and starts clean; STYLE persists via
-// useListViewPrefs("crm-deals"). Smart views ride the same `crm.saved_view`
-// table as the party list, discriminated by `list_key='deals'`.
+// useListViewPrefs("crm-deals"). Smart views ride the same `platform.saved_view`
+// table as the party list, discriminated by `surface_key='crm/deals'`.
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";

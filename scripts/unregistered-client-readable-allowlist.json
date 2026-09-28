@@ -225,12 +225,6 @@
       "owner": "the Data Doctrine chair (DD-159)"
     },
     {
-      "relation": "legal._stage_dockets_966c18eca7",
-      "anon_readable": false,
-      "reason": "A hash-suffixed staging table from a legal ingest run, 0 rows. RETIREMENT CANDIDATE \u2014 list, do not move.",
-      "owner": "the Data Doctrine chair (DD-159)"
-    },
-    {
       "relation": "legal.citations",
       "anon_readable": false,
       "reason": "Public-record legal corpus (court dockets and opinions). Whether a public corpus is `public` or `organization` is a product ruling, not a shape reading.",
@@ -282,18 +276,6 @@
       "relation": "pdf.pdf_redaction_key_escrow",
       "anon_readable": true,
       "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
-      "owner": "the Data Doctrine chair (DD-159)"
-    },
-    {
-      "relation": "platform._bak_assoc_file_processed_document_20260812",
-      "anon_readable": false,
-      "reason": "A dated `_bak_` copy taken 2026-08-12. Censused across all five repos: no reader, no writer, only generated schema snapshots and org-null baselines. RETIREMENT CANDIDATE \u2014 the Doctrine says list, do not move.",
-      "owner": "the Data Doctrine chair (DD-159)"
-    },
-    {
-      "relation": "platform._bak_assoc_type_file_processed_document_20260812",
-      "anon_readable": false,
-      "reason": "A dated `_bak_` copy taken 2026-08-12, sibling of the row above. RETIREMENT CANDIDATE \u2014 list, do not move.",
       "owner": "the Data Doctrine chair (DD-159)"
     },
     {
@@ -432,12 +414,6 @@
       "relation": "research.youtube_quota_day",
       "anon_readable": false,
       "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
-      "owner": "the Data Doctrine chair (DD-159)"
-    },
-    {
-      "relation": "runtime._org_repair_0253_backup",
-      "anon_readable": false,
-      "reason": "A one-off repair backup left behind by migration 0253. RETIREMENT CANDIDATE \u2014 list, do not move.",
       "owner": "the Data Doctrine chair (DD-159)"
     },
     {

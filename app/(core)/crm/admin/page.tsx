@@ -188,7 +188,7 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       name: "SavedViewBar",
       filePath: "features/crm/components/saved-views/SavedViewBar.tsx",
       description:
-        "Smart-view bar on the CRM list: chips over crm.saved_view, applied through the same setters the human controls call, with dirty detection, update/rename/share/delete, and /crm?view=<id> as a linkable destination.",
+        "Smart-view bar on the CRM list: chips over platform.saved_view (surface crm/parties), applied through the same setters the human controls call, with dirty detection, update/rename/share/delete, and /crm?view=<id> as a linkable destination.",
       tier: "internal",
       status: "Live",
     },

@@ -571,7 +571,11 @@ blockers are named in the confirm and in the resulting toast.
   has no clock), and `isSuppressionExpired` says so in the confirm so a rep
   knows the lift is expected rather than an override.
 
-## Smart views (`crm.saved_view`)
+## Smart views (`platform.saved_view`, surface `crm/<list>`)
+
+> 2026-09-27: the CRM-private `crm.saved_view` table was converged onto `platform.saved_view`
+> (`migrations/crm_saved_view_converged_to_platform.sql`) and then dropped by the database
+> estate-reduction program (wave 2). The history below names the old table as it was then.
 
 **A named, re-runnable `/crm` query** — the list becomes a work queue instead of
 a browser. `lib/list-views` persists STYLE and deliberately never QUERY, so a
@@ -646,8 +650,8 @@ probability: 0..100}`. A new pipeline or stage is a ROW, never a migration —
   `InteractionTimeline` bound to the deal's primary party (an interaction
   always belongs to someone, so a party-less deal disables the composer and
   says why).
-- **Smart views are the SAME store** — `crm.saved_view` gained `list_key`
-  (`'parties'` default / `'deals'`), the saved-views service + `SavedViewBar`
+- **Smart views are the SAME store** — one `platform.saved_view` row per view, keyed
+  by `surface_key` (`crm/parties` / `crm/deals`), the saved-views service + `SavedViewBar`
   are generic over a codec (`SavedViewCodec`), and the deals definition lives
   in `deals/views.ts`. Never a private filter store, and a deals view can never
   pollute the party bar.

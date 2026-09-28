@@ -19,7 +19,7 @@
  *
  * Bump `SAVED_VIEW_DEFINITION_VERSION` when the shape gains or loses a field,
  * and teach `parseSavedViewDefinition` to read the older shapes — the same
- * discipline `crm.saved_view` and `ListViewPrefs.version` already use.
+ * discipline CRM smart views and `ListViewPrefs.version` already use.
  */
 
 import { isColumnSummaryMap, type ColumnSummaryMap } from "../column-summaries";

@@ -220,7 +220,6 @@
     "users.invitation_codes:invitation_codes_code_key",
     "users.invitation_requests:invitation_requests_email_key",
     "users.user_achievements:user_achievements_created_by_achievement_type_key",
-    "users.user_bookmarks:user_bookmarks_user_id_canvas_id_key",
     "users.user_email_preferences:user_email_preferences_user_id_key",
     "users.user_memory:user_memory_created_by_path_key",
     "users.user_surface_state:user_surface_state_uniq",

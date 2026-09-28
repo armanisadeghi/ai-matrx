@@ -2,7 +2,8 @@
 //
 // The deals list's smart-view definition — the deals counterpart of
 // `features/crm/saved-views/types.ts` (which owns the PARTY definition). Both
-// persist into the same `crm.saved_view` table, discriminated by `list_key`;
+// persist into the same `platform.saved_view` table, discriminated by `surface_key`
+// (`crm/<listKey>`);
 // the generic bar + service in `saved-views/` serve both through a codec.
 
 import type { SavedViewCodec } from "../saved-views/service";
