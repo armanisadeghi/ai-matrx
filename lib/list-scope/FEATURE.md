@@ -32,10 +32,17 @@ record — that is the record's access level (law:
 - **Server lists:** every `*_list_scoped` organization / team arm (agx, wfx,
   shx, mkt, rsx, trx, ivw, seo_rank_target, fc_set, assessment,
   edu_library_scope_rows) applies it.
-- **Client lists:** `applyListScope(q, scope, { userId, shownTo })` with
-  `shownTo = await fetchShownToContext(token)` (`lib/list-scope/shownTo.ts`);
-  blended org lists use `shownToBlendedFilter`. A new client org list over a
-  table with `shown_to` MUST pass it.
+- **Client lists:** a list that opens on its type's default landing place uses
+  `const listScope = await defaultListFilter(token, { userId, requested })`
+  then `q = listScope.apply(q)` on every page — `mine` is the owner filter,
+  `organization` is the Shown-to filter across every organization the viewer
+  belongs to (`shownToMyOrgsFilter`). `scopeToOwner` (a yes/no whose "no"
+  applied no filter at all — 57 of a coworker's Only-me notes in the notes
+  sidebar, T-11 verifier 2026-09-28) is gone. One picked organization:
+  `applyListScope(q, scope, { userId, shownTo })` with
+  `shownTo = await fetchShownToContext(token)`; blended lists over named
+  organizations use `shownToBlendedFilter`. A new client org list over a table
+  with `shown_to` MUST use one of these.
 - It hides, never locks: row security ignores `shown_to`, and on Organization
   tables `personal` no longer locks (only children and private-class rows do).
 

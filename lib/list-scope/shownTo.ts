@@ -87,3 +87,46 @@ export function shownToBlendedFilter(
     .map((org) => `and(${orgColumn}.eq.${org},or(${shownToFilter(ctx, org, userId, ownerColumn)}))`)
     .join(",");
 }
+
+/**
+ * THE SAME RULE ACROSS EVERY ORGANIZATION THE VIEWER BELONGS TO — the filter a client list uses when
+ * it opens on "the organization" with no one organization picked (access ladder T-11 leak fixes,
+ * 2026-09-28: the notes sidebar applied no Shown to at all and listed 57 of a coworker's Only-me
+ * notes). Compact on purpose — one arm per distinct rule, not one per organization — because a
+ * person may belong to dozens of organizations and the whole expression rides in a URL:
+ *   mine · shown to everyone · my_team rows of my teammates (per organization that has any) ·
+ *   unset rows in organizations whose default shows them (visibility personal = Only me) ·
+ *   rows outside my organizations (reached by a direct share) or with no organization.
+ */
+export function shownToMyOrgsFilter(
+  ctx: ShownToContext,
+  userId: string,
+  ownerColumn = "created_by",
+  orgColumn = "organization_id",
+): string | null {
+  const orgs = Object.keys(ctx);
+  if (orgs.length === 0) return null;
+  const arms = [`${ownerColumn}.eq.${userId}`, "shown_to.in.(everyone,everyone_on_ai_matrx)"];
+  const everyoneByDefault: string[] = [];
+  for (const org of orgs) {
+    const { d, t } = ctx[org] ?? { d: null, t: [] };
+    const teammates = (t ?? []).filter((id) => id !== userId);
+    if (teammates.length > 0) {
+      const team = teammates.join(",");
+      arms.push(`and(${orgColumn}.eq.${org},shown_to.eq.my_team,${ownerColumn}.in.(${team}))`);
+      if (d === "my_team") {
+        arms.push(
+          `and(${orgColumn}.eq.${org},shown_to.is.null,visibility.neq.personal,${ownerColumn}.in.(${team}))`,
+        );
+      }
+    }
+    if (d === null || d === "everyone" || d === "everyone_on_ai_matrx") everyoneByDefault.push(org);
+  }
+  if (everyoneByDefault.length > 0) {
+    arms.push(
+      `and(${orgColumn}.in.(${everyoneByDefault.join(",")}),shown_to.is.null,visibility.neq.personal)`,
+    );
+  }
+  arms.push(`${orgColumn}.is.null`, `${orgColumn}.not.in.(${orgs.join(",")})`);
+  return arms.join(",");
+}

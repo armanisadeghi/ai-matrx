@@ -40,6 +40,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { ListScope } from "./types";
+import { fetchShownToContext, shownToMyOrgsFilter } from "./shownTo";
 
 /**
  * The registry's word for where a list lands: exactly the two values
@@ -147,13 +148,71 @@ export function shouldFilterToOwner(resolved: ListScopeWord, requested?: ListSco
   return (requested ?? resolved) === "mine";
 }
 
+/** Anything with the two PostgREST filters a default list needs. */
+export interface ListScopeQuery<Self> {
+  eq(column: string, value: string): Self;
+  or(filters: string): Self;
+}
+
+/** The answer to "where does this list land?", ready to apply to every page of the query. */
+export interface DefaultListFilter {
+  /** True when the list shows only the viewer's own rows. */
+  ownerOnly: boolean;
+  /** Narrow one query (call it on every page a paged read builds). */
+  apply<Q extends ListScopeQuery<Q>>(query: Q): Q;
+}
+
+export interface DefaultListFilterOpts {
+  /** The viewer. */
+  userId: string;
+  /** A scope the person clicked; wins over the registry. */
+  requested?: ListScopeWord;
+  /** Column holding the row's creator. Default "created_by". */
+  ownerColumn?: string;
+  /** Column holding the row's organization. Default "organization_id". */
+  orgColumn?: string;
+  /**
+   * False only for a table with no `shown_to` column (Private / Confidential types and a few
+   * system tables): the organization list is then everything row security returns.
+   */
+  shownTo?: boolean;
+}
+
 /**
- * The one call a list site makes: "should I scope this to me?" — answered by the registry unless
- * the caller (a scope toggle the person clicked) says otherwise.
+ * THE ONE CALL a client list makes for its default landing place (access ladder T-11).
+ *
+ * - `mine` (the registry word, or the person's click) → only the viewer's rows.
+ * - `organization` → every row the viewer can open that its "Shown to" lets a list show, across
+ *   every organization they belong to (each row judged by ITS organization's default and teammates,
+ *   `shownToMyOrgsFilter`), plus rows outside their organizations that reached them by a share.
+ *
+ * It replaced `scopeToOwner`, a yes/no answer whose "no" left the caller with NO filter at all —
+ * every coworker's Only-me note in the notes sidebar (T-11 verifier, 2026-09-28). There is no
+ * boolean door any more: a list either applies this filter or declares an explicit scope.
+ * Reading "Shown to" fails LOUDLY (fetchShownToContext throws) — never a guess wider.
  */
-export async function scopeToOwner(token: string, requested?: ListScopeWord): Promise<boolean> {
-  if (requested) return requested === "mine";
-  return shouldFilterToOwner(await resolveListScope(token));
+export async function defaultListFilter(
+  token: string,
+  opts: DefaultListFilterOpts,
+): Promise<DefaultListFilter> {
+  const ownerColumn = opts.ownerColumn ?? "created_by";
+  const orgColumn = opts.orgColumn ?? "organization_id";
+  const ownerOnly = opts.requested
+    ? opts.requested === "mine"
+    : shouldFilterToOwner(await resolveListScope(token));
+  if (ownerOnly) {
+    return { ownerOnly, apply: (query) => query.eq(ownerColumn, opts.userId) };
+  }
+  if (opts.shownTo === false) {
+    return { ownerOnly, apply: (query) => query };
+  }
+  const filter = shownToMyOrgsFilter(
+    await fetchShownToContext(token),
+    opts.userId,
+    ownerColumn,
+    orgColumn,
+  );
+  return { ownerOnly, apply: (query) => (filter ? query.or(filter) : query) };
 }
 
 /**
