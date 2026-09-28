@@ -493,6 +493,9 @@ export function EntityListTable<TRow>({
       })
     : fitted;
 
+  const emptyWithoutColumnFilter =
+    !isLoading && rows.length === 0 && Object.keys(filters).length === 0;
+
   return (
     <MatrxDataTable<TRow>
       data={rows}
@@ -506,7 +509,9 @@ export function EntityListTable<TRow>({
         isLoading || totalUnknown || read?.status === "error"
           ? ""
           : count === 0
-            ? "0 rows"
+            ? // ONE WORDING (list-shell fix D, 2026-09-28): the cards and rows
+              // views' footer reads "0 of 0"; the table said "0 rows".
+              "0 of 0"
             : `${start.toLocaleString()}-${end.toLocaleString()} of ${count.toLocaleString()}`
       }
       zebra
@@ -516,7 +521,14 @@ export function EntityListTable<TRow>({
       // full-height by default, so a list of three rows drew ~450px of empty
       // box. A list's box ends at its last row and scrolls only when the rows
       // outgrow the page.
-      tableClassName="h-auto max-h-full"
+      tableClassName={cn(
+        "h-auto max-h-full",
+        // AN EMPTY LANE DRAWS NO COLUMN HEADER (list-shell fix D, 2026-09-28):
+        // a full header row over "No quizzes from your team" is chrome for
+        // rows that do not exist. It stays while a column filter is set —
+        // that header is where the filter is cleared.
+        emptyWithoutColumnFilter && "[&_thead]:hidden",
+      )}
       query={{
         mode: "controlled",
         // 🚨 A PAGE THE URL NAMES SURVIVES THE LOAD (list-shell fix D,
