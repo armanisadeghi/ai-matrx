@@ -378,6 +378,8 @@ function VirtualList({
           ) : null}
         </div>
       ) : null}
+      {/* Room at the end so the last row scrolls clear of anything floating over the corner. */}
+      <div className="h-12" aria-hidden />
     </div>
   );
 }

@@ -990,6 +990,7 @@ export function KnowledgeHubPage({
     onOpenFull: openFull,
     onFilterTag: (name) => filterByTag(name),
     rowMenu: rowMenuNode,
+    hideKindWord: transcriptsView,
     rowFacts: (h) =>
       isTranscriptHit(h) ? transcriptRowFacts(factFor(h), transcriptFacts.contentFor(h)) : [],
     rowContent: (h) => {
@@ -1615,7 +1616,7 @@ export function KnowledgeHubPage({
                      [count ..........][settings][new][save][layout]
           so the search box always gets the full width it needs on a phone. */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-        <div className="order-1 min-w-0 basis-full @2xl:basis-0 @2xl:flex-1">
+        <div className="order-1 min-w-0 basis-full @lg:basis-0 @lg:flex-1">
           <HubFilterMenu
             open={filtersOpen}
             onOpenChange={setFiltersOpen}
@@ -1657,7 +1658,7 @@ export function KnowledgeHubPage({
           </HubFilterMenu>
         </div>
         {/* Trash lists trashed Sources only: views, layouts and search reach do not apply there. */}
-        <div className={trashView ? "hidden" : "order-3 flex shrink-0 items-center gap-1 @2xl:order-1"}>
+        <div className={trashView ? "hidden" : "order-3 flex shrink-0 items-center gap-1 @lg:order-1"}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Search settings" title="Search settings">
@@ -1711,9 +1712,10 @@ export function KnowledgeHubPage({
             </Button>
           ) : null}
           {transcriptsView ? (
-            <Button asChild size="sm" className="h-8 gap-1.5 px-2.5 @max-3xl:w-8 @max-3xl:px-0">
+            <Button asChild size="sm" className="h-8 gap-1 px-2.5">
               <Link href="/transcripts/new" aria-label="New transcript" title="Record, upload or paste a new transcript">
                 <Plus className="h-4 w-4" />
+                <span className="@3xl:hidden">New</span>
                 <span className="hidden @3xl:inline">New transcript</span>
               </Link>
             </Button>
@@ -1726,17 +1728,18 @@ export function KnowledgeHubPage({
             title="Save view (⌥V)"
           >
             <BookmarkPlus className="h-3.5 w-3.5" />
+            <span className="@3xl:hidden">Save</span>
             <span className="hidden @3xl:inline">{dirty ? "Save as new view" : "Save view"}</span>
             <kbd className="ml-0.5 hidden rounded border border-border px-1 text-[10px] text-muted-foreground @4xl:inline">⌥V</kbd>
           </Button>
-          {!searching ? layoutSwitch : null}
+          {layoutSwitch}
         </div>
         {!trashView && (transcriptsView || resultCount) ? (
           <>
             {/* Row break on a wide pane: facets and the count start their own line. */}
-            <div className="order-2 hidden h-0 basis-full @2xl:block" aria-hidden />
+            <div className="order-2 hidden h-0 basis-full @lg:block" aria-hidden />
             {transcriptsView ? (
-              <div className="order-2 min-w-0 basis-full @2xl:basis-0 @2xl:flex-1">
+              <div className="order-2 min-w-0 basis-full @lg:basis-0 @lg:flex-1">
               <TranscriptFacetBar
                 // Whole-set counts from the server (trx_list_facets); Sample data counts its own fixture.
                 counts={
@@ -1757,8 +1760,8 @@ export function KnowledgeHubPage({
             ) : null}
             <span
               className={cn(
-                "order-3 mr-auto shrink-0 text-xs tabular-nums text-muted-foreground @2xl:order-2 @2xl:ml-auto @2xl:mr-0",
-                !transcriptsView && "@2xl:ml-0",
+                // One place in every view: the right end of the facet line (Transcripts, Everything, Files).
+                "order-3 mr-auto shrink-0 text-xs tabular-nums text-muted-foreground @lg:order-2 @lg:ml-auto @lg:mr-0",
               )}
               aria-live="polite"
             >

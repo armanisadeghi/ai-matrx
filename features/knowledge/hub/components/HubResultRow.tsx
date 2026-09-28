@@ -55,6 +55,8 @@ export interface ResultHandlers {
   rowContent?: (hit: KnowledgeHit) => RowContent | undefined;
   /** The words being searched for: marked where they appear in a title or passage. */
   highlight?: string;
+  /** The view names the kind already (Transcripts): rows say only what differs (Session, Cleanup) in their facts. */
+  hideKindWord?: boolean;
   /** The row being renamed inline, and what Enter / Esc do. */
   renamingKey?: string | null;
   onRenameCommit?: (hit: KnowledgeHit, title: string) => void;
@@ -260,7 +262,11 @@ export function ResultRow({
   const snippet = aroundMatch(cleanSnippet(hit.snippet || content?.snippet), handlers.highlight) || null;
   const parts = [
     ...(compact && date ? [date] : []),
-    ...metaParts(hit, { hideKind, hideOrigin: Boolean(content?.channel), facts: handlers.rowFacts?.(hit) }),
+    ...metaParts(hit, {
+      hideKind: hideKind || handlers.hideKindWord,
+      hideOrigin: Boolean(content?.channel),
+      facts: handlers.rowFacts?.(hit),
+    }),
   ];
   const menu = handlers.rowMenu?.(hit);
   // A tag that repeats a fact already on the line (#Veritasium beside "Veritasium") is noise.
