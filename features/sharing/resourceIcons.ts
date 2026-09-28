@@ -22,6 +22,7 @@ import {
   Mic,
   Notebook,
   Palette,
+  PanelTop,
   Presentation,
   Search,
   Share2,
@@ -78,6 +79,10 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
   sandbox_instance: Boxes,
   wc_claim: Building2,
   feature_doc: FileText,
+  // CMS kinds Trash lists through its CMS source (features/trash/sources.ts).
+  cms_site: PanelTop,
+  cms_page: FileText,
+  cms_component: Layers,
 };
 
 /** Icon for a resource type; a neutral share glyph if unmapped. */

@@ -5,7 +5,9 @@
  *
  *   personal      /trash. What YOU archived plus what was shared with you by name
  *                 (`trash_list` / `trash_counts`). Kind chips; per-kind pages of 50; the
- *                 "Recent" overview shows the newest few of each kind.
+ *                 "Recent" overview shows the newest few of each kind. Rows come from every
+ *                 Trash SOURCE (`features/trash/sources.ts`): the main-DB registry and the CMS
+ *                 database, merged into one list and one kind picker.
  *   organization  Organization settings → Trash, for owners and admins. Members' archived
  *                 items in THAT organization (`org_trash_list` / `org_trash_counts`), filterable
  *                 by member and kind, 50 per merged page, Restore audited with a notice to the
@@ -42,14 +44,18 @@ import {
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
   getOrgTrashCounts,
-  getTrashCounts,
   listOrgTrash,
-  listTrash,
   restoreFromOrgTrash,
-  restoreFromTrash,
   type TrashCount,
   type TrashItem,
 } from "@/features/trash/service";
+import {
+  listMergedTrash,
+  mergeTrashCounts,
+  PERSONAL_TRASH_SOURCES,
+  sourceForItem,
+  type MergedTrashCounts,
+} from "@/features/trash/sources";
 
 /** Rows per page — per kind in personal mode, per merged page in organization mode. */
 export const TRASH_PAGE = 50;
@@ -132,6 +138,9 @@ export function TrashList({
   // The host's callbacks, read at call time so an inline function never re-triggers a load.
   const onCountsRef = useRef(onCounts);
   const onRestoredRef = useRef(onRestored);
+  // Personal mode: the latest merge of every source's counts, which also says which source lists
+  // which kind. Set synchronously by loadCounts so the first page load can await it.
+  const mergedRef = useRef<Promise<MergedTrashCounts> | null>(null);
   useEffect(() => {
     onCountsRef.current = onCounts;
     onRestoredRef.current = onRestored;
@@ -139,9 +148,20 @@ export function TrashList({
 
   const loadCounts = useCallback(async () => {
     try {
-      const next = organizationId
-        ? await getOrgTrashCounts(organizationId, member)
-        : await getTrashCounts();
+      let next: TrashCount[];
+      if (organizationId) {
+        next = await getOrgTrashCounts(organizationId, member);
+      } else {
+        const merging = mergeTrashCounts(PERSONAL_TRASH_SOURCES, (_source, e) =>
+          toast({
+            title: "Some of your Trash could not be loaded",
+            description: e instanceof Error ? e.message : String(e),
+            variant: "destructive",
+          }),
+        );
+        mergedRef.current = merging;
+        next = (await merging).counts;
+      }
       setCounts(next);
       onCountsRef.current?.(next);
     } catch (e) {
@@ -164,12 +184,14 @@ export function TrashList({
           offset,
         });
       }
-      const rows = await listTrash(
+      const merged = await (mergedRef.current ?? Promise.resolve(null)).catch(() => null);
+      return listMergedTrash(
+        PERSONAL_TRASH_SOURCES,
+        merged?.kindSource ?? new Map(),
         kind
           ? { kinds: [kind], limit: TRASH_PAGE, offset }
           : { limit: OVERVIEW_PER_KIND, offset: 0 },
       );
-      return rows.sort((a, b) => b.deleted_at.localeCompare(a.deleted_at));
     },
     [organizationId, kind, member],
   );
@@ -234,10 +256,23 @@ export function TrashList({
             : res.message,
         });
       } else {
-        await restoreFromTrash(item.entity_token, item.id);
+        const { notices } = await sourceForItem(PERSONAL_TRASH_SOURCES, item).restore(item);
         toast({
           title: `${item.label} restored`,
-          description: item.title ?? undefined,
+          // A CMS restore that had to change something (a taken address, a second header) says
+          // so in its own sentences; each one is shown as written.
+          description:
+            notices.length > 0 ? (
+              <span className="block space-y-1" data-testid="trash-restore-notices">
+                {notices.map((sentence, i) => (
+                  <span key={i} className="block">
+                    {sentence}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              (item.title ?? undefined)
+            ),
         });
       }
       // Re-read the rows, not just the counts: a restore can bring OTHER rows back with it
