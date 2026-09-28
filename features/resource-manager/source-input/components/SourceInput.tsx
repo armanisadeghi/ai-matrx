@@ -166,7 +166,9 @@ export function SourceInput({
         <span className="text-xs text-muted-foreground">
           {count === 0
             ? required
-              ? "Add at least one source, or pick Just a topic."
+              ? tiles.some((t) => t.id === "topic")
+                ? "Add at least one source, or pick Just a topic."
+                : "Add at least one source."
               : "Nothing picked yet."
             : `${count} ${count === 1 ? "source" : "sources"}${
                 set.totalChars ? ` · ${formatChars(set.totalChars)}` : ""
