@@ -518,7 +518,10 @@ export const loadConversation = createAsyncThunk<
           agentId: conv.initial_agent_id,
           error: capErr instanceof Error ? capErr.message : String(capErr),
         });
-        if (agentBehindApp) {
+        // Every loader of an agent-app conversation (the reopen, the runtime
+        // reconnect's terminal refetch, history) gets this — not only the
+        // caller that remembered to pass the flag.
+        if (agentBehindApp || conv.source_feature === "agent-app") {
           // Expected — see `agentBehindApp`. The warn above is the record.
         } else {
           const { toast } = await import("@/lib/toast");

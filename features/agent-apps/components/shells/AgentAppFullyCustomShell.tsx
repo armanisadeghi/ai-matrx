@@ -233,7 +233,11 @@ export function AgentAppFullyCustomShell({
   const isLive = ctx.isStreaming || ctx.isExecuting || ctx.isRestoringRun;
   // The person pressed Stop: say so, and offer the two ways on — never a bar
   // that simply vanishes.
-  const wasStopped = !isLive && latestRequestStatus === "cancelled";
+  // …including a reopened run that had been stopped (no request is live in
+  // this tab then — the conversation itself says it ended).
+  const wasStopped =
+    !isLive &&
+    (latestRequestStatus === "cancelled" || ctx.reopenedRunEnded === "stopped");
   const showActionBar = !isLive && !wasStopped && ctx.response.length > 0;
   // What the run was asked, for the live bar ("Checking: …" in the app's own
   // words is the app's; the host says what it is working on).

@@ -36,6 +36,7 @@ import { useConversationRoutePromotion } from "@/features/agents/hooks/useConver
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { supabase } from "@/utils/supabase/client";
 import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
 // The run's failure in words a person reads — `request.error` (ErrorPayload),
 // never `errorMessage` (a tool-call field). Shared with the app's run record.
@@ -291,6 +292,8 @@ export interface UseAgentAppReturn {
   isRestoringRun: boolean;
   /** This page reopened a run from its address and it has loaded (see `isReopenedRun` on the app contract). */
   isReopenedRun: boolean;
+  /** A reopened run that had ended without an answer — "stopped" or "failed"; null otherwise. */
+  reopenedRunEnded: "stopped" | "failed" | null;
 
   // ── Configuration mirrors (so shells can read state-of-app) ────────────
   allowChat: boolean;
@@ -313,6 +316,17 @@ const EMPTY_RECORD: Record<string, never> = Object.freeze({});
 
 /** How long a submit pressed during load waits for the app before it says so. */
 const SUBMIT_READY_WAIT_MS = 30_000;
+
+/** The last request status the server recorded for a conversation. */
+async function readLastRunStatus(conversationId: string): Promise<string | null> {
+  const { data } = await supabase
+    .schema("chat")
+    .from("conversation")
+    .select("last_request_status")
+    .eq("id", conversationId)
+    .maybeSingle();
+  return (data as { last_request_status?: string | null } | null)?.last_request_status ?? null;
+}
 
 /** How long a reopened link keeps looking for its run before saying so. */
 const REOPEN_RETRY_MS = 45_000;
@@ -526,6 +540,8 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const [isReopening, setIsReopening] = useState(false);
   // Which conversation this page reopened from its address (null = none).
   const [reopenedId, setReopenedId] = useState<string | null>(null);
+  // A reopened run that had ENDED without an answer: stopped or failed.
+  const [reopenedEnded, setReopenedEnded] = useState<"stopped" | "failed" | null>(null);
   useEffect(() => {
     // READING a finished run you own needs no organization — only starting a
     // new one does. While the holder waits for an organization (no agent
@@ -592,7 +608,17 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
           }
           await load().catch(() => undefined);
           found = hasAnswer();
-          if (!found) await new Promise((r) => setTimeout(r, 2000));
+          if (found) break;
+          // A run that ENDED without an answer (the person pressed Stop, or it
+          // failed) has nothing to rejoin — it is not "still starting". Its
+          // conversation says so; show that, never a 45s "Reopening…".
+          const ended = await readLastRunStatus(urlConversationId);
+          if (ended === "cancelled" || ended === "failed" || ended === "error") {
+            setReopenedEnded(ended === "cancelled" ? "stopped" : "failed");
+            found = true;
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 2000));
         }
         setIsReopening(false);
         if (found) setReopenedId(urlConversationId);
@@ -1094,6 +1120,8 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       startNewRun,
       isRestoringRun: isReopening,
       isReopenedRun: reopenedId !== null && reopenedId === conversationId && !isReopening,
+      reopenedRunEnded:
+        reopenedId !== null && reopenedId === conversationId ? reopenedEnded : null,
       runKey,
       allowChat,
       surfaceHandle,
@@ -1127,6 +1155,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       isHolding,
       isReopening,
       reopenedId,
+      reopenedEnded,
       streamPhase,
       error,
       messages,
