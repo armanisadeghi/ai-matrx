@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -252,6 +253,25 @@ def hashes(data: bytes) -> set[str]:
     }
 
 
+#: Statements that cannot run inside a transaction — the same list both runners refuse or route by
+#: (NEEDS_AUTOCOMMIT_RE in scripts/apply-migration.ts, _RE_NEEDS_AUTOCOMMIT in aidream's runner).
+_NEEDS_AUTOCOMMIT = re.compile(
+    r"\b(?:CREATE\s+(?:UNIQUE\s+)?INDEX\s+CONCURRENTLY|REINDEX\s+\w+\s+CONCURRENTLY"
+    r"|DROP\s+INDEX\s+CONCURRENTLY|VACUUM\b|ALTER\s+TYPE\s+\S+\s+ADD\s+VALUE)\b",
+    re.IGNORECASE,
+)
+#: What is not a statement: dollar-quoted bodies, string literals, block and line comments. A
+#: function whose HINT text says "CREATE INDEX CONCURRENTLY" is not an autocommit file.
+_NOT_STATEMENT = re.compile(
+    r"(\$[A-Za-z_0-9]*\$).*?\1|'(?:[^']|'')*'|/\*.*?\*/|--[^\n]*", re.DOTALL
+)
+
+
+def needs_autocommit(data: bytes) -> bool:
+    text = data.decode("utf-8", "surrogateescape")
+    return bool(_NEEDS_AUTOCOMMIT.search(_NOT_STATEMENT.sub(" ", text)))
+
+
 SELFTEST = """\
 THE THREE RULES, ON FIXTURES, WITH NO DATABASE. Each pair is the same ledger with ONE fact
 changed, so a rule that stopped working shows up as a row that no longer moves.
@@ -408,6 +428,24 @@ def verdict_self_test(run) -> int:
                       [("aidream", aid.name, raw, "2026-09-26 07:00:00+00")])
             check("RED-10 the clone ledgered THESE bytes in the other checksum spelling -> record only, never an inverse or a re-run",
                   len(got) == 1 and got[0][6] == "record" and got[0][11] == "", got)
+    check("RED-11 CREATE INDEX CONCURRENTLY as a statement -> needs autocommit",
+          needs_autocommit(b"SET lock_timeout = '2s';\nCREATE INDEX CONCURRENTLY IF NOT EXISTS i ON t (c);\n"))
+    check("GREEN-11 the same words in a comment, a string or a function body -> not autocommit",
+          not needs_autocommit(b"-- CREATE INDEX CONCURRENTLY x\nselect 'VACUUM';\n"
+                               b"create function f() returns void language plpgsql as $f$ begin raise notice "
+                               b"'x' using hint = 'CREATE INDEX CONCURRENTLY'; end $f$;\n"))
+    auto = _first_committed(FRONTEND, FRONTEND / "migrations", lambda p: needs_autocommit(p.read_bytes()))
+    if auto is not None:
+        ck = hashlib.sha256(auto.read_bytes()).hexdigest()
+        got = run([("matrx-frontend", auto.name, ck, "2026-09-28 10:00:00+00", "900", "t", "")], [])
+        check(f"RED-12 a matrx-frontend autocommit file ({auto.name}) -> runner aidream, never db:apply",
+              len(got) == 1 and got[0][6] == "aidream", got)
+    plain = _first_committed(FRONTEND, FRONTEND / "migrations", lambda p: not needs_autocommit(p.read_bytes()))
+    if plain is not None:
+        ck = hashlib.sha256(plain.read_bytes()).hexdigest()
+        got = run([("matrx-frontend", plain.name, ck, "2026-09-28 10:00:00+00", "900", "t", "")], [])
+        check("GREEN-12 a transactional matrx-frontend file -> runner frontend",
+              len(got) == 1 and got[0][6] == "frontend", got)
     got = run([("matrx-frontend", "zzselftest_not_committed_anywhere.sql", "aa" * 32, "2026-09-25 10:00:00+00", "5", "t", "ORDERFIX")], [])
     check("GREEN-9 a named refusal carries its owner", len(got) == 1 and got[0][0] == "REFUSE" and "ORDERFIX" in got[0][12], got)
     return fails
@@ -603,6 +641,15 @@ def main() -> int:
                 f"{RULES_INTRODUCED[0][0]} (from {DIRECT_REGIME_AT}); no runner judged these bytes there, so "
                 f"none judges them here — carried direct, as production took it"
             )
+        # 🚨 AN AUTOCOMMIT FILE GOES TO THE RUNNER THAT CAN RUN IT (2026-09-28). `pnpm db:apply` is
+        # transactional and refuses CREATE INDEX CONCURRENTLY & co. by name, sending the author to
+        # `python db/apply_migrations.py --source matrx-frontend` — which is how production ran
+        # access_ladder_t11r_files_list_order_indexes.sql. The catch-up sent it to the frontend
+        # runner anyway, so it "did not land". Same ledger, same label; only the runner differs.
+        if runner == "frontend" and selector == "" and needs_autocommit(committed):
+            runner = "aidream"
+            reason += (" — needs autocommit (CONCURRENTLY / VACUUM / ADD VALUE): applied by the aidream "
+                       "runner with --source matrx-frontend, as on production")
         # 🚨 RULE 4 (chair ruling 2026-09-26). The clone holds an EARLIER version of this same file
         # (a peer rehearsed it before the bytes production ran), and a re-run over that state is not
         # idempotent (42710 already exists, a policy that exists, an anchor already patched). So the

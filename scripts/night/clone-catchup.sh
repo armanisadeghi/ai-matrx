@@ -172,7 +172,10 @@ apply_one() {  # apply_one <source> <filename> <repo> <relpath> <runner> <select
     esac
   fi
   say "applying ($runner): $relpath$([ "$reapply" = yes ] && print -n ' (reapply)')"
-  ( cd "$repo" && "${cmd[@]}" ) 2>&1 | tee "$APPLY_OUT"
+  # The aidream runner runs from the aidream checkout even for a matrx-frontend file (the planner
+  # routes an autocommit frontend file there, `--source matrx-frontend`, as production ran it).
+  local where="$repo"; [ "$runner" = "aidream" ] && where="$AIDREAM"
+  ( cd "$where" && "${cmd[@]}" ) 2>&1 | tee "$APPLY_OUT"
   return ${pipestatus[1]}
 }
 
