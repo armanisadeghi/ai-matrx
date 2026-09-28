@@ -111,4 +111,28 @@ describe("table row context registry", () => {
     unregister();
     table.remove();
   });
+
+  it("the header names the ROW's record, not the clicked cell (admin pass 2026-09-27: 'Content: partial')", () => {
+    const table = document.createElement("table");
+    table.dataset.matrxTableId = "table-instance-record";
+    table.innerHTML =
+      '<tbody><tr data-row-id="r1">' +
+      '<td data-matrx-table-column-id="favorite"><button aria-label="Star">*</button></td>' +
+      '<td data-matrx-table-column-id="name"><div>Notes</div><div>matrx-user/notes</div></td>' +
+      '<td data-matrx-table-column-id="readiness" id="status">partial</td>' +
+      "</tr></tbody>";
+    document.body.append(table);
+    const descriptor = createTableRowMenuDescriptor({ context: { content: "{}" }, extraSections: [] });
+    const unregister = registerTableRowContextResolver("table-instance-record", () => descriptor);
+    const resolved = resolveTableRowMenuDescriptor(table.querySelector<HTMLElement>("#status"));
+    expect(resolved?.context.content).toBe("partial");
+    expect((resolved?.context as Record<string, unknown>).__heading).toEqual({ label: "Row", text: "Notes" });
+    // A descriptor that names itself keeps its own heading.
+    const named = createTableRowMenuDescriptor({ context: { content: "{}", __heading: { label: "Surface", text: "Notes" } }, extraSections: [] });
+    const unregister2 = registerTableRowContextResolver("table-instance-record", () => named);
+    expect((resolveTableRowMenuDescriptor(table.querySelector<HTMLElement>("#status"))?.context as Record<string, unknown>).__heading).toEqual({ label: "Surface", text: "Notes" });
+    unregister2();
+    unregister();
+    table.remove();
+  });
 });

@@ -1,4 +1,4 @@
-import type { ContextMenuExtraSection, ResolvedContextMenuContext } from "./types";
+import { CONTEXT_MENU_HEADING_KEY, type ContextMenuExtraSection, type ResolvedContextMenuContext } from "./types";
 import type { MatrxDataTableRecordControls } from "@ai-matrx/design-system/data-table/types";
 import type {
   MatrxTableMenuPayload,
@@ -127,7 +127,28 @@ export function resolveTableRowMenuDescriptor(target: HTMLElement | null): Table
   // in `context.context` for the actions that read it.
   const cell = target?.closest<HTMLElement>("td, [role='gridcell']");
   const shown = shownWords(cell ?? row);
-  return shown ? { ...descriptor, context: { ...descriptor.context, content: shown } } : descriptor;
+  // THE HEADER NAMES THE ROW'S RECORD (admin pass 2026-09-27: "Content: partial" — the clicked
+  // status cell). The descriptor's own `__heading` wins (a list row names "Quiz: …"); otherwise
+  // the row's record name — its first data cell's primary line. What the actions act on
+  // (`content`) stays the clicked cell's words.
+  const ownHeading = (descriptor.context as Record<string, unknown>)[CONTEXT_MENU_HEADING_KEY];
+  const recordName = ownHeading ? "" : rowRecordName(row);
+  const context = {
+    ...descriptor.context,
+    ...(shown ? { content: shown } : {}),
+    ...(recordName ? { [CONTEXT_MENU_HEADING_KEY]: { label: "Row", text: recordName } } : {}),
+  };
+  return shown || recordName ? { ...descriptor, context } : descriptor;
+}
+
+/** The row's record name: the first data cell (not a tick box, star or button cell) with words. */
+export function rowRecordName(row: HTMLElement | null | undefined): string {
+  if (!row) return "";
+  for (const cell of Array.from(row.querySelectorAll<HTMLElement>("td[data-matrx-table-column-id], [role='gridcell'][data-matrx-table-column-id]"))) {
+    const words = primaryLine(cell);
+    if (words) return words.length > 120 ? `${words.slice(0, 119)}…` : words;
+  }
+  return "";
 }
 
 /** Elements that start a new LINE of what a cell shows (name, then its subtitle). */
