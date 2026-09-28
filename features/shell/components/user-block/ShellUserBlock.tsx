@@ -23,6 +23,7 @@ import UserMenuTrigger from "../header/header-right-menu/UserMenuTrigger";
 import UserMenuPanel from "../header/header-right-menu/UserMenuPanel";
 import GuestUserMenuTrigger from "../header/header-right-menu/GuestUserMenuTrigger";
 import type { UserData } from "@/utils/userDataMapper";
+import UserMenuEscape from "./UserMenuEscape";
 
 interface ShellUserBlockProps {
   userData: UserData;
@@ -37,6 +38,7 @@ export default function ShellUserBlock({
     userData.userMetadata?.name ?? userData.email ?? "Your account";
   return (
     <div className="shell-user-block" data-shell-user-block>
+      <UserMenuEscape />
       <div className="shell-user-block-trigger">
         {isAuthenticated ? (
           <UserMenuTrigger userData={userData} />
