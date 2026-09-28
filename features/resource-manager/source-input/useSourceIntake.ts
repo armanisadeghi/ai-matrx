@@ -540,7 +540,7 @@ export function useSourceIntake(
           processedDocumentId,
           notes: [
             ...(card.draft.notes ?? []),
-            `It was read. ${WAITING_FOR_ORGANIZATION.replace("this continues", "it is kept for reuse")}`,
+            "It was read. Waiting for an organization to keep it for reuse — choose one and it is kept by itself.",
           ],
         });
         return;

@@ -1990,6 +1990,31 @@
       max-width: 100%;
     }
 
+    /* THE ZERO-WIDTH LAYER EXEMPTIONS. The clamp above resolves against the
+       containing block, and a pan/zoom "world" layer is an absolutely placed
+       box whose children are all absolutely placed too — so it is 0px (or the
+       pane) wide and the clamp squeezes every fixed-width child to nothing.
+       Library layers whose children carry their own measured size opt out
+       here, once, for every surface (hand-built layers use `max-w-none` —
+       guard: pnpm check:zero-width-layers):
+         .react-flow__node  every React Flow / xyflow node is absolutely placed
+                            in `.react-flow__viewport` (the pane's width); on a
+                            390px phone a 244px card in a narrow pane rendered
+                            50px wide (found 2026-09-28, growth-loop map).
+         .react-flow__edges svg  xyflow 12 draws each edge in its own
+                            width-less absolute <svg>; clamped to 0px wide an
+                            SVG does not render at all, so every React Flow
+                            arrow in the app was invisible on phones.
+       (`.recharts-wrapper` is exempted unlayered further down.) Same layer,
+       higher specificity than `*`, so an explicit `max-w-*` utility on the
+       element still wins. */
+    .react-flow__node,
+    .react-flow__edges svg,
+    .react-flow__nodesselection-rect,
+    .react-flow__edgelabel-renderer > * {
+      max-width: none;
+    }
+
     /* Ensure pre and code blocks wrap properly */
     pre,
     code {

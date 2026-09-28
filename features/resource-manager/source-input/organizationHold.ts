@@ -14,11 +14,27 @@
  * landing runs again, exactly as it would have.
  */
 
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 export const WAITING_FOR_ORGANIZATION =
-  "Waiting for an organization — choose one in the organization picker at the top of the page and this continues by itself.";
+  "Waiting for an organization — choose one and this continues by itself.";
+
+/**
+ * The card's "Choose organization": open the ONE picker (the person's
+ * memberships). Setting one releases every held landing (the intake watches the
+ * selected organization); closing it is "not now" and changes nothing.
+ */
+export async function chooseOrganizationForHeldSources(): Promise<void> {
+  try {
+    await ensureOrganizationContext({ interactive: true });
+  } catch (err) {
+    if (!isOrganizationSelectionCancelled(err)) throw err;
+  }
+}
 
 /** True when a landing stopped only because no organization is chosen yet. */
 export function waitsForOrganization(error: unknown): boolean {

@@ -294,6 +294,8 @@
     "check:retired-admin-mandate-links": "tsx scripts/check-retired-admin-mandate-links.ts",
     "check:reserved-icons:write": "tsx scripts/check-reserved-icons.ts --write",
     "check:reserved-icons:self-test": "tsx scripts/check-reserved-icons.ts --self-test",
+    "check:zero-width-layers": "tsx scripts/check-zero-width-layers.ts",
+    "check:zero-width-layers:self-test": "tsx scripts/check-zero-width-layers.ts --self-test",
     "check:error-message-fallback": "tsx scripts/check-error-message-fallback.ts",
     "check:error-message-fallback:write": "tsx scripts/check-error-message-fallback.ts --write",
     "check:error-message-fallback:self-test": "tsx scripts/check-error-message-fallback.ts --self-test",

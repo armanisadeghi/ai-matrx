@@ -83,9 +83,13 @@ export interface MonitorDraft {
 export type CountRanges = Record<string, [number, number]>;
 
 export const USER_BASIS: Basis = { kind: "user", ref: "user" };
+/** An item read back from a saved monitor: the record keeps the words, not
+ *  where each came from, so its chip says "saved" — never a false "you said it". */
+export const SAVED_BASIS: Basis = { kind: "user", ref: "saved" };
 
 /** The chip a person reads: the brief's five words. */
 export function basisChip(basis: Basis): string {
+  if (basis.ref === SAVED_BASIS.ref) return "saved";
   switch (basis.kind) {
     case "user":
       return "you said it";
@@ -381,7 +385,7 @@ export function draftFromTracker(
       keyword,
       means: String(entry.means ?? ""),
       excludeHints: asStrings(entry.exclude_hints),
-      basis: USER_BASIS,
+      basis: SAVED_BASIS,
     };
   });
   const competitors = (
@@ -393,11 +397,11 @@ export function draftFromTracker(
       name: terms[0] ?? String(c.key ?? ""),
       means: String(c.means ?? ""),
       excludeHints: asStrings(c.exclude_hints),
-      basis: USER_BASIS,
+      basis: SAVED_BASIS,
     };
   });
   const user = (list: string[]) =>
-    list.map((text) => ({ text, basis: USER_BASIS }));
+    list.map((text) => ({ text, basis: SAVED_BASIS }));
   const opportunity = tracker.lenses.includes("opportunity");
   return {
     name: tracker.name,

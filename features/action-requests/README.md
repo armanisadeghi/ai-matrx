@@ -10,8 +10,16 @@ by itself. This folder is the app's whole half of it.
 ## What the page is
 
 One ask, one answer, on a phone. `approve`, `choose_one`, `confirm_details`,
-`pick_time`, `credential`, `browser_takeover`, `one_time_code`, `vault_item` — the form is whichever one the
-server's render spec names.
+`pick_time`, `credential`, `browser_takeover`, `one_time_code`, `vault_item`, `approve_spend` — the form is
+whichever one the server's render spec names.
+
+`approve_spend` (kind `approve_spend`, minted only by the paid tools' spend gate) is a NUMBER, not a
+yes/no: the server's consequence sentence, what the money buys, the estimate, the organization's
+remaining limit when one applies, then one editable amount prefilled with the suggestion (never below
+the estimate rounded up to the cent). An amount below the estimate or above the limit is allowed and
+SAID under the box before the click; only a non-amount is refused. The heading tracks the typed amount.
+Its consequence class is `money`, so a signed-out visitor gets `can_complete: false` and the sign-in
+line, never the form, whatever any knob says.
 
 ## The in-chat twin (2026-09-26)
 

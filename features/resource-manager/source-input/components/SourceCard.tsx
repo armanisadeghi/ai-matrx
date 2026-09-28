@@ -21,6 +21,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
+  Building2,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -55,6 +56,7 @@ import { DELIVERY_CHOICES, DELIVERY_WORDS, deliveryPatch, sourceDelivery } from 
 import { findParts, isWordQuery, type SourcePart } from "../partsSearch";
 import { useSourcePartsText } from "../useSourcePartsText";
 import { resumableInput } from "../interrupted";
+import { chooseOrganizationForHeldSources, WAITING_FOR_ORGANIZATION } from "../organizationHold";
 import type { SourceCardModel } from "../types";
 import type { UseSourceSetResult } from "../useSourceSet";
 
@@ -117,6 +119,7 @@ export function SourceCard({
   const entry = card.manifest;
   const chars = cardChars(card);
   const delivery = sourceDelivery(ref);
+  const waitingForOrganization = card.status === "error" && card.error === WAITING_FOR_ORGANIZATION;
   const partsCount = ref?.include_segments?.length ?? 0;
   const segments = entry?.segments ?? [];
   // Parts belong to one form (clean text is split differently from the raw
@@ -192,10 +195,31 @@ export function SourceCard({
       ) : null}
 
       {card.status === "error" ? (
-        <p role="alert" className="flex items-start gap-2 border-t border-border px-3 py-2 text-xs text-destructive">
-          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <p
+          role="alert"
+          className={cn(
+            "flex items-start gap-2 border-t border-border px-3 py-2 text-xs",
+            waitingForOrganization ? "text-warning" : "text-destructive",
+          )}
+        >
+          {waitingForOrganization ? (
+            <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          )}
           <span className="min-w-0 flex-1">{card.error ?? "This could not be added. Remove it and try again."}</span>
-          {resumableInput(card.draft) && onTryAgain ? (
+          {waitingForOrganization ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
+              onClick={() => void chooseOrganizationForHeldSources().catch(() => undefined)}
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              Choose organization
+            </Button>
+          ) : resumableInput(card.draft) && onTryAgain ? (
             <Button
               type="button"
               variant="outline"
@@ -207,7 +231,7 @@ export function SourceCard({
               Try again
             </Button>
           ) : null}
-          {!resumableInput(card.draft) && !ref && isUploadKind(card.draft.kind) && onChooseFileAgain ? (
+          {!waitingForOrganization && !resumableInput(card.draft) && !ref && isUploadKind(card.draft.kind) && onChooseFileAgain ? (
             <>
               <Button
                 type="button"
@@ -232,7 +256,9 @@ export function SourceCard({
               />
             </>
           ) : null}
-          <ErrorAlchemyMenu error={card.error ?? "This could not be added."} operation={`Add ${card.draft.label}`} />
+          {waitingForOrganization ? null : (
+            <ErrorAlchemyMenu error={card.error ?? "This could not be added."} operation={`Add ${card.draft.label}`} />
+          )}
         </p>
       ) : null}
 
