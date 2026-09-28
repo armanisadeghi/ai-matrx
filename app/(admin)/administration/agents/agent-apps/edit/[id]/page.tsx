@@ -181,15 +181,15 @@ export default function AdminEditAgentAppPage({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Delete failed");
+        throw new Error(body.error ?? "Move to Trash failed");
       }
-      toast({ title: "Deleted", description: `${app.name} removed` });
+      toast({ title: "Moved to Trash", description: `${app.name} can be restored from Trash` });
       goToList();
     } catch (err) {
       toast({
         title: "Error",
         description:
-          err instanceof Error ? err.message : "Failed to delete agent app",
+          err instanceof Error ? err.message : "Failed to move agent app to Trash",
         variant: "destructive",
       });
       throw err;

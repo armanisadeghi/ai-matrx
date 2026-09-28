@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     const { data: existing, error: existingError } = await supabase
       .schema("app")
       .from("definition")
-      .select("id")
+      .select("id, deleted_at")
       .eq("slug", normalizedSlug)
       .maybeSingle();
 
@@ -125,8 +125,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (existing) {
+      // The slug index covers apps in Trash too (app.definition.slug is unique
+      // across live and archived rows), so say which one holds it.
       return NextResponse.json(
-        { error: "That slug is already taken" },
+        {
+          error: existing.deleted_at
+            ? "That slug belongs to an app in Trash. Restore that app from Trash, or choose a different slug."
+            : "That slug is already taken",
+        },
         { status: 409 },
       );
     }

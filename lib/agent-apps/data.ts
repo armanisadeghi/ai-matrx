@@ -209,6 +209,7 @@ export async function getAgentAppVersions(
       "id, app_id, version_number, changed_at, change_note, name, agent_id, agent_version_id, status, pinned_version",
     )
     .eq("app_id", appId)
+    .is("deleted_at", null)
     .order("version_number", { ascending: false });
   if (result.error) return [];
   return result.data ?? [];
@@ -253,6 +254,7 @@ export async function getAgentAppVersion(
     )
     .eq("app_id", appId)
     .eq("version_number", versionNumber)
+    .is("deleted_at", null)
     .single();
   if (result.error || !result.data) return null;
   return result.data;

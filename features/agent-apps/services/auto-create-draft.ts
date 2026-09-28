@@ -165,18 +165,21 @@ export async function createGenerationDraft(
  * created BEFORE the code exists, v1 captures `component_code = ''` — a
  * restorable snapshot that would BLANK the user's app from the versions page.
  *
- * So: drop the empty snapshot and renumber the real one to 1, leaving exactly
- * the single, correct version row the pre-draft flow produced. Never throws —
- * a failure here costs a junk row, never the generated code.
+ * So: move the empty snapshot to Trash and, when version 1 is free, renumber
+ * the real one to 1. Never throws — a failure here costs a junk row, never the
+ * generated code.
  */
 async function pruneEmptyCodeSnapshot(appId: string): Promise<void> {
   try {
+    // Delete means archive (Arman, 2026-09-27): the empty placeholder moves to
+    // Trash instead of being destroyed.
     const { error: deleteError } = await supabase
       .schema("app")
       .from("definition_version")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("app_id", appId)
-      .eq("component_code", "");
+      .eq("component_code", "")
+      .is("deleted_at", null);
     if (deleteError) {
       console.warn(
         "[autoCreateDraft] Could not prune the empty placeholder version:",
@@ -185,16 +188,22 @@ async function pruneEmptyCodeSnapshot(appId: string): Promise<void> {
       return;
     }
 
-    // Renumber only when the real snapshot is now the ONLY row, so this can
-    // never disturb an app that already has a genuine version history.
-    const { data: remaining, error: readError } = await supabase
+    // Renumber only when the real snapshot is now the ONLY live row, so this
+    // can never disturb an app that already has a genuine version history.
+    // uq_aga_versions_app_version (app_id, version_number) covers archived rows
+    // too, so version 1 may still be held by the archived placeholder — then the
+    // live snapshot keeps its number rather than colliding with it.
+    const { data: rows, error: readError } = await supabase
       .schema("app")
       .from("definition_version")
-      .select("id, version_number")
+      .select("id, version_number, deleted_at")
       .eq("app_id", appId);
-    if (readError || !remaining || remaining.length !== 1) return;
-    const only = remaining[0] as { id: string; version_number: number };
+    if (readError || !rows) return;
+    const live = rows.filter((r) => r.deleted_at === null);
+    if (live.length !== 1) return;
+    const only = live[0] as { id: string; version_number: number };
     if (only.version_number === 1) return;
+    if (rows.some((r) => r.version_number === 1)) return;
 
     await writeOne(
       supabase

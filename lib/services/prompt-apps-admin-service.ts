@@ -320,6 +320,7 @@ export async function fetchAnalytics(filters?: {
     .select(
       "id, name, slug, status, total_executions, success_rate, last_execution_at",
     )
+    .is("deleted_at", null)
     .order("total_executions", { ascending: false });
 
   if (filters?.app_id) query = query.eq("id", filters.app_id);

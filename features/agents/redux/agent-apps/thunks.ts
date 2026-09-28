@@ -115,6 +115,7 @@ export const fetchAppsInitial = createAsyncThunk<void, void, ThunkApi>(
       .schema("app")
       .from("definition")
       .select("*")
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false });
 
     if (error) {

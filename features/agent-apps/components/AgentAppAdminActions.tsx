@@ -380,16 +380,17 @@ export function AgentAppAdminActions({
             disabled={busy !== null}
           >
             <Trash2 className="w-3.5 h-3.5 mr-1" />
-            Delete
+            Move to Trash
           </Button>
 
           <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete agent app?</AlertDialogTitle>
+                <AlertDialogTitle>Move agent app to Trash?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently removes &quot;{app.name}&quot; and every
-                  associated execution and error record. This cannot be undone.
+                  &quot;{app.name}&quot; stops being available to run. Its
+                  execution and error records are kept, and you can restore it
+                  from Trash at any time.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -401,7 +402,7 @@ export function AgentAppAdminActions({
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   disabled={busy === "delete"}
                 >
-                  {busy === "delete" ? "Deleting..." : "Delete"}
+                  {busy === "delete" ? "Moving..." : "Move to Trash"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

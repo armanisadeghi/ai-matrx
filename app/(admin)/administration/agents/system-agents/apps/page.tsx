@@ -182,11 +182,11 @@ export default function AdminSystemAppsListPage() {
         throw new Error(payload.error ?? `HTTP ${res.status}`);
       }
       setApps((rows) => rows.filter((r) => r.id !== id));
-      toast.success("System app deleted.");
+      toast.success("System app moved to Trash.");
       setDeleteTarget(null);
     } catch (err) {
       toast.error(
-        `Failed to delete: ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to move to Trash: ${err instanceof Error ? err.message : String(err)}`,
       );
     } finally {
       setDeleting(false);
@@ -494,7 +494,7 @@ export default function AdminSystemAppsListPage() {
                         className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                         disabled={busyIds.has(app.id) || deleting}
                         onClick={() => setDeleteTarget(app)}
-                        title="Delete system app"
+                        title="Move system app to Trash"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -516,13 +516,13 @@ export default function AdminSystemAppsListPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive">
-              Delete system app
+              Move system app to Trash
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Permanently delete &ldquo;{deleteTarget?.name}&rdquo; (slug:{" "}
-              <span className="font-mono text-xs">{deleteTarget?.slug}</span>).
-              This removes the app for every user on the platform and cannot be
-              undone.
+              Move &ldquo;{deleteTarget?.name}&rdquo; (slug:{" "}
+              <span className="font-mono text-xs">{deleteTarget?.slug}</span>)
+              to Trash. It stops being available to every user on the
+              platform; you can restore it from Trash at any time.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -538,10 +538,10 @@ export default function AdminSystemAppsListPage() {
               {deleting ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Deleting...
+                  Moving...
                 </>
               ) : (
-                "Delete system app"
+                "Move to Trash"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

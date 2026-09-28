@@ -135,13 +135,13 @@ export async function DELETE(
     // Global apps were created with created_by = null (system scope marker).
     const isGlobal = existing.created_by === null;
     if (isGlobal) {
-      // Global (system-scope) apps can only be deleted by admins. Use the
-      // admin client so RLS doesn't block the destructive write.
+      // Global (system-scope) apps can only be moved to Trash by admins. Use
+      // the admin client so RLS doesn't block the write.
       const isAdmin = await hasAdminPower(supabase, user.id);
       if (!isAdmin) {
         return NextResponse.json(
           {
-            error: "Forbidden: only admins can delete system agent apps",
+            error: "Forbidden: only admins can move system agent apps to Trash",
           },
           { status: 403 },
         );
@@ -150,31 +150,48 @@ export async function DELETE(
         "@/utils/supabase/adminClient"
       );
       const admin = createAdminClient();
-      const { error } = await admin.schema("app").from("definition").delete().eq("id", id);
+      // Delete means archive (Arman, 2026-09-27): the app moves to Trash and
+      // stays restorable; its parts follow via the soft-delete cascade.
+      const { error } = await admin
+        .schema("app")
+        .from("definition")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null);
       if (error) {
         return NextResponse.json(
-          { error: "Failed to delete system agent app", details: error.message },
+          { error: "Failed to move system agent app to Trash", details: error.message },
           { status: 500 },
         );
       }
       return NextResponse.json({ success: true });
     }
 
-    // Canonical RLS std_delete checks created_by = auth.uid() — that IS the
-    // ownership guard. Add created_by filter explicitly so an accidental
-    // mismatch (e.g., shared-edit row) silently deletes 0 rows rather than
-    // succeeding.
-    const { error } = await supabase
+    // Delete means archive: the owner moves the app to Trash (restorable).
+    // The created_by filter is the ownership guard; the returned rows prove
+    // the move landed — RLS answers a refused update with zero rows.
+    const { data: moved, error } = await supabase
       .schema("app")
       .from("definition")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", id)
-      .eq("created_by", user.id);
+      .eq("created_by", user.id)
+      .is("deleted_at", null)
+      .select("id");
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to delete agent app" },
+        { error: "Failed to move agent app to Trash" },
         { status: 500 },
+      );
+    }
+    if (!moved || moved.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Nothing was moved to Trash: only the app's owner can do that. Ask the owner, or reload if it is already in Trash.",
+        },
+        { status: 403 },
       );
     }
 
