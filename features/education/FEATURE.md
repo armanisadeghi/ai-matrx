@@ -90,6 +90,41 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- `2026-09-28` — page-pass wave 7 continued: root-caused and fixed a platform-wide
+  access-ladder bug found while opening the remaining education tool homes as
+  test@test.com (`--as member --fresh`). `/education/quizzes`, `/education/practice-tests`,
+  `/education/notes`, `/education/kits`, `/education/flashcards` and `/education/study-guides`
+  all 403'd on load ("You are not a member of that organization, so you cannot see its
+  teams.") for this account. Root cause: `platform.shown_to_context()` (the access-ladder T-11
+  "Shown to" visibility primitive, consumed by `fc_set_list_scoped`, `assessment_list_scoped`,
+  `edu_library_scope_rows`, and five more `*_list_scoped` functions across agents/workflows/
+  SEO/research) looped over raw `iam.organization_member` rows with no archived-organization
+  filter, unlike `iam.my_orgs()`. Any viewer who had EVER belonged to an org that later got
+  archived hit `iam.teammate_user_ids`'s access refusal as an unhandled exception on the very
+  first call, killing every "Shown to"-gated list for that person platform-wide — not an
+  education-only bug. Fixed at the source via the Supabase MCP (no migration file):
+  `platform.shown_to_context` now joins to `iam.organizations` and filters `archived_at is
+  null`, matching `iam.my_orgs()`. Verified live pre/post-fix with `pnpm page:look` (console
+  errors 2→0, failed requests 2→0 on each affected route) and directly via SQL
+  (`education.fc_set_list_counts` / `assessment_list_counts` / `edu_library_scope_counts` as
+  test@test.com, before: 42501 exception, after: correct counts). No code changes, no deploy
+  needed — DB-only.
+  Also walked the full first-run path live as test@test.com: `/education/start` → pasted
+  sample notes → generated a real study kit (flashcard deck + practice test, grounded/cited
+  to source) → opened the deck at `/education/flashcards/<id>/study` → flipped and graded a
+  card (Correct) → confirmed via `/education/progress` → joined a class by code via
+  `/education/classes/join` (found no existing "Agent Test Chemistry" fixture in
+  `iam.organizations` because classes are NOT organizations — they are `context.scopes` with
+  `scope_types.slug = 'class'` — so created one, joined it, then left it and archived it as
+  admin). Found mid-flow: the kit-generation assistant can pause an already-started, already
+  -progressing run behind a blocking "Which organization is this for?" modal instead of asking
+  before the run starts — noted for the org-gate owner, not fixed here (out of this pass's
+  scope). Cleanup verified in the DB: the generated `fc_set` and `assessment` both carry
+  `deleted_at`, the test class's `settings.archived = true`, and test@test.com's membership row
+  on that class carries `deleted_at` (left). Opened every remaining tool home with no data
+  (quizzes, practice-tests, notes, mind-maps, memory, audio-study, summaries, study-guides,
+  kits, planner, game, flashcards) — after the DB fix, all render honest empty/low-data states
+  with no dead ends, no fake zeros, no jargon.
 - `2026-09-28` — page-pass wave 7, first-run experience (test@test.com, near-empty account):
   `/education` home's tool-chip row showed a count on every tile ("0 Kits", "1 Flashcard
   Studio", "0 Quizzes"…) except **Study Guides**, which showed no number at all —
