@@ -111,6 +111,11 @@ export interface EntityModeHeaderProps {
    * of one page (a shallow `?mode=` URL update, no server round-trip).
    */
   onModeSelect?: (href: string) => void;
+  /**
+   * PHONE: switch modes in one tap from the header row — one small button for
+   * the mode you are NOT in (View ⇄ Edit) — instead of a trip into the sheet.
+   */
+  modeSwitchOnPhone?: boolean;
   /** Declarative actions — glass tap targets on desktop, drawer rows on mobile. */
   actions?: EntityHeaderAction[];
   /** Desktop-only extra controls (e.g. a Switch). Hidden below sm. */
@@ -263,6 +268,7 @@ export function EntityModeHeader({
   modes,
   activeModeHref,
   onModeSelect,
+  modeSwitchOnPhone,
   actions,
   right,
 }: EntityModeHeaderProps) {
@@ -274,6 +280,7 @@ export function EntityModeHeader({
   // Back returns where this tab came from (filters included); `backHref` is
   // the fallback for a page opened straight from a link.
   const resolvedBackHref = useBackHref(backHref);
+  const router = useRouter();
   const pathname = usePathname();
   const activeMode = activeModeHref
     ? modes?.find((mode) => mode.href === activeModeHref)
@@ -342,6 +349,25 @@ export function EntityModeHeader({
             ) : (
               <span className="flex min-w-0 items-center px-1.5">{label}</span>
             )}
+            {isPhone &&
+              modeSwitchOnPhone &&
+              modes
+                ?.filter((m) => m.href !== activeMode?.href)
+                .slice(0, 1)
+                .map((m) => {
+                  const Icon = m.icon ?? MoreHorizontal;
+                  return (
+                    <span key={`mode-${m.href}`} className="shrink-0">
+                      <TapTargetButton
+                        icon={<Icon className="h-4 w-4" />}
+                        ariaLabel={m.name}
+                        onClick={() =>
+                          onModeSelect ? onModeSelect(m.href) : router.push(m.href)
+                        }
+                      />
+                    </span>
+                  );
+                })}
             {isPhone &&
               actions
                 ?.filter((a) => a.pinnedOnPhone)
