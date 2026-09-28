@@ -16,14 +16,16 @@
  *      AnnotationToolbar, HighlightToolbar) declared outside the canonical files;
  *   4. a new document-level `selectionchange` listener outside the root and
  *      the context menu's selection tracking;
- *   5. BY BEHAVIOUR, whatever it is named, across a FEATURE (a file plus the local modules
- *      it imports, one level — a hook and the component that draws its bar are one popup): it
+ *   5. BY BEHAVIOUR, whatever it is named, across a FEATURE (a file plus every helper and
+ *      hook it reaches, transitively and cycle-safe, and one level of the component it renders —
+ *      helper → hook → bar is one popup): it
  *      reads the document selection (`getSelection()`), listens for the gesture that ends one
  *      (mouseup / pointerup / keyup / touchend / select / selectionchange, as a listener or an
  *      inline `onMouseUp`…), measures the selection's RANGE (`getRangeAt`/`createRange` with
  *      `getBoundingClientRect`/`getClientRects`) and draws something at that place (a portal,
  *      fixed/absolute style or class, a Radix Popover/anchor, floating-ui, a virtual reference).
- *      Five realistic shapes are planted below; the pre-2026-09-28 census caught 1 of them.
+ *      Six realistic shapes are planted below (one reads the selection two imports from its bar);
+ *      the pre-2026-09-28 census caught 1 of them, the one-level version 5.
  *
  * Selection-driven behaviours that are NOT popups, and so are not toolbars
  * (they render nothing positioned — rule 5 does not match them — and the
@@ -59,6 +61,10 @@ const ALLOW: Record<string, string> = {
   "components/shared/FloatingSelectionToolbar.test.tsx": "its test",
   // The context menu tracks the selection for what its right-click menu acts on; it draws no popup.
   "features/context-menu-v3/ContextMenuV3.tsx": "selection tracking for the right-click menu; no popup",
+  // Its capture helper: reads and measures the selection so the right-click menu knows what it
+  // acts on (and anchors the menu at the pointer). It draws nothing; every module that imports it
+  // reaches it only through the context-menu hooks.
+  "features/context-menu-v3/utils/selection-tracking.ts": "the right-click menu's selection capture; draws nothing",
 };
 
 const RULES: { id: string; pattern: RegExp; allowCanonical: boolean; alsoNeeds?: RegExp }[] = [
@@ -111,6 +117,11 @@ export interface Finding {
 
 const SOURCE_EXT = [".tsx", ".ts", ".jsx", ".js"];
 
+/** A helper or hook module (no component of its own): a `.ts`/`.js` file, or a `use…` hook file. */
+function isLogicModule(file: string): boolean {
+  return /\.(ts|js)$/.test(file) || /(^|\/)use[A-Z][^/]*\.(tsx|jsx)$/.test(file);
+}
+
 /** The repo-relative file a local import resolves to (`@/x`, `./x`, `../x`), or null. */
 function resolveLocal(from: string, spec: string, known: ReadonlySet<string>): string | null {
   let base: string;
@@ -140,10 +151,68 @@ export function censusSelectionToolbars(root: string, files: readonly string[]):
     }
     return textCache.get(file) ?? null;
   };
+  const signalCache = new Map<string, Set<Behaviour>>();
   const signalsOf = (file: string): Set<Behaviour> => {
-    const text = textOf(file) ?? "";
-    return new Set((Object.keys(BEHAVIOUR) as Behaviour[]).filter((k) => BEHAVIOUR[k].test(text)));
+    let sigs = signalCache.get(file);
+    if (!sigs) {
+      const text = textOf(file) ?? "";
+      sigs = new Set((Object.keys(BEHAVIOUR) as Behaviour[]).filter((k) => BEHAVIOUR[k].test(text)));
+      signalCache.set(file, sigs);
+    }
+    return sigs;
   };
+
+  const importsCache = new Map<string, string[]>();
+  const importsOf = (file: string): string[] => {
+    if (!importsCache.has(file)) {
+      const deps: string[] = [];
+      for (const m of (textOf(file) ?? "").matchAll(IMPORT_SPEC)) {
+        const dep = resolveLocal(file, m[1] ?? m[2], known);
+        if (!dep || CANONICAL.has(dep) || ALLOW[dep] || dep.startsWith("components/selection-toolbar/")) continue;
+        deps.push(dep);
+      }
+      importsCache.set(file, deps);
+    }
+    return importsCache.get(file)!;
+  };
+  /**
+   * A SELECTION SOURCE reads the document selection AND measures its range in one module — the
+   * heart of every selection popup. Few modules do (the one toolbar's root, the context menu's
+   * tracking, the annotation capture); anything else that does is where a second popup starts.
+   */
+  const isSource = (file: string) => {
+    const sigs = signalsOf(file);
+    return sigs.has("readsSelection") && sigs.has("measures");
+  };
+  /**
+   * What `file` reaches through LOGIC imports (helpers and hooks), transitively, memoised, cycle-
+   * safe: does it reach a selection source, and does the chain handle the ending gesture? Selection
+   * data reaches a bar through logic, never through a rendered component (a child component that
+   * draws a popup is reported where it lives). A module met again while its own walk is still open
+   * (an import cycle) adds nothing new.
+   */
+  type Reach = { source: boolean; gesture: boolean };
+  const reachCache = new Map<string, Reach>();
+  const open = new Set<string>();
+  const reach = (file: string): Reach => {
+    const cached = reachCache.get(file);
+    if (cached) return cached;
+    const out: Reach = { source: false, gesture: false };
+    if (open.has(file)) return out;
+    open.add(file);
+    for (const d of importsOf(file)) {
+      if (!isLogicModule(d)) continue;
+      const sub = reach(d);
+      out.source ||= isSource(d) || sub.source;
+      out.gesture ||= signalsOf(d).has("endsGesture") || sub.gesture;
+    }
+    open.delete(file);
+    reachCache.set(file, out);
+    return out;
+  };
+  /** Does `file` render a component (one level) that draws something positioned? */
+  const drawsThroughChild = (file: string) =>
+    importsOf(file).some((d) => !isLogicModule(d) && signalsOf(d).has("positions"));
 
   for (const file of sources) {
     if (ALLOW[file]) continue;
@@ -152,19 +221,14 @@ export function censusSelectionToolbars(root: string, files: readonly string[]):
     const lines = text.split("\n");
 
     if (!CANONICAL.has(file)) {
-      // The feature: this file + the local modules it imports directly (canonical and allowed
-      // modules contribute nothing — importing the one toolbar is how a host SHOULD do it).
+      // THE FEATURE: this file with the helpers and hooks it reaches (helper → hook → bar is one
+      // popup) and, one level, the component it renders to draw the bar (parent + child split).
       const own = signalsOf(file);
-      const union = new Set(own);
-      for (const m of text.matchAll(IMPORT_SPEC)) {
-        const dep = resolveLocal(file, m[1] ?? m[2], known);
-        if (!dep || CANONICAL.has(dep) || ALLOW[dep] || dep.startsWith("components/selection-toolbar/")) continue;
-        for (const sig of signalsOf(dep)) union.add(sig);
-      }
-      // The file itself must take part in the gesture or the drawing — a module that merely
-      // imports a finished popup is reported where the popup lives, not at every importer.
-      const takesPart = own.has("positions") || own.has("endsGesture") || own.has("readsSelection");
-      if (takesPart && (Object.keys(BEHAVIOUR) as Behaviour[]).every((k) => union.has(k))) {
+      const r = reach(file);
+      const hasSource = isSource(file) || r.source;
+      const hasGesture = own.has("endsGesture") || r.gesture;
+      const draws = own.has("positions") || (own.has("endsGesture") && drawsThroughChild(file));
+      if (hasSource && hasGesture && draws) {
         const at = lines.findIndex((l) => BEHAVIOUR.readsSelection.test(l) || BEHAVIOUR.endsGesture.test(l));
         findings.push({ file, rule: "selection-driven-floating-ui", line: at + 1 });
       }
@@ -235,6 +299,7 @@ export const BEHAVIOUR_PLANTS = [
   "features/notes/PassagePopover.tsx", // a Radix Popover anchored to the selection rect, no portal, no fixed
   "features/docs/LineMarks.tsx", // getClientRects + an absolute class
   "features/chat/InlineAskBar.tsx", // an inline onMouseUp bar with an absolute class
+  "features/docs/SelectionChip.tsx", // two imports deep: helper (reads + measures) → hook (mouseup) → bar
 ] as const;
 
 export function plantSecondToolbars(): { scratch: string; files: string[] } {
@@ -330,6 +395,30 @@ export function plantSecondToolbars(): { scratch: string; files: string[] } {
     '      {box && <div className="absolute rounded bg-card" style={{ left: box.left, top: box.top }}>Ask AI</div>}',
     "    </article>",
     "  );",
+    "}",
+  ]);
+  // Shape 6: the selection is read two imports away from the bar that draws it.
+  plant("features/docs/selectionRect.ts", [
+    "export const selectionRect = () => window.getSelection()?.getRangeAt(0).getBoundingClientRect() ?? null;",
+  ]);
+  plant("features/docs/useSelectionRect.ts", [
+    'import { useEffect, useState } from "react";',
+    'import { selectionRect } from "./selectionRect";',
+    "export function useSelectionRect() {",
+    "  const [rect, setRect] = useState<DOMRect | null>(null);",
+    "  useEffect(() => {",
+    "    const up = () => setRect(selectionRect());",
+    '    document.addEventListener("mouseup", up);',
+    '    return () => document.removeEventListener("mouseup", up);',
+    "  }, []);",
+    "  return rect;",
+    "}",
+  ]);
+  plant("features/docs/SelectionChip.tsx", [
+    'import { useSelectionRect } from "./useSelectionRect";',
+    "export function SelectionChip() {",
+    "  const rect = useSelectionRect();",
+    '  return rect ? <button className="absolute" style={{ top: rect.bottom }}>Define</button> : null;',
     "}",
   ]);
   // NOT popups: a caret guard (MergeFieldInput's shape) and a toolbar HOST importing the one toolbar.
