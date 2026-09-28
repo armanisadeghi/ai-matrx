@@ -45,6 +45,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -180,7 +189,61 @@ export function EntityScopeTabs({
         : more.start
           ? "[mask-image:linear-gradient(to_right,transparent,black_1.5rem)]"
           : "";
+  const kinds = withTeamScope(scopes);
+  // Control-type rule: up to four choices are pills, more are a select. On a
+  // phone five or more scope tabs never fit (at 375 /transcripts showed two of
+  // five, "Shared" and "Public" past the edge), so the SAME slot holds a
+  // select there; wider screens keep the tabs.
+  const phoneSelect = kinds.length >= 5;
+  const activeNarrowId =
+    scope.kind === "industry" ? scopeIndustryId(scope) : scopeNarrowId(scope);
+  const countOf = (kind: ListScopeKind): number | null => {
+    const measured = counts.byKind[kind];
+    return typeof measured === "number" ? measured : countsLoading ? null : 0;
+  };
+  const withCount = (label: string, n: number | null) => (n === null ? label : `${label} (${n})`);
   return (
+    <>
+    {phoneSelect && (
+      <Select
+        value={activeNarrowId ? `${scope.kind}:${activeNarrowId}` : scope.kind}
+        onValueChange={(v) => {
+          const at = v.indexOf(":");
+          onChange(at === -1 ? makeScope(v as ListScopeKind) : makeScope(v.slice(0, at) as ListScopeKind, v.slice(at + 1)));
+        }}
+      >
+        <SelectTrigger aria-label="List scope" className="h-11 w-auto min-w-0 max-w-full gap-1.5 text-xs sm:hidden">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {kinds.map((kind) => {
+            const meta = SCOPE_META[kind];
+            const Icon = meta.icon;
+            const options = counts.narrow[kind] ?? [];
+            const item = (
+              <SelectItem key={kind} value={kind}>
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  {withCount(options.length > 0 ? `${meta.label} — all` : meta.label, countOf(kind))}
+                </span>
+              </SelectItem>
+            );
+            if (options.length === 0) return item;
+            return (
+              <SelectGroup key={kind}>
+                <SelectLabel className="text-xs">{meta.label}</SelectLabel>
+                {item}
+                {options.map((opt) => (
+                  <SelectItem key={`${kind}:${opt.id}`} value={`${kind}:${opt.id}`}>
+                    <span className="truncate">{withCount(opt.label, opt.count)}</span>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            );
+          })}
+        </SelectContent>
+      </Select>
+    )}
     <div
       ref={rowRef}
       data-scope-tabs-more={more.end ? "end" : more.start ? "start" : undefined}
@@ -191,13 +254,14 @@ export function EntityScopeTabs({
       // scrolls sideways instead of dropping its words.
       className={cn(
         "inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0",
+        phoneSelect && "max-sm:hidden",
         fade,
       )}
       role="tablist"
       aria-label="List scope"
     >
       {/* "My team" joins every tab bar that offers "My Orgs" — here, once. */}
-      {withTeamScope(scopes).map((kind) => {
+      {kinds.map((kind) => {
         const meta = SCOPE_META[kind];
         const Icon = meta.icon;
         // The server decides what a scope narrows to; personal orgs are
@@ -310,5 +374,6 @@ export function EntityScopeTabs({
         );
       })}
     </div>
+    </>
   );
 }
