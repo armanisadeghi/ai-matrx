@@ -608,8 +608,6 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const hasDbInterleavedSpecial = messageInterleavedContent.some(
     (s) => s.type === "db_tool" || s.type === "thinking",
   );
-  // [DBG-k9]
-  if (typeof window !== "undefined") { const w = window as unknown as { __dbgE?: unknown[] }; (w.__dbgE ??= []).push({ t: Math.round(performance.now()), mid: messageId?.slice(0, 8), rid: requestId?.slice(0, 12), active: !!isStreamActive, settled: settledFromRecord, uni: hasUnifiedSpecial, db: hasDbInterleavedSpecial, runs: recordMessageIds?.map((x) => x.slice(0, 8)).join(","), segs: messageInterleavedContent.map((x) => x.type).join(","), slots: unifiedSlots.map((x) => x.kind).join(",") }); }
 
   // Tool names for batching + the settled-turn agent-work fold (live path):
   // the unified slots only carry callIds; display-mode checks need the name.
@@ -703,6 +701,16 @@ export const EnhancedChatMarkdownInternal: React.FC<
     GroupedSlot | AgentWorkFold<GroupedSlot>
   > => {
     if (!isSettled) return groupedSlots;
+    // A turn whose committed record is about to take over (a row exists, its
+    // content not yet in the store) is NOT folded from its live slots: the
+    // stream flips to "not active" a beat before the commit lands, and folding
+    // the live reading for that beat (an empty reasoning run counts as work
+    // live, the record drops it) tucked the tool card into "Worked for" and
+    // brought it back out when the record rendered — a remount of every card
+    // at completion (verifier 2026-09-27, drawer and Chat window). The record
+    // decides the settled fold; live slots fold only when no row will
+    // (an adopted stream with no transcript).
+    if (messageId && !settledFromRecord) return groupedSlots;
     // An Expert's transcript has no machine frames left to fold, so the
     // "Worked for Ns" group would be a box that opens onto nothing — a dead
     // end, which is worse than the leak it replaced.
@@ -739,6 +747,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
     });
   }, [
     isSettled,
+    messageId,
+    settledFromRecord,
     groupedSlots,
     toolLifecycleMap,
     renderBlocksMap,

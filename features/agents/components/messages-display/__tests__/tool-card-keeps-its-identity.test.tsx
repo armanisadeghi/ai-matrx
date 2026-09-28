@@ -9,7 +9,11 @@
  * LAST row id, so a new last row unmounted the whole answer; (2) at
  * completion, when the settled turn split into one member per row and the
  * card moved from the live renderer's element (`InlineToolCard`) to the
- * persisted one (`DbToolCard`) under a different key.
+ * persisted one (`DbToolCard`) under a different key; (3) (r5, drawer and
+ * Chat window) in the beat between the stream going inactive and the commit
+ * landing, the settled "Worked for" fold ran over the LIVE slots — an empty
+ * reasoning run counts as work there — and tucked the card into a collapsed
+ * group, then the record (which drops the empty run) brought it back out.
  *
  * The seam: the real `processStream` drives the real reducers; the real
  * display grouping, the real `AssistantTurnGroup`, `AgentAssistantMessage`,
@@ -186,6 +190,17 @@ const reserved = (table: string, id: string, metadata: Record<string, unknown>, 
     metadata,
   },
 });
+// The server marks each row persisted as its iteration lands.
+const rowActive = (id: string) => ({
+  event: "record_update",
+  data: {
+    db_project: "matrx",
+    table: "message",
+    record_id: id,
+    status: "active",
+    metadata: {},
+  },
+});
 const dataTool = (event: string, data: Record<string, unknown> = {}) => ({
   event: "tool_event",
   data: { event, call_id: CALL, tool_name: "data", data },
@@ -196,6 +211,11 @@ const dataTool = (event: string, data: Record<string, unknown> = {}) => ({
 const EVENTS: unknown[] = [
   reserved("message", ROW1, { role: "assistant", position: 1 }),
   reserved("request", "req-iter-1", { iteration: 1 }, { user_request_id: "ur_1" }),
+  // The model reasons without streaming any reasoning text (the production
+  // wire): a live reasoning run with nothing in it, which the committed
+  // record drops.
+  { event: "reasoning", data: { state: "started" } },
+  { event: "reasoning", data: { state: "stopped" } },
   reserved(
     "tool_call",
     "e0000000-0001-4000-8000-000000000001",
@@ -206,6 +226,7 @@ const EVENTS: unknown[] = [
     arguments: { action: "patch", target: "note", old_text: "4. Take blood pressure" },
   }),
   dataTool("tool_completed", { result: { ok: true, edits: 1 } }),
+  rowActive(ROW1),
   reserved("request", "req-iter-2", { iteration: 2 }, { user_request_id: "ur_1" }),
   {
     event: "chunk",
@@ -216,6 +237,7 @@ const EVENTS: unknown[] = [
     position: 3,
     source: "iteration_persist",
   }),
+  rowActive(ROW3),
   { event: "end", data: {} },
 ];
 
@@ -315,17 +337,27 @@ test("the intake-checklist patch card is one DOM node from its first frame throu
     });
 
   // Up to the tool finishing: the card is on screen.
-  for (let i = 0; i < 5; i++) await h.stream.advance();
+  const toolDone = EVENTS.findIndex(
+    (e) =>
+      (e as { data?: { event?: string } }).data?.event === "tool_completed",
+  );
+  for (let i = 0; i <= toolDone; i++) await h.stream.advance();
   render(true);
   const first = card();
   if (!first) throw new Error(`no card rendered: ${host.innerHTML.slice(0, 1500)}`);
 
   // The answer streams, and the server announces the answer's row late.
-  for (let i = 5; i < EVENTS.length - 1; i++) {
+  for (let i = toolDone + 1; i < EVENTS.length - 1; i++) {
     await h.stream.advance();
     render(true);
     expect(card()).toBe(first);
   }
+
+  // The host flips the turn to "not streaming" a beat BEFORE the commit
+  // lands (the drawer and the Chat window do, most runs): the live reading
+  // must not be re-folded for that beat.
+  render(false);
+  if (card() !== first) throw new Error(`gap render: ${host.innerHTML.slice(0, 3000)}`);
 
   // `end`: the turn commits and settles onto its stored rows.
   await h.stream.advance();
