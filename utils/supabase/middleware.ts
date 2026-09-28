@@ -114,8 +114,20 @@ export async function updateSession(
   // requests only; signed-out ones (login page, assets) always pass.
   if (process.env.NODE_ENV === "development" && user) {
     const { walkCapGateForRequest } = await import("./walkCap");
-    const refused = await walkCapGateForRequest(request.headers.get("host"));
+    const refused = await walkCapGateForRequest(
+      request.headers.get("host"),
+      request.headers.get("sec-fetch-dest") === "document" ? "document" : "background",
+    );
     if (refused) {
+      if (refused.headers.get("x-matrx-walk-cap") === "evicted" && request.headers.get("sec-fetch-dest") === "document") {
+        const parked = request.nextUrl.clone();
+        parked.host = request.headers.get("host") ?? parked.host;
+        parked.pathname = "/__dev-walk";
+        parked.search = "";
+        parked.searchParams.set("parked", "1");
+        parked.searchParams.set("returnTo", `${pathname}${request.nextUrl.search}`);
+        return NextResponse.redirect(parked);
+      }
       return new NextResponse(refused.body, {
         status: refused.status,
         headers: refused.headers,

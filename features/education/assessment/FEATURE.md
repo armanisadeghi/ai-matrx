@@ -265,3 +265,14 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
   `gradeTypedAnswer` agent (`b39183d1…`; recorded to `study_attempt.graded_by=b39183d1…`); result
   finalized (75%). P2 converter verified live from a paste source (registry shows `quiz` available →
   5 grounded items → `education.assessment` `source_kind='source'`). Supersedes the outage note for P1.
+- **2026-09-27 (wave-2 adversarial retest)** — Two defects found and fixed while re-verifying a
+  practice test's countdown timer: (1) `remaining` was `useState`-decremented locally with no
+  persistence — a mid-taking page reload silently reset the clock to the full limit AND dropped every
+  already-graded answer (table-stakes violation). Fixed in `useTakeAssessment.ts` (new `restore`
+  option seeding `startedAt`/`sessionId`/`resultId`/`records`, `startedAt` now exposed) +
+  `AssessmentTaker.tsx` (a `sessionStorage` snapshot per assessment id, restored synchronously before
+  first render, cleared on finish; the countdown is now derived from the wall-clock `startedAt` each
+  tick instead of decremented, so a restored `startedAt` recomputes the true remaining time). (2)
+  `AssessmentDetail.tsx`'s owner action row had NO "Duplicate" — only a non-owner saw "Make a copy to
+  edit"; the platform's own author of a quiz/practice test had no way to duplicate it. Added a
+  "Duplicate" button beside Edit/Delete for `canEdit`.

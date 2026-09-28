@@ -42,6 +42,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
 import { generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -249,11 +250,26 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
    */
   const locallyCreatedRef = useRef<Set<string>>(new Set());
 
-  // Debounce timers
-  const rawTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cleanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const customTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const settingsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * A save belongs to the session and container that scheduled it, never to
+   * whatever happens to be active when its debounce expires.  The kit's
+   * single-value autosave is deliberately not used here: Custom has several
+   * independently editable documents, each of which needs its own queue.
+   */
+  const pendingSaveTimersRef = useRef<
+    Map<string, ReturnType<typeof setTimeout>>
+  >(new Map());
+  const pendingSaveTasksRef = useRef<Map<string, () => Promise<void>>>(
+    new Map(),
+  );
+  const saveQueuesRef = useRef<Map<string, Promise<void>>>(new Map());
+  const rawSegmentsBySessionRef = useRef<
+    Map<string, { id: string; text: string }[]>
+  >(new Map());
+  const chunkIndexBySessionRef = useRef<Map<string, number>>(new Map());
+  const cleanedBySessionRef = useRef<
+    Map<string, { id: string; passIndex: number } | null>
+  >(new Map());
 
   const elapsedSeconds = useCallback(() => {
     const startedAt = sessionRef.current?.startedAt
@@ -261,6 +277,61 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       : sessionStartedAtRef.current;
     return Math.max(0, (Date.now() - startedAt) / 1000);
   }, []);
+
+  const queueSave = useCallback(
+    (key: string, task: () => Promise<void>) => {
+      const previous = saveQueuesRef.current.get(key) ?? Promise.resolve();
+      const next = previous.catch(() => undefined).then(task);
+      saveQueuesRef.current.set(key, next);
+      void next.finally(() => {
+        if (saveQueuesRef.current.get(key) === next) {
+          saveQueuesRef.current.delete(key);
+        }
+      });
+      return next;
+    },
+    [],
+  );
+
+  const flushSave = useCallback(
+    (key: string) => {
+      const timer = pendingSaveTimersRef.current.get(key);
+      if (timer) clearTimeout(timer);
+      pendingSaveTimersRef.current.delete(key);
+      const task = pendingSaveTasksRef.current.get(key);
+      pendingSaveTasksRef.current.delete(key);
+      return task ? queueSave(key, task) : Promise.resolve();
+    },
+    [queueSave],
+  );
+
+  const scheduleSave = useCallback(
+    (key: string, delay: number, task: () => Promise<void>) => {
+      const previousTimer = pendingSaveTimersRef.current.get(key);
+      if (previousTimer) clearTimeout(previousTimer);
+      pendingSaveTasksRef.current.set(key, task);
+      pendingSaveTimersRef.current.set(
+        key,
+        setTimeout(() => {
+          void flushSave(key);
+        }, delay),
+      );
+    },
+    [flushSave],
+  );
+
+  const previousActiveSessionRef = useRef(activeSessionId);
+  useEffect(() => {
+    if (previousActiveSessionRef.current !== activeSessionId) {
+      // A switch must not turn a scheduled A edit into a B edit. The work is
+      // already target-captured, so starting it now is safe and makes the
+      // switch durable instead of waiting out an invisible debounce.
+      for (const key of [...pendingSaveTasksRef.current.keys()]) {
+        void flushSave(key);
+      }
+      previousActiveSessionRef.current = activeSessionId;
+    }
+  }, [activeSessionId, flushSave]);
 
   // ── Session list (refetches when the scope toggles) ───────────────────────
   useEffect(() => {
@@ -331,8 +402,10 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
         if (seq !== loadSeqRef.current) return; // superseded by a newer load
 
         rawSegmentsRef.current = raw.map((s) => ({ id: s.id, text: s.text }));
+        rawSegmentsBySessionRef.current.set(activeSessionId, rawSegmentsRef.current);
         chunkIndexRef.current =
           raw.length > 0 ? Math.max(...raw.map((s) => s.chunkIndex)) + 1 : 0;
+        chunkIndexBySessionRef.current.set(activeSessionId, chunkIndexRef.current);
         const latestCleaned =
           cleaned.length > 0 ? cleaned[cleaned.length - 1] : null;
         activeCleanedRef.current = latestCleaned
@@ -341,6 +414,7 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
               passIndex: Math.max(...cleaned.map((c) => c.passIndex)),
             }
           : null;
+        cleanedBySessionRef.current.set(activeSessionId, activeCleanedRef.current);
         const customTexts: Record<string, string> = {};
         for (const d of docs) {
           if (d.kind.startsWith(CLEANUP_DOC_KIND_PREFIX)) {
@@ -411,7 +485,9 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       locallyCreatedRef.current.add(session.id);
       sessionStartedAtRef.current = Date.now();
       rawSegmentsRef.current = [];
+      rawSegmentsBySessionRef.current.set(session.id, []);
       chunkIndexRef.current = 0;
+      chunkIndexBySessionRef.current.set(session.id, 0);
       activeCleanedRef.current = null;
       setUrlSession(session.id);
       return session.id;
@@ -561,15 +637,26 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       if (!sessionId) return;
       try {
         const t = elapsedSeconds();
+        const chunkIndex =
+          chunkIndexBySessionRef.current.get(sessionId) ?? chunkIndexRef.current;
         const seg = await insertRawSegment({
           sessionId,
-          chunkIndex: chunkIndexRef.current++,
+          chunkIndex,
           tStart: t,
           tEnd: t,
           text,
           source: "chunk",
         });
-        rawSegmentsRef.current.push({ id: seg.id, text: seg.text });
+        chunkIndexBySessionRef.current.set(sessionId, chunkIndex + 1);
+        const next = [
+          ...(rawSegmentsBySessionRef.current.get(sessionId) ?? []),
+          { id: seg.id, text: seg.text },
+        ];
+        rawSegmentsBySessionRef.current.set(sessionId, next);
+        if (sessionRef.current?.id === sessionId) {
+          rawSegmentsRef.current = next;
+          chunkIndexRef.current = chunkIndex + 1;
+        }
       } catch (err) {
         console.error("[cleanup] persistRawAppend failed:", err);
         toast.error("Could not save the recording text");
@@ -585,42 +672,57 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
    */
   const persistRawReplace = useCallback(
     (fullText: string) => {
-      if (rawTimerRef.current) clearTimeout(rawTimerRef.current);
-      rawTimerRef.current = setTimeout(async () => {
-        const joined = rawSegmentsRef.current.map((s) => s.text).join("\n\n");
-        if (fullText === joined) return;
-        const sessionId = await ensureSession();
+      const scheduledSessionId = sessionRef.current?.id ?? activeSessionId;
+      const elapsedAtSchedule = elapsedSeconds();
+      const key = `raw:${scheduledSessionId ?? "draft"}`;
+      scheduleSave(key, RAW_SAVE_DEBOUNCE_MS, async () => {
+        const sessionId = scheduledSessionId ?? (await ensureSession());
         if (!sessionId) return;
+        const current = rawSegmentsBySessionRef.current.get(sessionId) ?? [];
+        const joined = current.map((s) => s.text).join("\n\n");
+        if (fullText === joined) return;
         try {
-          const old = [...rawSegmentsRef.current];
+          const old = [...current];
           if (fullText.trim()) {
             const seg = await insertRawSegment({
               sessionId,
-              chunkIndex: chunkIndexRef.current++,
+              chunkIndex: chunkIndexBySessionRef.current.get(sessionId) ?? 0,
               tStart: 0,
-              tEnd: elapsedSeconds(),
+              tEnd: elapsedAtSchedule,
               text: fullText,
               source: "manual",
             });
-            rawSegmentsRef.current = [{ id: seg.id, text: seg.text }];
+            const next = [{ id: seg.id, text: seg.text }];
+            const nextChunkIndex =
+              (chunkIndexBySessionRef.current.get(sessionId) ?? 0) + 1;
+            chunkIndexBySessionRef.current.set(sessionId, nextChunkIndex);
+            rawSegmentsBySessionRef.current.set(sessionId, next);
+            if (sessionRef.current?.id === sessionId) {
+              rawSegmentsRef.current = next;
+              chunkIndexRef.current = nextChunkIndex;
+            }
           } else {
-            rawSegmentsRef.current = [];
+            rawSegmentsBySessionRef.current.set(sessionId, []);
+            if (sessionRef.current?.id === sessionId) rawSegmentsRef.current = [];
           }
           await Promise.all(old.map((s) => deleteRawSegment(s.id)));
         } catch (err) {
           console.error("[cleanup] persistRawReplace failed:", err);
           toast.error("Could not save your transcript edits");
         }
-      }, RAW_SAVE_DEBOUNCE_MS);
+      });
     },
-    [elapsedSeconds, ensureSession],
+    [activeSessionId, elapsedSeconds, ensureSession, scheduleSave],
   );
 
   /** Clear-all → delete every raw segment immediately. */
   const persistRawClear = useCallback(async () => {
-    if (rawTimerRef.current) clearTimeout(rawTimerRef.current);
-    const old = [...rawSegmentsRef.current];
-    rawSegmentsRef.current = [];
+    const sessionId = sessionRef.current?.id ?? activeSessionId;
+    if (!sessionId) return;
+    await flushSave(`raw:${sessionId}`);
+    const old = [...(rawSegmentsBySessionRef.current.get(sessionId) ?? [])];
+    rawSegmentsBySessionRef.current.set(sessionId, []);
+    if (sessionRef.current?.id === sessionId) rawSegmentsRef.current = [];
     if (old.length === 0) return;
     try {
       await Promise.all(old.map((s) => deleteRawSegment(s.id)));
@@ -628,7 +730,7 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       console.error("[cleanup] persistRawClear failed:", err);
       toast.error("Could not clear the saved transcript");
     }
-  }, []);
+  }, [activeSessionId, flushSave]);
 
   // ── Durable run handles ────────────────────────────────────────────────────
 
@@ -708,7 +810,16 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       existingRunId?: string | null,
     ) => {
       const sessionId = await ensureSession();
-      if (!sessionId || !text.trim()) return;
+      if (!sessionId) return;
+      if (!text.trim()) {
+        if (existingRunId) {
+          await failRun(
+            existingRunId,
+            "The agent finished without transcript text. Open the run to review its output.",
+          );
+        }
+        return;
+      }
       try {
         const run = existingRunId
           ? { id: existingRunId }
@@ -736,51 +847,69 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
           conversationId,
         });
       } catch (err) {
+        if (existingRunId)
+          await failRun(existingRunId, extractErrorMessage(err));
         console.error("[cleanup] persistCleanRun failed:", err);
         toast.error("Could not save the cleaned transcript");
       }
     },
-    [elapsedSeconds, ensureSession],
+    [elapsedSeconds, ensureSession, failRun],
   );
 
   /** User edit of the Clean container → debounced in-place update. */
   const persistCleanEdit = useCallback(
     (text: string, agentId: string) => {
-      if (cleanTimerRef.current) clearTimeout(cleanTimerRef.current);
-      cleanTimerRef.current = setTimeout(async () => {
-        const sessionId = await ensureSession();
+      const scheduledSessionId = sessionRef.current?.id ?? activeSessionId;
+      const key = `clean:${scheduledSessionId ?? "draft"}`;
+      scheduleSave(key, TEXT_SAVE_DEBOUNCE_MS, async () => {
+        const sessionId = scheduledSessionId ?? (await ensureSession());
         if (!sessionId) return;
         try {
-          if (activeCleanedRef.current) {
-            await updateCleanedSegmentText(activeCleanedRef.current.id, text);
+          const activeCleaned = cleanedBySessionRef.current.get(sessionId) ?? null;
+          if (activeCleaned) {
+            await updateCleanedSegmentText(activeCleaned.id, text);
           } else if (text.trim()) {
             // User typed into an empty Clean container — materialize a pass.
-            await persistCleanRun(text, agentId, null);
+            const run = await insertAgentRun({
+              sessionId,
+              columnIdx: 2,
+              shortcutId: requireAgentId(agentId),
+              triggerCause: "manual",
+              metadata: { surface: "cleanup", target: "clean" },
+            });
+            const passIndex = (activeCleaned?.passIndex ?? 0) + 1;
+            const seg = await applyCleanupRun({
+              sessionId,
+              runId: run.id,
+              passIndex,
+              tStart: 0,
+              tEnd: elapsedSeconds(),
+              text,
+              triggerCause: "manual",
+            });
+            const next = { id: seg.id, passIndex };
+            cleanedBySessionRef.current.set(sessionId, next);
+            if (sessionRef.current?.id === sessionId) activeCleanedRef.current = next;
           }
         } catch (err) {
           console.error("[cleanup] persistCleanEdit failed:", err);
           toast.error("Could not save your edits to the cleaned text");
         }
-      }, TEXT_SAVE_DEBOUNCE_MS);
+      });
     },
-    [ensureSession, persistCleanRun],
+    [activeSessionId, elapsedSeconds, ensureSession, scheduleSave],
   );
 
   // ── Custom output persistence ──────────────────────────────────────────────
 
   const writeCustomDoc = useCallback(
-    async (content: string, docKind: string) => {
-      const sessionId = await ensureSession();
-      if (!sessionId) return;
-      try {
-        await upsertStudioDocument(sessionId, docKind, {
-          content,
-          title: "Custom Output",
-        });
-      } catch (err) {
-        console.error("[cleanup] custom doc save failed:", err);
-        toast.error("Could not save the custom output");
-      }
+    async (content: string, docKind: string, sessionId?: string | null) => {
+      const targetSessionId = sessionId ?? (await ensureSession());
+      if (!targetSessionId) return;
+      await upsertStudioDocument(targetSessionId, docKind, {
+        content,
+        title: "Custom Output",
+      });
     },
     [ensureSession],
   );
@@ -797,7 +926,16 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       existingRunId?: string | null,
     ) => {
       const sessionId = await ensureSession();
-      if (!sessionId || !text.trim()) return;
+      if (!sessionId) return;
+      if (!text.trim()) {
+        if (existingRunId) {
+          await failRun(
+            existingRunId,
+            "The agent finished without transcript text. Open the run to review its output.",
+          );
+        }
+        return;
+      }
       try {
         const run = existingRunId
           ? { id: existingRunId }
@@ -815,22 +953,32 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
           conversationId,
         });
       } catch (err) {
+        if (existingRunId)
+          await failRun(existingRunId, extractErrorMessage(err));
         console.error("[cleanup] persistCustomRun failed:", err);
         toast.error("Could not save the custom output");
       }
     },
-    [ensureSession, writeCustomDoc],
+    [ensureSession, writeCustomDoc, failRun],
   );
 
   /** User edit → debounced doc upsert. */
   const persistCustomEdit = useCallback(
     (text: string, docKind: string) => {
-      if (customTimerRef.current) clearTimeout(customTimerRef.current);
-      customTimerRef.current = setTimeout(() => {
-        void writeCustomDoc(text, docKind);
-      }, TEXT_SAVE_DEBOUNCE_MS);
+      const scheduledSessionId = sessionRef.current?.id ?? activeSessionId;
+      const key = `custom:${scheduledSessionId ?? "draft"}:${docKind}`;
+      scheduleSave(key, TEXT_SAVE_DEBOUNCE_MS, async () => {
+        const sessionId = scheduledSessionId ?? (await ensureSession());
+        if (!sessionId) return;
+        try {
+          await writeCustomDoc(text, docKind, sessionId);
+        } catch (err) {
+          console.error("[cleanup] custom edit save failed:", err);
+          toast.error("Could not save the custom output");
+        }
+      });
     },
-    [writeCustomDoc],
+    [activeSessionId, ensureSession, scheduleSave, writeCustomDoc],
   );
 
   // ── Settings persistence (agents + context items) ──────────────────────────
@@ -857,43 +1005,45 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       }
       const sessionId = sessionRef.current?.id ?? activeSessionId;
       if (!sessionId) return; // flushed later by ensureSession
-      if (settingsTimerRef.current) clearTimeout(settingsTimerRef.current);
-      settingsTimerRef.current = setTimeout(async () => {
+      const agents = agentsRef.current
+        ? {
+            cleanAgentId: agentsRef.current.cleanAgentId,
+            customSlots: [...agentsRef.current.customSlots],
+          }
+        : null;
+      const contextItems = [...contextItemsRef.current];
+      scheduleSave(`settings:${sessionId}`, SETTINGS_SAVE_DEBOUNCE_MS, async () => {
         try {
           await upsertSessionSettings({
             sessionId,
-            ...(agentsRef.current
+            ...(agents
               ? {
-                  cleaningShortcutId: agentsRef.current.cleanAgentId || null,
+                  cleaningShortcutId: agents.cleanAgentId || null,
                   moduleShortcutId:
-                    agentsRef.current.customSlots[0]?.agentId ?? null,
-                  customSlots: agentsRef.current.customSlots,
+                    agents.customSlots[0]?.agentId ?? null,
+                  customSlots: agents.customSlots,
                 }
               : {}),
-            contextItems: contextItemsRef.current,
+            contextItems,
           });
         } catch (err) {
           console.error("[cleanup] settings save failed:", err);
           toast.error("Could not save your session settings");
         }
-      }, SETTINGS_SAVE_DEBOUNCE_MS);
+      });
     },
-    [activeSessionId],
+    [activeSessionId, scheduleSave],
   );
 
-  // Flush pending debounces on unmount (best-effort fire of saved closures).
+  // Flush captured session/container payloads on unmount. Clearing them would
+  // silently discard an edit made just before navigation.
   useEffect(() => {
     return () => {
-      for (const t of [
-        rawTimerRef.current,
-        cleanTimerRef.current,
-        customTimerRef.current,
-        settingsTimerRef.current,
-      ]) {
-        if (t) clearTimeout(t);
+      for (const key of [...pendingSaveTasksRef.current.keys()]) {
+        void flushSave(key);
       }
     };
-  }, []);
+  }, [flushSave]);
 
   return {
     // list

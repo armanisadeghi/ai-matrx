@@ -77,6 +77,7 @@ import {
   type MessageCitationSource,
 } from "@/features/agents/redux/execution-system/messages/message-citations";
 import { soleFence } from "@/lib/markdown/code-ranges";
+import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 
 /** Stable fallbacks — never inline `?? []` in selector outputs. */
 export const EMPTY_REQUEST_IDS: string[] = [];
@@ -177,12 +178,16 @@ export function deriveAnswerText(
   const { renderBlockOrder: order, renderBlocks: blocks, editedText } = request;
   if (editedText !== null && editedText !== undefined) return editedText;
   if (!order || !blocks || order.length === 0) return "";
-  return order
+  const answer = order
     .map((id) => blocks[id])
     .filter((b) => b && !NON_ANSWER_BLOCK_TYPES.has(b.type))
     .map((b) => b?.content ?? "")
     .filter(Boolean)
     .join("\n");
+  // The accumulator normally converts inline provider reasoning to typed
+  // render blocks. This is the final safety boundary for legacy or malformed
+  // streams that leave a closed, split, or still-open tag inside text.
+  return stripThinkingStreaming(answer).visible;
 }
 
 /**
@@ -958,7 +963,8 @@ export function isJsonOnlyText(content: string | null | undefined): boolean {
   if (!trimmed) return false;
   // A wrapping fence by THE one code-range rule.
   const fenced = soleFence(trimmed);
-  if (fenced && (fenced.lang === "" || fenced.lang.toLowerCase() === "json")) trimmed = fenced.body.trim();
+  if (fenced && (fenced.lang === "" || fenced.lang.toLowerCase() === "json"))
+    trimmed = fenced.body.trim();
   if (!trimmed) return false;
   const first = trimmed[0];
   const last = trimmed[trimmed.length - 1];
@@ -981,7 +987,9 @@ export function isJsonOnlyText(content: string | null | undefined): boolean {
  * that happens to reply with JSON prose is never touched.
  */
 export function verbalizedDecisionJsonTextBlockIds(
-  blocks: readonly { blockId: string; type: string; content?: string | null }[] | undefined,
+  blocks:
+    | readonly { blockId: string; type: string; content?: string | null }[]
+    | undefined,
 ): ReadonlySet<string> {
   if (!blocks || blocks.length === 0) return EMPTY_STRING_SET;
   const hasDecisionAnswers = blocks.some(
@@ -1913,7 +1921,11 @@ export const selectRequestAwaitingPerson =
   (state: RootState): boolean => {
     const request = state.activeRequests.byRequestId[requestId];
     if (!request) return false;
-    if (request.infoEvents.some((info) => info?.code === "suspended_awaiting_client")) {
+    if (
+      request.infoEvents.some(
+        (info) => info?.code === "suspended_awaiting_client",
+      )
+    ) {
       return true;
     }
     for (const entry of Object.values(request.toolLifecycle ?? {})) {

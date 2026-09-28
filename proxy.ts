@@ -327,6 +327,13 @@ function stampAdminLane(request: NextRequest): void {
 }
 
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  // This development-only endpoint must precede auth/session work: SSE status
+  // and explicit activity are not page requests and must never refresh a walk.
+  if (process.env.NODE_ENV === "development" && request.nextUrl.pathname === "/__dev-walk") {
+    const { walkCapDevEndpoint } = await import("@/utils/supabase/walkCap");
+    const response = await walkCapDevEndpoint(request);
+    if (response) return response;
+  }
   stampAdminLane(request);
   // The admin section's Route Handlers are matched ONLY to receive the lane
   // stamp: API routes gate their own auth, capture nothing, and never run the

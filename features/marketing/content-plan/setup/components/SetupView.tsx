@@ -140,7 +140,7 @@ import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
 import { SetupBridgeSection } from "./SetupBridgeSection";
-import { SetupPreviewColumn } from "./SetupPreviewColumn";
+import { SetupCommitBar, SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";
 import { SetupWorkOrderColumn } from "./SetupWorkOrderColumn";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -2328,7 +2328,25 @@ export function SetupView() {
               // become one-tap drawers. Before this, all three were stacked in
               // one endless scroll and reviewers reported the work order, page
               // list, lint and Make It Real as simply missing (2ca8190e).
-              main={<div className="bg-card">{workOrderColumn}</div>}
+              // The commit ("Create N pages") is the page's primary action, so
+              // it also rides the foot of the main column — the SAME control
+              // and handler as the preview column's, never reachable only
+              // through the "Pages that will exist" drawer.
+              main={
+                <div className="bg-card">
+                  {workOrderColumn}
+                  {!loading && expanded && preview ? (
+                    <SetupCommitBar
+                      className="matrx-touch-targets sticky bottom-0 z-10 pb-safe"
+                      newCount={preview.counts.new}
+                      disabledReason={disabledReason}
+                      committing={committing}
+                      progress={progress}
+                      onCommit={() => void handleCommit()}
+                    />
+                  ) : null}
+                </div>
+              }
               panels={[
                 // Drawer content renders in a PORTAL, outside the workbench
                 // root — so the touch-target floor has to ride the panel
@@ -2405,6 +2423,7 @@ function ErrorState({
           Try again
         </Button>
       </div>
-    <ErrorAlchemyMenu /></div>
+      <ErrorAlchemyMenu />
+    </div>
   );
 }

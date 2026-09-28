@@ -58,7 +58,7 @@ import {
   Brush,
   Blocks,
   RotateCcw,
-  Wand2,
+  TextSearch,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -90,7 +90,10 @@ import {
   type MicrophoneIconButtonHandle,
 } from "@/features/audio/components/MicrophoneIconButton";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
-import { clearContentAction, hostCopyAction } from "@/features/rich-document/actions/hostActions";
+import {
+  clearContentAction,
+  hostCopyAction,
+} from "@/features/rich-document/actions/hostActions";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import {
   useFloatingRunWindow,
@@ -99,7 +102,7 @@ import {
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
+import { CleanupOutput } from "./CleanupOutput";
 import {
   buildTranscriptsCleanupContextData,
   withActivePane,
@@ -151,10 +154,7 @@ import {
   CLEANUP_DOC_KIND,
   makeSlotDocKind,
 } from "../hooks/useCleanupSession";
-import {
-  CLEANUP_OVERLAY_ID,
-  cleanupVoicePadInstanceId,
-} from "../constants";
+import { CLEANUP_OVERLAY_ID, cleanupVoicePadInstanceId } from "../constants";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
@@ -924,11 +924,8 @@ export default function CleanupPad({
   sessionRefs.current = session;
 
   // ── Streaming → display values ─────────────────────────────────────────────
-  const { visible: strippedClean, isThinking: cleanThinking } = useMemo(
-    () => stripThinkingStreaming(cleanAi.accumulatedText),
-    [cleanAi.accumulatedText],
-  );
-  const responseValue = editedResponse ?? strippedClean;
+  const cleanThinking = cleanAi.isThinking;
+  const responseValue = editedResponse ?? cleanAi.answerText;
   responseRef.current = responseValue;
 
   // One-click raw↔cleaned compare: the raw transcript is the baseline (old),
@@ -954,7 +951,7 @@ export default function CleanupPad({
     if (!slot) return "";
     const edited = editedBySlot[slot.id];
     if (edited !== null && edited !== undefined) return edited;
-    return stripThinkingStreaming(slotAis[idx].accumulatedText).visible;
+    return slotAis[idx].answerText;
   };
   const activeSlotValue = activeSlot ? slotValue(activeSlotIdx) : "";
   customRef.current = activeSlotValue;
@@ -1294,7 +1291,7 @@ export default function CleanupPad({
       ai: ReturnType<typeof useAiPostProcess>;
       text: string;
     }) => {
-      const runPromise = sessionRefs.current.beginRun({
+      const run = await sessionRefs.current.beginRun({
         agentId: args.agentId,
         columnIdx: args.columnIdx,
         target: args.target,
@@ -1305,7 +1302,6 @@ export default function CleanupPad({
         contextItems: contextItemsRef.current,
         scope: buildScope(),
       });
-      const run = await runPromise;
       if (!run) return;
       if (!result) {
         void sessionRefs.current.failRun(
@@ -1375,9 +1371,7 @@ export default function CleanupPad({
     const slot = slotsRef.current[activeSlotIdx];
     if (!slot) return;
     const input =
-      slot.source === "clean" && responseRef.current.trim()
-        ? responseRef.current
-        : baseTextRef.current;
+      slot.source === "clean" ? responseRef.current : baseTextRef.current;
     runSlot(activeSlotIdx, input);
   }, [activeSlotIdx, runSlot]);
 
@@ -1403,7 +1397,7 @@ export default function CleanupPad({
       persistedCleanCidRef.current !== cleanAi.conversationId
     ) {
       persistedCleanCidRef.current = cleanAi.conversationId;
-      const text = stripThinkingStreaming(cleanAi.accumulatedText).visible;
+      const text = responseValue;
       void sessionRefs.current.persistCleanRun(
         text,
         cleanAgentIdRef.current,
@@ -1418,7 +1412,13 @@ export default function CleanupPad({
         });
       }
     }
-  }, [cleanAi.phase, cleanAi.conversationId, cleanAi.accumulatedText, runSlot]);
+  }, [
+    cleanAi.phase,
+    cleanAi.conversationId,
+    cleanAi.answerText,
+    responseValue,
+    runSlot,
+  ]);
 
   // Persist each slot's output exactly once per completed conversation.
   const persistedSlotCidsRef = useRef<Record<string, string>>({});
@@ -1432,7 +1432,7 @@ export default function CleanupPad({
         persistedSlotCidsRef.current[slot.id] !== ai.conversationId
       ) {
         persistedSlotCidsRef.current[slot.id] = ai.conversationId;
-        const text = stripThinkingStreaming(ai.accumulatedText).visible;
+        const text = slotValue(idx);
         void sessionRefs.current.persistCustomRun(
           text,
           slot.agentId,
@@ -1446,13 +1446,14 @@ export default function CleanupPad({
   }, [
     slotAi0.phase,
     slotAi0.conversationId,
-    slotAi0.accumulatedText,
+    slotAi0.answerText,
     slotAi1.phase,
     slotAi1.conversationId,
-    slotAi1.accumulatedText,
+    slotAi1.answerText,
     slotAi2.phase,
     slotAi2.conversationId,
-    slotAi2.accumulatedText,
+    slotAi2.answerText,
+    editedBySlot,
   ]);
 
   // A pass that ended badly closes its durable row. Left open it would sit at
@@ -1503,11 +1504,13 @@ export default function CleanupPad({
         ? slotsRef.current.findIndex((s) => s.docKind === target)
         : -1;
       const slot = slotIdx >= 0 ? slotsRef.current[slotIdx] : null;
-      const agentName = run.shortcutId ? agentNamesRef.current[run.shortcutId] : null;
+      const agentName = run.shortcutId
+        ? agentNamesRef.current[run.shortcutId]
+        : null;
 
       const applyRecoveredOutput = isClean
         ? async (text: string) => {
-            const visible = stripThinkingStreaming(text).visible;
+            const visible = text;
             setEditedResponse(visible);
             await sessionRefs.current.persistCleanRun(
               visible,
@@ -1518,7 +1521,7 @@ export default function CleanupPad({
           }
         : slot
           ? async (text: string) => {
-              const visible = stripThinkingStreaming(text).visible;
+              const visible = text;
               setEditedBySlot((prev) => ({ ...prev, [slot.id]: visible }));
               await sessionRefs.current.persistCustomRun(
                 visible,
@@ -1881,24 +1884,6 @@ export default function CleanupPad({
     transcriptEditedRef.current = false;
   }, []);
 
-  const handleCleanFocus = useCallback(() => {
-    if (editedResponse !== null) return;
-    const current = responseRef.current;
-    if (current) setEditedResponse(current);
-  }, [editedResponse]);
-
-  const handleCustomFocus = useCallback(() => {
-    const slot = slotsRef.current[activeSlotIdx];
-    if (!slot) return;
-    if (editedBySlot[slot.id] !== null && editedBySlot[slot.id] !== undefined) {
-      return;
-    }
-    const current = customRef.current;
-    if (current) {
-      setEditedBySlot((prev) => ({ ...prev, [slot.id]: current }));
-    }
-  }, [activeSlotIdx, editedBySlot]);
-
   const handleResponseChange = useCallback(
     (value: string) => {
       setEditedResponse(value);
@@ -2108,10 +2093,7 @@ export default function CleanupPad({
           ? (cleanAi.error ?? "Something went wrong. Please try again.")
           : "Preparing your response...";
 
-  const activeThinking = useMemo(
-    () => stripThinkingStreaming(activeAi.accumulatedText).isThinking,
-    [activeAi.accumulatedText],
-  );
+  const activeThinking = activeAi.isThinking;
   const activeBusyEarly =
     activeAi.phase === "launching" ||
     activeAi.phase === "pending" ||
@@ -2550,7 +2532,10 @@ export default function CleanupPad({
             <RichDocumentActions
               content={transcriptDisplay}
               source={{ type: "raw", title: "Voice Pad Transcript" }}
-              actions={{ exclude: ["open-fullscreen-editor", "tts-play"], extra: [clearContentAction(handleClearAll, "Clear transcript")] }}
+              actions={{
+                exclude: ["open-fullscreen-editor", "tts-play"],
+                extra: [clearContentAction(handleClearAll, "Clear transcript")],
+              }}
             />
           )}
         </div>
@@ -2571,10 +2556,10 @@ export default function CleanupPad({
             getApplicationScope={transcriptGetScope}
             // The pad owns recording (toolbar mic streams into this value) and
             // cleanup (Clean button) — a second mic/cleanup here would conflict.
-          enableVoice={false}
-          enableCleanup={false}
-          enableTextStats
-          value={transcriptDisplay}
+            enableVoice={false}
+            enableCleanup={false}
+            enableTextStats
+            value={transcriptDisplay}
             onChange={(e) => handleDraftChange(e.target.value)}
             onFocus={handleTranscriptFocus}
             onBlur={handleTranscriptBlur}
@@ -2660,47 +2645,71 @@ export default function CleanupPad({
           {responseValue.trim().length > 0 && (
             <RichDocumentActions
               content={responseValue}
-              source={{ type: "raw", title: `AI-cleaned: ${agentNames[cleanAgentId] ?? "agent"}` }}
-              actions={{ metadata: {
-                agent_id: cleanAgentId,
-                source: "transcription-cleanup-page",
-              }, exclude: ["open-fullscreen-editor", "tts-play"], extra: [hostCopyAction("copy-joined", "Copy transcript + cleaned text", handleCopyJoined)] }}
+              source={{
+                type: "raw",
+                title: `AI-cleaned: ${agentNames[cleanAgentId] ?? "agent"}`,
+              }}
+              actions={{
+                metadata: {
+                  agent_id: cleanAgentId,
+                  source: "transcription-cleanup-page",
+                },
+                exclude: ["open-fullscreen-editor", "tts-play"],
+                extra: [
+                  hostCopyAction(
+                    "copy-joined",
+                    "Copy transcript + cleaned text",
+                    handleCopyJoined,
+                  ),
+                ],
+              }}
             />
           )}
         </div>
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <EditableContextMenu
-          {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
-          getTextarea={() => cleanTaRef.current}
-          getApplicationScope={cleanGetScope}
-          contextData={menuContextData("clean", responseValue)}
-          contentSource={{ type: "raw" }}
-          className="flex min-h-0 flex-1 flex-col"
-          {...cleanHandlers}
+        <CleanupOutput
+          key={`clean-${sessionId}`}
+          label="Cleaned transcript"
+          content={responseValue}
+          requestId={editedResponse === null ? cleanAi.requestId : null}
+          conversationId={cleanAi.conversationId}
+          isBusy={cleanAi.isBusy}
+          error={cleanAi.error}
+          placeholder={responsePlaceholder}
+          onContentChange={handleResponseChange}
         >
-          <ProTextarea
-            ref={cleanTaRef}
-            surfaceName={TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS.surfaceName}
+          <EditableContextMenu
+            {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
+            getTextarea={() => cleanTaRef.current}
             getApplicationScope={cleanGetScope}
-            // The pad owns recording (toolbar mic streams into this value) and
-            // cleanup (Clean button) — a second mic/cleanup here would conflict.
-          enableVoice={false}
-          enableCleanup={false}
-          enableTextStats
-          value={responseValue}
-            onChange={(e) => handleResponseChange(e.target.value)}
-            onFocus={handleCleanFocus}
-            placeholder={responsePlaceholder}
-            wrapperClassName="flex min-h-0 flex-1 flex-col"
-            className={cn(
-              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed shadow-none",
-              "text-base md:text-sm",
-              "focus-visible:outline-none focus-visible:ring-0",
-              cleanAi.phase === "error" && "text-destructive",
-            )}
-          />
-        </EditableContextMenu>
+            contextData={menuContextData("clean", responseValue)}
+            contentSource={{ type: "raw" }}
+            className="flex min-h-0 flex-1 flex-col"
+            {...cleanHandlers}
+          >
+            <ProTextarea
+              ref={cleanTaRef}
+              surfaceName={TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS.surfaceName}
+              getApplicationScope={cleanGetScope}
+              // The pad owns recording (toolbar mic streams into this value) and
+              // cleanup (Clean button) — a second mic/cleanup here would conflict.
+              enableVoice={false}
+              enableCleanup={false}
+              enableTextStats
+              value={responseValue}
+              onChange={(e) => handleResponseChange(e.target.value)}
+              placeholder={responsePlaceholder}
+              wrapperClassName="flex min-h-0 flex-1 flex-col"
+              className={cn(
+                "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed shadow-none",
+                "text-base md:text-sm",
+                "focus-visible:outline-none focus-visible:ring-0",
+                cleanAi.phase === "error" && "text-destructive",
+              )}
+            />
+          </EditableContextMenu>
+        </CleanupOutput>
         <StreamPulseBorder
           running={cleanPulse.running}
           doneFlash={cleanPulse.doneFlash}
@@ -2832,7 +2841,9 @@ export default function CleanupPad({
           ) : (
             <Play className="h-3.5 w-3.5" />
           )}
-          {activeAi.isBusy ? (AI_PHASE_LABEL[activeAi.phase] ?? "Working") : "Run"}
+          {activeAi.isBusy
+            ? (AI_PHASE_LABEL[activeAi.phase] ?? "Working")
+            : "Run"}
         </button>
       </div>
 
@@ -2861,11 +2872,17 @@ export default function CleanupPad({
           {activeSlotValue.trim().length > 0 && (
             <RichDocumentActions
               content={activeSlotValue}
-              source={{ type: "raw", title: `Custom: ${activeSlot?.agentId ? (agentNames[activeSlot.agentId] ?? "agent") : "output"}` }}
-              actions={{ metadata: {
-                agent_id: activeSlot?.agentId ?? "",
-                source: "transcription-cleanup-page-custom",
-              }, exclude: ["open-fullscreen-editor", "tts-play"] }}
+              source={{
+                type: "raw",
+                title: `Custom: ${activeSlot?.agentId ? (agentNames[activeSlot.agentId] ?? "agent") : "output"}`,
+              }}
+              actions={{
+                metadata: {
+                  agent_id: activeSlot?.agentId ?? "",
+                  source: "transcription-cleanup-page-custom",
+                },
+                exclude: ["open-fullscreen-editor", "tts-play"],
+              }}
             />
           )}
         </div>
@@ -2878,37 +2895,52 @@ export default function CleanupPad({
       {customTopBand}
       {customToolbar}
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <EditableContextMenu
-          {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
-          getTextarea={() => customTaRef.current}
-          getApplicationScope={customGetScope}
-          contextData={menuContextData("custom", activeSlotValue)}
-          contentSource={{ type: "raw" }}
-          className="flex min-h-0 flex-1 flex-col"
-          {...customHandlers}
+        <CleanupOutput
+          key={`custom-${sessionId}-${activeSlot?.id}`}
+          label="Custom output"
+          content={activeSlotValue}
+          requestId={
+            activeSlot != null && editedBySlot[activeSlot.id] == null
+              ? activeAi.requestId
+              : null
+          }
+          conversationId={activeAi.conversationId}
+          isBusy={activeAi.isBusy}
+          error={activeAi.error}
+          placeholder={customPlaceholder}
+          onContentChange={handleCustomChange}
         >
-          <ProTextarea
-            ref={customTaRef}
-            surfaceName={TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS.surfaceName}
+          <EditableContextMenu
+            {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
+            getTextarea={() => customTaRef.current}
             getApplicationScope={customGetScope}
-            // The pad owns recording (toolbar mic streams into this value) and
-            // cleanup (Clean button) — a second mic/cleanup here would conflict.
-          enableVoice={false}
-          enableCleanup={false}
-          enableTextStats
-          value={activeSlotValue}
-            onChange={(e) => handleCustomChange(e.target.value)}
-            onFocus={handleCustomFocus}
-            placeholder={customPlaceholder}
-            wrapperClassName="flex min-h-0 flex-1 flex-col"
-            className={cn(
-              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed shadow-none",
-              "text-base md:text-sm",
-              "focus-visible:outline-none focus-visible:ring-0",
-              activeAi.phase === "error" && "text-destructive",
-            )}
-          />
-        </EditableContextMenu>
+            contextData={menuContextData("custom", activeSlotValue)}
+            contentSource={{ type: "raw" }}
+            className="flex min-h-0 flex-1 flex-col"
+            {...customHandlers}
+          >
+            <ProTextarea
+              ref={customTaRef}
+              surfaceName={TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS.surfaceName}
+              getApplicationScope={customGetScope}
+              // The pad owns recording (toolbar mic streams into this value) and
+              // cleanup (Clean button) — a second mic/cleanup here would conflict.
+              enableVoice={false}
+              enableCleanup={false}
+              enableTextStats
+              value={activeSlotValue}
+              onChange={(e) => handleCustomChange(e.target.value)}
+              placeholder={customPlaceholder}
+              wrapperClassName="flex min-h-0 flex-1 flex-col"
+              className={cn(
+                "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed shadow-none",
+                "text-base md:text-sm",
+                "focus-visible:outline-none focus-visible:ring-0",
+                activeAi.phase === "error" && "text-destructive",
+              )}
+            />
+          </EditableContextMenu>
+        </CleanupOutput>
         <StreamPulseBorder
           running={customPulse.running}
           doneFlash={customPulse.doneFlash}
@@ -2954,11 +2986,7 @@ export default function CleanupPad({
         );
       }
       handleCustomChange(
-        resolveCleanupTextWrite(
-          value,
-          "custom_output_text",
-          customRef.current,
-        ),
+        resolveCleanupTextWrite(value, "custom_output_text", customRef.current),
       );
     },
     session_title: (value: unknown) => {
@@ -2974,9 +3002,7 @@ export default function CleanupPad({
           "session_title has no session to rename yet — record or type something first.",
         );
       }
-      void dispatch(
-        updateSessionThunk({ id, patch: { title: value.trim() } }),
-      );
+      void dispatch(updateSessionThunk({ id, patch: { title: value.trim() } }));
     },
   });
 
@@ -3025,7 +3051,7 @@ export default function CleanupPad({
               <RevealChip
                 active={showCustom}
                 onClick={() => toggleReveal("custom")}
-                icon={Wand2}
+                icon={TextSearch}
                 label="Custom"
                 title="Custom refine agents (raw or clean → output)"
                 iconOnly
@@ -3060,7 +3086,7 @@ export default function CleanupPad({
                 <RevealChip
                   active={showCustom}
                   onClick={() => toggleReveal("custom")}
-                  icon={Wand2}
+                  icon={TextSearch}
                   label="Custom"
                   title="Custom refine agents (raw or clean → output)"
                 />
@@ -3167,9 +3193,7 @@ export default function CleanupPad({
       <div className="flex h-[34dvh] shrink-0 flex-col border-b border-border">
         {cleanPane}
       </div>
-      <div className="flex h-[48dvh] shrink-0 flex-col pb-4">
-        {customPane}
-      </div>
+      <div className="flex h-[48dvh] shrink-0 flex-col pb-4">{customPane}</div>
     </div>
   );
 
@@ -3211,9 +3235,7 @@ export default function CleanupPad({
               id="cleanup-v"
               orientation="vertical"
               defaultLayout={defaultVLayout}
-              onLayoutChanged={(layout) =>
-                writeLayoutCookie(V_COOKIE, layout)
-              }
+              onLayoutChanged={(layout) => writeLayoutCookie(V_COOKIE, layout)}
               className="min-h-0 flex-1"
             >
               <ResizablePanel id="transcript" defaultSize="50%" minSize="20%">

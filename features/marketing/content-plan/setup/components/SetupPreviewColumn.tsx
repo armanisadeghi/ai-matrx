@@ -32,7 +32,10 @@ type Filter = "all" | "new" | "conflict" | "failed";
 
 const STATE_BADGE: Record<RouteState, { label: string; className: string }> = {
   new: { label: "New", className: "bg-primary/15 text-primary" },
-  exists: { label: "Already planned", className: "bg-muted text-muted-foreground" },
+  exists: {
+    label: "Already planned",
+    className: "bg-muted text-muted-foreground",
+  },
   conflict: { label: "Conflict", className: "bg-warning/15 text-warning" },
   created: { label: "Created", className: "bg-success/15 text-success" },
   failed: { label: "Failed", className: "bg-destructive/15 text-destructive" },
@@ -101,7 +104,11 @@ export function SetupPreviewColumn({
     ["all", "All", counts.all],
     ["new", "New", newCount],
     ...(counts.conflict > 0
-      ? ([["conflict", "Conflict", counts.conflict]] as [Filter, string, number][])
+      ? ([["conflict", "Conflict", counts.conflict]] as [
+          Filter,
+          string,
+          number,
+        ][])
       : []),
     ...(counts.failed > 0
       ? ([["failed", "Failed", counts.failed]] as [Filter, string, number][])
@@ -141,9 +148,9 @@ export function SetupPreviewColumn({
             different page
           </span>{" "}
           — same URL, different parent. The database allows one page per route,
-          so those inserts will be rejected (and reported with the database&apos;s
-          own message). Move or rename the existing pages first to land them
-          cleanly.
+          so those inserts will be rejected (and reported with the
+          database&apos;s own message). Move or rename the existing pages first
+          to land them cleanly.
         </div>
       ) : null}
 
@@ -151,7 +158,9 @@ export function SetupPreviewColumn({
         {visible.length === 0 ? (
           <div className="p-6 text-center">
             <p className="text-sm font-medium text-foreground">
-              {rows.length === 0 ? "Nothing to preview" : "Nothing new to create"}
+              {rows.length === 0
+                ? "Nothing to preview"
+                : "Nothing new to create"}
             </p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {rows.length === 0
@@ -212,37 +221,13 @@ export function SetupPreviewColumn({
 
       {result ? <CommitReport result={result} onOpenPlan={onOpenPlan} /> : null}
 
-      <div className="border-t border-border bg-card p-3">
-        {disabledReason ? (
-          <p className="mb-2 flex items-start gap-1.5 text-xs leading-relaxed text-destructive">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {disabledReason}
-            <ErrorAlchemyMenu error={disabledReason} />
-          </p>
-        ) : null}
-        <Button
-          className="h-9 w-full gap-2"
-          disabled={committing || disabledReason !== null || newCount === 0}
-          onClick={onCommit}
-        >
-          {committing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Creating {progress ? `${progress.done} of ${progress.total}` : "…"}
-            </>
-          ) : (
-            <>
-              <Rocket className="h-4 w-4" />
-              {newCount === 0
-                ? "Nothing new to create"
-                : `Create ${newCount} page${newCount === 1 ? "" : "s"}`}
-            </>
-          )}
-        </Button>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-          Safe to re-run: pages that already exist are left exactly as they are.
-        </p>
-      </div>
+      <SetupCommitBar
+        newCount={newCount}
+        disabledReason={disabledReason}
+        committing={committing}
+        progress={progress}
+        onCommit={onCommit}
+      />
     </div>
   );
 }
@@ -285,10 +270,10 @@ function CommitReport({
       </p>
       {result.routeMismatches.length > 0 ? (
         <p className="mt-1.5 text-destructive">
-          {result.routeMismatches.length} page(s) landed on a different route than
-          previewed (e.g. {result.routeMismatches[0].expected} →{" "}
-          {result.routeMismatches[0].actual}). The database computes routes and is
-          the authority — report this.
+          {result.routeMismatches.length} page(s) landed on a different route
+          than previewed (e.g. {result.routeMismatches[0].expected} →{" "}
+          {result.routeMismatches[0].actual}). The database computes routes and
+          is the authority — report this.
         </p>
       ) : null}
       {failures.length > 0 ? (
@@ -306,6 +291,64 @@ function CommitReport({
           ) : null}
         </ul>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * THE commit control — "Create N pages". One component, two homes: the foot of
+ * the preview column (desktop, and inside the phone's "Pages that will exist"
+ * drawer) and the sticky foot of the phone's main column, so a page's primary
+ * action is never reachable only through a drawer. Same handler, same
+ * disabled reason, same count in both.
+ */
+export function SetupCommitBar({
+  newCount,
+  disabledReason,
+  committing,
+  progress,
+  onCommit,
+  className,
+}: {
+  newCount: number;
+  /** Non-null = commit is blocked, and this is the human reason why. */
+  disabledReason: string | null;
+  committing: boolean;
+  progress: { done: number; total: number } | null;
+  onCommit: () => void;
+  className?: string;
+}) {
+  return (
+    <div className={cn("border-t border-border bg-card p-3", className)}>
+      {disabledReason ? (
+        <p className="mb-2 flex items-start gap-1.5 text-xs leading-relaxed text-destructive">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {disabledReason}
+          <ErrorAlchemyMenu error={disabledReason} />
+        </p>
+      ) : null}
+      <Button
+        className="h-9 w-full gap-2"
+        disabled={committing || disabledReason !== null || newCount === 0}
+        onClick={onCommit}
+      >
+        {committing ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Creating {progress ? `${progress.done} of ${progress.total}` : "…"}
+          </>
+        ) : (
+          <>
+            <Rocket className="h-4 w-4" />
+            {newCount === 0
+              ? "Nothing new to create"
+              : `Create ${newCount} page${newCount === 1 ? "" : "s"}`}
+          </>
+        )}
+      </Button>
+      <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+        Safe to re-run: pages that already exist are left exactly as they are.
+      </p>
     </div>
   );
 }

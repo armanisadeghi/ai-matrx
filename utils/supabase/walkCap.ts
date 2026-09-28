@@ -10,12 +10,11 @@
 //
 // THE RULE. A preview host that carried a signed-in request within
 // `ops.agent_walks.activity_window_minutes` is an active walk. A signed-in
-// request from a host that is NOT already an active walk, while the active
-// walks already number `ops.agent_walks.production_concurrent_cap`, gets an
-// honest 503 page naming the walks in progress and telling the agent to wait
-// (the clone preview, `pnpm preview:start --clone`, is not built yet — it
-// needs a second development server, which the one-server rule forbids). Already-admitted hosts keep
-// walking; signed-out requests (the login page, assets) always pass.
+// request from a host that is NOT already an active walk evicts the least
+// recently used active host when the cap is full. The evicted host receives an
+// SSE notice, unloads into a script-free parked page, and can only return via
+// its explicit Resume form. Signed-out requests (the login page, assets)
+// always pass.
 //
 // WHERE IT RUNS. Only in `next dev` (NODE_ENV === "development") AND only when
 // the server is configured against production (`NEXT_PUBLIC_SUPABASE_URL` host
@@ -49,41 +48,87 @@ export interface ActiveWalk {
 }
 
 export type WalkDecision =
-  | { verdict: "admit"; newlyAdmitted: boolean; active: ActiveWalk[] }
-  | { verdict: "refuse"; active: ActiveWalk[] };
+  | { verdict: "admit"; newlyAdmitted: boolean; active: ActiveWalk[]; evicted: string[] }
+  | { verdict: "parked"; active: ActiveWalk[]; evicted: string[] }
+  | { verdict: "refuse"; active: ActiveWalk[]; evicted: string[] };
+
+export type WalkRequestKind = "background" | "document" | "activity" | "resume";
+
+export interface WalkRegistry {
+  admitted: Map<string, number>;
+  evicted: Set<string>;
+}
 
 /**
  * The admission rule. `registry` maps an admitted preview host to the last
- * time a signed-in request arrived from it; this prunes hosts idle past the
- * window, then admits (and records) or refuses `host`. Deterministic: the
- * clock is an argument.
+ * time of a real document navigation or explicit user interaction; background
+ * requests do not refresh it. It tombstones expired/evicted hosts so they can
+ * never reclaim automatically. Deterministic: the clock is an argument.
  */
 export function decideWalkAdmission(
-  registry: Map<string, number>,
+  registry: WalkRegistry,
   host: string,
   now: number,
   knobs: WalkKnobs,
+  kind: WalkRequestKind = "document",
 ): WalkDecision {
   const windowMs = knobs.windowMinutes * 60_000;
-  for (const [seenHost, lastSeen] of registry) {
-    if (now - lastSeen > windowMs) registry.delete(seenHost);
+  const evicted: string[] = [];
+  for (const [seenHost, lastSeen] of registry.admitted) {
+    if (now - lastSeen > windowMs) {
+      registry.admitted.delete(seenHost);
+      registry.evicted.add(seenHost);
+      evicted.push(seenHost);
+    }
   }
   const active = (): ActiveWalk[] =>
-    [...registry.entries()]
+    [...registry.admitted.entries()]
       .map(([h, lastSeen]) => ({ host: h, idleMs: now - lastSeen }))
       .sort((a, b) => a.idleMs - b.idleMs);
 
-  if (knobs.cap <= 0) return { verdict: "refuse", active: active() };
+  if (knobs.cap <= 0) {
+    for (const seenHost of [...registry.admitted.keys()]) {
+      registry.admitted.delete(seenHost);
+      registry.evicted.add(seenHost);
+      evicted.push(seenHost);
+    }
+    return { verdict: "refuse", active: active(), evicted };
+  }
+  if (registry.evicted.has(host) && kind !== "resume") {
+    return { verdict: "parked", active: active(), evicted: [] };
+  }
 
-  if (registry.has(host)) {
-    registry.set(host, now);
-    return { verdict: "admit", newlyAdmitted: false, active: active() };
+  const existing = registry.admitted.has(host);
+  if (existing && (kind === "document" || kind === "activity" || kind === "resume")) {
+    registry.admitted.set(host, now);
   }
-  if (registry.size >= knobs.cap) {
-    return { verdict: "refuse", active: active() };
+
+  // A newly admitted host always gets a slot. Break timestamp ties by map
+  // insertion order so LRU eviction is deterministic and testable.
+  const evictOldest = () => {
+    const oldest = [...registry.admitted.entries()].reduce<string | null>(
+      (candidate, [candidateHost, seen]) =>
+        candidate === null || seen < (registry.admitted.get(candidate) ?? Infinity)
+          ? candidateHost
+          : candidate,
+      null,
+    );
+    if (!oldest) return;
+    registry.admitted.delete(oldest);
+    registry.evicted.add(oldest);
+    evicted.push(oldest);
+  };
+  if (!existing) {
+    while (registry.admitted.size >= knobs.cap) evictOldest();
+    registry.evicted.delete(host);
+    registry.admitted.set(host, now);
+    return { verdict: "admit", newlyAdmitted: true, active: active(), evicted };
   }
-  registry.set(host, now);
-  return { verdict: "admit", newlyAdmitted: true, active: active() };
+  while (registry.admitted.size > knobs.cap) evictOldest();
+  if (!registry.admitted.has(host)) {
+    return { verdict: "parked", active: active(), evicted };
+  }
+  return { verdict: "admit", newlyAdmitted: false, active: active(), evicted };
 }
 
 interface KnobReaderDeps {
@@ -210,9 +255,10 @@ export interface WalkCapGateInput {
   host: string | null;
   env: { NODE_ENV?: string; NEXT_PUBLIC_SUPABASE_URL?: string };
   readKnobs: () => Promise<WalkKnobs | null>;
-  registry: Map<string, number>;
+  registry: WalkRegistry;
   now: number;
   log: (line: string) => void;
+  kind?: WalkRequestKind;
 }
 
 function pointsAtProduction(url: string | undefined): boolean {
@@ -236,13 +282,22 @@ export async function walkCapGate(input: WalkCapGateInput): Promise<Response | n
   const knobs = await input.readKnobs();
   if (!knobs) return null; // already screamed; fail open
 
-  const decision = decideWalkAdmission(input.registry, host, input.now, knobs);
+  const decision = decideWalkAdmission(input.registry, host, input.now, knobs, input.kind);
   const count = decision.active.length;
+  if (decision.evicted.length) {
+    input.log(`[walk-cap] EVICTED ${decision.evicted.join(", ")} to admit ${host}`);
+  }
   if (decision.verdict === "admit") {
     if (decision.newlyAdmitted) {
       input.log(`[walk-cap] ADMITTED ${host} — ${count}/${knobs.cap} live-database walks active`);
     }
     return null;
+  }
+  if (decision.verdict === "parked") {
+    return new Response("Walk evicted; resume explicitly to reclaim a production preview slot.", {
+      status: 409,
+      headers: { "cache-control": "no-store", [WALK_CAP_HEADER]: "evicted" },
+    });
   }
   input.log(
     `[walk-cap] REFUSED ${host} — ${count}/${knobs.cap} live-database walks already active: ` +
@@ -261,18 +316,25 @@ export async function walkCapGate(input: WalkCapGateInput): Promise<Response | n
 // ─── Process-wide state (survives HMR via globalThis) ──────────────────────
 
 interface WalkCapGlobal {
-  registry: Map<string, number>;
+  registry: WalkRegistry;
   readKnobs: () => Promise<WalkKnobs | null>;
+  listeners: Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>;
 }
 
 const GLOBAL_KEY = "__matrxWalkCap";
+
+/** Test-only seam for endpoint integration coverage; never called by app code. */
+export function setWalkCapTestState(state: WalkCapGlobal | undefined): void {
+  (globalThis as unknown as Record<string, WalkCapGlobal | undefined>)[GLOBAL_KEY] = state;
+}
 
 function processState(): WalkCapGlobal {
   const g = globalThis as unknown as Record<string, WalkCapGlobal | undefined>;
   let state = g[GLOBAL_KEY];
   if (!state) {
     state = {
-      registry: new Map(),
+      registry: { admitted: new Map(), evicted: new Set() },
+      listeners: new Map(),
       // The service-role (secret) key is used HERE ONLY because
       // platform.feature_knob has no anon read policy and the proxy has no
       // user-scoped client handy before the session pass. This whole module
@@ -288,13 +350,23 @@ function processState(): WalkCapGlobal {
     };
     g[GLOBAL_KEY] = state;
   }
+  // HMR from the former Map-only implementation keeps useful admission order
+  // while adding tombstones/listeners without throwing active walks away.
+  if ((state.registry as unknown) instanceof Map) {
+    state.registry = { admitted: state.registry as unknown as Map<string, number>, evicted: new Set() };
+  }
+  if (!state.listeners) state.listeners = new Map();
   return state;
 }
 
 /** The proxy's entry point: gate one signed-in request with process-wide state. */
-export async function walkCapGateForRequest(host: string | null): Promise<Response | null> {
+export async function walkCapGateForRequest(
+  host: string | null,
+  kind: WalkRequestKind,
+): Promise<Response | null> {
   const state = processState();
-  return walkCapGate({
+  const before = new Set(state.registry.evicted);
+  const response = await walkCapGate({
     host,
     env: {
       NODE_ENV: process.env.NODE_ENV,
@@ -304,5 +376,123 @@ export async function walkCapGateForRequest(host: string | null): Promise<Respon
     registry: state.registry,
     now: Date.now(),
     log: (line) => console.log(line),
+    kind,
   });
+  notifyEvicted([...state.registry.evicted].filter((candidate) => !before.has(candidate)));
+  return response;
+}
+
+const encoder = new TextEncoder();
+
+function isDevProductionLocalhost(host: string | null): boolean {
+  return process.env.NODE_ENV === "development" &&
+    pointsAtProduction(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+    Boolean(host && (host === "localhost" || host.startsWith("localhost:") || host.includes(".localhost:")));
+}
+
+function parkedPage(returnTo: string): string {
+  const safe = escapeHtml(returnTo);
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preview paused</title><body><main><h1>This preview was paused</h1><p>A newer production-preview walk took this slot. This tab has stopped loading the app and its live database activity.</p><form method="post" action="/__dev-walk"><input type="hidden" name="returnTo" value="${safe}"><button type="submit">Resume this preview</button></form></main></body></html>`;
+}
+
+function safeReturnTo(value: string | null): string {
+  if (!value || value.startsWith("\\") || value.startsWith("//")) return "/";
+  try {
+    const url = new URL(value, "http://walk-cap.localhost");
+    if (url.origin !== "http://walk-cap.localhost" || url.pathname === "/__dev-walk") return "/";
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return "/";
+  }
+}
+
+function isSameOrigin(origin: string | null, host: string, protocol: string): boolean {
+  if (!origin) return false;
+  try {
+    const parsed = new URL(origin);
+    return parsed.host === host && parsed.protocol === protocol;
+  } catch {
+    return false;
+  }
+}
+
+function notifyEvicted(hosts: string[]): void {
+  const state = processState();
+  for (const host of hosts) {
+    for (const controller of state.listeners.get(host) ?? []) {
+      try {
+        controller.enqueue(encoder.encode("event: evicted\ndata: {}\n\n"));
+        controller.close();
+      } catch {
+        // A tab can close between the listener snapshot and eviction.
+      }
+    }
+    state.listeners.delete(host);
+  }
+}
+
+/** Development-only proxy endpoint; it never admits or refreshes via SSE status. */
+export async function walkCapDevEndpoint(request: Request): Promise<Response | null> {
+  const host = request.headers.get("host");
+  if (!isDevProductionLocalhost(host)) return null;
+  const state = processState();
+  const url = new URL(request.url);
+  const normalizedHost = host as string;
+  const requestOrigin = `${url.protocol}//${normalizedHost}`;
+  if (request.method === "GET" && url.searchParams.get("parked") === "1") {
+    return new Response(parkedPage(safeReturnTo(url.searchParams.get("returnTo"))), {
+      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
+  if (request.method === "GET" && url.searchParams.get("stream") === "1") {
+    let controllerRef: ReadableStreamDefaultController<Uint8Array> | null = null;
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controllerRef = controller;
+        const set = state.listeners.get(normalizedHost) ?? new Set();
+        set.add(controller);
+        state.listeners.set(normalizedHost, set);
+        const event = state.registry.evicted.has(normalizedHost) ? "evicted" : "state";
+        controller.enqueue(encoder.encode(`event: ${event}\ndata: {}\n\n`));
+      },
+      cancel() {
+        const listeners = state.listeners.get(normalizedHost);
+        if (controllerRef) listeners?.delete(controllerRef);
+        if (listeners?.size === 0) state.listeners.delete(normalizedHost);
+      },
+    });
+    request.signal.addEventListener("abort", () => {
+      const listeners = state.listeners.get(normalizedHost);
+      if (controllerRef) listeners?.delete(controllerRef);
+      if (listeners?.size === 0) state.listeners.delete(normalizedHost);
+    }, { once: true });
+    return new Response(stream, { headers: { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" } });
+  }
+  if (request.method === "POST") {
+    if (url.searchParams.get("activity") === "1") {
+      const origin = request.headers.get("origin");
+      if (!isSameOrigin(origin, normalizedHost, url.protocol)) return new Response("same-origin required", { status: 403 });
+      if (!state.registry.admitted.has(normalizedHost)) return new Response("preview is not admitted", { status: 409, headers: { "cache-control": "no-store" } });
+      const response = await walkCapGateForRequest(normalizedHost, "activity");
+      return response ?? new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
+    }
+    const origin = request.headers.get("origin");
+    if (!isSameOrigin(origin, normalizedHost, url.protocol)) return new Response("same-origin required", { status: 403 });
+    if (!state.registry.evicted.has(normalizedHost)) {
+      return new Response("Only an evicted preview may resume here.", { status: 409, headers: { "cache-control": "no-store" } });
+    }
+    const form = await request.formData();
+    const returnTo = safeReturnTo(typeof form.get("returnTo") === "string" ? form.get("returnTo") as string : null);
+    const before = new Set(state.registry.evicted);
+    const response = await walkCapGateForRequest(normalizedHost, "resume");
+    if (response) return response.status === 409 ? new Response(parkedPage(returnTo), { status: 409, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } }) : response;
+    notifyEvicted([...state.registry.evicted].filter((candidate) => !before.has(candidate)));
+    return Response.redirect(new URL(returnTo, requestOrigin), 303);
+  }
+  return new Response("not found", { status: 404 });
+}
+
+/** Explicit user activity only; background proxy traffic never calls this. */
+export async function recordWalkActivity(host: string | null): Promise<Response | null> {
+  return walkCapGateForRequest(host, "activity");
 }

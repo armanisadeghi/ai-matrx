@@ -43,12 +43,9 @@
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import {
-  selectLatestAssistantMessageId,
-  selectMessageContent,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
-import { selectAccumulatedText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectAnswerText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -185,53 +182,24 @@ function waitForLiveTakeover(
 }
 
 /**
- * A stored message's text. Persisted content is a PART ARRAY
- * (`[{ id, text }, …]`), not a string — reading it as a string is how a
- * recovered run first reported "no saved output" while its answer sat in the
- * DB (caught in browser verification, 2026-08-15).
+ * The persisted answer boundary. `selectLatestAnswerText` reads the canonical
+ * MessagePart array, excludes both typed `thinking` and `reasoning`, and
+ * leaves non-text structured parts untouched in the stored message.
  */
-function messageText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => {
-        if (!part || typeof part !== "object") return "";
-        const { type, text } = part as { type?: unknown; text?: unknown };
-        // 🚨 The model's chain-of-thought is a part of its own
-        // (`type: "thinking"`). Answer text ONLY — reasoning reaching a
-        // surface is the `reasoning-leak` defect class, and here it would be
-        // saved into the user's cleaned transcript.
-        if (typeof type === "string" && type !== "text") return "";
-        return typeof text === "string" ? text : "";
-      })
-      .filter(Boolean)
-      .join("\n");
-  }
-  if (
-    content &&
-    typeof content === "object" &&
-    typeof (content as { text?: unknown }).text === "string"
-  ) {
-    return (content as { text: string }).text;
-  }
-  return "";
-}
-
-function latestAssistantText(
+export function recoveredAssistantAnswerText(
   state: RootState,
   conversationId: string,
 ): string {
-  const messageId = selectLatestAssistantMessageId(conversationId)(state);
-  if (messageId) {
-    const text = messageText(
-      selectMessageContent(conversationId, messageId)(state),
-    );
-    if (text.trim()) return text;
-  }
+  return selectLatestAnswerText(conversationId)(state);
+}
+
+function latestAssistantText(state: RootState, conversationId: string): string {
+  const persisted = recoveredAssistantAnswerText(state, conversationId);
+  if (persisted.trim()) return persisted;
   // A stream that finished in THIS tab may not have been re-fetched into the
   // message store yet — the request row holds the same answer.
   const requestId = selectLatestRequestId(conversationId)(state);
-  return requestId ? selectAccumulatedText(requestId)(state) : "";
+  return requestId ? selectAnswerText(requestId)(state) : "";
 }
 
 async function settle(
@@ -328,9 +296,7 @@ export async function reattachStudioRun({
                     : stage === "failed"
                       ? "failed"
                       : "completed",
-              ...(stage === "running" || stage === "failed"
-                ? { detail }
-                : {}),
+              ...(stage === "running" || stage === "failed" ? { detail } : {}),
               ...(preview ? { preview: previewOf(preview) } : {}),
             },
             {

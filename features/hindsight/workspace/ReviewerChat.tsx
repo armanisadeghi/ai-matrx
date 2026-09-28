@@ -86,6 +86,7 @@ export function ReviewerChat({
   onResolved,
   onRunReview,
   reviewRunning,
+  reviewStartedAt,
   pendingExamples,
 }: {
   /** The review whose thread is open. Null when no review exists yet. */
@@ -95,8 +96,16 @@ export function ReviewerChat({
   onClearGuidedFinding: () => void;
   /** Guidance changes the FINDINGS — the host refetches the enrollment. */
   onResolved: () => void;
+  /**
+   * The workspace's ONE confirm-then-run door (useEnrollmentActions
+   * .confirmAndRunReview) — the same handler as the sidebar's "Review now".
+   * This pane carries its own button because the sidebar is a drawer below
+   * 2xl: the primary action is never reachable only through a drawer.
+   */
   onRunReview: () => void;
   reviewRunning: boolean;
+  /** When the running review started — drives the honest elapsed readout. */
+  reviewStartedAt: number;
   pendingExamples: number;
 }) {
   const [draft, setDraft] = useState("");
@@ -181,6 +190,35 @@ export function ReviewerChat({
       className="flex h-full min-h-0 flex-col"
       data-testid="hindsight-reviewer-chat"
     >
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2">
+        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+          {pendingExamples > 0
+            ? `${pendingExamples} new ${pendingExamples === 1 ? "run" : "runs"} waiting since the last review`
+            : "No new runs since the last review"}
+        </span>
+        {reviewRunning ? (
+          <span
+            className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium"
+            data-testid="hindsight-chat-review-running"
+          >
+            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            Reviewing — <Elapsed startedAt={reviewStartedAt} />
+          </span>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            onClick={onRunReview}
+            title="Reads the new runs end to end — costs real money and takes a few minutes. You confirm first."
+            data-testid="hindsight-chat-review-now"
+          >
+            <Eye className="mr-1 h-3.5 w-3.5" />
+            Run a new review
+          </Button>
+        )}
+      </div>
+
       <div
         ref={scrollRef}
         className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4"
@@ -192,7 +230,7 @@ export function ReviewerChat({
         {unavailable && (
           <div className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
             {thread.data?.reason ??
-              "This review has no reviewer thread to reply to yet. Run a new review to start one."}
+              "This review has no reviewer thread to reply to yet. Run a new review (above) to start one."}
           </div>
         )}
 
@@ -259,7 +297,7 @@ export function ReviewerChat({
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="text-[11px] text-muted-foreground">
             {unavailable
-              ? "Run a new review to start a thread you can reply to."
+              ? "Run a new review (above) to start a thread you can reply to."
               : "Your guidance usually produces new proposals rather than edits. Takes about a minute; you can leave this page."}
           </span>
           <Button

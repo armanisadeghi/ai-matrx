@@ -34,7 +34,7 @@
  * No user input is set — these agents don't consume one.
  */
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
@@ -45,7 +45,9 @@ import { resolveMandate } from "@/features/mandates/service";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   selectPrimaryRequest,
-  selectAccumulatedText,
+  selectAnswerText,
+  selectIsReasoningStreaming,
+  selectRequestError,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
@@ -91,7 +93,7 @@ export function useAiPostProcess() {
   const dispatch = useAppDispatch();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(null);
 
   const request = useAppSelector((s) =>
     conversationId ? selectPrimaryRequest(conversationId)(s) : undefined,
@@ -100,9 +102,17 @@ export function useAiPostProcess() {
   const requestStatus = useAppSelector((s) =>
     requestId ? selectRequestStatus(requestId)(s) : undefined,
   );
-  const accumulatedText = useAppSelector((s) =>
-    requestId ? selectAccumulatedText(requestId)(s) : "",
+  const answerText = useAppSelector((s) =>
+    requestId ? selectAnswerText(requestId)(s) : "",
   );
+  const isThinking = useAppSelector((s) =>
+    requestId ? selectIsReasoningStreaming(requestId)(s) : false,
+  );
+  const runtimeError = useAppSelector((s) =>
+    requestId ? selectRequestError(requestId)(s) : undefined,
+  );
+  const error =
+    runtimeError?.user_message ?? runtimeError?.message ?? launchError;
 
   // Renders live stream output straight from the request row (no
   // `MarkdownStream requestId=`), so retention is this viewer's own job —
@@ -119,90 +129,91 @@ export function useAiPostProcess() {
     phase === "streaming" ||
     phase === "awaiting-tools";
 
-  const process = useCallback(
-    async ({ agent, transcript, context }: ProcessArgs) => {
-      setError(null);
-      setLaunching(true);
-      try {
-        // THE MANDATE DECIDES THE HOLDER. Resolve per run (never cached in a
-        // constant) so a rebinding in the mandate console takes effect on the
-        // next click; an unresolvable mandate throws and lands in `error`.
-        const { agentId } = await resolveMandate(agent.mandateKey);
-        // Load the Holder's variable_definitions + context_slots into redux.
-        // createManualInstance snapshots these onto the instance and
-        // executeInstance reads through that snapshot, not agentId.
-        await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
+  async function process({ agent, transcript, context }: ProcessArgs) {
+    setLaunchError(null);
+    setLaunching(true);
+    try {
+      // THE MANDATE DECIDES THE HOLDER. Resolve per run (never cached in a
+      // constant) so a rebinding in the mandate console takes effect on the
+      // next click; an unresolvable mandate throws and lands in `error`.
+      const { agentId } = await resolveMandate(agent.mandateKey);
+      // Load the Holder's variable_definitions + context_slots into redux.
+      // createManualInstance snapshots these onto the instance and
+      // executeInstance reads through that snapshot, not agentId.
+      await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
 
-        const cid = await dispatch(
-          createManualInstance({
-            agentId,
-            // THE MANDATE DOOR: turn 1 posts to /ai/mandates/{key}; the
-            // server resolves the Holder for this principal. agentId above
-            // is display identity + the variable snapshot only.
-            mandateKey: agent.mandateKey,
-            sourceFeature: "transcription",
-            apiEndpointMode: "agent",
-            displayMode: "direct",
-            autoRun: false,
-          }),
-        ).unwrap();
+      const cid = await dispatch(
+        createManualInstance({
+          agentId,
+          // THE MANDATE DOOR: turn 1 posts to /ai/mandates/{key}; the
+          // server resolves the Holder for this principal. agentId above
+          // is display identity + the variable snapshot only.
+          mandateKey: agent.mandateKey,
+          sourceFeature: "transcription",
+          apiEndpointMode: "agent",
+          displayMode: "direct",
+          autoRun: false,
+        }),
+      ).unwrap();
 
-        const contextValue = context.trim();
-        const hasContext = contextValue.length > 0;
+      const contextValue = context.trim();
+      const hasContext = contextValue.length > 0;
 
-        const variableValues: Record<string, string> = {
-          [agent.transcriptVariableKey]: transcript,
-        };
-        if (hasContext && agent.contextVariableKey) {
-          variableValues[agent.contextVariableKey] = contextValue;
-        }
+      const variableValues: Record<string, string> = {
+        [agent.transcriptVariableKey]: transcript,
+      };
+      if (hasContext && agent.contextVariableKey) {
+        variableValues[agent.contextVariableKey] = contextValue;
+      }
+      dispatch(
+        setUserVariableValues({
+          conversationId: cid,
+          values: variableValues,
+        }),
+      );
+
+      if (hasContext && !agent.contextVariableKey) {
+        const key = agent.contextPolicyKey ?? FALLBACK_CONTEXT_KEY;
         dispatch(
-          setUserVariableValues({
+          setContextEntries({
             conversationId: cid,
-            values: variableValues,
+            entries: [
+              {
+                key,
+                value: contextValue,
+                slotMatched: !!agent.contextPolicyKey,
+              },
+            ],
           }),
         );
-
-        if (hasContext && !agent.contextVariableKey) {
-          const key = agent.contextPolicyKey ?? FALLBACK_CONTEXT_KEY;
-          dispatch(
-            setContextEntries({
-              conversationId: cid,
-              entries: [
-                {
-                  key,
-                  value: contextValue,
-                  slotMatched: !!agent.contextPolicyKey,
-                },
-              ],
-            }),
-          );
-        }
-
-        setConversationId(cid);
-        // Fire-and-forget — the UI reads streaming state from redux selectors.
-        dispatch(executeInstance({ conversationId: cid }));
-      } catch (err) {
-        setError(extractErrorMessage(err));
-      } finally {
-        setLaunching(false);
       }
-    },
-    [dispatch],
-  );
 
-  const reset = useCallback(() => {
+      setConversationId(cid);
+      // Fire-and-forget — the UI reads streaming state from redux selectors.
+      dispatch(executeInstance({ conversationId: cid }));
+    } catch (err) {
+      setLaunchError(extractErrorMessage(err));
+    } finally {
+      setLaunching(false);
+    }
+  }
+
+  function reset() {
     setConversationId(null);
-    setError(null);
+    setLaunchError(null);
     setLaunching(false);
-  }, []);
+  }
 
   return {
     conversationId,
     requestId,
     phase,
     isBusy,
-    accumulatedText,
+    // Existing surfaces can retain this field while receiving only answer
+    // content. New callers should use the explicit name.
+    accumulatedText: answerText,
+    answerText,
+    isThinking,
     error,
     process,
     reset,

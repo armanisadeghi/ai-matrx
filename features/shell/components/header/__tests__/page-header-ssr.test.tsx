@@ -215,6 +215,95 @@ describe("PageHeader is server-rendered", () => {
     expect(slot().textContent).toContain("Message templates");
     expect(app.querySelector("[data-page-header-ssr]")).toBeNull();
   });
+
+  // 8. A server-rendered header React NEVER hydrates must not stay painted.
+  //    Observed 2026-09-27 on /education/flashcards/[setId] (a route with a
+  //    loading.tsx): the page streamed in a hidden segment `<div hidden
+  //    id="S:0">`; its inline script cloned the placeholder title ("Flashcard
+  //    set") into a ghost while the HTML parsed; React 19's batched reveal
+  //    ($RC → $RB → $RV on the next frame) had not swapped the segment in when
+  //    React client-rendered that boundary instead — the boundary's `B:0`
+  //    marker went away, the segment stayed in <body>, no layout effect ever
+  //    ran for that anchor, and the stale ghost sat over the real title.
+  function streamStaleSegment(boundaryStillPending: boolean) {
+    if (boundaryStillPending) {
+      const marker = document.createElement("template");
+      marker.id = "B:0";
+      app.appendChild(marker);
+    }
+    const segment = document.createElement("div");
+    segment.hidden = true;
+    segment.id = "S:0";
+    document.body.appendChild(segment);
+    segment.innerHTML = renderToString(header("Flashcard set"));
+    segment.querySelectorAll("script").forEach((dead) => {
+      const live = document.createElement("script");
+      live.textContent = dead.textContent;
+      dead.replaceWith(live);
+    });
+    expect(document.querySelector("matrx-header-ghost")?.textContent).toContain("Flashcard set");
+  }
+
+  it("drops the ghost and anchor of a streamed segment React discarded", () => {
+    root = createRoot(app);
+    act(() => root!.render(<Shell>{null}</Shell>));
+    streamStaleSegment(false);
+
+    // React client-renders the boundary: a client-only mount of the real header.
+    act(() => root!.render(<Shell>{header("AP Chemistry: Core Nomenclature")}</Shell>));
+
+    expect(slot().textContent).toContain("AP Chemistry: Core Nomenclature");
+    expect(document.querySelector("matrx-header-ghost")).toBeNull();
+    expect(document.querySelector("[data-page-header-ssr]")).toBeNull();
+    expect(document.body.textContent).not.toContain("Flashcard set");
+  });
+
+  it("keeps the ghost of a streamed segment whose reveal is still pending", () => {
+    root = createRoot(app);
+    act(() => root!.render(<Shell>{null}</Shell>));
+    streamStaleSegment(true);
+
+    // Another header instance mounts while the segment waits for its reveal.
+    act(() => root!.render(<Shell>{header("Section nav")}</Shell>));
+
+    expect(document.querySelector("matrx-header-ghost")?.textContent).toContain("Flashcard set");
+    expect(document.querySelector("[data-page-header-ssr]")).not.toBeNull();
+  });
+
+  it("drops the ghost once its pending segment is discarded later, with no new mount", async () => {
+    root = createRoot(app);
+    act(() => root!.render(<Shell>{null}</Shell>));
+    streamStaleSegment(true);
+    act(() => root!.render(<Shell>{header("Section nav")}</Shell>));
+    expect(document.querySelector("matrx-header-ghost")).not.toBeNull();
+
+    // React client-renders the boundary: its marker goes; nothing else mounts.
+    document.getElementById("B:0")!.remove();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(document.querySelector("matrx-header-ghost")).toBeNull();
+    expect(document.querySelector("[data-page-header-ssr]")).toBeNull();
+  });
+
+  it("treats a segment whose marker sits in a discarded segment as discarded (nested boundaries)", () => {
+    root = createRoot(app);
+    act(() => root!.render(<Shell>{null}</Shell>));
+    // B:0 is the nested boundary's marker, streamed inside S:1 — whose own
+    // marker B:1 React already discarded.
+    const outer = document.createElement("div");
+    outer.hidden = true;
+    outer.id = "S:1";
+    const nestedMarker = document.createElement("template");
+    nestedMarker.id = "B:0";
+    outer.appendChild(nestedMarker);
+    document.body.appendChild(outer);
+    streamStaleSegment(false);
+
+    act(() => root!.render(<Shell>{header("AI-Powered SEO")}</Shell>));
+    expect(document.querySelector("matrx-header-ghost")).toBeNull();
+    expect(document.querySelector("[data-page-header-ssr]")).toBeNull();
+  });
 });
 
 // ── 7. static: no route header behind dynamic({ ssr: false }) ──────────────

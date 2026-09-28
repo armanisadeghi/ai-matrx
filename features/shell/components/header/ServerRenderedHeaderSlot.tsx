@@ -94,6 +94,66 @@ function removeGhost(id: string, slot: HeaderSlotName, target: HTMLElement | nul
   }
 }
 
+/**
+ * true when React will never hydrate this server anchor: it sits in a streamed
+ * segment (`<div hidden id="S:n">`) whose boundary marker (`B:n`) is gone, or
+ * whose marker itself sits in such a discarded segment (nested boundaries).
+ * false while the segment is merely waiting for its reveal.
+ */
+function inDiscardedSegment(node: Element): boolean {
+  const segment = node.closest("div[hidden][id]");
+  const match = segment?.id.match(/^(.*)S:(.+)$/);
+  if (!segment || !match) return false;
+  const marker = document.getElementById(`${match[1]}B:${match[2]}`);
+  return !marker || inDiscardedSegment(marker);
+}
+
+/**
+ * Drop every ghost whose server anchor React will never hydrate, and that
+ * anchor with it.
+ *
+ * 🚨 WHY (2026-09-27, /education/flashcards/[setId], /research/topics/[id]): a
+ * route with a loading.tsx streams the page in a hidden segment. Its inline
+ * script clones the header into a ghost while the HTML parses, but React 19
+ * reveals streamed segments in a batch on a later animation frame ($RC → $RB →
+ * $RV) — and a frame never comes while the tab is hidden (a background tab, an
+ * agent's browser). When React client-renders that boundary first, the
+ * boundary marker goes away and the segment stays in <body> unowned (or a late
+ * reveal moves it nowhere): its anchor's layout effect never runs, and the
+ * ghost — the server's placeholder title — stayed painted over the real one.
+ * Swept whenever a header lands, and on every DOM change while a ghost exists.
+ */
+function sweepOrphanedGhosts() {
+  document.querySelectorAll<HTMLElement>("[data-page-header-ghost]").forEach((ghost) => {
+    const id = ghost.getAttribute("data-page-header-ghost") ?? "";
+    const anchor = document.querySelector<HTMLElement>(
+      `[data-page-header-ssr="${CSS.escape(id)}"]`,
+    );
+    if (anchor && !inDiscardedSegment(anchor)) return;
+    anchor?.remove();
+    const layer = ghost.parentElement as (HTMLElement & { __matrxTarget?: HTMLElement }) | null;
+    const slot: HeaderSlotName = layer?.classList.contains("page-header-ghost-right")
+      ? "right"
+      : "center";
+    removeGhost(id, slot, layer?.__matrxTarget ?? null);
+  });
+  watchGhosts();
+}
+
+let ghostWatcher: MutationObserver | null = null;
+/** While any ghost is up, re-sweep after each DOM change (a reveal, a discard). */
+function watchGhosts() {
+  const anyGhost = document.querySelector("matrx-header-ghost") !== null;
+  if (!anyGhost) {
+    ghostWatcher?.disconnect();
+    ghostWatcher = null;
+    return;
+  }
+  if (ghostWatcher) return;
+  ghostWatcher = new MutationObserver(sweepOrphanedGhosts);
+  ghostWatcher.observe(document.body, { childList: true, subtree: true });
+}
+
 const noopSubscribe = () => () => {};
 /** true on the server and during hydration; false for a client-only mount. */
 function useServerOrHydrating(): boolean {
@@ -137,6 +197,7 @@ export function ServerRenderedHeaderSlot({
     let placedIn: HTMLElement | null = null;
 
     const place = (found: HTMLElement) => {
+      sweepOrphanedGhosts();
       if (mode === "portal") {
         setTarget(found);
         return;

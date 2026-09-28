@@ -132,8 +132,14 @@ function EnrolledWorkspace({
       guidedFinding={guidedFinding}
       onClearGuidedFinding={() => setGuidedFinding(null)}
       onResolved={actions.invalidate}
-      onRunReview={() => actions.runReview.mutate(undefined)}
+      onRunReview={() =>
+        void actions.confirmAndRunReview({
+          pending: data.pending_examples ?? 0,
+          needed: data.enrollment.review_every_n,
+        })
+      }
       reviewRunning={actions.runReview.isPending}
+      reviewStartedAt={actions.reviewStartedAt}
       pendingExamples={data.pending_examples ?? 0}
     />
   );

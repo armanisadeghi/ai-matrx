@@ -40,7 +40,7 @@
  * variable names; without it `setUserVariableValues` silently no-ops.
  */
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
@@ -50,7 +50,9 @@ import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-defini
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import {
   selectPrimaryRequest,
-  selectAccumulatedText,
+  selectAnswerText,
+  selectIsReasoningStreaming,
+  selectRequestError,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
@@ -66,7 +68,6 @@ import { extractErrorMessage } from "@/utils/errors";
 import { textInputVariable } from "@/features/agents/utils/text-input-variable";
 
 export const CLEANUP_SURFACE_NAME = "matrx-user/transcripts-cleanup";
-
 
 export type AiProcessPhase =
   | "idle"
@@ -111,7 +112,7 @@ export function useAiPostProcess() {
   const store = useAppStore();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(null);
   const [mapping, setMapping] = useState<InputMappingInfo | null>(null);
 
   const request = useAppSelector((s) =>
@@ -121,9 +122,17 @@ export function useAiPostProcess() {
   const requestStatus = useAppSelector((s) =>
     requestId ? selectRequestStatus(requestId)(s) : undefined,
   );
-  const accumulatedText = useAppSelector((s) =>
-    requestId ? selectAccumulatedText(requestId)(s) : "",
+  const answerText = useAppSelector((s) =>
+    requestId ? selectAnswerText(requestId)(s) : "",
   );
+  const isThinking = useAppSelector((s) =>
+    requestId ? selectIsReasoningStreaming(requestId)(s) : false,
+  );
+  const runtimeError = useAppSelector((s) =>
+    requestId ? selectRequestError(requestId)(s) : undefined,
+  );
+  const error =
+    runtimeError?.user_message ?? runtimeError?.message ?? launchError;
 
   // Renders live stream output straight from the request row (no
   // `MarkdownStream requestId=`), so retention is this viewer's own job —
@@ -133,7 +142,9 @@ export function useAiPostProcess() {
 
   const phase: AiProcessPhase = launching
     ? "launching"
-    : ((requestStatus as AiProcessPhase | undefined) ?? "idle");
+    : error
+      ? "error"
+      : ((requestStatus as AiProcessPhase | undefined) ?? "idle");
 
   const isBusy =
     phase === "launching" ||
@@ -142,219 +153,217 @@ export function useAiPostProcess() {
     phase === "streaming" ||
     phase === "awaiting-tools";
 
-  const process = useCallback(
-    async ({
-      agentId,
-      text,
-      contextItems,
-      scope,
-      surfaceName: surfaceNameArg,
-    }: ProcessArgs): Promise<ProcessLaunchResult | null> => {
-      const bindingSurface = surfaceNameArg ?? CLEANUP_SURFACE_NAME;
-      setError(null);
-      setLaunching(true);
-      try {
-        // 1. Load the agent's variable_definitions + context_policies into redux
-        //    (createManualInstance snapshots them onto the instance).
-        await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
-        const payload = selectAgentExecutionPayload(store.getState(), agentId);
-        const defs = payload.variableDefinitions ?? [];
-        const slots = payload.contextPolicies ?? [];
-        const slotKeys = new Set(slots.map((s) => s.key));
+  async function process({
+    agentId,
+    text,
+    contextItems,
+    scope,
+    surfaceName: surfaceNameArg,
+  }: ProcessArgs): Promise<ProcessLaunchResult | null> {
+    const bindingSurface = surfaceNameArg ?? CLEANUP_SURFACE_NAME;
+    setLaunchError(null);
+    setLaunching(true);
+    try {
+      // 1. Load the agent's variable_definitions + context_policies into redux
+      //    (createManualInstance snapshots them onto the instance).
+      await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
+      const payload = selectAgentExecutionPayload(store.getState(), agentId);
+      const defs = payload.variableDefinitions ?? [];
+      const slots = payload.contextPolicies ?? [];
+      const slotKeys = new Set(slots.map((s) => s.key));
 
-        // 2. Surface bindings — same layered per-key merge as the launch
-        //    thunk (global → org-by-membership → user), so the in-page Run
-        //    buttons and the context menu resolve identically.
-        let bindingMappings: ValueMappingMap | null = null;
-        try {
-          const layers = await fetchSurfaceBindingLayers(
-            agentId,
-            bindingSurface,
-          );
-          if (layers.length > 0) {
-            const mergedResult = mergeValueMappingLayers(layers);
-            for (const inert of mergedResult.inertLayers) {
-              console.warn(
-                `[cleanup] mapping layer "${inert}" for agent ${agentId} exists but contributed no keys — fully shadowed`,
-                { provenance: mergedResult.provenance },
-              );
-            }
-            bindingMappings =
-              Object.keys(mergedResult.merged).length > 0
-                ? mergedResult.merged
-                : null;
-          }
-        } catch (err) {
-          // Binding lookup is an enhancement, never a blocker — but say so.
-          console.warn(
-            `[cleanup] surface-binding lookup failed for agent ${agentId}:`,
-            err,
-          );
-        }
-        const resolved = resolveValueMappings(
-          scope,
-          bindingMappings,
-          defs,
-          slots,
-        );
-        if (resolved.errors.length > 0) {
-          // Required surface values missing — the page IS the surface, so
-          // this is a real configuration/state problem. Abort loudly.
-          throw new Error(resolved.errors.join("\n"));
-        }
-        if (resolved.pendingPrompts.length > 0) {
-          // In-page runs are non-interactive (no pre-launch dialog here).
-          const requiredPrompts = resolved.pendingPrompts.filter(
-            (p) => p.required,
-          );
-          if (requiredPrompts.length > 0) {
-            throw new Error(
-              `This agent's binding requires user input (${requiredPrompts
-                .map((p) => `"${p.targetName}"`)
-                .join(", ")}) — run it from the context menu instead.`,
+      // 2. Surface bindings — same layered per-key merge as the launch
+      //    thunk (global → org-by-membership → user), so the in-page Run
+      //    buttons and the context menu resolve identically.
+      let bindingMappings: ValueMappingMap | null = null;
+      try {
+        const layers = await fetchSurfaceBindingLayers(agentId, bindingSurface);
+        if (layers.length > 0) {
+          const mergedResult = mergeValueMappingLayers(layers);
+          for (const inert of mergedResult.inertLayers) {
+            console.warn(
+              `[cleanup] mapping layer "${inert}" for agent ${agentId} exists but contributed no keys — fully shadowed`,
+              { provenance: mergedResult.provenance },
             );
           }
-          console.warn(
-            "[cleanup] optional prompt_user mappings skipped for in-page run:",
-            resolved.pendingPrompts.map((p) => p.targetName),
-          );
+          bindingMappings =
+            Object.keys(mergedResult.merged).length > 0
+              ? mergedResult.merged
+              : null;
         }
-
-        const variableValues: Record<string, unknown> = {
-          ...resolved.variableValues,
-        };
-
-        // 3. Did the input text land on a variable? If not, heuristics.
-        let landedVar = Object.entries(variableValues).find(
-          ([, v]) => v === text,
-        )?.[0];
-        if (!landedVar) {
-          const target = textInputVariable(defs);
-          if (target) {
-            variableValues[target.name] = text;
-            landedVar = target.name;
-          }
-        }
-        if (!landedVar) {
-          // THE USER-INPUT LAW: the transcript is structured content, never
-          // prose in the person's own message. No silent user_input reroute —
-          // a missing declared variable is a real agent misconfiguration.
-          throw new Error(
-            `This agent has no declared variable to receive the transcript ` +
-              `(no transcript-shaped variable like "transcribed_text" / ` +
-              `"transcript" / "content", and no single declared variable to ` +
-              `fall back to). Add a matching variable to the agent's ` +
-              `definition, or bind it to the "${bindingSurface}" surface, ` +
-              `before running it here.`,
-          );
-        }
-
-        // 4. Context items → proper context entries.
-        const entries: InstanceContextEntry[] = [...resolved.contextEntries];
-        const taken = new Set(entries.map((e) => e.key));
-        const activeItems = contextItems.filter((i) => i.value.trim());
-        const slotMatchedItems = activeItems.filter(
-          (i) => slotKeys.has(i.key) && !taken.has(i.key),
+      } catch (err) {
+        // Binding lookup is an enhancement, never a blocker — but say so.
+        console.warn(
+          `[cleanup] surface-binding lookup failed for agent ${agentId}:`,
+          err,
         );
-        const unmatchedItems = activeItems.filter((i) => !slotKeys.has(i.key));
-        for (const item of slotMatchedItems) {
+      }
+      const resolved = resolveValueMappings(
+        scope,
+        bindingMappings,
+        defs,
+        slots,
+      );
+      if (resolved.errors.length > 0) {
+        // Required surface values missing — the page IS the surface, so
+        // this is a real configuration/state problem. Abort loudly.
+        throw new Error(resolved.errors.join("\n"));
+      }
+      if (resolved.pendingPrompts.length > 0) {
+        // In-page runs are non-interactive (no pre-launch dialog here).
+        const requiredPrompts = resolved.pendingPrompts.filter(
+          (p) => p.required,
+        );
+        if (requiredPrompts.length > 0) {
+          throw new Error(
+            `This agent's binding requires user input (${requiredPrompts
+              .map((p) => `"${p.targetName}"`)
+              .join(", ")}) — run it from the context menu instead.`,
+          );
+        }
+        console.warn(
+          "[cleanup] optional prompt_user mappings skipped for in-page run:",
+          resolved.pendingPrompts.map((p) => p.targetName),
+        );
+      }
+
+      const variableValues: Record<string, unknown> = {
+        ...resolved.variableValues,
+      };
+
+      // 3. Did the input text land on a variable? If not, heuristics.
+      let landedVar = Object.entries(variableValues).find(
+        ([, v]) => v === text,
+      )?.[0];
+      if (!landedVar) {
+        const target = textInputVariable(defs);
+        if (target) {
+          variableValues[target.name] = text;
+          landedVar = target.name;
+        }
+      }
+      if (!landedVar) {
+        // THE USER-INPUT LAW: the transcript is structured content, never
+        // prose in the person's own message. No silent user_input reroute —
+        // a missing declared variable is a real agent misconfiguration.
+        throw new Error(
+          `This agent has no declared variable to receive the transcript ` +
+            `(no transcript-shaped variable like "transcribed_text" / ` +
+            `"transcript" / "content", and no single declared variable to ` +
+            `fall back to). Add a matching variable to the agent's ` +
+            `definition, or bind it to the "${bindingSurface}" surface, ` +
+            `before running it here.`,
+        );
+      }
+
+      // 4. Context items → proper context entries.
+      const entries: InstanceContextEntry[] = [...resolved.contextEntries];
+      const taken = new Set(entries.map((e) => e.key));
+      const activeItems = contextItems.filter((i) => i.value.trim());
+      const slotMatchedItems = activeItems.filter(
+        (i) => slotKeys.has(i.key) && !taken.has(i.key),
+      );
+      const unmatchedItems = activeItems.filter((i) => !slotKeys.has(i.key));
+      for (const item of slotMatchedItems) {
+        entries.push({
+          key: item.key,
+          value: item.value,
+          slotMatched: true,
+          type: "text",
+          label: item.label || item.key,
+        });
+        taken.add(item.key);
+      }
+      if (unmatchedItems.length > 0) {
+        const combined = unmatchedItems
+          .map((i) =>
+            i.label.trim() ? `[${i.label.trim()}]\n${i.value}` : i.value,
+          )
+          .join("\n\n");
+        const firstOpenSlot = slots.find((s) => !taken.has(s.key));
+        if (slotMatchedItems.length === 0 && firstOpenSlot) {
+          // Legacy system-cleaner behavior: free-form context fills the
+          // agent's declared context policy.
           entries.push({
-            key: item.key,
-            value: item.value,
+            key: firstOpenSlot.key,
+            value: combined,
             slotMatched: true,
             type: "text",
-            label: item.label || item.key,
+            label: firstOpenSlot.label ?? "User context",
           });
-          taken.add(item.key);
-        }
-        if (unmatchedItems.length > 0) {
-          const combined = unmatchedItems
-            .map((i) =>
-              i.label.trim() ? `[${i.label.trim()}]\n${i.value}` : i.value,
-            )
-            .join("\n\n");
-          const firstOpenSlot = slots.find((s) => !taken.has(s.key));
-          if (slotMatchedItems.length === 0 && firstOpenSlot) {
-            // Legacy system-cleaner behavior: free-form context fills the
-            // agent's declared context policy.
+        } else {
+          for (const item of unmatchedItems) {
+            if (taken.has(item.key)) continue;
             entries.push({
-              key: firstOpenSlot.key,
-              value: combined,
-              slotMatched: true,
+              key: item.key,
+              value: item.value,
+              slotMatched: false,
               type: "text",
-              label: firstOpenSlot.label ?? "User context",
+              label: item.label || item.key,
             });
-          } else {
-            for (const item of unmatchedItems) {
-              if (taken.has(item.key)) continue;
-              entries.push({
-                key: item.key,
-                value: item.value,
-                slotMatched: false,
-                type: "text",
-                label: item.label || item.key,
-              });
-              taken.add(item.key);
-            }
+            taken.add(item.key);
           }
         }
-
-        // 5. Create the instance and wire everything up.
-        const cid = await dispatch(
-          createManualInstance({
-            agentId,
-            sourceFeature: "transcription",
-            apiEndpointMode: "agent",
-            displayMode: "direct",
-            autoRun: false,
-          }),
-        ).unwrap();
-
-        if (Object.keys(variableValues).length > 0) {
-          dispatch(
-            setUserVariableValues({
-              conversationId: cid,
-              values: variableValues,
-            }),
-          );
-        }
-        if (entries.length > 0) {
-          dispatch(setContextEntries({ conversationId: cid, entries }));
-        }
-
-        const mappingInfo: InputMappingInfo =
-          bindingMappings && Object.keys(bindingMappings).length > 0
-            ? { mode: "binding", target: landedVar }
-            : { mode: "variable", target: landedVar };
-        setMapping(mappingInfo);
-
-        setConversationId(cid);
-        // Fire-and-forget — the UI reads streaming state from redux selectors.
-        dispatch(executeInstance({ conversationId: cid }));
-        return { conversationId: cid, mapping: mappingInfo };
-      } catch (err) {
-        setError(extractErrorMessage(err));
-        return null;
-      } finally {
-        setLaunching(false);
       }
-    },
-    [dispatch, store],
-  );
 
-  const reset = useCallback(() => {
+      // 5. Create the instance and wire everything up.
+      const cid = await dispatch(
+        createManualInstance({
+          agentId,
+          sourceFeature: "transcription",
+          apiEndpointMode: "agent",
+          displayMode: "direct",
+          autoRun: false,
+        }),
+      ).unwrap();
+
+      if (Object.keys(variableValues).length > 0) {
+        dispatch(
+          setUserVariableValues({
+            conversationId: cid,
+            values: variableValues,
+          }),
+        );
+      }
+      if (entries.length > 0) {
+        dispatch(setContextEntries({ conversationId: cid, entries }));
+      }
+
+      const mappingInfo: InputMappingInfo =
+        bindingMappings && Object.keys(bindingMappings).length > 0
+          ? { mode: "binding", target: landedVar }
+          : { mode: "variable", target: landedVar };
+      setMapping(mappingInfo);
+
+      setConversationId(cid);
+      // Fire-and-forget — the UI reads streaming state from redux selectors.
+      dispatch(executeInstance({ conversationId: cid }));
+      return { conversationId: cid, mapping: mappingInfo };
+    } catch (err) {
+      setLaunchError(extractErrorMessage(err));
+      return null;
+    } finally {
+      setLaunching(false);
+    }
+  }
+
+  function reset() {
     setConversationId(null);
-    setError(null);
+    setLaunchError(null);
     setLaunching(false);
     setMapping(null);
-  }, []);
+  }
 
   return {
     conversationId,
     requestId,
     phase,
     isBusy,
-    accumulatedText,
+    // Legacy consumers render this raw. Keep the field while making its
+    // source answer-only; they can migrate to the explicit `answerText`.
+    accumulatedText: answerText,
+    answerText,
+    isThinking,
     error,
     mapping,
     process,

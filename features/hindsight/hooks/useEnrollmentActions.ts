@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import { archiveEnrollment, triggerReview, updateEnrollment } from "../api";
 import { fmtCost } from "../components/tokens";
@@ -49,6 +50,30 @@ export function useEnrollmentActions(
     onError: (err: Error) => toast.error(`Review failed: ${err.message}`),
   });
 
+  /**
+   * The ONE "Review now" door every button uses (sidebar, reviewer pane,
+   * first-review empty state). THE LAW (destructive-and-expensive-actions):
+   * state the cost before spending, and never silently skip a click.
+   */
+  const confirmAndRunReview = async ({
+    pending,
+    needed,
+  }: {
+    pending: number;
+    needed: number;
+  }) => {
+    if (runReview.isPending) return;
+    const ok = await confirm({
+      title: "Run a review now?",
+      description:
+        pending > 0
+          ? `The reviewer reads your ${pending} new run${pending === 1 ? "" : "s"} end to end — it costs real money and takes a few minutes. Left alone, it happens automatically after ${needed} new runs.`
+          : "No new runs are waiting — the reviewer has nothing new to read and this will be skipped.",
+      confirmLabel: pending > 0 ? "Review now" : "Run anyway",
+    });
+    if (ok) runReview.mutate(undefined);
+  };
+
   const toggleStatus = useMutation({
     mutationFn: (status: "active" | "paused") =>
       updateEnrollment(enrollmentId, { status }),
@@ -79,5 +104,13 @@ export function useEnrollmentActions(
     onError: (err: Error) => toast.error(`Could not archive: ${err.message}`),
   });
 
-  return { runReview, toggleStatus, updateGoal, archive, invalidate, reviewStartedAt };
+  return {
+    runReview,
+    confirmAndRunReview,
+    toggleStatus,
+    updateGoal,
+    archive,
+    invalidate,
+    reviewStartedAt,
+  };
 }

@@ -14,6 +14,16 @@ panel (`components/official-candidate/transcription-cleanup/` — still intact,
 do not merge); now persisted on the STUDIO database so sessions interop with
 `/transcripts/studio`.
 
+## Output rendering and capture
+
+Clean and Custom render through `RichDocument` → `MarkdownStream`, with the live
+request ID preserving structured kinds, tools, and reasoning presentation.
+“Edit text” opens the existing surface-aware editor; block edits and full text
+edits persist through the studio service. Focus alone never freezes a live answer.
+All saved, copied, compared, and downstream input text comes from the execution
+system's answer selector, which excludes typed thinking and reasoning. Recovery
+uses the same answer boundary on committed messages.
+
 ## Data model — studio tables, source-scoped
 
 Sessions are `studio_sessions` rows with `source='cleanup'`; each surface
@@ -184,6 +194,8 @@ Auto-run: raw-source slots fire simultaneously with Clean (mic completion +
 manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
+
+- 2026-09-27 — Replaced regex-filtered raw stream output with the core rich-document renderer and canonical answer extraction across live output, persistence, custom input, and recovered runs. Kept direct text and block editing; surfaced runtime errors through ErrorNotice. Durable rows are established before launch; answerless runs settle as failed rather than remaining running. Custom slots honor their selected input source.
 
 - 2026-09-27 — **The Clean pane runs its own pass.** Clean / Re-clean now sits in the Clean pane header (same `handleProcess` as the sidebar's Clean Up), absent while a pass runs. Before, the page's main job lived only at the bottom of the sidebar — a header-menu "Controls" drawer on a phone (0-width there, verified at 375px) — and people faked a second of audio to re-trigger cleaning. Idle placeholder no longer says recording is the only way. Same fix on the floating window twin (`components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx`). Rule: a page's primary action is never reachable only through a drawer, collapsible sidebar, or menu.
 - 2026-08-29 — **Canonical ProTextarea fleet sweep.** An AST inventory found

@@ -34,6 +34,10 @@
 // via a search param) leaves the drawer covering the result. Panel content can
 // call `useMobilePanelClose()` — a no-op outside the drawer (desktop renders
 // the same component) — right where the action fires.
+//
+// Open-from-MAIN: a page's primary action must never live only in a drawer.
+// When the main column needs a door INTO a drawer (an empty pane's "Browse
+// stores"), it calls `useOpenMobilePanel()` — null on desktop, so no button.
 
 import { createContext, useContext, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -58,6 +62,21 @@ const MobilePanelCloseContext = createContext<() => void>(() => {});
  */
 export function useMobilePanelClose(): () => void {
   return useContext(MobilePanelCloseContext);
+}
+
+const MobilePanelOpenContext = createContext<((id: string) => void) | null>(
+  null,
+);
+
+/**
+ * Open one of the enclosing MobilePanelShell's drawers by panel id from the
+ * MAIN column — e.g. an empty main pane's "Browse stores" button. Returns
+ * `null` when there is no drawer to open (desktop, where the panel is already
+ * on screen, or the stacked presentation), so the caller renders no button
+ * rather than a dead one.
+ */
+export function useOpenMobilePanel(): ((id: string) => void) | null {
+  return useContext(MobilePanelOpenContext);
 }
 
 export interface MobileShellPanel {
@@ -232,7 +251,9 @@ export function MobilePanelShell({
       )}
 
       <div className={cn("h-full min-h-0 overflow-auto", mainClassName)}>
-        {main}
+        <MobilePanelOpenContext.Provider value={hasPanels ? show : null}>
+          {main}
+        </MobilePanelOpenContext.Provider>
       </div>
 
       {/* Panels that opted out of lazy mounting stay alive off-screen. */}

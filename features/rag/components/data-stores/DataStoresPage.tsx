@@ -78,7 +78,11 @@ import {
   SurfaceRuntimeProvider,
   useSurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { MobilePanelShell, useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
+import {
+  MobilePanelShell,
+  useMobilePanelClose,
+  useOpenMobilePanel,
+} from "@/features/shell/components/header/templates/MobilePanelShell";
 import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
@@ -163,6 +167,16 @@ export function DataStoresPage() {
     [router, search],
   );
 
+  // The create flow is `?new=1` — the same one the Knowledge hub's "New data
+  // store" opens. The empty main pane's "New store" goes here so creating a
+  // store is never reachable only through the Stores drawer on a phone.
+  const startCreate = useCallback(() => {
+    const params = new URLSearchParams(search?.toString() ?? "");
+    params.delete("store_id");
+    params.set("new", "1");
+    pushAddressOrNavigate(router, `/knowledge/data-stores?${params.toString()}`);
+  }, [router, search]);
+
   const storesList = (
     <>
       {/* Working context — what scoped retrieval acts within. */}
@@ -223,7 +237,10 @@ export function DataStoresPage() {
         . Bind any indexed PDF, note, code file, or library doc; the agent then
         sees only that bucket when it retrieves.
       </p>
-      <p>Pick or create a store in the Stores panel to get started.</p>
+      <p className="mb-4">
+        Pick a store from your list, or create a new one to get started.
+      </p>
+      <EmptyPaneActions onNew={startCreate} />
     </div>
   ) : (
     <StoreDetailPanel
@@ -288,6 +305,34 @@ export function DataStoresPage() {
         ]}
       />
     </SurfaceRuntimeProvider>
+  );
+}
+
+/**
+ * The empty main pane's real actions — never prose pointing at a hidden
+ * panel. "New store" opens the page's create flow; "Browse stores" opens the
+ * Stores drawer, and only exists where the list is behind one (phones).
+ */
+function EmptyPaneActions({ onNew }: { onNew: () => void }) {
+  const openPanel = useOpenMobilePanel();
+  return (
+    <div className="matrx-touch-targets flex flex-wrap gap-2">
+      <Button size="sm" className="gap-1.5" onClick={onNew}>
+        <Plus className="h-3.5 w-3.5" />
+        New store
+      </Button>
+      {openPanel ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          onClick={() => openPanel("stores")}
+        >
+          <Database className="h-3.5 w-3.5" />
+          Browse stores
+        </Button>
+      ) : null}
+    </div>
   );
 }
 

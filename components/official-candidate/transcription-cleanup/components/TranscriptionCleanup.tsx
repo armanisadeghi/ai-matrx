@@ -31,7 +31,6 @@ import {
   clearContentAction,
   hostCopyAction,
 } from "@/features/rich-document/actions/hostActions";
-import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import { TranscriptionCleanupContextPanel } from "./TranscriptionCleanupContextPanel";
 import {
   AI_POST_PROCESS_AGENTS,
@@ -207,15 +206,9 @@ export default function TranscriptionCleanup({
     }
   }, []);
 
-  // Strip <thinking>/<reasoning> blocks from the streaming model output so
-  // chain-of-thought never reaches the textarea or the clipboard. While a
-  // thinking block is open (closer hasn't arrived), surface a "Thinking…"
-  // indicator in the header instead.
-  const { visible: strippedResponse, isThinking } = useMemo(
-    () => stripThinkingStreaming(ai.accumulatedText),
-    [ai.accumulatedText],
-  );
-  const responseValue = editedResponse ?? strippedResponse;
+  // The execution system separates typed reasoning from answer content.
+  const isThinking = ai.isThinking;
+  const responseValue = editedResponse ?? ai.accumulatedText;
   responseRef.current = responseValue;
   const isBusyEarly =
     ai.phase === "launching" ||
