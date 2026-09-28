@@ -682,6 +682,7 @@ export function DailyDripDialog({
               ) : null}
               {stopped ? (
                 <span className="self-center text-xs text-muted-foreground">
+                  {/* read-gate-exempt: drip is the loaded Rulebook's own record (a prop) updated by this dialog's action results — no read here can fail into it */}
                   Stopped — your {answered.length} answer
                   {answered.length === 1 ? "" : "s"} are still here.
                 </span>
@@ -696,6 +697,7 @@ export function DailyDripDialog({
             {/* 🚨 THE HONEST WAITING STATE. A drip spends most of its life with
                 too little to distil, and that is neither a failure nor a
                 success — the sentence says exactly how far off it is. */}
+            {/* read-gate-exempt: drip is the loaded Rulebook's own record (a prop) updated by this dialog's action results — no read here can fail into it */}
             {!enoughToDistill ? (
               answered.length === 0 ? (
                 <>No answers yet. The first question has to go out and come back.</>
@@ -712,6 +714,7 @@ export function DailyDripDialog({
               </>
             ) : (
               <>
+                {/* read-gate-exempt: drip is the loaded Rulebook's own record (a prop) updated by this dialog's action results — no read here can fail into it */}
                 <Flame className="mr-1 inline h-3.5 w-3.5" />
                 {pending.length} day{pending.length === 1 ? "" : "s"} of answers ready to
                 become rules.

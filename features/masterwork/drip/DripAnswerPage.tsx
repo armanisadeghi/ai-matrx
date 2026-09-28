@@ -26,6 +26,7 @@
 // tapped a link and got a blank screen would never tap the next one.
 
 import { useEffect, useMemo, useState } from "react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { CalendarClock, CheckCircle2, PauseCircle } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
@@ -76,19 +77,24 @@ export function DripAnswerPage({
   // renders without waiting on it; until it lands the sentence that depends on
   // it is simply not shown.
   const [minAnswers, setMinAnswers] = useState<number | null>(null);
+  // The scoreboard drops one sentence when this read fails — and says why.
+  const [minAnswersFailed, setMinAnswersFailed] = useState(false);
+  const [minAnswersAttempt, setMinAnswersAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
     void knobInt(DRIP_KNOB_FEATURE, "min_answers_to_distill")
       .then((value) => {
-        if (!cancelled) setMinAnswers(value);
+        if (cancelled) return;
+        setMinAnswers(value);
+        setMinAnswersFailed(false);
       })
       .catch(() => {
-        /* The scoreboard drops one sentence; nothing on this page needs it. */
+        if (!cancelled) setMinAnswersFailed(true);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [minAnswersAttempt]);
 
   const submit = async (day: DripDay) => {
     // The button is gated on the same condition, so an empty answer cannot
@@ -274,6 +280,20 @@ export function DripAnswerPage({
           rules={rulebook.rules ?? []}
           minAnswersToDistill={minAnswers}
         />
+      ) : null}
+      {minAnswersFailed && (drip.subscription || answered.length > 0) ? (
+        <p className="text-xs text-muted-foreground">
+          Couldn&apos;t read how many answers it takes to make rules, so that
+          countdown isn&apos;t shown.{" "}
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-2 hover:underline"
+            onClick={() => setMinAnswersAttempt((n) => n + 1)}
+          >
+            Try again
+          </button>
+          <ErrorAlchemyMenu operation="Read the answers-before-rules setting" />
+        </p>
       ) : null}
     </div>
   );

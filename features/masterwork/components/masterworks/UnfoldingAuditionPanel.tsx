@@ -19,6 +19,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useRead } from "@/components/read-state/useRead";
 import Link from "next/link";
 import { FileLock2 } from "lucide-react";
 
@@ -221,13 +223,13 @@ export function UnfoldingAuditionPanel({
 }) {
   /** The Rulebook's built systems — read here rather than threaded through the
    *  dialog, which does not otherwise need them. */
-  const [masterworks, setMasterworks] = useState<Masterwork[]>([]);
   const [deskIds, setDeskIds] = useState<string[]>([]);
   const [caseIds, setCaseIds] = useState<string[]>([]);
   const [compareVanilla, setCompareVanilla] = useState(true);
   const [cases, setCases] = useState<SealedCase[] | null>(null);
   const [casesError, setCasesError] = useState<string | null>(null);
   const [history, setHistory] = useState<UnfoldingRunSummary[]>([]);
+  const [historyError, setHistoryError] = useState<unknown>(null);
 
   const run = useMasterworkRun<UnfoldingVerdict>({
     surface: "audition_unfolding",
@@ -237,20 +239,13 @@ export function UnfoldingAuditionPanel({
   });
   const verdict = run.result;
 
-  useEffect(() => {
-    let alive = true;
-    void listMasterworksForRulebook(rulebookId)
-      .then((rows) => {
-        if (alive) setMasterworks(rows);
-      })
-      .catch(() => {
-        // The empty-state below already names the remedy ("build one first"),
-        // and a failed read leaves exactly that — never a half-list.
-      });
-    return () => {
-      alive = false;
-    };
-  }, [rulebookId]);
+  // A failed read is said (with a retry) — never "you have not built one yet".
+  const masterworksRead = useRead<Masterwork[]>(
+    () => listMasterworksForRulebook(rulebookId),
+    [rulebookId],
+    { initialData: [] },
+  );
+  const masterworks = masterworksRead.data ?? [];
 
   useEffect(() => {
     let alive = true;
@@ -276,9 +271,14 @@ export function UnfoldingAuditionPanel({
 
   const refreshHistory = useCallback(() => {
     listUnfoldingAuditions(rulebookId)
-      .then(setHistory)
-      .catch(() => {
-        // History is a garnish — the verdict panel never blocks on it.
+      .then((runs) => {
+        setHistory(runs);
+        setHistoryError(null);
+      })
+      .catch((e: unknown) => {
+        // History is a garnish — the verdict panel never blocks on it — but a
+        // failed read is said, never an absent strip that reads as "no runs".
+        setHistoryError(e ?? new Error("The past runs read failed"));
       });
   }, [rulebookId]);
 
@@ -338,7 +338,16 @@ export function UnfoldingAuditionPanel({
 
   return (
     <div className="space-y-3">
-      <UnfoldingHistory runs={history} />
+      {historyError ? (
+        <ReadFailure
+          className="m-0"
+          error={historyError}
+          what="past sealed-case runs"
+          onRetry={refreshHistory}
+        />
+      ) : (
+        <UnfoldingHistory runs={history} />
+      )}
 
       <div className="space-y-1.5">
         <p className="text-xs font-medium text-foreground">
@@ -347,7 +356,16 @@ export function UnfoldingAuditionPanel({
             (up to {MAX_DESKS})
           </span>
         </p>
-        {desks.length === 0 ? (
+        {masterworksRead.isError ? (
+          <ReadFailure
+            className="m-0"
+            error={masterworksRead.error}
+            what="this Rulebook's Masterworks"
+            onRetry={masterworksRead.retry}
+          />
+        ) : masterworksRead.isLoading && !masterworksRead.hasData ? (
+          <p className="text-xs text-muted-foreground">Loading Masterworks…</p>
+        ) : desks.length === 0 ? (
           <p className="text-xs text-muted-foreground">
             You have not built a Masterwork from this Rulebook yet, so there is
             nothing to examine.{" "}

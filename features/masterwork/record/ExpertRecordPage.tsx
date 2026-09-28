@@ -456,6 +456,7 @@ export function ExpertRecordPage({
               oldest first, nothing left out.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
+              {/* read-gate-exempt: a failed corpus read returns early above (if (refusal) — the read's failure), so this count only follows a successful read */}
               {tally.total} thing{tally.total === 1 ? "" : "s"} you contributed
               {tally.byKind ? ` · ${tally.byKind}` : ""} · {words} in your own
               words
@@ -541,6 +542,7 @@ export function ExpertRecordPage({
       {/* Never let an access boundary read as an empty Record. */}
       {corpus.hiddenInterviewCount > 0 ? (
         <p className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+          {/* read-gate-exempt: a failed corpus read returns early above (if (refusal) — the read's failure), so this count only follows a successful read */}
           {corpus.hiddenInterviewCount} more interview
           {corpus.hiddenInterviewCount === 1 ? "" : "s"} belong
           {corpus.hiddenInterviewCount === 1 ? "s" : ""} to this Rulebook but

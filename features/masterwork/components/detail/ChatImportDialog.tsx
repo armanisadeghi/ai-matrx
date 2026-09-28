@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
 import { ExternalLink, FileUp, X } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -205,6 +206,9 @@ export function ChatImportDialog({
   const [preparing, setPreparing] = useState(false);
   const [shortlisting, setShortlisting] = useState(false);
   const [rows, setRows] = useState<ConversationRow[] | null>(null);
+  // The AI Matrx corpus read's failure: said in the lane (with a retry), and it
+  // stops the auto-load effect from re-firing the failed read in a loop.
+  const [rowsError, setRowsError] = useState<unknown>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [notes, setNotes] = useState<string[]>([]);
@@ -229,6 +233,7 @@ export function ChatImportDialog({
 
   const resetPicker = () => {
     setRows(null);
+    setRowsError(null);
     setSelected(new Set());
     setSearch("");
     setNotes([]);
@@ -422,12 +427,9 @@ export function ChatImportDialog({
         })),
       );
       setSelected(new Set());
+      setRowsError(null);
     } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Could not load your conversations.",
-      );
+      setRowsError(err ?? new Error("Could not load your conversations."));
     } finally {
       setPreparing(false);
     }
@@ -435,10 +437,10 @@ export function ChatImportDialog({
 
   // The AI Matrx tab needs no upload — offer the corpus the moment it opens.
   useEffect(() => {
-    if (open && tab === "matrx" && rows === null && !preparing) {
+    if (open && tab === "matrx" && rows === null && !preparing && !rowsError) {
       void loadMatrxConversations();
     }
-  }, [open, tab, rows, preparing, loadMatrxConversations]);
+  }, [open, tab, rows, preparing, rowsError, loadMatrxConversations]);
 
   // ── the AI shortlist assist (upload/paste lanes) ─────────────────────────
 
@@ -622,6 +624,13 @@ export function ChatImportDialog({
               <DurableRunInterruption interruption={run.interruption} />
             ) : null}
           </div>
+        ) : rowsError && tab === "matrx" ? (
+          <ReadFailure
+            className="m-0"
+            error={rowsError}
+            what="your conversations"
+            onRetry={() => setRowsError(null)}
+          />
         ) : rows ? (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">

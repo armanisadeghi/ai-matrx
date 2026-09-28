@@ -844,6 +844,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // can be published (`library_publish` asserts it), so the door only appears
   // there, and only for the platform admins who issue grants.
   const [libraryOrgId, setLibraryOrgId] = useState<string | null>(null);
+  // A failed Library-org read hides the publish door — so say it, with a retry.
+  const [libraryOrgFailed, setLibraryOrgFailed] = useState(false);
+  const [libraryOrgAttempt, setLibraryOrgAttempt] = useState(0);
   const [publishOpen, setPublishOpen] = useState(false);
   // The ingest dialog's lane is owned by ONE session primitive
   // (`durable-run/liveIngestLane.ts` § THE INGEST DIALOG SESSION), declared
@@ -1434,18 +1437,21 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
     let cancelled = false;
     resolveLibraryOrgId()
       .then((id) => {
-        if (!cancelled) setLibraryOrgId(id);
+        if (cancelled) return;
+        setLibraryOrgId(id);
+        setLibraryOrgFailed(false);
       })
       .catch((e) => {
         console.error(
           "[RulebookDetailPage] could not resolve the Library org:",
           e,
         );
+        if (!cancelled) setLibraryOrgFailed(true);
       });
     return () => {
       cancelled = true;
     };
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, libraryOrgAttempt]);
   const openBuild = useOpenBuildWindow();
   const openYourWords = useOpenMasterworkYourWordsWindow();
 
@@ -2406,9 +2412,22 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     (common-docs/systems/platform/library/STATE.md). Only a
                     Library-owned Rulebook can be published — the RPC asserts
                     it — so the door appears nowhere else. */}
-                {isSuperAdmin &&
-                libraryOrgId &&
-                rulebook.organization_id === libraryOrgId ? (
+                {isSuperAdmin && libraryOrgFailed ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    Couldn&apos;t check the Library
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setLibraryOrgAttempt((n) => n + 1)}
+                    >
+                      Try again
+                    </Button>
+                    <ErrorAlchemyMenu operation="Check whether this Rulebook belongs to the Library" />
+                  </span>
+                ) : isSuperAdmin &&
+                  libraryOrgId &&
+                  rulebook.organization_id === libraryOrgId ? (
                   <>
                     <Tooltip>
                       <TooltipTrigger asChild>

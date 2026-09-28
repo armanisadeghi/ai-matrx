@@ -23,6 +23,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -219,6 +220,7 @@ export function AuditionDialog({
   const [vanillaInput, setVanillaInput] = useState("");
   const [showVanillaText, setShowVanillaText] = useState(false);
   const [history, setHistory] = useState<AuditionRunSummary[]>([]);
+  const [historyError, setHistoryError] = useState<unknown>(null);
   const [expertWhy, setExpertWhy] = useState("");
   const [expertSaved, setExpertSaved] = useState<number | null>(null);
   const [savingExpert, setSavingExpert] = useState(false);
@@ -287,9 +289,14 @@ export function AuditionDialog({
 
   const refreshHistory = useCallback(() => {
     listAuditionRuns(rulebookId)
-      .then(setHistory)
-      .catch(() => {
-        // History is a garnish — the verdict panel never blocks on it.
+      .then((runs) => {
+        setHistory(runs);
+        setHistoryError(null);
+      })
+      .catch((e: unknown) => {
+        // History is a garnish — the verdict panel never blocks on it — but a
+        // failed read is said, never an absent strip that looks like "none".
+        setHistoryError(e ?? new Error("The past auditions read failed"));
       });
   }, [rulebookId]);
 
@@ -430,11 +437,20 @@ export function AuditionDialog({
               onAcknowledge={sitting.acknowledge}
             />
           ) : null}
-          <HistoryStrip
-            runs={history}
-            openRunId={reopened?.runId ?? null}
-            onOpen={openPastRun}
-          />
+          {historyError ? (
+            <ReadFailure
+              className="m-0"
+              error={historyError}
+              what="past auditions"
+              onRetry={refreshHistory}
+            />
+          ) : (
+            <HistoryStrip
+              runs={history}
+              openRunId={reopened?.runId ?? null}
+              onOpen={openPastRun}
+            />
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="audition-candidate">
               Your Masterwork&apos;s output

@@ -751,6 +751,7 @@ export function ShadowInboxDialog({
               </>
             ) : null}
             <span className="text-xs text-muted-foreground">
+              {/* read-gate-exempt: rows are the person's own pasted/uploaded threads after a preview that succeeded; a failed (re-)read toasts */}
               {shadowable > 0
                 ? `${selected.size} of ${shadowable} ${shadowable === 1 ? "thread" : "threads"} you replied to`
                 : `${rows.length} ${rows.length === 1 ? "thread" : "threads"} — none of ${rows.length === 1 ? "it" : "them"} has a reply of yours to compare yet`}

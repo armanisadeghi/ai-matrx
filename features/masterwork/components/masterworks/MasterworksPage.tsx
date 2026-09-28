@@ -3,6 +3,7 @@
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCallback, useEffect, useState } from "react";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -245,6 +246,9 @@ export function MasterworksPage({
   const [runsByMasterwork, setRunsByMasterwork] = useState<
     Record<string, MasterworkRun[]>
   >({});
+  // Run history is enrichment, but a failed read is said once above the list —
+  // never an absent "Recent runs" section that reads as "never run".
+  const [runsError, setRunsError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // "What did it get wrong?" — the run whose outcome the Expert is correcting.
@@ -339,8 +343,10 @@ export function MasterworksPage({
       setRunsByMasterwork(
         await listRecentRunsForMasterworks(masterworks.map((m) => m.id)),
       );
-    } catch {
-      // Run history is enrichment — a failed refresh keeps the stale list.
+      setRunsError(null);
+    } catch (e) {
+      // Run history is enrichment — a failed refresh keeps the stale list and says so.
+      setRunsError(e ?? new Error("The recent runs read failed"));
     }
   }, [masterworks]);
 
@@ -362,9 +368,13 @@ export function MasterworksPage({
           // Run history is enrichment — its failure never blanks the page.
           listRecentRunsForMasterworks(m.map((mw) => mw.id))
             .then((runs) => {
-              if (!cancelled) setRunsByMasterwork(runs);
+              if (cancelled) return;
+              setRunsByMasterwork(runs);
+              setRunsError(null);
             })
-            .catch(() => undefined);
+            .catch((e: unknown) => {
+              if (!cancelled) setRunsError(e ?? new Error("The recent runs read failed"));
+            });
         }
       } catch (err) {
         if (!cancelled)
@@ -444,6 +454,14 @@ export function MasterworksPage({
                   </Button>
                 )}
               </div>
+            ) : null}
+            {runsError ? (
+              <StaleDataNotice
+                hasData={Object.keys(runsByMasterwork).length > 0}
+                what="recent runs"
+                detail={runsError instanceof Error ? runsError.message : null}
+                onRetry={() => void refreshRuns()}
+              />
             ) : null}
             {renderedMasterworks.map((masterwork) => {
               const drifted =

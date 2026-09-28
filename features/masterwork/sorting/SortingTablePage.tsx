@@ -438,7 +438,8 @@ export function SortingTablePage({
       setProblem(
         door === "records"
           ? "Pick at least a couple of records — a pile of one has no edge in it."
-          : "There are no cases here yet. Add a few, or let us write them for you.",
+          : // read-gate-exempt: a validation message for a round the person built with no cases, not a failed read
+            "There are no cases here yet. Add a few, or let us write them for you.",
       );
       return;
     }
@@ -722,6 +723,7 @@ export function SortingTablePage({
                 surfaceName="matrx-user/masterwork-rulebook"
               />
               <p className="text-xs text-muted-foreground">
+                {/* read-gate-exempt: counts of this sitting's own cases and sorts (the person's input and this session's work), not a read */}
                 {broughtCases.length} case{broughtCases.length === 1 ? "" : "s"} so
                 far. Up to {MAX_CASES}.
               </p>
@@ -789,6 +791,7 @@ export function SortingTablePage({
                     The first row is column names, not a case
                   </label>
                   <p className="text-xs text-muted-foreground">
+                    {/* read-gate-exempt: counts of this sitting's own cases and sorts (the person's input and this session's work), not a read */}
                     {broughtCases.length} case
                     {broughtCases.length === 1 ? "" : "s"} ready. First one:{" "}
                     {broughtCases[0]?.text?.slice(0, 80) || "—"}
@@ -895,6 +898,7 @@ export function SortingTablePage({
             <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
               <Check className="h-7 w-7" />
             </span>
+            {/* read-gate-exempt: counts of this sitting's own cases and sorts (the person's input and this session's work), not a read */}
             <h2 className="text-2xl font-semibold text-foreground">
               {sortedCount} sorted
             </h2>
@@ -1087,6 +1091,7 @@ export function SortingTablePage({
               That's the round
             </h2>
             <p className="text-base text-muted-foreground">
+              {/* read-gate-exempt: counts of this sitting's own cases and sorts (the person's input and this session's work), not a read */}
               {rulesThisSitting
                 ? `${rulesThisSitting} rule${rulesThisSitting === 1 ? "" : "s"} drafted from ${sortedCount} sorted cases.`
                 : inFlight
@@ -1281,6 +1286,7 @@ export function SortingTablePage({
             where no two cases resemble each other, genuinely has no boundary —
             and inventing a question about it would waste the one thing this
             lane spends. */}
+        {/* read-gate-exempt: counts of this sitting's own cases and sorts (the person's input and this session's work), not a read */}
         <p className="text-base text-muted-foreground">
           You sorted {sortedCount} case{sortedCount === 1 ? "" : "s"}, but no two
           of them landed close enough on opposite sides of a line to be worth
