@@ -517,6 +517,8 @@ export const BUSINESS_FACT_KINDS = [
   "social_profile",
   "service_area",
   "registration",
+  "spokesperson",
+  "proof",
   "other",
 ] as const;
 export type BusinessFactKind = (typeof BUSINESS_FACT_KINDS)[number];
@@ -539,6 +541,8 @@ export const BUSINESS_FACT_KIND_LABELS: Record<BusinessFactKind, string> = {
   social_profile: "Social profile",
   service_area: "Service area",
   registration: "Registration",
+  spokesperson: "Spokesperson",
+  proof: "Proof",
   other: "Other fact",
 };
 

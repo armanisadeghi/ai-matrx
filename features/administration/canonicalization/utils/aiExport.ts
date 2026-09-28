@@ -91,9 +91,11 @@ export const SUMMARY_TABLE_COPY: AuditTableCopyForAi<AuditSummaryRow> = {
 export function auditSchemaSummaryToHuman(row: AuditSchemaSummaryRow): string {
   return [
     `Schema: ${row.schema_name}`,
-    `Tables: ${row.tables} (${row.certified} certified · ${row.uncertified} not certified · ${row.machinery} machinery)`,
+    `Problems: ${row.problems}`,
+    `Tables: ${row.tables} (${row.certified} certified · ${row.uncertified} not certified · ${row.machinery} machinery, ${row.machinery_failing} failing)`,
     `Tables with a FAIL: ${row.failing_tables}`,
     `Gate: ${row.fails} FAIL · ${row.warns} WARN`,
+    `Unregistered tables: ${row.unregistered} · Dead registry rows: ${row.dead_registry}`,
   ].join("\n");
 }
 
@@ -113,9 +115,12 @@ export const SCHEMA_SUMMARY_TABLE_COPY: AuditTableCopyForAi<AuditSchemaSummaryRo
     humanRow: auditSchemaSummaryToHuman,
     rowAttributes: (r) => ({
       schema: r.schema_name,
+      problems: r.problems,
       tables: r.tables,
       fails: r.fails,
       warns: r.warns,
+      unregistered: r.unregistered,
+      dead_registry: r.dead_registry,
     }),
     listAttributes: (visible, all) => ({
       count: visible.length,

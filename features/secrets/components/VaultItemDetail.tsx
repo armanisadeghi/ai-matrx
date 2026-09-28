@@ -2666,6 +2666,13 @@ function SharePanel({
                 {organizations.map((org) => (
                   <SelectItem key={org.id} value={org.id}>
                     {org.name}
+                    {organizations.some(
+                      (other) => other.id !== org.id && other.name === org.name,
+                    ) && (
+                      <span className="ml-1 text-muted-foreground">
+                        ({org.slug})
+                      </span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -2795,7 +2802,7 @@ function SharePanel({
                         }
                       }}
                     />
-                    Can reveal &amp; edit
+                    {grant.organization_id ? "Editor" : <>Can reveal &amp; edit</>}
                   </label>
                   <button
                     type="button"
@@ -2957,6 +2964,11 @@ function PrincipalPicker({
             {targets.map((org) => (
               <SelectItem key={org.id} value={org.id}>
                 {org.name}
+                {organizations.some(
+                  (other) => other.id !== org.id && other.name === org.name,
+                ) && (
+                  <span className="ml-1 text-muted-foreground">({org.slug})</span>
+                )}
               </SelectItem>
             ))}
           </SelectContent>

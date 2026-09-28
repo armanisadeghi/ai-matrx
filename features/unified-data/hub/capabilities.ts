@@ -23,10 +23,11 @@
 
 import type { RecordsClient } from "@ai-matrx/records/core";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
-import { VISIBILITY_LANE_TITLE, visibilityLaneFor, type VisibilityLane } from "@ai-matrx/records-ui";
+import { visibilityLaneFor, type VisibilityLane } from "@ai-matrx/records-ui";
 
 import * as doors from "./doors";
-import type { ChangedByKind, DoorFailure, TableFactRow } from "./doors";
+import type { ChangedByKind, DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
+import type { ScopeFacts } from "./dataHomeScope";
 import { openPath } from "@/lib/deep-link/openPath";
 
 /** One thing a person can open, whatever capability it came from. */
@@ -53,6 +54,13 @@ export interface HubItem {
   trouble?: string | undefined;
   changedAt?: string | null;
   changedBy?: string | null;
+  /**
+   * THE ORGANIZATION IT LIVES IN, said on the row (lane DATA-HOME-1): the data home lists every
+   * organization at once, so every row names its own.
+   */
+  organizationName?: string | null | undefined;
+  /** The four facts the data home's filters read (`dataHomeScope.ts`). Set by the hub. */
+  scope?: ScopeFacts | undefined;
 }
 
 export interface HubReadContext {
@@ -62,6 +70,12 @@ export interface HubReadContext {
   /** This organization's Tables, read once through `tableList()` and shared by every capability. */
   tables: readonly Table[];
   tableKernelId: string | null;
+  /**
+   * EVERY TABLE THE PERSON CAN OPEN, IN EVERY ORGANIZATION (`custom.data_home_tables()`, lane
+   * DATA-HOME-1). When the hub hands it, the Tables listing is these rows — the data home's
+   * default is everything, never one organization's. A failed read is the listing's refusal.
+   */
+  everywhere?: { ok: true; rows: readonly DataHomeTableRow[] } | { ok: false; error: DoorFailure } | undefined;
 }
 
 export type HubRead =
@@ -186,25 +200,6 @@ function failed(error: { message?: string; hint?: string } | undefined, door: st
 }
 
 /**
- * WHAT AN EMPTY LANE SAYS. Each line is only what is true of that lane, and it
- * names no control this app does not have — no screen here changes a table's
- * visibility, so none of them tells a person to (VERIFIER-16 M6: every lane
- * used to say "Nothing has been made here yet. Make a table below").
- */
-export const LANE_EMPTY_SENTENCE: Record<VisibilityLane, string> = {
-  mine: "Nothing here was made by you yet. A table you make is yours, and shared with this organization from the start.",
-  organization: "Nothing here is shared across this organization yet.",
-  community:
-    "Nothing here is open to every signed-in account. Tables cannot be shared that way yet; a link anyone can open is under World.",
-  world: "Nothing here is open to anyone with its link.",
-};
-
-/** The empty sentence for one capability under one lane. */
-export function emptyInLane(capabilityTitle: string, lane: VisibilityLane): string {
-  return `No ${capabilityTitle.toLowerCase()} in ${VISIBILITY_LANE_TITLE[lane]}. ${LANE_EMPTY_SENTENCE[lane]}`;
-}
-
-/**
  * DOES THE SHARED-ONLY SENTENCE SPEAK TO THIS PERSON? (UI-FIX-19, VERIFIER-19 #8)
  *
  * `shared_only` closes the organization-member lane only (`iam.member_lane_open`): the owner's and
@@ -235,7 +230,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     id: "tables",
     title: "Tables",
     // THE COUNT BESIDE IT IS WHAT THIS PERSON CAN OPEN, so the sentence says exactly that.
-    what: "The tables you can open in this organization.",
+    what: "The tables you can open, in every organization you belong to.",
     whatWhenSharedOnly:
       "The tables shared with you here. This organization shows each member only what is shared with them.",
     empty: "No tables yet. Press New table above, or start from an example.",
@@ -243,6 +238,32 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     door: "custom.read_records over the Table kernel",
     changedByKind: "structure",
     async read(ctx) {
+      // THE DATA HOME'S TABLES ARE EVERY ORGANIZATION'S (lane DATA-HOME-1, Arman 2026-09-27):
+      // one row per table she can open, each naming its organization and carrying the facts the
+      // five filters read. The per-organization list below is what a host without the door gets.
+      if (ctx.everywhere) {
+        if (!ctx.everywhere.ok) return { ok: false, error: ctx.everywhere.error };
+        return {
+          ok: true,
+          items: ctx.everywhere.rows.map((row) => ({
+            id: row.table_id,
+            title: row.table_name || "(unnamed table)",
+            tableId: row.table_id,
+            tableName: row.table_name || null,
+            lane: null,
+            organizationName: row.organization_name,
+            scope: {
+              mine: row.mine,
+              member: row.member,
+              sharedWithMe: row.shared_with_me,
+              visibility: row.visibility,
+            },
+            facts: row.member ? [] : ["shared with you"],
+            href: row.member ? `/data-v2/${row.table_id}` : `/data-v2/${row.table_id}?org=${row.organization_id}`,
+            changedAt: row.updated_at,
+          })),
+        };
+      }
       return {
         ok: true,
         // THE PERSON'S TABLES, AND ONLY THOSE. What the store keeps for itself

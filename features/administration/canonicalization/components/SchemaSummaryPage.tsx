@@ -15,37 +15,69 @@ import { useAuditDataset } from "../hooks/useAuditDataset";
 import { useCanonicalizationDatasetToolbar } from "../hooks/useCanonicalizationDatasetToolbar";
 import {
   isAuditSummaryRow,
+  isStaleRegistryRow,
+  isUnregisteredCandidateRow,
   type AuditSchemaSummaryRow,
   type AuditSummaryRow,
+  type StaleRegistryRow,
+  type UnregisteredCandidateRow,
 } from "../types";
 import { SCHEMA_SUMMARY_TABLE_COPY } from "../utils/aiExport";
 import { exportRowsAsCsv } from "../utils/exportCsv";
 
-/** Rolls the per-table `audit.summary` rows up to one row per schema. */
-function rollUpBySchema(rows: AuditSummaryRow[]): AuditSchemaSummaryRow[] {
+/**
+ * Rolls the per-table `audit.summary` rows up to one row per schema, and adds
+ * what the summary cannot see: tables with no registry row at all and registry
+ * rows whose table is gone. A schema that has ONLY those still gets a row —
+ * a problem the report hides is a problem nobody fixes.
+ */
+function rollUpBySchema(
+  rows: AuditSummaryRow[],
+  unregistered: UnregisteredCandidateRow[],
+  deadRegistry: StaleRegistryRow[],
+): AuditSchemaSummaryRow[] {
   const bySchema = new Map<string, AuditSchemaSummaryRow>();
-  for (const r of rows) {
-    let agg = bySchema.get(r.schema_name);
+  const aggFor = (schema: string): AuditSchemaSummaryRow => {
+    let agg = bySchema.get(schema);
     if (!agg) {
       agg = {
-        schema_name: r.schema_name,
+        schema_name: schema,
         tables: 0,
         certified: 0,
         uncertified: 0,
         machinery: 0,
+        machinery_failing: 0,
         failing_tables: 0,
         fails: 0,
         warns: 0,
+        unregistered: 0,
+        dead_registry: 0,
+        problems: 0,
       };
-      bySchema.set(r.schema_name, agg);
+      bySchema.set(schema, agg);
     }
+    return agg;
+  };
+  for (const r of rows) {
+    const agg = aggFor(r.schema_name);
     agg.tables += 1;
-    if (r.audit_class === "machinery") agg.machinery += 1;
-    else if (r.certified) agg.certified += 1;
+    if (r.audit_class === "machinery") {
+      agg.machinery += 1;
+      if (r.fails > 0) agg.machinery_failing += 1;
+    } else if (r.certified) agg.certified += 1;
     else agg.uncertified += 1;
     if (r.fails > 0) agg.failing_tables += 1;
     agg.fails += r.fails;
     agg.warns += r.warns;
+  }
+  for (const u of unregistered) {
+    if (u.schema_name) aggFor(u.schema_name).unregistered += 1;
+  }
+  for (const d of deadRegistry) {
+    if (d.schema_name) aggFor(d.schema_name).dead_registry += 1;
+  }
+  for (const agg of bySchema.values()) {
+    agg.problems = agg.fails + agg.warns + agg.unregistered + agg.dead_registry;
   }
   return [...bySchema.values()];
 }
@@ -106,6 +138,14 @@ const COLUMNS: MatrxColumnDef<AuditSchemaSummaryRow>[] = [
     ),
   },
   {
+    id: "problems",
+    header: "Problems",
+    accessorFn: (r) => r.problems,
+    filter: "number",
+    width: 100,
+    align: "right",
+  },
+  {
     id: "fails",
     header: "Fails",
     accessorFn: (r) => r.fails,
@@ -162,6 +202,30 @@ const COLUMNS: MatrxColumnDef<AuditSchemaSummaryRow>[] = [
     align: "right",
   },
   {
+    id: "machinery_failing",
+    header: "Machinery failing",
+    accessorFn: (r) => r.machinery_failing,
+    filter: "number",
+    width: 140,
+    align: "right",
+  },
+  {
+    id: "unregistered",
+    header: "Unregistered",
+    accessorFn: (r) => r.unregistered,
+    filter: "number",
+    width: 120,
+    align: "right",
+  },
+  {
+    id: "dead_registry",
+    header: "Dead registry rows",
+    accessorFn: (r) => r.dead_registry,
+    filter: "number",
+    width: 150,
+    align: "right",
+  },
+  {
     id: "certified_pct",
     header: "% certified",
     accessorFn: (r) => certifiedPct(r),
@@ -197,13 +261,23 @@ export function SchemaSummaryPage() {
             ? ("asc" as const)
             : ("desc" as const),
       }
-    : { id: "fails", direction: "desc" as const };
-  const { rows, loading, error, reload } = useAuditDataset<AuditSummaryRow>(
-    "summary",
-    isAuditSummaryRow,
+    : { id: "problems", direction: "desc" as const };
+  const summary = useAuditDataset<AuditSummaryRow>("summary", isAuditSummaryRow);
+  const unregistered = useAuditDataset<UnregisteredCandidateRow>(
+    "unregistered-candidates",
+    isUnregisteredCandidateRow,
   );
+  const deadRegistry = useAuditDataset<StaleRegistryRow>(
+    "stale-registry",
+    isStaleRegistryRow,
+  );
+  const loading = summary.loading || unregistered.loading || deadRegistry.loading;
+  const error = summary.error ?? unregistered.error ?? deadRegistry.error;
+  const reload = async () => {
+    await Promise.all([summary.reload(), unregistered.reload(), deadRegistry.reload()]);
+  };
   const toolbar = useCanonicalizationDatasetToolbar(reload);
-  const schemaRows = rollUpBySchema(rows);
+  const schemaRows = rollUpBySchema(summary.rows, unregistered.rows, deadRegistry.rows);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -220,16 +294,24 @@ export function SchemaSummaryPage() {
           columns={COLUMNS}
           summary={{
             metrics: [
+              { id: "problems", label: "Problems", value: ({ rows: visible }) => schemaTotal(visible, "problems") },
               { id: "schemas", label: "Schemas", value: ({ rows: visible }) => visible.length },
               { id: "tables", label: "Tables", value: ({ rows: visible }) => schemaTotal(visible, "tables") },
               { id: "certified", label: "Certified", value: ({ rows: visible }) => schemaTotal(visible, "certified") },
               { id: "uncertified", label: "Not certified", value: ({ rows: visible }) => schemaTotal(visible, "uncertified") },
               { id: "machinery", label: "Machinery", value: ({ rows: visible }) => schemaTotal(visible, "machinery") },
+              { id: "machinery_failing", label: "Machinery failing", value: ({ rows: visible }) => schemaTotal(visible, "machinery_failing") },
+              { id: "unregistered", label: "Unregistered", value: ({ rows: visible }) => schemaTotal(visible, "unregistered") },
+              { id: "dead_registry", label: "Dead registry rows", value: ({ rows: visible }) => schemaTotal(visible, "dead_registry") },
               { id: "fails", label: "Fails", value: ({ rows: visible }) => schemaTotal(visible, "fails") },
               { id: "warns", label: "Warnings", value: ({ rows: visible }) => schemaTotal(visible, "warns") },
               { id: "certification-rate", label: "Certification rate", value: ({ rows: visible }) => schemaCertificationRate(visible) },
             ],
             totals: {
+              problems: ({ rows: visible }) => schemaTotal(visible, "problems"),
+              machinery_failing: ({ rows: visible }) => schemaTotal(visible, "machinery_failing"),
+              unregistered: ({ rows: visible }) => schemaTotal(visible, "unregistered"),
+              dead_registry: ({ rows: visible }) => schemaTotal(visible, "dead_registry"),
               fails: ({ rows: visible }) => schemaTotal(visible, "fails"),
               warns: ({ rows: visible }) => schemaTotal(visible, "warns"),
               tables: ({ rows: visible }) => schemaTotal(visible, "tables"),

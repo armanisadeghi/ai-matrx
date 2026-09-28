@@ -4,11 +4,28 @@ import type { ReactNode } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/** A snapshot older than this is shown as stale — the numbers may no longer be true. */
+const STALE_SNAPSHOT_MS = 2 * 60 * 60 * 1000;
+
 function formatRefreshTime(iso: string | null | undefined): string {
   if (!iso) return "never";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "unknown";
   return d.toLocaleString();
+}
+
+function snapshotAge(iso: string | null | undefined): { label: string; stale: boolean } | null {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(ms)) return null;
+  const minutes = Math.max(0, Math.round(ms / 60000));
+  const label =
+    minutes < 60
+      ? `${minutes} min old`
+      : minutes < 48 * 60
+        ? `${Math.round(minutes / 60)} h old`
+        : `${Math.round(minutes / 1440)} days old`;
+  return { label, stale: ms > STALE_SNAPSHOT_MS };
 }
 
 /**
@@ -35,6 +52,7 @@ export function CanonicalizationToolbar({
 }) {
   if (!onReload && !onRefreshAudit && !actions) return null;
   const busy = reloading || refreshingAudit;
+  const age = snapshotAge(lastRefreshedAt);
 
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1.5">
@@ -43,6 +61,17 @@ export function CanonicalizationToolbar({
         <span className="font-medium text-foreground">
           {formatRefreshTime(lastRefreshedAt)}
         </span>
+        {age ? (
+          <span
+            className={
+              age.stale
+                ? "ml-1 font-medium text-amber-600 dark:text-amber-400"
+                : "ml-1"
+            }
+          >
+            ({age.stale ? `stale — ${age.label}` : age.label})
+          </span>
+        ) : null}
         . Tables read <code className="text-[10px]">audit.*</code> — run{" "}
         <span className="font-medium">Refresh audit store</span> after DB
         changes, then Re-fetch.

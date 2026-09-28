@@ -1,6 +1,6 @@
 -- draft: deep-lane read-lane-v2 lock order — chair runs it at the start of the 2026-09-27 window, before the first table
 -- chair-step: replaces iam._apply_rls_unchecked so an enrolled (read-lane v2) regeneration locks every relation its policies read BEFORE the first policy statement; adds iam.read_lane_v2_lock_policy_reads. No policy statement, no freeze. Self-test: aidream scripts/read_lane_v2/lock_order_selftest.py (clone, RED on the old body, GREEN on this one).
--- based-on: iam._apply_rls_unchecked(text, text, text, text) d31cf215a08d2de7effc4c1627ad2a26e9cdbfdaf396e3a356aeeffadcdb0767
+-- based-on: iam._apply_rls_unchecked(text, text, text, text) fe411e6fd8322593a685ffa4ac7477438cf3b0cb8b1528c1530cc41fc0a7fdcd
 -- read_lane_v2_b_lock_order — design: common-docs/projects/rich-content-unification/evidence/generator-perf-design.md; queue: read-lane-v2-queue.md
 -- READ-LANE V2 LOCK ORDER (chair-approved 2026-09-26). On 2026-09-26 02:56 PT two regenerations of
 -- agent.message_template_detail each held the auth/storage/realtime freeze ~1.9 s while a CREATE POLICY
@@ -615,14 +615,10 @@ begin
           case when v_vis_enum
                then '(visibility >= ''internal''::platform.visibility) and (select public.is_platform_admin())'
                else '(select public.is_platform_admin())' end);
-      else
-        v_pol := v_pol || format(
-          'create policy platform_admin_select on %s for select to authenticated using (%s)',
-          v_tbl,
-          case when v_vis_enum
-               then '(visibility >= ''internal''::platform.visibility) and (select public.is_platform_admin())'
-               else '(select public.is_platform_admin())' end);
       end if;
+      -- ONE ADMIN READ (Arman 2026-09-27): the doors-only FOR SELECT twin platform_admin_select is
+      -- retired. platform_admin_read, emitted for every table, is the one admin read. The old name
+      -- stays in iam.generated_policy_names() only so a regeneration drops stale copies.
     end if;
   end if;
 

@@ -1,8 +1,8 @@
 -- chair-step: inverse of read_lane_v2_d_client_declarations — restores the generator, grant and certifier bodies it replaced. The two registry columns are LEFT STANDING (their declarations are data; an inverse does not destroy them) and simply stop being honoured.
 -- ground-standing-ok: b — ORDER: runs before read_lane_v2_b_lock_order_down.sql and read_lane_v2_a_generator_down.sql; the body it restores calls the read-lane v2 helpers, which stay standing until read_lane_v2_a_generator_down runs.
--- based-on: iam._apply_rls_unchecked(text, text, text, text) cf4fb4dda0d25091445dbed7a916e34cf5d2046dbd67177a062185a2b36cbbeb
+-- based-on: iam._apply_rls_unchecked(text, text, text, text) fb708e3134ec178b485f5294f22bf92f9ade83d7ad35055874a85e126c1ad431
 -- based-on: iam.apply_table_grants(text, text, text) 7910064b4cac83ec999de1b16516c54e8f51f4b1b0d0198d886880470c5c4d83
--- based-on: iam.verify_canonical(text, text, text, text) ec752dbed7aefc53b42f22a60085f264fbc34141558fd1a5bb42a664cb6d0a82
+-- based-on: iam.verify_canonical(text, text, text, text) d5aa304bd1ec0e48249452f83c6f2edafd0b68309b9bb0241fc805b9b2e9c807
 
 CREATE OR REPLACE FUNCTION iam._apply_rls_unchecked(p_schema text, p_table text, p_token text, p_variant text DEFAULT 'entity'::text)
  RETURNS void
@@ -585,14 +585,10 @@ begin
           case when v_vis_enum
                then '(visibility >= ''internal''::platform.visibility) and (select public.is_platform_admin())'
                else '(select public.is_platform_admin())' end);
-      else
-        v_pol := v_pol || format(
-          'create policy platform_admin_select on %s for select to authenticated using (%s)',
-          v_tbl,
-          case when v_vis_enum
-               then '(visibility >= ''internal''::platform.visibility) and (select public.is_platform_admin())'
-               else '(select public.is_platform_admin())' end);
       end if;
+      -- ONE ADMIN READ (Arman 2026-09-27): the doors-only FOR SELECT twin platform_admin_select is
+      -- retired. platform_admin_read, emitted for every table, is the one admin read. The old name
+      -- stays in iam.generated_policy_names() only so a regeneration drops stale copies.
     end if;
   end if;
 
@@ -1523,9 +1519,9 @@ BEGIN
     EXISTS(SELECT 1 FROM pg_constraint c JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=c.conkey[1]
             WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='organization_id' AND c.confrelid='iam.organizations'::regclass),
     EXISTS(SELECT 1 FROM pg_constraint c JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=c.conkey[1]
-            WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='created_by' AND c.confrelid='auth.users'::regclass),
+            WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='created_by' AND c.confrelid in ('auth.users'::regclass, 'iam.users'::regclass)),
     EXISTS(SELECT 1 FROM pg_constraint c JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=c.conkey[1]
-            WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='updated_by' AND c.confrelid='auth.users'::regclass)
+            WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='updated_by' AND c.confrelid in ('auth.users'::regclass, 'iam.users'::regclass))
   INTO fk_org,fk_cb,fk_ub;
 
   SELECT COALESCE(bool_or(pr.proname='_stamp_actor'),false),COALESCE(bool_or(pr.proname='_touch_row'),false),
@@ -1727,6 +1723,9 @@ BEGIN
                      COALESCE(NULLIF(btrim(COALESCE(v_audit_reason,'')),''),'<blank>'));
     RETURN NEXT;
 
+    -- ── 6. SYSTEM TABLES CARRY THE SAME ADMIN CONTRACT (Arman 2026-09-27) ─────────────────────
+    RETURN QUERY SELECT h.check_name, h.status, h.detail FROM iam.admin_policy_findings(v_tbl) h;
+
     RETURN;
   END IF;
 
@@ -1767,7 +1766,7 @@ BEGIN
   ELSIF v_variant='reference' THEN status:='SKIP'; detail:='a reference row has no creator to name -- the catalogue belongs to the platform, its writes are a door''s, and iam.apply_rls refuses the variant if created_by exists';
   ELSE status:='SKIP'; detail:='ledger actor is a named domain column (e.g. actor_id), never an access key'; END IF; RETURN NEXT;
 
-  check_name:='base_created_by_fk'; status:=CASE WHEN NOT f_cb THEN 'SKIP' WHEN fk_cb THEN 'PASS' ELSE 'FAIL' END; detail:=CASE WHEN f_cb AND NOT fk_cb THEN 'created_by missing FK -> auth.users' END; RETURN NEXT;
+  check_name:='base_created_by_fk'; status:=CASE WHEN NOT f_cb THEN 'SKIP' WHEN fk_cb THEN 'PASS' ELSE 'FAIL' END; detail:=CASE WHEN f_cb AND NOT fk_cb THEN 'created_by missing FK -> iam.users' END; RETURN NEXT;
 
   check_name:='base_updated_by';
   IF f_ub THEN status:='PASS'; detail:=NULL;
@@ -1776,7 +1775,7 @@ BEGIN
   ELSIF v_variant='reference' THEN status:='SKIP'; detail:='a reference catalogue has no actor columns -- every write goes through a door and the actor is stamped into history.row_versions';
   ELSE status:='SKIP'; detail:='append-only ledger row is never updated'; END IF; RETURN NEXT;
 
-  check_name:='base_updated_by_fk'; status:=CASE WHEN NOT f_ub THEN 'SKIP' WHEN fk_ub THEN 'PASS' ELSE 'FAIL' END; detail:=CASE WHEN f_ub AND NOT fk_ub THEN 'updated_by missing FK -> auth.users' END; RETURN NEXT;
+  check_name:='base_updated_by_fk'; status:=CASE WHEN NOT f_ub THEN 'SKIP' WHEN fk_ub THEN 'PASS' ELSE 'FAIL' END; detail:=CASE WHEN f_ub AND NOT fk_ub THEN 'updated_by missing FK -> iam.users' END; RETURN NEXT;
 
   -- ---- append timestamp: UNIVERSAL. A ledger names it occurred_at (history.row_versions). -
   check_name:='base_created_at';
@@ -1937,7 +1936,7 @@ BEGIN
       EXCEPT SELECT unnest(ARRAY['std_insert','std_update','std_delete']));
     IF 'platform_admin_all' = ANY(v_expected) THEN
       v_expected:=ARRAY(SELECT unnest(v_expected) EXCEPT SELECT 'platform_admin_all');
-      v_expected:=array_append(v_expected,'platform_admin_select');
+      -- ONE ADMIN READ (2026-09-27): no FOR SELECT twin is expected; the admin read is platform_admin_read.
     END IF;
   END IF;
   -- D347: certify the declared restriction, including role and permissiveness.
@@ -2003,11 +2002,7 @@ BEGIN
   -- resolver and the signed-out invitation lanes are all deliberate). `policies_canonical` above
   -- already FAILs a table whose policy SET is wrong. This check exists to NAME them.
   -- ADMIN-ACCESS (Arman 2026-09-24): the platform-admin READ lane is expected on every RLS table.
-  check_name:='platform_admin_read_present';
-  IF v_relkind NOT IN ('r','p') OR NOT COALESCE(v_rls,false) THEN status:='SKIP'; detail:='not an RLS table';
-  ELSIF EXISTS (SELECT 1 FROM pg_policy WHERE polrelid=v_tbl AND polname='platform_admin_read' AND polcmd='r' AND polpermissive) THEN status:='PASS'; detail:=NULL;
-  ELSE status:='FAIL'; detail:='no permissive platform_admin_read FOR SELECT policy — the admin system reads every table (Arman 2026-09-24; common-docs/policies/our-own-admin-database-access.md); re-run iam.apply_rls or create it'; END IF;
-  RETURN NEXT;
+  RETURN QUERY SELECT h.check_name, h.status, h.detail FROM iam.admin_policy_findings(v_tbl) h;  -- ONE copy, shared with system tables
 
   check_name:='bespoke_policy_present';
   v_bespoke:=ARRAY(SELECT unnest(COALESCE(v_polnames,'{}')) EXCEPT SELECT unnest(iam.generated_policy_names())

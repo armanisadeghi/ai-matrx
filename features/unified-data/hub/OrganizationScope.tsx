@@ -16,16 +16,11 @@
 // Champion: Linear's workspace switcher beside "All teams", and Slack's "All workspaces" —
 // the filter is named where you look, and the unfiltered view is one click.
 
-import { useEffect, useState, type ReactNode } from "react";
-import Link from "next/link";
+import { useState, type ReactNode } from "react";
 import { Building2, Layers } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import type { RecordsDataSource } from "@ai-matrx/records";
-import { WhereItLives } from "@ai-matrx/records-ui";
 
 import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
-import * as doors from "./doors";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function OrganizationScopeStrip({
   organizationName,
@@ -86,103 +81,6 @@ export function OrganizationScopeStrip({
         </>
       )}
       {trailing ? <div className="ml-auto flex flex-wrap items-center gap-1.5">{trailing}</div> : null}
-    </div>
-  );
-}
-
-type AllState =
-  | { phase: "reading" }
-  | { phase: "read"; groups: Array<{ organizationId: string; organizationName: string; member: boolean; tables: doors.TableICanOpenRow[] }> }
-  | { phase: "failed"; why: string };
-
-export function AllOrganizationsTables({ dataSource }: { dataSource: RecordsDataSource }) {
-  const [state, setState] = useState<AllState>({ phase: "reading" });
-  // A table moved from a row re-reads the list, so it shows under its new organization.
-  const [reread, setReread] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    void doors.tablesICanOpen(dataSource).then((answered) => {
-      if (!alive) return;
-      if (!answered.ok) {
-        setState({ phase: "failed", why: answered.error.message });
-        return;
-      }
-      const byOrg = new Map<string, { organizationId: string; organizationName: string; member: boolean; tables: doors.TableICanOpenRow[] }>();
-      for (const row of answered.data) {
-        const group = byOrg.get(row.organization_id) ?? {
-          organizationId: row.organization_id,
-          organizationName: row.organization_name,
-          member: row.member,
-          tables: [],
-        };
-        group.tables.push(row);
-        byOrg.set(row.organization_id, group);
-      }
-      const groups = [...byOrg.values()]
-        .map((g) => ({ ...g, tables: g.tables.sort((a, b) => a.table_name.localeCompare(b.table_name)) }))
-        .sort((a, b) => a.organizationName.localeCompare(b.organizationName));
-      setState({ phase: "read", groups });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [dataSource, reread]);
-
-  if (state.phase === "reading") {
-    return <p className="text-xs text-muted-foreground">Reading the tables in every organization you can open&hellip;</p>;
-  }
-  if (state.phase === "failed") {
-    return (
-      <p className="text-xs text-muted-foreground">
-        The tables across your organizations could not be read, so nothing is listed &mdash; this is not an answer
-        about your access. {state.why}
-        <ErrorAlchemyMenu error={state.why} />
-      </p>
-    );
-  }
-  if (state.groups.length === 0) {
-    return <p className="text-xs text-muted-foreground">You have not been given a table in any organization yet.</p>;
-  }
-  const total = state.groups.reduce((n, g) => n + g.tables.length, 0);
-  return (
-    <div data-hub-all-organizations className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        {total} {total === 1 ? "table" : "tables"} in {state.groups.length}{" "}
-        {state.groups.length === 1 ? "organization" : "organizations"}. Each opens where it lives &mdash; you do not
-        need to switch.
-      </p>
-      {state.groups.map((group) => (
-        <section key={group.organizationId} className="rounded-lg border border-border bg-card">
-          <header className="flex items-baseline gap-2 border-b border-border px-3 py-1.5">
-            <span className="text-sm font-medium text-foreground">{group.organizationName}</span>
-            <span className="text-xs text-muted-foreground">
-              {group.member ? "" : "shared with you · "}
-              {group.tables.length} {group.tables.length === 1 ? "table" : "tables"}
-            </span>
-          </header>
-          <ul className="divide-y divide-border">
-            {group.tables.map((table) => (
-              <li key={table.table_id} className="flex items-center gap-2 px-3 py-1.5">
-                <Link
-                  href={`/data-v2/${table.table_id}`}
-                  data-hub-all-table={table.table_id}
-                  className="min-w-0 flex-1 truncate text-xs text-foreground underline-offset-2 hover:underline"
-                >
-                  {table.table_name}
-                </Link>
-                {/* WHERE IT LIVES, ON THE ROW, and — for its owner — where else it can go. */}
-                {/* records-ui's own chip; the hub renders inside the page's RecordsMount. */}
-                <WhereItLives
-                  variant="row"
-                  tableId={table.table_id}
-                  knownOrganizationName={group.organizationName}
-                  onMoved={() => setReread((n) => n + 1)}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
     </div>
   );
 }

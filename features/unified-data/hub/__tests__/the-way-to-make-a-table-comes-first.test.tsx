@@ -54,13 +54,13 @@ let role: string | null = "owner";
 jest.mock("@/features/organizations/hooks", () => ({
   useUserRole: () => ({ role, loading: false }),
 }));
-jest.mock("../OrganizationScope", () => ({
-  OrganizationScopeStrip: () => null,
-  AllOrganizationsTables: () => null,
+jest.mock("@/features/organizations/components/OrganizationPickerPopover", () => ({
+  OrganizationPickerPopover: () => null,
 }));
 jest.mock("../doors", () => ({
   tableKernelId: async () => ({ ok: true, data: "kernel" }),
   tableFacts: async () => ({ ok: true, data: [] }),
+  dataHomeTables: async () => ({ ok: true, data: [] }),
 }));
 jest.mock("../capabilities", () => {
   const actual = jest.requireActual("../capabilities");

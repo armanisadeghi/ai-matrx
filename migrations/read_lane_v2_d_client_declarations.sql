@@ -1,8 +1,8 @@
 -- draft: deep-lane read-lane-v2 client declarations — chair runs it in the 2026-09-27 window, after read_lane_v2_b_lock_order
--- chair-step: adds two registry declarations (platform.entity_types.client_read_only_columns, client_deletes_refused) and replaces iam._apply_rls_unchecked, iam.apply_table_grants and iam.verify_canonical to honour them; no policy statement, no freeze. Nothing changes for any table until it is declared (read_lane_v2_e) and regenerated.
--- based-on: iam._apply_rls_unchecked(text, text, text, text) b32976326af6a8bed8a48893dee1d94a7d114341c3d16332a0da563faa17e2a3
+-- chair-step: adds two registry declarations (platform.entity_types.client_read_only_columns, client_deletes_refused), accepts a column-level anon grant on a component's public parent (was a false refusal), and replaces iam._apply_rls_unchecked, iam.apply_table_grants and iam.verify_canonical to honour them; no policy statement, no freeze. Nothing changes for any table until it is declared (read_lane_v2_e) and regenerated.
+-- based-on: iam._apply_rls_unchecked(text, text, text, text) 57e9b3f4119119ce6f76881a6bc728356f77ea7bd56798284fc6c1ad5458df7c
 -- based-on: iam.apply_table_grants(text, text, text) fc782fbe5edec12ca24aabcc5d2a5f879b0f4d0118ee5a4cbd45a96c9b3c1062
--- based-on: iam.verify_canonical(text, text, text, text) 6f2bbaca6434337b9c99eb3b1c39fd14c1c72703a3776e5f5895aa40071e979e
+-- based-on: iam.verify_canonical(text, text, text, text) abaf69c8c15a8b34a02035673d0ff7d740eb1dd909bb7c096aef73e91315325c
 -- (the _apply_rls_unchecked hash above is the body read_lane_v2_b_lock_order installs: b runs first)
 -- read_lane_v2_d_client_declarations — chair rulings 2026-09-26:
 --   * CLIENT READ-ONLY COLUMNS: a declared column is granted SELECT only to authenticated (never INSERT or
@@ -605,14 +605,10 @@ begin
           case when v_vis_enum
                then '(visibility >= ''internal''::platform.visibility) and (select public.is_platform_admin())'
                else '(select public.is_platform_admin())' end);
-      else
-        v_pol := v_pol || format(
-          'create policy platform_admin_select on %s for select to authenticated using (%s)',
-          v_tbl,
-          case when v_vis_enum
-               then '(visibility >= ''internal''::platform.visibility) and (select public.is_platform_admin())'
-               else '(select public.is_platform_admin())' end);
       end if;
+      -- ONE ADMIN READ (Arman 2026-09-27): the doors-only FOR SELECT twin platform_admin_select is
+      -- retired. platform_admin_read, emitted for every table, is the one admin read. The old name
+      -- stays in iam.generated_policy_names() only so a regeneration drops stale copies.
     end if;
   end if;
 
@@ -745,7 +741,17 @@ begin
           -- A policy subquery runs with the QUERYING role's privileges: if anon
           -- cannot SELECT the parent, every anon query on the child errors with
           -- 42501 instead of filtering. Refuse the misconfiguration loudly.
-          if not has_table_privilege('anon', format('%I.%I', rec.pschema, rec.ptable)::regclass, 'SELECT') then
+          -- READ-LANE V2 (2026-09-27): the anon arm reads the parent's id, visibility and (when present)
+          -- deleted_at, and nothing else. A parent that grants anon exactly those COLUMNS (a column-level
+          -- design, e.g. content_ir.kind_definition) serves the arm as well as a table-level grant does;
+          -- refusing it was a false refusal that kept four content_ir components from regenerating.
+          if not (has_table_privilege('anon', format('%I.%I', rec.pschema, rec.ptable)::regclass, 'SELECT')
+                  or (has_column_privilege('anon', format('%I.%I', rec.pschema, rec.ptable)::regclass, 'id', 'SELECT')
+                      and has_column_privilege('anon', format('%I.%I', rec.pschema, rec.ptable)::regclass, 'visibility', 'SELECT')
+                      and (not exists (select 1 from information_schema.columns
+                                        where table_schema = rec.pschema and table_name = rec.ptable
+                                          and column_name = 'deleted_at')
+                           or has_column_privilege('anon', format('%I.%I', rec.pschema, rec.ptable)::regclass, 'deleted_at', 'SELECT')))) then
             raise exception
               'apply_rls: % declares component_anon_read_via_public_parent but parent %.% has no anon SELECT grant — the policy subquery would 42501 for every anon query. Apply the parent''s canonical RLS (its pub_read lane grants anon) first.',
               p_token, rec.pschema, rec.ptable;
@@ -1588,9 +1594,9 @@ BEGIN
     EXISTS(SELECT 1 FROM pg_constraint c JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=c.conkey[1]
             WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='organization_id' AND c.confrelid='iam.organizations'::regclass),
     EXISTS(SELECT 1 FROM pg_constraint c JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=c.conkey[1]
-            WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='created_by' AND c.confrelid='auth.users'::regclass),
+            WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='created_by' AND c.confrelid in ('auth.users'::regclass, 'iam.users'::regclass)),
     EXISTS(SELECT 1 FROM pg_constraint c JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=c.conkey[1]
-            WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='updated_by' AND c.confrelid='auth.users'::regclass)
+            WHERE c.conrelid=v_tbl AND c.contype='f' AND a.attname='updated_by' AND c.confrelid in ('auth.users'::regclass, 'iam.users'::regclass))
   INTO fk_org,fk_cb,fk_ub;
 
   SELECT COALESCE(bool_or(pr.proname='_stamp_actor'),false),COALESCE(bool_or(pr.proname='_touch_row'),false),
@@ -1792,6 +1798,9 @@ BEGIN
                      COALESCE(NULLIF(btrim(COALESCE(v_audit_reason,'')),''),'<blank>'));
     RETURN NEXT;
 
+    -- ── 6. SYSTEM TABLES CARRY THE SAME ADMIN CONTRACT (Arman 2026-09-27) ─────────────────────
+    RETURN QUERY SELECT h.check_name, h.status, h.detail FROM iam.admin_policy_findings(v_tbl) h;
+
     RETURN;
   END IF;
 
@@ -1832,7 +1841,7 @@ BEGIN
   ELSIF v_variant='reference' THEN status:='SKIP'; detail:='a reference row has no creator to name -- the catalogue belongs to the platform, its writes are a door''s, and iam.apply_rls refuses the variant if created_by exists';
   ELSE status:='SKIP'; detail:='ledger actor is a named domain column (e.g. actor_id), never an access key'; END IF; RETURN NEXT;
 
-  check_name:='base_created_by_fk'; status:=CASE WHEN NOT f_cb THEN 'SKIP' WHEN fk_cb THEN 'PASS' ELSE 'FAIL' END; detail:=CASE WHEN f_cb AND NOT fk_cb THEN 'created_by missing FK -> auth.users' END; RETURN NEXT;
+  check_name:='base_created_by_fk'; status:=CASE WHEN NOT f_cb THEN 'SKIP' WHEN fk_cb THEN 'PASS' ELSE 'FAIL' END; detail:=CASE WHEN f_cb AND NOT fk_cb THEN 'created_by missing FK -> iam.users' END; RETURN NEXT;
 
   check_name:='base_updated_by';
   IF f_ub THEN status:='PASS'; detail:=NULL;
@@ -1841,7 +1850,7 @@ BEGIN
   ELSIF v_variant='reference' THEN status:='SKIP'; detail:='a reference catalogue has no actor columns -- every write goes through a door and the actor is stamped into history.row_versions';
   ELSE status:='SKIP'; detail:='append-only ledger row is never updated'; END IF; RETURN NEXT;
 
-  check_name:='base_updated_by_fk'; status:=CASE WHEN NOT f_ub THEN 'SKIP' WHEN fk_ub THEN 'PASS' ELSE 'FAIL' END; detail:=CASE WHEN f_ub AND NOT fk_ub THEN 'updated_by missing FK -> auth.users' END; RETURN NEXT;
+  check_name:='base_updated_by_fk'; status:=CASE WHEN NOT f_ub THEN 'SKIP' WHEN fk_ub THEN 'PASS' ELSE 'FAIL' END; detail:=CASE WHEN f_ub AND NOT fk_ub THEN 'updated_by missing FK -> iam.users' END; RETURN NEXT;
 
   -- ---- append timestamp: UNIVERSAL. A ledger names it occurred_at (history.row_versions). -
   check_name:='base_created_at';
@@ -2002,7 +2011,7 @@ BEGIN
       EXCEPT SELECT unnest(ARRAY['std_insert','std_update','std_delete']));
     IF 'platform_admin_all' = ANY(v_expected) THEN
       v_expected:=ARRAY(SELECT unnest(v_expected) EXCEPT SELECT 'platform_admin_all');
-      v_expected:=array_append(v_expected,'platform_admin_select');
+      -- ONE ADMIN READ (2026-09-27): no FOR SELECT twin is expected; the admin read is platform_admin_read.
     END IF;
   END IF;
   -- CLIENT DELETES REFUSED (chair 2026-09-26): a declared token emits no std_delete.
@@ -2072,11 +2081,7 @@ BEGIN
   -- resolver and the signed-out invitation lanes are all deliberate). `policies_canonical` above
   -- already FAILs a table whose policy SET is wrong. This check exists to NAME them.
   -- ADMIN-ACCESS (Arman 2026-09-24): the platform-admin READ lane is expected on every RLS table.
-  check_name:='platform_admin_read_present';
-  IF v_relkind NOT IN ('r','p') OR NOT COALESCE(v_rls,false) THEN status:='SKIP'; detail:='not an RLS table';
-  ELSIF EXISTS (SELECT 1 FROM pg_policy WHERE polrelid=v_tbl AND polname='platform_admin_read' AND polcmd='r' AND polpermissive) THEN status:='PASS'; detail:=NULL;
-  ELSE status:='FAIL'; detail:='no permissive platform_admin_read FOR SELECT policy — the admin system reads every table (Arman 2026-09-24; common-docs/policies/our-own-admin-database-access.md); re-run iam.apply_rls or create it'; END IF;
-  RETURN NEXT;
+  RETURN QUERY SELECT h.check_name, h.status, h.detail FROM iam.admin_policy_findings(v_tbl) h;  -- ONE copy, shared with system tables
 
   check_name:='bespoke_policy_present';
   v_bespoke:=ARRAY(SELECT unnest(COALESCE(v_polnames,'{}')) EXCEPT SELECT unnest(iam.generated_policy_names())

@@ -21,9 +21,9 @@ import Link from "next/link";
 import { ChevronDown, ExternalLink, TriangleAlert } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 
-import type { VisibilityLane } from "@ai-matrx/records-ui";
 
-import { emptyInLane, type HubCapability, type HubItem } from "./capabilities";
+import type { HubCapability, HubItem } from "./capabilities";
+import { emptyInScope, type DataHomeScope } from "./dataHomeScope";
 import type { DoorFailure } from "./doors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -35,10 +35,8 @@ export type HubListingState =
 export interface HubListingProps {
   capability: HubCapability;
   state: HubListingState;
-  /** The lane filter the whole hub is under, for the sentence an empty lane gets. */
-  laneLabel: string | null;
-  /** The lane the whole hub is filtered to, for the lane's own empty sentence. */
-  lane?: VisibilityLane | null | undefined;
+  /** The data home's filter the whole hub is under, for the sentence an empty filter gets. */
+  scope?: DataHomeScope | undefined;
   /** This organization shows members only what is shared with them. */
   sharedOnly?: boolean | undefined;
   open: boolean;
@@ -74,6 +72,15 @@ function Row({ item }: { item: HubItem }) {
             twice — measured on Rincon's 43 tables, 2026-09-22. */}
         {item.tableName && item.tableId !== item.id ? (
           <span className="truncate text-xs text-muted-foreground">in {item.tableName}</span>
+        ) : null}
+        {/* WHERE IT LIVES (lane DATA-HOME-1): the home lists every organization at once. */}
+        {item.organizationName ? (
+          <span
+            data-hub-row-organization
+            className="shrink-0 rounded border border-border px-1.5 text-[11px] leading-5 text-muted-foreground"
+          >
+            {item.organizationName}
+          </span>
         ) : null}
         {item.facts.length ? (
           <span className="truncate text-xs text-muted-foreground">
@@ -164,8 +171,7 @@ function groupItemsByTitle(items: HubItem[]): Array<{ title: string; items: HubI
 export function HubListing({
   capability,
   state,
-  laneLabel,
-  lane,
+  scope = "all",
   sharedOnly,
   open,
   onOpenChange,
@@ -230,8 +236,8 @@ export function HubListing({
             </div>
           ) : state.items.length === 0 ? (
             <p className="px-3 py-3 text-xs text-muted-foreground">
-              {lane
-                ? emptyInLane(capability.title, lane)
+              {scope !== "all"
+                ? emptyInScope(capability.title, scope)
                 : sharedOnly && capability.emptyWhenSharedOnly
                   ? capability.emptyWhenSharedOnly
                   : capability.empty}

@@ -30,10 +30,18 @@ export interface AuditSchemaSummaryRow {
   certified: number;
   uncertified: number;
   machinery: number;
+  /** Machinery (system) tables with at least one FAIL against their own contract. */
+  machinery_failing: number;
   /** Tables with at least one FAIL. */
   failing_tables: number;
   fails: number;
   warns: number;
+  /** Real tables in this schema with no registry row (audit.unregistered_candidates). */
+  unregistered: number;
+  /** Registry rows whose table no longer exists (audit.stale_registry). */
+  dead_registry: number;
+  /** The number to drive to zero: fails + warns + unregistered + dead_registry. */
+  problems: number;
 }
 
 export interface CanonicalFindingRow {

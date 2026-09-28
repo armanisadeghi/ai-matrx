@@ -1,6 +1,6 @@
 // features/unified-data/hub/doors.ts — LANE DATA-HUB
 //
-// THE FIVE STORE DOORS THE HUB CALLS THAT `@ai-matrx/records`' CLIENT DOES NOT
+// THE STORE DOORS THE HUB CALLS THAT `@ai-matrx/records`' CLIENT DOES NOT
 // CARRY YET, AND NOTHING ELSE.
 //
 // Three of them are this lane's own (`custom.pipelines`, `custom.shares_outside`,
@@ -259,7 +259,7 @@ export function changedBy(
   );
 }
 
-export interface TableICanOpenRow {
+export interface DataHomeTableRow {
   table_id: string;
   table_name: string;
   organization_id: string;
@@ -269,16 +269,19 @@ export interface TableICanOpenRow {
   /** The record's own `visibility` column: personal · internal · link · public. */
   visibility: string;
   updated_at: string | null;
+  /** The Table record's own created_by is the person signed in. */
+  mine: boolean;
+  /** A live grant names the person signed in, given by somebody else. */
+  shared_with_me: boolean;
 }
 
 /**
- * EVERY TABLE THIS PERSON CAN OPEN, IN EVERY ORGANIZATION SHE CAN REACH —
- * `custom.tables_i_can_open()` (lane ACCESS-IS-PERSONAL). The hub's "All my
- * organizations" list: the active organization filters a list only while the page says
- * which one, and this is the "select all" (owner's law, 2026-09-23). It takes no
- * organization; the door skips every organization whose store is off, so there is no
- * single switch to ask here.
+ * EVERY TABLE THIS PERSON CAN OPEN, IN EVERY ORGANIZATION SHE CAN REACH, WITH THE FOUR FACTS THE
+ * DATA HOME'S FILTERS READ — `custom.data_home_tables()` (lane DATA-HOME-1). The walk is
+ * `custom.tables_i_can_open()`'s own; the door adds whether she made each one and whether
+ * somebody shared it with her. It takes no organization; the door skips every organization whose
+ * store is off, so there is no single switch to ask here.
  */
-export function tablesICanOpen(dataSource: RecordsDataSource): Promise<DoorAnswer<TableICanOpenRow[]>> {
-  return call<TableICanOpenRow[]>(dataSource, "tables_i_can_open", {});
+export function dataHomeTables(dataSource: RecordsDataSource): Promise<DoorAnswer<DataHomeTableRow[]>> {
+  return call<DataHomeTableRow[]>(dataSource, "data_home_tables", {});
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AtSign,
+  Award,
   BadgeCheck,
   Building2,
   ChevronDown,
@@ -15,6 +16,7 @@ import {
   Images,
   Inbox,
   Info,
+  Mic,
   ListTree,
   Mail,
   Map as MapIcon,
@@ -201,6 +203,8 @@ const FACT_KIND_ICONS: Record<BusinessFactKind, LucideIcon> = {
   social_profile: AtSign,
   service_area: MapIcon,
   registration: BadgeCheck,
+  spokesperson: Mic,
+  proof: Award,
   other: Info,
 };
 
@@ -215,6 +219,8 @@ const FACT_KIND_ORDER: BusinessFactKind[] = [
   "site_name",
   "title",
   "description",
+  "spokesperson",
+  "proof",
   "hours",
   "service_area",
   "registration",

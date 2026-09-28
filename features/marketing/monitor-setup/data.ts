@@ -3,8 +3,8 @@
  *
  * - the brand's monitors (`seo.coverage_tracker` by `brand_id`) and one monitor;
  * - the spokesperson / proof step: `web.business_fact` rows written directly
- *   under that table's RLS (NEWS-ENGINE-SPEC §12 Lane G), as the shapes the
- *   news client context reads (`label` spokesperson | proof, `kind` other);
+ *   under that table's RLS (NEWS-ENGINE-SPEC §12 Lane G), with the real
+ *   `spokesperson` / `proof` kinds (aidream 1439) the news client context reads;
  * - the brief: a note Source in `workbench.notes`, which the tracker points at
  *   through `brief_source_id` (the engine never parses it);
  * - the latest mentions a run surfaced, for the run view.
@@ -109,12 +109,13 @@ function factTag(fact: BusinessFact): string {
     .replace(/\s+/g, "_");
 }
 
+/** `kind` is the fact's role since aidream 1439; older rows tagged by label still count. */
 export function isSpokesperson(fact: BusinessFact): boolean {
-  return SPOKESPERSON_LABELS.has(factTag(fact));
+  return fact.kind === "spokesperson" || SPOKESPERSON_LABELS.has(factTag(fact));
 }
 
 export function isProof(fact: BusinessFact): boolean {
-  return PROOF_LABELS.has(factTag(fact));
+  return fact.kind === "proof" || PROOF_LABELS.has(factTag(fact));
 }
 
 export function factText(fact: BusinessFact): string {
@@ -138,8 +139,8 @@ export async function addSpokesperson(input: {
     .insert({
       organization_id: input.organizationId,
       brand_id: input.brandId,
-      kind: "other",
-      label: "spokesperson",
+      kind: "spokesperson",
+      label: null,
       value: title ? { text: name, name, title } : { text: name, name },
       source: "manual",
       confirmed_at: new Date().toISOString(),
@@ -163,8 +164,8 @@ export async function addProof(input: {
     .insert({
       organization_id: input.organizationId,
       brand_id: input.brandId,
-      kind: "other",
-      label: "proof",
+      kind: "proof",
+      label: null,
       value: url ? { text: summary, summary, url } : { text: summary, summary },
       source: "manual",
       confirmed_at: new Date().toISOString(),

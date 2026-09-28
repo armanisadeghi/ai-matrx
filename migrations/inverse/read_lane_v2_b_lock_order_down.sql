@@ -1,6 +1,6 @@
 -- chair-step: inverse of read_lane_v2_b_lock_order — restores the iam._apply_rls_unchecked body without the pre-freeze lock step and drops iam.read_lane_v2_lock_policy_reads.
 -- ground-standing-ok: b — ORDER: this inverse runs FIRST (it restores read_lane_v2_a_generator's body, which calls the read-lane v2 helpers); read_lane_v2_a_generator_down.sql runs after it and restores the pre-v2 body before dropping those helpers. Run alone, the helpers it calls stay standing.
--- based-on: iam._apply_rls_unchecked(text, text, text, text) b32976326af6a8bed8a48893dee1d94a7d114341c3d16332a0da563faa17e2a3
+-- based-on: iam._apply_rls_unchecked(text, text, text, text) 57e9b3f4119119ce6f76881a6bc728356f77ea7bd56798284fc6c1ad5458df7c
 
 CREATE OR REPLACE FUNCTION iam._apply_rls_unchecked(p_schema text, p_table text, p_token text, p_variant text DEFAULT 'entity'::text)
  RETURNS void
@@ -583,14 +583,10 @@ begin
           case when v_vis_enum
                then '(visibility >= ''internal''::platform.visibility) and (select public.is_platform_admin())'
                else '(select public.is_platform_admin())' end);
-      else
-        v_pol := v_pol || format(
-          'create policy platform_admin_select on %s for select to authenticated using (%s)',
-          v_tbl,
-          case when v_vis_enum
-               then '(visibility >= ''internal''::platform.visibility) and (select public.is_platform_admin())'
-               else '(select public.is_platform_admin())' end);
       end if;
+      -- ONE ADMIN READ (Arman 2026-09-27): the doors-only FOR SELECT twin platform_admin_select is
+      -- retired. platform_admin_read, emitted for every table, is the one admin read. The old name
+      -- stays in iam.generated_policy_names() only so a regeneration drops stale copies.
     end if;
   end if;
 

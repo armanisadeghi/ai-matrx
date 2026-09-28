@@ -24,17 +24,10 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  ArchivedDisclosure,
-  ArchivedPortals,
-  VISIBILITY_LANES,
-  VISIBILITY_LANE_TITLE,
-  TablesHome,
-  type VisibilityLane,
-} from "@ai-matrx/records-ui";
+import { ArchivedDisclosure, ArchivedPortals, TablesHome } from "@ai-matrx/records-ui";
 import { useRecordsClient, useTables } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
-import { cn } from "@ai-matrx/design-system";
+import { Button, cn } from "@ai-matrx/design-system";
 import { KeptByTheAppLine } from "./KeptByTheAppLine";
 
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
@@ -43,7 +36,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { useUserRole } from "@/features/organizations/hooks";
-import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 
 /** The organization's member-visibility setting, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -58,9 +51,18 @@ import {
 } from "./capabilities";
 import { ArchivedTablesList, type ArchivedTable } from "./ArchivedTablesList";
 import { HubListing, type HubListingState } from "./HubListing";
-import { AllOrganizationsTables, OrganizationScopeStrip } from "./OrganizationScope";
 import * as doors from "./doors";
-import type { TableFactRow } from "./doors";
+import type { DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
+import {
+  DATA_HOME_DEFAULT_SCOPE_KNOB,
+  DATA_HOME_SCOPES,
+  DATA_HOME_SCOPE_TITLE,
+  dataHomeScopeHref,
+  inDataHomeScope,
+  resolveDataHomeScope,
+  visibilityOfLane,
+  type DataHomeScope,
+} from "./dataHomeScope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 
@@ -105,25 +107,46 @@ export function OrganizationHub({
 }: OrganizationHubProps) {
   const router = useRouter();
   /**
-   * THE FILTER IS NAMED, AND "ALL" IS ONE CLICK (lane ACCESS-IS-PERSONAL, owner's law
-   * 2026-09-23): this LIST is the active organization's, so the page says which one and offers
-   * the way out. `?scope=all` is the unfiltered list, on the address so it can be sent.
+   * THE FIVE FILTERS — All · Mine · My Orgs · Shared · Public (lane DATA-HOME-1, Arman
+   * 2026-09-27). The home opens on the Feature Knob `custom.data_home_default_scope` (platform
+   * default All: everything the person can see in every organization); `?scope=` is what the
+   * person chose. Choosing is a NAVIGATION (router.push), so the browser's Back undoes it — the
+   * old strip rewrote the address in place and "All my organizations" had no way back.
    */
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const selectedOrganizationName = useAppSelector(selectOrganizationName);
   const organizationName = namedOrganizationName ?? selectedOrganizationName;
-  const showingAll = searchParams.get("scope") === "all";
-  const setScope = useCallback(
-    (all: boolean) => {
-      const next = new URLSearchParams(searchParams.toString());
-      if (all) next.set("scope", "all");
-      else next.delete("scope");
-      const query = next.toString();
-      replaceAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
+  const knobUserId = useAppSelector(selectUserId);
+  const defaultScope = useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_SCOPE_KNOB);
+  const scope: DataHomeScope = resolveDataHomeScope(searchParams.get("scope"), defaultScope);
+  const chooseScope = useCallback(
+    (next: DataHomeScope) => {
+      const href = dataHomeScopeHref(pathname, searchParams, next);
+      const here = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+      if (href !== here) router.push(href, { scroll: false });
     },
     [router, pathname, searchParams],
   );
+  /**
+   * EVERY TABLE SHE CAN OPEN, IN EVERY ORGANIZATION, with the facts the filters read — ONE call
+   * (`custom.data_home_tables()`), never one per organization.
+   */
+  const [everywhere, setEverywhere] = useState<
+    | { phase: "reading" }
+    | { phase: "read"; rows: readonly DataHomeTableRow[] }
+    | { phase: "failed"; error: DoorFailure }
+  >({ phase: "reading" });
+  useEffect(() => {
+    let alive = true;
+    void doors.dataHomeTables(dataSource).then((answered) => {
+      if (!alive) return;
+      setEverywhere(answered.ok ? { phase: "read", rows: answered.data } : { phase: "failed", error: answered.error });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [dataSource]);
   const client = useRecordsClient();
   const tablesRead = useTables();
   const userIdForFacts = useAppSelector(selectUserId);
@@ -163,9 +186,8 @@ export function OrganizationHub({
     if (facts.phase !== "read") return listed;
     return withHubTableFacts(listed, facts.rows, userIdForFacts ?? null);
   }, [tablesRead.data, facts, userIdForFacts]);
-  const lanesKnown = facts.phase === "read";
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  const [lane, setLane] = useState<VisibilityLane | null>(null);
   /**
    * "SHOW EVERYTHING" (SCOPES-CONTEXT-TRANSITION SC-1', finished by SC-1-TAILS). What the app keeps
    * for itself — a column's choices, the context system's scope tables, its own bookkeeping — is
@@ -201,6 +223,7 @@ export function OrganizationHub({
     // Read the capabilities ONCE, after the lane facts have answered either way,
     // rather than once before and once after.
     if (facts.phase === "reading") return;
+    if (everywhere.phase === "reading") return;
     let alive = true;
     const ctx: HubReadContext = {
       client,
@@ -208,6 +231,8 @@ export function OrganizationHub({
       organizationId,
       tables,
       tableKernelId: null,
+      everywhere:
+        everywhere.phase === "read" ? { ok: true, rows: everywhere.rows } : { ok: false, error: everywhere.error },
     };
     setStates(
       Object.fromEntries(HUB_CAPABILITIES.map((c) => [c.id, { phase: "reading" } as HubListingState])),
@@ -258,7 +283,7 @@ export function OrganizationHub({
     return () => {
       alive = false;
     };
-  }, [client, dataSource, organizationId, tables, tablesRead.loading, facts.phase]);
+  }, [client, dataSource, organizationId, tables, tablesRead.loading, facts.phase, everywhere]);
 
   // THE ARCHIVE, through the store's own archived door over the Table kernel —
   // the same door a table's own archive uses, addressed at the kernel that
@@ -333,113 +358,135 @@ export function OrganizationHub({
     [client, readArchive, router],
   );
 
-  /** The lane filter, applied to every listing at once. */
   /**
-   * WHICH TABLES ARE MINE — the ones I MADE, whatever their visibility (chair
-   * ruling, 2026-09-23). Mine is the only lane that is not a visibility: a new
-   * table is internal, so it sits under Mine AND under My organization, and a
-   * table somebody else made that is shared across the organization is under My
-   * organization only. The creator is the Table record's own `created_by`.
+   * WHICH TABLES ARE MINE — the ones I MADE, whatever their visibility (chair ruling,
+   * 2026-09-23), in THIS organization, for the things that belong to one of its tables (a form,
+   * a booking page). The Tables listing carries its own facts from `custom.data_home_tables()`.
    */
   const ownedTableIds = useMemo(
     () => new Set(tables.filter((t) => userId && t.created_by === userId).map((t) => t.id)),
     [tables, userId],
   );
-  const inLane = useCallback(
-    (item: HubItem, wanted: VisibilityLane): boolean => {
-      // No lane at all — the app's own tables, another organization's — is
-      // under Everything only.
-      if (item.lane === null) return false;
-      if (wanted === "mine") return Boolean(item.tableId && ownedTableIds.has(item.tableId));
-      return item.lane === wanted;
-    },
-    [ownedTableIds],
+  const sharedWithMeIds = useMemo(
+    () =>
+      new Set(
+        everywhere.phase === "read" ? everywhere.rows.filter((r) => r.shared_with_me).map((r) => r.table_id) : [],
+      ),
+    [everywhere],
   );
-  const filtered = useMemo(() => {
+  const tableIdsListed = useMemo(
+    () => new Set(everywhere.phase === "read" ? everywhere.rows.map((r) => r.table_id) : []),
+    [everywhere],
+  );
+  /**
+   * EVERY ROW NAMES ITS ORGANIZATION AND CARRIES THE FOUR FACTS. The Tables rows come with them
+   * from the door; everything else here is this organization's (a member's), and a row shared
+   * in from another organization is Shared and nothing else.
+   */
+  const labelled = useMemo(() => {
     const out: Record<string, HubListingState> = {};
     for (const [id, state] of Object.entries(states)) {
+      if (state.phase !== "read") {
+        out[id] = state;
+        continue;
+      }
+      const items = state.items
+        // An accepted share is already a row under Tables (its organization named); listing it
+        // twice is the page saying one thing two times. An offer not yet accepted stays here.
+        .filter((item) => !(id === "shared-with-me" && item.tableId && tableIdsListed.has(item.tableId) && item.id.startsWith("accepted:")))
+        .map((item) => {
+          if (item.scope) return item;
+          if (id === "shared-with-me") {
+            return {
+              ...item,
+              organizationName: item.tableName,
+              scope: { mine: false, member: false, sharedWithMe: true, visibility: null },
+            };
+          }
+          return {
+            ...item,
+            organizationName: organizationName ?? null,
+            scope: {
+              mine: Boolean(item.tableId && ownedTableIds.has(item.tableId)),
+              member: true,
+              sharedWithMe: Boolean(item.tableId && sharedWithMeIds.has(item.tableId)),
+              visibility: visibilityOfLane(item.lane),
+            },
+          };
+        });
+      out[id] = { phase: "read", items };
+    }
+    return out;
+  }, [states, tableIdsListed, organizationName, ownedTableIds, sharedWithMeIds]);
+  const filtered = useMemo(() => {
+    if (scope === "all") return labelled;
+    const out: Record<string, HubListingState> = {};
+    for (const [id, state] of Object.entries(labelled)) {
       out[id] =
-        state.phase === "read" && lane
-          ? { phase: "read", items: state.items.filter((item) => inLane(item, lane)) }
+        state.phase === "read"
+          ? { phase: "read", items: state.items.filter((item) => item.scope && inDataHomeScope(item.scope, scope)) }
           : state;
     }
     return out;
-  }, [states, lane, inLane]);
+  }, [labelled, scope]);
 
   /**
-   * THE LIST'S ONE PLACE TO NARROW IT (lane DATA-V2-FACE, owner 2026-09-24): which organization,
-   * and whose — on ONE row above the tables, and nothing else above them. The lanes, as filters
-   * and never a flat list; the words are the package's.
+   * THE LIST'S ONE PLACE TO NARROW IT: exactly All · Mine · My Orgs · Shared · Public, on ONE
+   * row above everything (lane DATA-HOME-1). The forms, bookings and the rest below the tables
+   * are the organization the person is working in — named on the same row, with Change, which is
+   * the owner's law for a list an organization filters (2026-09-23).
    */
-  const laneFilter = (
-    lanesKnown ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground">Show</span>
+  const scopeRow = (
+    <div
+      data-hub-scope={scope}
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-xs"
+    >
+      <div role="tablist" aria-label="Show" className="flex flex-wrap items-center gap-1.5">
+        {DATA_HOME_SCOPES.map((candidate) => (
           <button
+            key={candidate}
             type="button"
-            data-hub-lane="everything"
-            onClick={() => setLane(null)}
+            role="tab"
+            aria-selected={scope === candidate}
+            data-hub-scope-choice={candidate}
+            onClick={() => chooseScope(candidate)}
             className={cn(
               "rounded-full border px-2 py-0.5 text-xs transition-colors",
-              lane === null
+              scope === candidate
                 ? "border-foreground bg-foreground text-background"
                 : "border-border text-muted-foreground hover:bg-muted/50",
             )}
           >
-            Everything
+            {DATA_HOME_SCOPE_TITLE[candidate]}
           </button>
-          {/* THE FOUR VISIBILITY LANES — mine, my organization, community, world —
-              and nothing else (VERIFIER-15: six chips, two of which were about who
-              MADE a table, not who can see it). */}
-          {VISIBILITY_LANES.map((candidate) => (
-            <button
-              key={candidate}
-              type="button"
-              data-hub-lane={candidate}
-              onClick={() => setLane(candidate)}
-              className={cn(
-                "rounded-full border px-2 py-0.5 text-xs transition-colors",
-                lane === candidate
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border text-muted-foreground hover:bg-muted/50",
-              )}
-            >
-              {VISIBILITY_LANE_TITLE[candidate]}
-            </button>
-          ))}
-        </div>
-      ) : facts.phase === "failed" ? (
-        /* ABSENT, NEVER A LIE. Without the facts every table would be filed under
-           My organization and Mine would read 0 — so the filters are not offered,
-           and the reason is. */
-        <p className="text-xs text-muted-foreground">
-          Who can see each table, and which are yours, could not be read, so only everything is
-          shown. {facts.why}
+        ))}
+      </div>
+      <span className="ml-auto inline-flex items-center gap-x-1 whitespace-nowrap text-muted-foreground">
+        Forms and pages from <span className="font-medium text-foreground">{organizationName ?? "the organization you are working in"}</span>
+        <OrganizationPickerPopover
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          trigger={
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
+              Change
+            </Button>
+          }
+        />
+      </span>
+      {facts.phase === "failed" ? (
+        /* NEVER A LIE: without the organization's facts, which of its forms and pages are yours
+           cannot be said, so Mine shows only tables — and says why. */
+        <p className="w-full text-xs text-muted-foreground">
+          Which forms and pages here are yours could not be read, so Mine lists only tables. {facts.why}
           <ErrorAlchemyMenu error={facts.why} />
         </p>
-      ) : null
+      ) : null}
+    </div>
   );
-  const scopeStrip = (
-    <OrganizationScopeStrip
-      organizationName={organizationName}
-      showingAll={showingAll}
-      onShowAll={() => setScope(true)}
-      onShowOne={() => setScope(false)}
-      trailing={showingAll ? null : laneFilter}
-    />
-  );
-  if (showingAll) {
-    return (
-      <div data-hub-root className="space-y-4">
-        {scopeStrip}
-        <AllOrganizationsTables dataSource={dataSource} />
-      </div>
-    );
-  }
 
   return (
     <div data-hub-root className="space-y-4">
-      {scopeStrip}
+      {scopeRow}
 
       {/* MAKING A TABLE, AND ONLY THAT (lane POST-PUBLISH-FE, VERIFIER-18 M3). FIRST, UNDER THE
           STRIP (lane HANDOVER, 2026-09-27): it was the last thing on the page, below ten listings,
@@ -463,8 +510,7 @@ export function OrganizationHub({
           key={capability.id}
           capability={capability}
           state={filtered[capability.id] ?? { phase: "reading" }}
-          laneLabel={lane ? VISIBILITY_LANE_TITLE[lane] : null}
-          lane={lane}
+          scope={scope}
           sharedOnly={sharedOnly}
           open={open[capability.id] ?? false}
           onOpenChange={(next) => setOpen((prev) => ({ ...prev, [capability.id]: next }))}

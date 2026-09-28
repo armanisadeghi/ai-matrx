@@ -79,13 +79,13 @@ let role: string | null = "owner";
 jest.mock("@/features/organizations/hooks", () => ({
   useUserRole: () => ({ role, loading: false }),
 }));
-jest.mock("../OrganizationScope", () => ({
-  OrganizationScopeStrip: () => null,
-  AllOrganizationsTables: () => null,
+jest.mock("@/features/organizations/components/OrganizationPickerPopover", () => ({
+  OrganizationPickerPopover: () => null,
 }));
 jest.mock("../doors", () => ({
   tableKernelId: async () => ({ ok: true, data: "kernel" }),
   tableFacts: async () => ({ ok: true, data: [] }),
+  dataHomeTables: async () => ({ ok: true, data: [] }),
 }));
 jest.mock("../capabilities", () => {
   const actual = jest.requireActual("../capabilities");
@@ -153,7 +153,8 @@ describe("UI-FIX-19 · the Tables sentence speaks to its reader", () => {
     role = "owner";
     await mount();
     const heading = container.querySelector('[data-hub-listing-toggle="tables"]')?.textContent ?? "";
-    expect(heading).toMatch(/The tables you can open in this organization/);
+    // DATA-HOME-1: the Tables listing is every organization's now, and the sentence says so.
+    expect(heading).toMatch(/The tables you can open, in every organization you belong to/);
     expect(heading).not.toMatch(/only what is shared/);
   });
 

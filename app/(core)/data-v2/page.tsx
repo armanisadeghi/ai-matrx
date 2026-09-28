@@ -118,10 +118,19 @@ export default function UnifiedDataPage() {
    */
   const dataSource = useMemo(() => recordsDataSource(createClient()), []);
 
+  const goBack = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.replace("/data-v2");
+  }, [router]);
+
   return (
     <>
+      {/* BACK, AND NO WORD IN THE MIDDLE (lane DATA-HOME-1, Arman 2026-09-27): "Data" at the top
+          centre said nothing the page does not, and from `?scope=…` there was no way back. The
+          filters are navigations now, so Back walks them; with no page behind this one, Back
+          lands on the home's own first view rather than doing nothing. */}
       <PageHeader>
-        <HeaderStructured title="Data" />
+        <HeaderStructured back={goBack} />
       </PageHeader>
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
         {organizationState !== "ready" ? (
