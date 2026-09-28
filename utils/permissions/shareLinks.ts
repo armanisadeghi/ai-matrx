@@ -48,6 +48,12 @@ export interface ResolvedShareToken {
   urlPathTemplate?: string;
   /** The resource row as JSON (internal/heavy columns stripped). */
   resource?: Record<string, unknown>;
+  /**
+   * What the link holder sees BENEATH the record (children inherit their
+   * parent) — a per-type projection from `platform.share_link_children`, e.g.
+   * a shared chat's visible messages. Null for types without one.
+   */
+  children?: Record<string, unknown> | null;
 }
 
 export interface ShareCapabilities {
@@ -357,5 +363,6 @@ export async function resolveShareToken(
     displayLabel: res?.display_label as string | undefined,
     urlPathTemplate: res?.url_path_template as string | undefined,
     resource: res?.resource as Record<string, unknown> | undefined,
+    children: (res?.children as Record<string, unknown> | null | undefined) ?? null,
   };
 }

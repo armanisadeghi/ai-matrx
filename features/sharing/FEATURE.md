@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1` — foundation for every collaborative surface
-**Last updated:** `2026-08-24`
+**Last updated:** `2026-09-27`
 
 > Single source of truth for the sharing and permissions system. For hands-on usage patterns (copy-paste snippets for wiring sharing into a new feature), see [`README.md`](./README.md). This doc covers the architecture, invariants, and agent-relevant internals.
 
@@ -12,7 +12,7 @@
 
 One RLS-backed permissions system that shares a record with a named person or with anyone by link. Every collaborative feature in the app — prompts, notes, agents, canvases, tasks, chats, flashcards, and more — plugs into this system. There is one `permissions` table, one component set, one RPC surface.
 
-🚨 **The law: `common-docs/policies/access-ladder.md`.** Sharing sits outside the access ladder. The owner of any record, at any level (Organization, Public, Confidential, Private), can share it by **public link** — with anyone in the world, signed in or not — or **directly** with any person by email address or account. The level never blocks, narrows, or conditions sharing; a shared **AI chat** is the everyday case. A share names a person, never an organization. **What `is_link_shareable` means (access ladder T-9, 2026-09-26):** a type offers a link exactly when the generic share viewer (`/s/[token]` → `GenericRenderer`) has something of the record to show — a title-like or body-like column in `public_columns`, derived from a fixed allow-list of display column names (`migrations/access_ladder_t9_link_share_every_type.sql`). The class and the level never enter into it. 167 of ~288 active types are on; the rest have no displayable column (sync states, consents, run rows, `dm_conversation`, `sms_conversation`, `app_instance`, …) and need a lens before they get a link. **Direct sharing on personal tables:** personal-variant policies now carry the owner-grant arm (grants to a person in `iam.permissions`; no org or staff lane), and every personal table with a uuid `id` and `created_by` is registered. Personal tables still keyed on `user_id` (13, e.g. `billing.usage_ledger`, `extend.extension_auth_codes`) cannot be regenerated until they gain `created_by`. **Known viewer gap:** a shared `conversation` renders title + description only — there is no chat lens yet, so the messages are not shown to a link holder.
+🚨 **The law: `common-docs/policies/access-ladder.md`.** Sharing sits outside the access ladder. The owner of any record, at any level (Organization, Public, Confidential, Private), can share it by **public link** — with anyone in the world, signed in or not — or **directly** with any person by email address or account. The level never blocks, narrows, or conditions sharing; a shared **AI chat** is the everyday case. A share names a person, never an organization. **What `is_link_shareable` means (access ladder T-9, 2026-09-26):** a type offers a link exactly when the generic share viewer (`/s/[token]` → `GenericRenderer`) has something of the record to show — a title-like or body-like column in `public_columns`, derived from a fixed allow-list of display column names (`migrations/access_ladder_t9_link_share_every_type.sql`). The class and the level never enter into it. 167 of ~288 active types are on; the rest have no displayable column (sync states, consents, run rows, `dm_conversation`, `sms_conversation`, `app_instance`, …) and need a lens before they get a link. **Direct sharing on personal tables:** personal-variant policies now carry the owner-grant arm (grants to a person in `iam.permissions`; no org or staff lane), and every personal table with a uuid `id` and `created_by` is registered. Personal tables still keyed on `user_id` (13, e.g. `billing.usage_ledger`, `extend.extension_auth_codes`) cannot be regenerated until they gain `created_by`. **A shared AI chat shows its messages (access ladder T-19, 2026-09-27):** an Anyone link to a `conversation` renders the transcript through `lenses/conversation-lens.tsx` — see "Children of a shared record" below.
 
 ---
 
@@ -300,6 +300,28 @@ decks…) and its public projection deliberately omits the kind — so
 fallback (the `PublicCanvasRenderer` pattern), and `lenses/metadata.ts` dispatches the same
 way for meta + OG. Never assume a kind instance is one kind.
 
+**Children of a shared record (access ladder T-19, 2026-09-27).** Children inherit their parent,
+so a link holder sees what lives BENEATH the record, not just its `public_columns`.
+`resolve_share_token` keeps every check (active, expiry, type still link-shareable, row exists,
+not deleted, use limit) and only then attaches `children` from
+`platform.share_link_children(type, id)` — one per-type projection, the single extension point
+(`migrations/access_ladder_t19_shared_chat_shows_its_messages.sql`). It is SECURITY INVOKER, so a
+direct client call runs under the caller's own RLS; its reach exists only inside the resolver.
+`conversation` → `{kind:'conversation_messages', messages, total, truncated}`: visible
+(`is_visible_to_user`, status active/edited, not deleted) user + assistant messages, first 500;
+text blocks verbatim; thinking blocks and their provider signatures never; a tool call becomes
+`{type:'tool', name}` — never its arguments or result payload; media carries kind/title/size and a
+URL only when already on the public CDN (`cdn.matrxserver.com`), otherwise the lens names the
+attachment as private and does not serve it. `lenses/conversation-transcript.ts` (server-safe)
+validates the shape and groups consecutive assistant messages into one turn;
+`lenses/conversation-lens.tsx` renders it — user text in bubbles, assistant text through
+`RichContentStaticStandard` (in the SSR HTML), folded "Used X ×n" tool steps, a closing
+"Continue this chat" (`DuplicateToEditButton`) + "Try AI Matrx" card; `lenses/metadata.ts`
+describes the card by the chat's opening question. `/s/[token]` resolves once per request
+(`React.cache`), so one view is one use against `max_uses`. Not yet served: private attachments
+(no token-backed byte route for a chat's child files), tool RESULTS in their cleaned card form,
+and `decision_*` / `speech_script` blocks.
+
 **Adding a share rendering = one registry entry (+ optional metadata entry). Adding a per-type
 `switch` on any share surface is banned** — `SharedResourceView.tsx` is a pure shell
 (conversion chrome + lens dispatch) and must stay that way. Presentation-lens exemplar:
@@ -371,6 +393,8 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+
+- `2026-09-27` — **Access ladder T-19: a shared AI chat shows its messages.** `resolve_share_token` now attaches `children` from the new `platform.share_link_children` after every token check; the `conversation` lens renders the narrowed transcript signed-out, SSR, noindex, with a continue-this-chat CTA. `/s/[token]` resolves once per request (a view no longer counts twice against `max_uses`) and drops the doubled brand from its title. **Localhost evidence (admin@admin.com, conversation `c282678f…`):** link created in the Share dialog's Public tab; opened on a fresh signed-out host — title, 5-message count, the user prompt, "Used Fs write / Fs patch / Fs read", the full answer, the CTA card; SSR HTML carries the answer text and `noindex, nofollow`; no thinking signature in the HTML; no horizontal overflow at 375px; after "Turn off share link" the same URL shows "This link has been turned off by its owner."
 
 - `2026-09-26` — **Access ladder T-9: sharing reaches every type.** 127 more types became link-shareable (public_columns derived from display column names; types with nothing to show stay off). Personal-variant RLS emits the owner-grant arm, 8 personal tables registered for direct sharing (TS mirror + snapshot synced, plus `agent_term_list`/`document` drift from other lanes). Billing customer/subscription/connect_account re-registered Organization (ledger variant: member read, server-only writes). Proven live in rolled-back transactions: admin shares an `mcp_user_conn` row with test@test.com through `share_resource_with_user` → test reads 1, a third user 0, kernel agrees; anon resolves `create_share_link` tokens for a conversation, podcast episode and skill.
 - `2026-09-22` — **Canonical links can be reviewed and handed to a messaging app.** `ShareLinkPanel` now refreshes the selected canonical link before review and again before copy or native handoff; changed access, expiry, or use counts require another review, while revoked, expired, exhausted, or unverifiable links cannot be handed out. The preview identifies only an “AI Matrx item” and the exact canonical link; it never includes resource title or body. Native share cancellation does not copy, desktop can copy the reviewed message, and every result says prepared/opened/copied rather than sent. `listShareLinks()` now exposes refresh failures rather than turning them into an empty list. The canonical resolver remains authoritative for races after refresh. **Localhost evidence (admin test account, disposable task):** copied content exactly matched the generic preview and contained no title; cancel left clipboard unchanged; revoking from another tab caused the stale review to close with “This link has been turned off” and no clipboard write. At 390px viewport the dialog measured 358px without horizontal overflow. Native share UI could not be completed in the browser harness, so real-device native handoff remains unverified.

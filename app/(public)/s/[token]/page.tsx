@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { resolveShareToken } from "@/utils/permissions/shareLinks";
 import { resolveShareLensMeta } from "@/features/sharing/lenses/metadata";
@@ -14,10 +15,12 @@ interface PageProps {
   params: Promise<{ token: string }>;
 }
 
-async function resolve(token: string) {
+// One resolve per request: generateMetadata and the page share it, so a view
+// counts once against a link's use limit (the RPC increments use_count).
+const resolve = cache(async (token: string) => {
   const supabase = await createClient();
   return resolveShareToken(token, supabase as never);
-}
+});
 
 export async function generateMetadata({
   params,
@@ -25,11 +28,12 @@ export async function generateMetadata({
   const { token } = await params;
   const result = await resolve(token);
   if (!result.success) {
-    return { title: "Shared link · AI Matrx", robots: { index: false } };
+    return { title: "Shared link", robots: { index: false } };
   }
   const meta = resolveShareLensMeta(result);
   return {
-    title: `${meta.title} · AI Matrx`,
+    // The root layout's title template adds the brand.
+    title: meta.title,
     description: meta.description,
     robots: { index: false }, // link-shared, not publicly indexable
     openGraph: {

@@ -10,6 +10,10 @@
 
 import { readKeywordResearchArtifact } from "@/features/marketing/seo/keyword-research/data/artifact";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
+import {
+  firstUserText,
+  readSharedConversation,
+} from "@/features/sharing/lenses/conversation-transcript";
 
 export interface ShareLensMeta {
   title: string;
@@ -108,7 +112,25 @@ function fileMeta(result: ResolvedShareToken): ShareLensMeta | null {
   };
 }
 
+/** Shared AI chat — the chat's title, described by the question that opened
+ * it (what Claude and ChatGPT show on a shared-chat card). */
+function conversationMeta(result: ResolvedShareToken): ShareLensMeta | null {
+  const title = genericTitle(result.resource) ?? "Shared chat";
+  const transcript = readSharedConversation(result);
+  const opener = transcript ? firstUserText(transcript) : null;
+  const clean = opener?.replace(/\s+/g, " ").trim();
+  return {
+    title,
+    description: clean
+      ? clean.length > 180
+        ? `${clean.slice(0, 177)}…`
+        : clean
+      : "An AI chat shared with you on AI Matrx.",
+  };
+}
+
 const SHARE_LENS_META: Record<string, ShareLensMetaResolver> = {
+  conversation: conversationMeta,
   seo_collection_run: aiVisibilityMeta,
   content_ir_kind_instance: kindInstanceMeta,
   file: fileMeta,

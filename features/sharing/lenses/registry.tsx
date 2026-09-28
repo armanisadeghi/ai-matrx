@@ -31,6 +31,7 @@ import {
 } from "@/features/sharing/lenses/default-renderers";
 import { KindInstanceRenderer } from "@/features/sharing/lenses/kind-instance";
 import { SharedFileLens } from "@/features/sharing/lenses/file-lens";
+import { ConversationShareLens } from "@/features/sharing/lenses/conversation-lens";
 
 export interface ShareLensProps {
   /** The resolved share payload (registry `public_columns` projection). */
@@ -60,6 +61,11 @@ const SHARE_LENS_REGISTRY: Record<string, ShareLensRender> = {
   ),
   fc_card: (p) => <FlashcardRenderer result={p.result} />,
   file: (p) => <SharedFileLens result={p.result} token={p.token} />,
+  // A shared AI chat shows its messages (access ladder T-19) — the transcript
+  // arrives as `result.children`, narrowed by the database.
+  conversation: (p) => (
+    <ConversationShareLens result={p.result} token={p.token} />
+  ),
   folder: (p) => <FolderRenderer result={p.result} />,
   seo_collection_run: (p) => (
     <AiVisibilityRenderer result={p.result} token={p.token} />
