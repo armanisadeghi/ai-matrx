@@ -82,7 +82,10 @@ export async function fetchProposalDecisions(
   messageId: string,
 ): Promise<ProposalDecisions> {
   const { data, error } = await messageRow(messageId);
-  if (error || !data) return {};
+  // A failed read is thrown, never returned as "nothing decided yet" — that
+  // would offer to apply changes that were already applied.
+  if (error) throw new Error(error.message ?? String(error));
+  if (!data) return {};
   return readDecisions((data as MessageRow).metadata);
 }
 

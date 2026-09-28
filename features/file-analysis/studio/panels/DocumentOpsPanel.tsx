@@ -220,6 +220,7 @@ export function DocumentOpsPanel({ fileId }: Props) {
               Download {result.result.filename}
             </Button>
             <span className="ml-auto text-[10px] text-muted-foreground">
+              {/* read-gate-exempt: size of the file this operation just produced; result is set only when the operation returned */}
               {formatFileSize(result.result.blob.size)}
             </span>
           </div>

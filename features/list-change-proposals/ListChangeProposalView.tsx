@@ -65,6 +65,7 @@ import {
 } from "./decisions";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface ListChangeProposalViewProps {
   proposal: ListChangeProposalValue;
@@ -112,6 +113,8 @@ export function ListChangeProposalView({
   const [readRefusal, setReadRefusal] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [decisions, setDecisions] = useState<ProposalDecisions>({});
+  // Unknown past decisions block deciding: the person could re-apply a change.
+  const [decisionsError, setDecisionsError] = useState<unknown>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<
     { scope: "one"; item: ListChangeProposalItem } | { scope: "all" } | null
@@ -132,12 +135,20 @@ export function ListChangeProposalView({
     let live = true;
     setLoading(true);
     void (async () => {
-      const [, storedDecisions] = await Promise.all([
+      const [, stored] = await Promise.all([
         refreshStore(),
-        messageId ? fetchProposalDecisions(messageId) : Promise.resolve({}),
+        (messageId ? fetchProposalDecisions(messageId) : Promise.resolve({})).then(
+          (value): { ok: true; value: ProposalDecisions } => ({ ok: true, value }),
+          (err: unknown): { ok: false; err: unknown } => ({ ok: false, err }),
+        ),
       ]);
       if (!live) return;
-      setDecisions(storedDecisions);
+      if (stored.ok) {
+        setDecisions(stored.value);
+        setDecisionsError(null);
+      } else {
+        setDecisionsError(stored.err);
+      }
       setLoading(false);
     })();
     return () => {
@@ -145,7 +156,8 @@ export function ListChangeProposalView({
     };
   }, [refreshStore, messageId]);
 
-  const canDecide = !readOnly && Boolean(messageId) && readRefusal === null;
+  const canDecide =
+    !readOnly && Boolean(messageId) && readRefusal === null && decisionsError == null;
 
   const remember = useCallback(
     async (id: string, decision: ProposalDecision) => {
@@ -239,6 +251,7 @@ export function ListChangeProposalView({
         </span>
         <span className="text-xs text-muted-foreground">
           {listLabel} · {proposals.length} change{proposals.length === 1 ? "" : "s"}
+          {/* read-gate-exempt: list size from a snapshot that is set only when the list read succeeded (null with a refusal otherwise) */}
           {snapshot ? ` · ${snapshot.rows.length} on the list now` : ""}
         </span>
       </header>
@@ -305,6 +318,14 @@ export function ListChangeProposalView({
         </p>
       ) : null}
 
+      {decisionsError != null && !readRefusal ? (
+        <ReadFailure
+          error={decisionsError}
+          what="the decisions already made on these changes (deciding is paused until they load)"
+          className="m-0"
+        />
+      ) : null}
+
       {!messageId && !readOnly && !readRefusal ? (
         <p className="text-xs text-muted-foreground">{NO_MESSAGE_REASON}</p>
       ) : null}
@@ -341,6 +362,7 @@ export function ListChangeProposalView({
       <ConfirmDialog
         open={pendingConfirm !== null}
         onOpenChange={(open) => !open && setPendingConfirm(null)}
+        // read-gate-exempt: counts of this message's own proposals; the dialog opens only while deciding is allowed, i.e. after the decisions read succeeded
         title={
           pendingConfirm?.scope === "all"
             ? `Apply ${openProposals.length} changes to ${listLabel}?`
@@ -348,6 +370,7 @@ export function ListChangeProposalView({
               ? `Move this row from ${listLabel} to Trash?`
               : `Remove this row from ${listLabel}?`
         }
+        // read-gate-exempt: counts of this message's own proposals; the dialog opens only while deciding is allowed (decisions read succeeded)
         description={
           pendingConfirm?.scope === "all"
             ? `${openRemovals.length} of these ${openProposals.length} changes take a row off ${listLabel}; each one ${removalFate}. The rest add or edit rows.`

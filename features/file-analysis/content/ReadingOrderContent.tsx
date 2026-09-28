@@ -112,6 +112,7 @@ export function ReadingOrderContent({ fileId, onJumpToPage }: Props) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <span className="text-[11px] text-muted-foreground">
+          {/* read-gate-exempt: figures of a report this extraction returned; report is null until the extraction succeeds (early return above) */}
           {report.page_count} page{report.page_count === 1 ? "" : "s"} ·{" "}
           {pages.reduce((n, p) => n + (p.blocks_in_order?.length ?? 0), 0)}{" "}
           blocks in reading order
@@ -179,6 +180,7 @@ export function ReadingOrderContent({ fileId, onJumpToPage }: Props) {
             ))}
             {(page.blocks_in_order ?? []).length === 0 ? (
               <li className="px-2.5 py-1.5 text-[11px] italic text-muted-foreground">
+                {/* read-gate-exempt: a page of a report this extraction returned; report is null until the extraction succeeds (early return above) */}
                 No text blocks on this page.
               </li>
             ) : null}

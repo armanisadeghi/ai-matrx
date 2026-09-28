@@ -577,6 +577,7 @@ export default function CollectionItemsPage() {
         {/* Bulk action bar */}
         {selected.size > 0 && (
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+            {/* read-gate-exempt: how many items the person has ticked (selection state), not a count from a read */}
             <span className="text-xs font-medium">{selected.size} selected</span>
             <Button
               variant="ghost"
@@ -1016,6 +1017,7 @@ export default function CollectionItemsPage() {
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={(open) => !bulkBusy && setDeleteOpen(open)}
+        // read-gate-exempt: how many items the person has ticked (selection state), not a count from a read
         title={`Delete ${selected.size} item(s)?`}
         description="Items are soft-deleted and disappear from every view, including public reads."
         confirmLabel="Delete"

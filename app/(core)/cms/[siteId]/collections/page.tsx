@@ -313,7 +313,7 @@ export default function CollectionsPage() {
               Collections
             </h3>
             <p className="text-xs text-muted-foreground">
-              {collections.length === 0
+              {error || collections.length === 0
                 ? "Structured site data — form submissions, listings, testimonials."
                 : `${collections.length} collection${collections.length === 1 ? "" : "s"} on this site`}
             </p>
