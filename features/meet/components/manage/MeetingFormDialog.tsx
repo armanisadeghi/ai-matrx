@@ -13,6 +13,7 @@
 // occurrences" (the series moves by the same amount). "Notify guests" is on by
 // default and sends through `announce` — the update email with its `.ics`.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import { Clock, Globe, Loader2, Settings2, Users } from "lucide-react";
 import {
@@ -549,7 +550,10 @@ export function MeetingFormDialog({
             )}
             <div className="ml-auto flex items-center gap-2">
               {hasGuests && problem ? (
-                <span className="text-xs text-muted-foreground">{problem}</span>
+                <span className="text-xs text-muted-foreground">
+                  {problem}
+                  <ErrorAlchemyMenu error={problem} size="xs" />
+                </span>
               ) : null}
               <Button
                 type="button"
