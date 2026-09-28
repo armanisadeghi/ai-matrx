@@ -281,6 +281,7 @@ surface). Say which parts you judged as authored content.
   only the stopgap while the source rewrite lands.
 - **An empty value is still a supplied value**: a context inspector or a check
   that treats `null` as "missing" raises a false alarm.
+- **Desktop keeps every action visible; only the phone folds.** Folding into a "More"/tools menu is a phone fix — applying it at every width hid features and Arman had it reverted (2026-09-27). On desktop, fit actions into fewer rows, never behind a menu.
 - **A control the device cannot run is absent** (screen capture on a phone),
   never a button that fails.
 - **The screen shows what was saved.** After a save the view re-reads (or
