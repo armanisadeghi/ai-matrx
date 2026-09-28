@@ -564,6 +564,26 @@ export interface InstanceContextEntry {
 
 export type InputSubmissionPhase = "idle" | "pending" | "persisted";
 
+/**
+ * THE PRE-SEND WINDOW, made visible. Between the person pressing Send and the
+ * request being admitted (`markInputSubmitted`), a surface may do real work —
+ * the tutor searches the learner's material for 10–25 s. That window used to
+ * show NOTHING, and a failure in it only reached the console (2026-09-28).
+ * `preparing` renders the outgoing message with what is happening to it;
+ * `failed` renders an honest in-place error with Retry. The composer `text`
+ * is never touched by either — the draft stays exactly as typed.
+ */
+export interface PreSendState {
+  status: "preparing" | "failed";
+  /** The text being sent, captured at press time (display only). */
+  text: string;
+  /** What is happening, e.g. "Searching your study material". */
+  label: string;
+  /** Present only when `status === "failed"`: what failed, in plain words. */
+  error?: string;
+  startedAt: number;
+}
+
 export interface InstanceUserInputState {
   conversationId: string;
 
@@ -609,6 +629,9 @@ export interface InstanceUserInputState {
    */
   originalSubmittedText?: string;
   originalSubmittedUserValues?: Record<string, unknown>;
+
+  /** The visible pre-send window — see `PreSendState`. Null/absent when idle. */
+  preSend?: PreSendState | null;
 }
 
 /**

@@ -467,6 +467,7 @@ export const educationTutorManifest: SurfaceManifest = {
   description:
     "",
   requiresBeforeExecute: true,
+  beforeExecuteLabel: "Searching your study material",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter shipped and complete for everything the tutor client loads. Write targets (3) are live and were verified end-to-end with a real agent run — ask dialog per target, Apply landing through the canonical paths, decline clean, undeclared target refused, handler throws reaching the agent. Not yet stamped verified: the DB sync (writeTargets are code-only v1, not yet mirrored to ui.ui_surface_write_target) + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no agent roles are declared yet (the tutor agent itself is a fixed default, not a surface role).",

@@ -1,6 +1,9 @@
 import type { RootState } from "@/lib/redux/store";
 import type { MessagePart } from "@/types/python-generated/stream-events";
-import type { InputSubmissionPhase } from "@/features/agents/types/instance.types";
+import type {
+  InputSubmissionPhase,
+  PreSendState,
+} from "@/features/agents/types/instance.types";
 
 const EMPTY_USER_VALUES: Record<string, unknown> = Object.freeze({});
 
@@ -62,6 +65,15 @@ export const selectHasUserInput =
       ).length > 0
     );
   };
+
+/**
+ * The visible pre-send window (preparing / failed), or null. Returns the stored
+ * object reference, so it only changes identity when the state changes.
+ */
+export const selectPreSend =
+  (conversationId: string) =>
+  (state: RootState): PreSendState | null =>
+    state.instanceUserInput.byConversationId[conversationId]?.preSend ?? null;
 
 /**
  * Current submission phase — "idle" | "pending" | "persisted".

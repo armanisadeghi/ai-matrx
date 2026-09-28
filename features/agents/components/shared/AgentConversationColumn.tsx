@@ -16,6 +16,7 @@ import type { ComposerPresentation } from "@/features/agents/components/inputs/s
 import type { AttachedContextRailItem } from "../inputs/smart-input/ConversationContextRail";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
+import { PendingSendMessage } from "../messages-display/user/PendingSendMessage";
 import { TranscriptIntegrityCopyButton } from "../messages-display/TranscriptIntegrityCopyButton";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
 import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
@@ -480,6 +481,10 @@ export function AgentConversationColumn({
                     ? (chatVisibleGroupLimit ?? CHAT_INITIAL_VISIBLE_GROUPS)
                     : null
                 }
+              />
+              <PendingSendMessage
+                conversationId={conversationId}
+                surfaceKey={surfaceKey}
               />
               {afterMessages}
             </div>

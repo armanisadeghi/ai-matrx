@@ -40,7 +40,10 @@ import {
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import {
+  selectPreSend,
+  selectUserInputText,
+} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   selectConversationMessages,
   selectMessageCount,
@@ -518,6 +521,9 @@ function EducationTutorClientInner({
   // composer, so using the landing slot would leave the fresh route with no way
   // to type. `afterMessages` keeps the real SmartAgentInput mounted.
   const messageCount = useAppSelector(selectMessageCount(conversationId ?? ""));
+  // While the first question is being prepared (material search) or failed,
+  // the outgoing message owns the space — not the empty-state hero.
+  const preSend = useAppSelector(selectPreSend(conversationId ?? ""));
 
   // ── Per-turn STRUCTURED trust (target state) ──────────────────────────────
   // The re-authored tutor agent emits a machine-readable TrustEnvelope for THAT
@@ -765,7 +771,8 @@ function EducationTutorClientInner({
     );
   }
 
-  const showEmptyState = !hideLanding && isFreshRoute && messageCount === 0;
+  const showEmptyState =
+    !hideLanding && isFreshRoute && messageCount === 0 && !preSend;
 
   // ── Write half of the tutor surface (manifest `writeTargets`) ─────────────
   // Three targets, and the manifest's writeTargets docblock records why only

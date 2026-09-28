@@ -16,7 +16,10 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { InstanceUserInputState } from "@/features/agents/types/instance.types";
+import type {
+  InstanceUserInputState,
+  PreSendState,
+} from "@/features/agents/types/instance.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
@@ -180,6 +183,11 @@ const instanceUserInputSlice = createSlice({
       // User is composing new content — exit any lingering pending/persisted phase.
       if (entry.submissionPhase !== "idle") {
         entry.submissionPhase = "idle";
+      }
+      // Editing the draft after a failed pre-send answers that failure: the
+      // bubble showed the OLD text, and Retry would send the new one.
+      if (entry.preSend?.status === "failed" && text !== entry.preSend.text) {
+        entry.preSend = null;
       }
     },
 
@@ -356,6 +364,21 @@ const instanceUserInputSlice = createSlice({
     },
 
     /**
+     * The pre-send window (see `PreSendState`). Never touches `text`.
+     */
+    setPreSend(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        preSend: PreSendState | null;
+      }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (!entry) return;
+      entry.preSend = action.payload.preSend;
+    },
+
+    /**
      * Error/abort path. Returns phase to idle but keeps `text` intact so
      * the user doesn't lose their input on a failed submission.
      */
@@ -453,6 +476,7 @@ export const {
   markInputSubmitted,
   markInputPersisted,
   resetSubmissionPhase,
+  setPreSend,
   transferLastSubmittedInput,
   removeInstanceUserInput,
 } = instanceUserInputSlice.actions;
