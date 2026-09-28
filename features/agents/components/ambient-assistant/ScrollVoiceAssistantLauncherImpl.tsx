@@ -23,6 +23,7 @@ import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ActiveAmbientVoiceAssistantProps {
   primaryAgentId: string;
@@ -454,6 +455,7 @@ function AuthenticatedAmbientVoiceAssistant({
           <span className="min-w-0 flex-1 truncate">
             The page assistant didn&apos;t load
             {primary.error ? ` — ${primary.error}` : "."}
+            <ErrorAlchemyMenu error={primary.error ?? "The page assistant didn't load"} operation="Load the page assistant" />
           </span>
           <Button
             type="button"

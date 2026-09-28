@@ -19,6 +19,7 @@ import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { cn } from "@/lib/utils";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ScrollAssistantLauncherImplProps {
   inputVariant?: "single-line" | "multiline";
@@ -166,6 +167,7 @@ function AuthenticatedAmbientAssistant({
           >
             <span className="min-w-0 flex-1 truncate">
               The page assistant didn&apos;t load{error ? ` — ${error}` : "."}
+              <ErrorAlchemyMenu error={error ?? "The page assistant didn't load"} operation="Load the page assistant" />
             </span>
             <Button
               type="button"

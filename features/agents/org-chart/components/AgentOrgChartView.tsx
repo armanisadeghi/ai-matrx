@@ -42,6 +42,7 @@ import { toast } from "@/lib/toast";
 import { AGENT_ORG_EDGE_KINDS } from "../constants";
 import { useAgentOrgChart } from "../useAgentOrgChart";
 import { AgentOrgCard } from "./AgentOrgCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type PickMode =
   | { kind: "manager-for"; reportId: string } // choose who this agent sits under
@@ -125,6 +126,7 @@ export function AgentOrgChartView({
       {error && (
         <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           Part of the chart could not load: {error}
+          <ErrorAlchemyMenu error={error} operation="Load the agent org chart" />
         </div>
       )}
       <OrgChart
