@@ -37,7 +37,7 @@ export function ClassPicker({
   variant = "dropdown",
   onAfterSave,
 }: ClassPickerProps) {
-  const { classTypeId, orgId } = useClasses();
+  const { classTypeId, classes, error, orgId } = useClasses();
   const { organizations, refresh } = useScopeTree();
 
   // The class scope type + its classes are created through the legacy scope
@@ -53,7 +53,12 @@ export function ClassPicker({
     }
   }, [classTypeId, organizations, orgId, refresh]);
 
-  if (!classTypeId) {
+  // The one-line affordance until there is a class to pick. The Class type
+  // outlives its classes (it is created with the first one and stays when they
+  // are deleted or archived), so "no type" alone is not the test: a type with
+  // no active classes would render a dropdown whose only choice is "None".
+  // A failed tree read falls through so the tagger shows the failure.
+  if (!classTypeId || (classes.length === 0 && !error)) {
     return (
       <div className={className}>
         <Link
