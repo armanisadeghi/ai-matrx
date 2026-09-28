@@ -117,8 +117,10 @@ async function nudgeRound(row, col, word) {
   await page.keyboard.type(word, { delay: 30 });
   await sleep(800);
   await page.keyboard.press("Enter");
-  const asked = await until("the ask", async () => (await page.locator("[data-matrx-choice-nudge]").count()) > 0, 6000);
-  return { asked: !!asked.v, text: asked.v ? (await page.locator("[data-matrx-choice-nudge]").innerText()).replace(/\s+/g, " ") : null };
+  // The Sheet's question and the records-ui grid's question read the same words.
+  const ask = page.locator("[data-matrx-choice-nudge], [data-radix-popper-content-wrapper]").filter({ hasText: "to the choices for" });
+  const asked = await until("the ask", async () => (await ask.count()) > 0, 8000);
+  return { asked: !!asked.v, text: asked.v ? (await ask.first().innerText()).replace(/\s+/g, " ") : null };
 }
 
 try {
@@ -137,8 +139,14 @@ try {
 
     // ── 2 · sort, then an edit re-sorts (Arman: sort after edit) ────────────────────────────────
     await open(T.orders);
-    await page.locator("thead th", { hasText: "Item" }).first().locator("button, span").first().click().catch(() => {});
-    await sleep(1500);
+    await page.locator("thead th", { hasText: "Item" }).first().click({ button: "right" });
+    await sleep(800);
+    const sortItems = page.locator("[role=menu] [role^=menuitem]");
+    const sortTexts = await sortItems.allInnerTexts();
+    const asc = sortTexts.findIndex((t) => /^Sort/i.test(t.trim()) && /(A\s*[→-]\s*Z|ascending|smallest|oldest|first)/i.test(t));
+    if (asc >= 0) await sortItems.nth(asc).click();
+    else { friction(`no sort item in the header menu: ${sortTexts.slice(0, 6).join(" | ")}`); await page.keyboard.press("Escape"); }
+    await sleep(2000);
     const before = (await rowTexts()).slice(0, 3);
     const itemCell = await cellOf("Nitrile gloves, medium", "Item");
     await itemCell.dblclick();
@@ -189,14 +197,23 @@ try {
     await open(T.supplies);
     const r3 = await nudgeRound("Foam rollers", "Stock Status", "Backordered");
     step("nudge on the native table", r3);
-    await page.locator("[data-matrx-choice-nudge] button", { hasText: "Add" }).first().click().catch(() => {});
-    await sleep(2500);
+    await page
+      .locator("[data-matrx-choice-nudge], [data-radix-popper-content-wrapper]")
+      .filter({ hasText: "to the choices for" })
+      .getByRole("button", { name: "Add", exact: true })
+      .first()
+      .click()
+      .catch(() => {});
+    await sleep(3000);
     const added = (await (await cellOf("Foam rollers", "Stock Status")).innerText()).trim();
     await shot("o05-nudge-added");
     step("Add: the cell holds the new choice", { cell: added });
     if (!/Backordered/.test(added)) friction(`after Add the cell reads "${added}"`);
 
-    // ── 5 · a new row takes the column's default (Arman's defect) ──────────────────────────────
+    // ── 5 · a new row takes the column's default (Arman's defect) — in the Sheet layout ───────
+    await page.getByRole("button", { name: "Sheet", exact: true }).first().click();
+    await until("the Sheet", async () => (await page.locator("[data-sheet-layout]").count()) > 0, 60000);
+    await sleep(2500);
     await page.getByRole("button", { name: /^Row$/ }).first().click();
     const form = page.getByRole("dialog").filter({ hasText: "Add New Row" });
     await form.waitFor({ timeout: 20000 });
@@ -212,7 +229,7 @@ try {
 
     // ── 6 · add a column named after an old key (Arman) ─────────────────────────────────────────
     let d = await columnSettings("Wing Code");
-    await d.getByLabel("Name").fill("Wing");
+    await d.locator("#col-name").fill("Wing");
     await d.getByRole("button", { name: "Save", exact: true }).click();
     await sleep(3000);
     await page.getByRole("button", { name: /^Column$/ }).first().click();
@@ -234,11 +251,11 @@ try {
     await sleep(500);
     await page.getByRole("option", { name: "Stock Status", exact: true }).click();
     await sleep(1500);
-    const tinted = await page.evaluate(() => [...document.querySelectorAll("tbody tr")].filter((tr) => /bg-\w+-50/.test(tr.className)).length);
+    const tinted = await page.evaluate(() => [...document.querySelectorAll("tbody tr")].filter((tr) => /(^|\s)bg-\w+-50(\s|$)/.test(tr.className)).length);
     await shot("o08-colour-preview");
     await colors.getByRole("button", { name: "Cancel", exact: true }).click();
     await sleep(2500);
-    const untinted = await page.evaluate(() => [...document.querySelectorAll("tbody tr")].filter((tr) => /bg-\w+-50/.test(tr.className)).length);
+    const untinted = await page.evaluate(() => [...document.querySelectorAll("tbody tr")].filter((tr) => /(^|\s)bg-\w+-50(\s|$)/.test(tr.className)).length);
     step("colour by Stock Status, then Cancel", { tinted_while_open: tinted, tinted_after_cancel: untinted });
     if (untinted > 0) friction("Cancel on Table colors left the rows tinted");
 
@@ -319,7 +336,7 @@ try {
     await open(T.supplies);
     // B-F5/F7: rename, then add the old name; an emoji name beside a real one
     let d = await columnSettings("Room");
-    await d.getByLabel("Name").fill("Treatment area");
+    await d.locator("#col-name").fill("Treatment area");
     await d.getByRole("button", { name: "Save", exact: true }).click();
     await sleep(3000);
     for (const name of ["Room", "Stock Status 🔥"]) {
@@ -335,7 +352,7 @@ try {
     }
     // B-F8: rename onto another column's name
     d = await columnSettings("Stock Count");
-    await d.getByLabel("Name").fill("Title");
+    await d.locator("#col-name").fill("Title");
     await d.getByRole("button", { name: "Save", exact: true }).click();
     await sleep(2500);
     const refusal = await page.evaluate(() => [...document.querySelectorAll("li, [role=status], [role=dialog]")].map((x) => x.innerText.replace(/\s+/g, " ")).filter((t) => /already/i.test(t)).slice(0, 2));
