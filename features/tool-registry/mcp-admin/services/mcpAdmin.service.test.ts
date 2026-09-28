@@ -1,5 +1,7 @@
 import {
   getMcpTestNotificationLevel,
+  mergeMcpToolAllowlist,
+  toolAllowlistFromMetadata,
   type McpTestResult,
 } from "./mcpAdmin.service";
 
@@ -51,5 +53,28 @@ describe("getMcpTestNotificationLevel", () => {
         }),
       ),
     ).toBe("success");
+  });
+});
+
+describe("MCP tool allowlists", () => {
+  it("normalizes one tool name per line without storing an empty allowlist", () => {
+    expect(
+      mergeMcpToolAllowlist(
+        { retained: { nested: true }, tool_allowlist: ["old_tool"] },
+        "  list_teams\n\nlist_workspaces\nlist_teams  ",
+      ),
+    ).toEqual({
+      retained: { nested: true },
+      tool_allowlist: ["list_teams", "list_workspaces"],
+    });
+
+    expect(mergeMcpToolAllowlist({ retained: true }, " \n ")).toEqual({
+      retained: true,
+    });
+  });
+
+  it("treats an absent or empty stored allowlist as unrestricted", () => {
+    expect(toolAllowlistFromMetadata({})).toEqual([]);
+    expect(toolAllowlistFromMetadata({ tool_allowlist: [] })).toEqual([]);
   });
 });

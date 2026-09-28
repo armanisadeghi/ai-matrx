@@ -53,6 +53,9 @@ import {
   computeFreshness,
   computeTestFreshness,
   formatRelativeAge,
+  toolAllowlistFromMetadata,
+  toolAllowlistFromText,
+  updateServerToolAllowlist,
   createServerConfig,
   updateServerConfig,
   archiveServerConfig,
@@ -804,7 +807,7 @@ function ServerDetail({
           />
         </TabsContent>
         <TabsContent value="meta" className="m-0 mt-3">
-          <MetaTab server={server} />
+          <MetaTab server={server} onUpdated={onRefreshed} />
         </TabsContent>
       </Tabs>
     </div>
@@ -865,7 +868,15 @@ function ToolsTab({
         }}
         copy={{
           label: `Tools of ${slug}`,
-          export: (_visible, all) => ({ items: [jsonExportItem(() => all), csvExportItem(() => all as unknown as Array<Record<string, unknown>>, "CSV (raw data)")] }),
+          export: (_visible, all) => ({
+            items: [
+              jsonExportItem(() => all),
+              csvExportItem(
+                () => all as unknown as Array<Record<string, unknown>>,
+                "CSV (raw data)",
+              ),
+            ],
+          }),
           location: PAGE_LOCATION,
           rowKind: "mcp-server-tool",
           listKind: "mcp-server-tools",
@@ -881,7 +892,10 @@ function ToolsTab({
           agentRow: (row) => row,
           listContext: (visible) => ({ server: slug, count: visible.length }),
         }}
-        read={readOf({ loading, error }, { what: "this server's tools", onRetry: () => void load() })}
+        read={readOf(
+          { loading, error },
+          { what: "this server's tools", onRetry: () => void load() },
+        )}
         emptyState={{
           title: "No tools registered for this server",
           description: "Try Refresh sync to retrieve its current tools.",
@@ -1503,30 +1517,131 @@ function ConnectionsTab({
   );
 }
 
-function MetaTab({ server }: { server: McpServerRow }) {
-  const meta = serverMeta(server);
+function MetaTab({
+  server,
+  onUpdated,
+}: {
+  server: McpServerRow;
+  onUpdated: () => void;
+}) {
+  const [currentServer, setCurrentServer] = useState(server);
+  const [toolAllowlistText, setToolAllowlistText] = useState(() =>
+    toolAllowlistFromMetadata(server.metadata).join("\n"),
+  );
+  const [saving, setSaving] = useState(false);
+
+  // A list refresh after another write must replace the draft with the latest
+  // server record. This is a state sync only; it never writes on render.
+  useEffect(() => {
+    setCurrentServer(server);
+    setToolAllowlistText(toolAllowlistFromMetadata(server.metadata).join("\n"));
+  }, [server]);
+
+  const saveToolAllowlist = async () => {
+    const removingRestriction =
+      toolAllowlistFromMetadata(currentServer.metadata).length > 0 &&
+      toolAllowlistFromText(toolAllowlistText).length === 0;
+    if (removingRestriction) {
+      const confirmed = await confirm({
+        title: "Remove this server's tool restriction?",
+        description:
+          "This will remove its saved tool allowlist. Empty or absent allowlists make the server unrestricted, so future catalog syncs may register every tool the server offers.",
+        confirmLabel: "Make unrestricted",
+        variant: "destructive",
+      });
+      if (!confirmed) return;
+    }
+    setSaving(true);
+    try {
+      const saved = await updateServerToolAllowlist(
+        currentServer,
+        toolAllowlistText,
+      );
+      setCurrentServer(saved);
+      setToolAllowlistText(
+        toolAllowlistFromMetadata(saved.metadata).join("\n"),
+      );
+      toast.success(`Allowed tools saved for ${saved.slug}`);
+      onUpdated();
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Could not save allowed tools",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const meta = serverMeta(currentServer);
   return (
-    <div className="rounded-md border border-border bg-card p-3">
-      <div className="flex justify-end">
-        <CopyButtons
-          size="xs"
-          label={`Server ${server.slug} metadata`}
-          human={() => serverSummary(server)}
-          json={() => meta}
-          agent={() => ({
-            kind: "mcp-server",
-            location: PAGE_LOCATION,
-            description:
-              "Sanitized metadata of the MCP server open in the admin detail pane.",
-            data: meta,
-            summary: serverSummary(server),
-            attributes: { slug: server.slug, status: server.status },
-          })}
+    <div className="space-y-3">
+      <section className="rounded-md border border-border bg-card p-3 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label
+              htmlFor={`mcp-tool-allowlist-${currentServer.id}`}
+              className="text-xs"
+            >
+              Allowed tool names
+            </Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              One exact MCP tool name per line. Leave this blank to remove the
+              allowlist: empty or absent means this server is unrestricted, not
+              that all tools are disabled.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => void saveToolAllowlist()}
+            disabled={saving}
+            className="h-8 text-xs"
+          >
+            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            Save allowed tools
+          </Button>
+        </div>
+        <Textarea
+          id={`mcp-tool-allowlist-${currentServer.id}`}
+          value={toolAllowlistText}
+          onChange={(event) => setToolAllowlistText(event.target.value)}
+          placeholder={"search_projects\nget_project"}
+          rows={6}
+          className="font-mono text-xs"
+          aria-describedby={`mcp-tool-allowlist-help-${currentServer.id}`}
         />
+        <p
+          id={`mcp-tool-allowlist-help-${currentServer.id}`}
+          className="text-[11px] text-muted-foreground"
+        >
+          Names are trimmed and duplicate lines are saved once. Server status,
+          authentication, endpoint, and all other metadata stay unchanged.
+        </p>
+      </section>
+      <div className="rounded-md border border-border bg-card p-3">
+        <div className="flex justify-end">
+          <CopyButtons
+            size="xs"
+            label={`Server ${currentServer.slug} metadata`}
+            human={() => serverSummary(currentServer)}
+            json={() => meta}
+            agent={() => ({
+              kind: "mcp-server",
+              location: PAGE_LOCATION,
+              description:
+                "Sanitized metadata of the MCP server open in the admin detail pane.",
+              data: meta,
+              summary: serverSummary(currentServer),
+              attributes: {
+                slug: currentServer.slug,
+                status: currentServer.status,
+              },
+            })}
+          />
+        </div>
+        <pre className="font-mono text-[11px] overflow-auto whitespace-pre-wrap leading-relaxed">
+          {JSON.stringify(meta, null, 2)}
+        </pre>
       </div>
-      <pre className="font-mono text-[11px] overflow-auto whitespace-pre-wrap leading-relaxed">
-        {JSON.stringify(meta, null, 2)}
-      </pre>
     </div>
   );
 }
@@ -1592,7 +1707,9 @@ function TestFreshnessBadge({ testFresh }: { testFresh: TestFreshness }) {
     >
       <XCircle className="h-3 w-3" />
       unreachable
-      <ErrorAlchemyMenu error={`${formatRelativeAge(testFresh.ageSec)}: ${testFresh.error}`} />
+      <ErrorAlchemyMenu
+        error={`${formatRelativeAge(testFresh.ageSec)}: ${testFresh.error}`}
+      />
     </span>
   );
 }
