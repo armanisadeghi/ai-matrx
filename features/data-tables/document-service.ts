@@ -303,6 +303,7 @@ export async function listDocumentSnapshots(
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_document_snapshots")
+    // component-created-by-ok: append-only snapshot with NO updated_by column and NO parent-rewrite trigger — created_by is the author the client wrote at insert (the only person field this table has)
     .select("id, document_id, label, origin, created_by, created_at")
     .eq("document_id", documentId)
     .order("created_at", { ascending: false })

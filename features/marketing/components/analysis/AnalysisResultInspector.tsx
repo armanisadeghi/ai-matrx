@@ -65,7 +65,7 @@ export function AnalysisResultInspector({
 }) {
   const reasoning = resultReasoning(result.metadata);
   const resolveActor = useRecordActors(result.organization_id, [
-    result.created_by,
+    // A component: created_by is the parent owner (db-rules §6d-1), so only the saver is named.
     result.updated_by,
   ]);
   const copy = webCopy({
@@ -265,7 +265,7 @@ export function AnalysisResultInspector({
       <RecordStamps
         organizationId={result.organization_id}
         createdAt={result.created_at}
-        createdBy={result.created_by}
+        component
         updatedAt={result.updated_at}
         updatedBy={result.updated_by}
         deletedAt={result.deleted_at}

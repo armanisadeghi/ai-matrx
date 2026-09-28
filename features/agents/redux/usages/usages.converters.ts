@@ -171,7 +171,9 @@ export function toHistoryCount(
 export function toDriftAlert(r: Record<string, unknown>): DriftAlertRow {
   return {
     id: r.id as string,
-    userId: r.created_by as string,
+    // The person the alert is ADDRESSED to. Never created_by: drift_alert is a
+    // component, so the database rewrites created_by to the agent's owner.
+    userId: r.recipient_id as string,
     agentId: r.agent_id as string,
     agentName: (r.agent_name as string) ?? "",
     severity: (r.severity as DriftAlertRow["severity"]) ?? "warning",

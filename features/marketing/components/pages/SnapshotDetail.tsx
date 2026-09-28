@@ -40,7 +40,7 @@ export function SnapshotDetail({
   const snapshot = useSnapshot(site.id, pageId, snapshotId);
   // Hooks run before the guards — the doors below need them either way.
   const resolveActor = useRecordActors(snapshot.data?.organization_id, [
-    snapshot.data?.created_by,
+    // A component: created_by is the parent owner (db-rules §6d-1), so only the saver is named.
     snapshot.data?.updated_by,
   ]);
   // access-errors: ok — door ref to the crawl session; the snapshot primary is gated below and a failed ref only weakens the door label
@@ -241,7 +241,7 @@ export function SnapshotDetail({
           <RecordStamps
             organizationId={row.organization_id}
             createdAt={row.created_at}
-            createdBy={row.created_by}
+            component
             updatedAt={row.updated_at}
             updatedBy={row.updated_by}
             deletedAt={row.deleted_at}

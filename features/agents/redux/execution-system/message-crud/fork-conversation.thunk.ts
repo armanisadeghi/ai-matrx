@@ -162,6 +162,7 @@ export const forkConversation = createAsyncThunk<
         sourceFeature: sourceFeatureFromStorage(conv.source_feature),
         createdAt: conv.created_at,
         updatedAt: conv.updated_at,
+        // component-created-by-ok: chat.conversation is an entity — its created_by is the conversation's owner
         createdBy: conv.created_by,
         initialAgentId: conv.initial_agent_id,
         initialAgentVersionId: conv.initial_agent_version_id,

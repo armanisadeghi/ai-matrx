@@ -212,6 +212,7 @@ async function resolveFixture(client: pg.Client): Promise<Fixture | string> {
     hi_id: string;
     hi_num: number;
   }>(
+    // component-created-by-ok: a.created_by is agent.definition (an entity: the agent's owner); no definition_version created_by is read
     `with ranked as (
        select v.agent_id, a.name,
               v.id as version_id, v.version_number,

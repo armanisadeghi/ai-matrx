@@ -8,6 +8,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { requireUserId } from "@/utils/auth/getUserId";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -183,7 +184,12 @@ export const updateAllUsagesToActive = createAsyncThunk<
   }
 });
 
-/** Load the caller's open drift alerts (RLS-scoped to own rows) for the banner. */
+/**
+ * Load the open drift alerts ADDRESSED to the caller for the banner. RLS lets her
+ * read every alert on an agent she can read (drift_alert is a component of the
+ * agent); the banner is hers, so it narrows to `recipient_id` — never
+ * `created_by`, which the database rewrites to the agent's owner.
+ */
 export const fetchDriftAlerts = createAsyncThunk<void, { force?: boolean } | void, ThunkApi>(
   "agentUsages/fetchAlerts",
   async (arg, { dispatch, getState }) => {
@@ -192,11 +198,13 @@ export const fetchDriftAlerts = createAsyncThunk<void, { force?: boolean } | voi
     if (!force && (alerts.status === "loading" || alerts.status === "succeeded")) return;
     dispatch(alertsPending());
     try {
-      // VIEW LAW: container-scoped via RLS — drift_alert rows are already caller-scoped, see docblock above
+      const userId = requireUserId();
+      // VIEW LAW: the alerts addressed to me — see docblock above.
       const { data, error } = await supabase
         .schema("agent")
         .from("drift_alert")
         .select("*")
+        .eq("recipient_id", userId)
         .in("status", ["pending", "acknowledged"])
         .order("detected_at", { ascending: false });
       if (error) throw pgErrorToError(error);

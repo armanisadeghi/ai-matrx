@@ -232,7 +232,11 @@ export function dbRowToCloudFileVersion(
     // Phase 0 rename — see `dbRowToCloudFile` above.
     fileSize: row.size_bytes,
     checksum: row.checksum,
-    createdBy: row.created_by,
+    // Who saved THIS version is not recorded: files.file_versions has no
+    // updated_by, and its created_by is rewritten to the FILE's owner
+    // (component of files.files, db-rules §6d-1) — so it is unknown, never
+    // the owner presented as the author.
+    createdBy: null,
     createdAt: row.created_at,
     changeSummary: row.change_summary,
   };

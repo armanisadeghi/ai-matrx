@@ -125,7 +125,9 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .upsert(insertRow, {
             // Infers `uq_cx_artifact_source_natural_key_cb` — the canonical
-            // dedup key, on `created_by` (stamped by `_stamp_actor`).
+            // dedup key. On this component the database rewrites `created_by`
+            // to the conversation's owner, so the key dedups per message.
+            // component-created-by-ok: an ON CONFLICT target must name the unique index's own columns
             onConflict:
               "created_by,source_system,source_id,artifact_index,artifact_type,external_system",
             ignoreDuplicates: true,
@@ -167,9 +169,14 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .update(updates)
-          .eq("created_by", user.id)
+          // The row the conflict collided with. Not `.eq("created_by", user.id)`:
+          // on this component created_by is the CONVERSATION's owner (db-rules
+          // §6d-1), so a collaborator's revive matched nothing and 500'd. Source
+          // + index + type + system name the one row (this route writes a NULL
+          // artifact_index); RLS decides whether she may change it.
           .eq("source_system", "cx_message")
           .eq("source_id", messageId)
+          .is("artifact_index", null)
           .eq("artifact_type", artifactType);
         updateQuery = normalizedExternalSystem
           ? updateQuery.eq("external_system", normalizedExternalSystem)
@@ -229,7 +236,6 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .update(updates)
           .eq("id", id)
-          .eq("created_by", user.id)
           .select()
           .single();
 
@@ -262,8 +268,7 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .update({ status: "archived", deleted_at: new Date().toISOString() })
-          .eq("id", id)
-          .eq("created_by", user.id);
+          .eq("id", id);
 
         if (error) {
           console.error("[artifacts API] archive error:", error);
@@ -287,8 +292,7 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .delete()
-          .eq("id", id)
-          .eq("created_by", user.id);
+          .eq("id", id);
 
         if (error) {
           console.error("[artifacts API] delete error:", error);
@@ -313,7 +317,6 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .select("*")
           .eq("id", id)
-          .eq("created_by", user.id)
           .is("deleted_at", null)
           .single();
 
@@ -333,9 +336,11 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .select("*")
-          .eq("created_by", user.id)
           .is("deleted_at", null)
           .order("updated_at", { ascending: false });
+        // "My artifacts" is what I SAVED (updated_by); a conversation's artifacts
+        // are the conversation's, whoever saved them (RLS is the ceiling).
+        if (!filters.conversationId) query = query.eq("updated_by", user.id);
 
         if (filters.artifactType)
           query = query.eq("artifact_type", filters.artifactType);
@@ -369,7 +374,6 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .select("*")
           .eq("message_id", messageId)
-          .eq("created_by", user.id)
           .is("deleted_at", null)
           .order("created_at", { ascending: true });
 

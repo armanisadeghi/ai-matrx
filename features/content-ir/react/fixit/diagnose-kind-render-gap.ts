@@ -103,7 +103,7 @@ async function compute(kind: string): Promise<KindRenderGapDiagnosis | null> {
     supabase
       .schema("content_ir")
       .from("kind_component")
-      .select("id, component_key, source, component_source, is_active, created_by")
+      .select("id, component_key, source, component_source, is_active, updated_by")
       .eq("kind_definition_id", def.id)
       .eq("role", "output")
       .eq("platform", "web")
@@ -136,6 +136,7 @@ async function compute(kind: string): Promise<KindRenderGapDiagnosis | null> {
     kindDefinitionId: def.id as string,
     kindLabel: (def.label as string) ?? null,
     kindActive: def.is_active === true,
+    // component-created-by-ok: kind_definition is an entity — its created_by is the kind's owner
     kindCreatedBy: (def.created_by as string) ?? null,
     kindOrganizationId: (def.organization_id as string) ?? null,
     hasCanonicalExample: (exampleResult.data ?? []).length > 0,
@@ -154,7 +155,8 @@ async function compute(kind: string): Promise<KindRenderGapDiagnosis | null> {
       state: "component_inactive",
       inactiveComponentId: inactiveReal.id as string,
       inactiveComponentKey: inactiveReal.component_key as string,
-      inactiveComponentCreatedBy: (inactiveReal.created_by as string) ?? null,
+      // Who SAVED the component (updated_by) — its created_by is the kind's owner.
+      inactiveComponentCreatedBy: (inactiveReal.updated_by as string) ?? null,
     };
   }
   if (emptyDb) {

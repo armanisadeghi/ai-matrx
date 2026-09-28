@@ -207,7 +207,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
     table.queryState,
   );
   const resolveFindingActor = useRecordActors(site.organization_id, [
-    detail.data?.finding.created_by,
+    // A component: created_by is the parent owner (db-rules §6d-1), so only the saver is named.
     detail.data?.finding.updated_by,
   ]);
 
@@ -645,7 +645,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         <RecordStamps
           organizationId={finding.organization_id}
           createdAt={finding.created_at}
-          createdBy={finding.created_by}
+          component
           updatedAt={finding.updated_at}
           updatedBy={finding.updated_by}
           deletedAt={finding.deleted_at}

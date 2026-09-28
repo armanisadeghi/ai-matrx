@@ -127,6 +127,7 @@ export async function GET(
         Type: conversation.type,
         GroupName: conversation.group_name,
         GroupImage: conversation.group_image_url,
+        // component-created-by-ok: communication.dm_conversations is an entity — its created_by is the group's creator
         CreatedBy: conversation.created_by,
         CreatedAt: conversation.created_at,
         UpdatedAt: conversation.updated_at,
@@ -247,6 +248,7 @@ export async function PUT(
 
       // Check if user is owner or admin
       if (
+        // component-created-by-ok: communication.dm_conversations is an entity — its created_by is the group's creator
         conversation.created_by !== userId &&
         participation.role !== "admin"
       ) {
@@ -327,6 +329,7 @@ export async function DELETE(
     }
 
     // For group chats where user is owner, delete the entire conversation
+    // component-created-by-ok: communication.dm_conversations is an entity — its created_by is the group's creator
     if (conversation.type === "group" && conversation.created_by === userId) {
       await supabase
         .schema("communication")

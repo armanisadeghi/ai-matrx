@@ -226,7 +226,9 @@ export function olderColumnFromField(
     validation_rules: olderValidationRules(field.rules, (field as { unique?: boolean | null }).unique) as DatasetField["validation_rules"],
     metadata: (format ? { format } : {}) as DatasetField["metadata"],
     organization_id: field.organization_id,
+    // component-created-by-ok: carries the record-store Field's own created_by into the legacy row shape verbatim (the Field is the store's entity, not a udt component row)
     user_id: (field.created_by ?? "") as string,
+    // component-created-by-ok: same verbatim carry of the store Field's created_by
     created_by: (field.created_by ?? "") as string,
     updated_by: field.updated_by ?? null,
     created_at: field.created_at,

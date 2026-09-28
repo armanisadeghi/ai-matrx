@@ -35,6 +35,18 @@ interface ConversationRow {
   title: string | null;
 }
 
+/** Merge id-keyed row lists (first wins) and drop the join-only `conversation` embed. */
+function dropJoinAndDedupe(lists: ReadonlyArray<ReadonlyArray<unknown> | null>): unknown[] {
+  const byId = new Map<string, unknown>();
+  for (const list of lists) {
+    for (const raw of list ?? []) {
+      const { conversation: _joinOnly, ...row } = raw as { id: string; conversation?: unknown };
+      if (!byId.has(row.id)) byId.set(row.id, row);
+    }
+  }
+  return [...byId.values()];
+}
+
 export function ListsHubView() {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
@@ -52,31 +64,52 @@ export function ListsHubView() {
     if (!userId) return undefined;
     let cancelled = false;
     void (async () => {
-      const [plansR, tasksR, todosR] = await Promise.all([
-        db
-          .schema("chat").from("agent_plan")
-          .select("*")
-          .eq("created_by", userId)
-          .neq("status", "superseded")
-          .order("updated_at", { ascending: false })
-          .limit(500),
-        // VIEW LAW: `agent_task` has no owner column of its own — it is owned
-        // through its parent conversation, so the scope is declared as an
-        // inner join on `conversation.created_by`.
-        db
-          .schema("chat").from("agent_task")
-          .select("*, conversation!inner(created_by)")
-          .eq("conversation.created_by", userId)
-          .is("deleted_at", null)
-          .order("updated_at", { ascending: false })
-          .limit(2000),
-        db
-          .schema("chat").from("user_todo")
-          .select("*")
-          .eq("created_by", userId)
-          .order("updated_at", { ascending: false })
-          .limit(2000),
-      ]);
+      // WHOSE lists: every list in a conversation I own (the parent's owner —
+      // a component's `created_by` IS that, db-rules §6d-1), plus every list I
+      // SAVED in someone else's conversation (`updated_by`). Never a list row's
+      // own `created_by` as "mine": the database rewrites it to the
+      // conversation's owner, so a collaborator's own todos never appeared.
+      const [plansOwnedR, plansSavedR, tasksR, todosOwnedR, todosSavedR] =
+        await Promise.all([
+          db
+            .schema("chat").from("agent_plan")
+            .select("*, conversation!inner(created_by)")
+            .eq("conversation.created_by", userId)
+            .neq("status", "superseded")
+            .order("updated_at", { ascending: false })
+            .limit(500),
+          db
+            .schema("chat").from("agent_plan")
+            .select("*")
+            .eq("updated_by", userId)
+            .neq("status", "superseded")
+            .order("updated_at", { ascending: false })
+            .limit(500),
+          // VIEW LAW: `agent_task` has no owner column of its own — it is owned
+          // through its parent conversation, so the scope is declared as an
+          // inner join on `conversation.created_by`.
+          db
+            .schema("chat").from("agent_task")
+            .select("*, conversation!inner(created_by)")
+            .eq("conversation.created_by", userId)
+            .is("deleted_at", null)
+            .order("updated_at", { ascending: false })
+            .limit(2000),
+          db
+            .schema("chat").from("user_todo")
+            .select("*, conversation!inner(created_by)")
+            .eq("conversation.created_by", userId)
+            .order("updated_at", { ascending: false })
+            .limit(2000),
+          db
+            .schema("chat").from("user_todo")
+            .select("*")
+            .eq("updated_by", userId)
+            .order("updated_at", { ascending: false })
+            .limit(2000),
+        ]);
+      const plansR = { data: dropJoinAndDedupe([plansOwnedR.data, plansSavedR.data]) };
+      const todosR = { data: dropJoinAndDedupe([todosOwnedR.data, todosSavedR.data]) };
       if (cancelled) return;
 
       const convoIds = new Set<string>();

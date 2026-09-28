@@ -2,8 +2,10 @@
  * canvasItemStateService — per-viewer interactive state for artifacts that use
  * GENERIC persistence (no dedicated domain table).
  *
- * Reads/writes `canvas_item_state(canvas_id, created_by, state)` for the current
- * user. Custom-table types (flashcards, quiz, tasks) do NOT use this — they
+ * Reads/writes `canvas_item_state(canvas_id, viewer_id, state)` for the current
+ * viewer. The key is `viewer_id`, NEVER `created_by`: this is a component table, so
+ * the database rewrites `created_by` to the canvas item's OWNER (db-rules §6d-1) —
+ * keyed on it, every viewer shared the owner's one row. Custom-table types (flashcards, quiz, tasks) do NOT use this — they
  * persist through their feature's service via a custom adapter.
  */
 
@@ -22,7 +24,7 @@ export const canvasItemStateService = {
         .select("state")
         .is("deleted_at", null)
         .eq("canvas_id", canvasId)
-        .eq("created_by", userId)
+        .eq("viewer_id", userId)
         .maybeSingle();
       if (error) {
         console.error("[canvasItemStateService.getState] error:", error);
@@ -51,11 +53,11 @@ export const canvasItemStateService = {
       const { error } = await supabase.schema("canvas").from("canvas_item_state").upsert(
         {
           canvas_id: canvasId,
-          created_by: userId,
+          viewer_id: userId,
           organization_id: await ensureOrgId(undefined),
           state: merged,
         },
-        { onConflict: "canvas_id,created_by" },
+        { onConflict: "canvas_id,viewer_id" },
       );
       if (error) {
         console.error("[canvasItemStateService.saveState] error:", error);

@@ -225,6 +225,7 @@ export function InterviewClient({
     !!interview &&
     !!userId &&
     userId !== interview.respondent_user_id &&
+    // component-created-by-ok: the interview row is an entity — its created_by is the person who opened the interview
     userId !== interview.created_by;
   const identitySentence = interview
     ? `Signed in as ${userEmail ?? userId ?? "nobody"}; this interview is addressed to ${respondentEmail ?? interview.respondent_user_id}.`

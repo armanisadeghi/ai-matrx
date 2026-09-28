@@ -168,6 +168,7 @@ async function listAssistantMessages(
     .schema("chat")
     .from("message")
     .select("*")
+    // component-created-by-ok: chat.message / chat.tool_call created_by IS the conversation's owner (db-rules §6d-1) — this reads "rows in MY conversations", the parent's owner, on purpose (server-written turns carry no saver)
     .eq("created_by", userId)
     .eq("role", "assistant")
     .eq("is_visible_to_user", true)

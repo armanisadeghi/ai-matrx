@@ -81,6 +81,7 @@ export function claimSql(
     run_id: identity.runId, instruction_hash: instructionHash, checklist_hash: checklistHash,
     checklist: frozen, route, fixture,
   };
+  // component-created-by-ok: reads dm_conversations.created_by (an entity: the conversation's owner) to address the audit message; dm_messages.created_by is only written
   return `do $runner$
 declare v_row agent.review_queue%rowtype; v_instruction_hash text;
 begin
@@ -124,6 +125,7 @@ export function candidateSql(
   const frozen = freezeChecklist(checklist);
   const evidenceHash = sha256Json(evidence);
   const candidate = { instruction_hash: instructionHash, checklist: frozen, evidence, evidence_hash: evidenceHash, reviewer, run_id: identity.runId, recorded_at: new Date().toISOString() };
+  // component-created-by-ok: reads dm_conversations.created_by (an entity: the conversation's owner) to address the audit message; dm_messages.created_by is only written
   return `with updated as (
  update agent.review_queue q set metadata=jsonb_set(q.metadata,'{triage,runner,candidate}',${json(candidate)})
  where q.id=${quote(id)} and q.status='agent_review'
@@ -142,6 +144,7 @@ export function candidateSql(
 
 export function acceptSql(id: string, identity: RunnerIdentity, evidenceHash: string, verdicts: ReviewerVerdict[], nonce: string): string {
   const [functional, quality] = requireIndependentVerdicts(identity.stableWorker, evidenceHash, verdicts);
+  // component-created-by-ok: reads dm_conversations.created_by (an entity: the conversation's owner) to address the audit message; dm_messages.created_by is only written
   return `with updated as (
  update agent.review_queue q set metadata=jsonb_set(q.metadata,'{triage,runner,acceptance}',${json({ evidence_hash: evidenceHash, verdicts: [functional, quality], accepted_at: new Date().toISOString() })})
  where q.id=${quote(id)} and q.status='agent_review'
@@ -159,6 +162,7 @@ export function acceptSql(id: string, identity: RunnerIdentity, evidenceHash: st
 }
 
 export function promoteSql(id: string, identity: RunnerIdentity, instructionHash: string, evidenceHash: string, nonce: string): string {
+  // component-created-by-ok: reads dm_conversations.created_by (an entity: the conversation's owner) to address the audit message; dm_messages.created_by is only written
   return `with promoted as (
  update agent.review_queue q set status='ready_for_human', metadata=jsonb_set(
   jsonb_set(jsonb_set(jsonb_set(q.metadata,'{triage,assignment,state}','"awaiting_review"'::jsonb),'{triage,verification,verified_by}',to_jsonb((q.metadata #>> '{triage,runner,candidate,reviewer}')::text)),'{triage,verification,verified_at}',to_jsonb(now())),
@@ -180,6 +184,7 @@ export function promoteSql(id: string, identity: RunnerIdentity, instructionHash
 }
 
 export function releaseSql(id: string, identity: RunnerIdentity, instructionHash: string, reason: string, nonce: string): string {
+  // component-created-by-ok: reads dm_conversations.created_by (an entity: the conversation's owner) to address the audit message; dm_messages.created_by is only written
   return `with released as (
  update agent.review_queue q set status=q.metadata #>> '{triage,runner,prior_status}',
   metadata=jsonb_set(q.metadata,'{triage,assignment}',q.metadata #> '{triage,runner,prior_assignment}')

@@ -838,6 +838,7 @@ export type Database = {
           last_scanned_at: string
           metadata: Json
           organization_id: string
+          recipient_id: string
           severity: string
           silent_count: number
           status: string
@@ -867,6 +868,7 @@ export type Database = {
           last_scanned_at?: string
           metadata?: Json
           organization_id: string
+          recipient_id: string
           severity: string
           silent_count?: number
           status?: string
@@ -896,6 +898,7 @@ export type Database = {
           last_scanned_at?: string
           metadata?: Json
           organization_id?: string
+          recipient_id?: string
           severity?: string
           silent_count?: number
           status?: string
@@ -7930,6 +7933,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
+          viewer_id: string | null
         }
         Insert: {
           canvas_id: string
@@ -7944,6 +7948,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          viewer_id?: string | null
         }
         Update: {
           canvas_id?: string
@@ -7958,6 +7963,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          viewer_id?: string | null
         }
         Relationships: [
           {
@@ -20344,6 +20350,10 @@ export type Database = {
         Returns: Json
       }
       redact_inbound_sms_body: {
+        Args: { p_marker: string; p_message_id: string }
+        Returns: Json
+      }
+      redact_outbound_sms_body: {
         Args: { p_marker: string; p_message_id: string }
         Returns: Json
       }
@@ -32885,6 +32895,10 @@ export type Database = {
         Returns: boolean
       }
       is_crawl_artifact: { Args: { p_file_id: string }; Returns: boolean }
+      is_dictation_chunk: {
+        Args: { p_file_name: string; p_file_path: string; p_metadata: Json }
+        Returns: boolean
+      }
       is_discoverable_for: {
         Args: {
           p_file_id: string
@@ -32917,6 +32931,10 @@ export type Database = {
       is_user_visible_path: { Args: { p_file_path: string }; Returns: boolean }
       is_user_visible_paths: { Args: { p_paths: string[] }; Returns: Json }
       min_tombstone_retention_days: { Args: never; Returns: number }
+      ultimate_parent_record: {
+        Args: { p_file_id: string }
+        Returns: Record<string, unknown>
+      }
       webhook_create: {
         Args: {
           p_description?: string
@@ -74287,6 +74305,7 @@ export type Database = {
       cf_utf8_byte_length: { Args: { p_text: string }; Returns: number }
       cf_ws_class: { Args: never; Returns: string }
       child_parent_columns: { Args: { p_token: string }; Returns: string[] }
+      child_parent_types: { Args: { p_token: string }; Returns: string[] }
       claim_oauth_handoff_hash: {
         Args: {
           p_callback_origin: string

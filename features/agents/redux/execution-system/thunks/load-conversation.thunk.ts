@@ -322,6 +322,7 @@ export const loadConversation = createAsyncThunk<
         sourceFeature: sourceFeatureFromStorage(conv.source_feature),
         createdAt: conv.created_at,
         updatedAt: conv.updated_at,
+        // component-created-by-ok: chat.conversation is an entity — its created_by is the conversation's owner
         createdBy: conv.created_by,
         initialAgentId: conv.initial_agent_id,
         initialAgentVersionId: conv.initial_agent_version_id,
@@ -405,6 +406,7 @@ export const loadConversation = createAsyncThunk<
     // Ownership read from the canonical `created_by` column (trigger-stamped),
     // not the deprecated `user_id`. A viewer must never mint canvas_items rows
     // for someone else's conversation.
+    // component-created-by-ok: chat.conversation is an entity — its created_by is the conversation's owner
     if (authedUserId && conv.created_by === authedUserId) {
       void reconcileMessagesArtifacts(
         messageRecords

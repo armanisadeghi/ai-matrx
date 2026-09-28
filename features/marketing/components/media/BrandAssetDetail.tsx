@@ -75,7 +75,7 @@ export function BrandAssetDetail({
   // access-errors: ok — name enrichment for the brand door; the asset row this surface is about arrives as a prop, and the door falls back to the id-resolved ref
   const brand = useBrand(asset.brand_id);
   const resolveActor = useRecordActors(asset.organization_id, [
-    asset.created_by,
+    // A component: created_by is the parent owner (db-rules §6d-1), so only the saver is named.
     asset.updated_by,
     asset.confirmed_by,
   ]);
@@ -358,7 +358,7 @@ export function BrandAssetDetail({
       <RecordStamps
         organizationId={asset.organization_id}
         createdAt={asset.created_at}
-        createdBy={asset.created_by}
+        component
         updatedAt={asset.updated_at}
         updatedBy={asset.updated_by}
         deletedAt={asset.deleted_at}

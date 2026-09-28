@@ -230,7 +230,7 @@ async function main(): Promise<void> {
     pinned_kind_version: number | null;
     updated_at: string | null;
     created_at: string;
-    created_by: string | null;
+    updated_by: string | null;
     kind_definition: { kind: string; deleted_at: string | null }[];
   }>(
     ({ from, to }) =>
@@ -238,7 +238,7 @@ async function main(): Promise<void> {
         .schema("content_ir")
         .from("kind_component")
         .select(
-          "id,platform,role,component_key,source,is_active,config,component_source,props_transform,pinned_kind_version,updated_at,created_at,created_by,kind_definition!inner(kind,deleted_at)",
+          "id,platform,role,component_key,source,is_active,config,component_source,props_transform,pinned_kind_version,updated_at,created_at,updated_by,kind_definition!inner(kind,deleted_at)",
           { count: "exact" },
         )
         .is("deleted_at", null)
@@ -270,7 +270,8 @@ async function main(): Promise<void> {
         updatedAt: r.updated_at ?? r.created_at,
         createdAt: r.created_at,
         id: r.id,
-        createdBy: r.created_by,
+        // the saver (updated_by) — kind_component.created_by is the kind's owner
+        createdBy: r.updated_by,
       },
     ];
   });

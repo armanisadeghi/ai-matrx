@@ -570,6 +570,7 @@ async function fetchToolSummary(
       .schema("chat")
       .from("tool_call")
       .select("tool_name")
+      // component-created-by-ok: chat.message / chat.tool_call created_by IS the conversation's owner (db-rules §6d-1) — this reads "rows in MY conversations", the parent's owner, on purpose (server-written turns carry no saver)
       .eq("created_by", userId)
       .eq("success", true)
       .not("output", "is", null)
@@ -618,6 +619,7 @@ async function fetchRunsForTool(
         // conversation it came from — the converter ignores it.
         "call_id, conversation_id, tool_name, tool_name_as_called, arguments, output, output_preview, is_error, error_type, error_message, started_at, completed_at, execution_events, status, created_at",
       )
+      // component-created-by-ok: chat.message / chat.tool_call created_by IS the conversation's owner (db-rules §6d-1) — this reads "rows in MY conversations", the parent's owner, on purpose (server-written turns carry no saver)
       .eq("created_by", userId)
       .eq("tool_name", toolName)
       .eq("success", true)

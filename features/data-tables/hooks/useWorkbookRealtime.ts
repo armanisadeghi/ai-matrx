@@ -60,6 +60,7 @@ export function useWorkbookRealtime(
       if (!row?.id) return;
       onSnapshot({
         snapshotId: row.id,
+        // component-created-by-ok: append-only snapshot with NO updated_by column and NO parent-rewrite trigger — created_by is the author the client wrote at insert (the only person field this table has)
         createdBy: row.created_by ?? null,
         createdAt: row.created_at ?? new Date().toISOString(),
       });
@@ -88,6 +89,7 @@ export function useWorkbookRealtime(
             const { data, error } = await supabase
               .schema("workbench")
               .from("udt_workbook_snapshots")
+              // component-created-by-ok: append-only snapshot with NO updated_by column and NO parent-rewrite trigger — created_by is the author the client wrote at insert (the only person field this table has)
               .select("id, created_by, created_at")
               .eq("workbook_id", workbookId)
               .order("created_at", { ascending: false })

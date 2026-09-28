@@ -31,6 +31,7 @@ import type {
   CxRequestRecord,
   CxToolCallRecord,
 } from "../observability/observability.slice";
+import { componentSaver } from "@/lib/provenance/componentSaver";
 
 /**
  * Error code for "the conversation row doesn't exist YET" — a client-minted
@@ -484,7 +485,9 @@ export function toolCallRowToRecord(row: CxToolCallRow): CxToolCallRecord {
     conversationId: row.conversation_id,
     userRequestId: row.user_request_id,
     messageId: row.message_id,
-    userId: row.created_by ?? "",
+    // Who SAVED the call (updated_by) — never created_by, which on this
+    // component is the conversation's owner. "" = unknown (a server write).
+    userId: componentSaver(row) ?? "",
     callId: row.call_id,
     toolName: row.tool_name,
     toolNameAsCalled: row.tool_name_as_called ?? null,

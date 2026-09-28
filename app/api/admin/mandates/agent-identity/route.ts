@@ -114,9 +114,11 @@ export async function GET(request: Request) {
     // Owner email is display-only context ("whose personal agent is this?") —
     // best effort, never fatal.
     let ownerEmail: string | null = null;
+    // component-created-by-ok: agent.definition is an entity — its created_by is the agent's owner
     if (agent.created_by) {
       try {
         const { data: ownerData } = await adminClient.auth.admin.getUserById(
+          // component-created-by-ok: agent.definition is an entity — its created_by is the agent's owner
           agent.created_by,
         );
         ownerEmail = ownerData.user?.email ?? null;

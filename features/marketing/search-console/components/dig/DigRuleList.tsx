@@ -79,11 +79,13 @@ export function DigRuleList({
   onDelete: (rule: GscDigRuleRow) => void;
 }) {
   const templates = rules.filter((r) => r.is_template);
+  // "Yours" = the rules you SAVED (updated_by). gsc_dig_rule is a component of
+  // its site, so its created_by is the site's owner (db-rules §6d-1), not you.
   const own = rules.filter(
-    (r) => !r.is_template && r.created_by === currentUserId,
+    (r) => !r.is_template && r.updated_by === currentUserId,
   );
   const shared = rules.filter(
-    (r) => !r.is_template && r.created_by !== currentUserId,
+    (r) => !r.is_template && r.updated_by !== currentUserId,
   );
 
   const section = (

@@ -1,3 +1,5 @@
+import { componentSaver } from "@/lib/provenance/componentSaver";
+
 // features/artifacts/types.ts
 //
 // Shared types for the artifact tracking system.
@@ -63,12 +65,18 @@ export const ARTIFACT_STATUS_LABELS: Record<ArtifactStatus, string> = {
 
 // ── DB row shape (snake_case — matches Supabase response) ─────────────────
 
-/** Shape of a row returned from the cx_artifact table. */
+/**
+ * Shape of a row returned from the cx_artifact table.
+ * @componentRow chat.artifact
+ */
 export interface CxArtifactRow {
   id: string;
   message_id: string;
   conversation_id: string;
+  /** The CONVERSATION's owner on a chat artifact (db-rules §6d-1) — never the saver. */
   created_by: string | null;
+  /** The person who last saved the row; null = unknown (a server write). */
+  updated_by?: string | null;
   organization_id: string | null;
   task_id: string | null;
   artifact_type: ArtifactType;
@@ -119,7 +127,8 @@ export function rowToArtifactRecord(row: CxArtifactRow): CxArtifactRecord {
     id: row.id,
     messageId: row.message_id,
     conversationId: row.conversation_id,
-    userId: row.created_by ?? "",
+    // Who SAVED it (updated_by), never created_by (the conversation's owner). "" = unknown.
+    userId: componentSaver(row) ?? "",
     organizationId: row.organization_id,
     taskId: row.task_id,
     artifactType: row.artifact_type,

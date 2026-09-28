@@ -713,7 +713,10 @@ export const canvasArtifactService = {
         .from("artifact")
         .upsert(insertRow, {
           // Infers `uq_cx_artifact_source_natural_key_cb` — the canonical
-          // dedup key, on `created_by` (stamped by `_stamp_actor`).
+          // dedup key. On a chat row the database rewrites `created_by` to the
+          // conversation's owner (db-rules §6d-1); a non-chat row has no parent,
+          // so it keeps the saver.
+          // component-created-by-ok: an ON CONFLICT target must name the unique index's own columns
           onConflict:
             "created_by,source_system,source_id,artifact_index,artifact_type,external_system",
           ignoreDuplicates: true,
@@ -731,11 +734,13 @@ export const canvasArtifactService = {
       if (created) return { id: created.id };
 
       // Natural key already existed (concurrent materialize / reconcile).
+      // Find the row the key collided with, by the key's own value: a chat
+      // row's `created_by` is the conversation's owner (never this viewer), so
+      // it is found by its conversation; a parentless row keeps its saver.
       let existingByKey = supabase
         .schema("chat")
         .from("artifact")
         .select("id, canvas_item_id")
-        .eq("created_by", userId)
         .eq("source_system", input.source.system)
         .eq("source_id", input.source.id)
         .eq("artifact_index", input.artifactIndex)
@@ -743,6 +748,10 @@ export const canvasArtifactService = {
       existingByKey = normalizedExternalSystem
         ? existingByKey.eq("external_system", normalizedExternalSystem)
         : existingByKey.is("external_system", null);
+      existingByKey = isChat
+        ? existingByKey.eq("conversation_id", input.conversationId ?? "")
+        : // component-created-by-ok: a parentless artifact keeps its saver in created_by, and the unique key collided on exactly that value
+          existingByKey.eq("created_by", userId);
 
       const { data: keyed, error: keyedErr } =
         await existingByKey.maybeSingle();

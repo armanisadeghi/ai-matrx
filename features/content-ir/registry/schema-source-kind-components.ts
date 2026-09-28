@@ -102,8 +102,10 @@ export interface KindComponentProjection {
   createdAt: string;
   id: string;
   /**
-   * The row's author — drives the in-render ownership affordance (the
-   * "fix this component" badge shows only to the creator or a super admin).
+   * The person who last SAVED the component (`updated_by`; null = unknown) —
+   * drives the in-render ownership affordance (the "fix this component" badge
+   * shows only to them or a super admin). Never the row's `created_by`, which
+   * on this component is the kind's owner.
    */
   createdBy: string | null;
 }
@@ -234,7 +236,7 @@ export async function listKindComponentsFromTables(): Promise<
             .schema("content_ir")
             .from("kind_component")
             .select(
-              "id, kind_definition_id, platform, role, component_key, source, is_active, config, is_default, sort_order, pinned_kind_version, updated_at, created_at, created_by, kind_definition!inner(kind, deleted_at)",
+              "id, kind_definition_id, platform, role, component_key, source, is_active, config, is_default, sort_order, pinned_kind_version, updated_at, created_at, updated_by, kind_definition!inner(kind, deleted_at)",
               { count: "exact" },
             )
             .is("deleted_at", null)
@@ -313,7 +315,7 @@ export async function getKindComponentBySlug(
     .schema("content_ir")
     .from("kind_component")
     .select(
-      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, created_by, is_default, sort_order",
+      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, updated_by, is_default, sort_order",
     )
     .eq("kind_definition_id", def.id)
     .is("deleted_at", null)
@@ -350,7 +352,8 @@ type RawKindComponentRow = {
   pinned_kind_version: number | null;
   updated_at: string;
   created_at: string;
-  created_by: string | null;
+  /** Who last saved the component. Never created_by: kind_component is a component of its kind, so the database rewrites created_by to the kind's owner (db-rules §6d-1). */
+  updated_by: string | null;
   /**
    * Selected by BOTH loaders so the client-side defense sort
    * (`sortKindComponentRows`) can actually act on them. The warm list used to
@@ -406,7 +409,7 @@ function projectRows(
       updatedAt: row.updated_at,
       createdAt: row.created_at,
       id: row.id,
-      createdBy: row.created_by,
+      createdBy: row.updated_by,
     });
   }
   return out;

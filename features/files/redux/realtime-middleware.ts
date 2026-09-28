@@ -411,6 +411,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
         newRow.id
       ],
     );
+    // component-created-by-ok: files.files / files.folders are entities — created_by is the file's or folder's owner (the listing gate)
     if (newRow.created_by !== subscribedUserId && !alreadyInStore) return;
     const file = dbRowToCloudFile(newRow);
     // `files.files` is REPLICA IDENTITY DEFAULT — `payload.old` carries ONLY
@@ -487,6 +488,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     if (!isUserVisibleFolderPath(newRow.folder_path)) return;
     // Same LISTING gate as files — the tree RPC only ever returns the
     // user's OWN folders, so realtime must not inject anyone else's.
+    // component-created-by-ok: files.files / files.folders are entities — created_by is the file's or folder's owner (the listing gate)
     if (newRow.created_by !== subscribedUserId) return;
     const folder = dbRowToCloudFolder(newRow);
     // REPLICA IDENTITY DEFAULT: `payload.old` is PK-only — read the previous

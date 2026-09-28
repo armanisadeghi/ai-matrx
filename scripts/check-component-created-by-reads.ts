@@ -322,7 +322,7 @@ export function scanSource(file: string, text: string, components: Registry, glo
       scopeOf(node).tables.add(aliasTable.get(node.typeName.text)!);
     }
     const s = lit(node) ?? (ts.isTemplateExpression(node) ? node.getText(sf) : null);
-    if (s && /\bcreated_by\b/.test(s)) {
+    if (s && /\bcreated_by\b/.test(s) && /\b(select|from|where|join|update|returning)\b/i.test(s)) {
       // SQL text: `schema.table` + created_by in one string.
       for (const m of s.matchAll(/\b([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\b/g)) {
         const fq = `${m[1]}.${m[2]}`;
@@ -348,15 +348,17 @@ export function scanSource(file: string, text: string, components: Registry, glo
         const where = scopeName(info.node);
         for (const c of calls) {
           const m = methodName(c);
+          // Report at the `.method(` line — a call's own start is the head of the whole chain.
+          const at: ts.Node = ts.isPropertyAccessExpression(c.expression) ? c.expression.name : c;
           const a0 = lit(c.arguments[0]);
           if (m && FILTER_METHODS.has(m) && a0 !== null && /^created_by\b/.test(a0)) {
             seenChainReads.add(c);
-            report(c, table, `.${m}("${a0}") filters on the parent owner`, where);
+            report(at, table, `.${m}("${a0}") filters on the parent owner`, where);
           }
-          if (m === "or" && a0 && /(^|,|\()created_by\./.test(a0)) report(c, table, `.or() filters on created_by`, where);
-          if (m === "select" && a0 && topLevelColumns(a0).includes("created_by")) report(c, table, `.select() reads created_by`, where);
+          if (m === "or" && a0 && /(^|,|\()created_by\./.test(a0)) report(at, table, `.or() filters on created_by`, where);
+          if (m === "select" && a0 && topLevelColumns(a0).includes("created_by")) report(at, table, `.select() reads created_by`, where);
           if (m === "match" && c.arguments[0] && ts.isObjectLiteralExpression(c.arguments[0]) && c.arguments[0].properties.some((p) => p.name && ts.isIdentifier(p.name) && p.name.text === "created_by")) {
-            report(c, table, `.match({ created_by }) filters on the parent owner`, where);
+            report(at, table, `.match({ created_by }) filters on the parent owner`, where);
           }
           if ((m === "upsert" || m === "insert") && c.arguments[1] && ts.isObjectLiteralExpression(c.arguments[1])) {
             for (const p of c.arguments[1].properties) {
@@ -405,7 +407,8 @@ export function scanSource(file: string, text: string, components: Registry, glo
 
 function listFiles(): string[] {
   const out = execFileSync("git", ["ls-files", "*.ts", "*.tsx"], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-  return out.split("\n").filter((f) => f && !SKIP.test(f));
+  // This file's own self-test fixtures are deliberate violations.
+  return out.split("\n").filter((f) => f && !SKIP.test(f) && f !== "scripts/check-component-created-by-reads.ts");
 }
 
 function refreshRegistry(): void {

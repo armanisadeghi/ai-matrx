@@ -25,7 +25,15 @@ import { cn } from "@/lib/utils";
 export interface RecordStampsProps {
   organizationId?: string | null;
   createdAt?: string | null;
+  /**
+   * The row's creator. OMIT for a COMPONENT row (one that takes its access
+   * from a parent): there the database rewrites `created_by` to the PARENT's
+   * owner (db-rules §6d-1), so it is not who created this row — pass
+   * `component` instead and the Created stamp shows the time only.
+   */
   createdBy?: string | null;
+  /** A component row: the Created stamp carries no actor (see `createdBy`). */
+  component?: boolean;
   updatedAt?: string | null;
   updatedBy?: string | null;
   deletedAt?: string | null;
@@ -46,6 +54,7 @@ function Stamp({
   formatTimestamp,
   resolveActor,
   tone,
+  showActor = true,
 }: {
   label: string;
   at?: string | null;
@@ -53,6 +62,8 @@ function Stamp({
   formatTimestamp: (value: string | null) => string;
   resolveActor: RecordStampsProps["resolveActor"];
   tone?: "warning";
+  /** False when no actor is recorded for this stamp (a component's Created). */
+  showActor?: boolean;
 }) {
   if (!at) return null;
   const actor = resolveActor?.(actorId) ?? null;
@@ -68,7 +79,7 @@ function Stamp({
         )}
       >
         <span className="whitespace-nowrap">{formatTimestamp(at)}</span>
-        {actor ? (
+        {!showActor ? null : actor ? (
           actor.user ? (
             <UserIdentity
               user={actor.user}
@@ -100,6 +111,7 @@ function Stamp({
 export function RecordStamps({
   createdAt,
   createdBy,
+  component = false,
   updatedAt,
   updatedBy,
   deletedAt,
@@ -118,7 +130,8 @@ export function RecordStamps({
       <Stamp
         label="Created"
         at={createdAt}
-        actorId={createdBy}
+        actorId={component ? null : createdBy}
+        showActor={!component}
         formatTimestamp={formatTimestamp}
         resolveActor={resolveActor}
       />
