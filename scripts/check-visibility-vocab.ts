@@ -39,6 +39,7 @@ import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
 import { emitItem, endItems } from "./checks/items.mjs";
+import { REMEDIES } from "./visibility-vocab/remedies.mjs";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -159,7 +160,6 @@ const findings: Finding[] = [];
 
 // ─── Detection ──────────────────────────────────────────────────────────────
 
-const CANONICAL = ["personal", "internal", "link", "public"];
 const RETIRED = ["private", "shared"];
 
 // A chain of ≥2 quoted string literals separated by `|` on one line.
@@ -266,7 +266,7 @@ function scanConstArrays(rel: string, text: string, allow: Allowlist): void {
           file: rel,
           line: lineNo,
           rule: `Retired visibility spelling ${retired.map((r) => `'${r}'`).join(", ")} in an \`as const\` vocabulary — the server silently rewrites it to 'personal' (data downgrade).`,
-          fix: `Use the canonical values: ${CANONICAL.map((c) => `'${c}'`).join(" | ")} (features/files/types.ts#Visibility). Normalize legacy reads via toVisibility().`,
+          fix: REMEDIES.retiredSpelling.fix,
           snippet: snippet.slice(0, 160),
         });
       }
@@ -284,7 +284,7 @@ function scanConstArrays(rel: string, text: string, allow: Allowlist): void {
           file: rel,
           line: lineNo,
           rule: `Visibility vocabulary omits 'internal' — collapsing "org-readable" into "belongs to one person" is the bug that mislabeled ~11k files.`,
-          fix: `Carry all four values (${CANONICAL.join(" | ")}), or reuse Database["platform"]["Enums"]["visibility"].`,
+          fix: REMEDIES.collapsedUnion.fix,
           snippet: snippet.slice(0, 160),
         });
       }
@@ -316,7 +316,7 @@ function scanFile(rel: string, text: string, allow: Allowlist): void {
               file: rel,
               line: lineNo,
               rule: `Retired visibility spelling ${retired.map((r) => `'${r}'`).join(", ")} — the server silently rewrites it to 'personal' (data downgrade).`,
-              fix: `Use the canonical union: ${CANONICAL.map((c) => `'${c}'`).join(" | ")} (features/files/types.ts#Visibility). Normalize legacy reads via toVisibility().`,
+              fix: REMEDIES.retiredSpelling.fix,
               snippet: trimmed.slice(0, 160),
             });
           }
@@ -334,7 +334,7 @@ function scanFile(rel: string, text: string, allow: Allowlist): void {
               file: rel,
               line: lineNo,
               rule: `Visibility union omits 'internal' — collapsing "org-readable" into "belongs to one person" is the bug that mislabeled ~11k files.`,
-              fix: `Carry all four values (${CANONICAL.join(" | ")}), or reuse Database["platform"]["Enums"]["visibility"].`,
+              fix: REMEDIES.collapsedUnion.fix,
               snippet: trimmed.slice(0, 160),
             });
           }
@@ -350,7 +350,7 @@ function scanFile(rel: string, text: string, allow: Allowlist): void {
           file: rel,
           line: lineNo,
           rule: `"Only you" is a claim about PEOPLE that one visibility column cannot prove — visibility is one of six grant paths.`,
-          fix: `Say what you know ("Personal" describes the setting), or mount <AccessSummaryPanel entityType entityId /> for the true answer.`,
+          fix: REMEDIES.onlyYouClaim.fix,
           snippet: trimmed.slice(0, 160),
         });
       }

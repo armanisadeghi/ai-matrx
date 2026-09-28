@@ -20,6 +20,7 @@ import { REPO_ROOT, accept, collect, commitOnly, parseArgs, shellQuote } from ".
 import { appendToJsonArray } from "./json-edit.mjs";
 import { CORPUS_PATH, RuleError, applyAcceptRule, commitLine, loadAcceptRules, readUtf8Strict } from "./accept-rules.mjs";
 import { FINDINGS_CHECKS, byId } from "./registry.mjs";
+import { remedyForKey } from "../visibility-vocab/remedies.mjs";
 
 const ROWS = manifestRows();
 
@@ -145,7 +146,8 @@ test("findings <paths>: exit 1 on a new item in the paths, 0 on a clean or unwat
   const hit = run([fresh.file, "--check", "visibility-vocabulary"]);
   assert.equal(hit.status, 1, hit.stdout + hit.stderr);
   assert.match(hit.stdout, new RegExp(`pnpm findings accept visibility-vocabulary ${shellQuote(fresh.item_key).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} --reason`));
-  assert.match(hit.stdout, /fix: {4}Use the canonical visibility values/);
+  // The item's OWN class remedy, not the all-classes summary (visibility-vocab/remedies.mjs).
+  assert.ok(hit.stdout.includes(`fix:    ${remedyForKey(fresh.item_key)}`), hit.stdout);
 
   const clean = run(["README.md"]);
   assert.equal(clean.status, 0, clean.stdout);

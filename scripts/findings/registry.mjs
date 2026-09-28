@@ -10,7 +10,8 @@
  * An entry:
  *   id       — the runner's row id (scripts/checks/run.mjs --list)
  *   watch    — repo-relative paths the check scans; `findings <paths>` runs it only when one matches
- *   fix      — the exact fix hint printed under each new item
+ *   fix      — the exact fix hint printed under each new item (all classes)
+ *   fixFor   — optional (key) → the remedy for THAT item's class, when the check has several
  *   accept   — { files, rule, apply({ key, reason, by, date, root }) } or null   ┐ both from
  *   noAccept — when accept is null: how this check is accepted today            ┘ accept-rules.json
  */
@@ -19,6 +20,7 @@ import { join } from "node:path";
 
 import { applyAcceptRule, readUtf8Strict, ruleFiles } from "./accept-rules.mjs";
 import ACCEPT_RULES from "./accept-rules.json" with { type: "json" };
+import { SUMMARY as VISIBILITY_SUMMARY, remedyForKey as visibilityRemedyForKey } from "../visibility-vocab/remedies.mjs";
 
 /**
  * accept / noAccept come from accept-rules.json — the ONE declaration the server's Mark OK button
@@ -53,7 +55,10 @@ export const FINDINGS_CHECKS = [
   {
     id: "visibility-vocabulary",
     watch: /(\.tsx?$)|^scripts\/visibility-vocab\//,
-    fix: "Use the canonical visibility values (features/files/types.ts#Visibility) and normalize legacy reads with toVisibility(); never claim 'only you' where access is wider.",
+    // One remedy per class of finding, each proven importable and accepted by the check
+    // (scripts/visibility-vocab/remedies.test.mjs).
+    fix: VISIBILITY_SUMMARY,
+    fixFor: visibilityRemedyForKey,
     ...fromRules("visibility-vocabulary"),
   },
   {
