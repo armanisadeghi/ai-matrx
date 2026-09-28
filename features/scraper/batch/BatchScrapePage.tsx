@@ -630,7 +630,6 @@ export default function BatchScrapePage() {
                 isLoading={rows.length === 0 && isLoading}
                 isFetching={isLoading}
                 viewTabs={false}
-                hidePagination={rows.length <= 25}
                 density="condensed"
                 rowActions={(row) =>
                   row.status === "failed" ? (

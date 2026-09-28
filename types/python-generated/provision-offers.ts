@@ -2688,6 +2688,12 @@ export interface NerDeepChunkExtractionOffer {
   slots_to_extract: unknown;
   relevant_chunks_text: string;
   document_label: string;
+  source_kind?: string;
+  source_id?: string;
+  ingest_run_id?: string;
+  organization_id?: string;
+  user_id?: string;
+  scope_id?: string;
 }
 
 /** Offered shape of provision `ner.document_orientation` (kind `ner.document_orientation.offer`). */
@@ -2699,12 +2705,28 @@ export interface NerDocumentOrientationOffer {
   top_entities: unknown;
   top_cooccurrences: unknown;
   user_scope_tree: unknown;
+  source_kind?: string;
+  source_id?: string;
+  ingest_run_id?: string;
+  organization_id?: string;
+  user_id?: string;
+  scope_id?: string;
+  total_entity_count?: number;
+  total_chunk_count?: number;
+  user_scope_count?: number;
 }
 
 /** Offered shape of provision `ner.entity_canonicalization` (kind `ner.entity_canonicalization.offer`). */
 export interface NerEntityCanonicalizationOffer {
   __kind?: "ner.entity_canonicalization.offer";
   entity_pairs: unknown;
+  source_kind?: string;
+  source_id?: string;
+  ingest_run_id?: string;
+  organization_id?: string;
+  user_id?: string;
+  scope_id?: string;
+  entity_pair_count?: number;
 }
 
 /** Offered shape of provision `ner.finisher_batch` (kind `ner.finisher_batch.offer`). */
@@ -2718,6 +2740,13 @@ export interface NerItemProposalOffer {
   __kind?: "ner.item_proposal.offer";
   unmatched_findings: unknown;
   scope_type_context: unknown;
+  source_kind?: string;
+  source_id?: string;
+  ingest_run_id?: string;
+  organization_id?: string;
+  user_id?: string;
+  scope_id?: string;
+  scope_type_id?: string;
 }
 
 /** Offered shape of provision `ner.magic_moment_detection` (kind `ner.magic_moment_detection.offer`). */
@@ -2727,6 +2756,12 @@ export interface NerMagicMomentDetectionOffer {
   document_classification?: string;
   document_sample?: string;
   relevant_entities?: unknown;
+  source_kind?: string;
+  source_id?: string;
+  ingest_run_id?: string;
+  organization_id?: string;
+  user_id?: string;
+  scope_id?: string;
 }
 
 /** Offered shape of provision `ner.scope_proposal` (kind `ner.scope_proposal.offer`). */
@@ -2735,6 +2770,12 @@ export interface NerScopeProposalOffer {
   entity_tree: unknown;
   document_classification?: string;
   existing_scope_types?: unknown;
+  source_kind?: string;
+  source_id?: string;
+  ingest_run_id?: string;
+  organization_id?: string;
+  user_id?: string;
+  scope_id?: string;
 }
 
 /** Offered shape of provision `ner.scope_slot_filling` (kind `ner.scope_slot_filling.offer`). */
@@ -2747,6 +2788,12 @@ export interface NerScopeSlotFillingOffer {
   top_cooccurrences: unknown;
   document_label: string;
   document_classification: string;
+  source_kind?: string;
+  source_id?: string;
+  ingest_run_id?: string;
+  organization_id?: string;
+  user_id?: string;
+  scope_id?: string;
 }
 
 /** Offered shape of provision `ner.suggestion_review` (kind `ner.suggestion_review.offer`). */
@@ -2755,6 +2802,12 @@ export interface NerSuggestionReviewOffer {
   suggestions: unknown;
   scope_context: unknown;
   document_content?: string;
+  source_kind?: string;
+  source_id?: string;
+  ingest_run_id?: string;
+  organization_id?: string;
+  user_id?: string;
+  scope_id?: string;
 }
 
 /** Offered shape of provision `ner.sweep_scope_discovery` (kind `ner.sweep_scope_discovery.offer`). */
@@ -3047,6 +3100,7 @@ export interface PodcastAudienceAdaptationOffer {
   prepared_content: string;
   target_audience: string;
   adaptation_guidance?: string;
+  content_char_count?: number;
 }
 
 /** Offered shape of provision `podcast.audio_stage` (kind `podcast.audio_stage.offer`). */
@@ -3099,12 +3153,22 @@ export interface PodcastFeatureImagePromptOffer {
   __kind?: "podcast.feature_image_prompt.offer";
   intent_or_content: string;
   style: string;
+  asset_slot?: number;
+  visual_style?: string;
+  transcript_char_count?: number;
 }
 
 /** Offered shape of provision `podcast.image_render` (kind `podcast.image_render.offer`). */
 export interface PodcastImageRenderOffer {
   __kind?: "podcast.image_render.offer";
   image_description: string;
+  asset_slot?: number;
+  is_fallback_render?: boolean;
+  podcast_run_id?: string;
+  asset_id?: string;
+  model_alias?: string;
+  is_manual_regeneration?: boolean;
+  visual_style?: string;
 }
 
 /** Offered shape of provision `podcast.legacy_script_stage` (kind `podcast.legacy_script_stage.offer`). */
@@ -3152,6 +3216,7 @@ export interface PodcastLiveSessionOffer {
 export interface PodcastMetadataStageOffer {
   __kind?: "podcast.metadata_stage.offer";
   podcast_content: string;
+  podcast_content_char_count?: number;
 }
 
 /** Offered shape of provision `podcast.post_prep` (kind `podcast.post_prep.offer`). */
@@ -3161,6 +3226,8 @@ export interface PodcastPostPrepOffer {
   target_language?: string;
   target_length?: string;
   expansion_guidance?: string;
+  post_prep_option?: string;
+  content_char_count?: number;
 }
 
 /** Offered shape of provision `podcast.prep_extraction` (kind `podcast.prep_extraction.offer`). */
@@ -3241,6 +3308,12 @@ export interface PodcastTitleOptimizationOffer {
 export interface PodcastVideoRenderOffer {
   __kind?: "podcast.video_render.offer";
   video_description: string;
+  asset_slot?: number;
+  is_fallback_render?: boolean;
+  podcast_run_id?: string;
+  asset_id?: string;
+  model_alias?: string;
+  is_manual_regeneration?: boolean;
 }
 
 /** Offered shape of provision `podcast_client.episode_content` (kind `podcast_client.episode_content.offer`). */
@@ -3427,6 +3500,11 @@ export interface ResearchCaptureCoverageOffer {
   intent: string;
   keywords: string;
   capture_report: unknown;
+  topic_id?: string;
+  topic_name?: string;
+  keyword_list?: string[];
+  keyword_count?: number;
+  reported_source_count?: number;
 }
 
 /** Offered shape of provision `research.cross_cutting_discovery` (kind `research.cross_cutting_discovery.offer`). */
@@ -3494,6 +3572,10 @@ export interface ResearchScrapeCondensationOffer {
   scraped_content: string;
   queries: string;
   search_results: string;
+  scraped_content_char_count?: number;
+  tool_call_id?: string;
+  calling_tool_name?: string;
+  calling_agent_name?: string;
 }
 
 /** Offered shape of provision `research.source_read_candidate` (kind `research.source_read_candidate.offer`). */
@@ -3533,6 +3615,14 @@ export interface ResearchSourceTriageOffer {
   __kind?: "research.source_triage.offer";
   topic: string;
   sources: unknown;
+  topic_id?: string;
+  topic_name?: string;
+  batch_number?: number;
+  batch_count?: number;
+  batch_source_count?: number;
+  batch_source_ids?: string[];
+  candidate_source_count?: number;
+  is_forced_rerank?: boolean;
 }
 
 /** Offered shape of provision `research.tagged_pages` (kind `research.tagged_pages.offer`). */

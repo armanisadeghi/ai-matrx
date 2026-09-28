@@ -222,16 +222,14 @@ export default function AnnouncementTable() {
                     </div>
                 </div>
 
-                {/* Intentional override — Arman, 2026-09-21 shared-table rollout:
-                    the legacy unbounded read has no count/receipt. Treat it as a loaded
-                    local window, not a complete transport; existing row actions remain sole doors. */}
+                {/* Table owner, 2026-09-28: preserve the loaded-window coverage
+                    and existing announcement actions as the sole record controls.
+                    Numbered pagination follows Arman's stable-footer instruction. */}
                 <MatrxDataTable
                     data={announcements}
                     columns={columns}
                     getRowId={(announcement) => announcement.id}
                     onRowOpen={handleEdit}
-                    hidePagination
-                    localPagination={{ mode: 'progressive' }}
                     viewTabs={false}
                     copy={false}
                     detail={{ enabled: false }}

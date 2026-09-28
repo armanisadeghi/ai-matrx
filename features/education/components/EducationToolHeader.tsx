@@ -96,7 +96,6 @@ export function EducationToolHeader({
   /** Escape hatch for a bespoke right-slot node (tap buttons self-space). */
   right?: React.ReactNode;
 }) {
-  const isPhone = useIsMobile();
   const list = actions ?? [];
   const primary = list.filter((a) => a.primary);
   const secondary = list.filter((a) => !a.primary);
@@ -112,8 +111,21 @@ export function EducationToolHeader({
     ...secondary.map((action) => (
       <ActionButton key={action.label} action={action} iconOnly />
     )),
+    // A primary is the bare labelled TapTargetButton (not the ActionButton
+    // wrapper) so RouteHeader can see its label: on a phone RouteHeader draws
+    // it icon-only, and in the server HTML it draws both forms chosen by the
+    // phone breakpoint — the first paint already matches (no JS switch here).
     ...primary.map((action) => (
-      <ActionButton key={action.label} action={action} iconOnly={isPhone} />
+      <TapTargetButton
+        key={action.label}
+        icon={<ActionIcon name={action.icon} />}
+        label={action.label}
+        ariaLabel={action.label}
+        disabled={action.disabled}
+        {...(action.href && !action.disabled
+          ? { href: action.href }
+          : { onClick: action.onPress })}
+      />
     )),
   ];
 
