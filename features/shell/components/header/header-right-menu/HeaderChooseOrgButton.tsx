@@ -68,7 +68,7 @@ export default function HeaderChooseOrgButton() {
           aria-label={says}
           title={says}
           onClick={() => dispatch(chooseActiveOrganization({ id: objectOrganization.organizationId, name }))}
-          className="inline-flex h-11 max-w-[14rem] items-center gap-1.5 rounded-md bg-primary/10 px-2 text-xs font-medium text-primary transition-colors hover:bg-primary/15 sm:h-8"
+          className="inline-flex h-11 min-w-11 max-w-[14rem] items-center justify-center gap-1.5 rounded-md bg-primary/10 px-2 sm:min-w-0 text-xs font-medium text-primary transition-colors hover:bg-primary/15 sm:h-8"
         >
           <Building2 size={14} strokeWidth={2} aria-hidden="true" />
           <span data-header-compact-label className="hidden truncate sm:inline">{name}</span>
@@ -117,7 +117,7 @@ export default function HeaderChooseOrgButton() {
       type="button"
       aria-label={description}
       title={description}
-      className={`inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors sm:h-8 ${
+      className={`inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors sm:h-8 sm:min-w-0 ${
         chosen
           ? "text-muted-foreground hover:bg-accent hover:text-foreground"
           : // 🚨 COLOUR MEANS SOMETHING (page-pass core 5, 2026-09-27). No

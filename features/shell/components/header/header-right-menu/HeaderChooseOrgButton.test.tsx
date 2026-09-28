@@ -147,6 +147,9 @@ describe("HeaderChooseOrgButton — the trigger tells the truth about itself", (
     mount();
 
     expect(trigger().textContent).toContain("Choose organization");
+    // A finger-sized target on a phone: 44 × 44, not a 30px icon (page-pass core 4).
+    expect(trigger().className).toMatch(/\bh-11\b/);
+    expect(trigger().className).toMatch(/\bmin-w-11\b/);
     expect(trigger().className).toContain("text-primary");
     expect(trigger().className).toContain("bg-primary/10");
     expect(trigger().className).not.toMatch(/\b(text|bg|ring|border)-(red|destructive)/);
