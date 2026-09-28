@@ -60,7 +60,7 @@ it("marks the row after a separator in a section as starting a group", () => {
           { kind: "separator", id: "grid-row-sep-delete" },
           item("grid-row-delete", "Delete row…"),
         ],
-      } as MenuModel["sections"][number],
+      } as unknown as MenuModel["sections"][number],
     ],
   };
   const actions = contextMenuActionsFromModel(model, "m1").filter((a) => a.id.startsWith("cm:grid-row-"));

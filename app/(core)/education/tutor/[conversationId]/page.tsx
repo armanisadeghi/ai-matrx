@@ -31,7 +31,7 @@ export default async function TutorConversationPage({
   const { data, error } = await supabase
     .schema("chat")
     .from("conversation")
-    .select("id, initial_agent_id")
+    .select("id, initial_agent_id, title, status, source_feature, created_by")
     .eq("id", conversationId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -56,10 +56,18 @@ export default async function TutorConversationPage({
     );
   }
 
+  const { data: claims } = await supabase.auth.getClaims();
+  const viewerId = typeof claims?.claims.sub === "string" ? claims.claims.sub : null;
+  const ownedTutorConversation =
+    data.source_feature === "education-tutor" && data.created_by === viewerId
+      ? { id: data.id, title: data.title, status: data.status }
+      : undefined;
+
   return (
     <EducationTutorClient
       conversationId={conversationId}
       conversationAgentId={(data.initial_agent_id as string | null) ?? null}
+      ownedTutorConversation={ownedTutorConversation}
     />
   );
 }

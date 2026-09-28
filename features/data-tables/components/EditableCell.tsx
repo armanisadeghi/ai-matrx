@@ -40,7 +40,7 @@ import {
 } from "react";
 import { Loader2 } from "lucide-react";
 
-import { readTypedNumber, readTypedTime, type RecordsError } from "@ai-matrx/records";
+import type { RecordsError } from "@ai-matrx/records";
 import { RefusalNotice } from "@ai-matrx/records-ui";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -197,27 +197,12 @@ export function EditableCell({
   }, [value, editing]);
 
   // Auto-focus on entering edit mode.
-  //
-  // 🚨 A CELL OPENED BY TYPING NEVER SELECTS WHAT WAS TYPED (Arman, 2026-09-28: "if I type 1200PM,
-  // I get 2:00PM because the one isn't recorded"). An editor that mounts already holding the typed
-  // key (the date editor does) had it selected-all here, so the SECOND keystroke replaced the
-  // first. A typed-into cell puts the caret after what was typed; opening with Enter or a
-  // double-click still selects the stored value, so typing replaces it.
   useEffect(() => {
-    const control = inputRef.current;
-    if (!editing || !control) return;
-    control.focus();
-    if (seed === null || seed === "") {
-      if ("select" in control) control.select();
-      return;
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      if ("select" in inputRef.current) inputRef.current.select();
     }
-    try {
-      const end = control.value.length;
-      control.setSelectionRange(end, end);
-    } catch {
-      // An email/number input has no text selection; its caret is already after the text.
-    }
-  }, [editing, seed]);
+  }, [editing]);
 
   // Entering edit mode seeds the draft: from the typed character when the user
   // just started typing (the spreadsheet reflex of "type to replace"), and from
@@ -257,27 +242,7 @@ export function EditableCell({
   const commitEdit = useCallback(async (opts?: { value?: unknown; move?: GridMove; add?: string[]; answered?: boolean }) => {
     if (saving) return;
 
-    let source = opts && "value" in opts ? opts.value : draft;
-
-    // TYPED WORDS ARE READ ONCE, HERE, BY THE ONE READER (`@ai-matrx/records`) — the same reading
-    // the record-store grids use. A time (`1200PM`, `9:30a`, `0930`) and a number (`-150`,
-    // `(300)`) sit in a plain text box while they are typed; nothing the reader would have to
-    // guess is written — the editor stays open holding the words, with the way to write them.
-    if (typeof source === "string" && source.trim() !== "") {
-      const kind = typedReaderKind(format, dataType);
-      const read = kind === "time" ? readTypedTime(source) : kind === "number" ? readTypedNumber(source) : null;
-      if (read && !read.ok) {
-        setRuleRefusal(
-          columnRuleRefusal({
-            fieldDisplayName,
-            reason: `${fieldDisplayName} holds ${kind === "time" ? "a time of day" : "a number"}, and ${read.why}`,
-          }),
-        );
-        requestAnimationFrame(() => inputRef.current?.focus());
-        return;
-      }
-      if (read) source = read.value;
-    }
+    const source = opts && "value" in opts ? opts.value : draft;
 
     // A declared format owns the coercion (currency strips "$", tags split on
     // commas); without one this falls back to the storage-type normalizer.
@@ -696,11 +661,8 @@ export function EditableCell({
     return (
       <Input
         ref={inputRef as React.RefObject<HTMLInputElement>}
-        // A TEXT BOX, never `type="number"`: the browser drops a lone "-" or "$" typed into a
-        // number control, so "-150" became 150. `commitEdit` reads the words (readTypedNumber).
-        type="text"
-        inputMode="decimal"
-        autoComplete="off"
+        type="number"
+        step={dataType === "integer" ? 1 : "any"}
         value={draft === null || draft === undefined ? "" : String(draft)}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={handleKey}
@@ -733,11 +695,8 @@ export function EditableCell({
     return (
       <Input
         ref={inputRef as React.RefObject<HTMLInputElement>}
-        // A TEXT BOX, never `type="number"`: the browser drops a lone "-" or "$" typed into a
-        // number control, so "-150" became 150. `commitEdit` reads the words (readTypedNumber).
-        type="text"
-        inputMode="decimal"
-        autoComplete="off"
+        type="number"
+        step={dataType === "integer" ? 1 : "any"}
         value={draft === null || draft === undefined ? "" : String(draft)}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={handleKey}
@@ -751,19 +710,21 @@ export function EditableCell({
   }
 
   if (editorKind === "time") {
-    // 🚨 A TEXT BOX, NEVER THE BROWSER'S TIME CONTROL (Arman, 2026-09-28: "if I type 1200PM, I get
-    // 2:00PM because the one isn't recorded"). The native control could not hold a half-typed
-    // "1", fell back to its placeholder, and took the rest of the keys segment by segment. The box
-    // holds exactly what was typed; `commitEdit` reads it once (`readTypedTime`: 1200PM, 12pm,
-    // 9:30a, 0930, 14:30) and refuses a guess (a bare "9") with the way to write it. Stored as
-    // 24-hour "HH:MM[:SS]", as before.
+    // Stored as 24-hour "HH:MM[:SS]" — exactly what this input reads/writes.
+    // A blank native time input leaves its AM/PM segment unset; typing only
+    // the hour and minute and tabbing away never produces a complete value,
+    // so the browser silently reports "" and the whole entry is lost. Seeding
+    // an empty cell's DISPLAYED value with a PM time means every untouched
+    // segment (AM/PM included) already holds a valid value, so editing just
+    // the hour/minute still commits a complete, PM-defaulted time. `draft`
+    // itself stays null until the user actually edits, so leaving the cell
+    // untouched still commits nothing.
     return (
       <Input
         ref={inputRef as React.RefObject<HTMLInputElement>}
-        type="text"
-        autoComplete="off"
-        placeholder="2:30 PM"
-        value={typeof draft === "string" ? draft : ""}
+        type="time"
+        step={format?.options?.timeSeconds ? 1 : 60}
+        value={typeof draft === "string" && draft ? draft : "12:00"}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={handleKey}
         onBlur={() => void commitEdit()}
@@ -970,21 +931,6 @@ export class RelationCellValueError extends Error {
  * second, parallel normalizer is how an agent write and a hand edit end up
  * storing different things for the same keystrokes.
  */
-/**
- * Which ONE reader reads this column's typed words on commit: a time of day, a plain number, or
- * none (the column's format parses its own words — currency, percent — and text is the words).
- */
-export function typedReaderKind(
-  format: FieldFormatConfig | null | undefined,
-  dataType: FieldDataType,
-): "time" | "number" | null {
-  if (format) {
-    if (format.id === "time") return "time";
-    return format.id === "number" || format.id === "decimal" || format.id === "integer" ? "number" : null;
-  }
-  return dataType === "number" || dataType === "integer" ? "number" : null;
-}
-
 export function normalizeCellValue(
   raw: unknown,
   dataType: FieldDataType | string,

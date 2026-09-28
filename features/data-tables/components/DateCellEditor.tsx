@@ -13,7 +13,7 @@
  * a date cell OPENS the calendar at once, in a layer anchored to the cell and
  * drawn outside the table, so no column width or scroll position can clip it.
  * The cell itself keeps a plain text field, so the keyboard path survives:
- * start typing to replace ("9/30/2026", "Oct 3 2026 4pm" — read by the one reader, `fromText`), Enter saves and moves
+ * start typing to replace ("9/30", "Oct 3 2026 4pm"), Enter saves and moves
  * down, Tab saves and moves right, Escape discards. Picking a day saves a
  * `date` column immediately; a `datetime` column keeps the calendar open for
  * the time, and Done / Enter / clicking away saves it.
@@ -32,8 +32,7 @@ import {
   type KeyboardEvent,
   type SyntheticEvent,
 } from "react";
-import { format as formatDate, isValid } from "date-fns";
-import { readTypedDate } from "@ai-matrx/records";
+import { format as formatDate, isValid, parse } from "date-fns";
 import { CalendarDays, Clock } from "lucide-react";
 
 import {
@@ -66,6 +65,36 @@ type Props = {
 const DATE_TEXT = "MMM d, yyyy";
 const DATETIME_TEXT = "MMM d, yyyy h:mm a";
 
+/** Formats a person might type, most specific first. */
+const DATE_INPUTS = [
+  "yyyy-MM-dd",
+  "M/d/yyyy",
+  "M/d/yy",
+  "M/d",
+  "MMM d, yyyy",
+  "MMM d yyyy",
+  "MMMM d, yyyy",
+  "MMMM d yyyy",
+  "d MMM yyyy",
+  "MMM d",
+];
+const TIME_SUFFIXES = [
+  " h:mm a",
+  ", h:mm a",
+  " h:mma",
+  " ha",
+  " h a",
+  ", h:mm:ss a",
+  " H:mm",
+  ", H:mm",
+];
+const DATETIME_INPUTS = [
+  "yyyy-MM-dd'T'HH:mm:ss",
+  "yyyy-MM-dd'T'HH:mm",
+  "yyyy-MM-dd HH:mm",
+  ...DATE_INPUTS.flatMap((d) => TIME_SUFFIXES.map((t) => d + t)),
+];
+
 /** Reads a STORED value. Date-only strings are local calendar days, never UTC. */
 export function fromStored(value: unknown, kind: DateCellKind): Date | null {
   if (value === null || value === undefined || value === "") return null;
@@ -97,31 +126,19 @@ function toText(date: Date | null, kind: DateCellKind): string {
   return formatDate(date, kind === "date" ? DATE_TEXT : DATETIME_TEXT);
 }
 
-/**
- * Reads what a person TYPED. `undefined` = could not read it.
- *
- * 🚨 THE ONE READER (`@ai-matrx/records` `readTypedDate`), the same reading the record-store
- * grids use — never a list of patterns tried until one "works". The old loose reading took a
- * half-typed "0/03/" as 1 March 2000 and "9/30" as this year by guesswork; this one reads the
- * person's locale order, a month word, a time after the day (2:30 PM, 1200PM, 14:30), and refuses
- * a two-digit or missing year with the way to write it (`whyUnread`).
- */
+/** Reads what a person TYPED. `undefined` = could not read it. */
 export function fromText(text: string, kind: DateCellKind): Date | null | undefined {
   const trimmed = text.trim().replace(/\s+/g, " ");
   if (trimmed === "") return null;
-  const read = readTypedDate(trimmed, { withTime: kind === "datetime" });
-  if (!read.ok) return undefined;
-  if (kind === "datetime" && read.instant) return new Date(read.instant);
-  const [y, m, d] = read.day.split("-").map(Number);
-  return new Date(y!, m! - 1, d!);
-}
-
-/** Why the typed text is not a date — the reader's own sentence, or `null` when it reads. */
-export function whyUnread(text: string, kind: DateCellKind): string | null {
-  const trimmed = text.trim().replace(/\s+/g, " ");
-  if (trimmed === "") return null;
-  const read = readTypedDate(trimmed, { withTime: kind === "datetime" });
-  return read.ok ? null : read.why;
+  const now = new Date();
+  const patterns =
+    kind === "date" ? DATE_INPUTS : [...DATETIME_INPUTS, ...DATE_INPUTS];
+  for (const pattern of patterns) {
+    const d = parse(trimmed, pattern, now);
+    if (isValid(d)) return d;
+  }
+  const loose = new Date(trimmed);
+  return isValid(loose) ? loose : undefined;
 }
 
 function swallow(e: SyntheticEvent) {
@@ -296,7 +313,9 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
         >
           {unreadable && (
             <p className="w-0 min-w-full border-b border-border px-3 py-2 text-xs text-destructive">
-              {whyUnread(text, kind) ?? "That is not a date this cell can read."} Or pick one below.
+              That is not a date this cell can read. Try &ldquo;
+              {kind === "date" ? "Sep 22, 2026" : "Sep 22, 2026 9:00 AM"}
+              &rdquo;, or pick one below.
             </p>
           )}
           <div className="flex justify-center">
