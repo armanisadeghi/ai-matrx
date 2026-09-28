@@ -154,6 +154,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 
 // ── Sort field labels ───────────────────────────────────────────────────────
 const SORT_FIELDS: { field: NoteSortField; label: string }[] = [
@@ -179,6 +180,16 @@ const RECENT_PAGE_SIZE = 10;
 
 interface NoteSidebarProps {
   instanceId: string;
+}
+
+/** "admin's Workspace" → "AW"; "Castellano & Reyes, LLP" → "CRL". */
+function orgInitials(name: string): string {
+  const letters = name
+    .split(/[\s,&/-]+/)
+    .map((word) => word.replace(/[^\p{L}\p{N}]/gu, ""))
+    .filter(Boolean)
+    .map((word) => word[0]!.toUpperCase());
+  return letters.slice(0, 3).join("") || name.slice(0, 2);
 }
 
 export function NoteSidebar({ instanceId }: NoteSidebarProps) {
@@ -801,10 +812,13 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
       if (!representative?.folder_id) {
         throw new Error("This folder cannot be changed until its organization identity is available.");
       }
+      // Named by the folder's NAME (the group key is an internal id), and the
+      // consequence stated before the click: archived to Trash, restorable.
+      const folderName = folderNotes[0]?.folder_name ?? "Uncategorized";
       const ok = await confirm({
-        title: "Delete all notes in folder?",
-        description: `${count} note${count === 1 ? "" : "s"} in "${folder}" will be moved to trash. You can restore them later.`,
-        confirmLabel: "Delete all",
+        title: `Move ${count} note${count === 1 ? "" : "s"} to Trash?`,
+        description: `Every note in "${folderName}" moves to Trash. Nothing is erased: you can restore them from Trash.`,
+        confirmLabel: `Move ${count} to Trash`,
         variant: "destructive",
       });
       if (!ok) return;
@@ -847,10 +861,12 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
             icon: Pencil,
             onSelect: () => handleFolderRename(folder),
           },
+          // The destructive row sits in its own group, apart from Rename.
+          { kind: "separator", id: "folder-danger-sep" },
           {
             kind: "item",
             id: "delete-all",
-            label: "Delete All Notes",
+            label: "Move all notes to Trash…",
             icon: Trash2,
             destructive: true,
             onSelect: () => void handleFolderDeleteAll(folder),
@@ -1042,7 +1058,8 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           • Selectors (Group, Sort) — filled chips showing the CURRENT value.
           • Actions (order, Select, Expand) — plain icon buttons.
           Every control carries a proper tooltip. */}
-      <div className="shrink-0 flex items-center gap-1 px-2 py-1 border-b border-border/20">
+      {/* At a narrow sidebar the row scrolls sideways instead of overflowing. */}
+      <div className="shrink-0 flex items-center gap-1 overflow-x-auto px-2 py-1 border-b border-border/20 [scrollbar-width:none]">
         {/* Group-by selector */}
         <div className="relative">
           <SimpleTooltip text="Group notes by">
@@ -1106,7 +1123,8 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         >
           <button
             onClick={toggleSortOrder}
-            className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5"
+            aria-label={sortOrder === "desc" ? "Newest first — show oldest first" : "Oldest first — show newest first"}
+            className="flex shrink-0 items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5"
           >
             {sortOrder === "desc" ? (
               <ArrowDownWideNarrow />
@@ -1124,8 +1142,10 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         >
           <button
             onClick={toggleSelectionMode}
+            aria-label={selectionMode ? "Exit selection mode" : "Select notes"}
+            aria-pressed={selectionMode}
             className={cn(
-              "flex items-center justify-center h-6 w-6 rounded-md cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5",
+              "flex shrink-0 items-center justify-center h-6 w-6 rounded-md cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5",
               selectionMode
                 ? "text-primary bg-primary/10"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -1140,7 +1160,8 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           <SimpleTooltip text="Expand or collapse all folders">
             <button
               onClick={toggleAllFolders}
-              className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5"
+              aria-label="Expand or collapse all folders"
+              className="flex shrink-0 items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5"
             >
               <ChevronsUpDown />
             </button>
@@ -1552,14 +1573,19 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       className="flex min-w-0 flex-1 items-center gap-1"
                       title={orgSuffix ? `${label} — in ${orgSuffix}` : undefined}
                     >
-                      <span className="min-w-0 truncate">{label}</span>
+                      <span className="min-w-[3.5rem] truncate">{label}</span>
                       {orgSuffix && (
                         // The organization is what tells same-name folders
                         // apart: its chip keeps its natural width and the
                         // folder name truncates instead (a long folder name
                         // used to squeeze the chip to one letter).
-                        <span className="max-w-[60%] shrink-0 truncate rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground">
-                          {orgSuffix}
+                        // The folder name has priority: the organization shows
+                        // as its initials (full name in the row's tooltip).
+                        <span
+                          aria-label={`in ${orgSuffix}`}
+                          className="shrink-0 rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground"
+                        >
+                          {orgInitials(orgSuffix)}
                         </span>
                       )}
                     </span>
@@ -1603,7 +1629,14 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                   {isFolderMode ? (
                     <NonEditableContextMenu
                       sourceFeature="notes"
-                      contextData={{ content: groupKey }}
+                      // The notes surface: "Save to Notes" is absent inside Notes.
+                      surfaceName="matrx-user/notes"
+                      // The folder's NAME heads the menu — never the group key
+                      // ("pending:<org>:General" is an internal id).
+                      contextData={{ content: label }}
+                      resolveContextOnOpen={() => ({
+                        [CONTEXT_MENU_HEADING_KEY]: { label: "Folder", text: label },
+                      })}
                       extraSections={buildFolderSections(groupKey)}
                     >
                       {folderHeaderButton}
