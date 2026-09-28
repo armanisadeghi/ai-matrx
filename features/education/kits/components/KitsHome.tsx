@@ -168,9 +168,9 @@ export function KitsHome() {
             Each kit is one piece of your material and everything made from it.
           </p>
           <Button asChild size="sm" className="gap-1.5">
-            <Link href="/education/start" data-tap-target>
+            <Link href="/education/kits/new" data-tap-target>
               <AGENT_ICON className="h-4 w-4" />
-              New kit
+              Create kit
             </Link>
           </Button>
         </div>
@@ -207,11 +207,12 @@ export function KitsHome() {
               kept together.
             </p>
             <Button asChild size="sm" className="gap-1.5">
-              <Link href="/education/start">
+              <Link href="/education/kits/new">
                 <AGENT_ICON className="h-4 w-4" />
                 Create your first kit
               </Link>
             </Button>
+            <Button asChild size="sm" variant="outline"><Link href="/education/start">Generate kit</Link></Button>
           </div>
         ) : filteredKits.length === 0 ? (
           <EducationCollectionNoResults

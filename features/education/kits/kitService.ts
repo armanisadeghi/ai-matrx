@@ -32,6 +32,8 @@ import {
   type LibraryRowStats,
 } from "@/features/education/library/types";
 import { studyMediaService } from "@/features/education/media/service";
+import { educationLibraryHref, type EducationLibraryRow } from "@/features/education/library/types";
+import { targetKindForSubtype } from "@/features/education/library/artifactVisuals";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import type { TargetKind } from "@/features/education/convert/types";
 import type { AssociationTargetType } from "@/features/scopes/types";
@@ -505,5 +507,32 @@ export async function deleteKit(kit: StudyKit, expectedFingerprint = kitMembersh
     } catch {
       throw new Error(`Removed ${completed} of ${current.artifacts.length} study aids from this kit. The remaining aids still belong to it; reload the kit and try again.`);
     }
+  }
+}
+
+/** Attach existing library aids to one saved file, creating a manual kit without a new record type. */
+export async function createManualKit(input: {
+  sourceId: string;
+  title: string;
+  artifacts: readonly EducationLibraryRow[];
+}): Promise<void> {
+  const sourceTitle = writableTitle(input.title);
+  if (!input.sourceId) throw new Error("Choose the saved file for this kit.");
+  if (!input.artifacts.length) throw new Error("Choose at least one saved study aid.");
+  let completed = 0;
+  for (const artifact of input.artifacts) {
+    const targetKind = targetKindForSubtype(artifact.subtype);
+    if (!targetKind) throw new Error(`"${artifact.title}" is not a study aid that can join a kit.`);
+    const result = await associationsService.add({
+      sourceType: artifact.kind,
+      sourceId: artifact.id,
+      targetType: "file",
+      targetId: input.sourceId,
+      role: "source",
+      label: artifact.title,
+      metadata: { targetKind, href: educationLibraryHref(artifact), detail: artifact.description ?? null, sourceTitle },
+    });
+    if (!result.ok) throw new Error(`Added ${completed} of ${input.artifacts.length} study aids. The remaining aids were not added; try again from the kit page.`);
+    completed += 1;
   }
 }

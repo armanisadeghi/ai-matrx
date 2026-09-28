@@ -297,7 +297,7 @@ export function KitHub({
           setRefreshKey((key) => key + 1);
           return { id: plan.kit.sourceId, name: plan.title };
         },
-        nameOf: (plan) => plan.kit.title,
+        nameOf: (plan) => plan.title,
         changedOf: () => ["title"],
       },
       delete: {
@@ -307,7 +307,7 @@ export function KitHub({
           router.push("/education/kits");
           return { id: plan.kit.sourceId, name: plan.kit.title };
         },
-        nameOf: (plan) => plan.title,
+        nameOf: (plan) => plan.kit.title,
       },
     }, refuseSurfaceWrite);
   };
