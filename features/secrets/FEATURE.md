@@ -83,7 +83,7 @@ personal vault:
 | -------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
 | `mine`         | `eq(user_id, me)`                                                                          | Keeps the explicit owner filter.                                                                        |
 | `shared`       | my own `user_secret_grants` rows (`can_use`) → `in(id, thoseItemIds)` + `neq(user_id, me)` | Items OTHER people shared with me. Create/import are hidden here — the items are owned by someone else. |
-| `organization` | `eq(organization_id, org)`                                                                 | Unchanged.                                                                                              |
+| `organization` | `eq(organization_id, org)` OR `id in` the org's own grant rows (`user_secret_grants.organization_id = org`) | The org's vault: its own items plus personal items shared into it (row badge "Shared in"). A member with vault access none reads nothing. |
 
 The personal surface shows My credentials / Shared with me / Organization.
 Organization is one bounded destination with an explicit membership dropdown;
@@ -120,6 +120,17 @@ the ORG `all_members` ↔ `restricted` flip only.
 - A `can_use` recipient sees `visible` fields (the username) but cannot reveal
   the password; `can_manage` adds reveal + edit. Only the owner may share,
   transfer, or delete. **Ratified 2026-07-26** — the share UI states it.
+- **Organization vaults (access ladder decision 14):** the Share panel of a
+  personal item offers "Share into an organization's vault" at **Use only** or
+  **Editor** (`shareToOrganization` → `POST /items/{id}/organization-grants`);
+  the access list shows the org row and it is changed/revoked like a person.
+  **Move to…** (`transfer`) moves between your vault and an org vault. Each
+  member's **vault access** (Organization default / No access / Use only /
+  Editor) is set by owners/admins on the org settings members page
+  (`MemberVaultAccessControl`, one list load per org). `deriveCapabilities`
+  mirrors the server: my own access (`users.my_organization_vault_access`)
+  bounds the org scope. Law: `../../../common-docs/policies/access-ladder.md`
+  § The vault.
 
 ## Management password generation
 
