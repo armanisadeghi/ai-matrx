@@ -1,6 +1,6 @@
 -- chair-step: this puts custom.data_home_items(uuid) back to the body datahome2_e made (the store's eight list doors called per organization). Signature, grant and door row unchanged; no data row is touched.
 -- lane: DATA-HOME-2
--- based-on: custom.data_home_items(uuid) PLACEHOLDER
+-- based-on: custom.data_home_items(uuid) 6e762c1910b6b327515d94106245c37c0ee1b5402030012555a8092ce40a49b8
 
 create or replace function custom.data_home_items(p_organization_id uuid default null)
 returns table(

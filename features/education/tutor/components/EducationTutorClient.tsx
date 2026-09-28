@@ -95,6 +95,10 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import {
+  tutorConversationWriteHandlers,
+  type OwnedTutorConversation,
+} from "../tutorConversationAgentWrites";
 
 const SOURCE_FEATURE = "education-tutor" as const;
 const BASE_PATH = "/education/tutor/[conversationId]";
@@ -112,6 +116,8 @@ export interface EducationTutorClientProps {
    * was held with.
    */
   conversationAgentId?: string | null;
+  /** Present only when the server verified this existing row belongs to the viewer and is a tutor row. */
+  ownedTutorConversation?: OwnedTutorConversation;
   /** Optional item to ground a fresh conversation in (AskTutor entry). */
   seed?: TutorGroundingSeed;
   /** Build the deep-link URL for a conversation id (default /education/tutor/<id>). */
@@ -183,6 +189,7 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
 
 function EducationTutorClientInner({
   conversationId: conversationIdProp,
+  ownedTutorConversation,
   seed,
   buildHref = defaultHref,
   hideLanding,
@@ -776,6 +783,10 @@ function EducationTutorClientInner({
   const getSurfaceWriteHandlers = (): SurfaceWriteHandlers => {
     if (isSharedView) return {};
 
+    const ownedTutorConversations = ownedTutorConversation
+      ? [ownedTutorConversation]
+      : [];
+
     // Mirror a style change into the RUNNING conversation's tutor context —
     // the same `setContextEntries` dispatch used at launch and on every memory
     // refresh, so the next turn already teaches this way instead of the change
@@ -863,6 +874,7 @@ function EducationTutorClientInner({
         // AgentTextarea) — never a parallel write path into the composer.
         dispatch(setUserInputText({ conversationId, text: next }));
       },
+      ...tutorConversationWriteHandlers(dispatch, ownedTutorConversations),
     };
   };
 
@@ -972,6 +984,9 @@ function EducationTutorClientInner({
           send_blocked: sendBlocked,
           compliance_blocked: coppa.blocked,
           ...(composerDraft.trim() ? { composer_draft: composerDraft } : {}),
+          ...(ownedTutorConversation
+            ? { owned_tutor_conversations: [ownedTutorConversation] }
+            : {}),
           ...(seed ? { grounding_seed: { ...seed } } : {}),
           ...(grounding
             ? {
