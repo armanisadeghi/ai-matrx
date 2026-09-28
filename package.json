@@ -1007,7 +1007,7 @@
     "uuid": "latest",
     "vaul": "latest",
     "web-vitals": "^6.2.2",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "xlsx": "file:vendor/xlsx",
     "y-protocols": "^1.0.7",
     "yaml": "^2.9.1",
     "yjs": "^13.6.33",
