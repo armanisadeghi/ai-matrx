@@ -120,12 +120,15 @@ export function uniformColumnIds<T>(
   columns: readonly { id: string; column: MatrxColumnDef<T>; locked?: boolean }[],
   rows: readonly T[],
   keep: readonly (string | null | undefined)[] = [],
+  /** Every row of the list is loaded (no further page): the rows ARE the list. */
+  options: { complete?: boolean } = {},
 ): string[] {
   // An all-EMPTY column is empty at any row count (/connected-sources with 2
-  // rows showed a column of dashes); "the same value on every row" needs
-  // MIN_ROWS_TO_JUDGE rows before it means anything.
+  // rows showed a column of dashes). "The same value on every row" needs
+  // MIN_ROWS_TO_JUDGE rows — or 2 when those rows are the whole list
+  // (/connected-sources: "From" repeated one value on its only 2 rows).
   if (rows.length === 0) return [];
-  const judgeIdentical = rows.length >= MIN_ROWS_TO_JUDGE;
+  const judgeIdentical = rows.length >= MIN_ROWS_TO_JUDGE || (options.complete === true && rows.length >= 2);
   const out: string[] = [];
   for (const spec of columns) {
     if (spec.locked || keep.includes(spec.id)) continue;

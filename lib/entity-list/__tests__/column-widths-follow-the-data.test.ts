@@ -73,6 +73,9 @@ describe("uniform columns hide by default", () => {
       { id: "2", name: "B", topic: "", folders: [], visibility: "Organization" },
     ] as Row[];
     expect(uniformColumnIds(specs, two, ["name"])).toEqual(["topic"]);
+    // …and when those 2 rows ARE the whole list, an identical value hides too.
+    expect(uniformColumnIds(specs, two, ["name"], { complete: true })).toEqual(["topic", "visibility"]);
+    expect(uniformColumnIds(specs, two.slice(0, 1), ["name"], { complete: true })).toEqual(["topic"]);
   });
 
   it("a column the person shows stays shown", () => {

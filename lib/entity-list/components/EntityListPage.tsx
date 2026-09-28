@@ -283,7 +283,9 @@ export function EntityListPage<TRow>({
   // UNIFORM COLUMNS hide by default where the surface opts in (they stay in
   // the picker; a column the person shows stays shown) — ../columnWidths.ts.
   const autoHidden = config.autoHideUniformColumns
-    ? uniformColumnIds(config.columns, list.rows, [entityListDoorColumnId(config)])
+    ? uniformColumnIds(config.columns, list.rows, [entityListDoorColumnId(config)], {
+        complete: list.query.page <= 1 && list.total <= list.rows.length,
+      })
     : [];
   const hiddenColumns = effectiveHiddenColumns(
     prefs.hiddenColumns,
