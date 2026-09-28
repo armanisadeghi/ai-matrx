@@ -83,7 +83,7 @@ export async function collect({ paths = [], checkIds = [], root = REPO_ROOT, wor
 export function renderItem(item) {
   const check = byId(item.check);
   const where = item.file ? `${item.file}${item.line != null ? `:${item.line}` : ""}` : "-";
-  const lines = [`${item.check}  ${item.item_key}  ${where}  ${item.title}`, `    fix:    ${check?.fix ?? item.remedy}`];
+  const lines = [`${item.check}  ${item.item_key}  ${where}  ${item.title}`, `    fix:    ${check?.fixFor?.(item.item_key) ?? check?.fix ?? item.remedy}`];
   lines.push(
     check?.accept
       ? `    accept: ${ACCEPT_CMD} ${item.check} ${shellQuote(item.item_key)} --reason "<why this is fine>"`

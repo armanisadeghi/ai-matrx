@@ -20,7 +20,7 @@ import {
 } from "@/features/ai-models/redux/modelRegistrySlice";
 // smsSlice imported lazily — avoids pulling the full SMS feature into the shell bundle
 import { supabase } from "@/utils/supabase/client";
-import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { getClientClaimsUserCached } from "@/utils/supabase/clientClaimsCache";
 import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";
 import { getSSRShellData } from "@/utils/supabase/ssrShellData";
 import { mapUserData } from "@/utils/userDataMapper";
@@ -56,7 +56,7 @@ export default function DeferredShellData() {
         const {
           data: { user },
           error: claimsError,
-        } = await getClaimsUser(supabase);
+        } = await getClientClaimsUserCached();
         console.debug(
           `⚡DeferredShellData getClaims: ${(performance.now() - t1).toFixed(2)}ms`,
         );

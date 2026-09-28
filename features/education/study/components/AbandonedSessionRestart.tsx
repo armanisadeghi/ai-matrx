@@ -51,7 +51,7 @@ export function AbandonedSessionRestart({
   const startNewSession = async (): Promise<void> => {
     if (busyAction || isPending) return;
     setBusyAction("restart");
-    const del = await studyService.deleteSession(session.id);
+    const del = await studyService.deleteSession(session.id, session.version);
     if (del.error) {
       toast.error("Couldn't remove the old session", {
         description: del.error,
@@ -67,7 +67,7 @@ export function AbandonedSessionRestart({
   const deleteAndReturn = async (): Promise<void> => {
     if (busyAction || isPending) return;
     setBusyAction("delete");
-    const del = await studyService.deleteSession(session.id);
+    const del = await studyService.deleteSession(session.id, session.version);
     if (del.error) {
       toast.error("Couldn't delete session", { description: del.error });
       setBusyAction(null);

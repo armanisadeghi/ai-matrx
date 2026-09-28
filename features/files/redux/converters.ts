@@ -43,8 +43,12 @@ import type { ShareLink as CanonicalShareLink } from "@/utils/permissions/shareL
  * both mean `personal`. They were retired from the enum on 2026-07-21 and
  * should no longer appear in any row; they are handled here only so an old
  * cached payload cannot land as an unknown value.
+ *
+ * EXPORTED on purpose: it is the remedy the visibility-vocabulary check names
+ * for a legacy read (scripts/visibility-vocab/remedies.mjs) — one normalizer,
+ * never a private copy per surface.
  */
-function toVisibility(raw: string | null | undefined): Visibility {
+export function toVisibility(raw: string | null | undefined): Visibility {
   if (raw === "public") return "public";
   if (raw === "link") return "link";
   if (raw === "internal") return "internal";

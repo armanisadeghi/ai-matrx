@@ -17,7 +17,7 @@ import {
 } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
-import { mergeJsonColumn, type JsonObject } from "@ai-matrx/data/db";
+import { guardedUpdate, mergeJsonColumn, type JsonObject } from "@ai-matrx/data/db";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
@@ -927,8 +927,33 @@ export const fcService = {
   /** Soft-delete a card. The `member` edge is left in place (harmless — the
    * card row is filtered by `deleted_at` everywhere it's read), avoiding a
    * second round-trip for something with no user-visible effect. */
-  async deleteCard(cardId: string): Promise<FcResult<null>> {
-    return softDeleteOne("fc_card", cardId, "deleteCard", "card");
+  async deleteCard(cardId: string, expectedVersion: number): Promise<FcResult<null>> {
+    try {
+      const result = await guardedUpdate<FcCardRow>({
+        expectedVersion,
+        applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
+          EDU()
+            .from("fc_card")
+            .update({ deleted_at: new Date().toISOString(), version: nextVersion })
+            .eq("id", cardId)
+            .eq("version", expected)
+            .is("deleted_at", null)
+            .select("*")
+            .maybeSingle(),
+        fetchCurrent: () =>
+          EDU()
+            .from("fc_card")
+            .select("*")
+            .eq("id", cardId)
+            .is("deleted_at", null)
+            .maybeSingle(),
+      });
+      if (result.status === "conflict") return fail("deleteCard", "This card changed elsewhere. Reload before deleting it.");
+      if (result.status === "not_found") return fail("deleteCard", "This card is no longer available.");
+      return { data: null, error: null };
+    } catch (error) {
+      return fail("deleteCard", error);
+    }
   },
 
   /**

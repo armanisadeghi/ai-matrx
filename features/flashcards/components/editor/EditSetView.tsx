@@ -286,7 +286,7 @@ export function EditSetView({ setId }: { setId: string }) {
   const confirmDeleteCard = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
-    const res = await fcService.deleteCard(deleteTarget.id);
+    const res = await fcService.deleteCard(deleteTarget.id, deleteTarget.version);
     setDeleting(false);
     setDeleteTarget(null);
     if (res.error) {
@@ -345,6 +345,7 @@ export function EditSetView({ setId }: { setId: string }) {
             cards: data.cards.map(
               (c, i): FlashcardEditorCard => ({
                 id: c.id,
+                version: c.version,
                 position: c.position ?? i,
                 card_kind: asCardKind(c.card_kind),
                 front: c.front,
@@ -528,6 +529,29 @@ export function EditSetView({ setId }: { setId: string }) {
       }
       // Positions are assigned server-side, so refetch for the true order.
       setReloadKey((k) => k + 1);
+    },
+    delete_cards: async (value: unknown) => {
+      if (!data) throw new Error("delete_cards: the set has not loaded.");
+      const request = writeRecord(value, "delete_cards");
+      const id = writeText(request, "card_id", "delete_cards")?.trim();
+      const version = request.version;
+      if (!id || !Number.isSafeInteger(version) || Object.keys(request).some((key) => key !== "card_id" && key !== "version")) {
+        throw new Error("delete_cards: provide { card_id, version } from this loaded set.");
+      }
+      const current = data.cards.find((card) => card.id === id);
+      if (!current) {
+        throw new Error(`delete_cards: card ${id} is no longer in the open set.`);
+      }
+      if (current.version !== version) {
+        throw new Error("delete_cards: this card changed. Reload before deleting it.");
+      }
+      const result = await fcService.deleteCard(id, current.version);
+      if (result.error) throw new Error(`delete_cards: ${result.error}`);
+      setData((previous) => previous ? {
+        ...previous,
+        cards: previous.cards.filter((card) => card.id !== id),
+      } : previous);
+      setReloadKey((key) => key + 1);
     },
   });
 

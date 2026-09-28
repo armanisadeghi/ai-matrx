@@ -24,6 +24,7 @@
  * adapters carry traffic.
  */
 
+import { toVisibility } from "@/features/files/redux/converters";
 import type {
   AudioBlock,
   DocumentBlock,
@@ -145,15 +146,12 @@ type WireVisibility =
   | "private";
 
 function pickVisibility(v?: WireVisibility | null): MediaVisibility {
-  if (v === "public") return "public";
-  if (v === "link") return "link";
-  if (v === "internal") return "internal";
-  // The retired spellings both reconcile to `personal`, exactly as the server
-  // does (matrx_utils.visibility.LEGACY_VISIBILITY_MAP). Unknown/null also
-  // lands here so a block with a missing visibility is never promoted to
-  // public — a private file must resolve through the durable authenticated
-  // route, never a bare CDN guess.
-  return "personal";
+  // The ONE legacy normalizer: the retired spellings both reconcile to
+  // `personal`, exactly as the server does (matrx_utils LEGACY_VISIBILITY_MAP),
+  // and unknown/null lands there too so a block with a missing visibility is
+  // never promoted to public — a private file must resolve through the durable
+  // authenticated route, never a bare CDN guess.
+  return toVisibility(v);
 }
 
 /**
