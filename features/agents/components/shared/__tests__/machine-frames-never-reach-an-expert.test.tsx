@@ -97,31 +97,59 @@ describe("the audience primitive", () => {
 });
 
 /**
- * The four machine frames the one shared renderer can mount. Each must sit
- * behind the gate; the check reads the source because the failure this guards
- * is a FIFTH frame being added later with no gate — behaviour tests over the
- * four that exist today cannot see that.
+ * The shared renderer used to mount four separately-named components
+ * (InlineToolCard / InlineToolBatch / DbToolCard / DbToolBatch), one per
+ * live-vs-persisted × card-vs-batch combination. It has since been
+ * consolidated onto ONE component per shape — `ToolCard` and `ToolBatch`
+ * (`components/mardown-display/chat-markdown/internal-handlers/ToolHandlers.tsx`)
+ * — each still mounted from two call sites in `EnhancedChatMarkdown.tsx`: the
+ * live `tool` / `tool_batch` slot branch and the persisted `db_tool` /
+ * `db_tool_batch` segment branch. The four legacy names still exist as thin
+ * back-compat wrappers around `ToolCard`/`ToolBatch` for the other surfaces
+ * that render one source only, but the shared transcript renderer no longer
+ * spells any of them — so a literal search for `<InlineToolCard>` etc. in
+ * this file finds nothing and proves nothing.
+ *
+ * The guard now scans EVERY `<ToolCard` / `<ToolBatch` mount site in the
+ * shared renderer (not just the first) and requires each to sit behind
+ * `machineFramesVisible` — so a fifth mount added later with no gate still
+ * fails here, and so does a future rename back to four distinct components
+ * that forgets the gate on one of them.
  */
-const MACHINE_FRAMES = [
-  "InlineToolCard",
-  "InlineToolBatch",
-  "DbToolCard",
-  "DbToolBatch",
-];
+const MACHINE_FRAME_TAGS = ["ToolCard", "ToolBatch"];
 
 describe("every machine frame in the shared transcript renderer is gated", () => {
   const source = read(
     "components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx",
   );
 
-  it.each(MACHINE_FRAMES)("%s only mounts when machine frames are visible", (
-    frame,
-  ) => {
-    const mountAt = source.indexOf(`<${frame}`);
-    expect(mountAt).toBeGreaterThan(-1);
-    // The gate lives in the same branch, immediately above the mount.
-    const branch = source.slice(Math.max(0, mountAt - 700), mountAt);
-    expect(branch).toContain("machineFramesVisible");
+  const mountSites = (tag: string): number[] => {
+    const sites: number[] = [];
+    let from = 0;
+    for (;;) {
+      const at = source.indexOf(`<${tag}`, from);
+      if (at === -1) break;
+      sites.push(at);
+      from = at + 1;
+    }
+    return sites;
+  };
+
+  it.each(MACHINE_FRAME_TAGS)("every <%s> mount is gated", (tag) => {
+    const sites = mountSites(tag);
+    expect(sites.length).toBeGreaterThan(0);
+    for (const mountAt of sites) {
+      // The gate lives in the same branch, immediately above the mount.
+      const branch = source.slice(Math.max(0, mountAt - 700), mountAt);
+      expect(branch).toContain("machineFramesVisible");
+    }
+  });
+
+  it("mounts both the live and the persisted branch for a card and a batch", () => {
+    // Pins the "one component, two call sites" shape itself so a collapse
+    // back to a single call site (losing branch coverage) is visible here.
+    expect(mountSites("ToolCard").length).toBeGreaterThanOrEqual(2);
+    expect(mountSites("ToolBatch").length).toBeGreaterThanOrEqual(2);
   });
 
   it("gives an Expert the FACT that work is happening, never silence", () => {

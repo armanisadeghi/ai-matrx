@@ -34,7 +34,17 @@ const dispatched: unknown[] = [];
 
 const dispatch = (action: unknown) => {
   dispatched.push(action);
-  return action;
+  // Real RTK thunk dispatch returns a promise carrying `.unwrap()` (and
+  // `.abort()`) in addition to being awaitable/then-able itself — this
+  // mock mirrors that shape so a real `.unwrap()` call site behaves the
+  // way it does against the actual store.
+  const promise = Promise.resolve(action) as Promise<unknown> & {
+    unwrap: () => Promise<unknown>;
+    abort: () => void;
+  };
+  promise.unwrap = () => Promise.resolve(action);
+  promise.abort = () => {};
+  return promise;
 };
 
 jest.mock("@/lib/redux/hooks", () => ({
