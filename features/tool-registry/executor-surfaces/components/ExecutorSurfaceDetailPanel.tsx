@@ -113,7 +113,8 @@ export function ExecutorSurfaceDetailPanel({
             disableNavigation
           />{" "}
           from <span className="font-mono">{executor.name}</span>. The tool
-          stays in the catalog. You can re-add it later.
+          stays in the catalog and the binding moves to Trash. Re-adding it
+          restores it.
         </>
       ),
       confirmLabel: "Remove",

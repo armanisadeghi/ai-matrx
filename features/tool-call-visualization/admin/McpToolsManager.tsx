@@ -937,18 +937,10 @@ export function McpToolsManager() {
   const handleBulkDelete = async () => {
     if (targetIds.length === 0) return;
     const noun = `${targetIds.length} tool${targetIds.length === 1 ? "" : "s"}`;
-    const targetNames = filteredTools
-      .filter((t) => targetIds.includes(t.id))
-      .map((t) => t.name);
-    const { count: refCount } = await supabase
-      .schema("chat")
-      .from("tool_call")
-      .select("id", { count: "exact", head: true })
-      .in("tool_name", targetNames);
     const ok = await confirm({
-      title: `Delete ${noun}?`,
-      description: `${refCount ?? 0} historical cx_tool_call rows reference these tool names. Deleting cascades through tool.binding, tool.definition_version, and tool.ui, and orphans the tool's bundle-membership associations — but cx_tool_call.tool_name has no FK and will be orphaned. Prefer Deactivate unless you really mean it.`,
-      confirmLabel: "Delete forever",
+      title: `Move ${noun} to Trash?`,
+      description: `Agents stop seeing ${targetIds.length === 1 ? "this tool" : "these tools"} and ${targetIds.length === 1 ? "its" : "their"} executor bindings move to Trash with ${targetIds.length === 1 ? "it" : "them"}. Historical tool calls keep their records. You can restore from Trash at any time.`,
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -957,14 +949,15 @@ export function McpToolsManager() {
       const { error: delErr } = await supabase
         .schema("tool")
         .from("definition")
-        .delete()
-        .in("id", targetIds);
+        .update({ deleted_at: new Date().toISOString() })
+        .in("id", targetIds)
+        .is("deleted_at", null);
       if (delErr) throw delErr;
-      toast({ title: `${noun} deleted` });
+      toast({ title: `${noun} moved to Trash` });
       await refetch();
       setSelectedToolIds(new Set());
     } catch (err) {
-      toastWriteFailure(err, { action: `delete ${noun}`, remedy: "Try again, or reload the catalog." });
+      toastWriteFailure(err, { action: `move ${noun} to Trash`, remedy: "Try again, or reload the catalog." });
     } finally {
       setBulkBusy(false);
     }
@@ -1003,11 +996,11 @@ export function McpToolsManager() {
         const err = await response.json();
         throw new Error(err.error || "Failed to delete");
       }
-      toast({ title: "Deleted" });
+      toast({ title: "Moved to Trash" });
       await refetch();
     } catch (err) {
       toastWriteFailure(err, {
-        action: `delete ${deleteConfirmation.toolName ?? "this tool"}`,
+        action: `move ${deleteConfirmation.toolName ?? "this tool"} to Trash`,
         remedy: "Try again, or reload the catalog.",
       });
     } finally {
@@ -1354,7 +1347,7 @@ export function McpToolsManager() {
                     disabled={bulkBusy || targetIds.length === 0}
                     className="text-xs text-destructive focus:text-destructive"
                   >
-                    Delete permanently…
+                    Move to Trash…
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1746,7 +1739,7 @@ export function McpToolsManager() {
                               onClick={() =>
                                 handleDeleteTool(tool.id, tool.name)
                               }
-                              title="Delete Tool"
+                              title="Move to Trash"
                               className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -1775,7 +1768,7 @@ export function McpToolsManager() {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Tool</AlertDialogTitle>
+              <AlertDialogTitle>Move tool to Trash</AlertDialogTitle>
               <AlertDialogDescription>
                 {archiveConfirmSentence(
                   deleteConfirmation.toolName
@@ -1790,7 +1783,7 @@ export function McpToolsManager() {
                 onClick={confirmDelete}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Delete
+                Move to Trash
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

@@ -48,6 +48,7 @@ export async function listServerTools(
   const { data, error } = await sb()
     .schema("tool").from("definition")
     .select("id, name, description, is_active")
+    .is("deleted_at", null)
     .eq("managed_by_server_id", serverId)
     .order("name", { ascending: true });
   if (error) throw error;

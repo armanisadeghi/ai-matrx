@@ -7,8 +7,8 @@ const TOOL = "11111111-1111-4111-8111-111111111111";
 const ORG = "22222222-2222-4222-8222-222222222222";
 function transport(data: unknown, error: unknown = null) {
   const single = jest.fn().mockResolvedValue({ data, error });
-  const query = { select: jest.fn(), eq: jest.fn(), insert: jest.fn(), single };
-  query.select.mockReturnValue(query); query.eq.mockReturnValue(query); query.insert.mockReturnValue(query);
+  const query = { select: jest.fn(), eq: jest.fn(), insert: jest.fn(), upsert: jest.fn(), single };
+  query.select.mockReturnValue(query); query.eq.mockReturnValue(query); query.insert.mockReturnValue(query); query.upsert.mockReturnValue(query);
   return query;
 }
 
@@ -22,7 +22,11 @@ describe("canonical tool binding organization", () => {
     createClient.mockReturnValue({ schema: jest.fn().mockReturnValue({ from }) });
     await expect(addToolBinding({ toolId: TOOL, executorName: "test-executor", isActive: false })).resolves.toMatchObject({ organization_id: ORG });
     expect(tool.eq).toHaveBeenCalledWith("id", TOOL);
-    expect(binding.insert).toHaveBeenCalledWith({ tool_id: TOOL, executor_name: "test-executor", organization_id: ORG, is_active: false });
+    // (tool_id, executor_name) is the primary key and covers rows in Trash: re-adding revives the archived row.
+    expect(binding.upsert).toHaveBeenCalledWith(
+      { tool_id: TOOL, executor_name: "test-executor", organization_id: ORG, is_active: false, deleted_at: null },
+      { onConflict: "tool_id,executor_name" },
+    );
     expect(from.mock.calls).toEqual([["definition"], ["binding"]]);
   });
 
@@ -35,7 +39,7 @@ describe("canonical tool binding organization", () => {
     const tool = transport(row); const from = jest.fn().mockReturnValue(tool);
     createClient.mockReturnValue({ schema: jest.fn().mockReturnValue({ from }) });
     await expect(addToolBinding({ toolId: TOOL, executorName: "test-executor" })).rejects.toThrow();
-    expect(tool.insert).not.toHaveBeenCalled(); expect(from).toHaveBeenCalledTimes(1);
+    expect(tool.insert).not.toHaveBeenCalled(); expect(tool.upsert).not.toHaveBeenCalled(); expect(from).toHaveBeenCalledTimes(1);
   });
 
   it("propagates a denied parent read without issuing a binding write", async () => {
@@ -43,6 +47,6 @@ describe("canonical tool binding organization", () => {
     const from = jest.fn().mockReturnValue(tool);
     createClient.mockReturnValue({ schema: jest.fn().mockReturnValue({ from }) });
     await expect(addToolBinding({ toolId: TOOL, executorName: "test-executor" })).rejects.toBe(denied);
-    expect(tool.insert).not.toHaveBeenCalled(); expect(from).toHaveBeenCalledTimes(1);
+    expect(tool.insert).not.toHaveBeenCalled(); expect(tool.upsert).not.toHaveBeenCalled(); expect(from).toHaveBeenCalledTimes(1);
   });
 });

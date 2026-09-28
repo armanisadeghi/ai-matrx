@@ -194,11 +194,43 @@ export async function POST(request: NextRequest) {
       organization_id: await resolveSystemOrgId(supabase),
     };
 
-    const { data, error } = await supabase
+    // tool.definition.name is unique across live AND archived rows
+    // (tool_def_name_key). A name that belongs to a tool in Trash revives that
+    // row with the new content instead of failing on the unique key; a name a
+    // live tool already holds is refused with a remedy.
+    const { data: sameName, error: sameNameError } = await supabase
       .schema("tool").from("definition")
-      .insert([toolData])
-      .select()
-      .single();
+      .select("id, deleted_at")
+      .eq("name", toolData.name)
+      .maybeSingle();
+    if (sameNameError) {
+      console.error("Error checking tool name:", sameNameError);
+      return NextResponse.json(
+        { error: "Failed to create tool", details: sameNameError.message },
+        { status: 500 },
+      );
+    }
+    if (sameName && sameName.deleted_at === null) {
+      return NextResponse.json(
+        {
+          error: `A tool named "${toolData.name}" already exists. Open it to edit, or choose a different name.`,
+        },
+        { status: 409 },
+      );
+    }
+
+    const { data, error } = sameName
+      ? await supabase
+          .schema("tool").from("definition")
+          .update({ ...toolData, deleted_at: null })
+          .eq("id", sameName.id)
+          .select()
+          .single()
+      : await supabase
+          .schema("tool").from("definition")
+          .insert([toolData])
+          .select()
+          .single();
 
     if (error) {
       console.error("Error creating tool:", error);
@@ -210,8 +242,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "Tool created successfully",
+        message: sameName
+          ? "Tool restored from Trash with the new definition"
+          : "Tool created successfully",
         tool: data,
+        revived: Boolean(sameName),
       },
       { status: 201 },
     );

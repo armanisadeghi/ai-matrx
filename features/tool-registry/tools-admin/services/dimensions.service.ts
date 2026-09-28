@@ -59,6 +59,7 @@ export async function listToolBindings(toolId: string): Promise<ToolBindingRow[]
   const { data, error } = await sb()
     .schema("tool").from("binding")
     .select("*")
+    .is("deleted_at", null)
     .eq("tool_id", toolId)
     .order("executor_name", { ascending: true });
   if (error) throw error;
@@ -84,9 +85,11 @@ export async function removeToolBinding(args: {
 }): Promise<void> {
   const { error } = await sb()
     .schema("tool").from("binding")
-    .delete()
+    // Archive, never destroy: the binding moves to Trash and can be restored.
+    .update({ deleted_at: new Date().toISOString() })
     .eq("tool_id", args.toolId)
-    .eq("executor_name", args.executorName);
+    .eq("executor_name", args.executorName)
+    .is("deleted_at", null);
   if (error) throw error;
 }
 
@@ -351,6 +354,7 @@ export async function listAllToolOptions(): Promise<ToolCatalogOption[]> {
   const { data, error } = await sb()
     .schema("tool").from("definition")
     .select("id, name, category, description, is_active, source_kind")
+    .is("deleted_at", null)
     .order("category", { ascending: true })
     .order("name", { ascending: true });
   if (error) throw error;

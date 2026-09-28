@@ -858,6 +858,7 @@ export const applyOwnedAgentToolDelta = createAsyncThunk<
         .schema("tool")
         .from("definition")
         .select("id")
+        .is("deleted_at", null)
         .in("id", add)
         .eq("is_active", true);
       if (toolsError) throw pgErrorToError(toolsError);

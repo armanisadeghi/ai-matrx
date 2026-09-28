@@ -22,7 +22,9 @@ const ADMIN_ID = "87a6e699-1111-4111-8111-111111111111";
 const ORG_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
 
 const mockInsert = jest.fn();
+const mockUpdate = jest.fn();
 const mockSingle = jest.fn();
+const mockSameName = jest.fn();
 
 function request(body: Record<string, unknown>) {
   return new NextRequest("https://www.aimatrx.com/api/admin/tools", {
@@ -45,9 +47,18 @@ beforeEach(() => {
     data: { id: "tool-1", name: "storage_source_import" },
     error: null,
   });
+  mockSameName.mockResolvedValue({ data: null, error: null });
   const select = jest.fn(() => ({ single: mockSingle }));
   mockInsert.mockReturnValue({ select });
-  const from = jest.fn(() => ({ insert: mockInsert }));
+  mockUpdate.mockReturnValue({ eq: jest.fn(() => ({ select })) });
+  const lookup = jest.fn(() => ({
+    eq: jest.fn(() => ({ maybeSingle: mockSameName })),
+  }));
+  const from = jest.fn(() => ({
+    insert: mockInsert,
+    update: mockUpdate,
+    select: lookup,
+  }));
   const schema = jest.fn(() => ({ from }));
   mockCreateClient.mockResolvedValue({ schema });
 });
@@ -115,4 +126,32 @@ describe("tool registry create route", () => {
       expect(mockInsert).not.toHaveBeenCalled();
     },
   );
+
+  it("revives a tool in Trash that holds the same name instead of inserting", async () => {
+    mockSameName.mockResolvedValue({
+      data: { id: "archived-tool", deleted_at: "2026-09-27T00:00:00Z" },
+      error: null,
+    });
+    const response = await POST(request({ version: 1, semver: "1.0.0" }));
+
+    expect(response.status).toBe(201);
+    expect(mockInsert).not.toHaveBeenCalled();
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "storage_source_import", deleted_at: null }),
+    );
+    expect((await response.json()).revived).toBe(true);
+  });
+
+  it("refuses a name a live tool already holds, with a remedy", async () => {
+    mockSameName.mockResolvedValue({
+      data: { id: "live-tool", deleted_at: null },
+      error: null,
+    });
+    const response = await POST(request({ version: 1, semver: "1.0.0" }));
+
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toMatch(/already exists/);
+    expect(mockInsert).not.toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
 });

@@ -19,14 +19,20 @@ export async function addToolBinding(args: {
   if (readError) throw readError;
   if (!tool || tool.id !== args.toolId) throw new Error("The selected tool is unavailable. Reload it before adding a binding.");
   const organizationId = requireOrganizationContext(tool.organization_id);
+  // tool.binding's primary key is (tool_id, executor_name) and covers rows in
+  // Trash too, so re-adding a binding that was moved to Trash revives that row.
   const { data, error } = await client
     .schema("tool").from("binding")
-    .insert({
-      tool_id: args.toolId,
-      executor_name: args.executorName,
-      is_active: args.isActive ?? true,
-      organization_id: organizationId,
-    })
+    .upsert(
+      {
+        tool_id: args.toolId,
+        executor_name: args.executorName,
+        is_active: args.isActive ?? true,
+        organization_id: organizationId,
+        deleted_at: null,
+      },
+      { onConflict: "tool_id,executor_name" },
+    )
     .select()
     .single();
   if (error) throw error;

@@ -40,6 +40,7 @@ export class ServerToolsService {
       const { data, error } = await supabase
         .schema('tool').from('definition')
         .select(ANON_TOOL_COLUMNS)
+        .is("deleted_at", null)
         .eq('is_active', true)
         .order('category', { ascending: true })
         .order('name', { ascending: true });
@@ -65,6 +66,7 @@ export class ServerToolsService {
       const { data, error } = await supabase
         .schema('tool').from('definition')
         .select(ANON_TOOL_COLUMNS)
+        .is("deleted_at", null)
         .eq('is_active', true)
         .eq('category', category)
         .order('name', { ascending: true });
@@ -92,6 +94,7 @@ export class ServerToolsService {
       const { data, error } = await supabase
         .schema('tool').from('definition')
         .select(ANON_TOOL_COLUMNS)
+        .is("deleted_at", null)
         .eq('is_active', true)
         .or(buildSearchOr(query, ["name", "description"]))
         .order('category', { ascending: true })
@@ -120,6 +123,7 @@ export class ServerToolsService {
       const { data, error } = await supabase
         .schema('tool').from('definition')
         .select(ANON_TOOL_COLUMNS)
+        .is("deleted_at", null)
         .in('name', toolIdentifiers)  // Query by 'name' field which contains the tool identifiers
         .eq('is_active', true);
 

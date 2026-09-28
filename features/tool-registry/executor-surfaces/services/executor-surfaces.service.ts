@@ -96,6 +96,7 @@ export async function listExecutorsWithStats(): Promise<ExecutorWithStats[]> {
           .schema("tool")
           .from("binding")
           .select("executor_name, is_active", { count: "exact" })
+          .is("deleted_at", null)
           .order("executor_name", { ascending: true })
           .order("tool_id", { ascending: true })
           .range(from, to),
@@ -133,6 +134,7 @@ export async function listBindingsForExecutor(
     .select(
       "tool_id, executor_name, is_active, updated_at, tool:definition(name, category, description, is_active, source_kind)",
     )
+    .is("deleted_at", null)
     .eq("executor_name", executorName)
     .order("updated_at", { ascending: false });
   if (error) throw error;
@@ -190,6 +192,7 @@ export async function listUnboundToolsForExecutor(
           .select("id, name, category, description, is_active, source_kind", {
             count: "exact",
           })
+          .is("deleted_at", null)
           .order("category", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -201,6 +204,7 @@ export async function listUnboundToolsForExecutor(
           .schema("tool")
           .from("binding")
           .select("tool_id", { count: "exact" })
+          .is("deleted_at", null)
           .eq("executor_name", executorName)
           .order("tool_id", { ascending: true })
           .range(from, to),
@@ -236,8 +240,10 @@ export async function removeBinding(args: {
 }): Promise<void> {
   const { error } = await sb()
     .schema("tool").from("binding")
-    .delete()
+    // Archive, never destroy: the binding moves to Trash and can be restored.
+    .update({ deleted_at: new Date().toISOString() })
     .eq("tool_id", args.toolId)
-    .eq("executor_name", args.executorName);
+    .eq("executor_name", args.executorName)
+    .is("deleted_at", null);
   if (error) throw error;
 }

@@ -324,6 +324,7 @@ export async function searchToolsForBundle(
   let q = sb()
     .schema("tool").from("definition")
     .select("id, name, description")
+    .is("deleted_at", null)
     .eq("is_active", true);
   if (query.trim()) {
     q = q.or(buildSearchOr(query, ["name"]));

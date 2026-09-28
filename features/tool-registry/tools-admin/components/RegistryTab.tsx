@@ -256,7 +256,8 @@ function BindingsSection({ toolId }: { toolId: string }) {
   const onRemove = async (row: ToolBindingRow) => {
     const ok = await confirm({
       title: `Unbind from ${row.executor_name}?`,
-      description: "The tool will no longer be runnable on this executor.",
+      description:
+        "The tool will no longer be runnable on this executor. The binding moves to Trash; re-adding it restores it.",
       confirmLabel: "Unbind",
       variant: "destructive",
     });

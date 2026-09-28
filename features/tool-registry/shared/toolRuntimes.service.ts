@@ -110,6 +110,7 @@ async function loadAllBindings(): Promise<Map<string, string[]>> {
         .schema("tool")
         .from("binding")
         .select("tool_id, executor_name, is_active", { count: "exact" })
+        .is("deleted_at", null)
         .order("tool_id", { ascending: true })
         .order("executor_name", { ascending: true })
         .range(from, to),

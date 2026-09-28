@@ -33,6 +33,7 @@ export class ToolsService {
       const { data, error } = await this.supabase
         .schema("tool").from("definition")
         .select("*")
+        .is("deleted_at", null)
         .eq("is_active", true)
         .order("category", { ascending: true })
         .order("name", { ascending: true });
@@ -57,6 +58,7 @@ export class ToolsService {
       const { data, error } = await this.supabase
         .schema("tool").from("definition")
         .select("*")
+        .is("deleted_at", null)
         .eq("is_active", true)
         .eq("category", category)
         .order("name", { ascending: true });
@@ -83,6 +85,7 @@ export class ToolsService {
       const { data, error } = await this.supabase
         .schema("tool").from("definition")
         .select("*")
+        .is("deleted_at", null)
         .in("id", toolIds)
         .eq("is_active", true);
 
@@ -111,6 +114,7 @@ export class ToolsService {
       const { data, error } = await this.supabase
         .schema("tool").from("definition")
         .select("*")
+        .is("deleted_at", null)
         .in("id", toolIds);
 
       if (error) {
@@ -141,6 +145,7 @@ export class ToolsService {
       const { data, error } = await this.supabase
         .schema("tool").from("definition")
         .select("*")
+        .is("deleted_at", null)
         .eq("is_active", true)
         .or(buildSearchOr(query, ["name", "description"]))
         .order("category", { ascending: true })
