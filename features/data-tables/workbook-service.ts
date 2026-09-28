@@ -191,7 +191,7 @@ export async function deleteWorkbook(
 }
 
 /**
- * HARD delete — only for rolling back a workbook this very flow just created and
+ * Archive (delete means archive: never a hard delete) — only for rolling back a workbook this very flow just created and
  * failed to populate (see the import path in app/(core)/workbooks/page.tsx).
  * Never use this for a user-initiated delete: that is deleteWorkbook, which
  * tombstones and stays recoverable.
@@ -203,10 +203,10 @@ export async function discardFailedWorkbook(
     supabase
       .schema("workbench")
       .from("udt_workbooks")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", workbookId)
       .select("id"),
-    { action: "delete", noun: "workbook" },
+    { action: "archive", noun: "workbook" },
   );
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };

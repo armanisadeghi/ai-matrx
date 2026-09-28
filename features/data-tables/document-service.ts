@@ -200,7 +200,7 @@ export async function restoreDocument(
 }
 
 /**
- * HARD delete — only for rolling back a document this very flow just created and
+ * Archive (delete means archive: never a hard delete) — only for rolling back a document this very flow just created and
  * failed to populate. Never use for a user-initiated delete: that is
  * deleteDocument, which tombstones and stays recoverable.
  */
@@ -211,10 +211,10 @@ export async function discardFailedDocument(
     supabase
       .schema("workbench")
       .from("udt_documents")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", documentId)
       .select("id"),
-    { action: "delete", noun: "document" },
+    { action: "archive", noun: "document" },
   );
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };
