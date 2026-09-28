@@ -42,7 +42,8 @@ import {
 } from "../subject-doors";
 import { DoorLink } from "./DoorLink";
 import { useDoorAudience } from "./door-audience";
-import { fmtCost, fmtDate, VERDICT_COLOR } from "./tokens";
+import { fmtDate, VERDICT_COLOR } from "./tokens";
+import { Cost } from "@/components/cost/Cost";
 
 function replayStatus(replay: Replay): string {
   if (replayInFlight(replay)) {
@@ -148,7 +149,7 @@ function ReplayVerdictCell({ replay }: { replay: Replay }) {
 }
 
 function ReplayCostCell({ replay }: { replay: Replay }) {
-  if (replayRan(replay)) return fmtCost(replaySpend(replay));
+  if (replayRan(replay)) return <Cost usd={replaySpend(replay)} />;
   if (replayInFlight(replay)) {
     return (
       <span className="text-xs text-muted-foreground">not yet — in flight</span>
@@ -171,7 +172,7 @@ function OriginalCostCell({ replay }: { replay: Replay }) {
   return baseline == null ? (
     <span className="text-xs text-muted-foreground">baseline not recorded</span>
   ) : (
-    fmtCost(baseline)
+    <Cost usd={baseline} />
   );
 }
 

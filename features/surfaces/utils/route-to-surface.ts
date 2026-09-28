@@ -195,6 +195,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-user/education-grade-work",
   },
   { prefix: "/education/mind-maps", surface: "matrx-user/education-mind-maps" },
+  { prefix: "/education/summaries", surface: "matrx-user/education-summaries" },
   { prefix: "/education/memory", surface: "matrx-user/education-memory" },
   { prefix: "/education/planner", surface: "matrx-user/education-planner" },
   {

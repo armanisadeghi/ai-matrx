@@ -5,9 +5,18 @@
  * submit-time live-scope refresh.
  *
  * Layers are merged weakest → strongest per target: inherited/global binding,
- * organization bindings, user binding, then shortcut mappings. Required
- * values fail loudly; prompt_user mappings use the canonical prompt host only
- * when the execution display is interactive.
+ * organization bindings, user binding, then shortcut mappings.
+ *
+ * A REQUIRED VALUE THE PAGE CANNOT FILL OFFERS, NEVER BLOCKS (Arman,
+ * 2026-09-27; `common-docs/policies/validation-offers-never-blocks.md`). When
+ * a required surface value is absent (e.g. "Translate to Spanish" with nothing
+ * selected) or a required prompt_user value cannot be asked for:
+ *   - interactive display → ONE small dialog names the missing value, lets the
+ *     person type it, run without it (leave it blank), or cancel. Cancel stops
+ *     the launch with `LaunchCancelledByPerson` — an answer, not a failure: no
+ *     error toast, no Error Inspector row.
+ *   - direct/background (no UI may interrupt) → the run proceeds and a toast
+ *     names what it ran without. Never silent, never refused.
  */
 
 import {
@@ -15,7 +24,11 @@ import {
   type ValuePromptField,
 } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { toast } from "@/lib/toast";
-import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
+import {
+  readSurfaceScopeValue,
+  resolveValueMappings,
+} from "@/features/surfaces/utils/value-mapping-resolver";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
@@ -101,6 +114,47 @@ export function applyLaunchWritePolicies(
   );
 }
 
+/**
+ * The person cancelled a launch at the missing-value dialog. THIS IS AN
+ * ANSWER, NOT A FAILURE: the message is empty so every `toast.error(err.message)`
+ * boundary drops it (`lib/toast.ts` never raises a wordless error toast), and
+ * the name is `AbortError` so the rejected-thunk capture
+ * (`lib/diagnostics/reduxErrorCaptureMiddleware.ts`) files nothing. The reason
+ * stays readable for developers on `.reason`.
+ */
+export class LaunchCancelledByPerson extends Error {
+  override name = "AbortError" as const;
+  readonly reason: string;
+  constructor(title: string) {
+    super("");
+    this.reason = `"${title}" was cancelled at the missing-value prompt; nothing ran.`;
+  }
+}
+
+function isBlank(value: unknown): boolean {
+  return (
+    value === undefined ||
+    value === null ||
+    (typeof value === "string" && value.trim() === "")
+  );
+}
+
+/** The person-facing name of a surface value: its manifest label, else the key in words. */
+function surfaceValueLabel(
+  surfaceName: string | null | undefined,
+  target: string,
+): string {
+  const label = surfaceName
+    ? getManifest(surfaceName)?.values.find((v) => v.name === target)?.label
+    : undefined;
+  return label ?? target.replace(/^.*\./, "").replace(/[_-]+/g, " ").trim();
+}
+
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
 export async function prepareLaunchMappings(args: {
   merged: ValueMappingMap;
   applicationScope: Record<string, unknown>;
@@ -108,46 +162,91 @@ export async function prepareLaunchMappings(args: {
   interactive: boolean;
   /** Dialog title — the shortcut/agent label. */
   title: string;
+  /** The launching surface — names missing values by their manifest label. */
+  surfaceName?: string | null;
 }): Promise<ValueMappingMap> {
-  const { merged, applicationScope, interactive, title } = args;
+  const { applicationScope, interactive, title, surfaceName } = args;
+  const out: ValueMappingMap = { ...args.merged };
 
-  const missingRequired: string[] = [];
-  for (const [key, mapping] of Object.entries(merged)) {
+  // ── Required surface values the page did not provide ────────────────────
+  // Same read as the resolver (`readSurfaceScopeValue`), so the two never
+  // disagree about what is missing; a blank string counts as missing here
+  // (no selection is not a selection).
+  const missing: Array<{
+    key: string;
+    label: string;
+    mapping: Extract<ValueMapping, { mapType: "surface_value" }>;
+  }> = [];
+  for (const [key, mapping] of Object.entries(out)) {
     if (
       mapping.mapType === "surface_value" &&
       mapping.required &&
-      applicationScope[mapping.target] === undefined
+      isBlank(
+        readSurfaceScopeValue(
+          applicationScope as ApplicationScope,
+          mapping.target,
+        ),
+      )
     ) {
-      missingRequired.push(`"${key}" needs surface value "${mapping.target}"`);
+      missing.push({
+        key,
+        label: surfaceValueLabel(surfaceName, mapping.target),
+        mapping,
+      });
     }
   }
-  if (missingRequired.length > 0) {
-    const message = `Cannot run "${title}" — required values are missing from this page: ${missingRequired.join("; ")}`;
-    toast.error(message);
-    throw new Error(message);
+  if (missing.length > 0) {
+    const names = joinNames(missing.map((m) => m.label));
+    // Proceeding without a value = the mapping stops being required, so the
+    // resolver neither errors nor invents one.
+    const runWithout = (m: (typeof missing)[number]) => {
+      out[m.key] = { ...m.mapping, required: false };
+    };
+    if (!interactive) {
+      toast.info(`"${title}" ran without ${names} — this page had none.`);
+      missing.forEach(runWithout);
+    } else {
+      const answers = await promptForValues({
+        title,
+        description: `This page has no ${names}, which "${title}" needs. Type ${missing.length === 1 ? "it" : "them"} below, or leave blank to run without ${missing.length === 1 ? "it" : "them"}.`,
+        submitLabel: "Run",
+        fields: missing.map((m) => ({
+          name: m.key,
+          prompt: m.label.charAt(0).toUpperCase() + m.label.slice(1),
+          required: false,
+        })),
+      });
+      if (answers === null) throw new LaunchCancelledByPerson(title);
+      for (const m of missing) {
+        const typed = answers[m.key]?.trim();
+        if (typed) out[m.key] = { mapType: "direct_value", target: typed };
+        else runWithout(m);
+      }
+    }
   }
 
-  const promptEntries = Object.entries(merged).filter(
+  // ── prompt_user mappings ────────────────────────────────────────────────
+  const promptEntries = Object.entries(out).filter(
     (
       entry,
     ): entry is [string, Extract<ValueMapping, { mapType: "prompt_user" }>] =>
       entry[1].mapType === "prompt_user",
   );
-  if (promptEntries.length === 0) return merged;
+  if (promptEntries.length === 0) return out;
 
-  const out: ValueMappingMap = { ...merged };
   if (!interactive) {
     const requiredNames = promptEntries
       .filter(([, mapping]) => mapping.required)
-      .map(([key]) => `"${key}"`);
+      .map(([, mapping]) => mapping.prompt || "a value");
     if (requiredNames.length > 0) {
-      const message = `Cannot run "${title}" in the background — required input(s) ${requiredNames.join(", ")} must be entered by a user. Use an interactive display mode.`;
-      toast.error(message);
-      throw new Error(message);
+      // Nobody can be asked in a direct/background run — say so, and run.
+      toast.info(
+        `"${title}" ran without ${joinNames(requiredNames.map((n) => `"${n}"`))} — it runs without a window, so nobody could be asked.`,
+      );
     }
     for (const [key] of promptEntries) {
       console.warn(
-        `[surfaces] optional prompt_user mapping "${key}" skipped — non-interactive display mode`,
+        `[surfaces] prompt_user mapping "${key}" skipped — non-interactive display mode`,
       );
       delete out[key];
     }

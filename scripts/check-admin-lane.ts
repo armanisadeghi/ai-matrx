@@ -75,6 +75,7 @@ const IDENTITY_ALLOWED = new Set([
   // An admin sees points like everyone else until HE flips the switch; the
   // identity decides only whether the switch exists and is honored.
   "components/cost/useCostDisplay.ts",
+  "components/cost/costUnit.ts",
   "features/shell/components/header/header-right-menu/CostUnitMenuItem.tsx",
 ]);
 

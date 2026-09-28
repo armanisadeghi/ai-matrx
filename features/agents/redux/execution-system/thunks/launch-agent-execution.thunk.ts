@@ -657,7 +657,9 @@ export const launchAgentExecution = createAsyncThunk<
       }
       applyLaunchWritePolicies(resolvedLayers, shortcut.agentId, surfaceName);
       if (resolvedLayers) {
-        // Validation/prompt failures here are intentional launch aborts.
+        // A missing required value is OFFERED, never refused: interactive
+        // asks (type it / run without / cancel), direct/background runs with
+        // a notice. Only the person's Cancel rejects (LaunchCancelledByPerson).
         shortcutSurfaceMappings = await prepareLaunchMappings({
           merged: resolvedLayers.merged,
           applicationScope: (applicationScope ?? {}) as Record<string, unknown>,
@@ -666,6 +668,7 @@ export const launchAgentExecution = createAsyncThunk<
             resolvedDisplayMode !== "direct" &&
             resolvedDisplayMode !== "background",
           title: shortcut.label ?? "Provide values",
+          surfaceName,
         });
       }
     }
@@ -889,7 +892,8 @@ export const launchAgentExecution = createAsyncThunk<
           applyLaunchWritePolicies(resolvedLayers, agentId, surfaceName);
           bindingAutoRun = resolvedLayers?.autoRun ?? null;
           if (resolvedLayers) {
-            // Validation/prompt failures are intentional launch aborts.
+            // Missing required values are offered, never refused — see
+            // prepareLaunchMappings. Only the person's Cancel rejects.
             surfaceValueMappings = await prepareLaunchMappings({
               merged: resolvedLayers.merged,
               applicationScope: applicationScope as Record<string, unknown>,
@@ -898,6 +902,7 @@ export const launchAgentExecution = createAsyncThunk<
                 resolvedDisplayMode !== "direct" &&
                 resolvedDisplayMode !== "background",
               title: agent.name ?? "Provide values",
+              surfaceName,
             });
           }
         }

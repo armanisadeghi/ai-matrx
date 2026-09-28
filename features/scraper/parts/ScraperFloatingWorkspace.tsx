@@ -760,6 +760,68 @@ export function ScraperFloatingWorkspace({
           {/* DOM wrapper so ContextMenuTrigger (asChild) has a real element to
               attach to — ScrapedResultDetailTabs is a component, not a ref host. */}
           <div className="flex flex-col h-full min-h-0">
+            {/* The body's own run control — the sidebar's Scrape / Search +
+                scrape is the same handler over the same state, but the sidebar
+                collapses, so the window's one job never lives only there
+                (check:hidden-primary-actions). */}
+            <div className="flex shrink-0 items-center gap-1.5 border-b border-border bg-card/50 px-2 py-1.5">
+              {mode === "url" ? (
+                <>
+                  <ProInput
+                    enableCleanup={false}
+                    type="url"
+                    placeholder="https://…"
+                    aria-label="Page URL"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={isAnyLoading}
+                    wrapperClassName="min-w-0 flex-1"
+                    className="h-7 text-xs bg-muted/50 border-border"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => void handleQuickScrape()}
+                    disabled={!url.trim() || isAnyLoading}
+                    className="h-7 shrink-0 gap-1.5 text-xs"
+                  >
+                    {quickApi.isLoading ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Zap className="w-3 h-3 text-amber-400" />
+                    )}
+                    {quickApi.isLoading ? "Scraping…" : "Scrape"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <ProInput
+                    enableCleanup={false}
+                    placeholder="Keyword…"
+                    aria-label="Keyword"
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={isAnyLoading}
+                    wrapperClassName="min-w-0 flex-1"
+                    className="h-7 text-xs bg-muted/50 border-border"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => void handleSearchAndScrape()}
+                    disabled={!keyword.trim() || isAnyLoading}
+                    className="h-7 shrink-0 gap-1.5 text-xs"
+                  >
+                    {batchApi.isLoading ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Search className="w-3 h-3" />
+                    )}
+                    {batchApi.isLoading ? "Working…" : "Search + scrape"}
+                  </Button>
+                </>
+              )}
+            </div>
             <ScrapedResultDetailTabs
               selected={selectedScraped}
               activeTab={activeTab}

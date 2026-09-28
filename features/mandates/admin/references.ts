@@ -28,6 +28,7 @@ import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 import { formatFileSize, formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 export type MandateReferenceRow =
   components["schemas"]["MandateReferenceRow"];
@@ -186,7 +187,7 @@ export const NO_COST_CELL = "no rate set";
  * set", never "$0.00" — plus the sub-cent precision the old body branched for
  * by hand.
  */
-export function costCell(usd: number | null | undefined, unit: CostUnit = "points"): string {
+export function costCell(usd: number | null | undefined, unit: CostUnit = currentCostUnit()): string {
   return formatCost(usd, { unit, unknown: NO_COST_CELL });
 }
 

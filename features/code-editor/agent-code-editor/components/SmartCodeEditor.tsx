@@ -40,7 +40,8 @@ import React, {
   useState,
 } from "react";
 import type { editor as MonacoEditorNs } from "monaco-editor";
-import { History } from "lucide-react";
+import { History, Loader2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   SurfaceRuntimeProvider,
@@ -702,6 +703,44 @@ export function SmartCodeEditor({
     />
   );
 
+  // A phone sees `main` only — the History drawer's New must not be the only
+  // way to start a draft. Same handler, same picked job; the job picker itself
+  // stays in the drawer, so the strip names the job it will start.
+  const pickedAgent = agents.find((a) => a.mandateKey === pickerMandateKey);
+  const phoneCreateDisabled =
+    mandatesLoading ||
+    !pickerMandateKey ||
+    mandateErrors[pickerMandateKey] !== undefined;
+  const phoneMain = (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-3 py-1.5">
+        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+          {activeConversationId
+            ? "Draft open in the Agent panel"
+            : pickedAgent
+              ? pickedAgent.name
+              : "No agent job available"}
+        </span>
+        <Button
+          size="sm"
+          className="h-8 shrink-0 gap-1.5"
+          disabled={phoneCreateDisabled}
+          onClick={() => {
+            if (pickerMandateKey) void handleCreateDraft(pickerMandateKey);
+          }}
+        >
+          {mandatesLoading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
+          New draft
+        </Button>
+      </div>
+      <div className="min-h-0 flex-1">{codeColumn}</div>
+    </div>
+  );
+
   const agentColumn = (
     <AgentRunnerColumn
       conversationId={activeConversationId}
@@ -771,7 +810,7 @@ export function SmartCodeEditor({
       <div className="flex-1 min-h-0">
         <MobilePanelShell
           desktop={desktopEditor}
-          main={codeColumn}
+          main={phoneMain}
           mainClassName="overflow-hidden"
           menuIcon={AGENT_ICON}
           menuLabel="IDE panels"

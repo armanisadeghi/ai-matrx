@@ -7,6 +7,7 @@
 
 import { parseTimestamp } from "@/utils/datetime";
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { currentCostUnit } from "@/components/cost/costUnit";
 // `formatDurationMs` used to be re-implemented here, under the package's own
 // name (census H1). It is now imported straight from `@ai-matrx/kit/format` by
 // its callers; the one display change is that seconds under ten keep one
@@ -17,7 +18,7 @@ export { formatRelativeTime } from "@ai-matrx/kit/format";
 
 export function formatCostUsd(
   cost: number | null | undefined,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string {
   return formatCost(cost, { unit });
 }

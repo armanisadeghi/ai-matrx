@@ -1280,9 +1280,19 @@ export default function CleanupPad({
    * on the next load. See `features/transcript-studio/redux/reattachStudioRun.ts`.
    */
   const runIdByConversationRef = useRef<Record<string, string>>({});
+  const runOriginByConversationRef = useRef<
+    Record<
+      string,
+      {
+        sessionId: string | null;
+        agentId: string;
+        target: string;
+        slotId?: string;
+      }
+    >
+  >({});
 
-  /** Open the durable row and launch the agent — concurrently, so the row
-   *  costs the run no latency. */
+  /** Capture the destination and inputs before awaiting any launch work. */
   const launchDurable = useCallback(
     async (args: {
       agentId: string;
@@ -1290,8 +1300,13 @@ export default function CleanupPad({
       target: string;
       ai: ReturnType<typeof useAiPostProcess>;
       text: string;
+      slotId?: string;
     }) => {
+      const scope = buildScope();
+      const contextItems = contextItemsRef.current;
+      const originSessionId = await sessionRefs.current.ensureSession();
       const run = await sessionRefs.current.beginRun({
+        sessionId: originSessionId,
         agentId: args.agentId,
         columnIdx: args.columnIdx,
         target: args.target,
@@ -1299,9 +1314,17 @@ export default function CleanupPad({
       const result = await args.ai.process({
         agentId: args.agentId,
         text: args.text,
-        contextItems: contextItemsRef.current,
-        scope: buildScope(),
+        contextItems,
+        scope,
       });
+      if (result) {
+        runOriginByConversationRef.current[result.conversationId] = {
+          sessionId: originSessionId,
+          agentId: args.agentId,
+          target: args.target,
+          slotId: args.slotId,
+        };
+      }
       if (!run) return;
       if (!result) {
         void sessionRefs.current.failRun(
@@ -1358,6 +1381,7 @@ export default function CleanupPad({
         agentId: slot.agentId,
         columnIdx: 4,
         target: slot.docKind,
+        slotId: slot.id,
         ai: slotAis[idx],
         text: input,
       });
@@ -1397,14 +1421,18 @@ export default function CleanupPad({
       persistedCleanCidRef.current !== cleanAi.conversationId
     ) {
       persistedCleanCidRef.current = cleanAi.conversationId;
-      const text = responseValue;
+      const origin = runOriginByConversationRef.current[cleanAi.conversationId];
+      if (!origin) return;
+      const isCurrentSession = origin.sessionId === sessionId;
+      const text = isCurrentSession ? responseValue : cleanAi.answerText;
       void sessionRefs.current.persistCleanRun(
         text,
-        cleanAgentIdRef.current,
+        origin.agentId,
         cleanAi.conversationId,
         runIdByConversationRef.current[cleanAi.conversationId],
+        origin.sessionId,
       );
-      if (text.trim()) {
+      if (isCurrentSession && text.trim()) {
         slotsRef.current.forEach((slot, idx) => {
           if (slot.autoRun && slot.source === "clean" && slot.agentId) {
             runSlot(idx, text, { silent: true });
@@ -1417,30 +1445,51 @@ export default function CleanupPad({
     cleanAi.conversationId,
     cleanAi.answerText,
     responseValue,
+    sessionId,
     runSlot,
   ]);
 
   // Persist each slot's output exactly once per completed conversation.
   const persistedSlotCidsRef = useRef<Record<string, string>>({});
   useEffect(() => {
-    slotAis.forEach((ai, idx) => {
-      const slot = slotsRef.current[idx];
+    slotAis.forEach((ai) => {
+      const cid = ai.conversationId;
+      if (!cid || ai.phase !== "complete") return;
+      const origin = runOriginByConversationRef.current[cid];
       if (
-        slot?.agentId &&
-        ai.phase === "complete" &&
-        ai.conversationId &&
-        persistedSlotCidsRef.current[slot.id] !== ai.conversationId
-      ) {
-        persistedSlotCidsRef.current[slot.id] = ai.conversationId;
-        const text = slotValue(idx);
-        void sessionRefs.current.persistCustomRun(
-          text,
-          slot.agentId,
-          ai.conversationId,
-          slot.docKind,
-          runIdByConversationRef.current[ai.conversationId],
+        !origin ||
+        !origin.slotId ||
+        persistedSlotCidsRef.current[origin.slotId] === cid
+      )
+        return;
+      persistedSlotCidsRef.current[origin.slotId] = cid;
+      const isCurrentSession = origin.sessionId === sessionId;
+      const destination = slotsRef.current.find(
+        (slot) => slot.id === origin.slotId && slot.docKind === origin.target,
+      );
+      if (isCurrentSession && !destination) {
+        const runId = runIdByConversationRef.current[cid];
+        if (runId)
+          void sessionRefs.current.failRun(
+            runId,
+            "This output slot was removed. Open the agent run to recover its result.",
+          );
+        toast.info(
+          "This output slot was removed. Your result remains in the agent run.",
         );
+        return;
       }
+      const text = isCurrentSession
+        ? (editedBySlot[origin.slotId] ?? ai.answerText)
+        : ai.answerText;
+      void sessionRefs.current.persistCustomRun(
+        text,
+        origin.agentId,
+        cid,
+        origin.target,
+        runIdByConversationRef.current[cid],
+        origin.sessionId,
+      );
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -1454,6 +1503,7 @@ export default function CleanupPad({
     slotAi2.conversationId,
     slotAi2.answerText,
     editedBySlot,
+    sessionId,
   ]);
 
   // A pass that ended badly closes its durable row. Left open it would sit at
@@ -1500,10 +1550,11 @@ export default function CleanupPad({
       const target = studioRunTarget(run);
       const isClean =
         target === CLEAN_RUN_TARGET || (!target && run.columnIdx === 2);
+      const recoveredSlots = session.loaded?.customSlots ?? [];
       const slotIdx = target
-        ? slotsRef.current.findIndex((s) => s.docKind === target)
+        ? recoveredSlots.findIndex((s) => s.docKind === target)
         : -1;
-      const slot = slotIdx >= 0 ? slotsRef.current[slotIdx] : null;
+      const slot = slotIdx >= 0 ? recoveredSlots[slotIdx] : null;
       const agentName = run.shortcutId
         ? agentNamesRef.current[run.shortcutId]
         : null;
@@ -1511,24 +1562,28 @@ export default function CleanupPad({
       const applyRecoveredOutput = isClean
         ? async (text: string) => {
             const visible = text;
-            setEditedResponse(visible);
+            if (sessionRefs.current.activeSessionId === run.sessionId)
+              setEditedResponse(visible);
             await sessionRefs.current.persistCleanRun(
               visible,
               run.shortcutId,
               run.conversationId,
               run.id,
+              run.sessionId,
             );
           }
         : slot
           ? async (text: string) => {
               const visible = text;
-              setEditedBySlot((prev) => ({ ...prev, [slot.id]: visible }));
+              if (sessionRefs.current.activeSessionId === run.sessionId)
+                setEditedBySlot((prev) => ({ ...prev, [slot.id]: visible }));
               await sessionRefs.current.persistCustomRun(
                 visible,
                 run.shortcutId,
                 run.conversationId,
                 slot.docKind,
                 run.id,
+                run.sessionId,
               );
             }
           : undefined;

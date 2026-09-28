@@ -50,6 +50,7 @@ import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWind
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   selectAnswerText,
+  selectRequestError,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { resolveMandate } from "@/features/mandates/service";
@@ -88,6 +89,25 @@ export const PAGE_IMAGE_ALL_IN_ONE_MANDATE_KEY = MANDATE_KEYS.marketing__page_im
 // not exist — and missed "timeout"/"cancelled", so those runs burned the full
 // wait timeout instead of settling the moment the request went terminal.
 const TERMINAL_STATUSES = new Set(["complete", "error", "timeout", "cancelled"]);
+
+/**
+ * A run that ended in error/timeout/cancelled must surface the SERVER's reason
+ * (e.g. "model route no longer available"), never collapse into an empty
+ * answer the caller then misreports as "answered without a usable block".
+ * Throws; every caller's catch turns the message into its toast.
+ */
+function throwIfRunFailed(state: RootState, requestId: string): void {
+  const status = selectRequestStatus(requestId)(state);
+  if (status === "error") {
+    const error = selectRequestError(requestId)(state);
+    throw new Error(
+      error?.user_message || error?.message || "The agent run failed.",
+    );
+  }
+  if (status === "timeout" || status === "cancelled") {
+    throw new Error(`The agent run ended without an answer (${status}).`);
+  }
+}
 
 /**
  * Pull a matrx file id out of a render block's data bag, tolerating the
@@ -143,7 +163,9 @@ async function waitForImage(
     }
     if (status !== undefined && TERMINAL_STATUSES.has(status)) {
       // Terminal without an image block — one last scan then give up.
-      return findImageFileId(state, requestId);
+      const lastScan = findImageFileId(state, requestId);
+      if (!lastScan) throwIfRunFailed(state, requestId);
+      return lastScan;
     }
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
@@ -162,6 +184,7 @@ export async function waitForAnswerText(
     const state = getState();
     const status = selectRequestStatus(requestId)(state);
     if (status !== undefined && TERMINAL_STATUSES.has(status)) {
+      throwIfRunFailed(state, requestId);
       return selectAnswerText(requestId)(state);
     }
     await new Promise((resolve) => setTimeout(resolve, intervalMs));

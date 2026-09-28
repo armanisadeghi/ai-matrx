@@ -54,12 +54,14 @@ export function StudyTodayBlock({ snapshot }: { snapshot: EducationSnapshot }) {
           <MandateDoorLink feature="education" label="Study agents" variant="inline" />
           <Link
             href="/education/progress"
+            data-tap-target
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             Progress
           </Link>
           <Link
             href="/education/planner"
+            data-tap-target
             className="inline-flex items-center gap-1 text-xs text-primary"
           >
             {study.plan ? "Open plan" : "Make a plan"}
@@ -123,7 +125,7 @@ export function StudyTodayBlock({ snapshot }: { snapshot: EducationSnapshot }) {
                 </div>
                 {action.href && (
                   <Button asChild size="sm" className="h-8 shrink-0 gap-1 px-3 text-xs">
-                    <Link href={action.href}>
+                    <Link href={action.href} data-tap-target>
                       Start
                       <ChevronRight className="h-3.5 w-3.5" />
                     </Link>

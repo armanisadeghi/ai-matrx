@@ -13,12 +13,13 @@
 // the strings are byte-identical to the ones it built inline.
 
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 /** The trial arm's cost, in the viewer's unit (points for everyone, dollars
  *  only for an admin who flipped the switch). */
 export function money(
   usd: number | null | undefined,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string | null {
   if (usd === null || usd === undefined) return null;
   return formatCost(usd, { unit });
@@ -49,7 +50,7 @@ export interface BenchFactsInput {
  */
 export function benchFacts(
   v: BenchFactsInput,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string[] {
   return [
     v.panel_votes > 0

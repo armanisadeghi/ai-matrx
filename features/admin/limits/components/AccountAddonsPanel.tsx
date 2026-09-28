@@ -94,6 +94,9 @@ import {
 } from "../types";
 import { EnforcementBadge } from "./PlanAllowancesPanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { CostUnit } from "@ai-matrx/kit/format";
+import { currentCostUnit } from "@/components/cost/costUnit";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
@@ -154,6 +157,7 @@ export function createAddonTableRow(
   capabilityDef: Capability | undefined,
   planContext: PlanContext,
   now: Date,
+  unit: CostUnit = currentCostUnit(),
 ): AddonTableRow {
   const startsLater = new Date(addon.effective_from).getTime() > now.getTime();
   const inEffect = addonIsInEffect(addon, now);
@@ -176,7 +180,7 @@ export function createAddonTableRow(
   } else if (allowanceState === "not_included" || planLimit === 0) {
     raiseState = "from_nothing";
     raiseAmount = addon.limit_value;
-    raiseLabel = "from nothing (+" + limitToHuman(addon.capability, addon.limit_value) + ")";
+    raiseLabel = "from nothing (+" + limitToHuman(addon.capability, addon.limit_value, unit) + ")";
   } else if (allowanceState === "unlimited" || planLimit === null) {
     raiseState = "already_unlimited";
     raiseLabel = "plan is already unlimited";
@@ -186,8 +190,8 @@ export function createAddonTableRow(
     raiseState = delta > 0 ? "positive" : "no_raise";
     raiseLabel =
       delta > 0
-        ? "+" + limitToHuman(addon.capability, delta)
-        : "no raise (" + limitToHuman(addon.capability, delta) + ")";
+        ? "+" + limitToHuman(addon.capability, delta, unit)
+        : "no raise (" + limitToHuman(addon.capability, delta, unit) + ")";
   }
 
   if (startsLater) {
@@ -216,6 +220,18 @@ function sameAddonIds(left: readonly string[], right: readonly string[]): boolea
     left.length === right.length &&
     left.every((id, index) => id === right[index])
   );
+}
+
+/** A saved limit in the viewer's cost unit — subscribes, so the admin switch flips it live. */
+function LimitHuman({ capability, value }: { capability: string; value: number | null }) {
+  const { unit } = useCostDisplay();
+  return <>{limitToHuman(capability, value, unit)}</>;
+}
+
+/** "~N points / month of AI" (or dollars for an admin who asked) for a points grant. */
+function PointsUsdLabel({ points, period }: { points: number | null; period: string | null }) {
+  const { unit } = useCostDisplay();
+  return <>{pointsToUsdLabel(points, period, unit)}</>;
 }
 
 const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
@@ -302,7 +318,7 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
     cell: (row) => (
       <div className="text-right">
         <p>
-          {limitToHuman(row.addon.capability, row.addon.limit_value)}
+          <LimitHuman capability={row.addon.capability} value={row.addon.limit_value} />
           {row.addon.limit_value !== null &&
             !isMicroUsd(row.addon.capability) && (
               <span className="ml-1 text-xs text-muted-foreground">
@@ -312,7 +328,7 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
         </p>
         {isPoints(row.addon.capability) && (
           <p className="text-xs text-muted-foreground">
-            {pointsToUsdLabel(row.addon.limit_value, row.addon.period)}
+            <PointsUsdLabel points={row.addon.limit_value} period={row.addon.period} />
           </p>
         )}
       </div>
@@ -346,7 +362,7 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
         const value = row.planContext.limit?.limit_value ?? 0;
         return (
           <>
-            {limitToHuman(row.addon.capability, value)}
+            <LimitHuman capability={row.addon.capability} value={value} />
             {!isMicroUsd(row.addon.capability) && (
               <span className="ml-1 text-xs text-muted-foreground">
                 {capabilityUnitLabel(row.addon.capability)}
@@ -472,6 +488,7 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
 ];
 
 export function AccountAddonsPanel() {
+  const { unit: costUnit } = useCostDisplay();
   const [addons, setAddons] = useState<AccountAddon[]>([]);
   const [orgs, setOrgs] = useState<OrganizationOption[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -597,9 +614,10 @@ export function AccountAddonsPanel() {
           capabilityByName.get(addon.capability),
           planContextFor(addon.organization_id, addon.capability),
           now,
+          costUnit,
         ),
       ),
-    [addons, capabilityByName, now, orgById, planContextFor],
+    [addons, capabilityByName, now, orgById, planContextFor, costUnit],
   );
   const processedAddonRows = useMemo(() => {
     const rowsById = new Map(
@@ -781,7 +799,8 @@ function GrantAddonDialog({
   const period = cap?.period ?? "lifetime";
   const money = cap ? isMicroUsd(cap.capability) : false;
   const points = cap ? isPoints(cap.capability) : false;
-  const draftUsd = points ? pointsToUsdLabel(limitRaw, period) : null;
+  const { unit: costUnit } = useCostDisplay();
+  const draftUsd = points ? pointsToUsdLabel(limitRaw, period, costUnit) : null;
   const planContext =
     orgId && capability ? planContextFor(orgId, capability) : null;
 
@@ -991,7 +1010,7 @@ function GrantAddonDialog({
               <p className="text-xs text-muted-foreground">
                 Plan {planContext.plan.name} gives{" "}
                 {planContext.limit
-                  ? limitToHuman(capability, planContext.limit.limit_value)
+                  ? limitToHuman(capability, planContext.limit.limit_value, costUnit)
                   : "nothing"}{" "}
                 for this capability
                 {planContext.limit &&

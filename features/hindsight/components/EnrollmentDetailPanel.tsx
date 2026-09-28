@@ -29,8 +29,9 @@ import { FindingCard } from "./FindingCard";
 import { PendingExamplesPanel } from "./PendingExamplesPanel";
 import { ReviewProgress } from "./ReviewProgress";
 import { ReviewRow } from "./ReviewRow";
-import { fmtCost, fmtDate, KIND_COLOR, KIND_ICON, KIND_LABEL } from "./tokens";
+import { fmtDate, KIND_COLOR, KIND_ICON, KIND_LABEL } from "./tokens";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Cost } from "@/components/cost/Cost";
 
 export function EnrollmentDetailPanel({
   enrollmentId,
@@ -217,14 +218,14 @@ export function EnrollmentDetailPanel({
               Hindsight spend
             </div>
             <div className="text-lg font-semibold tabular-nums">
-              {fmtCost(spend.total_cost)}
+              <Cost usd={spend.total_cost} />
             </div>
             <div className="text-xs text-muted-foreground">total, all time</div>
           </div>
           <div>
             <div className="text-xs uppercase text-muted-foreground">Reviewing</div>
             <div className="text-lg font-semibold tabular-nums">
-              {fmtCost(spend.review_cost)}
+              <Cost usd={spend.review_cost} />
             </div>
             <div className="text-xs text-muted-foreground">
               {spend.review_count} review{spend.review_count === 1 ? "" : "s"}
@@ -233,7 +234,7 @@ export function EnrollmentDetailPanel({
           <div>
             <div className="text-xs uppercase text-muted-foreground">Replaying</div>
             <div className="text-lg font-semibold tabular-nums">
-              {fmtCost(spend.replay_cost)}
+              <Cost usd={spend.replay_cost} />
             </div>
             <div className="text-xs text-muted-foreground">
               {spend.replay_count} replay{spend.replay_count === 1 ? "" : "s"}
@@ -245,7 +246,7 @@ export function EnrollmentDetailPanel({
             <div className="text-xs uppercase text-muted-foreground">Per review</div>
             <div className="text-lg font-semibold tabular-nums">
               {spend.review_count
-                ? fmtCost((spend.review_cost ?? 0) / spend.review_count)
+                ? <Cost usd={(spend.review_cost ?? 0) / spend.review_count} />
                 : "—"}
             </div>
             <div className="text-xs text-muted-foreground">

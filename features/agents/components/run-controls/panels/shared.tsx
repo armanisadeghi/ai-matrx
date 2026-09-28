@@ -26,6 +26,7 @@ import type {
   UsageTotals,
 } from "@/types/python-generated/stream-events";
 import { cn } from "@/lib/utils";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 // ── Selectors ──────────────────────────────────────────────────────────────
 
@@ -96,7 +97,7 @@ export function fmtTokens(n: number | null | undefined): string {
  *  system admin who flipped the switch. Pass `useCostDisplay().unit`. */
 export function fmtCost(
   cost: number | null | undefined,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string {
   return formatCost(cost, { unit });
 }

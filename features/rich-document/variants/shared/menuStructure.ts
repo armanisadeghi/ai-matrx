@@ -90,6 +90,9 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "send-to-agent",
       // An answer in a "Custom agent…" window goes back into the text it came from.
       "apply-to-source",
+      // A good "Custom agent…" run, kept: as a shortcut or bound to the page.
+      "save-run-as-shortcut",
+      "bind-run-to-page",
       "ask-followup",
       "quote-into-chat",
       "add-to-rulebook",

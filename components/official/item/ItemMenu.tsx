@@ -534,6 +534,10 @@ export function ItemMenu({
     </DropdownMenu>
   );
 }
+// A record's menu is never a route header's phone primary: RouteHeader sends it
+// to the shell's ⋮ sheet instead of drawing a second overflow beside it
+// (`isMenuAction` in features/shell/components/header/route-header-layout.tsx).
+ItemMenu.routeHeaderMenu = true as const;
 
 // ── ItemContextMenu (right-click anchored) ──────────────────────────────────
 // Renders the ONE universal context menu (v3): the schema-driven config rides

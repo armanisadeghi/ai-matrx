@@ -9,6 +9,7 @@
  */
 
 import { callbackManager } from "@/utils/callbackManager";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 
 export type SurfaceAgentBindEventType = "bound" | "window-close";
 
@@ -40,6 +41,8 @@ export interface SurfaceAgentBindHandlers {
 export interface SurfaceAgentBindWindowData {
   surfaceName: string;
   initialAgentId?: string | null;
+  /** A mapping to start from (e.g. a Custom Agent run's). */
+  initialValueMappings?: ValueMappingMap | null;
   callbackGroupId?: string | null;
 }
 

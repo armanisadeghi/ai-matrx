@@ -20,6 +20,7 @@ import type {
   SystemInstruction,
 } from "./agent-api-types";
 import type { ApplicationScope } from "./scope.types";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import type { UserInputPart } from "./request.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
@@ -293,6 +294,15 @@ export interface ExecutionInstance {
    * send), which is what keeps those runs on the route-derived behavior.
    */
   surfaceName?: string | null;
+  /**
+   * The mapping a person chose for this run (Custom Agent's "Map Inputs"),
+   * and the page it was captured on. Lets an answer offer "Save as shortcut"
+   * and "Bind to this page" with that exact mapping. Tab lifetime only.
+   */
+  launchMapping?: {
+    valueMappings: ValueMappingMap;
+    surfaceName: string | null;
+  } | null;
   /**
    * When true, the server persists NOTHING for this conversation. Redux
    * (specifically the messages slice) is the sole source of truth.

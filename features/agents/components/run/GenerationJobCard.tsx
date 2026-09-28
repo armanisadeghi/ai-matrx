@@ -41,6 +41,7 @@ import { selectRunModelId } from "@/features/agents/runtime/generation-job";
 import { useVideoSecondPoints } from "./useVideoSecondPoints";
 import { formatCost, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 export function formatElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -96,7 +97,7 @@ export function estimateVideoJob(
 /** The estimate line in the viewer's unit (`useCostDisplay().unit`). */
 export function describeEstimate(
   estimate: VideoJobEstimate,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string {
   if (estimate.points !== null && estimate.pointsPerSecond !== null) {
     const total = formatCost(pointsToUsd(estimate.points), { unit });

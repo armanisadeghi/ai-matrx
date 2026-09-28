@@ -19,6 +19,15 @@
  *                                          — a hand-rolled dollar figure;
  *   R4 `"$" + …`                          — a hand-glued dollar sign.
  *
+ * AND THE OTHER HALF OF THE RULING — a cost that IGNORES THE ADMIN SWITCH
+ * (always points, even for an admin who asked for dollars). No baseline; any
+ * hit fails:
+ *   R5 `unit: CostUnit = "points"` / `unit = "points"` — a helper whose
+ *      default silently drops the switch; default to `currentCostUnit()`
+ *      (`components/cost/costUnit.ts`) or take the unit from the hook;
+ *   R6 `formatCost(…)` imported from `@ai-matrx/kit/format` and called with
+ *      no `unit` — kit's default is points, so the switch never reaches it.
+ *
  * NOT FLAGGED: `components/cost/**` (the primitive), tests, scripts, and the
  * DOMAIN_MONEY files below — real money that is not what the platform charged
  * for AI work (a worker's pay, a course price, a keyword's CPC, a print order's
@@ -128,9 +137,39 @@ function isUiFile(file: string): boolean {
   return /^(app|features|components|lib|hooks|providers|utils)\//.test(file);
 }
 
+/** R5/R6 — lines where a cost ignores the admin's dollars switch. Pure. */
+export function switchIgnoredSites(source: string): number[] {
+  const hits = new Set<number>();
+  const lines = source.split("\n");
+  const importsKitFormatCost =
+    /import\s*(?:type\s*)?\{[^}]*\bformatCost\b[^}]*\}\s*from\s*["']@ai-matrx\/kit\/format["']/.test(source);
+  lines.forEach((line, i) => {
+    if (/^\s*(\*|\/\*|\/\/)/.test(line)) return;
+    if (/\bCostUnit\s*=\s*["']points["']|\bunit\s*=\s*["']points["']/.test(line)) hits.add(i + 1);
+  });
+  if (importsKitFormatCost) {
+    const re = /\bformatCost\s*\(/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(source))) {
+      const before = source.slice(Math.max(0, m.index - 16), m.index);
+      if (/function\s+$/.test(before) || /\.\s*$/.test(before)) continue;
+      let depth = 0;
+      let j = m.index + m[0].length - 1;
+      for (; j < source.length; j++) {
+        const ch = source[j];
+        if (ch === "(") depth++;
+        else if (ch === ")" && --depth === 0) break;
+      }
+      const args = source.slice(m.index + m[0].length, j);
+      if (!/\bunit\b/.test(args)) hits.add(source.slice(0, m.index).split("\n").length);
+    }
+  }
+  return [...hits].sort((a, b) => a - b);
+}
+
 type Counts = Record<string, number>;
 
-function scanTree(): { counts: Counts; staleDomain: string[] } {
+function scanTree(): { counts: Counts; staleDomain: string[]; switchIgnored: string[] } {
   const listed = execFileSync(
     "git",
     ["ls-files", "--cached", "--others", "--exclude-standard", "--", "*.ts", "*.tsx"],
@@ -140,11 +179,14 @@ function scanTree(): { counts: Counts; staleDomain: string[] } {
     .filter(Boolean);
   const counts: Counts = {};
   const staleDomain: string[] = [];
+  const switchIgnored: string[] = [];
   for (const file of listed) {
     if (!isUiFile(file)) continue;
     const abs = join(ROOT, file);
     if (!existsSync(abs)) continue;
-    const n = countCostSites(readFileSync(abs, "utf8"));
+    const source = readFileSync(abs, "utf8");
+    for (const line of switchIgnoredSites(source)) switchIgnored.push(`${file}:${line}`);
+    const n = countCostSites(source);
     if (file in DOMAIN_MONEY) {
       if (n === 0) staleDomain.push(file);
       continue;
@@ -154,7 +196,7 @@ function scanTree(): { counts: Counts; staleDomain: string[] } {
   for (const file of Object.keys(DOMAIN_MONEY)) {
     if (!existsSync(join(ROOT, file)) && !staleDomain.includes(file)) staleDomain.push(file);
   }
-  return { counts, staleDomain: staleDomain.sort() };
+  return { counts, staleDomain: staleDomain.sort(), switchIgnored };
 }
 
 export interface Verdict {
@@ -210,6 +252,23 @@ function selfTest(): number {
     ratchet.newSites.length === 1 && ratchet.newSites[0].file === "c.tsx" && ratchet.cleared.join() === "b.tsx";
   if (!ratchetOk) failed++;
   console.log(`${ratchetOk ? "PASS" : "FAIL"}  ratchet: a new file fails, a lower count is cleared`);
+  const KIT = `import { formatCost } from "@ai-matrx/kit/format";\n`;
+  const switchCases: { name: string; source: string; want: number }[] = [
+    { name: "R5 literal points default", source: `function f(v: number, unit: CostUnit = "points") {}`, want: 1 },
+    { name: "R5 destructured points default", source: `const { unit = "points" } = input;`, want: 1 },
+    { name: "R6 kit formatCost with no unit", source: `${KIT}const s = formatCost(run.costUsd);`, want: 1 },
+    { name: "R6 multi-line call with no unit", source: `${KIT}const s = formatCost(\n  Number(r.cost),\n);`, want: 1 },
+    { name: "R6 kit formatCost with the unit", source: `${KIT}const s = formatCost(x, { unit });`, want: 0 },
+    { name: "R6 unit read at call time", source: `${KIT}formatCost(x, { unit: currentCostUnit() })`, want: 0 },
+    { name: "R6 a local wrapper named formatCost", source: `export function formatCost(v: number, unit: CostUnit = currentCostUnit()) {}\nformatCost(3);`, want: 0 },
+    { name: "R5 default read from the store", source: `function f(unit: CostUnit = currentCostUnit()) {}`, want: 0 },
+  ];
+  for (const c of switchCases) {
+    const got = switchIgnoredSites(c.source).length;
+    const ok = got === c.want;
+    if (!ok) failed++;
+    console.log(`${ok ? "PASS" : "FAIL"}  ${c.name}: got ${got}, want ${c.want}`);
+  }
   console.log(failed === 0 ? "self-test: all rules fire" : `self-test: ${failed} failed`);
   return failed === 0 ? 0 : 1;
 }
@@ -218,7 +277,7 @@ function main(): number {
   const args = new Set(process.argv.slice(2));
   if (args.has("--self-test")) return selfTest();
 
-  const { counts: current, staleDomain } = scanTree();
+  const { counts: current, staleDomain, switchIgnored } = scanTree();
   const baseline = readBaseline();
   if (args.has("--write")) {
     if (!baseline) {
@@ -241,6 +300,13 @@ function main(): number {
   if (staleDomain.length > 0) {
     console.log("FAIL: DOMAIN_MONEY entries no longer format dollars (or are gone) — delete them:");
     for (const file of staleDomain) console.log(`  STALE  ${file}`);
+    code = 1;
+  }
+  if (switchIgnored.length > 0) {
+    console.log(
+      `FAIL: a cost ignores the system-admin "Show costs in dollars" switch (always points). Take the unit from useCostDisplay() in render, or default it to currentCostUnit() (components/cost/costUnit.ts) for copy text, toasts and payloads:`,
+    );
+    for (const site of switchIgnored) console.log(`  SWITCH  ${site}`);
     code = 1;
   }
   if (verdict.newSites.length > 0) {

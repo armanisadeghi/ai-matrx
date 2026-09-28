@@ -6,6 +6,7 @@
 // Doc: features/admin/spend/FEATURE.md
 
 import { formatCount, formatCost, formatRelativeTime, type CostUnit } from "@ai-matrx/kit/format";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 /**
  * `1,234 points` (or `$144.85` for an admin who flipped to dollars). A null
@@ -22,7 +23,7 @@ import { formatCount, formatCost, formatRelativeTime, type CostUnit } from "@ai-
  * `useCostDisplay().unit` from the calling component so a system admin who
  * flipped "Show costs in dollars" still sees $.
  */
-export function usd(value: number | null | undefined, unit: CostUnit = "points"): string {
+export function usd(value: number | null | undefined, unit: CostUnit = currentCostUnit()): string {
   return formatCost(value, { unit, unknown: "not measured" });
 }
 
@@ -35,7 +36,7 @@ export function usd(value: number | null | undefined, unit: CostUnit = "points")
  * dollar or more, four down to a cent and six below that, so the same value now
  * reads "$0.000004". See {@link usd} for the `unit` contract.
  */
-export function usdPrecise(value: number | null | undefined, unit: CostUnit = "points"): string {
+export function usdPrecise(value: number | null | undefined, unit: CostUnit = currentCostUnit()): string {
   return formatCost(value, { unit, unknown: "not measured" });
 }
 

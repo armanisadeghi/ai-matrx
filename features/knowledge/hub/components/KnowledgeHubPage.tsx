@@ -262,31 +262,31 @@ function viewTitle(view: HubView, sidebar: HubSidebarData): string {
   }
 }
 
+/** One short line; the way forward is a button beside it, never a paragraph. */
 function emptySentence(view: HubView, title: string, filtered: boolean): string {
-  if (filtered) return "Nothing matches these filters. Remove a filter to see more.";
+  if (filtered) return "Nothing matches these filters.";
   switch (view.kind) {
     case "inbox":
-      return "Your Inbox is empty — you are caught up. New captures land here: pages you save with the browser extension, files you upload, URLs and text you add with Add, and what agents and research capture for you. Keep (s) or archive (e) each one to clear it.";
+      return "You're caught up.";
     case "kept":
-      return "Nothing kept yet. Press s on an Inbox item to keep it here.";
+      return "Nothing kept yet.";
     case "archived":
-      return "Nothing archived yet. Press e on an Inbox item to archive it; press i here to bring one back.";
+      return "Nothing archived.";
     case "favorites":
-      return "No favorites yet. Star anything and it stays here.";
+      return "No favorites yet.";
     case "trash":
-      return "The trash is empty.";
+      return "Trash is empty.";
     case "container":
-      return `Nothing is filed under ${title} yet.`;
+      return "Nothing filed here yet.";
     case "kind":
-      return `No ${title.toLowerCase()} yet.`;
-    case "saved":
-      return "Nothing matches this saved view right now.";
     case "preset":
       return `No ${title.toLowerCase()} yet.`;
+    case "saved":
+      return "Nothing matches this view.";
     case "group":
       return "";
     case "everything":
-      return "Nothing here yet. Add a Source, capture a page or start a chat and it shows up here.";
+      return "Nothing here yet.";
   }
 }
 
@@ -456,7 +456,7 @@ export function KnowledgeHubPage({
   const hits: KnowledgeHit[] = dateOrdered ? newestFirst(narrowedHits) : narrowedHits;
   const moreToLoad = results.sections.some((s) => s.key !== "top_hit" && Boolean(s.section?.next_cursor));
   const stageNote = moreToLoad
-    ? `Stage narrows the ${loadedSourceIds.length} Sources loaded so far; load more to check the rest.`
+    ? `Of ${loadedSourceIds.length} loaded`
     : null;
   const byKey = new Map(baseHits.map((h) => [hitKey(h), h]));
   const peekKey = state.peek ? `${state.peek.entity}:${state.peek.id}` : null;
@@ -1565,7 +1565,7 @@ export function KnowledgeHubPage({
                 onChange={(next) => write({ group: facetSelectionToGroup(next, state.group) }, { replace: true })}
                 note={
                   hasFacetSelection(facetSel) && moreToLoad
-                    ? `Narrowing the ${baseHits.length} rows loaded so far; load more to check the rest.`
+                    ? `Of ${baseHits.length} loaded`
                     : null
                 }
               />
@@ -1626,7 +1626,7 @@ export function KnowledgeHubPage({
       {triageFiltered ? (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground" role="status">
           <span className="min-w-0 flex-1">
-            {title} lists your own triage and filters by words only, so these filters are not applied here.
+            {title} filters by words only.
           </span>
           <button
             type="button"

@@ -23,6 +23,7 @@ import {
   UNKNOWN_DISPLAY,
 } from "@/lib/format/honest";
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 /**
  * "1.2k" / "3m" style compact number, matching the app's existing style.
@@ -147,7 +148,7 @@ export type AgentAppKpis = Record<string, string | number>;
  */
 export function agentAppKpis(
   app: AgentAppKpiLike,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): AgentAppKpis {
   const kpis: AgentAppKpis = {
     runs: formatNumber(app.total_executions),
@@ -174,7 +175,7 @@ export function agentAppKpis(
  */
 export function agentAppAdminKpis(
   app: AgentAppKpiLike,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): AgentAppKpis {
   return {
     runs: formatCount(app.total_executions),

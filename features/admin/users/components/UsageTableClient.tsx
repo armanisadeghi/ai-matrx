@@ -27,6 +27,7 @@ import { pushAppHref } from "@/lib/deployment/navigate";
 import { formatCount, formatCost, type CostUnit } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { readOf } from "@/components/read-state/ReadGate";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 type Timeframe = "all" | "30d" | "7d" | "24h";
 
@@ -44,7 +45,7 @@ const TIMEFRAME_DAYS: Record<Exclude<Timeframe, "all">, number> = {
  * "0,00 $" for a dollar figure. `digits: "adaptive"` shows the sub-cent end and
  * kit pins `en-US`, so the separators never move under the reader.
  */
-const fmtCost = (n: number | null | undefined, unit: CostUnit = "points") => formatCost(n, { unit });
+const fmtCost = (n: number | null | undefined, unit: CostUnit = currentCostUnit()) => formatCost(n, { unit });
 function fmtDate(iso: string | null): string {
   return iso ? new Date(iso).toLocaleString() : "—";
 }
@@ -94,7 +95,7 @@ function OriginBar({ row }: { row: AdminUserUsageRow }) {
 /** Origin split as one scalar line — the copy/AI payload takes scalars only. */
 function originSummaryLine(
   origins: readonly AdminUserUsageRow["by_origin"][number][],
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string {
   const parts = sortByOriginOrder(origins, (o) => o.origin_class).map(
     (o) =>

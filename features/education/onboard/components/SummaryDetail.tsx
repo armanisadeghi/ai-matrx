@@ -27,6 +27,8 @@ import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { downloadTextFile } from "../export/download";
 import { ContentFindControl } from "@/features/rich-document/search/ContentFindControl";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationSummariesScope } from "@/features/surfaces/manifests/education-summaries.manifest";
 
 interface SummaryEnvelope {
   __kind?: string;
@@ -69,24 +71,34 @@ export function SummaryDetail({ id }: { id: string }) {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
+      <SurfaceRuntimeProvider
+        surfaceName="matrx-user/education-summaries"
+        getScope={() => createEducationSummariesScope({ view: "detail", summary_loading: true })}
+      >
+        <div className="flex h-64 items-center justify-center text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
+      </SurfaceRuntimeProvider>
     );
   }
   if (!row) {
     // Denied / deleted / never existed / signed-out all read as zero rows here.
     return (
-      <AccessGate
-        token="study_media"
-        id={id}
-        error={loadError}
-        onRetry={() => setReloadKey((k) => k + 1)}
-        // The summaries library — a real index route since 2026-08-20, so the
-        // way forward is the tool the learner was already in, not the hub.
-        fallbackHref="/education/summaries"
-        fallbackLabel="Study Summaries"
-      />
+      <SurfaceRuntimeProvider
+        surfaceName="matrx-user/education-summaries"
+        getScope={() => createEducationSummariesScope({ view: "detail", summary_not_found: true })}
+      >
+        <AccessGate
+          token="study_media"
+          id={id}
+          error={loadError}
+          onRetry={() => setReloadKey((k) => k + 1)}
+          // The summaries library — a real index route since 2026-08-20, so the
+          // way forward is the tool the learner was already in, not the hub.
+          fallbackHref="/education/summaries"
+          fallbackLabel="Study Summaries"
+        />
+      </SurfaceRuntimeProvider>
     );
   }
 
@@ -102,7 +114,27 @@ export function SummaryDetail({ id }: { id: string }) {
     downloadTextFile(`${row.title || "summary"}.md`, `# ${row.title}\n\n${markdown}${kp}`);
   };
 
+  const getScope = () =>
+    createEducationSummariesScope({
+      view: "detail",
+      summary_id: row.id,
+      summary_title: row.title,
+      summary_source_title: row.source_title ?? undefined,
+      summary_markdown: markdown || undefined,
+      key_points: keyPoints,
+      trust_confidence: trust?.confidence,
+      trust_grounded_in: trust?.groundedIn,
+      trust_citation_count: trust?.citations.length,
+      trust_citations: trust?.citations.map((c) => ({
+        sourceId: c.sourceId,
+        sourceKind: c.sourceKind,
+        title: c.title ?? null,
+        excerpt: c.excerpt ?? null,
+      })),
+    });
+
   return (
+    <SurfaceRuntimeProvider surfaceName="matrx-user/education-summaries" getScope={getScope}>
     <div className="mx-auto w-full max-w-2xl space-y-5 p-4 sm:p-6">
       <div className="flex items-center gap-3">
         <Button
@@ -164,5 +196,6 @@ export function SummaryDetail({ id }: { id: string }) {
         </div>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

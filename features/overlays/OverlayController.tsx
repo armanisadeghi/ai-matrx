@@ -13,6 +13,7 @@
  */
 "use client";
 
+import { isValueMappingMap } from "@/features/surfaces/types";
 import { isPreparedResourceIdentity } from "@/features/agents/components/chat/usePreparedResourceSeed";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
@@ -832,6 +833,10 @@ const AttachResourceDialog = lazyOverlay(
 );
 const CustomAgentWindow = lazyOverlay(
   () => import("@/features/agents/components/custom-agent/CustomAgentWindow"),
+  { ssr: false },
+);
+const ShortcutEditorWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/ShortcutEditorWindow"),
   { ssr: false },
 );
 const ApplyToSourceReview = lazyOverlay(
@@ -2304,6 +2309,9 @@ export default function OverlayController() {
     ),
     customAgentWindow: useAppSelector((s) =>
       selectOpenInstances(s, "customAgentWindow"),
+    ),
+    shortcutEditorWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "shortcutEditorWindow"),
     ),
     imageUploaderWindow: useAppSelector((s) =>
       selectOpenInstances(s, "imageUploaderWindow"),
@@ -5260,6 +5268,31 @@ export default function OverlayController() {
         );
       })}
 
+      {/* shortcutEditorWindow — multi-instance. THE shortcut editor. */}
+      {instancesById.shortcutEditorWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <ShortcutEditorWindow
+            key={inst.instanceId}
+            isOpen
+            instanceId={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "shortcutEditorWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            agentId={typeof data?.agentId === "string" ? data.agentId : null}
+            shortcutId={
+              typeof data?.shortcutId === "string" ? data.shortcutId : "new"
+            }
+            seedId={typeof data?.seedId === "string" ? data.seedId : null}
+          />
+        );
+      })}
+
       {/* applyToSourceReview — an agent window's answer reviewed against the
           text it was launched from (rich-document/review/applyTargets). */}
       {(() => {
@@ -7499,6 +7532,11 @@ export default function OverlayController() {
             initialAgentId={
               typeof data?.initialAgentId === "string"
                 ? data.initialAgentId
+                : null
+            }
+            initialValueMappings={
+              isValueMappingMap(data?.initialValueMappings)
+                ? data.initialValueMappings
                 : null
             }
             callbackGroupId={

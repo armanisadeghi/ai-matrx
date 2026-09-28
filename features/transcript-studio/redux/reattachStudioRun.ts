@@ -43,9 +43,9 @@
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectLatestAnswerDocumentText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
-import { selectAnswerText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectAnswerDocumentText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -182,7 +182,7 @@ function waitForLiveTakeover(
 }
 
 /**
- * The persisted answer boundary. `selectLatestAnswerText` reads the canonical
+ * The persisted answer boundary. `selectLatestAnswerDocumentText` reads the canonical
  * MessagePart array, excludes both typed `thinking` and `reasoning`, and
  * leaves non-text structured parts untouched in the stored message.
  */
@@ -190,7 +190,7 @@ export function recoveredAssistantAnswerText(
   state: RootState,
   conversationId: string,
 ): string {
-  return selectLatestAnswerText(conversationId)(state);
+  return selectLatestAnswerDocumentText(conversationId)(state);
 }
 
 function latestAssistantText(state: RootState, conversationId: string): string {
@@ -199,7 +199,7 @@ function latestAssistantText(state: RootState, conversationId: string): string {
   // A stream that finished in THIS tab may not have been re-fetched into the
   // message store yet — the request row holds the same answer.
   const requestId = selectLatestRequestId(conversationId)(state);
-  return requestId ? selectAnswerText(requestId)(state) : "";
+  return requestId ? selectAnswerDocumentText(requestId)(state) : "";
 }
 
 async function settle(

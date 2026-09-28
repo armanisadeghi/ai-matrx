@@ -35,3 +35,20 @@ export function takeShortcutDraftSeed(
   seeds.delete(id);
   return seed;
 }
+
+/**
+ * The seed for a person's own mapping: a run they open in a floating window,
+ * that waits for them to press send and lets them keep chatting.
+ */
+export function shortcutSeedForMapping(
+  valueMappings: ValueMappingMap,
+  surfaceName: string | null,
+): ShortcutDraftSeed {
+  return {
+    surfaceName,
+    valueMappings,
+    displayMode: "floating-chat",
+    allowChat: true,
+    autoRun: false,
+  };
+}

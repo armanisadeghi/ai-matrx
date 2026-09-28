@@ -15,8 +15,7 @@
  * each answer offers "Apply to source" (review/applyTargets).
  */
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ArrowLeft, BookmarkPlus, Loader2 } from "lucide-react";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,12 @@ import {
   buildMappedRuntime,
 } from "./custom-agent-plan";
 import { getCustomAgentSession, releaseCustomAgentSession } from "./session";
-import { putShortcutDraftSeed } from "@/features/agent-shortcuts/draft-seed";
+import {
+  putShortcutDraftSeed,
+  shortcutSeedForMapping,
+} from "@/features/agent-shortcuts/draft-seed";
+import { shortcutEditorWindowAction } from "@/features/overlays/openers/shortcutEditorWindow";
+import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { getSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 export interface CustomAgentWindowProps {
@@ -67,8 +71,6 @@ export default function CustomAgentWindow({
 }: CustomAgentWindowProps) {
   const dispatch = useAppDispatch();
   const { launchAgent } = useAgentLauncher();
-  const router = useRouter();
-  const [isNavigating, startNavigation] = useTransition();
   const session = getCustomAgentSession(sessionId);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
@@ -127,6 +129,19 @@ export default function CustomAgentWindow({
         },
         runtime: buildMappedRuntime(mapping, sources, rows, session?.scope),
       });
+      // The mapping rides the conversation so an answer can offer "Save as
+      // shortcut" / "Bind to this page" with it.
+      dispatch(
+        patchConversation({
+          conversationId: result.conversationId,
+          launchMapping: {
+            valueMappings:
+              buildMappedRuntime(mapping, sources, rows, session?.scope)
+                .valueMappings ?? {},
+            surfaceName: capturedSurfaceName(),
+          },
+        }),
+      );
       if (session?.applyTargetId) {
         bindConversationToApplyTarget(result.conversationId, session.applyTargetId);
       }
@@ -140,29 +155,31 @@ export default function CustomAgentWindow({
     }
   };
 
-  // The same mapping, saved: the ONE shortcut editor opens with it filled in,
-  // bound to the page it was captured on.
+  // The page the text was captured on: the scope's own name when it carries
+  // one, else the surface mounted under it (the same lookup a launch uses).
+  const capturedSurfaceName = (): string | null => {
+    const scoped = session?.scope?.surface_name;
+    return typeof scoped === "string" && scoped
+      ? scoped
+      : (getSurfaceRuntime()?.surfaceName ?? null);
+  };
+
+  // The same mapping, saved: THE shortcut editor opens in a window with it
+  // filled in, bound to the page it was captured on.
   const handleSaveAsShortcut = () => {
     if (!agentId) return;
     const runtime = buildMappedRuntime(mapping, sources, rows, session?.scope);
-    // The page the text was captured on: the scope's own name when it carries
-    // one, else the surface mounted under it (the same lookup a launch uses).
-    const scoped = session?.scope?.surface_name;
-    const surfaceName =
-      typeof scoped === "string" && scoped
-        ? scoped
-        : (getSurfaceRuntime()?.surfaceName ?? null);
-    const seedId = putShortcutDraftSeed({
-      surfaceName,
-      valueMappings: runtime.valueMappings ?? {},
-      displayMode: "floating-chat",
-      allowChat: true,
-      autoRun: false,
-    });
-    startNavigation(() => {
-      // agent-link-ok: the shortcut editor lives under the user-shell agent route
-      router.push(`/agents/${agentId}/shortcuts/new?seed=${seedId}`);
-    });
+    dispatch(
+      shortcutEditorWindowAction({
+        agentId,
+        seedId: putShortcutDraftSeed(
+          shortcutSeedForMapping(
+            runtime.valueMappings ?? {},
+            capturedSurfaceName(),
+          ),
+        ),
+      }),
+    );
     close();
   };
 
@@ -191,7 +208,7 @@ export default function CustomAgentWindow({
                   variant="ghost"
                   size="sm"
                   onClick={handleSaveAsShortcut}
-                  disabled={load.status !== "ready" || isNavigating}
+                  disabled={load.status !== "ready"}
                 >
                   <BookmarkPlus className="mr-1 h-4 w-4" />
                   Save as shortcut

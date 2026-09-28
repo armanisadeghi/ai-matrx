@@ -25,9 +25,10 @@ import { EnrollmentDetailPanel } from "./EnrollmentDetailPanel";
 import { FindingEffectivenessPanel } from "./FindingEffectivenessPanel";
 import { HindsightSurfaceEmitter } from "./HindsightSurfaceEmitter";
 import { selectEnrollmentId, type EnrollmentSelection } from "./select-enrollment";
-import { fmtCost, KIND_COLOR, KIND_ICON } from "./tokens";
+import { KIND_COLOR, KIND_ICON } from "./tokens";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { Cost } from "@/components/cost/Cost";
 
 export function HindsightPage() {
   // Assist chips deep-link here: `?enrollment=<id>` (a finding to decide) and
@@ -98,15 +99,15 @@ export function HindsightPage() {
               Platform-wide Hindsight spend
             </span>
             <span>
-              <strong className="tabular-nums">{fmtCost(costs.data.total_cost)}</strong>{" "}
+              <strong className="tabular-nums"><Cost usd={costs.data.total_cost} /></strong>{" "}
               total
             </span>
             <span className="text-muted-foreground">
-              {fmtCost(costs.data.review_cost)} across {costs.data.review_count}{" "}
+              <Cost usd={costs.data.review_cost} /> across {costs.data.review_count}{" "}
               review{costs.data.review_count === 1 ? "" : "s"}
             </span>
             <span className="text-muted-foreground">
-              {fmtCost(costs.data.replay_cost)} across {costs.data.replay_count}{" "}
+              <Cost usd={costs.data.replay_cost} /> across {costs.data.replay_count}{" "}
               replay{costs.data.replay_count === 1 ? "" : "s"}
             </span>
           </Card>

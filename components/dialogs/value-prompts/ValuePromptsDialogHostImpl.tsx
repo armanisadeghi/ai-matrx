@@ -88,7 +88,8 @@ export default function ValuePromptsDialogHostImpl() {
         <DialogHeader>
           <DialogTitle>{request?.title ?? ""}</DialogTitle>
           <DialogDescription>
-            This action needs a few values from you before it runs.
+            {request?.description ??
+              "This action needs a few values from you before it runs."}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-1">
@@ -133,7 +134,7 @@ export default function ValuePromptsDialogHostImpl() {
             onClick={handleSubmit}
             disabled={missingRequired}
           >
-            Continue
+            {request?.submitLabel ?? "Continue"}
           </Button>
         </DialogFooter>
       </DialogContent>

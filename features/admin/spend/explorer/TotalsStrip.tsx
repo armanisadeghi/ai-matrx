@@ -13,6 +13,7 @@ import type { SpendBreakdown } from "../types";
 import { compactNumber } from "./labels";
 import { formatCount, formatPercentFromFraction, type CostUnit } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 export interface SpendLeadingKpis {
   windowTotal: { value: string; hint: string };
@@ -24,7 +25,7 @@ export interface SpendLeadingKpis {
 }
 
 /** One formatter for both the rendered KPI strip and its Copy-for-AI context. */
-export function buildSpendLeadingKpis(data: SpendBreakdown, unit: CostUnit = "points"): SpendLeadingKpis {
+export function buildSpendLeadingKpis(data: SpendBreakdown, unit: CostUnit = currentCostUnit()): SpendLeadingKpis {
   const t = data.totals;
   const sliceHours = data.filters.hour ? 1 : data.filters.day ? 24 : t.hours;
   const perHour = sliceHours > 0 ? t.cost / sliceHours : 0;

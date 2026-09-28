@@ -26,6 +26,7 @@ import { createEducationMindMapsScope } from "@/features/surfaces/manifests/educ
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
 import { MindMapNodeSearch, MindMapView } from "./MindMapView";
+import { distinctSourceTitle } from "@/features/education/components/EducationCollectionSearch";
 import type { DiagramNode } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 
 /**
@@ -249,9 +250,9 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-0 flex-1 lg:min-w-48">
-              {media.source_title && (
+              {distinctSourceTitle(media.title, media.source_title) && (
                 <span className="block truncate text-xs text-muted-foreground">
-                  from {media.source_title}
+                  from {distinctSourceTitle(media.title, media.source_title)}
                 </span>
               )}
               <h1 className="truncate text-lg font-semibold text-foreground">

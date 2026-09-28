@@ -11,6 +11,7 @@ import {
   buildAgentPayload,
   type AgentPayloadInput,
 } from "@/components/agent-copy/buildAgentPayload";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 const LOCATION = "AI Matrx — Workflow run";
 
@@ -46,7 +47,7 @@ export function workflowFailureHuman(view: WorkflowFailureView): string {
       : null;
   const cost =
     view.costUsd !== undefined && view.costUsd > 0
-      ? formatCost(view.costUsd)
+      ? formatCost(view.costUsd, { unit: currentCostUnit() })
       : null;
   return compactLines([
     view.workflowName ? `Workflow: ${view.workflowName}` : null,
@@ -75,7 +76,7 @@ export function workflowFailureAgentInput(
       : null;
   const cost =
     view.costUsd !== undefined && view.costUsd > 0
-      ? formatCost(view.costUsd)
+      ? formatCost(view.costUsd, { unit: currentCostUnit() })
       : null;
 
   return {

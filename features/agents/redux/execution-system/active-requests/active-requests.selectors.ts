@@ -65,7 +65,10 @@ import type {
   CompletedOperationEntry,
 } from "@/features/agents/types/request.types";
 import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import {
+  readEnvelope,
+  reconstructRegionValue,
+} from "@/features/content-ir/redux/render-block-envelope";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   buildLiveCitationIndex,
@@ -190,6 +193,81 @@ export function deriveAnswerText(
   return stripThinkingStreaming(answer).visible;
 }
 
+function hasKindMarker(value: unknown): value is Record<string, unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>).__kind === "string"
+  );
+}
+
+function stringifyAnswerDocumentValue(value: unknown): string | null {
+  if (!hasKindMarker(value)) return null;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Lossless document projection of an answer for string destinations that
+ * intentionally accept Content IR. Plain-answer consumers keep using
+ * `deriveAnswerText`; this preserves a no-text `__kind` result as JSON so a
+ * RichDocument can reconstruct its registered component after persistence.
+ */
+export function deriveAnswerDocumentText(
+  request: Pick<
+    ActiveRequest,
+    "renderBlockOrder" | "renderBlocks" | "editedText"
+  >,
+): string {
+  const { renderBlockOrder: order, renderBlocks: blocks, editedText } = request;
+  if (editedText !== null && editedText !== undefined) return editedText;
+  if (!order || !blocks || order.length === 0) return "";
+
+  const ordered = order
+    .map((id) => blocks[id])
+    .filter((block): block is RenderBlockPayload => block != null);
+  const verbalizedDuplicates = verbalizedDecisionJsonTextBlockIds(ordered);
+  const output: string[] = [];
+  let textRun: string[] = [];
+  const flushTextRun = () => {
+    if (textRun.length === 0) return;
+    const text = stripThinkingStreaming(textRun.join("")).visible;
+    if (text) output.push(text);
+    textRun = [];
+  };
+
+  for (const block of ordered) {
+    if (
+      NON_ANSWER_BLOCK_TYPES.has(block.type) ||
+      verbalizedDuplicates.has(block.blockId)
+    ) {
+      continue;
+    }
+    if (typeof block.content === "string" && block.content.length > 0) {
+      textRun.push(block.content);
+      continue;
+    }
+
+    const envelope = readEnvelope(block.metadata);
+    const reconstructed = envelope ? reconstructRegionValue(envelope) : null;
+    const payload =
+      block.data && typeof block.data === "object" ? block.data.payload : null;
+    const structured =
+      stringifyAnswerDocumentValue(reconstructed) ??
+      stringifyAnswerDocumentValue(payload);
+    if (structured) {
+      flushTextRun();
+      output.push(structured);
+    }
+  }
+  flushTextRun();
+  return output.join("\n");
+}
+
 /**
  * The model's ANSWER text — the accumulated render-block content WITHOUT the
  * chain-of-thought (`thinking` / `reasoning` blocks). This is the canonical
@@ -216,6 +294,12 @@ export const selectAnswerText = (requestId: string) =>
       state.activeRequests.byRequestId[requestId]?.editedText,
     (renderBlockOrder, renderBlocks, editedText): string =>
       deriveAnswerText({ renderBlockOrder, renderBlocks, editedText }),
+  );
+
+/** A lossless Content-IR document string for destinations that opt into it. */
+export const selectAnswerDocumentText = (requestId: string) =>
+  createSelector(selectRequest(requestId), (request): string =>
+    request ? deriveAnswerDocumentText(request) : "",
   );
 
 /**

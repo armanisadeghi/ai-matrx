@@ -25,6 +25,9 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
+import { DropdownMenu } from "@ai-matrx/design-system";
+import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { Ellipsis, EllipsisVertical } from "lucide-react";
 
 /** Secondary actions fold before the title's text gets less than this. */
 export const TITLE_MIN_PX = 96;
@@ -68,6 +71,46 @@ function declaredActions(child: ReactElement): ReactNode | undefined {
   if (typeof type !== "function" && (typeof type !== "object" || type === null)) return undefined;
   const expand = (type as DeclaresRouteHeaderActions<unknown>).routeHeaderActions;
   return typeof expand === "function" ? expand(child.props) : undefined;
+}
+
+/**
+ * A component that IS a menu — a record's "…", a row's ItemMenu, an export menu —
+ * declares it with this static, the same way `routeHeaderActions` declares a cluster.
+ * On a phone RouteHeader never keeps a menu in the row as the page's primary: it
+ * would sit beside the shell's own ⋮ as a second overflow button (2026-09-27).
+ */
+export interface DeclaresRouteHeaderMenu {
+  routeHeaderMenu?: true;
+}
+
+/** Shared components that are menus by identity — no page has to mark them. */
+const MENU_TYPES: ReadonlySet<unknown> = new Set<unknown>([DropdownMenu, MoreHorizontalTapButton]);
+/** A tap button whose declared `icon` is the overflow glyph is an overflow trigger. */
+const MENU_ICONS: ReadonlySet<unknown> = new Set<unknown>([Ellipsis, EllipsisVertical]);
+
+/**
+ * Whether an action is itself a menu / overflow trigger, decided from what it
+ * DECLARES — its component identity, the `routeHeaderMenu` static, or an overflow
+ * `icon` — never from DOM text. A host element wrapping exactly one control is
+ * that control (`<span aria-label=…><ExportMenu/></span>`).
+ */
+export function isMenuAction(node: ReactNode): boolean {
+  if (!isValidElement(node)) return false;
+  const type = node.type as unknown;
+  if (MENU_TYPES.has(type)) return true;
+  if (
+    (typeof type === "function" || (typeof type === "object" && type !== null)) &&
+    (type as DeclaresRouteHeaderMenu).routeHeaderMenu === true
+  ) {
+    return true;
+  }
+  const props = node.props as { icon?: unknown; children?: ReactNode };
+  if (isValidElement(props.icon) && MENU_ICONS.has(props.icon.type)) return true;
+  if (typeof type === "string") {
+    const kids = Children.toArray(props.children);
+    return kids.length === 1 && isMenuAction(kids[0]);
+  }
+  return false;
 }
 
 const RESPONSIVE_DISPLAY = /^(sm|md|lg|xl|2xl|max-\w+|min-\[[^\]]+\]|@\w+):(flex|inline-flex|block|inline-block|inline|grid|inline-grid|contents|table)$/;

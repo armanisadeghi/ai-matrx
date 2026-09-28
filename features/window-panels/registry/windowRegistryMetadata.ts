@@ -1442,6 +1442,23 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
 
+  // ── Shortcut editor ─────────────────────────────────────────────────────
+  // THE shortcut editor in a window; a new draft may carry a seed.
+  {
+    slug: "shortcut-editor-window",
+    overlayId: "shortcutEditorWindow",
+    kind: "window",
+    label: "Shortcut editor",
+    defaultData: {
+      agentId: null as string | null,
+      shortcutId: "new",
+      seedId: null as string | null,
+    },
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+    ephemeral: true,
+  },
+
   // ── Send to another agent ───────────────────────────────────────────────
   // The agent picker window, then where the content goes. Carries the content
   // being sent, so it is ephemeral and never restored from a link.

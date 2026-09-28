@@ -188,6 +188,7 @@ export const refreshSurfaceScope = createAsyncThunk<
             displayMode !== "direct" &&
             displayMode !== "background",
           title: agent?.name ?? shortcut?.label ?? "Agent",
+          surfaceName,
         })
       : {};
 

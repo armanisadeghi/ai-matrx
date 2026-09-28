@@ -4,7 +4,12 @@ import {
   WALK_CAP_HEADER,
   createWalkKnobReader,
   decideWalkAdmission,
+  walkCapDevEndpoint,
+  walkCapGateForRequest,
+  scheduleWalkIdleExpiryForTest,
+  setWalkCapTestState,
   walkCapGate,
+  type WalkRegistry,
   type WalkKnobs,
 } from "./walkCap";
 
@@ -13,7 +18,7 @@ const KNOBS: WalkKnobs = { cap: 4, windowMinutes: 10 };
 const T0 = 1_800_000_000_000;
 
 function registryWith(entries: Array<[string, number]>) {
-  return new Map<string, number>(entries);
+  return { admitted: new Map<string, number>(entries), evicted: new Set<string>() } satisfies WalkRegistry;
 }
 
 describe("decideWalkAdmission — the live-database walk cap", () => {
@@ -22,10 +27,10 @@ describe("decideWalkAdmission — the live-database walk cap", () => {
     const decision = decideWalkAdmission(registry, "b.localhost:3001", T0, KNOBS);
     expect(decision.verdict).toBe("admit");
     expect(decision.verdict === "admit" && decision.newlyAdmitted).toBe(true);
-    expect(registry.has("b.localhost:3001")).toBe(true);
+    expect(registry.admitted.has("b.localhost:3001")).toBe(true);
   });
 
-  it("at the cap refuses a NEW host, and does not record it", () => {
+  it("at the cap evicts the exact least-recently-used host and admits a new one", () => {
     const registry = registryWith([
       ["a.localhost:3001", T0 - 1 * MIN],
       ["b.localhost:3001", T0 - 2 * MIN],
@@ -33,15 +38,53 @@ describe("decideWalkAdmission — the live-database walk cap", () => {
       ["d.localhost:3001", T0 - 4 * MIN],
     ]);
     const decision = decideWalkAdmission(registry, "e.localhost:3001", T0, KNOBS);
-    expect(decision.verdict).toBe("refuse");
+    expect(decision.verdict).toBe("admit");
     expect(decision.active.map((w) => w.host)).toEqual([
+      "e.localhost:3001",
       "a.localhost:3001",
       "b.localhost:3001",
       "c.localhost:3001",
-      "d.localhost:3001",
     ]);
-    expect(decision.active[3].idleMs).toBe(4 * MIN);
-    expect(registry.has("e.localhost:3001")).toBe(false);
+    expect(decision.active[3].idleMs).toBe(3 * MIN);
+    expect(decision.evicted).toEqual(["d.localhost:3001"]);
+    expect(registry.evicted.has("d.localhost:3001")).toBe(true);
+    expect(registry.admitted.has("e.localhost:3001")).toBe(true);
+  });
+
+  it("breaks equal LRU timestamps by insertion order", () => {
+    const registry = registryWith([
+      ["first.localhost:3001", T0],
+      ["second.localhost:3001", T0],
+      ["third.localhost:3001", T0],
+      ["fourth.localhost:3001", T0],
+    ]);
+    const decision = decideWalkAdmission(registry, "new.localhost:3001", T0, KNOBS);
+    expect(decision.evicted).toEqual(["first.localhost:3001"]);
+  });
+
+  it("an explicit user activity touch keeps a host ahead of background requests", () => {
+    const registry = registryWith([
+      ["quiet.localhost:3001", T0 - 4 * MIN],
+      ["active.localhost:3001", T0 - 3 * MIN],
+      ["c.localhost:3001", T0 - 2 * MIN],
+      ["d.localhost:3001", T0 - MIN],
+    ]);
+    decideWalkAdmission(registry, "active.localhost:3001", T0, KNOBS, "activity");
+    decideWalkAdmission(registry, "quiet.localhost:3001", T0 + MIN, KNOBS, "background");
+    const decision = decideWalkAdmission(registry, "new.localhost:3001", T0 + MIN, KNOBS);
+    expect(decision.evicted).toEqual(["quiet.localhost:3001"]);
+  });
+
+  it("lowers a cap by evicting LRU and tombstones evicted hosts against auto reclaim", () => {
+    const registry = registryWith([
+      ["a.localhost:3001", T0 - 4 * MIN],
+      ["b.localhost:3001", T0 - 3 * MIN],
+      ["c.localhost:3001", T0 - 2 * MIN],
+      ["d.localhost:3001", T0 - MIN],
+    ]);
+    const decision = decideWalkAdmission(registry, "d.localhost:3001", T0, { cap: 2, windowMinutes: 10 }, "document");
+    expect(decision.evicted).toEqual(["a.localhost:3001", "b.localhost:3001"]);
+    expect(decideWalkAdmission(registry, "a.localhost:3001", T0 + MIN, KNOBS, "background").verdict).toBe("parked");
   });
 
   it("at the cap still re-admits a host that is already admitted, refreshing its last-seen", () => {
@@ -54,7 +97,7 @@ describe("decideWalkAdmission — the live-database walk cap", () => {
     const decision = decideWalkAdmission(registry, "d.localhost:3001", T0, KNOBS);
     expect(decision.verdict).toBe("admit");
     expect(decision.verdict === "admit" && decision.newlyAdmitted).toBe(false);
-    expect(registry.get("d.localhost:3001")).toBe(T0);
+    expect(registry.admitted.get("d.localhost:3001")).toBe(T0);
   });
 
   it("a host idle past the window frees its slot", () => {
@@ -66,14 +109,15 @@ describe("decideWalkAdmission — the live-database walk cap", () => {
     ]);
     const decision = decideWalkAdmission(registry, "e.localhost:3001", T0, KNOBS);
     expect(decision.verdict).toBe("admit");
-    expect(registry.has("stale.localhost:3001")).toBe(false);
-    expect(registry.has("e.localhost:3001")).toBe(true);
+    expect(registry.admitted.has("stale.localhost:3001")).toBe(false);
+    expect(registry.evicted.has("stale.localhost:3001")).toBe(true);
+    expect(registry.admitted.has("e.localhost:3001")).toBe(true);
   });
 
   it("cap 0 refuses every host, even one seen before", () => {
     const registry = registryWith([["a.localhost:3001", T0 - MIN]]);
     const knobs = { cap: 0, windowMinutes: 10 };
-    expect(decideWalkAdmission(new Map(), "x.localhost:3001", T0, knobs).verdict).toBe("refuse");
+    expect(decideWalkAdmission(registryWith([]), "x.localhost:3001", T0, knobs).verdict).toBe("refuse");
     expect(decideWalkAdmission(registry, "a.localhost:3001", T0, knobs).verdict).toBe("refuse");
   });
 });
@@ -154,20 +198,14 @@ describe("walkCapGate — development against production only", () => {
     };
   }
 
-  it("answers the 5th host with an honest 503 page and the refusal header, and logs it", async () => {
+  it("admits the 5th host by evicting the oldest active walk", async () => {
     const log = jest.fn();
     const input = gateInput({ log });
     const response = await walkCapGate(input);
-    if (!response) throw new Error("expected a refusal response");
-    expect(response.status).toBe(503);
-    expect(response.headers.get(WALK_CAP_HEADER)).toBe("refused");
-    const html = await response.text();
-    expect(html).toContain("over the live-database walk cap");
-    expect(html).toContain("4 agent sessions");
-    expect(html).toContain("a.localhost:3001");
-    expect(html).toContain("goes idle for 10 minutes");
-    expect(html).toMatch(/--clone<\/code>, port 3002, a copy of production for walks\) is not built yet/);
-    expect(String(log.mock.calls[0][0])).toMatch(/REFUSED e\.localhost:3001/);
+    expect(response).toBeNull();
+    expect(input.registry.evicted.has("a.localhost:3001")).toBe(true);
+    expect(input.registry.admitted.has("e.localhost:3001")).toBe(true);
+    expect(String(log.mock.calls.map((call) => call[0]).join("\n"))).toMatch(/EVICTED a\.localhost:3001/);
   });
 
   it("a missing knob fails OPEN — the walk proceeds", async () => {
@@ -179,7 +217,7 @@ describe("walkCapGate — development against production only", () => {
     const input = gateInput({ env: { ...devEnv, NODE_ENV: "production" } });
     await expect(walkCapGate(input)).resolves.toBeNull();
     expect(input.readKnobs).not.toHaveBeenCalled();
-    expect(input.registry.size).toBe(4);
+    expect(input.registry.admitted.size).toBe(4);
   });
 
   it("a development server pointed at the clone is never capped", async () => {
@@ -188,5 +226,141 @@ describe("walkCapGate — development against production only", () => {
     });
     await expect(walkCapGate(input)).resolves.toBeNull();
     expect(input.readKnobs).not.toHaveBeenCalled();
+  });
+});
+
+describe("walk-cap dev endpoint framing and safe parking", () => {
+  const originalEnv = { ...process.env };
+  let nowSpy: jest.SpyInstance;
+  let endpointState: { registry: WalkRegistry; listeners: Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>; readKnobs: () => Promise<WalkKnobs> };
+
+  beforeEach(() => {
+    process.env.NODE_ENV = "development";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://db.matrxserver.com";
+    nowSpy = jest.spyOn(Date, "now").mockReturnValue(T0);
+    endpointState = {
+      registry: registryWith([]),
+      listeners: new Map(),
+      readKnobs: async () => KNOBS,
+    };
+    setWalkCapTestState(endpointState);
+  });
+
+  afterEach(() => {
+    setWalkCapTestState(undefined);
+    nowSpy.mockRestore();
+    process.env = { ...originalEnv };
+  });
+
+  it("writes a real SSE frame and status reads do not admit a host", async () => {
+    const response = await walkCapDevEndpoint(new Request("http://frame.localhost:3001/__dev-walk?stream=1", { headers: { host: "frame.localhost:3001" } }));
+    if (!response?.body) throw new Error("expected an SSE stream");
+    const reader = response.body.getReader();
+    const first = await reader.read();
+    expect(new TextDecoder().decode(first.value)).toBe("event: state\ndata: {}\n\n");
+    await reader.cancel();
+    expect(endpointState.listeners.has("frame.localhost:3001")).toBe(false);
+  });
+
+  it("parks with an escaped, same-origin-only return target", async () => {
+    const response = await walkCapDevEndpoint(new Request("http://frame.localhost:3001/__dev-walk?parked=1&returnTo=%2F%5Cevil", { headers: { host: "frame.localhost:3001" } }));
+    const html = await response?.text();
+    expect(html).toContain('value="/"');
+    expect(html).toContain("font:16px/1.5 system-ui");
+  });
+
+  it("does not let status or unknown activity create an admission", async () => {
+    const activity = await walkCapDevEndpoint(new Request("http://frame.localhost:3001/__dev-walk?activity=1", {
+      method: "POST",
+      headers: { host: "frame.localhost:3001", origin: "http://frame.localhost:3001" },
+    }));
+    expect(activity?.status).toBe(204);
+    const stream = await walkCapDevEndpoint(new Request("http://frame.localhost:3001/__dev-walk?stream=1", { headers: { host: "frame.localhost:3001" } }));
+    expect(stream?.status).toBe(200);
+  });
+
+  it("notifies every same-host stream on LRU eviction and never lets it reacquire automatically", async () => {
+    const registry = registryWith([
+      ["old.localhost:3001", T0 - 4 * MIN], ["b.localhost:3001", T0 - 3 * MIN],
+      ["c.localhost:3001", T0 - 2 * MIN], ["d.localhost:3001", T0 - MIN],
+    ]);
+    setWalkCapTestState({ registry, listeners: new Map(), readKnobs: async () => KNOBS });
+    const streams = await Promise.all([1, 2].map(() => walkCapDevEndpoint(new Request("http://old.localhost:3001/__dev-walk?stream=1", { headers: { host: "old.localhost:3001" } }))));
+    const readers = streams.map((response) => response?.body?.getReader());
+    await Promise.all(readers.map((reader) => reader?.read()));
+    await walkCapGateForRequest("new.localhost:3001", "document");
+    const frames = await Promise.all(readers.map(async (reader) => new TextDecoder().decode((await reader?.read())?.value)));
+    expect(frames).toEqual(["event: evicted\ndata: {}\n\n", "event: evicted\ndata: {}\n\n"]);
+    expect(await walkCapGateForRequest("old.localhost:3001", "background")).toMatchObject({ status: 409 });
+  });
+
+  it("resumes only a tombstoned host and evicts the next LRU host", async () => {
+    const registry = registryWith([
+      ["a.localhost:3001", T0 - 4 * MIN], ["b.localhost:3001", T0 - 3 * MIN],
+      ["c.localhost:3001", T0 - 2 * MIN], ["d.localhost:3001", T0 - MIN],
+    ]);
+    registry.evicted.add("returning.localhost:3001");
+    setWalkCapTestState({ registry, listeners: new Map(), readKnobs: async () => KNOBS });
+    const response = await walkCapDevEndpoint(new Request("http://returning.localhost:3001/__dev-walk", {
+      method: "POST", headers: { host: "returning.localhost:3001", origin: "http://returning.localhost:3001", "content-type": "application/x-www-form-urlencoded" }, body: "returnTo=%2Fnotes",
+    }));
+    expect(response?.status).toBe(303);
+    expect(response?.headers.get("location")).toBe("http://returning.localhost:3001/notes");
+    expect(registry.evicted.has("a.localhost:3001")).toBe(true);
+  });
+
+  it("rejects malformed or normalized-host origin spoofing", async () => {
+    const malformed = await walkCapDevEndpoint(new Request("http://frame.localhost:3001/__dev-walk?activity=1", {
+      method: "POST", headers: { host: "frame.localhost:3001", origin: "not a url" },
+    }));
+    const wrongHost = await walkCapDevEndpoint(new Request("http://localhost:3001/__dev-walk?activity=1", {
+      method: "POST", headers: { host: "frame.localhost:3001", origin: "http://localhost:3001" },
+    }));
+    expect(malformed?.status).toBe(403);
+    expect(wrongHost?.status).toBe(403);
+  });
+
+  it("cap zero shuts every admitted host down into tombstones", () => {
+    const registry = registryWith([["a.localhost:3001", T0], ["b.localhost:3001", T0]]);
+    const decision = decideWalkAdmission(registry, "a.localhost:3001", T0, { cap: 0, windowMinutes: 10 });
+    expect(decision.evicted).toEqual(["a.localhost:3001", "b.localhost:3001"]);
+    expect(registry.evicted).toEqual(new Set(["a.localhost:3001", "b.localhost:3001"]));
+  });
+});
+
+describe("process-global idle expiry", () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => {
+    jest.useRealTimers();
+    setWalkCapTestState(undefined);
+  });
+
+  it("expires the earliest host, then reschedules after an explicit touch", () => {
+    jest.setSystemTime(T0);
+    const registry = registryWith([
+      ["a.localhost:3001", T0],
+      ["b.localhost:3001", T0 + MIN],
+    ]);
+    setWalkCapTestState({ registry, listeners: new Map(), readKnobs: async () => KNOBS });
+    scheduleWalkIdleExpiryForTest(KNOBS);
+    jest.advanceTimersByTime(9 * MIN);
+    decideWalkAdmission(registry, "a.localhost:3001", T0 + 9 * MIN, KNOBS, "activity");
+    scheduleWalkIdleExpiryForTest(KNOBS);
+    jest.advanceTimersByTime(2 * MIN + 2);
+    expect(registry.evicted.has("b.localhost:3001")).toBe(true);
+    expect(registry.admitted.has("a.localhost:3001")).toBe(true);
+    jest.advanceTimersByTime(8 * MIN + 1);
+    expect(registry.evicted.has("a.localhost:3001")).toBe(true);
+  });
+
+  it("cleans up without leaving a timer once no admitted hosts remain", () => {
+    jest.setSystemTime(T0);
+    const registry = registryWith([["a.localhost:3001", T0]]);
+    const state = { registry, listeners: new Map(), readKnobs: async () => KNOBS };
+    setWalkCapTestState(state);
+    scheduleWalkIdleExpiryForTest(KNOBS);
+    jest.advanceTimersByTime(10 * MIN + 1);
+    expect(registry.admitted.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
   });
 });

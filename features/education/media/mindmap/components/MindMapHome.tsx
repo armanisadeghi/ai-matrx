@@ -20,6 +20,7 @@ import { createEducationMindMapsScope } from "@/features/surfaces/manifests/educ
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
 import {
+  distinctSourceTitle,
   EducationCollectionNoResults,
   EducationCollectionSearch,
   filterEducationCollection,
@@ -132,8 +133,10 @@ export function MindMapHome() {
                 <Network className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium text-foreground">{row.title}</div>
-                  {row.source_title && (
-                    <div className="truncate text-[11px] text-muted-foreground">from {row.source_title}</div>
+                  {distinctSourceTitle(row.title, row.source_title) && (
+                    <div className="truncate text-[11px] text-muted-foreground">
+                      from {distinctSourceTitle(row.title, row.source_title)}
+                    </div>
                   )}
                 </div>
               </Link>

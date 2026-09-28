@@ -29,6 +29,14 @@ export interface ValuePromptField {
 export interface ValuePromptsRequest {
   /** Dialog title — typically the shortcut/agent label. */
   title: string;
+  /**
+   * One plain sentence under the title. Defaults to "This action needs a few
+   * values from you before it runs." — pass one when the dialog is asking for
+   * something the page should have provided (a missing required value).
+   */
+  description?: string;
+  /** Label of the submit button. Defaults to "Continue". */
+  submitLabel?: string;
   fields: ValuePromptField[];
 }
 

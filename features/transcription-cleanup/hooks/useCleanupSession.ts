@@ -752,8 +752,11 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       agentId: string;
       columnIdx: 2 | 4;
       target: string;
+      /** Captured at launch; null deliberately means no durable session. */
+      sessionId?: string | null;
     }): Promise<AgentRun | null> => {
-      const sessionId = await ensureSession();
+      const sessionId =
+        args.sessionId === undefined ? await ensureSession() : args.sessionId;
       if (!sessionId) return null;
       try {
         return await insertAgentRun({
@@ -767,6 +770,7 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
         // Never blocks the run — the pass still streams into its pane; it just
         // won't be recoverable across a reload, which is worth saying.
         console.error("[cleanup] beginRun failed:", err);
+        toast.error("This run will continue, but cannot be recovered after a refresh. Keep this page open until it finishes.");
         return null;
       }
     },
@@ -780,6 +784,7 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
         await bindAgentRunConversation(runId, conversationId);
       } catch (err) {
         console.error("[cleanup] bindRunConversation failed:", err);
+        toast.error("Could not link this run for recovery. Keep this page open until it finishes.");
       }
     },
     [],
@@ -808,8 +813,11 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       conversationId: string | null,
       /** The row `beginRun` opened for this pass; a new one is opened without it. */
       existingRunId?: string | null,
+      /** The originating session when a run completes after the user switched. */
+      targetSessionId?: string | null,
     ) => {
-      const sessionId = await ensureSession();
+      const sessionId =
+        targetSessionId === undefined ? await ensureSession() : targetSessionId;
       if (!sessionId) return;
       if (!text.trim()) {
         if (existingRunId) {
@@ -830,7 +838,20 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
               triggerCause: "manual",
               metadata: { surface: "cleanup", target: "clean" },
             });
-        const passIndex = (activeCleanedRef.current?.passIndex ?? 0) + 1;
+        const currentCleaned =
+          sessionRef.current?.id === sessionId
+            ? activeCleanedRef.current
+            : cleanedBySessionRef.current.get(sessionId) ??
+              (await listCleanedSegments(sessionId).then((segments) => {
+                const latest = segments.at(-1);
+                return latest
+                  ? {
+                      id: latest.id,
+                      passIndex: Math.max(...segments.map((s) => s.passIndex)),
+                    }
+                  : null;
+              }));
+        const passIndex = (currentCleaned?.passIndex ?? 0) + 1;
         const seg = await applyCleanupRun({
           sessionId,
           runId: run.id,
@@ -840,7 +861,9 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
           text,
           triggerCause: "manual",
         });
-        activeCleanedRef.current = { id: seg.id, passIndex };
+        const next = { id: seg.id, passIndex };
+        cleanedBySessionRef.current.set(sessionId, next);
+        if (sessionRef.current?.id === sessionId) activeCleanedRef.current = next;
         await finalizeAgentRun({
           id: run.id,
           status: "complete",
@@ -877,7 +900,9 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
               triggerCause: "manual",
               metadata: { surface: "cleanup", target: "clean" },
             });
-            const passIndex = (activeCleaned?.passIndex ?? 0) + 1;
+            // This branch only runs with no saved clean segment for this
+            // captured session, so its first materialized pass is always 1.
+            const passIndex = 1;
             const seg = await applyCleanupRun({
               sessionId,
               runId: run.id,
@@ -904,7 +929,8 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
 
   const writeCustomDoc = useCallback(
     async (content: string, docKind: string, sessionId?: string | null) => {
-      const targetSessionId = sessionId ?? (await ensureSession());
+      const targetSessionId =
+        sessionId === undefined ? await ensureSession() : sessionId;
       if (!targetSessionId) return;
       await upsertStudioDocument(targetSessionId, docKind, {
         content,
@@ -924,8 +950,11 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       docKind: string,
       /** The row `beginRun` opened for this pass; a new one is opened without it. */
       existingRunId?: string | null,
+      /** The originating session when a run completes after the user switched. */
+      targetSessionId?: string | null,
     ) => {
-      const sessionId = await ensureSession();
+      const sessionId =
+        targetSessionId === undefined ? await ensureSession() : targetSessionId;
       if (!sessionId) return;
       if (!text.trim()) {
         if (existingRunId) {
@@ -946,7 +975,7 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
               triggerCause: "manual",
               metadata: { surface: "cleanup", target: docKind },
             });
-        await writeCustomDoc(text, docKind);
+        await writeCustomDoc(text, docKind, sessionId);
         await finalizeAgentRun({
           id: run.id,
           status: "complete",

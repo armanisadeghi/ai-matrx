@@ -31,6 +31,7 @@
 import { isRecord } from "./legacy-bridge-utils";
 import type { MaterializedKind } from "./kind-payload";
 import type { AiUsage_AgentResult, GeneratedImage } from "./generated/kinds.generated";
+import { currentCostUnit } from "@/components/cost/costUnit";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
 import {
@@ -115,7 +116,7 @@ export function formatDuration(seconds: number | null): string | null {
  *  `null` (untracked) stays `null` so the fact is omitted, never "—". */
 export function formatCost(
   cost: number | null,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string | null {
   if (cost === null) return null;
   return formatKitCost(cost, { unit });

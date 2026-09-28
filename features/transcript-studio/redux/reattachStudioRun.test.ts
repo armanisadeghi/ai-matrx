@@ -5,9 +5,13 @@ import {
   selectAccumulatedText,
   selectAnswerText,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import {
+  envelopeFromCompleteValue,
+  IR_ENVELOPE_KEY,
+} from "@ai-matrx/content-ir";
 
 describe("cleanup execution answer boundary", () => {
-  it("projects a no-content structured block as its lossless __kind document", () => {
+  it("projects a no-content structured block from its canonical envelope", () => {
     const structured = {
       __kind: "decision_answers",
       model: "test-model",
@@ -24,6 +28,34 @@ describe("cleanup execution answer boundary", () => {
             type: "thinking",
             content: "private scratch work",
           },
+          decision: {
+            blockId: "decision",
+            type: "decision_answers",
+            content: null,
+            data: null,
+            metadata: {
+              [IR_ENVELOPE_KEY]: envelopeFromCompleteValue(
+                structured,
+                "decision_answers",
+              ),
+            },
+          },
+        },
+      } as never),
+    ).toBe(JSON.stringify(structured));
+  });
+
+  it("uses a typed __kind payload when no canonical envelope is present", () => {
+    const structured = {
+      __kind: "decision_answers",
+      model: "payload-model",
+      answers: { preserve: { answer: "payload" } },
+    };
+    expect(
+      deriveAnswerDocumentText({
+        editedText: null,
+        renderBlockOrder: ["decision"],
+        renderBlocks: {
           decision: {
             blockId: "decision",
             type: "decision_answers",

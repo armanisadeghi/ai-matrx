@@ -56,12 +56,12 @@ export function RowsSkeleton({
   sentence?: string;
 }) {
   return (
-    <div className="px-0.5 py-1" aria-label={label} role="status">
+    <div className="-mx-2 py-1" aria-label={label} role="status">
       <span className="sr-only">{label}</span>
       {sentence ? <p className="px-2 pb-1 text-xs text-muted-foreground">{sentence}</p> : null}
       {/* The row's own shape: kind tile, title + date, one line of facts. */}
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex items-start gap-3 px-2.5 py-2">
+        <div key={i} className="flex items-start gap-3 px-2 py-2">
           <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
           <div className="min-w-0 flex-1 space-y-2 pt-0.5">
             <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export function SearchSections({
   );
   const anything = sections.some((s) => (s.section?.items.length ?? 0) > 0);
   return (
-    <div className="space-y-5 pb-10" role="listbox" aria-label="Search results">
+    <div className="-mx-2 space-y-5 pb-10" role="listbox" aria-label="Search results">
       {sections.map((s) => {
         if (s.key === "top_hit") {
           if (s.status === "loading" || !s.section?.items.length) return null;
@@ -288,7 +288,9 @@ function VirtualList({
   return (
     <div
       ref={ref}
-      className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+      // -mx-2 + the row's px-2: the tile sits on the pane's own 16px edge, in line with the
+      // search box and facets, while the hover fill still reaches past it (Linear).
+      className="relative -mx-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
       onScroll={(e) => setOffset(e.currentTarget.scrollTop)}
       role="listbox"
       aria-label="Results"
@@ -329,7 +331,7 @@ function SectionHeader({ label, count, pinned = false }: { label: string; count:
   return (
     <div
       className={cn(
-        "flex h-8 items-end gap-2 px-2.5 pb-1.5 text-xs font-medium text-muted-foreground",
+        "flex h-8 items-end gap-2 px-2 pb-1.5 text-xs font-medium text-muted-foreground",
         // The page's own surface, opaque, so rows pass cleanly beneath it; a hairline says it is pinned.
         pinned && "bg-textured border-b border-border/50",
       )}
@@ -586,7 +588,7 @@ export function BrowseResults({
       {failures}
       {loading && hits.length === 0 ? <RowsSkeleton rows={8} label="Loading your knowledge" /> : null}
       {!loading && hits.length === 0 && !failed.length ? (
-        <div className="flex flex-col items-start gap-3 px-2.5 py-8">
+        <div className="flex flex-col items-start gap-3 py-8">
           <p className="max-w-prose text-sm text-muted-foreground">{emptySentence}</p>
           {emptyExtra}
         </div>

@@ -24,6 +24,7 @@ import type {
   PanelMetricKey,
   QaDecision,
 } from "./types";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 function humanize(code: string): string {
   return code.replaceAll("_", " ").trim();
@@ -390,7 +391,7 @@ export function formatComparison(comparison: PairedComparison): string {
 
 export function formatWaveCost(
   value: number | null | undefined,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string | null {
   if (value === null || value === undefined || Number.isNaN(value)) return null;
   return formatCost(value, { unit });

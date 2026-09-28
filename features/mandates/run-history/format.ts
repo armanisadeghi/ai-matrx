@@ -4,6 +4,7 @@
 
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
 import type { MandateRun, RunHistoryView, RunRung, RunStatus } from "./service";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 export const STATUS_WORDS: Record<RunStatus, string> = {
   succeeded: "Succeeded",
@@ -73,7 +74,7 @@ export function absoluteWhen(iso: string): string {
 
 /** A run's cost in the viewer's unit ("538 points"; dollars only for a
  *  system admin who flipped the switch); "—" when not known. */
-export function costWords(cost: number | null, unit: CostUnit = "points"): string {
+export function costWords(cost: number | null, unit: CostUnit = currentCostUnit()): string {
   return formatCost(cost, { unit });
 }
 

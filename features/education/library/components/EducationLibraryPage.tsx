@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FilePlus2, LibraryBig } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { educationLibraryListConfig } from "../listConfig";
 import { EDUCATION_LIBRARY_SURFACE } from "../librarySurface";
 
@@ -19,6 +20,12 @@ export function EducationLibraryPage() {
 
   return (
     <div className="h-full [--shell-header-h:0px]">
+      {/* Every other education tool home carries its identity through
+          EducationToolHeader; the Library list rendered with no page title
+          anywhere at all (page-pass 2026-09-28) — nothing in the shell
+          header, nothing in the body. `EntityListPage` never renders one
+          itself (see its header doctrine), so this was the missing piece. */}
+      <EducationToolHeader title="Library" />
       <EntityListPage
         config={educationLibraryListConfig}
         // Agent surface `matrx-user/education-library`: what the list shows +

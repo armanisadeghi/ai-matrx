@@ -41,6 +41,7 @@ import { useAudioStudyRunPersistence } from "../useAudioStudyRunPersistence";
 import { AudioPlayback } from "./AudioPlayback";
 import type { StudyMediaRow } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { distinctSourceTitle } from "@/features/education/components/EducationCollectionSearch";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
 
@@ -201,9 +202,9 @@ function Header({
           <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
             {FORMAT_LABEL[media.audio_format ?? "overview"] ?? "Audio"}
           </span>
-          {media.source_title && (
+          {distinctSourceTitle(media.title, media.source_title) && (
             <span className="truncate text-xs text-muted-foreground">
-              from {media.source_title}
+              from {distinctSourceTitle(media.title, media.source_title)}
             </span>
           )}
         </div>

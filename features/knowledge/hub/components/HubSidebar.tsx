@@ -313,7 +313,7 @@ function ContainerGroup({
           <LoadState
             loadable={loadable}
             what={label.toLowerCase()}
-            empty={`No ${label.toLowerCase()} you can open yet.`}
+            empty="None"
             indent
           />
           {rows.map((r) => {
@@ -433,27 +433,25 @@ export function HubSidebar({
           />
         )}
 
-        <div className="flex items-center justify-between pr-1">
-          <GroupHeading>Saved views</GroupHeading>
-          {onSaveView ? (
-            <button
-              type="button"
-              className="mt-3 flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-              aria-label="Save view (⌥V)"
-              title="Save view (⌥V)"
-              onClick={onSaveView}
-            >
-              <BookmarkPlus className="h-3.5 w-3.5" />
-            </button>
-          ) : null}
-        </div>
-        <LoadState
-          loadable={data.savedViews}
-          what="saved views"
-          empty="No saved views yet. Filter the hub, then Save view (⌥V)."
-        />
-        {pinnedViews.length === 0 && data.savedViews.status === "ready" && data.savedViews.items.length > 0 ? (
-          <p className="px-2 py-1 text-xs text-muted-foreground">Nothing pinned. Pin a view from its ··· menu.</p>
+        {/* Linear hides an empty group: "Saved views" appears once there is one (Save view lives in
+            the toolbar, ⌥V). While the list reads, or if it fails, it says so here. */}
+        {data.savedViews.status !== "ready" ? (
+          <LoadState loadable={data.savedViews} what="saved views" empty="" />
+        ) : pinnedViews.length || otherViews.length ? (
+          <div className="flex items-center justify-between pr-1">
+            <GroupHeading>Saved views</GroupHeading>
+            {onSaveView ? (
+              <button
+                type="button"
+                className="mt-3 flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                aria-label="Save view (⌥V)"
+                title="Save view (⌥V)"
+                onClick={onSaveView}
+              >
+                <BookmarkPlus className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </div>
         ) : null}
         {pinnedViews.map(viewRow)}
         {otherViews.length ? (

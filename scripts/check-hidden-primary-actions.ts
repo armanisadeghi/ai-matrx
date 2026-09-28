@@ -10,7 +10,7 @@
  * review: the button existed, it worked, it was one tap away — for someone who knew to look.
  *
  * THE LAW. The action a person came to the page to take (Run, Generate, Clean, Review, Create,
- * Submit, Start, Process, Analyze, Publish, Send) has a door in the MAIN pane. A drawer, sidebar or
+ * Submit, Start, Process, Analyze, Publish, Send, Scrape) has a door in the MAIN pane. A drawer, sidebar or
  * menu may ALSO carry it — the same handler, never a second implementation.
  *
  * WHAT IS DETECTED (TypeScript AST, one file plus one level of imported components):
@@ -89,7 +89,7 @@ const EXPLAIN = process.argv.includes("--explain");
 
 const PRIMARY_VERBS = new Set([
   "run", "generate", "clean", "review", "create", "submit", "start", "process",
-  "analyze", "analyse", "publish", "send",
+  "analyze", "analyse", "publish", "send", "scrape",
 ]);
 
 /** Called names too generic to identify a handler on their own. */

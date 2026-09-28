@@ -358,7 +358,7 @@ export function EducationHome() {
       getApplicationScope={getScope}
       contentSource={{ type: "raw" }}
     >
-    <main className="h-full overflow-y-auto bg-textured pb-safe">
+    <main className="matrx-touch-targets h-full overflow-y-auto bg-textured pb-safe">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6">
         {!snapshot ? (
           <HomeSkeleton />

@@ -30,6 +30,8 @@ import {
   EducationCollectionSearch,
   filterEducationCollection,
 } from "@/features/education/components/EducationCollectionSearch";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationSummariesScope } from "@/features/surfaces/manifests/education-summaries.manifest";
 
 export function SummaryHome() {
   const read = useRead(
@@ -56,8 +58,24 @@ export function SummaryHome() {
     ],
   );
 
+  const getScope = () =>
+    createEducationSummariesScope({
+      view: "list",
+      summaries_loaded: !loading,
+      summary_count: loading ? undefined : rows.length,
+      summaries: loading
+        ? undefined
+        : rows.map((r) => ({
+            id: r.id,
+            title: r.title,
+            source_title: r.source_title,
+            source_kind: r.source_kind,
+            status: r.status,
+          })),
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider surfaceName="matrx-user/education-summaries" getScope={getScope}>
       <EducationToolHeader title="Study Summaries" />
       <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -128,6 +146,6 @@ export function SummaryHome() {
           </ul>
         )}
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

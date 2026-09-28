@@ -193,6 +193,9 @@ export type RichDocumentActionId =
   | "send-to-agent"
   // An agent window's answer applied back to the text it was launched from
   | "apply-to-source"
+  // A good "Custom agent…" run kept: its mapping as a shortcut, or bound to the page
+  | "save-run-as-shortcut"
+  | "bind-run-to-page"
   // The Notes & comments dock of a saved record (annotations/RecordAnnotations)
   | "notes-and-comments"
   // Text-field AI powers (ProTextarea hosts them)

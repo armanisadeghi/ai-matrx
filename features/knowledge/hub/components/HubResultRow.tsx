@@ -221,7 +221,7 @@ export function ResultRow({
       data-hit-key={key}
       style={style}
       className={cn(
-        "group flex min-w-0 cursor-default items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors",
+        "group flex min-w-0 cursor-default items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors",
         isFocused ? "bg-accent" : isSelected ? "bg-primary/5" : "hover:bg-muted/70",
         isPeek && "ring-1 ring-inset ring-primary/40",
       )}

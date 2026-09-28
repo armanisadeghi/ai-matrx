@@ -33,7 +33,6 @@ export function HubDetailEmbed({ embed }: { embed: HubEmbed }) {
             This screen failed to draw here: {error.message}
             <ErrorAlchemyMenu error={error} size="xs" />
           </p>
-          <p className="text-muted-foreground">Details still has everything the hub knows; Open full opens its own page.</p>
           <button type="button" className="text-primary underline-offset-2 hover:underline" onClick={reset}>
             Try again
           </button>

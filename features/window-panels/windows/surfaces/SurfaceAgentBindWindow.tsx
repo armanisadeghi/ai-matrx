@@ -11,6 +11,7 @@ import { Link2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceAgentBindPanel } from "@/features/surfaces/components/bind/SurfaceAgentBindPanel";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 import {
   emitSurfaceAgentBindEvent,
   type SurfaceAgentBindWindowData,
@@ -22,6 +23,7 @@ export interface SurfaceAgentBindWindowProps {
   instanceId: string;
   surfaceName: string;
   initialAgentId?: string | null;
+  initialValueMappings?: ValueMappingMap | null;
   callbackGroupId?: string | null;
 }
 
@@ -31,6 +33,7 @@ export function SurfaceAgentBindWindow({
   instanceId,
   surfaceName,
   initialAgentId = null,
+  initialValueMappings = null,
   callbackGroupId = null,
 }: SurfaceAgentBindWindowProps) {
   const lastBoundRef = useRef(false);
@@ -84,6 +87,7 @@ export function SurfaceAgentBindWindow({
         <SurfaceAgentBindPanel
           surfaceName={surfaceName}
           initialAgentId={initialAgentId}
+          initialValueMappings={initialValueMappings}
           onBound={(result) => {
             lastBoundRef.current = true;
             emitSurfaceAgentBindEvent(callbackGroupId, {

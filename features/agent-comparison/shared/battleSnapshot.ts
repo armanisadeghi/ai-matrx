@@ -38,6 +38,7 @@ import {
   selectActiveBattleColumns,
   type BattleColumnDescriptor,
 } from "./activeBattleColumns";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 export const MODE_LABELS: Record<BattleModeId, string> = {
   open: "Open battle",
@@ -501,7 +502,7 @@ export function battleMarkdown(
     if (scores && c.metrics && c.metrics.rounds > 0) {
       const m = c.metrics;
       out.push(
-        `**Run:** ${m.total_tokens ?? "—"} tokens, ${formatCost(m.cost_usd)}, ${m.server_seconds != null ? `${m.server_seconds.toFixed(1)}s` : "—"}`,
+        `**Run:** ${m.total_tokens ?? "—"} tokens, ${formatCost(m.cost_usd, { unit: currentCostUnit() })}, ${m.server_seconds != null ? `${m.server_seconds.toFixed(1)}s` : "—"}`,
       );
     }
     if (c.error) out.push(`**Error:** ${c.error}`);

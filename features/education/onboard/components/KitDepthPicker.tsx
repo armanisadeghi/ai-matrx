@@ -89,7 +89,7 @@ export function KitDepthPicker({
           value={count}
           onChange={(e) => onCount(e.target.value)}
           placeholder="Auto"
-          className="h-9 w-24 text-base"
+          className="h-11 w-20 text-base [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           aria-label="Exact number of cards and questions"
         />
         <p className="text-[11px] text-muted-foreground">

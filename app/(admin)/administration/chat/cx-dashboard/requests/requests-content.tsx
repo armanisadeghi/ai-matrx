@@ -39,6 +39,7 @@ import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
+import { Cost } from "@/components/cost/Cost";
 
 type Props = {
   result: CxPaginatedResponse<CxUserRequest>;
@@ -260,7 +261,7 @@ export function RequestsContent({ result }: Props) {
         width: 110,
         cell: (r) => (
           <span className="block truncate font-mono">
-            {formatCost(Number(r.total_cost))}
+            <Cost usd={Number(r.total_cost)} />
           </span>
         ),
       },

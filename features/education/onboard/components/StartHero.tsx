@@ -360,7 +360,7 @@ export function StartHero({
       getApplicationScope={getScope}
       contentSource={{ type: "raw" }}
     >
-    <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
+    <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
       <header className="space-y-2 text-center">
         <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
           <PackageOpen className="h-3.5 w-3.5 text-primary" />
@@ -512,13 +512,13 @@ function InputPanel({
             key={m.id}
             onClick={() => props.onMode(m.id)}
             className={cn(
-              "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex min-h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-2 text-xs font-medium transition-colors sm:px-3 sm:text-sm",
               props.mode === m.id
                 ? "bg-accent text-accent-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            <m.icon className="h-4 w-4" /> {m.label}
+            <m.icon className="h-4 w-4 shrink-0" /> {m.label}
           </button>
         ))}
       </div>

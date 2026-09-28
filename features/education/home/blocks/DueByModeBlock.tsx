@@ -26,6 +26,7 @@ export function DueByModeBlock({ snapshot }: { snapshot: EducationSnapshot }) {
         <h2 className="text-sm font-semibold text-foreground">Waiting for you</h2>
         <Link
           href="/education/progress"
+          data-tap-target
           className="text-xs text-muted-foreground hover:text-foreground"
         >
           All progress

@@ -42,6 +42,10 @@ import {
   fromCxVideoPart,
 } from "@/features/files/blocks/adapters/from-cx-av-part";
 import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
+import {
+  readEnvelope,
+  reconstructRegionValue,
+} from "@/features/content-ir/redux/render-block-envelope";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { NON_ANSWER_BLOCK_TYPES } from "../active-requests/active-requests.selectors";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
@@ -310,7 +314,20 @@ export const selectLatestAnswerText =
   (state: RootState): string => {
     const id = selectLatestAssistantMessageId(conversationId)(state);
     if (!id) return "";
-    return extractFlatText(state.messages.byConversationId[conversationId]?.byId?.[id]);
+    return extractFlatText(
+      state.messages.byConversationId[conversationId]?.byId?.[id],
+    );
+  };
+
+/** The latest committed answer as a lossless Content-IR document string. */
+export const selectLatestAnswerDocumentText =
+  (conversationId: string) =>
+  (state: RootState): string => {
+    const id = selectLatestAssistantMessageId(conversationId)(state);
+    if (!id) return "";
+    return extractAnswerDocumentText(
+      state.messages.byConversationId[conversationId]?.byId?.[id],
+    );
   };
 
 // ---------------------------------------------------------------------------
@@ -421,6 +438,88 @@ export function extractFlatText(
     out = removeThinkingContent(out);
   }
   return out;
+}
+
+function hasDocumentKindMarker(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>).__kind === "string"
+  );
+}
+
+function stringifyDocumentPart(value: unknown): string | null {
+  if (!hasDocumentKindMarker(value)) return null;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return null;
+  }
+}
+
+function documentValueFromRenderBlock(block: RenderBlockPayload): unknown {
+  const envelope = readEnvelope(block.metadata);
+  if (envelope) return reconstructRegionValue(envelope);
+  if (hasDocumentKindMarker(block.data)) return block.data;
+  if (
+    block.data &&
+    typeof block.data === "object" &&
+    hasDocumentKindMarker(block.data.payload)
+  ) {
+    return block.data.payload;
+  }
+  return null;
+}
+
+/**
+ * Lossless Content-IR document projection of persisted assistant parts.
+ * Text preserves `extractFlatText`'s thinking boundary and consecutive-part
+ * joining; no-text `__kind` parts serialize in order for RichDocument reload.
+ */
+export function extractAnswerDocumentText(
+  record: MessageRecord | undefined,
+): string {
+  if (!record) return "";
+  const output: string[] = [];
+  let textRun: string[] = [];
+  const flushTextRun = () => {
+    if (textRun.length === 0) return;
+    const text = removeThinkingContent(textRun.join(""));
+    if (text) output.push(text);
+    textRun = [];
+  };
+
+  for (const entry of parsePersistedMessageContent(contentForDisplay(record))) {
+    if (entry.kind === "message_part") {
+      const part = entry.part;
+      if (NON_ANSWER_BLOCK_TYPES.has(part.type)) continue;
+      if (part.type === "text") {
+        textRun.push(part.text);
+        continue;
+      }
+      const structured = stringifyDocumentPart(part);
+      if (structured) {
+        flushTextRun();
+        output.push(structured);
+      }
+      continue;
+    }
+
+    const structured = stringifyDocumentPart(
+      entry.kind === "unknown_part"
+        ? entry.raw
+        : documentValueFromRenderBlock(entry.block),
+    );
+    if (structured) {
+      flushTextRun();
+      output.push(structured);
+    }
+  }
+  flushTextRun();
+  return output.join("\n");
 }
 
 /**

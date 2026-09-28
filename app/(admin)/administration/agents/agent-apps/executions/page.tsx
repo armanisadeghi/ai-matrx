@@ -60,6 +60,7 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 const LIMIT = 500;
 /** Both source calls order newest first and request only the newest 500; no total receipt exists. */
@@ -115,7 +116,7 @@ export function errorTypeFilterOptions(errorTypes: Iterable<string>) {
     .map((value) => ({ value, label: ERROR_TYPE_LABELS[value] ?? value }));
 }
 
-export function humanExecution(row: AgentAppExecutionRow, unit: CostUnit = "points") {
+export function humanExecution(row: AgentAppExecutionRow, unit: CostUnit = currentCostUnit()) {
   return [
     `${row.app_name ?? row.app_id} — ${row.success === true ? "OK" : row.success === false ? "Failed" : "Pending"}`,
     `Task: ${row.task_id}`,

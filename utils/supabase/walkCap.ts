@@ -319,13 +319,16 @@ interface WalkCapGlobal {
   registry: WalkRegistry;
   readKnobs: () => Promise<WalkKnobs | null>;
   listeners: Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>;
+  idleTimer?: ReturnType<typeof setTimeout>;
 }
 
 const GLOBAL_KEY = "__matrxWalkCap";
 
 /** Test-only seam for endpoint integration coverage; never called by app code. */
 export function setWalkCapTestState(state: WalkCapGlobal | undefined): void {
-  (globalThis as unknown as Record<string, WalkCapGlobal | undefined>)[GLOBAL_KEY] = state;
+  const globalState = globalThis as unknown as Record<string, WalkCapGlobal | undefined>;
+  if (globalState[GLOBAL_KEY]?.idleTimer) clearTimeout(globalState[GLOBAL_KEY].idleTimer);
+  globalState[GLOBAL_KEY] = state;
 }
 
 function processState(): WalkCapGlobal {
@@ -359,11 +362,46 @@ function processState(): WalkCapGlobal {
   return state;
 }
 
+/** One process timer, always aimed at the earliest current inactivity deadline. */
+function scheduleIdleExpiry(state: WalkCapGlobal, knobs: WalkKnobs, now = Date.now()): void {
+  if (state.idleTimer) clearTimeout(state.idleTimer);
+  state.idleTimer = undefined;
+  if (knobs.cap <= 0 || state.registry.admitted.size === 0) return;
+
+  const windowMs = knobs.windowMinutes * 60_000;
+  const earliestDeadline = Math.min(...[...state.registry.admitted.values()].map((seen) => seen + windowMs + 1));
+  const delay = Math.max(0, earliestDeadline - now);
+  state.idleTimer = setTimeout(() => {
+    state.idleTimer = undefined;
+    const expired: string[] = [];
+    const current = Date.now();
+    for (const [host, lastSeen] of state.registry.admitted) {
+      if (current - lastSeen > windowMs) {
+        state.registry.admitted.delete(host);
+        state.registry.evicted.add(host);
+        expired.push(host);
+      }
+    }
+    notifyEvicted(expired);
+    if (expired.length) console.log(`[walk-cap] IDLE EVICTED ${expired.join(", ")}`);
+    scheduleIdleExpiry(state, knobs, current);
+  }, delay);
+  state.idleTimer.unref?.();
+}
+
+/** Test-only seam for timer behavior; production callers use the gate wrapper. */
+export function scheduleWalkIdleExpiryForTest(knobs: WalkKnobs): void {
+  scheduleIdleExpiry(processState(), knobs);
+}
+
 /** The proxy's entry point: gate one signed-in request with process-wide state. */
 export async function walkCapGateForRequest(
   host: string | null,
   kind: WalkRequestKind,
 ): Promise<Response | null> {
+  if (process.env.NODE_ENV !== "development" || !pointsAtProduction(process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+    return null;
+  }
   const state = processState();
   const before = new Set(state.registry.evicted);
   const response = await walkCapGate({
@@ -379,6 +417,8 @@ export async function walkCapGateForRequest(
     kind,
   });
   notifyEvicted([...state.registry.evicted].filter((candidate) => !before.has(candidate)));
+  const knobs = await state.readKnobs();
+  if (knobs) scheduleIdleExpiry(state, knobs);
   return response;
 }
 
@@ -392,7 +432,7 @@ function isDevProductionLocalhost(host: string | null): boolean {
 
 function parkedPage(returnTo: string): string {
   const safe = escapeHtml(returnTo);
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preview paused</title><body><main><h1>This preview was paused</h1><p>A newer production-preview walk took this slot. This tab has stopped loading the app and its live database activity.</p><form method="post" action="/__dev-walk"><input type="hidden" name="returnTo" value="${safe}"><button type="submit">Resume this preview</button></form></main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preview paused</title><style>body{font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:48px auto;padding:0 16px;color:#1a1a1a;background:#fff}button{font:inherit;padding:9px 14px;border:1px solid currentColor;border-radius:6px;background:transparent;color:inherit;cursor:pointer}@media (prefers-color-scheme:dark){body{color:#eee;background:#141414}}</style></head><body><main><h1>This preview was paused</h1><p>Another preview session took this slot because this session was idle. This tab has stopped loading the app and its live database activity.</p><form method="post" action="/__dev-walk"><input type="hidden" name="returnTo" value="${safe}"><button type="submit">Resume this preview</button></form></main></body></html>`;
 }
 
 function safeReturnTo(value: string | null): string {
@@ -445,6 +485,8 @@ export async function walkCapDevEndpoint(request: Request): Promise<Response | n
     });
   }
   if (request.method === "GET" && url.searchParams.get("stream") === "1") {
+    const knobs = await state.readKnobs();
+    if (knobs) scheduleIdleExpiry(state, knobs);
     let controllerRef: ReadableStreamDefaultController<Uint8Array> | null = null;
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
@@ -472,7 +514,9 @@ export async function walkCapDevEndpoint(request: Request): Promise<Response | n
     if (url.searchParams.get("activity") === "1") {
       const origin = request.headers.get("origin");
       if (!isSameOrigin(origin, normalizedHost, url.protocol)) return new Response("same-origin required", { status: 403 });
-      if (!state.registry.admitted.has(normalizedHost)) return new Response("preview is not admitted", { status: 409, headers: { "cache-control": "no-store" } });
+      // A signed-out/login tab can mount the monitor before its first admitted
+      // document request. Its clicks are a no-op, never an implicit admission.
+      if (!state.registry.admitted.has(normalizedHost)) return new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
       const response = await walkCapGateForRequest(normalizedHost, "activity");
       return response ?? new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
     }

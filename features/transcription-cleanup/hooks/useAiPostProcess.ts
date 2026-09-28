@@ -50,7 +50,7 @@ import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-defini
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import {
   selectPrimaryRequest,
-  selectAnswerText,
+  selectAnswerDocumentText,
   selectIsReasoningStreaming,
   selectRequestError,
   selectRequestStatus,
@@ -123,7 +123,7 @@ export function useAiPostProcess() {
     requestId ? selectRequestStatus(requestId)(s) : undefined,
   );
   const answerText = useAppSelector((s) =>
-    requestId ? selectAnswerText(requestId)(s) : "",
+    requestId ? selectAnswerDocumentText(requestId)(s) : "",
   );
   const isThinking = useAppSelector((s) =>
     requestId ? selectIsReasoningStreaming(requestId)(s) : false,
@@ -161,7 +161,11 @@ export function useAiPostProcess() {
     surfaceName: surfaceNameArg,
   }: ProcessArgs): Promise<ProcessLaunchResult | null> {
     const bindingSurface = surfaceNameArg ?? CLEANUP_SURFACE_NAME;
+    // A new launch must not render the prior run's answer/error while it is
+    // resolving this agent and has no request row of its own yet.
+    setConversationId(null);
     setLaunchError(null);
+    setMapping(null);
     setLaunching(true);
     try {
       // 1. Load the agent's variable_definitions + context_policies into redux

@@ -59,6 +59,7 @@ export function MandateDoorLink({
         target="_blank"
         rel="noopener noreferrer"
         prefetch={false}
+        data-tap-target
         className={cn(
           "inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground",
           className,

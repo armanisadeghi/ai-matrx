@@ -7,6 +7,7 @@
 // hardcode.
 
 import { formatCost, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 /** One operational knob: a ceiling, backstop, cadence or default. */
 export interface FeatureKnob {
@@ -153,7 +154,7 @@ export function isPoints(capability: string): boolean {
 export function pointsToUsdLabel(
   points: number | string | null | undefined,
   period: string | null | undefined,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string | null {
   if (points === null || points === undefined) return null;
   const numeric = typeof points === "string" ? Number(points.trim()) : points;
@@ -179,7 +180,7 @@ export function capabilityUnitLabel(capability: string): string {
 export function limitToHuman(
   capability: string,
   stored: number | null,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string {
   if (stored === null || stored === undefined) return "unlimited";
   if (isMicroUsd(capability)) {

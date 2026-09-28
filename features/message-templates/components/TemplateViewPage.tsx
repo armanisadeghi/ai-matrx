@@ -536,7 +536,11 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
     .filter((part): part is string => part !== null)
     .join("\n\n");
 
-  // The page's own actions, in its right-click menu (view mode).
+  // The page's own actions, in its right-click menu (view mode). Every one is a
+  // SECOND door: the visible one is the header (Save / Discard pinned on phone,
+  // the View/Edit mode switch, Archive), the unsaved-changes bar, and the
+  // Show example toggle above the body — so each states renderSlot "overflow"
+  // as a decision, never a default (check:hidden-primary-actions).
   const pageMenuActions: RichDocumentAction[] = [
     ...(canEdit && mode === "edit" && isDirty
       ? [
@@ -546,6 +550,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
             icon: Save,
             category: "edit" as const,
             supportedSources: "*" as const,
+            renderSlot: "overflow" as const,
             order: 0,
             run: () => void handleSave(),
           },
@@ -555,6 +560,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
             icon: X,
             category: "edit" as const,
             supportedSources: "*" as const,
+            renderSlot: "overflow" as const,
             order: 0.5,
             run: () => void handleDiscard(),
           },
@@ -568,6 +574,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
             icon: Pencil,
             category: "edit" as const,
             supportedSources: "*" as const,
+            renderSlot: "overflow" as const,
             order: 1,
             run: () => selectMode(editHref),
           },
@@ -581,6 +588,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
             icon: Eye,
             category: "edit" as const,
             supportedSources: "*" as const,
+            renderSlot: "overflow" as const,
             order: 2,
             run: () => setShow(show === "example" ? "names" : "example"),
           },
@@ -594,6 +602,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
             icon: Archive,
             category: "edit" as const,
             supportedSources: "*" as const,
+            renderSlot: "overflow" as const,
             order: 3,
             run: () => void handleArchive(),
           },

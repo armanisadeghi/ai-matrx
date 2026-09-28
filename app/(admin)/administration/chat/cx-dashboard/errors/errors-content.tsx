@@ -37,6 +37,7 @@ import {
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Cost } from "@/components/cost/Cost";
 
 type ErrorsData = {
   error_requests: CxUserRequest[];
@@ -164,7 +165,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         className: "whitespace-nowrap",
         cell: (r) => (
           <span className="font-mono whitespace-nowrap">
-            {formatCost(Number(r.total_cost))}
+            <Cost usd={Number(r.total_cost)} />
           </span>
         ),
       },

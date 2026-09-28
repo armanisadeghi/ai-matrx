@@ -85,6 +85,11 @@ export interface SurfaceAgentBindPanelProps {
    * host already fixed the agent (e.g. Agent Settings → Surface tab).
    */
   lockAgent?: boolean;
+  /**
+   * Start from a mapping the person already built for `initialAgentId` (e.g.
+   * a Custom Agent run). Laid over any binding the agent already has here.
+   */
+  initialValueMappings?: ValueMappingMap | null;
   onBound?: (result: SurfaceAgentBindResult) => void;
   onCancel?: () => void;
   className?: string;
@@ -102,6 +107,7 @@ export function SurfaceAgentBindPanel({
   surfaceName,
   initialAgentId = null,
   lockAgent = false,
+  initialValueMappings = null,
   onBound,
   onCancel,
   className,
@@ -209,6 +215,11 @@ export function SurfaceAgentBindPanel({
     if (!agentId || seededForAgent === agentId) return;
     if (bindingsLoadedFor !== agentId) return;
 
+    // A mapping the person already built wins over whatever is stored.
+    const carried =
+      initialValueMappings && agentId === initialAgentId
+        ? cloneMappings(initialValueMappings)
+        : null;
     const forSurface = assocBindings.filter(
       (b) => b.surfaceName === surfaceName,
     );
@@ -217,7 +228,7 @@ export function SurfaceAgentBindPanel({
       forSurface[0] ??
       null;
     if (existing) {
-      setMappings(cloneMappings(existing.valueMappings));
+      setMappings({ ...cloneMappings(existing.valueMappings), ...carried });
       setAutoRun(existing.autoRun);
       // Editing an existing binding — open on the editor, not the suggester.
       setMapTab("manual");
@@ -229,12 +240,13 @@ export function SurfaceAgentBindPanel({
       (b) => b.surfaceName === DEFAULT_SURFACE_NAME,
     );
     if (defaultBinding?.valueMappings) {
-      setMappings(cloneMappings(defaultBinding.valueMappings));
+      setMappings({ ...cloneMappings(defaultBinding.valueMappings), ...carried });
       setAutoRun(defaultBinding.autoRun);
     } else {
-      setMappings({});
+      setMappings({ ...carried });
       setAutoRun(false);
     }
+    if (carried) setMapTab("manual");
     setSeededForAgent(agentId);
   }, [
     agentId,
@@ -243,6 +255,8 @@ export function SurfaceAgentBindPanel({
     currentUserId,
     seededForAgent,
     surfaceName,
+    initialAgentId,
+    initialValueMappings,
   ]);
 
   const availableSurfaceValues = useMemo<SurfaceValue[]>(() => {

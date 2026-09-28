@@ -9,11 +9,18 @@
 // the chosen agent in its own window on any text; when the text is writable
 // its answers offer "Apply to source" (the same review).
 
-import { FilePen, MessageCircle, Wand2 } from "lucide-react";
+import { BookmarkPlus, FilePen, Link2, MessageCircle, Wand2 } from "lucide-react";
 import { registerAction } from "../provider";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { customAgentWindowAction } from "@/features/overlays/openers/customAgentWindow";
 import { applyToSourceReviewAction } from "@/features/overlays/openers/applyToSourceReview";
+import { shortcutEditorWindowAction } from "@/features/overlays/openers/shortcutEditorWindow";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import {
+  putShortcutDraftSeed,
+  shortcutSeedForMapping,
+} from "@/features/agent-shortcuts/draft-seed";
+import type { RichDocumentActionContext } from "../../types";
 import { buildValueSources } from "@/features/agents/components/custom-agent/custom-agent-plan";
 import {
   applyTargetForConversation,
@@ -129,6 +136,81 @@ registerAction({
       applyToSourceReviewAction({
         applyTargetId: target.id,
         proposal: contentForDestination(ctx),
+      }),
+    );
+    ctx.onClose();
+  },
+});
+
+// ── A good "Custom agent…" run, kept ───────────────────────────────────────
+// The run's mapping (recorded on the conversation by the Custom Agent window)
+// becomes a shortcut — its own menu item, its own window, usually one-shot —
+// or a binding of the agent to this page (it joins the page's Agents menu
+// and reads this page's own values).
+
+function runMapping(ctx: RichDocumentActionContext) {
+  if (
+    ctx.extensions?.type !== "chat-message" ||
+    ctx.extensions.role !== "assistant"
+  ) {
+    return null;
+  }
+  const { conversationId } = chatIds(ctx);
+  if (!conversationId) return null;
+  const conversation =
+    ctx.getState().conversations.byConversationId[conversationId];
+  if (!conversation?.agentId || !conversation.launchMapping) return null;
+  return { agentId: conversation.agentId, ...conversation.launchMapping };
+}
+
+registerAction({
+  id: "save-run-as-shortcut",
+  label: "Save as shortcut",
+  icon: BookmarkPlus,
+  iconColor: "text-primary",
+  category: "ai",
+  supportedSources: ["chat-message"],
+  renderSlot: "overflow",
+  order: 4,
+  visible: (ctx) => runMapping(ctx) !== null,
+  run: (ctx) => {
+    const run = runMapping(ctx);
+    if (!run) return;
+    ctx.dispatch(
+      shortcutEditorWindowAction({
+        agentId: run.agentId,
+        seedId: putShortcutDraftSeed(
+          shortcutSeedForMapping(run.valueMappings, run.surfaceName),
+        ),
+      }),
+    );
+    ctx.onClose();
+  },
+});
+
+registerAction({
+  id: "bind-run-to-page",
+  label: "Bind to this page",
+  icon: Link2,
+  iconColor: "text-primary",
+  category: "ai",
+  supportedSources: ["chat-message"],
+  renderSlot: "overflow",
+  order: 5,
+  // Only a run captured on a registered page has a page to bind to.
+  visible: (ctx) => Boolean(runMapping(ctx)?.surfaceName),
+  run: (ctx) => {
+    const run = runMapping(ctx);
+    if (!run?.surfaceName) return;
+    ctx.dispatch(
+      openOverlay({
+        overlayId: "surfaceAgentBindWindow",
+        instanceId: `surfaceAgentBindWindow-${Date.now()}`,
+        data: {
+          surfaceName: run.surfaceName,
+          initialAgentId: run.agentId,
+          initialValueMappings: run.valueMappings,
+        },
       }),
     );
     ctx.onClose();

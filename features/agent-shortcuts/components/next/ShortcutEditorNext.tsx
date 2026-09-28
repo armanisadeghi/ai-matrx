@@ -59,6 +59,7 @@ import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { takeShortcutDraftSeed } from "@/features/agent-shortcuts/draft-seed";
+import { cn } from "@/lib/utils";
 const DEFAULT_SURFACE_NAME = "matrx-default/default";
 
 /**
@@ -75,11 +76,20 @@ export function ShortcutEditorNext({
   agent,
   shortcutId,
   seedId = null,
+  embedded = false,
+  onSaved,
+  onCancel: onCancelProp,
 }: {
   agent: AgentDefinition;
   shortcutId: string;
   /** A new draft starts from this seed (draft-seed.ts) — e.g. a Custom Agent mapping. */
   seedId?: string | null;
+  /** Rendered inside a window, not a page: no shell-header offset, no navigation. */
+  embedded?: boolean;
+  /** Replaces the page navigation after a save (a window closes instead). */
+  onSaved?: (shortcutId: string) => void;
+  /** Replaces router.back() (a window closes instead). */
+  onCancel?: () => void;
 }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -298,11 +308,13 @@ export function ShortcutEditorNext({
           editableToFormData(form, agent),
         );
         toast.success("Shortcut created");
+        if (onSaved) onSaved(newId);
         // agent-link-ok: shortcut editing only ever runs inside the user-shell agent route it navigates within
-        router.replace(`/agents/${agentId}/shortcuts/${newId}`);
+        else router.replace(`/agents/${agentId}/shortcuts/${newId}`);
       } else {
         await crud.updateShortcut(shortcutId, editableToPatch(form));
         toast.success("Shortcut saved");
+        onSaved?.(shortcutId);
       }
     } catch (e) {
       toastErrorAlreadyCaptured(extractErrorMessage(e));
@@ -333,14 +345,19 @@ export function ShortcutEditorNext({
     }
   };
 
-  const onCancel = () => router.back();
+  const onCancel = () => (onCancelProp ? onCancelProp() : router.back());
 
   // The read failed and nothing arrived: the canonical access gate says which
   // of denied / deleted / never existed / fault this is, instead of painting a
   // blank draft over a record that could not be opened.
   if (loadFailure && !existing) {
     return (
-      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+      <div
+        className={cn(
+          "h-full overflow-hidden",
+          !embedded && "pt-[var(--shell-header-h)]",
+        )}
+      >
         <AccessGate
           token="agent_shortcut"
           id={shortcutId}
@@ -355,7 +372,12 @@ export function ShortcutEditorNext({
   }
 
   return (
-    <div className="h-full flex flex-col bg-background pt-[var(--shell-header-h)]">
+    <div
+      className={cn(
+        "h-full flex flex-col bg-background",
+        !embedded && "pt-[var(--shell-header-h)]",
+      )}
+    >
       {/* Scrollable body */}
       <div className="flex-1 min-h-0 overflow-auto">
         <div className="max-w-3xl mx-auto px-6 py-6 space-y-8">

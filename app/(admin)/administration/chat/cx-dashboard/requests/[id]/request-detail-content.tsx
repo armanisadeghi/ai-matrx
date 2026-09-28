@@ -52,6 +52,7 @@ import {
 } from "@/features/cx-dashboard/components/cx-row-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Cost } from "@/components/cost/Cost";
 
 type Detail = {
   user_request: CxUserRequest;
@@ -116,7 +117,7 @@ const apiRequestColumns: MatrxColumnDef<CxRequest>[] = [
     align: "right",
     width: 90,
     cell: (r) => (
-      <span className="font-mono">{formatCost(Number(r.cost))}</span>
+      <span className="font-mono"><Cost usd={Number(r.cost)} /></span>
     ),
   },
   {
@@ -324,7 +325,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
             </span>
             <CxCostVerificationModal verification={cost_verification}>
               <span className="text-sm font-semibold font-mono cursor-pointer hover:text-primary flex items-center gap-1">
-                {formatCost(Number(ur.total_cost))}
+                <Cost usd={Number(ur.total_cost)} />
                 {cost_verification.has_discrepancy ? (
                   <AlertTriangle className="w-3 h-3 text-amber-500" />
                 ) : (
@@ -510,7 +511,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                     ) : null}
                     {Number(tc.cost_usd) > 0 && (
                       <span className="font-mono">
-                        {formatCost(Number(tc.cost_usd))}
+                        <Cost usd={Number(tc.cost_usd)} />
                       </span>
                     )}
                     {tc.retry_count ? (

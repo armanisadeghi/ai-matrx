@@ -7,6 +7,7 @@ import {
   formatRelativeTime as kitFormatRelativeTime,
   type CostUnit,
 } from "@ai-matrx/kit/format";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 /**
  * Compact relative-time label, e.g. "3d ago", "Never". The formatting is the
@@ -42,7 +43,7 @@ export const MCENTS_PER_USD = 100_000;
  */
 export function formatMcents(
   mcents: number | null | undefined,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string {
   if (mcents == null) return "—";
   return formatCost(mcents / MCENTS_PER_USD, { unit });

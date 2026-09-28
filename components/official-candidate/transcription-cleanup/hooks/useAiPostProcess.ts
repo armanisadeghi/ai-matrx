@@ -45,7 +45,7 @@ import { resolveMandate } from "@/features/mandates/service";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   selectPrimaryRequest,
-  selectAnswerText,
+  selectAnswerDocumentText,
   selectIsReasoningStreaming,
   selectRequestError,
   selectRequestStatus,
@@ -103,7 +103,7 @@ export function useAiPostProcess() {
     requestId ? selectRequestStatus(requestId)(s) : undefined,
   );
   const answerText = useAppSelector((s) =>
-    requestId ? selectAnswerText(requestId)(s) : "",
+    requestId ? selectAnswerDocumentText(requestId)(s) : "",
   );
   const isThinking = useAppSelector((s) =>
     requestId ? selectIsReasoningStreaming(requestId)(s) : false,
@@ -130,6 +130,8 @@ export function useAiPostProcess() {
     phase === "awaiting-tools";
 
   async function process({ agent, transcript, context }: ProcessArgs) {
+    // Do not expose a prior run's answer/error during this launch gap.
+    setConversationId(null);
     setLaunchError(null);
     setLaunching(true);
     try {

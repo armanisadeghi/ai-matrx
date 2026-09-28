@@ -12,6 +12,7 @@ import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayloa
 import type { OrgAdminAuditEntry, OrgAdminMember } from "./types";
 import { formatMcents, formatRelativeTime } from "./utils";
 import { formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 function lines(
   rows: Array<[string, string | number | boolean | null | undefined]>,
@@ -31,7 +32,7 @@ function adminLocation(orgSlug: string, area: string): string {
 /** One member row, in the units the table renders (bytes and mcents formatted). */
 export function rosterMemberSummary(
   member: OrgAdminMember,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string {
   return lines([
     ["Member", member.displayName || member.email || "Unknown user"],
@@ -94,7 +95,7 @@ export function rosterKpis(members: OrgAdminMember[]) {
 
 export function rosterListHuman(
   members: OrgAdminMember[],
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string {
   const kpis = rosterKpis(members);
   const head = `Org member roster — ${kpis.total} member${kpis.total === 1 ? "" : "s"} · ${kpis.suspended} suspended · ${formatFileSize(kpis.org_bytes_used)} in org files · ${formatMcents(kpis.cost_24h_mcents, unit)} spend 24h`;
@@ -109,7 +110,7 @@ export function buildRosterListPayload(input: {
   sort?: string;
   unit?: CostUnit;
 }): AgentPayloadInput {
-  const { members, orgSlug, searchQuery, sort, unit = "points" } = input;
+  const { members, orgSlug, searchQuery, sort, unit = currentCostUnit() } = input;
   const kpis = rosterKpis(members);
   return {
     kind: "org-admin-roster",
@@ -142,7 +143,7 @@ export function buildRosterMemberPayload(input: {
   totalMembers: number;
   unit?: CostUnit;
 }): AgentPayloadInput {
-  const { member, orgSlug, totalMembers, unit = "points" } = input;
+  const { member, orgSlug, totalMembers, unit = currentCostUnit() } = input;
   return {
     kind: "org-admin-member",
     location: adminLocation(orgSlug, "Member roster"),

@@ -661,6 +661,12 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  // THE shortcut editor in a window — save a shortcut without leaving the page.
+  shortcutEditorWindow: {
+    label: "Shortcut editor",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   // "Apply to source" from an agent window — the one review (diff → apply).
   applyToSourceReview: {
     label: "Apply to source",

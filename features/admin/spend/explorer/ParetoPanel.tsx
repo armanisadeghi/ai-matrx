@@ -29,6 +29,7 @@ import {
 } from "./TotalsStrip";
 import { formatPercentFromFraction, type CostUnit } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { currentCostUnit } from "@/components/cost/costUnit";
 
 const PARETO_DIMENSIONS: readonly SpendDimension[] = [
   "user",
@@ -87,7 +88,7 @@ export function paretoCopyText(
   cut: ParetoCut,
   total: number,
   parent: ParetoParentContext,
-  unit: CostUnit = "points",
+  unit: CostUnit = currentCostUnit(),
 ): string {
   const data = paretoCopyData(dim, cut, total, parent);
   const activeFilters = Object.entries(parent.filters)

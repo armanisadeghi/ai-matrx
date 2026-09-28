@@ -30,27 +30,15 @@
 
 import { useContext, useSyncExternalStore } from "react";
 import { ReactReduxContext } from "react-redux";
-import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import {
   formatCost,
   usdToPoints,
   type CostUnit,
 } from "@ai-matrx/kit/format";
 import type { RootState } from "@/lib/redux/store";
+import { selectCanToggleCostUnit, selectCostUnit } from "./costUnit";
 
-/** Admin identity, tolerant of a store without the auth slice (embeds, tests). */
-const selectCanToggleCostUnit = (state: RootState): boolean =>
-  state.userAuth != null && selectIsAdminPerson(state);
-
-/** The raw preference, whatever the viewer's role (admin-only in effect). */
-export const selectShowCostInUsdPreference = (state: RootState): boolean =>
-  state.userPreferences?.system?.showCostInUsd === true;
-
-/** The unit THIS viewer sees: dollars only for an admin who asked for them. */
-export const selectCostUnit = (state: RootState): CostUnit =>
-  selectCanToggleCostUnit(state) && selectShowCostInUsdPreference(state)
-    ? "usd"
-    : "points";
+export { currentCostUnit, selectCostUnit, selectShowCostInUsdPreference } from "./costUnit";
 
 export interface CostDisplay {
   /** `"points"` for everyone; `"usd"` only for an admin who flipped the switch. */
