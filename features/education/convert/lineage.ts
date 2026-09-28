@@ -36,6 +36,7 @@ export interface GeneratedArtifact {
   /** When the artifact was linked — the kit's own chronology. */
   createdAt: string;
   membershipRole?: "source" | "member";
+  kitHidden?: boolean;
 }
 
 function metaString(meta: Json | undefined, key: string): string | null {
@@ -80,6 +81,7 @@ export async function listGeneratedFrom(
         sourceTitle: metaString(e.metadata, "sourceTitle"),
         createdAt: e.createdAt,
         membershipRole: "source",
+        kitHidden: !!(e.metadata && typeof e.metadata === "object" && !Array.isArray(e.metadata) && (e.metadata as Record<string, unknown>).kitHidden === true),
       };
     });
 }

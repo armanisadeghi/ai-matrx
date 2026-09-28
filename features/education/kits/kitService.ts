@@ -145,7 +145,7 @@ export async function readKitArtifactStats(
 function kitMembers(rows: GeneratedArtifact[]): GeneratedArtifact[] {
   const seen = new Set<string>();
   return rows
-    .filter((r) => r.targetKind !== null)
+    .filter((r) => r.targetKind !== null && !r.kitHidden)
     .filter((r) => {
       const key = `${r.artifactType}:${r.artifactId}`;
       if (seen.has(key)) return false;
@@ -492,6 +492,11 @@ export async function removeKitMember(
   kit: StudyKit,
   artifact: Pick<GeneratedArtifact, "artifactType" | "artifactId" | "membershipRole">,
 ): Promise<void> {
+  if (artifact.membershipRole === "source") {
+    const result = await associationsService.add({ sourceType: artifact.artifactType, sourceId: artifact.artifactId, targetType: kit.sourceType as AssociationTargetType, targetId: kit.sourceId, role: "source", metadata: { kitHidden: true } });
+    if (!result.ok) throw new Error("Could not hide this generated study aid from the kit.");
+    return;
+  }
   const result = await associationsService.remove({
     sourceType: artifact.artifactType,
     sourceId: artifact.artifactId,
@@ -537,10 +542,8 @@ export async function createManualKit(input: {
       sourceId: artifact.id,
       targetType: "file",
       targetId: input.sourceId,
-      role: "source",
-      label: artifact.title,
       // Manual grouping is membership, never generated-from provenance.
-      metadata: { educationKit: true, targetKind, href: educationLibraryHref(artifact), detail: artifact.description ?? null, kitTitle: sourceTitle },
+      metadata: { educationKit: true, targetKind, href: educationLibraryHref(artifact), kitTitle: sourceTitle },
       role: "member",
     });
     if (!result.ok) throw new Error(`Added ${completed} of ${input.artifacts.length} study aids. The remaining aids were not added; try again from the kit page.`);
