@@ -287,6 +287,7 @@ function FilePicker({ onPick, onCancel }: PickerProps) {
 export const WORK_ITEMS: BoardItemType[] = [
   {
     key: "chat",
+    surface: { name: "matrx-user/chat" },
     label: "Chat",
     icon: MessagesSquare,
     group: "work",
@@ -306,6 +307,7 @@ export const WORK_ITEMS: BoardItemType[] = [
   },
   {
     key: "note",
+    surface: { name: "matrx-user/notes" },
     label: "Note",
     icon: StickyNote,
     group: "work",
@@ -325,6 +327,7 @@ export const WORK_ITEMS: BoardItemType[] = [
   },
   {
     key: "file",
+    surface: { name: "matrx-user/files" },
     label: "File",
     icon: FileIcon,
     group: "work",

@@ -29,7 +29,7 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
     name: "board_read",
     label: "Read board",
     description:
-      "Returns what is on the spatial board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles, the selected and focused tile, and which tiles are in the person's view. Call this before arranging or editing so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
+      "Returns what is on the spatial board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles, the selected and focused tile, which tiles are in the person's view, and `live_tile_id` — the tile whose feature is live for you. A tile with a `surface` publishes that feature's OWN values, write targets and tools (the same ones its page has) while it is live. Call this before arranging or editing so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
     inputSchema: {
       type: "object",
       properties: {
@@ -168,9 +168,9 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
   },
   {
     name: "board_focus",
-    label: "Show tile",
+    label: "Show and open tile",
     description:
-      "Moves the person's view to a tile so they see what you are talking about: `fly` glides the camera to it (default); `focus` opens it full-size over the board (they press Esc to return). Changes nothing on the board.",
+      "Shows a tile and makes it the LIVE tile: `fly` glides the camera to it and selects it (default); `focus` opens it full-size over the board (they press Esc to return). A live tile's feature publishes its own values, write targets and tools (a note's text, a task's fields…) — they reach you on your NEXT turn, so work inside a tile in two steps: board_focus it, then act on it. Changes nothing on the board.",
     inputSchema: {
       type: "object",
       properties: {

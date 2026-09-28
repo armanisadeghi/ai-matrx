@@ -106,6 +106,7 @@ function LabelBody({ source, onSource }: ItemBodyProps) {
 export const CONTENT_ITEMS: BoardItemType[] = [
   {
     key: "web-page",
+    surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Web page",
     icon: Globe,
     group: "media",
@@ -121,6 +122,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
   },
   {
     key: "image",
+    surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Image",
     icon: ImageIcon,
     group: "media",
@@ -135,6 +137,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
   },
   {
     key: "write-up",
+    surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Write-up",
     icon: FileText,
     group: "content",
@@ -145,6 +148,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
   },
   {
     key: "label",
+    surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Label",
     icon: Type,
     group: "content",

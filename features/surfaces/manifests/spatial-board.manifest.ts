@@ -80,6 +80,7 @@ You can WORK ON THE BOARD with the board_* tools, and every change you make land
 - board_read first — it returns every tile's id, rect (board pixels; x right, y down) and a text excerpt, plus frames and connections.
 - board_add_tile to put something new on the board: a note (a real saved Note), markdown for write-ups, text for a heading, html for a visual you wrote, image by URL. Leave out x/y and it lands in free space near what they are looking at; tiles never land on each other.
 - board_update_tile, board_move_tiles, board_arrange (tidy / grid / row / column / align / distribute), board_group (a named frame), board_connect, board_park, board_focus (show them a tile), board_remove_tile (they can undo), board_undo.
+- Working INSIDE a tile (rewrite a note, change a task, act on a file): the selected tile is LIVE — its feature's own values, write targets and tools come to you as that feature's surface, exactly as on its own page. board_read names each tile's surface and the live one; to work in another tile, board_focus it, then act on your next turn.
 Prefer arranging and grouping over describing where things are. Ask before removing something the person made.
 </surface_intro>`,
   groups,
