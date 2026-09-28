@@ -15,6 +15,8 @@ import type { Basis, DeclareTrackerBody, SetupProposal } from "./model";
 
 export type SetupFacts = components["schemas"]["SetupFacts"];
 export type TrackerView = components["schemas"]["TrackerView"];
+export type ScheduleView = components["schemas"]["ScheduleView"];
+export type SchedulePresetId = components["schemas"]["ScheduleBody"]["preset"];
 
 export interface ProposalRef {
   ref: string;
@@ -28,29 +30,6 @@ export interface ProposalResult {
   proposal: SetupProposal;
   refs: ProposalRef[];
   inputs: Record<string, number>;
-}
-
-export interface CoverageRunTracker {
-  tracker_id: string;
-  status: "ok" | "empty" | "failed";
-  queries: number;
-  articles_seen: number;
-  candidates: number;
-  mentions_created: number;
-  captured: number;
-  analyzed: number;
-  queries_refused?: number;
-  error?: string | null;
-}
-
-export interface CoverageRunResult {
-  trackers_due: number;
-  trackers_run: number;
-  trackers_failed: number;
-  mentions_created: number;
-  captured: number;
-  analyzed: number;
-  trackers: CoverageRunTracker[];
 }
 
 function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
@@ -143,24 +122,76 @@ export async function saveMonitor(
   return outcome.data as TrackerView;
 }
 
+/** The monitor's saved schedule (Lane C's route), or "No schedule — set one". */
+export async function getMonitorSchedule(
+  dispatch: AppDispatch,
+  trackerId: string,
+  organizationId: string,
+): Promise<ScheduleView> {
+  const outcome = await dispatch(
+    callApi({
+      path: "/coverage/trackers/{tracker_id}/schedule",
+      pathParams: { tracker_id: trackerId },
+      method: "GET",
+      scopeOverrides: { organization_id: organizationId },
+    }),
+  );
+  if (outcome.error) {
+    throw new Error(outcome.error.message ?? "Could not load this monitor's schedule.");
+  }
+  return outcome.data as ScheduleView;
+}
+
+/** Save the schedule the person picked — the customer's own trigger (ruling R1). */
+export async function saveMonitorSchedule(
+  dispatch: AppDispatch,
+  trackerId: string,
+  organizationId: string,
+  preset: SchedulePresetId,
+  timezone: string,
+): Promise<ScheduleView> {
+  const outcome = await dispatch(
+    callApi({
+      path: "/coverage/trackers/{tracker_id}/schedule",
+      pathParams: { tracker_id: trackerId },
+      method: "POST",
+      body: { preset, timezone },
+      scopeOverrides: { organization_id: organizationId },
+    }),
+  );
+  if (outcome.error) {
+    throw new Error(outcome.error.message ?? "The schedule could not be saved.");
+  }
+  return outcome.data as ScheduleView;
+}
+
+export interface MonitorRunStarted {
+  /** The workflow run the person can open, when the stream named it. */
+  runId: string | null;
+}
+
+/** Run now: the "News monitor run" workflow, streamed (Lane C). The editor
+ *  reads what the run found from the monitor itself afterwards. */
 export async function runMonitorNow(
   dispatch: AppDispatch,
   trackerId: string,
   organizationId: string,
-): Promise<CoverageRunResult> {
-  let result: CoverageRunResult | undefined;
+): Promise<MonitorRunStarted> {
+  let runId: string | null = null;
   const outcome = await dispatch(
     callApi({
       path: "/coverage/trackers/{tracker_id}/run",
       pathParams: { tracker_id: trackerId },
       method: "POST",
       body: { force: true },
-      scopeOverrides: { organization_id: organizationId },
       stream: true,
+      scopeOverrides: { organization_id: organizationId },
       onStreamEvent: (event) => {
-        const data = streamData(event);
-        if (data && Array.isArray(data.trackers)) {
-          result = data as unknown as CoverageRunResult;
+        const data = (event as { data?: unknown }).data;
+        if (!runId && data && typeof data === "object") {
+          const record = data as Record<string, unknown>;
+          const id = record.run_id ?? record.workflow_run_id;
+          if (typeof id === "string" && id) runId = id;
         }
       },
     }),
@@ -168,8 +199,5 @@ export async function runMonitorNow(
   if (outcome.error) {
     throw new Error(outcome.error.message ?? "The run could not start.");
   }
-  if (!result) {
-    throw new Error("The run finished without reporting what it did.");
-  }
-  return result;
+  return { runId };
 }

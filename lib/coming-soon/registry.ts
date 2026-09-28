@@ -233,22 +233,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
   // decision brief), and /marketing/monitoring is now their front door. The
   // untouched half of the original promise is what stays registered: review
   // sites, and being TOLD when something moves instead of having to look.
-  // The tracker editor (features/marketing/monitor-setup) shows the schedule
-  // presets, the fixed minute and the cost estimate, but saving the schedule
-  // is the customer's own workflow trigger, saved through the doors lane's
-  // route (NEWS-ENGINE-SPEC §12 Lane C, `POST /coverage/trackers/{id}/schedule`)
-  // — which does not exist yet. Until it does, a monitor runs on Run now.
-  "marketing.monitoring.schedule": {
-    id: "marketing.monitoring.schedule",
-    label: "Scheduled monitor runs",
-    owner: "marketing",
-    promise:
-      "Saving the schedule you pick here is not connected yet, so for now this monitor runs when you press Run now.",
-    stage: "blocked",
-    blockedBy:
-      "The schedule-save route (NEWS-ENGINE-SPEC §12 Lane C: POST /coverage/trackers/{id}/schedule) is not built.",
-    surfaces: ["/marketing/[brandId]/intelligence/monitoring/setup"],
-  },
   "marketing.monitoring.alerts": {
     id: "marketing.monitoring.alerts",
     label: "Review monitoring and alerts",

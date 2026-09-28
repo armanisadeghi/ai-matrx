@@ -28981,6 +28981,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coverage/trackers/{tracker_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Tracker Schedule
+         * @description The monitor's schedule, or "No schedule — set one".
+         */
+        get: operations["get_tracker_schedule_coverage_trackers__tracker_id__schedule_get"];
+        put?: never;
+        /**
+         * Save Tracker Schedule
+         * @description Save the monitor's schedule — the ONLY way a cadence reaches a trigger. A person saves it;
+         *     an agent may only propose one (ruling R1).
+         */
+        post: operations["save_tracker_schedule_coverage_trackers__tracker_id__schedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coverage/trackers/{tracker_id}/delivery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save Tracker Delivery */
+        post: operations["save_tracker_delivery_coverage_trackers__tracker_id__delivery_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/coverage/feed": {
         parameters: {
             query?: never;
@@ -67701,6 +67743,47 @@ export interface components {
              */
             secret?: boolean;
         };
+        /**
+         * DeliveryBody
+         * @description Who a monitor's alerts reach: people (each must be able to open the monitor) and one Slack
+         *     credential (org use rights, and a real Slack incoming webhook).
+         */
+        DeliveryBody: {
+            /** Alert Recipient User Ids */
+            alert_recipient_user_ids?: string[];
+            /** Slack Credential Item Id */
+            slack_credential_item_id?: string | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("user" | "auto") | null;
+        };
         /** DemioServiceStatus */
         DemioServiceStatus: {
             /**
@@ -96213,6 +96296,24 @@ export interface components {
             /** Published At */
             published_at: string;
         };
+        /**
+         * Notice
+         * @description A stand-in, fallback or automatic intervention, announced with its remedy.
+         */
+        Notice: {
+            /**
+             * Kind
+             * @default news_notice
+             * @constant
+             */
+            __kind?: "news_notice";
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Remedy */
+            remedy: string;
+        };
         /** NotificationChannelReceipt */
         NotificationChannelReceipt: {
             /** Notification Id */
@@ -114736,6 +114837,95 @@ export interface components {
         ScenariosResponse: {
             /** Scenarios */
             scenarios?: components["schemas"]["ScenarioRow"][];
+        };
+        /**
+         * ScheduleBody
+         * @description A schedule preset (daily 7am, 7am and 2pm, hourly, custom cron, or off) in the saver's timezone.
+         */
+        ScheduleBody: {
+            /**
+             * Preset
+             * @enum {string}
+             */
+            preset: "daily" | "twice_daily" | "hourly" | "custom" | "off";
+            /**
+             * Cron Expression
+             * @description Required for preset 'custom'.
+             */
+            cron_expression?: string | null;
+            /**
+             * Timezone
+             * @description IANA zone; default: the person's own timezone.
+             */
+            timezone?: string | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("user" | "auto") | null;
+        };
+        /** ScheduleView */
+        ScheduleView: {
+            /**
+             * Kind
+             * @default news_monitor_schedule
+             * @constant
+             */
+            __kind?: "news_monitor_schedule";
+            /** Tracker Id */
+            tracker_id: string;
+            /** Has Schedule */
+            has_schedule: boolean;
+            /** Message */
+            message?: string | null;
+            /** Trigger Id */
+            trigger_id?: string | null;
+            /** Preset */
+            preset?: ("daily" | "twice_daily" | "hourly" | "custom" | "off") | null;
+            /** Cron Expression */
+            cron_expression?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Jitter Minute */
+            jitter_minute?: number | null;
+            /**
+             * Is Active
+             * @default false
+             */
+            is_active?: boolean;
+            /** Next Run At */
+            next_run_at?: string | null;
+            /** Saved By */
+            saved_by?: string | null;
+            /** Workflow Id */
+            workflow_id?: string | null;
+            /** Notices */
+            notices?: components["schemas"]["Notice"][];
         };
         /** SchemaAllResponse */
         SchemaAllResponse: {
@@ -183241,6 +183431,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_tracker_schedule_coverage_trackers__tracker_id__schedule_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tracker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_tracker_schedule_coverage_trackers__tracker_id__schedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tracker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_tracker_delivery_coverage_trackers__tracker_id__delivery_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tracker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */

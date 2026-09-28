@@ -50,7 +50,10 @@ import {
   proposeMonitorSetup,
   runMonitorNow,
   saveMonitor,
-  type CoverageRunResult,
+  type MonitorRunStarted,
+  type ScheduleView,
+  getMonitorSchedule,
+  saveMonitorSchedule,
   type ProposalRef,
   type ProposalResult,
   type SetupFacts,
@@ -77,7 +80,6 @@ import {
   draftFromTracker,
   newDraft,
   parseBriefMarkdown,
-  scheduleMinute,
   scheduleOptions,
   toDeclareBody,
   USER_BASIS,
@@ -86,7 +88,6 @@ import {
   type MonitorDraft,
 } from "./model";
 
-const SCHEDULE_PROMISE_ID = "marketing.monitoring.schedule";
 const DELIVERY_PROMISE_ID = "marketing.monitoring.alerts";
 const NO_PROOF_SENTENCE =
   "Without a spokesperson or proof on file, pitch-ready stories will be marked 'needs a spokesperson'.";
@@ -268,12 +269,14 @@ export function MonitorSetupEditor() {
 
   const [setup, setSetup] = useState<SetupFacts | null>(null);
   const [setupError, setSetupError] = useState<unknown>(null);
+  const [setupAttempt, setSetupAttempt] = useState(0);
   const [draft, setDraft] = useState<MonitorDraft | null>(null);
   const [scheduleTouched, setScheduleTouched] = useState(false);
   const [proposal, setProposal] = useState<ProposalResult | null>(null);
   const [proposing, setProposing] = useState<string | null>(null);
   const [saving, setSaving] = useState<"save" | "run" | null>(null);
-  const [run, setRun] = useState<CoverageRunResult | null>(null);
+  const [run, setRun] = useState<MonitorRunStarted | null>(null);
+  const [schedule, setSchedule] = useState<ScheduleView | null>(null);
   const [runKey, setRunKey] = useState(0);
   const [newSpokesperson, setNewSpokesperson] = useState({ name: "", title: "" });
   const [newProof, setNewProof] = useState({ summary: "", url: "" });
@@ -282,13 +285,35 @@ export function MonitorSetupEditor() {
 
   useEffect(() => {
     let live = true;
+    setSetupError(null);
     getSetupFacts(dispatch, brandCtx.id, brandCtx.organizationId)
       .then((next) => live && setSetup(next))
       .catch((error: unknown) => live && setSetupError(error));
     return () => {
       live = false;
     };
-  }, [dispatch, brandCtx.id, brandCtx.organizationId]);
+  }, [dispatch, brandCtx.id, brandCtx.organizationId, setupAttempt]);
+
+  // A saved monitor's schedule preselects its choice.
+  useEffect(() => {
+    if (!trackerParam) return;
+    let live = true;
+    getMonitorSchedule(dispatch, trackerParam, brandCtx.organizationId)
+      .then((view) => {
+        if (!live) return;
+        setSchedule(view);
+        if (view.preset && view.preset !== "custom") {
+          setScheduleTouched(true);
+          setDraft((current) =>
+            current ? { ...current, schedule: view.preset ?? "", timezone: view.timezone ?? current.timezone } : current,
+          );
+        }
+      })
+      .catch((error: unknown) => live && toast.error(error instanceof Error ? error.message : String(error)));
+    return () => {
+      live = false;
+    };
+  }, [dispatch, trackerParam, brandCtx.organizationId]);
 
   const brandRow = brand.data;
   const aliases = (() => {
@@ -336,7 +361,6 @@ export function MonitorSetupEditor() {
     brandRow.description ||
     (descriptionFact ? factText(descriptionFact) : "") ||
     "";
-  const minute = trackerId ? scheduleMinute(trackerId) : null;
   const presets = scheduleOptions(setup?.schedule_presets);
   const scheduleId = draft.schedule || defaultSchedule(draft.opportunity, setup?.schedule_default);
   const preset = presets.find((p) => p.id === scheduleId);
@@ -345,7 +369,6 @@ export function MonitorSetupEditor() {
     return Number.isFinite(woeid) ? [{ woeid, label: String(loc.label ?? woeid) }] : [];
   });
   const cost = setup?.cost;
-  const schedulePromise = getComingSoon(SCHEDULE_PROMISE_ID);
   const deliveryPromise = getComingSoon(DELIVERY_PROMISE_ID);
   const brandSeg = brandCtx.seg;
 
@@ -411,6 +434,19 @@ export function MonitorSetupEditor() {
         params.set("tracker", saved.id);
         router.replace(`?${params.toString()}`, { scroll: false });
       }
+      // The schedule is the customer's own trigger, saved through the schedule
+      // route (never a client write). "No schedule" on a monitor that never had
+      // one saves nothing.
+      if (scheduleId && (scheduleId !== "off" || schedule?.has_schedule)) {
+        const savedSchedule = await saveMonitorSchedule(
+          dispatch,
+          saved.id,
+          brandRow.organization_id,
+          scheduleId as Parameters<typeof saveMonitorSchedule>[3],
+          draft.timezone,
+        );
+        setSchedule(savedSchedule);
+      }
       if (!andRun) {
         toast.success("Monitor saved.");
         return;
@@ -418,6 +454,7 @@ export function MonitorSetupEditor() {
       const result = await runMonitorNow(dispatch, saved.id, brandRow.organization_id);
       setRun(result);
       setRunKey((k) => k + 1);
+      void invalidate();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "The monitor could not be saved.");
     } finally {
@@ -457,7 +494,10 @@ export function MonitorSetupEditor() {
   };
 
   const topicWords = beatsOutsideWordRange(draft.topics, counts.topic_words);
-  const runTracker = run?.trackers[0];
+  const savedMonitor = tracker.data;
+  const runSummary = (savedMonitor?.last_run_summary ?? null) as Record<string, unknown> | null;
+  const runHeadline =
+    runSummary && typeof runSummary.headline === "string" ? runSummary.headline : null;
 
   return (
     <div ref={scrollRef} className="h-full overflow-y-auto bg-textured">
@@ -515,7 +555,9 @@ export function MonitorSetupEditor() {
           </div>
         ) : null}
 
-        {setupError ? <QueryError error={setupError} /> : null}
+        {setupError ? (
+          <QueryError error={setupError} onRetry={() => setSetupAttempt((n) => n + 1)} />
+        ) : null}
 
         <Section step={1} title="What to watch">
           <label className="flex items-start gap-2 text-sm">
@@ -569,7 +611,7 @@ export function MonitorSetupEditor() {
           ) : null}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Name</span>
-            <Input value={draft.name} onChange={(e) => update({ name: e.target.value })} className="h-8 max-w-md text-sm" />
+            <Input value={draft.name} aria-label="Monitor name" onChange={(e) => update({ name: e.target.value })} className="h-8 max-w-md text-sm" />
           </div>
         </Section>
 
@@ -939,6 +981,11 @@ export function MonitorSetupEditor() {
         </Section>
 
         <Section step={draft.coverage && draft.opportunity ? 8 : draft.opportunity ? 7 : 6} title="How often">
+          {setup && !presets.length ? (
+            <p className="text-xs text-warning">
+              No schedule choices are set up for this organization yet (the monitor setup schedule setting is empty).
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="How often">
             {presets.map((p) => (
               <button
@@ -978,37 +1025,41 @@ export function MonitorSetupEditor() {
             </Select>
             {preset && preset.runsPerMonth > 0 ? (
               <span className="text-muted-foreground">
-                {minute !== null
-                  ? `Runs at ${String(minute).padStart(2, "0")} minutes past the hour, so it never collides with every other monitor on the hour.`
-                  : "The exact minute is fixed when you save (never on the hour)."}
+                {schedule?.has_schedule && schedule.is_active && schedule.jitter_minute != null
+                  ? `Saved: runs at ${String(schedule.jitter_minute).padStart(2, "0")} past the hour${schedule.next_run_at ? `, next ${new Date(schedule.next_run_at).toLocaleString()}` : ""} — never on the hour, so it does not collide with every other monitor.`
+                  : "The exact minute is fixed for this monitor when you save — never on the hour."}
               </span>
             ) : null}
           </div>
           <p className="text-xs text-muted-foreground" data-surface-value="setup_cost_estimate">
             {cost?.average_run_usd != null
-              ? `A run has cost about ${formatCostDisplay(cost.average_run_usd)} (${cost.runs_measured} runs in the last 30 days), so this schedule is about ${formatCostDisplay(cost.average_run_usd * (preset?.runsPerMonth ?? 0))} a month.`
+              ? `A run has cost about ${formatCostDisplay(cost.average_run_usd)} (${cost.runs_measured} runs in the last 30 days)${preset ? `, so this schedule is about ${formatCostDisplay(cost.average_run_usd * preset.runsPerMonth)} a month` : ""}.`
               : "No runs yet in this organization, so there is no cost per run to estimate — the first run measures it."}{" "}
             {cost
               ? `Your organization has spent ${formatCostDisplay(cost.month_to_date_usd)} of its ${formatCostDisplay(cost.monthly_ceiling_usd)} monthly news ceiling.`
               : null}
           </p>
-          {schedulePromise ? (
-            <MarketingFrontDoorPromise label={schedulePromise.label} promise={schedulePromise.promise} />
-          ) : null}
+          {schedule?.message ? <p className="text-xs text-muted-foreground">{schedule.message}</p> : null}
         </Section>
 
         {run ? (
           <section className="rounded-md border border-border bg-card p-3" data-surface-value="monitor_run_view">
             <h2 className="text-sm font-semibold text-foreground">The run</h2>
-            {runTracker?.status === "failed" ? (
-              <p className="mt-1 text-sm text-destructive">{runTracker.error}</p>
+            {savedMonitor?.last_run_status === "failed" && savedMonitor.last_error ? (
+              <p className="mt-1 text-sm text-destructive">{savedMonitor.last_error}</p>
             ) : (
               <p className="mt-1 text-sm text-foreground">
-                Searched {runTracker?.queries ?? 0} queries, saw {runTracker?.articles_seen ?? 0} articles, kept{" "}
-                {runTracker?.mentions_created ?? 0} new mentions, read {runTracker?.captured ?? 0} pages and scored{" "}
-                {runTracker?.analyzed ?? 0}.
+                {runHeadline ??
+                  (savedMonitor?.last_run_at
+                    ? `Finished ${new Date(savedMonitor.last_run_at).toLocaleString()}.`
+                    : "The run finished.")}
               </p>
             )}
+            {run.runId ? (
+              <Link href={`/workflows/runs/${run.runId}`} className="mt-1 inline-block text-xs font-medium text-primary">
+                Open the run, step by step
+              </Link>
+            ) : null}
             <p className="mt-2 text-xs font-medium text-foreground">A few real things it looked at</p>
             {runMentions.isPending ? (
               <p className="text-xs text-muted-foreground">Loading…</p>
