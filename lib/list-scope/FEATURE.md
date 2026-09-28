@@ -9,10 +9,35 @@ list query MUST declare its own scope explicitly.
 
 The scope tabs decide what a person SEES in a list, never who CAN open a
 record — that is the record's access level (law:
-`common-docs/policies/access-ladder.md`). Which scope a list shows by default
-is the per-type knob "who sees this in lists by default" (*only me*, *my team
-or department*, *everyone in the organization*: system default → organization
-override → the person's own override).
+`common-docs/policies/access-ladder.md`).
+
+## Shown to — the per-row list filter (access ladder T-11, 2026-09-27)
+
+- **Per row:** `shown_to` (`platform.shown_to`: `only_me` · `my_team` ·
+  `everyone` · `everyone_on_ai_matrx`; NULL = follow the knob) on every
+  Organization and Public table with a row `visibility`. Set only through
+  `platform.set_shown_to(type, id, value)` (creator or admin on the record;
+  refused on a child row); read with `platform.shown_to_state(type, id)`.
+- **Per type:** the knob `access.shown_to_default/<token>` (system →
+  organization → person, `platform.feature_knob`). It is also where a list
+  OPENS: `only_me` → Mine, anything else → the organization
+  (`platform.entity_default_list_scope`, and the `platform.list_scope_registry`
+  view `resolveListScope` reads). `entity_types.default_list_scope` is no
+  longer read by any list.
+- **The predicate:** `platform.shown_to_lists(shown_to, visibility, created_by,
+  organization_id, viewer, ctx)` — creator always; else the row's value, else a
+  legacy `visibility = 'personal'` read as Only me (until T-13), else the knob;
+  `my_team` = creator in `iam.teammate_user_ids`. `ctx` =
+  `platform.shown_to_context(token)`, read ONCE per query.
+- **Server lists:** every `*_list_scoped` organization / team arm (agx, wfx,
+  shx, mkt, rsx, trx, ivw, seo_rank_target, fc_set, assessment,
+  edu_library_scope_rows) applies it.
+- **Client lists:** `applyListScope(q, scope, { userId, shownTo })` with
+  `shownTo = await fetchShownToContext(token)` (`lib/list-scope/shownTo.ts`);
+  blended org lists use `shownToBlendedFilter`. A new client org list over a
+  table with `shown_to` MUST pass it.
+- It hides, never locks: row security ignores `shown_to`, and on Organization
+  tables `personal` no longer locks (only children and private-class rows do).
 
 ## The canonical scope model — a FIXED vocabulary
 
@@ -206,6 +231,10 @@ Invariants the template carries, all of them learned the hard way:
    explicitly at the wire boundary.
 
 ## Change log
+
+- 2026-09-27 — Access ladder T-11: Shown to (per row) + Shown to by default
+  (per-type knob) replace `default_list_scope` for lists; all list RPCs and
+  `applyListScope` honor it.
 
 - 2026-09-26 — MANAGEMENT vs SUPPORT (Arman): an admin MANAGEMENT page has no
   scope lanes — it shows the platform's own records (`system` alone, rendered
