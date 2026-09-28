@@ -5,7 +5,7 @@ import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatColl
 import FlashcardMobileView from "./FlashcardMobileView";
 import {
   toFlashcardMobileCards,
-  useAutoFlashcardMobileView,
+  useFlashcardDeckView,
 } from "./flashcard-mobile-bridge";
 import {
   FlashcardsSetBody,
@@ -72,9 +72,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
     exitMobileView,
     mobileStartIndex,
     dismissed: mobileDismissed,
-  } = useAutoFlashcardMobileView(set.flashcards.length, {
-    enabled: !isFullscreen,
-  });
+  } = useFlashcardDeckView();
 
   const handleOpenInWindow = (e?: React.MouseEvent) => {
     e?.stopPropagation();

@@ -85,6 +85,9 @@ import { AnnotatedContent, AnnotationSidecarProvider, useSidecar } from "@/featu
 import { toast } from "@/lib/toast";
 import { SelectionToolbarRoot } from "../SelectionToolbarRoot";
 import { useSelectionZone } from "../selection-zones";
+import { declareSelectionProvider, hostHalf } from "../selection-actions";
+import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { Bold } from "lucide-react";
 
 const BODY = "## Maps\n\nShades represent statistical data.";
 const SOURCE = { token: "note", id: "guide-7", title: "Maps", body: BODY, contentVersion: 1 };
@@ -258,4 +261,68 @@ it("reattach: a pending reattach opens the toolbar straight into its question, a
   expect(grabbed.current!.pendingReattach).toBeNull();
   expect(toolbar()).toBeNull();
   expect(toast.success).toHaveBeenCalledWith("Reattached to the new passage.");
+});
+
+// ── A zone's own model state re-targets the open toolbar (verify round 2: the Visual editor's
+//    formatting set was judged on the editor's PREVIOUS selection — its model syncs a beat after
+//    the DOM selection the toolbar reads, and nothing asked again).
+let modelReady = false;
+let notifyModel: (() => void) | null = null;
+declareSelectionProvider({
+  id: "test-model-probe",
+  tier: "T0",
+  declaredIds: () => ["test:model-probe"],
+  actions: (t) =>
+    hostHalf(t, "modelProbe")
+      ? [
+          {
+            id: "test:model-probe",
+            label: "Probe",
+            icon: registerAlchemyIcon(Bold),
+            category: "edit",
+            placement: "primary",
+            eligible: () => (modelReady ? { status: "available" } : { status: "absent" }),
+            run: () => undefined,
+          },
+        ]
+      : [],
+});
+
+function ModelZone({ children }: { children: React.ReactNode }) {
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
+  useSelectionZone(el, {
+    editable: true,
+    host: { modelProbe: true },
+    subscribe: (onChange) => {
+      notifyModel = onChange;
+      return () => {
+        notifyModel = null;
+      };
+    },
+  });
+  return <div ref={setEl}>{children}</div>;
+}
+
+it("a zone's model catching up re-resolves the open toolbar (never a stale action set)", async () => {
+  modelReady = false;
+  const registry = createActionRegistry({ ports });
+  await act(async () => {
+    root.render(
+      <AlchemyActionsProvider ports={ports} registry={registry}>
+        <ModelZone>
+          <p>Weigh every inbound load of scrap aluminum.</p>
+        </ModelZone>
+        <SelectionToolbarRoot />
+      </AlchemyActionsProvider>,
+    );
+  });
+  await flush();
+  await selectWord("aluminum");
+  expect(labels()).not.toContain("Probe");
+  // The editor's model lands its selection now: the zone says so, and the toolbar asks again.
+  modelReady = true;
+  expect(notifyModel).not.toBeNull();
+  await act(async () => notifyModel!());
+  await flush();
+  expect(labels()).toContain("Probe");
 });

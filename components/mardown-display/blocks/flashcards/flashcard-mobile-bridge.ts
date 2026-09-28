@@ -2,8 +2,7 @@
  * Bridge between flashcard domain shapes and FlashcardMobileView.
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useCallback, useState } from "react";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import type { ReviewResult } from "@/features/flashcards/types";
 import {
@@ -116,13 +115,19 @@ export function useFlashcardMobileViewState(initialIndex = 0) {
   };
 }
 
-/** Auto-open swipe mode on phones once cards are ready (user can exit). */
-export function useAutoFlashcardMobileView(
-  cardCount: number,
-  options?: { enabled?: boolean; isComplete?: boolean },
-) {
-  const isMobile = useIsMobile();
-  const enabled = options?.enabled ?? true;
+/**
+ * The phone deck (full-screen swipe mode) for a flashcards block — opened ONLY
+ * by the person: the block's own deck button, the "Study in flash mode?"
+ * prompt, or an explicit `?mode=flash` link.
+ *
+ * It used to open ITSELF on every phone the moment a block had cards, so a
+ * conversation whose answer held flashcards opened straight into a black
+ * full-screen deck instead of the chat (verifier, 2026-09-28,
+ * /chat/6c043b28… at 375). A chat opens as a chat; flashcards render inline
+ * and become a deck when the person asks. Guard:
+ * `__tests__/deck-opens-only-when-asked.test.tsx`.
+ */
+export function useFlashcardDeckView() {
   const {
     isMobileView,
     setIsMobileView,
@@ -132,19 +137,6 @@ export function useAutoFlashcardMobileView(
     exitMobileView: baseExit,
   } = useFlashcardMobileViewState(0);
   const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    if (!enabled || !isMobile || dismissed || cardCount === 0) return;
-    if (options?.isComplete === false) return;
-    enterMobileView(0);
-  }, [
-    enabled,
-    isMobile,
-    dismissed,
-    cardCount,
-    options?.isComplete,
-    enterMobileView,
-  ]);
 
   const exitMobileView = useCallback(() => {
     setDismissed(true);

@@ -76,6 +76,9 @@ import { ShortcutsDialog } from "./panels/ShortcutsDialog";
 import { KindPicker } from "./panels/KindPicker";
 import { islandMeta, inlineIslandLabel } from "./islands/island-meta";
 import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import { RecordAnnotations } from "@/features/rich-document/annotations/RecordAnnotations";
+import { annotationRecordOf, type AnnotationRecord } from "@/features/rich-document/annotations/record-of-source";
+import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 
 export type RichEditorView = "visual" | "source" | "preview";
 const VIEWS: RichEditorView[] = ["visual", "source", "preview"];
@@ -145,6 +148,15 @@ export interface RichEditorProps {
   sourceFeature?: SourceFeature;
   /** The preview's action source (RichDocument). */
   contentSource?: ContentSource;
+  /**
+   * The SAVED RECORD this buffer is, with its saved bytes, for Comment in the Visual view (chair
+   * ruling 2026-09-26: Comment appears when the buffer is a saved record, and is absent for an
+   * unsaved buffer). Derived from `contentSource` (a note, a chat answer, a saved working
+   * document; body = the last stored text) unless the host names it — the studio does, because
+   * its buffer is a copy of the loaded document. `null` turns it off. It applies only while the
+   * working text is byte-identical to `body`: the anchors index into those bytes.
+   */
+  annotationRecord?: (AnnotationRecord & { body: string }) | null;
   /** Label for the save button. */
   saveLabel?: string;
   className?: string;
@@ -223,6 +235,7 @@ export default function RichEditorImpl({
   surfaceName = "matrx-user/markdown-studio",
   sourceFeature = "documents",
   contentSource = { type: "raw" },
+  annotationRecord,
   saveLabel = "Save",
   className,
   toolbarExtras,
@@ -509,8 +522,25 @@ export default function RichEditorImpl({
       : // read-gate-exempt: save status of the document in this editor (nothing edited), not an empty read
         "No changes";
 
+  // The saved record under the Visual view (Comment on a saved record; absent for an unsaved buffer).
+  const derivedRecord = contentSource.readOnly ? null : annotationRecordOf(contentSource);
+  const recordHere =
+    annotationRecord !== undefined ? annotationRecord : derivedRecord ? { ...derivedRecord, body: stored } : null;
+  const visualRecord: AnnotationSource | null =
+    recordHere && !readOnly && current === recordHere.body && current.trim()
+      ? {
+          token: recordHere.token,
+          id: recordHere.id,
+          title: recordHere.title ?? "",
+          body: recordHere.body,
+          contentVersion: Math.max(1, recordHere.contentVersion ?? 1),
+          ...(recordHere.href ? { href: recordHere.href } : {}),
+        }
+      : null;
+
   const viewEditor =
     view === "visual" ? (
+      <RecordAnnotations record={visualRecord} className="h-full min-h-0">
       <VisualEditor
         key={`visual-${mountKey}`}
         initialText={current}
@@ -521,6 +551,7 @@ export default function RichEditorImpl({
         focusMode={focusMode}
         handleRef={handle}
       />
+      </RecordAnnotations>
     ) : (
       <SourceEditor
         key={`source-${mountKey}`}

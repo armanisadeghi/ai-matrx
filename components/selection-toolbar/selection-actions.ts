@@ -224,8 +224,13 @@ function hostKeyOf(id: string): string {
 
 function presentAt(id: string, target: ClickTarget): boolean {
   const key = hostKeyOf(id);
-  // The common pair shows only where nothing richer owns the passage.
-  if (key === SELECTION_COMMON_HOST_KEY && hostHalf<unknown>(target, "annotation")) return false;
+  // The common pair shows only where nothing richer owns the passage: an annotation host that can
+  // pin THIS selection. One that cannot (a figure or other island in the Visual editor, text the
+  // record's source does not hold) offers nothing, so Copy and Save to notes stay.
+  if (key === SELECTION_COMMON_HOST_KEY) {
+    const annotation = hostHalf<{ capture?: (o: { silent?: boolean }) => unknown }>(target, "annotation");
+    if (annotation && (!annotation.capture || annotation.capture({ silent: true }))) return false;
+  }
   if (id.startsWith("selection:table-")) {
     const editor = hostHalf<{ inTable?: () => boolean }>(target, "richEditor");
     if (!editor?.inTable?.()) return false;

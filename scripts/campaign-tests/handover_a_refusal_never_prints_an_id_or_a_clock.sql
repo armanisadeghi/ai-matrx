@@ -7,9 +7,12 @@
 -- person reads. The fact belongs in DETAIL, structured, where a screen can say it in the reader's
 -- own words and clock.
 --
---   1  CENSUS (the class): no `raise exception '…%…', <args>` in a custom.* function interpolates
---      a uuid variable (p_*_id, v_*_id, v_id, p_id), a to_char() clock, a decided_at, or a uuid
---      cast of a parent. RED on the bodies before the lane (89 statements).
+--   1  CENSUS (the class), widened 2026-09-28 after VERIFIER-28 item 5 overturned "0 of 699": over
+--      the DERIVED reach of every client door (not schema custom alone), no `raise exception
+--      '…%…', <args>` interpolates a uuid or a timestamp — typed by the function's own
+--      declarations, not only by name. RED on the live bodies before the second file (237
+--      statements in 168 functions across 16 schemas; the second file fixes 151 functions, and 17 are held by the two rules in clause 1, the verifier's platform.assert_same_org and
+--      custom.sign_request_create among them).
 --   2  THE USE CASE, through the door as the person: an approval admin decided is decided again;
 --      the refusal names who, carries no clock, and its DETAIL says state, decided_at, decided_by
 --      and decided_by_name. RED before the lane ("…, on 2026-…").
@@ -31,28 +34,104 @@ declare
   v_detail  text;
   v_hits    text;
   v_read    jsonb;
+  v_frozen  integer;
 begin
-  -- ── 1  THE CENSUS ────────────────────────────────────────────────────────────────────────
-  with f as (
-    select p.oid::regprocedure::text as sig, pg_get_functiondef(p.oid) as body
-      from pg_proc p where p.pronamespace = 'custom'::regnamespace and p.prokind = 'f'),
-  -- The sentence's arguments run from the comma after it to USING (or the statement's end).
-  -- (A Postgres regular expression takes ONE greediness for the whole pattern, so the arguments
-  -- are cut at USING in a second step rather than by a lazy quantifier.)
-  r as (
-    select sig, m[1] as said,
-           regexp_replace(m[2], '\musing\M.*$', '', 'si') as args
-      from f, regexp_matches(body, 'raise\s+exception\s+(''(?:[^'']|'''')*'')\s*,([^;]*);', 'gi') m)
-  select string_agg(sig || ': ' || left(said, 80), E'\n' order by sig) into v_hits
-    from r
-   -- An id is a whole argument of its own (an id handed to a function inside an argument is not
-   -- printed); a clock is any to_char(), decided_at, or a parent id cast to text.
-   where args ~* '(^|,)\s*([pv]_[a-z_]*_id|v_id|p_id)(::text)?\s*(,|$)'
-      or args ~* 'to_char\(|decided_at|v_parent::text';
+  -- ── 1  THE CENSUS, over everything a signed-in person or an agent can reach ───────────────
+  -- The reach is DERIVED, never a hand list: every declared client door
+  -- (platform.client_callable_door, signed-in or anonymous callers), every function those doors
+  -- call (schema-qualified calls in their bodies, transitively), and every trigger function in a
+  -- schema that reach touches (a door's write fires them). An argument is printed when it is a
+  -- name the function declares as uuid or timestamp (a parameter or a DECLARE line), an id-named
+  -- variable (p_*_id, v_*_id, v_id, p_id), a ::uuid / ::timestamp cast, now() and its kin,
+  -- to_char(), decided_at, or a parent id cast to text. A date the person typed and a duration
+  -- are not clocks; RAISE WARNING / NOTICE are operator log lines, not refusals, and are out.
+  with recursive
+  fns as materialized (
+    select p.oid, n.nspname, p.proname, n.nspname || '.' || p.proname as qname, pg_get_functiondef(p.oid) as body,
+           p.prorettype = 'trigger'::regtype as is_trigger
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where p.prokind = 'f'
+       and n.nspname not in ('pg_catalog','information_schema','extensions','graphql','graphql_public','pgsodium','vault','net','cron','realtime','storage','supabase_functions','pgbouncer','auth','graveyard','deprecated','topology','tiger')
+       and n.nspname not like 'pg\_%'
+  ),
+  seeds as (
+    select f.oid from platform.client_callable_door d
+    join fns f on f.nspname = d.schema_name and f.proname = d.function_name
+    where coalesce(d.signed_in_callers, false) or coalesce(d.anonymous_callers, false)
+  ),
+  -- WHAT THOSE DOORS CALL: every schema-qualified call in a body, joined to the function it names.
+  edges as materialized (
+    select distinct f.oid as caller, g.oid as callee
+      from fns f,
+           regexp_matches(lower(f.body), '([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\s*\(', 'g') m
+      join fns g on g.nspname = m[1] and g.proname = m[2]
+     where g.oid <> f.oid
+  ),
+  reach(oid) as (
+    select oid from seeds
+    union
+    select e.callee from reach r join edges e on e.caller = r.oid
+  ),
+  reach_schemas as (select distinct f.nspname from reach r join fns f on f.oid = r.oid),
+  scope as (
+    select oid from reach
+    union
+    -- triggers fire on the writes those doors make: every trigger function in a reached schema
+    select f.oid from fns f where f.is_trigger and f.nspname in (select nspname from reach_schemas)
+  ),
+  raises as (
+    select f.oid, f.nspname || '.' || f.proname as fn, m[1] as said,
+           regexp_replace(m[2], '\musing\M.*$', '', 'si') as args, f.body
+      from scope s join fns f on f.oid = s.oid,
+           regexp_matches(f.body, 'raise\s+exception\s+(''(?:[^'']|'''')*'')\s*,([^;]*);', 'gi') m
+  ),
+  typed as (
+    -- every name the function declares as a uuid or a clock: its parameters and its DECLARE lines
+    select f.oid, lower(a.name) as name
+      from scope s join fns f on f.oid = s.oid
+      join pg_proc p on p.oid = f.oid,
+      lateral unnest(coalesce(p.proargnames, '{}'::text[]),
+                     coalesce(p.proallargtypes, p.proargtypes::oid[])) as a(name, typ)
+     where format_type(a.typ, null) in ('uuid','timestamp with time zone','timestamp without time zone')
+    union
+    select f.oid, lower(d[1])
+      from scope s join fns f on f.oid = s.oid,
+           regexp_matches(f.body, '\m([a-z_][a-z0-9_]*)\s+(uuid|timestamptz|timestamp(\s+with(out)?\s+time\s+zone)?)\s*(:=|;|default|not\s+null)', 'gi') d
+  ),
+  pieces as (
+    select r.oid, r.fn, r.said, btrim(x, E' \t\r\n') as piece
+      from raises r, regexp_split_to_table(r.args, ',') x
+  ),
+  hits as (
+    select distinct p.oid::regprocedure::text as sig, p.fn, p.said, p.piece from pieces p
+     where p.piece ~* '^([pv]_[a-z_]*_id|v_id|p_id)(::text)?$'
+        or p.piece ~* '::(uuid|timestamptz|timestamp)\s*$'
+        or p.piece ~* '^(now|clock_timestamp|statement_timestamp)\(\)$|^current_timestamp$'
+        or p.piece ~* 'decided_at|v_parent::text|^to_char\('
+        or exists (select 1 from typed t where t.oid = p.oid
+                    and regexp_replace(lower(p.piece), '::text$', '') = t.name)
+  )
+    -- TWO KINDS THIS LANE MAY NOT REPLACE, exempt by RULE (never by a list of names), and printed so
+  -- the count stays honest:
+  --   (a) a function that assigns NEW.organization_id — the ddl_guard refuses ANY replacement of
+  --       such a function (writers must supply organization_id);
+  --   (b) a SECURITY DEFINER function with no access decision declared in
+  --       platform.client_callable_door — replacing it demands that decision (provision_shape_guard)
+  --       and revokes client EXECUTE; who may call it is its owner's access decision.
+  -- Neither kind can be born any more (both guards refuse new ones), so this set only shrinks.
+  select string_agg(h.sig || ': ' || left(h.said, 80) || ' [' || h.piece || ']', E'\n' order by h.sig),
+         count(*) filter (where h.frozen)
+    into v_hits, v_frozen
+    from (select h.*,
+                 (f.body ~* 'new\s*\.\s*organization_id\s*:?=')
+                 or (p.prosecdef and not exists (select 1 from platform.client_callable_door d
+                                                  where d.schema_name = f.nspname and d.function_name = f.proname)) as frozen
+            from hits h join fns f on f.qname = h.fn join pg_proc p on p.oid = f.oid) h
+   where not h.frozen;
   if v_hits is not null then
     raise exception E'1: these refusals still print an id or a clock:\n%', v_hits;
   end if;
-  raise notice '1 PASSED — no custom.* refusal interpolates an id or a clock.';
+  raise notice '1 PASSED — no replaceable refusal anywhere a signed-in person or an agent can reach interpolates an id or a clock (% held by the two rules above).', v_frozen;
 
   -- ── 2  THE USE CASE ──────────────────────────────────────────────────────────────────────
   perform set_config('app.actor_system', 'campaign-test/handover_a_refusal_never_prints_an_id_or_a_clock', true);

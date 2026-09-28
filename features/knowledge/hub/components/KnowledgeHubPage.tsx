@@ -446,33 +446,56 @@ export function KnowledgeHubPage({
   /** Bumped after a tag/file write: the peek remounts and re-reads where the item is filed. */
   const [filedVersion, setFiledVersion] = useState(0);
 
+  const trashView = state.view.kind === "trash";
+  // The Transcripts view reads the transcripts list's own server functions: every filter,
+  // count and total over the WHOLE set, and search reaching into the transcript text.
+  const transcriptsView = presetKey === "transcripts";
+  const facetSel = transcriptsView ? facetSelectionFromGroup(state.group) : {};
+  const listRestore = useListRestore(listRestoreKey(state));
+  const transcriptList = useTranscriptList({
+    enabled: transcriptsView && !sample && !trashView,
+    text: state.query.text ?? "",
+    selection: facetSel,
+    orgId: effectiveQuery.organizations?.length === 1 ? effectiveQuery.organizations[0] : null,
+    sort: state.query.sort === "title" ? "title" : "updated",
+    initialDepth: listRestore.saved?.depth,
+  });
+  const serverTranscripts = transcriptsView && !sample && !trashView;
+  /** After a write, every list that could show the change reads again. */
+  const refreshResults = () => {
+    results.refresh();
+    if (serverTranscripts) transcriptList.refresh();
+  };
+  const listSections: SectionState[] = serverTranscripts ? transcriptList.sections : results.sections;
   const baseHits: KnowledgeHit[] =
     triageView
       ? triageHits
       : state.view.kind === "favorites"
       ? favoriteHits
-      : searching
-        ? orderedSearchHits(results.sections)
-        : browseHits(results.sections);
-  const trashView = state.view.kind === "trash";
+      : serverTranscripts
+        ? transcriptList.hits
+        : searching
+          ? searchHitsByItem(results.sections)
+          : browseHits(results.sections);
   // Stage (Sources only): read from source_list_facts for the loaded Sources.
   const loadedSourceIds = baseHits.map(stageSourceId).filter((id): id is string => Boolean(id));
   const stages = useSourceStages(loadedSourceIds, !sample && !trashView);
   // Transcript rows' own fields (Status, Folder, Visibility, session vs cleanup) — H6d.
   const transcriptFacts = useTranscriptFacts(baseHits, !sample && !trashView);
-  const transcriptsView = presetKey === "transcripts";
-  const facetSel = transcriptsView ? facetSelectionFromGroup(state.group) : {};
+  /** A transcript row's own fields: the server's list row when this view read it, else the facts read. */
+  const factFor = (h: KnowledgeHit) => transcriptList.rowFor(h) ?? transcriptFacts.factFor(h);
   // Browsing a list, newest first: the rows arrive section by section (Sources, then records),
   // so they are put in date order here — the list sections them by day (Granola), and j/k walk
   // the same order the eye does. A title sort keeps its own order and no date sections.
   const dateOrdered = !searching && state.query.sort !== "title";
-  const narrowedHits = narrowByTranscriptFacets(
-    narrowByStage(baseHits, state.stage, stages.stageFor),
-    facetSel,
-    transcriptFacts.factFor,
-  );
-  const hits: KnowledgeHit[] = dateOrdered ? newestFirst(narrowedHits) : narrowedHits;
-  const moreToLoad = results.sections.some((s) => s.key !== "top_hit" && Boolean(s.section?.next_cursor));
+  // Facets filter on the server (useTranscriptList); only Stage narrows loaded Sources here,
+  // and it says so ("Of N loaded").
+  const narrowedHits = narrowByStage(baseHits, state.stage, stages.stageFor);
+  // Sample data is a fixture held whole in the page, so its facets narrow it here.
+  const facetedHits = sample && transcriptsView ? narrowByTranscriptFacets(narrowedHits, facetSel, factFor) : narrowedHits;
+  // The server already orders the Transcripts view (newest first, or by relevance when searching).
+  const hits: KnowledgeHit[] = dateOrdered && !serverTranscripts ? newestFirst(facetedHits) : facetedHits;
+  const moreToLoad = listSections.some((s) => s.key !== "top_hit" && Boolean(s.section?.next_cursor));
   const stageNote = moreToLoad
     ? `Of ${loadedSourceIds.length} loaded`
     : null;
@@ -528,9 +551,9 @@ export function KnowledgeHubPage({
   // Known only when every section ANSWERED with a count: no sections yet (loading) or a section
   // that failed leaves the total unknown (undefined), never a confident 0.
   const total =
-    results.sections.length > 0 &&
-    results.sections.every((s) => s.status !== "error" && typeof s.section?.count === "number")
-    ? results.sections
+    listSections.length > 0 &&
+    listSections.every((s) => s.status !== "error" && typeof s.section?.count === "number")
+    ? listSections
         .filter((s) => s.key !== "top_hit" && s.key !== "segments")
         .reduce((n, s) => n + (s.section?.count ?? 0), 0)
     : undefined;
@@ -543,12 +566,12 @@ export function KnowledgeHubPage({
   const resultNoun = transcriptsView ? "transcript" : "item";
   const plural = (n: number) => `${n.toLocaleString("en-US")} ${resultNoun}${n === 1 ? "" : "s"}`;
   const resultCount =
-    searching ||
+    (searching && !serverTranscripts) ||
     triageView ||
     state.view.kind === "favorites" ||
-    results.sections.some((s) => s.status === "loading") ||
+    listSections.some((s) => s.status === "loading") ||
     // A section whose read failed makes any total short: no count, the section says the failure (RC-B12).
-    results.sections.some((s) => s.status === "error")
+    listSections.some((s) => s.status === "error")
       ? null
       : narrowed
         ? `${hits.length.toLocaleString("en-US")} matching`
@@ -776,7 +799,7 @@ export function KnowledgeHubPage({
     });
 
   const onTranscriptAction = (hit: KnowledgeHit, action: TranscriptMenuAction) => {
-    const fact = transcriptFacts.factFor(hit);
+    const fact = factFor(hit);
     const href = fact ? transcriptLink(fact) : (openFullHref(hit) ?? `/knowledge?peek=${hit.entity}:${hit.id}`);
     switch (action) {
       case "rename":
@@ -803,7 +826,7 @@ export function KnowledgeHubPage({
 
   const commitRename = async (hit: KnowledgeHit, title: string) => {
     setRenamingKey(null);
-    const fact = transcriptFacts.factFor(hit);
+    const fact = factFor(hit);
     const ref = { type: hit.entity, id: hit.id, title: hit.title };
     if (!fact) {
       recordToast.error(ref, `"${hit.title}" was not renamed: its record has not been read yet. Try again in a moment.`);
@@ -814,7 +837,7 @@ export function KnowledgeHubPage({
       await saveTranscriptRowEdit(fact, { title });
       recordToast.success({ ...ref, title: title.trim() }, `Renamed to "${title.trim()}".`);
       transcriptFacts.refresh();
-      results.refresh();
+      refreshResults();
     } catch (err) {
       recordToast.error(ref, `"${hit.title}" was not renamed: ${err instanceof Error ? err.message : "the server refused."}`);
     }
@@ -824,7 +847,7 @@ export function KnowledgeHubPage({
   // under "Open with", then Copy, then Trash. The same verbs the keys advertise (s, e, t, m).
   const rowMenuNode = (hit: KnowledgeHit) => {
     const transcript = isTranscriptHit(hit);
-    const entries = transcript ? transcriptMenu(hit, transcriptFacts.factFor(hit), sourceHref) : [];
+    const entries = transcript ? transcriptMenu(hit, factFor(hit), sourceHref) : [];
     const opens = entries.filter((e) => e.section === "open" && e.href);
     const open = openFullHref(hit);
     const ref = entries.length ? (a: TranscriptMenuAction) => entries.some((e) => e.action === a) : () => false;
@@ -887,7 +910,7 @@ export function KnowledgeHubPage({
   };
 
   const selectedTranscriptRows = selectedHits
-    .map((h) => transcriptFacts.factFor(h))
+    .map((h) => factFor(h))
     .filter((r): r is TranscriptListRow => Boolean(r));
   const selectedTranscriptHits = selectedHits.filter(isTranscriptHit).length;
 
@@ -914,7 +937,7 @@ export function KnowledgeHubPage({
     onFilterTag: (name) => filterByTag(name),
     rowMenu: rowMenuNode,
     rowFacts: (h) =>
-      isTranscriptHit(h) ? transcriptRowFacts(transcriptFacts.factFor(h), transcriptFacts.contentFor(h)) : [],
+      isTranscriptHit(h) ? transcriptRowFacts(factFor(h), transcriptFacts.contentFor(h)) : [],
     rowContent: (h) => {
       if (!isTranscriptHit(h)) return undefined;
       const c = transcriptFacts.contentFor(h);
@@ -948,7 +971,7 @@ export function KnowledgeHubPage({
       else toast.success(outcome.sentence);
       if (outcome.ok) {
         setFiledVersion((n) => n + 1);
-        results.refresh();
+        refreshResults();
       }
     } finally {
       setBusy(false);
@@ -974,7 +997,7 @@ export function KnowledgeHubPage({
 
   const afterTriageWrite = () => {
     triage.refresh();
-    results.refresh();
+    refreshResults();
   };
 
   const doTriage = async (items: KnowledgeHit[], next: TriageState) => {
@@ -1033,7 +1056,7 @@ export function KnowledgeHubPage({
       if (outcome.ok) {
         setFiledVersion((n) => n + 1);
         hubTags.retry();
-        results.refresh();
+        refreshResults();
         triage.refresh();
       }
     } finally {
@@ -1080,7 +1103,7 @@ export function KnowledgeHubPage({
       setSelected(new Set());
       if (outcome.ok) {
         if (peekKey && targets.some((t) => `${t.entity}:${t.id}` === peekKey)) closePeek();
-        results.refresh();
+        refreshResults();
       }
     } finally {
       setBusy(false);
@@ -1152,7 +1175,7 @@ export function KnowledgeHubPage({
       else toast.error(sentence);
       setSelected(new Set());
       stages.refresh();
-      results.refresh();
+      refreshResults();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Nothing was processed.");
     } finally {
@@ -1645,21 +1668,20 @@ export function KnowledgeHubPage({
             {transcriptsView ? (
               <div className="order-2 min-w-0 basis-full @2xl:basis-0 @2xl:flex-1">
               <TranscriptFacetBar
-                counts={transcriptFacetCounts(baseHits, transcriptFacts.factFor)}
+                // Whole-set counts from the server (trx_list_facets); Sample data counts its own fixture.
+                counts={
+                  serverTranscripts
+                    ? ((transcriptList.facets ?? {}) as Record<TranscriptFacet, { value: string; count: number }[]>)
+                    : transcriptFacetCounts(baseHits, transcriptFacts.factFor)
+                }
                 selection={facetSel}
-                // Idle = nothing to read (no transcript rows, or Sample data): ready once the rows have answered.
-                ready={
-                  transcriptFacts.status === "loading"
-                    ? false
-                    : transcriptFacts.status !== "idle" ||
-                      (results.sections.length > 0 && results.sections.every((s) => s.status !== "loading"))
-                }
-                onChange={(next) => write({ group: facetSelectionToGroup(next, state.group) }, { replace: true })}
-                note={
-                  hasFacetSelection(facetSel) && moreToLoad
-                    ? `Of ${baseHits.length} loaded`
-                    : null
-                }
+                ready={serverTranscripts ? transcriptList.facets !== null || Boolean(transcriptList.facetsError) : true}
+                onChange={(next) => {
+                  // Scope is one choice (the list's scope), never two at once.
+                  const scope = next.scope && next.scope.length > 1 ? [next.scope[next.scope.length - 1]] : next.scope;
+                  write({ group: facetSelectionToGroup({ ...next, scope }, state.group) }, { replace: true });
+                }}
+                note={transcriptList.facetsError}
               />
               </div>
             ) : null}
@@ -1741,7 +1763,7 @@ export function KnowledgeHubPage({
       ) : null}
       <div className={noLibraries || expanding || librariesFailed ? "hidden" : "flex min-h-0 flex-1 flex-col overflow-hidden"}>
         {trashView ? (
-          <LibraryTrashList filterText={state.query.text} onMutated={() => results.refresh()} />
+          <LibraryTrashList filterText={state.query.text} onMutated={() => refreshResults()} />
         ) : state.view.kind === "favorites" && sidebar.favorites.status !== "ready" ? (
           sidebar.favorites.status === "error" ? (
             <p className="px-2 py-4 text-sm text-destructive">
@@ -1751,20 +1773,13 @@ export function KnowledgeHubPage({
           ) : (
             <p className="px-2 py-4 text-sm text-muted-foreground" role="status">Reading your favorites…</p>
           )
-        ) : searching && state.view.kind !== "favorites" && !triageView ? (
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-            <SearchSections
-              text={state.query.text ?? ""}
-              sections={results.sections}
-              handlers={handlers}
-              onShowMore={results.showMore}
-              onRetry={results.retry}
-            />
-          </div>
         ) : (
+          // Searching keeps the view: the same layouts and facets, the matching items (a matching
+          // passage folds into its item, highlighted) — never a separate page of typed sections.
           <BrowseResults
             layout={state.layout}
-            sections={triageView ? triageSections : state.view.kind === "favorites" ? [] : results.sections}
+            highlight={searching ? (state.query.text ?? "") : ""}
+            sections={triageView ? triageSections : state.view.kind === "favorites" ? [] : listSections}
             hits={hits}
             handlers={handlers}
             emptySentence={emptySentence(
@@ -1773,8 +1788,8 @@ export function KnowledgeHubPage({
               // Facets and Stage narrow outside the query: they are filters too.
               viewFiltered || hasFacetSelection(facetSel) || state.stage.length > 0,
             )}
-            onShowMore={triageView ? triage.showMore : results.showMore}
-            onRetry={triageView ? triage.refresh : results.retry}
+            onShowMore={triageView ? triage.showMore : serverTranscripts ? () => transcriptList.showMore() : results.showMore}
+            onRetry={triageView ? triage.refresh : serverTranscripts ? () => transcriptList.retry() : results.retry}
             stage={stageColumn}
             groupByDate={dateOrdered}
             emptyExtra={
@@ -1914,7 +1929,7 @@ export function KnowledgeHubPage({
             <SourceAddMenu
               runner={runner}
               onLanded={() => {
-                results.refresh();
+                refreshResults();
                 triage.refresh();
                 stages.refresh();
               }}
@@ -1969,11 +1984,11 @@ export function KnowledgeHubPage({
     <SourceSaveDialog
       target={saveTarget}
       onClose={() => setSaveTarget(null)}
-      onSettled={() => results.refresh()}
+      onSettled={() => refreshResults()}
       onSaved={() => {
         setSelected(new Set());
         setFiledVersion((n) => n + 1);
-        results.refresh();
+        refreshResults();
         stages.refresh();
       }}
     />
@@ -1982,7 +1997,7 @@ export function KnowledgeHubPage({
       onOpenChange={(o) => {
         setJobsOpen(o);
         if (!o) {
-          results.refresh();
+          refreshResults();
           stages.refresh();
         }
       }}

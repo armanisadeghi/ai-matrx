@@ -51,10 +51,52 @@ export interface ResultHandlers {
   rowFacts?: (hit: KnowledgeHit) => string[];
   /** What is inside the row's record: its opening words and a poster frame (Granola / Otter rows). */
   rowContent?: (hit: KnowledgeHit) => RowContent | undefined;
+  /** The words being searched for: marked where they appear in a title or passage. */
+  highlight?: string;
   /** The row being renamed inline, and what Enter / Esc do. */
   renamingKey?: string | null;
   onRenameCommit?: (hit: KnowledgeHit, title: string) => void;
   onRenameCancel?: () => void;
+}
+
+/**
+ * Text with the searched-for words marked (every word of the query, case
+ * ignored). No query, or no match: the text as it is.
+ */
+export function Highlight({ text, query }: { text: string; query?: string }) {
+  const words = (query ?? "")
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}'-]/gu, ""))
+    .filter((w) => w.length > 1);
+  if (!words.length || !text) return <>{text}</>;
+  const re = new RegExp(`(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
+  const parts = text.split(re);
+  if (parts.length === 1) return <>{text}</>;
+  return (
+    <>
+      {parts.map((p, i) =>
+        i % 2 === 1 ? (
+          <mark key={i} className="rounded-sm bg-warning/25 px-0.5 text-foreground">
+            {p}
+          </mark>
+        ) : (
+          p
+        ),
+      )}
+    </>
+  );
+}
+
+/** A long passage starts a little before the first searched-for word, so the match is on screen. */
+export function aroundMatch(text: string, query?: string): string {
+  const words = (query ?? "").toLowerCase().split(/\s+/).filter((w) => w.length > 1);
+  if (!words.length || text.length < 80) return text;
+  const lower = text.toLowerCase();
+  const at = Math.min(...words.map((w) => lower.indexOf(w)).filter((i) => i >= 0));
+  if (!Number.isFinite(at) || at < 50) return text;
+  const start = text.lastIndexOf(" ", at - 30);
+  return `…${text.slice(start > 0 ? start + 1 : at - 30)}`;
 }
 
 /** The title, or — while this row is being renamed — the inline editor (Enter saves, Esc cancels). */
@@ -90,7 +132,11 @@ export function HitTitle({ hit, handlers, className }: { hit: KnowledgeHit; hand
       />
     );
   const shown = handlers.rowContent?.(hit)?.title;
-  return <div className={className}>{shown || plainText(hit.title)}</div>;
+  return (
+    <div className={className}>
+      <Highlight text={shown || plainText(hit.title)} query={handlers.highlight} />
+    </div>
+  );
 }
 
 function filedWords(hit: KnowledgeHit): string | null {
@@ -209,7 +255,7 @@ export function ResultRow({
   const when = hitWhen(hit);
   const date = whenLabel !== undefined ? whenLabel : when ? formatRelativeTime(when) : null;
   const content = handlers.rowContent?.(hit);
-  const snippet = cleanSnippet(hit.snippet || content?.snippet) || null;
+  const snippet = aroundMatch(cleanSnippet(hit.snippet || content?.snippet), handlers.highlight) || null;
   const parts = [
     ...(compact && date ? [date] : []),
     ...metaParts(hit, { hideKind, hideOrigin: Boolean(content?.channel), facts: handlers.rowFacts?.(hit) }),
@@ -279,7 +325,9 @@ export function ResultRow({
           ) : null}
         </div>
         {snippet ? (
-          <p className={cn("text-[13px] leading-5 text-muted-foreground", compact ? "line-clamp-2" : "truncate")}>{snippet}</p>
+          <p className={cn("text-[13px] leading-5 text-muted-foreground", compact ? "line-clamp-2" : "truncate")}>
+            <Highlight text={snippet} query={handlers.highlight} />
+          </p>
         ) : null}
         {parts.length || tags.length ? (
           <div className="flex min-w-0 items-center gap-2 text-xs leading-4 text-muted-foreground/80">

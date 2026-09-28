@@ -333,6 +333,13 @@ export function VisualEditor({
             return box ? { left: box.left, top: box.top, bottom: box.top + 1, width: Math.min(box.width, 40) } : null;
           },
           caretText: () => (editor && !editor.isDestroyed ? (islandSelectionOf(editor)?.raw ?? "") : ""),
+          // The model selection lands a beat after the DOM one: re-resolve the open toolbar then,
+          // so formatting is judged on the selection the person made, never the previous one.
+          subscribe: (onChange) => {
+            if (!editor || editor.isDestroyed) return () => {};
+            editor.on("selectionUpdate", onChange);
+            return () => editor.off("selectionUpdate", onChange);
+          },
         }
       : null,
   );

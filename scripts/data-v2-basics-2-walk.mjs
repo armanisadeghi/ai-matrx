@@ -308,6 +308,24 @@ try {
     }
   }
 
+  if (PHASE === "share") {
+    // The owner shares "Clinic Supplies Count" with test@test.com as Editor, through the page's Share.
+    await open(T.supplies);
+    await page.getByRole("button", { name: /^Share$/ }).first().click();
+    await sleep(2500);
+    const dlg = page.getByRole("dialog").filter({ hasText: "Share Table" }).first();
+    await dlg.getByPlaceholder("user@example.com").fill(env.AI_MEMBER_USERNAME);
+    await dlg.getByText("Permission Level", { exact: true }).click().catch(() => {});
+    await sleep(400);
+    // The label opens the level picker (it is the select's label).
+    await page.getByRole("option", { name: "Editor", exact: true }).click();
+    await sleep(500);
+    await dlg.getByRole("button", { name: /Share with User/ }).last().click();
+    await sleep(4000);
+    await shot("s01-shared-as-editor");
+    step("shared with the member as Editor", { dialog: (await dlg.innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 600) });
+  }
+
   if (PHASE === "member") {
     // test@test.com is a member of Cedar Ridge Physical Therapy (invited by lane HANDOVER).
     await open(T.equipment);
@@ -317,6 +335,13 @@ try {
     await sleep(1200);
     const editorOpen = await page.locator("[data-matrx-cell-editor], tbody textarea, tbody input[type=text]").count();
     step("a member on an organization table", { headers: (await headers()).slice(0, 10), editor_opened: editorOpen, text: (await page.evaluate(() => document.body.innerText.match(/Viewer[^\n]{0,160}|can view[^\n]{0,160}|view only[^\n]{0,160}/i)?.[0] ?? null)) });
+    await c.click().catch(() => {});
+    await page.keyboard.type("G", { delay: 20 });
+    await sleep(1500);
+    const said = await page.evaluate(() => [...document.querySelectorAll("[role=status], [role=alert], li, [data-sonner-toast], [role=tooltip]")].map((x) => x.innerText.replace(/\s+/g, " ")).filter((t) => /change|edit|view|read/i.test(t)).slice(0, 3));
+    await shot("m01b-viewer-types");
+    step("a viewer types into a cell", { said });
+    if (said.length === 0) friction("a viewer typed into a cell and nothing said why it cannot change");
     await page.keyboard.press("Escape");
     await open(T.supplies);
     await shot("m02-member-shared-editor");

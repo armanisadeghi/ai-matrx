@@ -233,14 +233,26 @@ type ListItem = DatedItem<KnowledgeHit>;
  * Yesterday, Previous 7 days, Previous 30 days, then month by month, with the
  * current section pinned quietly at the top while you scroll.
  */
+const END_H = 40;
+/** Start reading the next page this far before the end — the reader never waits at a button. */
+const REACH_END_PX = 600;
+
 function VirtualList({
   hits,
   handlers,
   groupByDate: grouped,
+  more,
+  initialScrollTop,
+  onScrollTop,
 }: {
   hits: KnowledgeHit[];
   handlers: ResultHandlers;
   groupByDate?: boolean;
+  /** Infinite scroll: the next page, its state, and a failure's retry. */
+  more?: { has: boolean; loading: boolean; error: string | null; load: () => void };
+  /** Where the list was when the person left it (Back restores it). */
+  initialScrollTop?: number;
+  onScrollTop?: (top: number) => void;
 }) {
   const hideKind = oneKind(hits);
   const ref = useRef<HTMLDivElement>(null);
@@ -267,7 +279,23 @@ function VirtualList({
   const lines = items.map((it) => (it.kind === "row" ? titleLinesFor(it.item.title, width, compact) : 1));
   const sizes = items.map((it, i) => (it.kind === "header" ? HEADER_H : resultRowHeight(it.item, handlers, lines[i], compact)));
   const starts: number[] = [];
-  sizes.reduce((acc, n, i) => ((starts[i] = acc), acc + n), 0);
+  const listHeight = sizes.reduce((acc, n, i) => ((starts[i] = acc), acc + n), 0);
+  const endRow = more && (more.has || more.loading || more.error) ? END_H : 0;
+  // Back to the list: the scroll position comes back once the rows it pointed at are drawn.
+  const restored = useRef(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || restored.current || !initialScrollTop) return;
+    if (listHeight + endRow < initialScrollTop + el.clientHeight && more?.has) return;
+    restored.current = true;
+    el.scrollTop = initialScrollTop;
+    setOffset(el.scrollTop);
+  }, [listHeight, endRow, initialScrollTop, more?.has]);
+  // Near the end: read the next page (once per page — `loading` holds it).
+  useEffect(() => {
+    if (!more?.has || more.loading || more.error) return;
+    if (offset + viewport >= listHeight - REACH_END_PX) more.load();
+  }, [offset, viewport, listHeight, more]);
   // Keep the keyboard-focused row in view.
   useEffect(() => {
     const el = ref.current;
@@ -291,13 +319,16 @@ function VirtualList({
       // -mx-2 + the row's px-2: the tile sits on the pane's own 16px edge, in line with the
       // search box and facets, while the hover fill still reaches past it (Linear).
       className="relative -mx-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
-      onScroll={(e) => setOffset(e.currentTarget.scrollTop)}
+      onScroll={(e) => {
+        setOffset(e.currentTarget.scrollTop);
+        onScrollTop?.(e.currentTarget.scrollTop);
+      }}
       role="listbox"
       aria-label="Results"
     >
       {current && current.kind === "header" && offset > 0 ? (
         <div className="pointer-events-none sticky top-0 z-10 -mb-8 h-8" aria-hidden>
-          <SectionHeader label={current.group.label} count={current.count} pinned />
+          <SectionHeader label={current.group.label} pinned />
         </div>
       ) : null}
       <div style={{ height: w.padStart }} />
@@ -306,7 +337,7 @@ function VirtualList({
         if (it.kind === "header")
           return (
             <div key={`h:${it.group.key}:${i}`} style={{ height: sizes[i] }} role="presentation">
-              <SectionHeader label={it.group.label} count={it.count} />
+              <SectionHeader label={it.group.label} />
             </div>
           );
         return (
@@ -323,11 +354,28 @@ function VirtualList({
         );
       })}
       <div style={{ height: w.padEnd }} />
+      {endRow ? (
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground" style={{ height: END_H }} role="status">
+          {more?.error ? (
+            <>
+              <span className="min-w-0 truncate text-destructive">{more.error}</span>
+              <button type="button" className="font-medium text-foreground underline-offset-2 hover:underline" onClick={more.load}>
+                Try again
+              </button>
+            </>
+          ) : more?.loading ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading more…
+            </>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function SectionHeader({ label, count, pinned = false }: { label: string; count: number; pinned?: boolean }) {
+/** A date section's name. No count: a count over the loaded rows would change as more load. */
+function SectionHeader({ label, pinned = false }: { label: string; pinned?: boolean }) {
   return (
     <div
       className={cn(
@@ -337,7 +385,6 @@ function SectionHeader({ label, count, pinned = false }: { label: string; count:
       )}
     >
       <span className="text-foreground/80">{label}</span>
-      <span className="tabular-nums text-muted-foreground/70">{count}</span>
     </div>
   );
 }

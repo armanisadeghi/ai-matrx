@@ -52,6 +52,8 @@ export interface TranscriptFactsState {
   facts: Map<string, TranscriptListRow>;
   /** The row's content — opening words, channel, speakers, poster (Granola / Otter rows). */
   contentFor: (hit: KnowledgeHit) => TranscriptRowContent | undefined;
+  /** The Source a transcript record became (its passages answer text searches). */
+  sourceIdFor: (hit: KnowledgeHit) => string | null;
   status: "idle" | "loading" | "ready" | "error";
   error: string | null;
   retry: () => void;
@@ -218,6 +220,8 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
     facts,
     factFor: (hit) => facts.get(`${hit.entity}:${hit.id}`),
     contentFor: (hit) => content.get(`${hit.entity}:${hit.id}`),
+    sourceIdFor: (hit) =>
+      hit.entity === TRANSCRIPT_RECORD_TOKEN ? (transcripts.get(hit.id)?.processed_document_id ?? null) : null,
     status: wanted.length ? status : "idle",
     error,
     retry: () => setNonce((n) => n + 1),

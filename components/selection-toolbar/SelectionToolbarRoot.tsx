@@ -307,6 +307,21 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
     close,
   }));
 
+  // A zone's own state moved while the toolbar is open (the editor synced its selection after the
+  // DOM one): re-target so eligibility is read again — never a stale formatting set.
+  const openZoneIds = open ? open.zones.map((z) => z.id).join("|") : "";
+  React.useEffect(() => {
+    const current = openRef.current;
+    if (!current || !openZoneIds) return;
+    const offs = current.zones
+      .map((z) => z.contribution.subscribe?.(() => {
+        seq.current += 1;
+        setOpen((prev) => (prev ? { ...prev, seq: seq.current } : prev));
+      }))
+      .filter((off): off is () => void => typeof off === "function");
+    return () => offs.forEach((off) => off());
+  }, [openZoneIds]);
+
   // The docked (phone) bar fits a row of buttons and never scrolls: how many
   // fit decides which actions keep a button (selection-actions.ts priority).
   const [viewportWidth, setViewportWidth] = React.useState(() => (typeof window === "undefined" ? 1024 : window.innerWidth));

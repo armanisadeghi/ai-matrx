@@ -29,11 +29,20 @@ import type { AnnotationSource } from "./types";
 
 const RecordAnnotationsImpl = lazy(() => import("./RecordAnnotationsImpl"));
 
-export function RecordAnnotations({ record, children }: { record: AnnotationSource | null; children: ReactNode }) {
+export function RecordAnnotations({
+  record,
+  children,
+  className,
+}: {
+  record: AnnotationSource | null;
+  children: ReactNode;
+  /** The wrapper's own layout, for a host whose child fills a bounded flex column (an editor). */
+  className?: string;
+}) {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   return (
     <>
-      <div ref={setRoot} data-record-annotations={record ? recordKeyOf(record) : undefined}>
+      <div ref={setRoot} className={className} data-record-annotations={record ? recordKeyOf(record) : undefined}>
         {children}
       </div>
       {record && root ? (

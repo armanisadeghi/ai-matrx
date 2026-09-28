@@ -474,6 +474,12 @@ export function MarkdownStudio() {
       ? (loadedSource.annotationRecord ?? annotationRecordOf(loadedSource.contentSource))
       : null;
 
+  // The loaded saved record the Visual editor may comment on (the editor checks the bytes itself).
+  const loadedRecord = loadedSource
+    ? (loadedSource.annotationRecord ?? annotationRecordOf(loadedSource.contentSource))
+    : null;
+  const editorRecord = loadedSource && loadedRecord ? { ...loadedRecord, body: loadedSource.content } : null;
+
   const handleCopySource = async () => {
     if (!content) {
       toast.info("Nothing to copy yet");
@@ -995,6 +1001,7 @@ export function MarkdownStudio() {
               content={content}
               title={contentLabel}
               contentSource={loadedSource?.contentSource ?? RAW_SOURCE}
+              annotationRecord={editorRecord}
               onContentChange={handleChange}
             />
           ) : mode === "inspect" && isAdmin ? (

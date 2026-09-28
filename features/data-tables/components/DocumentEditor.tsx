@@ -51,6 +51,7 @@ import {
   renderDocumentCanvasColorsVerbatim,
   type ReplaceableInjector,
 } from "../univer-doc-canvas-colors";
+import { mountUniverDocument } from "../univer-mount-document";
 import { useDocumentRealtime } from "../hooks/useDocumentRealtime";
 import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
 import { useUniverDocSurfaceTheme } from "../hooks/useUniverDocSurfaceTheme";
@@ -198,15 +199,18 @@ export default function DocumentEditor({
     }
     const snapshot = res.data?.snapshot;
     if (snapshot) {
-      const fb = apiRef.current as unknown as {
-        createUniverDoc?: (data: Partial<IDocumentData>) => unknown;
-      };
-      fb.createUniverDoc?.(
-        sanitizeUniverDocSnapshot(
-          snapshot as Partial<IDocumentData>,
-          documentId,
-        ),
-      );
+      try {
+        mountUniverDocument(
+          apiRef.current,
+          sanitizeUniverDocSnapshot(snapshot as Partial<IDocumentData>, documentId),
+        );
+      } catch (error) {
+        toast({
+          title: "Could not load latest document state",
+          description: error instanceof Error ? error.message : String(error),
+          variant: "destructive",
+        });
+      }
     }
   }, [documentId]);
 
@@ -281,19 +285,10 @@ export default function DocumentEditor({
             defaultEmptyDocument(),
           documentId,
         );
-        const fb = apiRef.current as unknown as {
-          createUniverDoc?: (data: Partial<IDocumentData>) => unknown;
-        };
-        fb.createUniverDoc?.(initial);
-        // Read the unit back off the facade rather than trusting `initial.id`:
-        // `sanitizeUniverDocSnapshot` may repair a snapshot, and Univer is the
-        // authority on what it actually mounted.
-        const activeDoc = (
-          apiRef.current as unknown as {
-            getActiveDocument?: () => { getId?: () => string } | null;
-          }
-        ).getActiveDocument?.();
-        setUnitId(activeDoc?.getId?.() ?? initial.id ?? null);
+        // Univer is the authority on what it actually mounted (the snapshot
+        // may have been repaired); a unit that did not mount throws into the
+        // catch below and the page says "Load failed" — never "Editing".
+        setUnitId(mountUniverDocument(apiRef.current, initial));
         setBootState("ready");
 
         // Command stream → debounced autosave. Registered for the lifetime of

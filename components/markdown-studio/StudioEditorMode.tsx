@@ -13,6 +13,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Archive, CopyPlus, ExternalLink, Loader2 } from "lucide-react";
 import RichEditor from "@/components/rich-editor/RichEditor";
+import type { AnnotationRecord } from "@/features/rich-document/annotations/record-of-source";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { toast } from "@/lib/toast";
@@ -72,11 +73,14 @@ export function StudioEditorMode({
   content,
   title,
   contentSource,
+  annotationRecord,
   onContentChange,
 }: {
   content: string;
   title: string;
   contentSource: ContentSource;
+  /** The loaded saved record and its bytes (Comment in the Visual view while the buffer is still it). */
+  annotationRecord?: (AnnotationRecord & { body: string }) | null;
   onContentChange: (text: string) => void;
 }) {
   // The text the editor opened with — a snapshot, so the studio buffer this
@@ -189,6 +193,7 @@ export function StudioEditorMode({
       onSave={save}
       onChange={onContentChange}
       contentSource={contentSource}
+      annotationRecord={annotationRecord ?? null}
       surfaceName="matrx-user/markdown-studio"
       saveLabel={copy ? "Save" : "Save to a copy"}
       toolbarExtras={extras}

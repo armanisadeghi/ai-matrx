@@ -56,6 +56,12 @@ export interface SelectionZoneContribution {
   caretText?(): string;
   /** A panel (and its payload) to show immediately when the toolbar opens here (a pending reattach). */
   initialPanel?(): { panel: string; payload?: unknown } | null;
+  /**
+   * A zone whose own state decides what its actions can do (an editor's model selection, which
+   * the editor syncs a beat AFTER the DOM selection the toolbar reads) calls `onChange` when that
+   * state moves; the open toolbar then re-resolves its actions. Returns the unsubscribe.
+   */
+  subscribe?(onChange: () => void): () => void;
 }
 
 interface ZoneEntry {
