@@ -63,6 +63,9 @@ export function buildConversationListItemFromExecution(
     lastModelId: overrides?.lastModelId ?? agent?.modelId ?? null,
     sourceApp: overrides?.sourceApp ?? instance.sourceApp,
     sourceFeature: overrides?.sourceFeature ?? instance.sourceFeature,
+    // What the server will derive from this run's attestation: an "auto" run
+    // is `client_auto` (the Auto lane), never a person's chat.
+    ...(instance.initiation === "auto" ? { originClass: "client_auto" } : {}),
   };
 
   return { row, canonicalAgentId, alsoTouchVersionFilters };

@@ -4,43 +4,36 @@
  * Choose the parts of one Source — search, never "show 50 more".
  *
  * Parts are the manifest's Segments (a page of a PDF, a chunk of a note). The
- * search box matches a part's label, a page number ("12") or a page range
- * ("3-10"); "Choose all shown" / "Clear shown" act on what the search shows,
- * so "pages 40 to 80" is two keystrokes and one click.
+ * search box matches words (in a part's label, its opening words, and — read on
+ * the first word search — its full text), a page number ("12") or a page range
+ * ("3-10"), through THE one matcher (`../partsSearch.ts`). "Choose all shown" /
+ * "Clear shown" act on what the search shows, so "pages 40 to 80" is two
+ * keystrokes and one click. Each part shows its opening words.
  */
 
 import { useState } from "react";
 import { Search } from "lucide-react";
-import type { SourceManifestSegment } from "@ai-matrx/agents/sources";
+import type { SourceRef } from "@ai-matrx/agents/sources";
 import { Button, Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatChars } from "@/lib/tokens/estimate";
-
-function matchesQuery(segment: SourceManifestSegment, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const range = /^(\d+)\s*[-–to]+\s*(\d+)$/.exec(q);
-  if (range && segment.page !== undefined) {
-    const from = Number(range[1]);
-    const to = Number(range[2]);
-    return segment.page >= Math.min(from, to) && segment.page <= Math.max(from, to);
-  }
-  if (/^\d+$/.test(q) && segment.page !== undefined) {
-    return segment.page === Number(q);
-  }
-  return segment.label.toLowerCase().includes(q) || segment.id.toLowerCase() === q;
-}
+import { findParts, isWordQuery, type SourcePart } from "../partsSearch";
+import { useSourcePartsText } from "../useSourcePartsText";
 
 interface SourcePartsPickerProps {
-  segments: SourceManifestSegment[];
+  /** The Source whose parts these are — its text is read for a word search. */
+  sourceRef: SourceRef;
+  segments: SourcePart[];
   selected: readonly string[];
   onChange: (ids: string[]) => void;
 }
 
-export function SourcePartsPicker({ segments, selected, onChange }: SourcePartsPickerProps) {
+export function SourcePartsPicker({ sourceRef, segments, selected, onChange }: SourcePartsPickerProps) {
   const [query, setQuery] = useState("");
+  const words = isWordQuery(query);
+  const partsText = useSourcePartsText(sourceRef, words);
   const chosen = new Set(selected);
-  const shown = segments.filter((s) => matchesQuery(s, query));
+  const shown = findParts(segments, query, partsText.text);
   const chosenChars = segments.filter((s) => chosen.has(s.id)).reduce((n, s) => n + s.chars, 0);
   const hasPages = segments.some((s) => s.page !== undefined);
 
@@ -62,11 +55,16 @@ export function SourcePartsPicker({ segments, selected, onChange }: SourcePartsP
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={hasPages ? "Search parts — words, a page (12) or pages (3-10)" : "Search parts"}
+          placeholder={hasPages ? "Search parts — words, a page (12) or pages (3-10)" : "Search parts by their words"}
           aria-label="Search parts"
           className="pl-8"
         />
       </div>
+      {words && (partsText.reading || partsText.error) && (
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          {partsText.error ?? "Searching inside the text…"}
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>
@@ -102,18 +100,23 @@ export function SourcePartsPicker({ segments, selected, onChange }: SourcePartsP
       <ul className="max-h-72 overflow-y-auto rounded-md border border-border divide-y divide-border">
         {shown.length === 0 && (
           <li className="px-3 py-4 text-center text-sm text-muted-foreground">
-            No part matches “{query}”.
+            {partsText.reading ? "Searching inside the text…" : `No part matches “${query}”.`}
           </li>
         )}
         {shown.map((segment) => (
-          <li key={segment.id} className="[content-visibility:auto] [contain-intrinsic-size:auto_44px]">
+          <li key={segment.id} className="[content-visibility:auto] [contain-intrinsic-size:auto_52px]">
             <label className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-1.5 hover:bg-accent/50 sm:min-h-9">
               <Checkbox
                 checked={chosen.has(segment.id)}
                 onCheckedChange={() => toggle(segment.id)}
                 aria-label={`Choose ${segment.label}`}
               />
-              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{segment.label}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm text-foreground">{segment.label}</span>
+                {segment.preview && (
+                  <span className="block truncate text-xs text-muted-foreground">{segment.preview}</span>
+                )}
+              </span>
               <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
                 {formatChars(segment.chars)}
               </span>

@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import CitationChip from "@/components/official/citation-chip/CitationChip";
 import type { SourceCitation, TrustEnvelope } from "../types";
 import { citationIsOpenable, openCitationSource } from "../open-source";
+import { openSourceLabel, plainLocator } from "../plainWords";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import {
   inspectorArgsForSourceRef,
@@ -36,7 +37,8 @@ const KIND_ICON = {
 
 function citationLabel(c: SourceCitation, index: number): string {
   if (c.title) return c.title;
-  if (c.locator) return c.locator;
+  const where = plainLocator(c.locator);
+  if (where) return where;
   return `Source ${index + 1}`;
 }
 
@@ -90,12 +92,12 @@ export function SourceCitations({
               FileText
             }
             label={citationLabel(c, i)}
-            locator={c.locator}
+            locator={plainLocator(c.locator)}
             excerpt={c.excerpt}
             onOpen={
               onOpenSource || citationIsOpenable(c) ? () => open(c) : undefined
             }
-            openLabel={c.url ? "Open web source" : "Open full source"}
+            openLabel={openSourceLabel(c.url)}
           />
         ))}
       </div>

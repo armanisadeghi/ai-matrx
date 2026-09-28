@@ -33,10 +33,12 @@
  */
 
 import type { Resource } from "@/features/agents/resources/types";
+import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { holdDeliberateIntent } from "@/lib/organization/organization-gate";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
@@ -59,6 +61,11 @@ import { isAssociationTargetType } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { supabase } from "@/utils/supabase/client";
 import { isNeedsIntake, resourceToSourceRef } from "./resourceToSourceRef";
+import {
+  createOrganizationHold,
+  WAITING_FOR_ORGANIZATION,
+  waitsForOrganization,
+} from "./organizationHold";
 import { MAX_KEPT_TEXT_CHARS, resumableInput } from "./interrupted";
 import type { UseSourceSetResult } from "./useSourceSet";
 import type {
@@ -130,6 +137,23 @@ export function useSourceIntake(
   const { uploadMany } = useFileUpload();
   const attachTo = attachTargets(options.attachTo);
 
+  // No organization yet: the landing waits and runs again the moment one is
+  // set (`organizationHold.ts`) — never a dead error on the card.
+  const [orgHold] = useState(createOrganizationHold);
+  useEffect(() => {
+    if (activeOrgId) orgHold.release();
+  }, [activeOrgId, orgHold]);
+
+  /** Fail the card — or, when only the organization is missing, hold it and say so. */
+  const failOrHold = (id: string, err: unknown, replay: () => Promise<void>) => {
+    if (waitsForOrganization(err)) {
+      orgHold.hold(id, () => (set.restart(id) ? replay() : undefined));
+      set.fail(id, WAITING_FOR_ORGANIZATION);
+      return;
+    }
+    set.fail(id, addFailureSentence(err));
+  };
+
   const needUser = (): string => {
     if (!userId)
       throw new Error("Your sign-in is still loading, so nothing was added. Try again in a moment.");
@@ -152,7 +176,7 @@ export function useSourceIntake(
       label: name?.trim() || "Pasted text",
       input: trimmed.length <= MAX_KEPT_TEXT_CHARS ? { text: trimmed, name } : undefined,
     });
-    await landPaste(id, trimmed, name);
+    await holdDeliberateIntent(() => landPaste(id, trimmed, name));
   };
 
   const landPaste = async (id: string, trimmed: string, name?: string) => {
@@ -172,14 +196,14 @@ export function useSourceIntake(
         notes: landed.notes,
       });
     } catch (err) {
-      set.fail(id, addFailureSentence(err));
+      failOrHold(id, err, () => landPaste(id, trimmed, name));
     }
   };
 
   const addWebPage = async (raw: string) => {
     const url = /^https?:\/\//i.test(raw.trim()) ? raw.trim() : `https://${raw.trim()}`;
     const id = set.addPending({ kind: "web", label: hostOf(url), origin: url, input: { url } });
-    await landWebPage(id, url);
+    await holdDeliberateIntent(() => landWebPage(id, url));
   };
 
   const landWebPage = async (id: string, url: string) => {
@@ -227,7 +251,7 @@ export function useSourceIntake(
         notes,
       });
     } catch (err) {
-      set.fail(id, addFailureSentence(err));
+      failOrHold(id, err, () => landWebPage(id, url));
     }
   };
 
@@ -236,7 +260,7 @@ export function useSourceIntake(
     const videoId = youtubeId(url);
     if (!videoId) return;
     const id = set.addPending({ kind: "youtube", label: "YouTube video", origin: url, input: { url } });
-    await landYouTube(id, url, videoId);
+    await holdDeliberateIntent(() => landYouTube(id, url, videoId));
   };
 
   const landYouTube = async (id: string, url: string, videoId: string) => {
@@ -295,7 +319,7 @@ export function useSourceIntake(
         notes: note ? [...landed.notes, note] : landed.notes,
       });
     } catch (err) {
-      set.fail(id, addFailureSentence(err));
+      failOrHold(id, err, () => landYouTube(id, url, videoId));
     }
   };
 
@@ -346,7 +370,7 @@ export function useSourceIntake(
   const addFiles = async (files: File[], kind: SourceKindId) => {
     for (const file of files) {
       const id = set.addPending({ kind, label: file.name, origin: "Uploaded file" });
-      await landFile(id, file);
+      await holdDeliberateIntent(() => landFile(id, file));
     }
   };
 
@@ -381,13 +405,13 @@ export function useSourceIntake(
       // reading it) — the same for a new upload, a reused copy and a reload.
       set.settle(id, { label: file.name, ref: createSourceRef("file", fileId), fileId, notes });
     } catch (err) {
-      set.fail(id, addFailureSentence(err));
+      failOrHold(id, err, () => landFile(id, file));
     }
   };
 
   const addRecording = async (file: File) => {
     const id = set.addPending({ kind: "audio", label: file.name, origin: "Recording" });
-    await landRecording(id, file);
+    await holdDeliberateIntent(() => landRecording(id, file));
   };
 
   const landRecording = async (id: string, file: File) => {
@@ -407,7 +431,7 @@ export function useSourceIntake(
       set.updateDraft(id, { input: { fileId }, fileId });
       await transcribeRecording(id, fileId, file.name, organizationId);
     } catch (err) {
-      set.fail(id, addFailureSentence(err));
+      failOrHold(id, err, () => landRecording(id, file));
     }
   };
 
@@ -443,7 +467,7 @@ export function useSourceIntake(
         notes: landed.notes,
       });
     } catch (err) {
-      set.fail(id, addFailureSentence(err));
+      failOrHold(id, err, () => transcribeRecording(id, fileId, fileName));
     }
   };
 
@@ -468,6 +492,7 @@ export function useSourceIntake(
   const resume = (card: SourceCardModel): boolean => {
     const input: SourceIntakeInput | null = resumableInput(card.draft);
     if (!input) return false;
+    orgHold.drop(card.id);
     set.restart(card.id);
     switch (card.draft.kind) {
       case "paste":
@@ -496,17 +521,30 @@ export function useSourceIntake(
   const retryFile = async (card: SourceCardModel, file: File) => {
     set.restart(card.id);
     set.updateDraft(card.id, { label: file.name });
-    if (card.draft.kind === "audio") await landRecording(card.id, file);
-    else await landFile(card.id, file);
+    orgHold.drop(card.id);
+    await holdDeliberateIntent(() =>
+      card.draft.kind === "audio" ? landRecording(card.id, file) : landFile(card.id, file),
+    );
   };
 
   const fileLanded = async (card: SourceCardModel, processedDocumentId: string) => {
-    // Every card opens its Source from now on.
-    set.updateDraft(card.id, { processedDocumentId });
+    // Every card opens its Source from now on (and a held keep's waiting note goes).
+    set.updateDraft(card.id, { processedDocumentId, notes: card.draft.notes });
     try {
       const organizationId = await ensureOrgId(activeOrgId);
       await keepSource(processedDocumentId, { attachTo, organizationId });
     } catch (err) {
+      if (waitsForOrganization(err)) {
+        orgHold.hold(card.id, () => fileLanded(card, processedDocumentId));
+        set.updateDraft(card.id, {
+          processedDocumentId,
+          notes: [
+            ...(card.draft.notes ?? []),
+            `It was read. ${WAITING_FOR_ORGANIZATION.replace("this continues", "it is kept for reuse")}`,
+          ],
+        });
+        return;
+      }
       set.updateDraft(card.id, {
         processedDocumentId,
         notes: [

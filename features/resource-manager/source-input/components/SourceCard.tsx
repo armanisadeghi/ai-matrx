@@ -6,9 +6,13 @@
  * said in words: landing, mid-processing (usable now with the raw text, or
  * "wait for the clean version"), unavailable, failed — each with its remedy.
  *
- * Form chooser: a stored file gets the canonical `ResourceFamilyPolicyEditor`
- * (Auto · Clean · Raw · Original PDF + include/exclude + previews) behind the
- * adapter below; every other kind gets the forms the server measured.
+ * Form chooser: every kind — a stored file included — gets the forms the
+ * server measured (the forms `/sources/resolve` can actually deliver), and
+ * "How the AI gets it" reads and writes delivery through `../delivery.ts`,
+ * the one source of truth the review page uses too. (V1-A: a stored file used
+ * chat's attachment editor, whose "nothing copied" sentence described chat's
+ * look-up-by-default and whose extra copies/exclusions the Source path never
+ * reads — so the card said the opposite of what the request carried.)
  * Progress: the existing `useStagesStatus` (the per-stage read the Knowledge
  * library uses), re-read on THE STAGE RE-READ RULE cadence — never a third
  * mechanism.
@@ -38,9 +42,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
-import { primaryFormShortLabel } from "@/features/agents/components/inputs/resources/resource-family-words";
-import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
 import { useStagesStatus } from "@/features/rag/hooks/useStagesStatus";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import { factsPollDelayMs } from "@/features/sources/sourceRows";
@@ -50,6 +51,9 @@ import { toast } from "@/lib/toast";
 import { asClause } from "@/lib/text/asClause";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { sourceKindDef } from "../sourceKinds";
+import { DELIVERY_CHOICES, DELIVERY_WORDS, deliveryPatch, sourceDelivery } from "../delivery";
+import { findParts, isWordQuery, type SourcePart } from "../partsSearch";
+import { useSourcePartsText } from "../useSourcePartsText";
 import { resumableInput } from "../interrupted";
 import type { SourceCardModel } from "../types";
 import type { UseSourceSetResult } from "../useSourceSet";
@@ -112,7 +116,7 @@ export function SourceCard({
   const ref = card.draft.ref;
   const entry = card.manifest;
   const chars = cardChars(card);
-  const isFile = ref?.resource_type === "file";
+  const delivery = sourceDelivery(ref);
   const partsCount = ref?.include_segments?.length ?? 0;
   const segments = entry?.segments ?? [];
   // Parts belong to one form (clean text is split differently from the raw
@@ -123,15 +127,9 @@ export function SourceCard({
     if (hadParts)
       toast.info("The parts you picked were cleared — this form is split differently. Choose parts again if you need them.");
   };
-  // A stored file uses the same words as its chooser (the shared family editor).
-  const formLabel = isFile
-    ? primaryFormShortLabel(ref?.representation as DocumentRepresentation | undefined)
-    : entry?.forms.find((f) => f.form === (ref?.representation ?? entry.default_form))?.label ??
-    (ref?.representation === "raw"
-      ? "Raw text"
-      : ref?.representation === "pdf"
-        ? "Original PDF"
-        : "Clean text");
+  const formLabel =
+    entry?.forms.find((f) => f.form === (ref?.representation ?? entry.default_form))?.label ??
+    (ref?.representation === "raw" ? "Raw text" : "Clean text");
 
   return (
     <li className="rounded-xl border border-border bg-card">
@@ -156,7 +154,13 @@ export function SourceCard({
           </div>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
             <span>{kind.label}</span>
-            {chars !== null ? <span>· {formatChars(chars)}</span> : null}
+            {chars !== null ? (
+              <span>
+                · {formatChars(chars)}
+                {delivery === "context" ? ", not sent up front" : ""}
+              </span>
+            ) : null}
+            {delivery === "context" ? <span>· {DELIVERY_WORDS.context.summary}</span> : null}
             {entry ? (
               <span className={cn(entry.state === "processing" && "text-warning", (entry.state === "failed" || entry.state === "unavailable") && "text-destructive")}>
                 · {STATE_WORDS[entry.state]}
@@ -263,7 +267,7 @@ export function SourceCard({
             <span className="text-muted-foreground">Use:</span> {formLabel}
             {open === "form" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           </Button>
-          {segments.length > 1 ? (
+          {segments.length > 1 && delivery === "direct" ? (
             <Button
               type="button"
               variant="outline"
@@ -280,35 +284,46 @@ export function SourceCard({
       ) : null}
 
       {open === "form" && ref && entry ? (
-        <div className="border-t border-border px-3 py-3">
-          {isFile ? (
-            <ResourceFamilyPolicyEditor
-              fileId={ref.resource_id}
-              compact
-              value={{
-                promote: ref.promote ? (Array.isArray(ref.promote) ? ref.promote : [ref.promote]) : undefined,
-                exclude: ref.exclude,
-              }}
-              onChange={(policy) =>
-                set.updateRef(card.id, { promote: policy.promote, exclude: policy.exclude })
-              }
-              primaryRepresentation={ref.representation as DocumentRepresentation | undefined}
-              onPrimaryRepresentationChange={(representation) =>
-                changeForm(representation)
-              }
-            />
-          ) : (
+        <div className="space-y-3 border-t border-border px-3 py-3">
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-foreground">Which version</p>
             <FormChooser
               entry={entry}
               value={ref.representation ?? entry.default_form}
               onChange={(representation) => changeForm(representation)}
             />
-          )}
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-foreground">How the AI gets it</p>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="How the AI gets it">
+              {DELIVERY_CHOICES.map((choice) => (
+                <button
+                  key={choice.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={delivery === choice.value}
+                  onClick={() => {
+                    if (choice.value !== delivery) set.updateRef(card.id, deliveryPatch(choice.value));
+                  }}
+                  className={cn(
+                    "min-h-11 rounded-lg border px-3 text-left text-xs font-medium transition-colors sm:min-h-9",
+                    delivery === choice.value
+                      ? "border-primary/60 bg-primary/10 text-foreground"
+                      : "border-border text-muted-foreground hover:bg-accent/50",
+                  )}
+                >
+                  {choice.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">{DELIVERY_WORDS[delivery].hint}</p>
+          </div>
         </div>
       ) : null}
 
-      {open === "parts" && ref ? (
+      {open === "parts" && ref && delivery === "direct" ? (
         <PartsChooser
+          sourceRef={ref}
           segments={segments}
           picked={ref.include_segments ?? []}
           onChange={(ids) => set.updateRef(card.id, { include_segments: ids })}
@@ -390,22 +405,24 @@ function FormChooser({
 }
 
 function PartsChooser({
+  sourceRef,
   segments,
   picked,
   onChange,
 }: {
-  segments: NonNullable<SourceManifestEntry["segments"]>;
+  sourceRef: NonNullable<SourceCardModel["draft"]["ref"]>;
+  segments: readonly SourcePart[];
   picked: readonly string[];
   onChange: (ids: string[]) => void;
 }) {
   const [query, setQuery] = useState("");
+  const words = isWordQuery(query);
+  const partsText = useSourcePartsText(sourceRef, words);
   // "pick" = the person chose to build the list from nothing. Until they tick
   // one, the whole Source still goes in (and the sentence says so).
   const [picking, setPicking] = useState(false);
   const pickedSet = new Set(picked);
-  const shown = query.trim()
-    ? segments.filter((s) => s.label.toLowerCase().includes(query.trim().toLowerCase()))
-    : segments;
+  const shown = findParts(segments, query, partsText.text);
   const all = picked.length === 0 && !picking;
   const toggle = (id: string) => {
     // "No parts picked" means the whole Source; the first untick starts from all.
@@ -451,19 +468,32 @@ function PartsChooser({
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Find a part (e.g. Page 12)"
+          placeholder="Find a part — words, a page (12) or pages (3-10)"
           className="text-base sm:text-sm"
           aria-label="Find a part"
         />
+      ) : null}
+      {words && (partsText.reading || partsText.error) ? (
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          {partsText.error ?? "Searching inside the text…"}
+        </p>
+      ) : null}
+      {query.trim() && shown.length === 0 && !partsText.reading ? (
+        <p className="text-xs text-muted-foreground">No part matches “{query.trim()}”.</p>
       ) : null}
       <ul className="grid max-h-64 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
         {shown.map((s) => {
           const on = all || pickedSet.has(s.id);
           return (
             <li key={s.id}>
-              <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-2 hover:bg-accent/40 sm:min-h-9">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-accent/40 sm:min-h-9">
                 <Checkbox checked={on} onCheckedChange={() => toggle(s.id)} />
-                <span className="min-w-0 flex-1 truncate text-sm">{s.label}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm">{s.label}</span>
+                  {s.preview ? (
+                    <span className="block truncate text-xs text-muted-foreground">{s.preview}</span>
+                  ) : null}
+                </span>
                 <span className="shrink-0 text-xs text-muted-foreground">{formatChars(s.chars)}</span>
               </label>
             </li>

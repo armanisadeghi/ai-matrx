@@ -82,6 +82,11 @@ export async function runAgentExtraction(
     variables: opts.variables,
     organizationId: opts.organizationId ?? null,
     displayMode: opts.live === false ? "background" : "direct",
+    // A background section run is fired by this code, once per section, not
+    // by a button the person pressed — it is honestly "auto", which lands it
+    // in the Auto lane instead of the person's chat sidebar (verify-1: one
+    // "…section 3 of 6: Chunk…" chat per section appeared there).
+    ...(opts.live === false ? { initiation: "auto" as const } : {}),
     // Live converter UI renders the stream via onRequestId — keep the
     // instance so those selectors stay populated (pre-D126 behavior). A
     // background segment run keeps nothing: see `live` above.

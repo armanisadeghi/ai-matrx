@@ -40,6 +40,7 @@ import { formatChars } from "@/lib/tokens/estimate";
 import type { SourceRef } from "@ai-matrx/agents/sources";
 import { chosenForm, type SourcePlanEntry } from "./plan";
 import { SourcePartsPicker } from "./SourcePartsPicker";
+import { DELIVERY_CHOICES, DELIVERY_WORDS, deliveryPatch, sourceDelivery } from "../delivery";
 
 /** Phones: every segment is a 44px target (the package control is 28px at "sm"). */
 const SEGMENTED_TOUCH = "max-w-full flex-wrap max-lg:[&_[role=tab]]:min-h-11!";
@@ -71,7 +72,7 @@ function pagesPhrase(chars: number): string {
 
 const STATUS_WORDS: Record<SourcePlanEntry["status"], { label: string; className: string }> = {
   included: { label: "Goes in", className: "border-emerald-500/40 text-emerald-700 dark:text-emerald-400" },
-  on_demand: { label: "Looked up when needed", className: "border-sky-500/40 text-sky-700 dark:text-sky-400" },
+  on_demand: { label: DELIVERY_WORDS.context.summary, className: "border-sky-500/40 text-sky-700 dark:text-sky-400" },
   left_out: { label: "Won't fit", className: "border-red-500/40 text-red-700 dark:text-red-400" },
   unusable: { label: "Can't be used", className: "border-border text-muted-foreground" },
 };
@@ -103,6 +104,7 @@ export function SourceReviewRow({
   const availableForms = entry.forms.filter((f) => f.available);
   const form = chosenForm(entry, ref);
   const capOn = ref.max_chars !== undefined;
+  const delivery = sourceDelivery(ref);
 
   const update = (patch: Partial<SourceRef>) => {
     const next: SourceRef = { ...ref, ...patch };
@@ -212,7 +214,7 @@ export function SourceReviewRow({
             </Field>
           )}
 
-          {usable && segments.length > 1 && ref.delivery !== "context" && (
+          {usable && segments.length > 1 && delivery === "direct" && (
             <Field label="How much" hint={`This Source has ${segments.length} parts.`}>
               <SegmentedControl
                 value={choosingParts ? "parts" : "all"}
@@ -234,6 +236,7 @@ export function SourceReviewRow({
               {choosingParts && (
                 <div className="pt-2">
                   <SourcePartsPicker
+                    sourceRef={ref}
                     segments={segments}
                     selected={ref.include_segments ?? []}
                     onChange={(ids) => update({ include_segments: ids.length ? ids : undefined })}
@@ -243,7 +246,7 @@ export function SourceReviewRow({
             </Field>
           )}
 
-          {usable && ref.delivery !== "context" && (
+          {usable && delivery === "direct" && (
             <Field label="Size limit" hint="Stops this Source at a set size. Whole parts are kept in order until the limit is reached.">
               <div className="flex flex-wrap items-center gap-3">
                 <label className="flex min-h-11 items-center gap-2 text-sm text-foreground sm:min-h-0">
@@ -283,19 +286,12 @@ export function SourceReviewRow({
           {usable && (
             <Field
               label="How the AI gets it"
-              hint={
-                ref.delivery === "context"
-                  ? "Nothing is sent up front. The AI opens this Source and reads the parts it needs while it works — best for very large Sources."
-                  : "The text is handed to the AI with your request, so it reads all of it before it starts."
-              }
+              hint={DELIVERY_WORDS[delivery].hint}
             >
               <SegmentedControl
-                value={ref.delivery === "context" ? "context" : "direct"}
-                onValueChange={(v) => update({ delivery: v === "context" ? "context" : undefined })}
-                data={[
-                  { value: "direct", label: "Include the text" },
-                  { value: "context", label: "Let the AI look it up" },
-                ]}
+                value={delivery}
+                onValueChange={(v) => update(deliveryPatch(v === "context" ? "context" : "direct"))}
+                data={DELIVERY_CHOICES.map((c) => ({ value: c.value, label: c.label }))}
                 size="sm"
                 className={SEGMENTED_TOUCH}
               />

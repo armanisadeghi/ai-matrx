@@ -104,6 +104,7 @@ export default function ScannerHealthPage() {
     note: string | null = null,
   ) => {
     try {
+      if (!item.mute) return;
       await item.mute.apply(Date.now() + ms, note);
       toast.success(
         `"${item.title}" is muted for every super-admin — it comes back on its own.`,
@@ -113,9 +114,10 @@ export default function ScannerHealthPage() {
     }
   };
   const onUnmute = async (item: AttentionItem) => {
-    if (!item.mute.clear) return;
+    const clear = item.mute?.clear;
+    if (!clear) return;
     try {
-      await item.mute.clear();
+      await clear();
       toast.success(`"${item.title}" is back on the attention dock.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));

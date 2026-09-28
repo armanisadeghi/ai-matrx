@@ -50,7 +50,10 @@ import {
   selectIsDebugMode,
   toggleDebugMode,
 } from "@/lib/redux/preferences/adminDebugSlice";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import {
+  selectIsSuperAdmin,
+  selectIsSuperAdminDebugger,
+} from "@/lib/redux/slices/userSlice";
 import {
   selectIsOverlayOpen,
   toggleOverlay,
@@ -480,7 +483,13 @@ export function useContextMenuActions(
 
   const hasCompareBase = useAppSelector(selectHasCompareBase);
   const currentUserId = useAppSelector(selectUserId);
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  // Admin DEBUGGING (every page): the surface key, the menu version and the
+  // Admin Tools submenu (debug mode, context values, Redux state, admin
+  // indicator) — this browser's own diagnostics, no data. Admin POWER (the
+  // Surface Context Admin editor, admin rich-document actions) stays on the
+  // lane-gated selector, false outside /administration.
+  const isAdmin = useAppSelector(selectIsSuperAdminDebugger);
+  const hasAdminPower = useAppSelector(selectIsSuperAdmin);
   const organizationId = useAppSelector(selectOrganizationId);
   const isDebugMode = useAppSelector(selectIsDebugMode);
   const isAdminIndicatorOpen = useAppSelector((state) =>
@@ -519,7 +528,7 @@ export function useContextMenuActions(
     getState: store.getState,
     organizationId,
     isAuthenticated: Boolean(currentUserId),
-    isAdmin,
+    isAdmin: hasAdminPower,
     isCreator: false,
     surfaceKey: surfaceName ?? null,
     onClose: () => {},
@@ -1156,7 +1165,7 @@ export function useContextMenuActions(
         });
       },
     },
-    ...(isAdmin
+    ...(hasAdminPower
       ? ([
           {
             kind: "item",

@@ -233,20 +233,55 @@ function packSegments(
   // A pathological source (thousands of tiny units) must not fan out to
   // thousands of agent calls: re-pack evenly into the ceiling instead of
   // truncating, because dropping the tail is the very bug this file fixes.
-  if (packed.length > maxSegments) {
-    const per = Math.ceil(packed.length / maxSegments);
-    const merged: typeof packed = [];
-    for (let i = 0; i < packed.length; i += per) {
-      const group = packed.slice(i, i + per);
-      merged.push({
-        text: group.map((g) => g.text).join("\n\n"),
-        first: group[0].first,
-        last: group[group.length - 1].last,
-      });
-    }
-    return merged;
+  return foldPacked(packed, maxSegments);
+}
+
+type Packed = { text: string; first: string; last: string };
+
+/**
+ * Fold neighbouring packed sections into at most `ceiling` groups. Nothing is
+ * dropped: every section's text still reaches exactly one agent call.
+ */
+function foldPacked(packed: Packed[], ceiling: number): Packed[] {
+  const limit = Math.max(1, ceiling);
+  if (packed.length <= limit) return packed;
+  const per = Math.ceil(packed.length / limit);
+  const merged: Packed[] = [];
+  for (let i = 0; i < packed.length; i += per) {
+    const group = packed.slice(i, i + per);
+    merged.push({
+      text: group.map((g) => g.text).join("\n\n"),
+      first: group[0].first,
+      last: group[group.length - 1].last,
+    });
   }
-  return packed;
+  return merged;
+}
+
+/**
+ * Split `total` across sections in proportion to their size, every section at
+ * least one, and the shares summing to EXACTLY `total` (largest remainder).
+ * Callers guarantee `sizes.length <= total`.
+ */
+export function apportionItems(sizes: number[], total: number): number[] {
+  const n = sizes.length;
+  if (n === 0) return [];
+  const shares = new Array<number>(n).fill(1);
+  const spare = total - n;
+  if (spare <= 0) return shares;
+  const sum = sizes.reduce((a, b) => a + Math.max(1, b), 0);
+  const exact = sizes.map((s) => (Math.max(1, s) / sum) * spare);
+  let handed = 0;
+  exact.forEach((x, i) => {
+    const whole = Math.floor(x);
+    shares[i] += whole;
+    handed += whole;
+  });
+  const byRemainder = exact
+    .map((x, i) => ({ i, r: x - Math.floor(x) }))
+    .sort((a, b) => b.r - a.r || a.i - b.i);
+  for (let k = 0; k < spare - handed; k++) shares[byRemainder[k % n].i] += 1;
+  return shares;
 }
 
 // ---------------------------------------------------------------------------
@@ -342,29 +377,32 @@ export async function planCoverage({
     ]);
 
   const clean = text.trim();
-  const packed = packSegments(splitUnits(clean), segmentChars, maxSegments);
-  const total = Math.max(1, packed.length);
+  const natural = packSegments(splitUnits(clean), segmentChars, maxSegments);
 
   const multiplier = DEPTH_MULTIPLIER[depth];
-  const scaled = Math.round(perSegmentDefault * multiplier * total);
+  const scaled = Math.round(
+    perSegmentDefault * multiplier * Math.max(1, natural.length),
+  );
   const targetTotal = requestedTotal
     ? Math.max(1, Math.min(requestedTotal, maxItems))
     : Math.max(minItems, Math.min(scaled, maxItems));
 
+  // THE COUNT LAW: an explicit ask is handed out EXACTLY. More sections than
+  // items ("5 cards" over 10 sections) used to give every section at least one
+  // and ship 10 cards (verify-1, 2026-09-28). Neighbouring sections are folded
+  // together instead, so every part of the material still gets a pass and each
+  // pass earns at least one item. (A source-scaled count has no ask to honour;
+  // its sections stay as the material split them.)
+  const packed = requestedTotal ? foldPacked(natural, targetTotal) : natural;
+  const total = Math.max(1, packed.length);
+
   // Distribute by segment SIZE, not evenly: a dense 6k-character section earns
   // more cards than a 400-character title slide, and an even split is how you
   // get four flashcards about a section header.
-  const sizes = packed.map((p) => Math.max(1, p.text.length));
-  const sizeSum = sizes.reduce((a, b) => a + b, 0);
-  let handedOut = 0;
-  const items = sizes.map((size, i) => {
-    const share =
-      i === sizes.length - 1
-        ? targetTotal - handedOut
-        : Math.max(1, Math.round((size / sizeSum) * targetTotal));
-    handedOut += share;
-    return Math.max(1, share);
-  });
+  const items = apportionItems(
+    packed.map((p) => p.text.length),
+    Math.max(targetTotal, packed.length),
+  );
 
   const segments: SourceSegment[] = packed.map((p, i) => ({
     id: `s${i + 1}`,

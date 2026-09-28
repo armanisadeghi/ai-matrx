@@ -10,6 +10,15 @@
  *
  * Wire types are the frozen v1 contract from `@ai-matrx/agents/sources` —
  * the same package the server's Pydantic twins mirror.
+ *
+ * THE ONE CLIENT for both doors (the review page and the input share it).
+ * Both are READS decided by access, never by the selected organization: the
+ * server names them in `BODY_CARRIED_READS` (aidream `api/read_by_access.py`),
+ * so they go as `bodyCarriedRead` — with an organization selected it is still
+ * named, with none they are sent naming none instead of being refused in the
+ * browser. V1-A: a person with no organization selected picked a file and saw
+ * "Sizes and parts could not be read: Select an organization before sending
+ * this request" — a dead end the server no longer asks for.
  */
 
 import type {
@@ -33,7 +42,7 @@ export async function fetchSourceManifest(
   const { data } = await postJson<SourceManifest, SourceSetRequest>(
     SOURCES_MANIFEST_PATH,
     { source_set: sourceSet },
-    { organizationId: options.organizationId, signal: options.signal },
+    { organizationId: options.organizationId, signal: options.signal, bodyCarriedRead: true },
   );
   return data;
 }
@@ -45,7 +54,7 @@ export async function resolveSourceSet(
   const { data } = await postJson<ResolvedSourceSet, SourceSetRequest>(
     SOURCES_RESOLVE_PATH,
     { source_set: sourceSet },
-    { organizationId: options.organizationId, signal: options.signal },
+    { organizationId: options.organizationId, signal: options.signal, bodyCarriedRead: true },
   );
   return data;
 }

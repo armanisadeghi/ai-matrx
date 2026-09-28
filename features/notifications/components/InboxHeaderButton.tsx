@@ -81,22 +81,26 @@ function SignedInInboxButton() {
         ? "Inbox (some counts unavailable)"
         : "Inbox";
 
+  // The ARIA popup wiring (aria-haspopup / aria-expanded / onClick) must land
+  // on the actual focusable button, never on a plain wrapping <div> — a div
+  // with those attributes but no interactive role fails
+  // aria-allowed-attr and leaves a keyboard/screen-reader user with no
+  // "has popup" affordance on the control they actually land on. The
+  // positioning wrapper below carries only the badge, not the ARIA state.
   const trigger = (
-    <div className="relative shrink-0" data-inbox-header-button>
-      <Bell
-        ariaLabel={label}
-        tooltip={label}
-        className={counts.total > 0 ? "text-primary" : undefined}
-        onClick={isMobile ? () => setOpen(true) : undefined}
-      />
-      <InboxBadge count={counts.total} />
-    </div>
+    <Bell
+      ariaLabel={label}
+      tooltip={label}
+      className={counts.total > 0 ? "text-primary" : undefined}
+      onClick={isMobile ? () => setOpen(true) : undefined}
+    />
   );
 
   if (isMobile) {
     return (
-      <>
+      <div className="relative shrink-0" data-inbox-header-button>
         {trigger}
+        <InboxBadge count={counts.total} />
         <Drawer open={open} onOpenChange={setOpen}>
           <DrawerContent className="bg-textured pb-safe max-h-[85dvh]">
             <DrawerHeader className="sr-only">
@@ -111,24 +115,27 @@ function SignedInInboxButton() {
             )}
           </DrawerContent>
         </Drawer>
-      </>
+      </div>
     );
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent
-        sizing="content"
-        align="end"
-        side="bottom"
-        className="p-0 bg-textured"
-      >
-        {open && (
-          <InboxPanel variant="compact" onNavigate={() => setOpen(false)} />
-        )}
-      </PopoverContent>
-    </Popover>
+    <div className="relative shrink-0" data-inbox-header-button>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+        <PopoverContent
+          sizing="content"
+          align="end"
+          side="bottom"
+          className="p-0 bg-textured"
+        >
+          {open && (
+            <InboxPanel variant="compact" onNavigate={() => setOpen(false)} />
+          )}
+        </PopoverContent>
+      </Popover>
+      <InboxBadge count={counts.total} />
+    </div>
   );
 }
 

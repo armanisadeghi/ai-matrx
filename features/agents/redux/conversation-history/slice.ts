@@ -402,7 +402,9 @@ const slice = createSlice({
         // just minted — a person's run, so Chat or Matrx by its feature.
         if (
           scope.includeLanes &&
-          !scope.includeLanes.includes(laneOfClientMintedRow(row.sourceFeature))
+          !scope.includeLanes.includes(
+            laneOfClientMintedRow(row.sourceFeature, row.originClass),
+          )
         ) {
           continue;
         }

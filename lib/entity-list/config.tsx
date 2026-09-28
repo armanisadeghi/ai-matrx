@@ -277,6 +277,13 @@ export interface EntityListConfig<TRow> {
    */
   autoHideUniformColumns?: boolean;
   /**
+   * The widest the pinned name column may be (px; default PINNED_NAME_MAX in
+   * `../columnWidths.ts`). For a list whose names run long (flashcard decks
+   * named after chapters) and whose other columns are mostly empty, so the
+   * name — what people scan for — gets the room instead of being cut off.
+   */
+  nameColumnMaxWidth?: number;
+  /**
    * THE REGISTRY TOKEN whose `default_list_scope` decides where this list OPENS
    * (DD-137c / VISIBILITY-BY-CLASS §3.3, the second axis).
    *

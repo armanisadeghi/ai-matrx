@@ -14,6 +14,7 @@
  */
 import { downloadFile } from "@/features/files/api/files";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { fileImage } from "@/features/unified-data/recordsFileImage";
 
 export function hrefForFile({ fileId }: { fileId: string }): string {
   return `/files/f/${encodeURIComponent(fileId)}`;
@@ -77,5 +78,9 @@ export async function pickFiles({
   return picked && picked.length > 0 ? picked : null;
 }
 
+/**
+ *   fileImage     a gallery card's picture from a File column (records-ui 0.93.62+, lane
+ *                 DATA-V2-VIEWS-1): drawn through the platform's one media element.
+ */
 /** The host's file ports, as one object to spread into a RecordsMount host. */
-export const RECORDS_FILES = { hrefForFile, readFileText, pickFiles };
+export const RECORDS_FILES = { hrefForFile, readFileText, pickFiles, fileImage };

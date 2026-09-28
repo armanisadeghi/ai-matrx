@@ -54,6 +54,7 @@ import { fetchSourceManifest, resolveSourceSet } from "./sourceSetApi";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 import { useSyncHydrated } from "@/lib/sync/useSyncHydrated";
 import { reloadedCard } from "./interrupted";
+import { WAITING_FOR_ORGANIZATION } from "./organizationHold";
 import type { SourceCardModel, SourceDraft } from "./types";
 
 /** The instanceResources key for one surface's Source input. */
@@ -155,7 +156,8 @@ export interface UseSourceSetResult {
    */
   restoring: boolean;
   /** Put a failed or interrupted card back to "adding" to land it again. (USI-3b) */
-  restart: (id: string) => void;
+  /** Back to landing. False when the card is gone (removed) — nothing to land. */
+  restart: (id: string) => boolean;
   /** Change what a card that is still landing says or keeps (label, input, fileId, notes). (USI-3b) */
   updateDraft: (id: string, patch: Partial<Omit<SourceDraft, "ref">>) => void;
 }
@@ -214,7 +216,12 @@ export function useSourceSet(
       );
       // Cut off mid-landing: an error the input resolves (it re-lands the
       // kept input, or asks for the file again) — never a spinner forever.
-      const reloaded = reloadedCard(card.draft, card.status);
+      // A landing held for an organization lost its hold with the page: it is
+      // picked up again like one cut off mid-landing (and held again if needed).
+      const reloaded = reloadedCard(
+        card.draft,
+        card.status === "error" && card.error === WAITING_FOR_ORGANIZATION ? "resolving" : card.status,
+      );
       dispatch(
         setResourceStatus({
           conversationId: key,
@@ -354,10 +361,11 @@ export function useSourceSet(
     persist();
   };
 
-  const restart = (id: string) => {
-    if (!readDraft(id)) return;
+  const restart = (id: string): boolean => {
+    if (!readDraft(id)) return false;
     dispatch(setResourceStatus({ conversationId: key, resourceId: id, status: "resolving" }));
     persist();
+    return true;
   };
 
   const updateDraft: UseSourceSetResult["updateDraft"] = (id, patch) => {

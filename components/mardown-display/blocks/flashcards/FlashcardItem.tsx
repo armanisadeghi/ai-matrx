@@ -222,7 +222,14 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
       onKeyDown={handleKeyDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      role="button"
+      // "group", not "button": this container also holds real nested
+      // buttons (dev trigger, voice test, go-deeper, grade row) — a widget
+      // role like "button" may not contain other interactive descendants
+      // (axe: nested-interactive), which breaks the accessibility tree for
+      // every one of them. "group" keeps the div focusable/keyboard-operable
+      // (tabIndex + the existing Enter/Space handler below) without making
+      // those false claims.
+      role="group"
       tabIndex={0}
       aria-label={`Flashcard ${index + 1}. Click to flip. ${isFlipped ? "Showing back" : "Showing front"}`}
     >
@@ -346,6 +353,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
                   onReview ? "bottom-[3.25rem]" : "bottom-1.5",
                 )}
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
               >
                 <FlashcardGoDeeperTrigger
                   subcards={subcards}
@@ -387,6 +395,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
               <div
                 className="mt-auto shrink-0 border-t border-green-200 px-1 py-1.5 dark:border-green-800"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
               >
                 <FlashcardGradeButtonRow
                   onGrade={handleReview}

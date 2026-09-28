@@ -16,6 +16,7 @@
 // the grounding legible instead of implicit. Target state (once the streaming
 // channel can carry structure) is a per-turn envelope — see FEATURE.md.
 
+import { plainGroundedIn } from "@/features/education/trust/plainWords";
 import { useState } from "react";
 import { ShieldCheck, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,7 +53,7 @@ export function TutorTrustStrip({ trust }: { trust: TrustEnvelope | null }) {
       >
         <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
         <span className="font-medium text-foreground">
-          Grounded in {trust.groundedIn ?? "your material"}
+          Grounded in {plainGroundedIn(trust.groundedIn) ?? "your material"}
         </span>
         <ConfidenceBadge confidence={trust.confidence} className="ml-0.5" />
         <span className="ml-auto flex items-center gap-1">

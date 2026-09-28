@@ -63,6 +63,13 @@ export interface SegmentedGenerateArgs<T> {
    * twice is the most visible way a segmented deck looks careless.
    */
   identity: (item: T) => string;
+  /**
+   * Optional "these two say the same thing" test, beyond an exact identity
+   * match. Two sections that both teach one idea word it differently ("What
+   * is osmosis?" twice, verify-1 2026-09-28); exact keys miss that. See
+   * `isNearDuplicateQA` for the question/answer rule every list target uses.
+   */
+  sameAs?: (a: T, b: T) => boolean;
   /** Per-section ceiling. Defaults to 120s (one section is a small ask). */
   timeoutMs?: number;
 }
@@ -81,6 +88,52 @@ export interface SegmentedGenerateResult<T> {
   gapNote: string | null;
   /** Sections that produced nothing. */
   missedCount: number;
+}
+
+const STOPWORDS = new Set(
+  "a an and are as at be by can do does did for from how in into is it its of on or the this that to was were what when where which who whom why will with you your".split(
+    " ",
+  ),
+);
+
+/** The meaningful words of a string, for near-duplicate tests. */
+export function contentWords(s: string): Set<string> {
+  return new Set(
+    looseKey(s)
+      .split(" ")
+      .filter((w) => w.length > 1 && !STOPWORDS.has(w)),
+  );
+}
+
+function jaccard(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 && b.size === 0) return 1;
+  let both = 0;
+  for (const w of a) if (b.has(w)) both += 1;
+  return both / (a.size + b.size - both);
+}
+
+function contained(small: Set<string>, big: Set<string>): boolean {
+  if (small.size === 0) return false;
+  for (const w of small) if (!big.has(w)) return false;
+  return true;
+}
+
+/**
+ * Two question/answer items that teach the same thing: the questions share
+ * most of their words, or one question's words all sit inside the other's AND
+ * the answers overlap. The answer check keeps "What is osmosis?" apart from
+ * "In forward osmosis, how is a draw solution used?".
+ */
+export function isNearDuplicateQA(
+  a: { question: string; answer: string },
+  b: { question: string; answer: string },
+): boolean {
+  const qa = contentWords(a.question);
+  const qb = contentWords(b.question);
+  if (qa.size > 0 && qb.size > 0 && jaccard(qa, qb) >= 0.6) return true;
+  const [small, big] = qa.size <= qb.size ? [qa, qb] : [qb, qa];
+  if (!contained(small, big)) return false;
+  return jaccard(contentWords(a.answer), contentWords(b.answer)) >= 0.3;
 }
 
 /** Normalized identity: case- and punctuation-insensitive, whitespace-collapsed. */
@@ -103,6 +156,7 @@ export async function segmentedGenerate<T>({
   variables,
   extract,
   identity,
+  sameAs,
   timeoutMs,
 }: SegmentedGenerateArgs<T>): Promise<SegmentedGenerateResult<T>> {
   const plan = await planCoverage({
@@ -163,17 +217,15 @@ export async function segmentedGenerate<T>({
     });
   }
 
-  const seen = new Set<string>();
-  const items: T[] = [];
-  for (const batch of results) {
-    if (!batch) continue;
-    for (const item of batch) {
-      const key = identity(item);
-      if (key && seen.has(key)) continue;
-      if (key) seen.add(key);
-      items.push(item);
-    }
-  }
+  // An explicit count is a promise (THE COUNT LAW); a source-scaled run keeps
+  // everything its sections wrote.
+  const items = mergeSectionItems(
+    plan,
+    results,
+    identity,
+    sameAs,
+    options?.count ? plan.total : undefined,
+  );
 
   return {
     items,
@@ -183,4 +235,54 @@ export async function segmentedGenerate<T>({
     gapNote: describeGaps(missed),
     missedCount: missed.length,
   };
+}
+
+/**
+ * Merge every section's items into one de-duplicated list (exact and near
+ * duplicates dropped across sections).
+ *
+ * With a `limit` — the person asked for a number — the list is EXACTLY that
+ * long (or shorter when the sections came back short). THE COUNT LAW: a
+ * person who asked for 5 gets 5; a model that wrote more than its section's
+ * share does not inflate the deck (verify-1: asked 5, got 10). Each section's
+ * own share goes first so coverage stays spread across the material; a
+ * section's extras only fill the gap a short or duplicate-heavy section left.
+ */
+export function mergeSectionItems<T>(
+  plan: Pick<CoveragePlan, "segments">,
+  results: (T[] | null)[],
+  identity: (item: T) => string,
+  sameAs?: (a: T, b: T) => boolean,
+  limit?: number,
+): T[] {
+  const seen = new Set<string>();
+  const kept: T[] = [];
+  const admit = (item: T): boolean => {
+    const key = identity(item);
+    if (key && seen.has(key)) return false;
+    if (sameAs && kept.some((k) => sameAs(k, item))) return false;
+    if (key) seen.add(key);
+    kept.push(item);
+    return true;
+  };
+  const extras: T[] = [];
+  results.forEach((batch, i) => {
+    if (!batch) return;
+    const share =
+      limit === undefined ? batch.length : (plan.segments[i]?.items ?? batch.length);
+    let taken = 0;
+    for (const item of batch) {
+      if (taken < share) {
+        if (admit(item)) taken += 1;
+      } else {
+        extras.push(item);
+      }
+    }
+  });
+  if (limit === undefined) return kept;
+  for (const item of extras) {
+    if (kept.length >= limit) break;
+    admit(item);
+  }
+  return kept.slice(0, Math.max(0, limit));
 }

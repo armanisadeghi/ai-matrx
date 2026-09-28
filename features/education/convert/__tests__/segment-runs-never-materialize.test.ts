@@ -49,6 +49,15 @@ describe("segment runs never materialize", () => {
     expect(isConversationSurfaceOwned("conv-live")).toBe(true);
   });
 
+  it("declares a background section run 'auto' so it stays out of the chat sidebar", async () => {
+    fakeRun("conv-auto");
+    await run(false);
+    expect(mocked.mock.calls.at(-1)?.[2].initiation).toBe("auto");
+    fakeRun("conv-person");
+    await run(true);
+    expect(mocked.mock.calls.at(-1)?.[2].initiation).toBeUndefined();
+  });
+
   it("an unclaimed conversation is not surface-owned", () => {
     expect(isConversationSurfaceOwned("conv-never-claimed")).toBe(false);
   });
