@@ -6,8 +6,8 @@
  * WHERE AN ENTITY-REF LINK ACTUALLY POINTS.
  *
  * For almost every token, the entity registry's `hrefFor(id)` is the whole
- * answer: one id, one canonical route. AGENTS are the exception, and they are
- * the reason this seam exists.
+ * answer: one id, one canonical route. AGENTS and TEAMS are the exceptions,
+ * and they are the reason this seam exists.
  *
  * An agent's address depends on facts the caller does not hold (see
  * `features/agents/addressing/agentAddress.ts`): a builtin agent opens ONLY
@@ -17,11 +17,16 @@
  * `EntityRef token="agent"` call sites, so every system agent named anywhere
  * in the app was a link into the wrong shell.
  *
+ * A team's address depends on a fact the caller does not hold either (see
+ * `features/organizations/addressing/teamAddress.ts`): a team has no page of
+ * its own — it opens on its ORGANIZATION's settings page — and an id-only
+ * caller does not know which organization that is.
+ *
  * Fixing it HERE fixes all of them at once, which is the only fix worth
  * making: a per-call-site fix would be re-broken by the next call site.
  *
- * The hook is called unconditionally with a null id for non-agent tokens, so
- * there is no conditional-hook hazard and no cost for the other tokens.
+ * The hook is called unconditionally with a null id for non-matching tokens,
+ * so there is no conditional-hook hazard and no cost for the other tokens.
  */
 
 import {
@@ -29,6 +34,7 @@ import {
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
 import { useAgentHref } from "@/features/agents/addressing/useAgentHref";
+import { useTeamHref } from "@/features/organizations/addressing/useTeamHref";
 
 export interface EntityHrefResult {
   /** The href, or null while resolving / when the record cannot be placed. */
@@ -50,12 +56,17 @@ export function useEntityHref(
 ): EntityHrefResult {
   const canonicalToken = resolveEntityToken(token);
   const isAgent = canonicalToken === "agent";
+  const isTeam = canonicalToken === "team";
 
   // Unconditional: a null id makes this free for every other token.
   const agentDoor = useAgentHref({
     id: isAgent && !hrefOverride ? id : null,
     context: `EntityRef token="${token}"`,
   });
+  // Same shape for teams — a team's address depends on its ORGANIZATION
+  // (LIVES_UNDER_ITS_ORGANIZATION), a fact this hook does not hold from an id
+  // alone, so it is resolved the same way an agent's kind is.
+  const teamDoor = useTeamHref({ id: isTeam && !hrefOverride ? id : null });
 
   if (hrefOverride) return { href: hrefOverride, refusal: null, resolving: false };
 
@@ -68,6 +79,17 @@ export function useEntityHref(
       // flight — and keeps working if the resolver never answers.
       return { href: agentDoor.href, refusal: null, resolving: true };
     return { href: null, refusal: agentDoor.reason, resolving: false };
+  }
+
+  if (isTeam) {
+    if (teamDoor.state === "ready")
+      return { href: teamDoor.href, refusal: null, resolving: false };
+    if (teamDoor.state === "resolving")
+      // A REAL href, not null: `/teams/id/<id>` resolves server-side, so the
+      // link works on the very first paint and while the client resolver is
+      // in flight — and keeps working if the resolver never answers.
+      return { href: teamDoor.href, refusal: null, resolving: true };
+    return { href: null, refusal: teamDoor.reason, resolving: false };
   }
 
   const info = tryGetEntityInfo(canonicalToken);

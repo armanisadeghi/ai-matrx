@@ -161,7 +161,13 @@ const CENSUS = {
   hr_workflow_instance: "UNMEASURED",
   // iam.*
   iam_api_key: "UNMEASURED",
-  team: "LIVES_UNDER_ITS_ORGANIZATION",
+  // `team` GOT ITS DOOR (2026-09-28): `app/(core)/teams/id/[teamId]/page.tsx`
+  // resolves team -> organization server-side (`public.team_organization_id`,
+  // migrations/team_organization_id_door.sql) and redirects to the org
+  // settings page's Teams section, deep-linked to the team
+  // (`entityRegistry.ts`'s `team.hrefFor`); `EntityRef` also resolves it on
+  // the client (`features/organizations/addressing/useTeamHref`) so most
+  // links skip the redirect hop.
   // interview.*
   interview_decision_interview: "UNMEASURED",
   interview_session: "UNMEASURED",
@@ -210,7 +216,10 @@ export const DOORLESS_LISTED_ENTITIES: Readonly<DoorlessCensus> = Object.freeze(
  * door — or someone must lower this number by giving an old one its door in the
  * same change.
  */
-// 80 (was 79): `team` (iam.team, 2026-09-26) joined the listed entities with
-// no door — measured, owed (LIVES_UNDER_ITS_ORGANIZATION). `spatial_board` got
-// its door instead (entityRegistry.ts), page-pass /notes 2026-09-28.
-export const DOORLESS_BASELINE = 80;
+// 79 (was 80): `team` (iam.team) got its door — a team -> organization
+// resolver route, `/teams/id/<id>` (app/(core)/teams/id/[teamId]/page.tsx),
+// same shape as the `mandate`/`agent` resolver routes; 2026-09-28.
+// (80 was itself: `team`, 2026-09-26, joined the listed entities with no
+// door — measured, owed (LIVES_UNDER_ITS_ORGANIZATION). `spatial_board` got
+// its door instead (entityRegistry.ts), page-pass /notes 2026-09-28.)
+export const DOORLESS_BASELINE = 79;

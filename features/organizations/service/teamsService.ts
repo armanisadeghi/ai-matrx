@@ -236,3 +236,25 @@ export async function listMyTeams(
     memberCount: row.member_count ?? 0,
   }));
 }
+
+/**
+ * A team's organization id — THE DOOR for a team the UI only holds an id for.
+ * `iam.team` grants SELECT to nobody the client can be, so this is the one
+ * client-callable read (`public.team_organization_id`, a
+ * `platform.client_callable_door`; migrations/team_organization_id_door.sql).
+ *
+ * Null means "no door": the team was deleted, never existed, or belongs to an
+ * organization this caller cannot see — never a thrown error, because a
+ * caller resolving an address for a list of links must not have one bad id
+ * crash the whole render. See `features/organizations/addressing/teamAddress.ts`,
+ * which caches this per id.
+ */
+export async function getTeamOrganizationId(
+  teamId: string,
+): Promise<string | null> {
+  const { data, error } = await runWithSessionRetry(() =>
+    supabase.rpc("team_organization_id", { p_team_id: teamId }),
+  );
+  if (error) return null;
+  return data ?? null;
+}

@@ -607,6 +607,21 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "War Rooms",
     hrefFor: (id) => `/war-room/${id}`,
   },
+  // A team (iam.team) is managed on its ORGANIZATION's settings page
+  // (Manage > Teams) — there is no route keyed on the team's own id, so this
+  // is a RESOLVER route, the same shape as `mandate` (`/mandates/id/<id>`)
+  // and `agent` (`/agents/go/<id>`): it redirects server-side once it has
+  // looked the team's organization up (`app/(core)/teams/id/[teamId]/page.tsx`
+  // -> `public.team_organization_id`). `EntityRef` still resolves the address
+  // on the CLIENT first (`features/organizations/addressing/useTeamHref`) so
+  // most links skip the redirect hop; this is what every other consumer gets,
+  // and what `EntityRef` itself falls back to while its own resolution is in
+  // flight.
+  team: {
+    Icon: UsersRound,
+    labelPlural: "Teams",
+    hrefFor: (id) => `/teams/id/${encodeURIComponent(id)}`,
+  },
 
   // ─── CRM (crm.party — the ONE record for an external person/company) ──────
   party: {

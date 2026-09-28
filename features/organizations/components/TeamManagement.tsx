@@ -18,7 +18,9 @@
  * picker), TextInputDialog (Dialog on desktop, Drawer on mobile), confirm().
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { useSearchParams } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
   Building2,
   ChevronDown,
@@ -101,12 +103,34 @@ export function TeamManagement({
   organizationName,
   canManageTeams,
 }: TeamManagementProps) {
-  const [showArchived, setShowArchived] = useState(false);
-  const [openTeamId, setOpenTeamId] = useState<string | null>(null);
+  // THE DOOR: `EntityRef`/`useTeamHref` sends a team link here as
+  // `?team=<id>#teams` (features/organizations/addressing/teamAddress.ts) —
+  // a team has no page of its own, so "open the team" means "open this
+  // section, with that team's row expanded and in view". Read once: the
+  // param is meant to focus the row on arrival, not fight the user's own
+  // clicks on every re-render.
+  const searchParams = useSearchParams();
+  const focusTeamIdRef = useRef(searchParams.get("team"));
+  const focusTeamId = focusTeamIdRef.current;
+  const focusedRef = useRef<HTMLDivElement | null>(null);
+  const [hasScrolledToFocus, setHasScrolledToFocus] = useState(false);
+
+  // An archived team is hidden by default; a deep link must still be able to
+  // reach it, or the door opens on a list that quietly doesn't show the
+  // record it promised.
+  const [showArchived, setShowArchived] = useState(Boolean(focusTeamId));
+  const [openTeamId, setOpenTeamId] = useState<string | null>(focusTeamId);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const teams = useOrganizationTeams(organizationId, showArchived);
   const departments = useHrDepartmentOptions(organizationId, canManageTeams);
+
+  useEffect(() => {
+    if (!focusTeamId || hasScrolledToFocus) return;
+    if (!teams.data.some((t) => t.id === focusTeamId)) return;
+    focusedRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    setHasScrolledToFocus(true);
+  }, [focusTeamId, hasScrolledToFocus, teams.data]);
 
   const liveCount = teams.data.filter((t) => !t.archivedAt).length;
 
@@ -170,6 +194,7 @@ export function TeamManagement({
               setOpenTeamId((current) => (current === team.id ? null : team.id))
             }
             onChanged={teams.refresh}
+            focusRef={team.id === focusTeamId ? focusedRef : undefined}
           />
         ))}
       </div>
@@ -210,6 +235,7 @@ function TeamRow({
   open,
   onToggle,
   onChanged,
+  focusRef,
 }: {
   team: Team;
   organizationId: string;
@@ -218,6 +244,8 @@ function TeamRow({
   open: boolean;
   onToggle: () => void;
   onChanged: () => void;
+  /** Set only on the team a deep link (`?team=<id>`) asked to open — scrolled into view. */
+  focusRef?: RefObject<HTMLDivElement | null>;
 }) {
   const [renaming, setRenaming] = useState(false);
   const [describing, setDescribing] = useState(false);
@@ -242,7 +270,13 @@ function TeamRow({
   const hasMenu = (team.canManage && !archived) || canManageTeams;
 
   return (
-    <div className="rounded-lg border bg-card">
+    <div
+      ref={focusRef}
+      className={cn(
+        "rounded-lg border bg-card",
+        focusRef && "ring-2 ring-primary/60",
+      )}
+    >
       <div className="flex items-center gap-2 p-3">
         <button
           type="button"
