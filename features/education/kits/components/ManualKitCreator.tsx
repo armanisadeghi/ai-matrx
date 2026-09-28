@@ -11,6 +11,7 @@ import type { EducationLibraryRow } from "@/features/education/library/types";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import { createManualKit, kitHref } from "../kitService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationKitsScope, EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/education-kits.manifest";
 import { collectionWriteHandlers, readCollectionList } from "@/features/surfaces/runtime/collection-write-targets";
@@ -31,6 +32,32 @@ export function ManualKitCreator() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const draftKey = "manual-study-kit-draft";
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      const raw = sessionStorage.getItem(draftKey);
+      if (!active || !raw) return;
+      try {
+        const draft = JSON.parse(raw) as { title?: string; sourceId?: string; sourceName?: string; selected?: EducationLibraryRow[] };
+        if (typeof draft.title === "string") setTitle(draft.title);
+        if (typeof draft.sourceId === "string") setSourceId(draft.sourceId);
+        if (typeof draft.sourceName === "string") setSourceName(draft.sourceName);
+        if (Array.isArray(draft.selected)) setSelected(draft.selected);
+        toast.info("Your unsaved kit was restored.");
+      } catch { sessionStorage.removeItem(draftKey); }
+    });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    const dirty = Boolean(title || sourceId || selected.length);
+    if (!dirty) { sessionStorage.removeItem(draftKey); return; }
+    sessionStorage.setItem(draftKey, JSON.stringify({ title, sourceId, sourceName, selected }));
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [sourceId, sourceName, selected, title]);
 
   useEffect(() => {
     let active = true;
@@ -52,7 +79,7 @@ export function ManualKitCreator() {
     current.some((item) => item.id === row.id) ? current.filter((item) => item.id !== row.id) : [...current, row]);
   const save = async () => {
     setSaving(true); setError(null);
-    try { await createManualKit({ sourceId: sourceId ?? "", title, artifacts: selected }); router.push(kitHref("file", sourceId ?? "")); }
+    try { await createManualKit({ sourceId: sourceId ?? "", title, artifacts: selected }); sessionStorage.removeItem(draftKey); router.push(kitHref("file", sourceId ?? "")); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create this kit."); }
     finally { setSaving(false); }
   };
@@ -88,6 +115,6 @@ export function ManualKitCreator() {
     </div>
     <div className="flex justify-between"><Button variant="outline" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</Button><span className="text-sm text-muted-foreground">{page * PAGE_SIZE < total ? "More results available" : "End of results"}</span><Button variant="outline" disabled={page * PAGE_SIZE >= total} onClick={() => setPage((value) => value + 1)}>Next</Button></div>
     {error && <p role="alert" className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
-    <div className="flex gap-2"><Button variant="outline" onClick={() => router.push("/education/kits")}>Cancel</Button><Button disabled={saving} onClick={() => void save()}>{saving ? "Creating…" : "Create kit"}</Button></div>
+    <div className="flex gap-2"><Button variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.push("/education/kits"); }}>Cancel</Button><Button disabled={saving} onClick={() => void save()}>{saving ? "Creating…" : "Create kit"}</Button></div>
   </main></SurfaceRuntimeProvider>;
 }
