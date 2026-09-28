@@ -166,6 +166,7 @@ function ScrapePanel({ local }: { local: UseMatrxLocalReturn }) {
                 variant="outline"
                 className="text-green-600 border-green-500"
               >
+                {/* read-gate-exempt: summary of a finished scrape batch; batchMeta exists only when the batch returned */}
                 {batchMeta.success_count}/{batchMeta.total} success
               </Badge>
               <Badge variant="outline" className="text-muted-foreground">
@@ -413,6 +414,7 @@ function SearchPanel({ local }: { local: UseMatrxLocalReturn }) {
 
       {meta && (
         <div className="flex gap-2 text-xs">
+          {/* read-gate-exempt: summary of a finished search; meta is set only when the search returned, failures show in the error line */}
           <Badge variant="outline">{meta.total} results</Badge>
           <Badge variant="outline" className="text-muted-foreground">
             {meta.elapsed_ms}ms
@@ -943,6 +945,7 @@ function ComparisonPanel({ local }: { local: UseMatrxLocalReturn }) {
                         />
                       </div>
                       <span className="text-muted-foreground w-24 text-right shrink-0">
+                        {/* read-gate-exempt: length of a scrape result this run returned; a failed run renders no row (r is null) */}
                         {r.content.trim().length.toLocaleString()} chars
                       </span>
                       <span className="text-muted-foreground w-16 text-right shrink-0">

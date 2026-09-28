@@ -309,6 +309,7 @@ export default function PdfExtractClient() {
                   </span>
                 </div>
                 <p className="text-sm font-medium">
+                  {/* read-gate-exempt: stats of a finished extraction; this grid renders only once extractedData is set on success */}
                   {charCount.toLocaleString()}
                 </p>
               </div>
@@ -318,6 +319,7 @@ export default function PdfExtractClient() {
                   <span className="text-xs text-muted-foreground">Words</span>
                 </div>
                 <p className="text-sm font-medium">
+                  {/* read-gate-exempt: stats of a finished extraction; this grid renders only once extractedData is set on success */}
                   {wordCount.toLocaleString()}
                 </p>
               </div>
@@ -327,6 +329,7 @@ export default function PdfExtractClient() {
                   <span className="text-xs text-muted-foreground">Pages</span>
                 </div>
                 <p className="text-sm font-medium">
+                  {/* read-gate-exempt: stats of a finished extraction; this grid renders only once extractedData is set on success */}
                   {extractedData.page_count.toLocaleString()}
                 </p>
               </div>

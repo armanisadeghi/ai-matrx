@@ -193,6 +193,7 @@ export default function EnginePage() {
 
             {settings && (
               <p className="text-[10px] text-muted-foreground">
+                {/* read-gate-exempt: settings stays null until a load succeeds; a failed load or refresh is shown by the message line above */}
                 {Object.keys(settings).length} top-level keys •{" "}
                 <Badge variant="secondary" className="text-[10px] h-4">
                   GET/PUT /settings

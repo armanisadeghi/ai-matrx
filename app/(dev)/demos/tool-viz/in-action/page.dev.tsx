@@ -77,6 +77,8 @@ import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 // ─── Curated scenario scripts ───────────────────────────────────────────────
 // The surrounding "around" content for a turn — intro markdown the agent
@@ -579,14 +581,14 @@ async function fetchToolSummary(
     "tool-summary fetch",
   );
 
-  if (error || !data) {
-    if (error)
-      console.warn(
-        "[tool-viz/in-action] tool summary fetch failed:",
-        (error as { message?: string })?.message ?? error,
-      );
-    return new Map();
+  // A failed read is thrown, never returned as an empty catalogue — the panel
+  // would otherwise say "no saved runs" over a request that failed.
+  if (error) {
+    throw new Error(
+      `Tool summary fetch failed: ${(error as { message?: string })?.message ?? String(error)}`,
+    );
   }
+  if (!data) return new Map();
 
   const counts = new Map<string, number>();
   for (const row of data as { tool_name: string }[]) {
@@ -630,14 +632,12 @@ async function fetchRunsForTool(
     "tool-runs fetch",
   );
 
-  if (error || !data) {
-    if (error)
-      console.warn(
-        "[tool-viz/in-action] tool runs fetch failed:",
-        (error as { message?: string })?.message ?? error,
-      );
-    return { runs: [], hasMore: false };
+  if (error) {
+    throw new Error(
+      `Tool runs fetch failed: ${(error as { message?: string })?.message ?? String(error)}`,
+    );
   }
+  if (!data) return { runs: [], hasMore: false };
 
   const rows = data as CxToolCallRow[];
   const hasMore = rows.length > RUNS_PER_PAGE;
@@ -1073,6 +1073,10 @@ function RealRunsPanel({
   onToolCountChange: (count: number) => void;
 }) {
   const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState<unknown>(null);
+  const [summaryAttempt, setSummaryAttempt] = useState(0);
+  const [runsError, setRunsError] = useState<unknown>(null);
+  const [runsAttempt, setRunsAttempt] = useState(0);
   const [dbCounts, setDbCounts] = useState<Map<string, number>>(new Map());
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [toolRuns, setToolRuns] = useState<RealRun[]>([]);
@@ -1098,20 +1102,27 @@ function RealRunsPanel({
   useEffect(() => {
     let cancelled = false;
     setSummaryLoading(true);
-    fetchToolSummary(reduxUserId).then((counts) => {
-      if (cancelled) return;
-      setDbCounts(counts);
-      setSummaryLoading(false);
-      onToolCountChangeRef.current(counts.size);
-      // Auto-select the tool with the most runs.
-      const top =
-        [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-      if (top) setSelectedTool(top);
-    });
+    setSummaryError(null);
+    fetchToolSummary(reduxUserId)
+      .then((counts) => {
+        if (cancelled) return;
+        setDbCounts(counts);
+        setSummaryLoading(false);
+        onToolCountChangeRef.current(counts.size);
+        // Auto-select the tool with the most runs.
+        const top =
+          [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+        if (top) setSelectedTool(top);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setSummaryError(err);
+        setSummaryLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [reduxUserId]);
+  }, [reduxUserId, summaryAttempt]);
 
   // Fetch (or clear) runs whenever the selected tool or page changes.
   useEffect(() => {
@@ -1125,8 +1136,9 @@ function RealRunsPanel({
     }
     let cancelled = false;
     setRunsLoading(true);
-    fetchRunsForTool(reduxUserId, selectedTool, runsPage).then(
-      ({ runs, hasMore: more }) => {
+    setRunsError(null);
+    fetchRunsForTool(reduxUserId, selectedTool, runsPage)
+      .then(({ runs, hasMore: more }) => {
         if (cancelled) return;
         setToolRuns((prev) => (runsPage === 0 ? runs : [...prev, ...runs]));
         setHasMore(more);
@@ -1135,12 +1147,16 @@ function RealRunsPanel({
           setSelectedCallId(runs[0].callId);
           onSelectSampleRef.current(runs[0].sample);
         }
-      },
-    );
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setRunsError(err);
+        setRunsLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [selectedTool, runsPage, reduxUserId, dbCounts]);
+  }, [selectedTool, runsPage, reduxUserId, dbCounts, runsAttempt]);
 
   // Build the full ordered tool list: data tools first (by count), then known
   // tools with no data (registry + scripts), alphabetically within each group.
@@ -1196,6 +1212,16 @@ function RealRunsPanel({
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading tool catalogue…
       </div>
+    );
+  }
+
+  if (summaryError != null) {
+    return (
+      <ReadFailure
+        error={summaryError}
+        what="your saved tool runs"
+        onRetry={() => setSummaryAttempt((n) => n + 1)}
+      />
     );
   }
 
@@ -1304,7 +1330,14 @@ function RealRunsPanel({
               — pick a run to replay
             </p>
             <div className="rounded-md border border-border bg-card">
-              {runsLoading && toolRuns.length === 0 ? (
+              {runsError != null && toolRuns.length === 0 ? (
+                <ReadFailure
+                  error={runsError}
+                  what="this tool's runs"
+                  onRetry={() => setRunsAttempt((n) => n + 1)}
+                  size="compact"
+                />
+              ) : runsLoading && toolRuns.length === 0 ? (
                 <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Loading runs…
@@ -1352,6 +1385,14 @@ function RealRunsPanel({
                 })
               )}
             </div>
+            {runsError != null && toolRuns.length > 0 && (
+              <StaleDataNotice
+                hasData
+                partial
+                what="the next page of runs"
+                onRetry={() => setRunsAttempt((n) => n + 1)}
+              />
+            )}
             {(hasMore || (runsLoading && toolRuns.length > 0)) && (
               <button
                 type="button"

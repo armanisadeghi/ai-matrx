@@ -297,6 +297,7 @@ export default function RankKindsDemoPage() {
               What we hide
               {report && report.dropped.length > 0 && (
                 <span className="ml-1.5 rounded-full bg-muted px-1.5 text-[10px]">
+                  {/* read-gate-exempt: figure from a snapshot this page just ran; outcome is set only when the stream returned a result */}
                   {report.dropped.length}
                 </span>
               )}
@@ -329,6 +330,7 @@ export default function RankKindsDemoPage() {
                 <div className="rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-sm">
                   <div className="flex items-center gap-2 font-medium text-foreground">
                     <AlertTriangle className="h-4 w-4 text-warning" />
+                    {/* read-gate-exempt: figure from a snapshot this page just ran; outcome is set only when the stream returned a result */}
                     The live pipeline stored {persisted.resultCount} of{" "}
                     {kindTotal} positions on this page.
                   </div>
@@ -386,9 +388,11 @@ export default function RankKindsDemoPage() {
                       <tr className="border-t border-border bg-muted/30 font-medium">
                         <td className="px-3 py-1.5">Total</td>
                         <td className="px-3 py-1.5 text-right tabular-nums">
+                          {/* read-gate-exempt: figure from a snapshot this page just ran; outcome is set only when the stream returned a result */}
                           {persisted.resultCount}
                         </td>
                         <td className="px-3 py-1.5 text-right tabular-nums">
+                          {/* read-gate-exempt: figure from a snapshot this page just ran; outcome is set only when the stream returned a result */}
                           {kindTotal}
                         </td>
                       </tr>
@@ -399,6 +403,7 @@ export default function RankKindsDemoPage() {
                 <div className="text-xs text-muted-foreground">
                   snapshot <code>{persisted.snapshotId}</code> ·{" "}
                   {persisted.provider} / {persisted.engine} /{" "}
+                  {/* read-gate-exempt: figure from a snapshot this page just ran; outcome is set only when the stream returned a result */}
                   {persisted.searchType} · {persisted.observationCount} rank
                   observation(s)
                   {persisted.observedAt ? ` · observed ${persisted.observedAt}` : ""}
@@ -406,6 +411,7 @@ export default function RankKindsDemoPage() {
 
                 <details className="rounded-md border border-border">
                   <summary className="cursor-pointer px-3 py-2 text-sm text-muted-foreground">
+                    {/* read-gate-exempt: figure from a snapshot this page just ran; outcome is set only when the stream returned a result */}
                     The {persisted.rows.length} rows exactly as they sit in{" "}
                     <code>seo.serp_result</code>
                   </summary>

@@ -104,10 +104,13 @@ export default function ExtractTextDemo() {
           <span className="font-medium text-foreground">
             {running
               ? (progressMessage ?? "Extracting…")
-              : `Extracted ${pages.length} page${pages.length === 1 ? "" : "s"}`}
+              : error
+                ? `Stopped after ${pages.length} page${pages.length === 1 ? "" : "s"}`
+                : `Extracted ${pages.length} page${pages.length === 1 ? "" : "s"}`}
           </span>
           {totalPages > 0 && (
             <span className="text-muted-foreground">
+              {/* read-gate-exempt: live progress of pages the stream has actually delivered in this run, not a read's rows */}
               {pages.length} / {totalPages}
             </span>
           )}

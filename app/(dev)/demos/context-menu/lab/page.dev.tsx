@@ -1300,7 +1300,11 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
               title="Raw DB view"
               subtitle="agent.context_menu_view via supabase-js (RLS still applies)"
               badge={
-                dbResponse ? (
+                dbResponse?.error ? (
+                  <span className="text-[10px] font-mono text-destructive">
+                    query failed
+                  </span>
+                ) : dbResponse ? (
                   <span className="text-[10px] font-mono text-muted-foreground">
                     {dbResponse.rowCount} rows
                   </span>

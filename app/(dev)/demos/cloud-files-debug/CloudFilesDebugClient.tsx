@@ -319,6 +319,7 @@ export function CloudFilesDebugClient() {
         try {
           const parsed = JSON.parse(responseBody);
           if (parsed.file_id) setLastFileId(parsed.file_id);
+        // read-gate-exempt: best-effort parse of an upload response for the file id; the call itself is already logged with its outcome
         } catch {
           // ignore
         }
@@ -772,6 +773,7 @@ export function CloudFilesDebugClient() {
           <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
+              {/* read-gate-exempt: a local log of test calls fired on this page, failures included as entries — not a read */}
               <h2 className="text-sm font-medium">Event log ({logs.length})</h2>
             </div>
             {logs.length > 0 && (
@@ -789,6 +791,7 @@ export function CloudFilesDebugClient() {
           <div className="divide-y divide-border">
             {logs.length === 0 && (
               <div className="p-6 text-center text-sm text-muted-foreground">
+                {/* read-gate-exempt: a local log of test calls fired on this page, failures included as entries — not a read */}
                 No events yet. Fire a test above.
               </div>
             )}

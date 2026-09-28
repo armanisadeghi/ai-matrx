@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, MessageSquare, RefreshCw, Phone, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 interface Conversation {
   id: string;
@@ -120,7 +121,8 @@ export default function ConversationsList() {
             <div>
               <CardTitle>Conversations</CardTitle>
               <CardDescription>
-                All SMS conversations ({conversations.length})
+                All SMS conversations (
+                <UntrustedCount value={conversations.length} trustworthy={!error} label="Conversations" />)
               </CardDescription>
             </div>
             <Button

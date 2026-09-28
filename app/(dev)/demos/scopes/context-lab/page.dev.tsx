@@ -107,6 +107,8 @@ import type {
   ContextItemValue,
 } from "@/features/scopes/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 interface DemoFile {
   id: string;
@@ -136,6 +138,7 @@ function AssignToItemPanel({
     Record<string, ContextItemRow[]>
   >({});
   const [loadingType, setLoadingType] = useState<string | null>(null);
+  const [itemsError, setItemsError] = useState<Record<string, unknown>>({});
   const [itemId, setItemId] = useState<string | null>(null);
   const [assigned, setAssigned] = useState(false);
 
@@ -167,8 +170,14 @@ function AssignToItemPanel({
     scopesService
       .listContextItems(type.id)
       .then((r) => {
-        if (r.ok) setItemsByType((p) => ({ ...p, [type.id]: r.data.items }));
+        if (r.ok) {
+          setItemsByType((p) => ({ ...p, [type.id]: r.data.items }));
+          setItemsError((p) => ({ ...p, [type.id]: null }));
+        } else {
+          setItemsError((p) => ({ ...p, [type.id]: r.error }));
+        }
       })
+      .catch((e: unknown) => setItemsError((p) => ({ ...p, [type.id]: e })))
       .finally(() => setLoadingType(null));
   }, [type?.id]);
 
@@ -273,6 +282,12 @@ function AssignToItemPanel({
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Loading {type.label_plural}&apos; context items…
               </div>
+            ) : itemsError[type.id] != null ? (
+              <ReadFailure
+                error={itemsError[type.id]}
+                what={`${type.label_plural}' context items`}
+                size="compact"
+              />
             ) : items.length === 0 ? (
               <div className="px-2.5 py-2 text-xs text-muted-foreground">
                 {type.label_singular} has no context items defined yet.
@@ -414,6 +429,7 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
   const [itemsByType, setItemsByType] = useState<
     Record<string, ContextItemRow[]>
   >({});
+  const [itemsError, setItemsError] = useState<Record<string, unknown>>({});
   const [itemId, setItemId] = useState<string | null>(null);
   const [targetId, setTargetId] = useState<string | null>(null);
   const [refs, setRefs] = useState<ScopeRef[]>([]);
@@ -436,9 +452,17 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
   }, [sourceId]);
   useEffect(() => {
     if (!type || itemsByType[type.id]) return;
-    scopesService.listContextItems(type.id).then((r) => {
-      if (r.ok) setItemsByType((p) => ({ ...p, [type.id]: r.data.items }));
-    });
+    scopesService
+      .listContextItems(type.id)
+      .then((r) => {
+        if (r.ok) {
+          setItemsByType((p) => ({ ...p, [type.id]: r.data.items }));
+          setItemsError((p) => ({ ...p, [type.id]: null }));
+        } else {
+          setItemsError((p) => ({ ...p, [type.id]: r.error }));
+        }
+      })
+      .catch((e: unknown) => setItemsError((p) => ({ ...p, [type.id]: e })));
   }, [type?.id]);
 
   const items = type ? (itemsByType[type.id] ?? []) : [];
@@ -548,7 +572,13 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
                 )}
               </SelectTrigger>
               <SelectContent>
-                {items.length === 0 ? (
+                {type && itemsError[type.id] != null ? (
+                  <ReadFailure
+                    error={itemsError[type.id]}
+                    what={`${type.label_plural}' context items`}
+                    size="compact"
+                  />
+                ) : items.length === 0 ? (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">
                     {type ? `${type.label_singular} has no items.` : ""}
                   </div>
@@ -698,6 +728,8 @@ function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
     Record<string, ContextItemValue[]>
   >({});
   const [loading, setLoading] = useState(false);
+  const [itemsError, setItemsError] = useState<Record<string, unknown>>({});
+  const [valuesError, setValuesError] = useState<unknown>(null);
 
   const allTypes = useMemo(
     () => orgs.flatMap((o) => o.scope_types.map((t) => ({ t, o }))),
@@ -712,30 +744,43 @@ function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
   useEffect(() => {
     if (!type) return;
     if (!itemsByType[type.id]) {
-      scopesService.listContextItems(type.id).then((r) => {
-        if (r.ok) setItemsByType((p) => ({ ...p, [type.id]: r.data.items }));
-      });
+      scopesService
+        .listContextItems(type.id)
+        .then((r) => {
+          if (r.ok) {
+            setItemsByType((p) => ({ ...p, [type.id]: r.data.items }));
+            setItemsError((p) => ({ ...p, [type.id]: null }));
+          } else {
+            setItemsError((p) => ({ ...p, [type.id]: r.error }));
+          }
+        })
+        .catch((e: unknown) => setItemsError((p) => ({ ...p, [type.id]: e })));
     }
     // load REAL current values for every scope of this type (gap check)
     const missing = type.scopes.filter((s) => !valuesByScope[s.id]);
     if (missing.length === 0) return;
     setLoading(true);
+    setValuesError(null);
     Promise.all(
       missing.map((s) =>
         scopesService
           .listContextValues(s.id)
-          .then((r) => ({ id: s.id, values: r.ok ? r.data.values : [] })),
+          .then((r) => (r.ok ? { id: s.id, values: r.data.values, error: null } : { id: s.id, values: null, error: r.error as unknown })),
       ),
     )
-      .then((rs) =>
+      .then((rs) => {
+        // A scope whose values could not be read is left uncached (so it is
+        // re-read next time) and the gap check says it could not be checked.
         setValuesByScope((p) => {
           const n = { ...p };
           rs.forEach((r) => {
-            n[r.id] = r.values;
+            if (r.values) n[r.id] = r.values;
           });
           return n;
-        }),
-      )
+        });
+        setValuesError(rs.find((r) => r.error != null)?.error ?? null);
+      })
+      .catch((e: unknown) => setValuesError(e))
       .finally(() => setLoading(false));
   }, [type?.id]);
 
@@ -828,7 +873,13 @@ function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
                 </div>
               </SelectTrigger>
               <SelectContent>
-                {items.length === 0 ? (
+                {type && itemsError[type.id] != null ? (
+                  <ReadFailure
+                    error={itemsError[type.id]}
+                    what={`${type.label_plural}' context items`}
+                    size="compact"
+                  />
+                ) : items.length === 0 ? (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">
                     {type ? "No items on this type." : ""}
                   </div>
@@ -850,6 +901,12 @@ function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
               Pick a type and the item every{" "}
               {type ? type.label_singular.toLowerCase() : "scope"} must have.
             </div>
+          ) : valuesError != null ? (
+            <ReadFailure
+              error={valuesError}
+              what={`the current values of these ${type.label_plural.toLowerCase()}`}
+              size="compact"
+            />
           ) : loading && rows.every((r) => !valuesByScope[r.scope.id]) ? (
             <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -907,7 +964,7 @@ function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
         </div>
 
         <div className="flex h-5 items-center gap-2">
-          {type && item && rows.length > 0 ? (
+          {valuesError == null && type && item && rows.length > 0 ? (
             <>
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
@@ -1450,12 +1507,12 @@ export default function ContextLabPage() {
   const { organizations, status } = useScopeTree();
   const [orgId, setOrgId] = useState<string | null>(null);
   const [files, setFiles] = useState<DemoFile[]>([]);
-  const [filesErr, setFilesErr] = useState<string | null>(null);
+  const [filesError, setFilesError] = useState<string | null>(null);
   const [filesLoading, setFilesLoading] = useState(true);
   const [fileId, setFileId] = useState<string | null>(null);
   const [projects, setProjects] = useState<AssignableProject[]>([]);
   const [tasks, setTasks] = useState<AssignableTask[]>([]);
-  const [engagementErr, setEngagementErr] = useState<unknown>(null);
+  const [engagementError, setEngagementError] = useState<unknown>(null);
   const [liveRows, setLiveRows] = useState<LiveRowView[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [windowOpen, setWindowOpen] = useState(false);
@@ -1476,7 +1533,7 @@ export default function ContextLabPage() {
         if (docs[0]) setFileId(docs[0].id);
       })
       .catch((e) =>
-        setFilesErr(
+        setFilesError(
           e instanceof Error ? e.message : "Could not load your files",
         ),
       )
@@ -1485,10 +1542,10 @@ export default function ContextLabPage() {
     // their cache, so the page + every field instance cost ONE fetch each.
     fetchAssignableProjects()
       .then(setProjects)
-      .catch(setEngagementErr);
+      .catch(setEngagementError);
     fetchAssignableTasks()
       .then(setTasks)
-      .catch(setEngagementErr);
+      .catch(setEngagementError);
   }, []);
 
   useEffect(() => {
@@ -1588,11 +1645,11 @@ export default function ContextLabPage() {
             Demo harness — picks which real document the assignment field
             receives (not part of the UI)
           </div>
-          {filesErr ? (
+          {filesError ? (
             <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
               <AlertTriangle className="h-4 w-4" />
-              {filesErr}
-              <ErrorAlchemyMenu error={filesErr} />
+              {filesError}
+              <ErrorAlchemyMenu error={filesError} />
             </div>
           ) : filesLoading ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1622,15 +1679,18 @@ export default function ContextLabPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {engagementErr ? (
+              {engagementError ? (
                 <span className="flex items-center gap-1 text-xs text-destructive" role="alert">
                   Couldn&rsquo;t load your projects and tasks — the counts below are not an answer.
-                  <ErrorAlchemyMenu error={engagementErr} operation="Load your projects and tasks" />
+                  <ErrorAlchemyMenu error={engagementError} operation="Load your projects and tasks" />
                 </span>
               ) : null}
               <span className="text-xs text-muted-foreground">
-                {files.length} files · {projects.length} projects ·{" "}
-                {tasks.length} tasks loaded
+                {files.length} files ·{" "}
+                <UntrustedCount value={projects.length} trustworthy={engagementError == null} label="Projects" />{" "}
+                projects ·{" "}
+                <UntrustedCount value={tasks.length} trustworthy={engagementError == null} label="Tasks" />{" "}
+                tasks loaded
               </span>
             </div>
           )}
@@ -1658,6 +1718,10 @@ export default function ContextLabPage() {
                 onSelectionChange={handleSelection}
                 className="w-[680px] max-w-full"
               />
+            ) : filesError ? (
+              <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">
+                Your documents could not be read — the harness above says why.
+              </Card>
             ) : (
               <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">
                 No documents found. Upload a file, then revisit.
@@ -1782,6 +1846,10 @@ export default function ContextLabPage() {
                   writeMode="preview"
                 />
               </div>
+            ) : filesError ? (
+              <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">
+                Your documents could not be read — the harness above says why.
+              </Card>
             ) : (
               <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">
                 No documents found.
@@ -2012,6 +2080,10 @@ export default function ContextLabPage() {
           ui={renderField(
             fileSubject ? (
               <AssignToItemPanel file={file!} orgs={organizations} />
+            ) : filesError ? (
+              <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">
+                Your documents could not be read — the harness above says why.
+              </Card>
             ) : (
               <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">
                 No documents found. Upload a file, then revisit.

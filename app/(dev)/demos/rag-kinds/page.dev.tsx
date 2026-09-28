@@ -273,6 +273,7 @@ export default function RagKindsDemoPage() {
               What the live citation loses
               {legacy && legacy.lost.length > 0 && (
                 <span className="ml-1.5 rounded-full bg-destructive/15 px-1.5 text-[10px] text-destructive">
+                  {/* read-gate-exempt: figure from a search this page just ran; outcome is set only when the stream returned a result */}
                   {legacy.lost.length}
                 </span>
               )}
@@ -282,6 +283,7 @@ export default function RagKindsDemoPage() {
               What we hide
               {report && report.dropped.length > 0 && (
                 <span className="ml-1.5 rounded-full bg-muted px-1.5 text-[10px]">
+                  {/* read-gate-exempt: figure from a search this page just ran; outcome is set only when the stream returned a result */}
                   {report.dropped.length}
                 </span>
               )}
@@ -327,7 +329,8 @@ export default function RagKindsDemoPage() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     The right column is{" "}
                     <code>graph_actions/rag/_shared.py::_hit_to_citation</code> —
-                    what every RAG node emits today — run over the exact hits the
+                    what every RAG node emits today — run over the exact hits the{" "}
+                    {/* read-gate-exempt: explanatory prose about the live emitter, not an empty state */}
                     left column carries. It reads{" "}
                     <code>sm.get(&quot;library_short_code&quot;)</code>; the real
                     key is <code>short_code</code>. It never reads the URL at
@@ -356,9 +359,11 @@ export default function RagKindsDemoPage() {
                           Sources
                         </td>
                         <td className="px-3 py-1.5 text-right tabular-nums text-foreground">
+                          {/* read-gate-exempt: figure from a search this page just ran; outcome is set only when the stream returned a result */}
                           {ours?.total ?? 0}
                         </td>
                         <td className="px-3 py-1.5 text-right tabular-nums">
+                          {/* read-gate-exempt: figure from a search this page just ran; outcome is set only when the stream returned a result */}
                           {legacy.total}
                         </td>
                       </tr>
@@ -416,6 +421,7 @@ export default function RagKindsDemoPage() {
 
                 <details className="rounded-md border border-border">
                   <summary className="cursor-pointer px-3 py-2 text-sm text-muted-foreground">
+                    {/* read-gate-exempt: figure from a search this page just ran; outcome is set only when the stream returned a result */}
                     The {legacy.citations.length} citations exactly as the live
                     node builds them
                   </summary>

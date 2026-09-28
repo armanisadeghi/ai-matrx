@@ -36,6 +36,7 @@ import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -413,7 +414,11 @@ export default function ToolsDemoClient() {
                   variant={tools.length > 0 ? "secondary" : "outline"}
                   className="text-[10px] h-5 px-1.5"
                 >
-                  {tools.length}
+                  <UntrustedCount
+                    value={tools.length}
+                    trustworthy={!loadError || tools.length > 0}
+                    label="Tools"
+                  />
                 </Badge>
               </div>
 

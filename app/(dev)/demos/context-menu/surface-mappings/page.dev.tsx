@@ -505,7 +505,7 @@ export default function SurfaceMappingsDemoPage() {
         </div>
 
         {/* ── Output ─────────────────────────────────────────────────────── */}
-        {output && (
+        {output && !resolveError && (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
               Resolved{" "}

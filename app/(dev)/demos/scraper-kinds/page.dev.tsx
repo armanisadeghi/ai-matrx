@@ -332,6 +332,7 @@ export default function ScraperKindsDemoPage() {
               <div className="flex items-start gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
                 <EyeOff className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
+                  {/* read-gate-exempt: explanatory prose ("Nothing here is hidden from you"), not an empty state */}
                   Everything the engine produced that the kind does <strong>not</strong> carry —
                   the reason, the real size, and the actual data. Nothing here is hidden from
                   you; the question is whether it should be hidden from a user.

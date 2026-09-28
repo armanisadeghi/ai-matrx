@@ -41,6 +41,7 @@ import type {
   SyncStatus,
   DocConflict,
 } from "../_lib/types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -439,13 +440,21 @@ export default function DocumentsPage() {
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
 
+  // Each read below records its own failure so its empty view never claims
+  // "nothing" over a request that failed.
+  const [readErrors, setReadErrors] = useState<
+    Partial<Record<"tree" | "notes" | "sync" | "versions" | "conflicts" | "local" | "shares" | "mappings", unknown>>
+  >({});
+
   // ── Data fetchers ────────────────────────────────────────────────────────
 
   const fetchTree = useCallback(async () => {
     try {
       const data = (await restGet("/documents/tree")) as DocFolder[];
       setFolders(Array.isArray(data) ? data : []);
-    } catch {
+      setReadErrors((p) => ({ ...p, tree: null }));
+    } catch (err) {
+      setReadErrors((p) => ({ ...p, tree: err }));
       setFolders([]);
     }
   }, [restGet]);
@@ -458,7 +467,9 @@ export default function DocumentsPage() {
       if (searchQuery) path += `search=${encodeURIComponent(searchQuery)}&`;
       const data = (await restGet(path)) as DocNote[];
       setNotes(Array.isArray(data) ? data : []);
-    } catch {
+      setReadErrors((p) => ({ ...p, notes: null }));
+    } catch (err) {
+      setReadErrors((p) => ({ ...p, notes: err }));
       setNotes([]);
     } finally {
       setLoadingNotes(false);
@@ -606,7 +617,9 @@ export default function DocumentsPage() {
     try {
       const data = (await restGet("/documents/sync/status")) as SyncStatus;
       setSyncStatus(data);
-    } catch {
+      setReadErrors((p) => ({ ...p, sync: null }));
+    } catch (err) {
+      setReadErrors((p) => ({ ...p, sync: err }));
       setSyncStatus(null);
     }
   };
@@ -657,7 +670,9 @@ export default function DocumentsPage() {
         `/documents/notes/${noteId}/versions`,
       )) as NoteVersion[];
       setVersions(Array.isArray(data) ? data : []);
-    } catch {
+      setReadErrors((p) => ({ ...p, versions: null }));
+    } catch (err) {
+      setReadErrors((p) => ({ ...p, versions: err }));
       setVersions([]);
     }
   };
@@ -686,7 +701,9 @@ export default function DocumentsPage() {
     try {
       const data = (await restGet("/documents/conflicts")) as DocConflict[];
       setConflicts(Array.isArray(data) ? data : []);
-    } catch {
+      setReadErrors((p) => ({ ...p, conflicts: null }));
+    } catch (err) {
+      setReadErrors((p) => ({ ...p, conflicts: err }));
       setConflicts([]);
     }
   };
@@ -726,7 +743,9 @@ export default function DocumentsPage() {
       ]);
       setLocalFolders(Array.isArray(foldersData) ? foldersData : []);
       setLocalFiles(Array.isArray(filesData) ? filesData : []);
-    } catch {
+      setReadErrors((p) => ({ ...p, local: null }));
+    } catch (err) {
+      setReadErrors((p) => ({ ...p, local: err }));
       setLocalFolders([]);
       setLocalFiles([]);
     }
@@ -738,7 +757,9 @@ export default function DocumentsPage() {
     try {
       const data = (await restGet("/documents/shares")) as unknown[];
       setShares(Array.isArray(data) ? data : []);
-    } catch {
+      setReadErrors((p) => ({ ...p, shares: null }));
+    } catch (err) {
+      setReadErrors((p) => ({ ...p, shares: err }));
       setShares([]);
     }
   };
@@ -762,7 +783,9 @@ export default function DocumentsPage() {
     try {
       const data = (await restGet("/documents/mappings")) as unknown[];
       setMappings(Array.isArray(data) ? data : []);
-    } catch {
+      setReadErrors((p) => ({ ...p, mappings: null }));
+    } catch (err) {
+      setReadErrors((p) => ({ ...p, mappings: err }));
       setMappings([]);
     }
   };
@@ -828,6 +851,14 @@ export default function DocumentsPage() {
                 <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1">
                   Folders
                 </h3>
+                {readErrors.tree != null && (
+                  <ReadFailure
+                    error={readErrors.tree}
+                    what="the folders"
+                    onRetry={() => void fetchTree()}
+                    size="compact"
+                  />
+                )}
                 <FolderTree
                   folders={folders}
                   selectedFolderId={selectedFolderId}
@@ -876,7 +907,14 @@ export default function DocumentsPage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto max-h-[50dvh]">
-                  {notes.length === 0 ? (
+                  {readErrors.notes != null ? (
+                    <ReadFailure
+                      error={readErrors.notes}
+                      what="the notes"
+                      onRetry={() => void fetchNotes()}
+                      size="compact"
+                    />
+                  ) : notes.length === 0 ? (
                     <p className="text-xs text-muted-foreground p-3 text-center italic">
                       No notes found
                     </p>
@@ -1041,7 +1079,14 @@ export default function DocumentsPage() {
                   <RefreshCw className="w-3 h-3" /> Refresh
                 </Button>
               </div>
-              {syncStatus ? (
+              {readErrors.sync != null ? (
+                <ReadFailure
+                  error={readErrors.sync}
+                  what="the sync status"
+                  onRetry={() => void fetchSyncStatus()}
+                  size="compact"
+                />
+              ) : syncStatus ? (
                 <pre className="text-xs font-mono bg-background border rounded p-3 overflow-x-auto">
                   {JSON.stringify(syncStatus, null, 2)}
                 </pre>
@@ -1117,7 +1162,14 @@ export default function DocumentsPage() {
                   Load Versions
                 </Button>
               </div>
-              {versions.length === 0 ? (
+              {readErrors.versions != null ? (
+                <ReadFailure
+                  error={readErrors.versions}
+                  what="the note's versions"
+                  onRetry={() => void fetchVersions(versionsNoteId)}
+                  size="compact"
+                />
+              ) : versions.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">
                   No versions loaded
                 </p>
@@ -1179,7 +1231,14 @@ export default function DocumentsPage() {
                   <RefreshCw className="w-3 h-3" /> Refresh
                 </Button>
               </div>
-              {conflicts.length === 0 ? (
+              {readErrors.conflicts != null ? (
+                <ReadFailure
+                  error={readErrors.conflicts}
+                  what="the sync conflicts"
+                  onRetry={() => void fetchConflicts()}
+                  size="compact"
+                />
+              ) : conflicts.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">
                   No conflicts — everything in sync
                 </p>
@@ -1273,6 +1332,14 @@ export default function DocumentsPage() {
                   Browse
                 </Button>
               </div>
+              {readErrors.local != null ? (
+                <ReadFailure
+                  error={readErrors.local}
+                  what="the local folders and files"
+                  onRetry={() => void fetchLocalFiles()}
+                  size="compact"
+                />
+              ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground mb-1">
@@ -1291,6 +1358,7 @@ export default function DocumentsPage() {
                   </pre>
                 </div>
               </div>
+              )}
             </div>
           )}
 
@@ -1313,7 +1381,14 @@ export default function DocumentsPage() {
                   <RefreshCw className="w-3 h-3" /> Refresh
                 </Button>
               </div>
-              {shares.length === 0 ? (
+              {readErrors.shares != null ? (
+                <ReadFailure
+                  error={readErrors.shares}
+                  what="the shares"
+                  onRetry={() => void fetchShares()}
+                  size="compact"
+                />
+              ) : shares.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">
                   No shares
                 </p>
@@ -1382,7 +1457,14 @@ export default function DocumentsPage() {
                   <RefreshCw className="w-3 h-3" /> Refresh
                 </Button>
               </div>
-              {mappings.length === 0 ? (
+              {readErrors.mappings != null ? (
+                <ReadFailure
+                  error={readErrors.mappings}
+                  what="the folder mappings"
+                  onRetry={() => void fetchMappings()}
+                  size="compact"
+                />
+              ) : mappings.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">
                   No mappings configured
                 </p>

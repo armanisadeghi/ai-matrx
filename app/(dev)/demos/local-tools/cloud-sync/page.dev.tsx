@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { LocalToolsPageShell } from "../_lib/LocalToolsPageShell";
 import { useMatrxLocalContext } from "../_lib/MatrxLocalContext";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // ---------------------------------------------------------------------------
 // Component
@@ -75,6 +76,7 @@ export default function CloudSyncPage() {
   const [instances, setInstances] = useState<unknown[] | null>(null);
   const [currentInstance, setCurrentInstance] = useState<unknown | null>(null);
   const [loadingInstances, setLoadingInstances] = useState(false);
+  const [instancesError, setInstancesError] = useState<unknown>(null);
 
   const configure = async () => {
     setConfiguring(true);
@@ -160,6 +162,7 @@ export default function CloudSyncPage() {
 
   const fetchInstances = async () => {
     setLoadingInstances(true);
+    setInstancesError(null);
     try {
       const [current, all] = await Promise.all([
         restGet("/cloud/instance") as Promise<unknown>,
@@ -167,8 +170,8 @@ export default function CloudSyncPage() {
       ]);
       setCurrentInstance(current);
       setInstances(Array.isArray(all) ? all : []);
-    } catch {
-      // Silently ignore
+    } catch (err) {
+      setInstancesError(err);
     } finally {
       setLoadingInstances(false);
     }
@@ -360,7 +363,16 @@ export default function CloudSyncPage() {
               </div>
             )}
 
-            {instances && instances.length > 0 && (
+            {instancesError != null && (
+              <ReadFailure
+                error={instancesError}
+                what="the cloud instances"
+                onRetry={() => void fetchInstances()}
+                size="compact"
+              />
+            )}
+
+            {instancesError == null && instances && instances.length > 0 && (
               <div className="space-y-1">
                 <h3 className="text-xs font-semibold text-muted-foreground">
                   All Instances ({instances.length})
@@ -371,7 +383,7 @@ export default function CloudSyncPage() {
               </div>
             )}
 
-            {!currentInstance && !instances && !loadingInstances && (
+            {instancesError == null && !currentInstance && !instances && !loadingInstances && (
               <p className="text-xs text-muted-foreground italic">
                 No instance data — configure cloud sync first
               </p>

@@ -35,6 +35,7 @@ import {
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { RootState } from "@/lib/redux/store";
 import type { IdentityKey } from "@/lib/sync/types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // Shape of a slice record written by the engine's IDB persistence layer. Kept
 // local to the demo — production code imports the type from `lib/sync/persistence/idb`
@@ -93,6 +94,7 @@ export function PreferencesDemoClient() {
 
   // Live persisted-data observers.
   const [idbRecord, setIdbRecord] = useState<ObservedIdbRecord | null>(null);
+  const [idbError, setIdbError] = useState<string | null>(null);
   const [lsFallbackRaw, setLsFallbackRaw] = useState<string | null>(null);
   const [events, setEvents] = useState<BroadcastEvent[]>([]);
 
@@ -124,8 +126,10 @@ export function PreferencesDemoClient() {
         const compoundKey = `${currentIdentity}:${SLICE_NAME}:${IDB_SCHEMA_VERSION}`;
         const rec = await db.slices.get(compoundKey);
         setIdbRecord(rec ?? null);
-      } catch {
+        setIdbError(null);
+      } catch (err) {
         setIdbRecord(null);
+        setIdbError(err instanceof Error ? err.message : String(err));
       }
       setLsFallbackRaw(window.localStorage.getItem(LS_FALLBACK_KEY));
     };
@@ -254,7 +258,9 @@ export function PreferencesDemoClient() {
               : "—"}
           </code>
         </p>
-        {mounted && idbRecord ? (
+        {mounted && idbError ? (
+          <ReadFailure error={idbError} what="the IndexedDB record" size="compact" />
+        ) : mounted && idbRecord ? (
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-xs">
             <dt className="text-muted-foreground">persistedAt:</dt>
             <dd className="font-mono">

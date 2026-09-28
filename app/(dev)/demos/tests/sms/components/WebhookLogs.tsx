@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, RefreshCw, AlertCircle, Webhook, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, RefreshCw, Webhook, CheckCircle2, XCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 interface WebhookLog {
   id: string;
@@ -80,7 +82,8 @@ export default function WebhookLogs() {
             <div>
               <CardTitle>Webhook Logs</CardTitle>
               <CardDescription>
-                Recent webhook events ({logs.length})
+                Recent webhook events (
+                <UntrustedCount value={logs.length} trustworthy={!error || logs.length > 0} label="Webhook events" />)
               </CardDescription>
             </div>
             <Button onClick={fetchLogs} variant="outline" size="sm" disabled={loading}>
@@ -93,20 +96,24 @@ export default function WebhookLogs() {
           </div>
         </CardHeader>
         <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+          {error && logs.length > 0 && (
+            <StaleDataNotice
+              hasData
+              what="the webhook logs"
+              onRetry={() => void fetchLogs()}
+              retrying={loading}
+              detail={error}
+              className="mb-4"
+            />
           )}
 
           {loading && logs.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : error ? (
-<ReadFailure error={error} what="this list" />
-) : logs.length === 0 ? (
+          ) : error && logs.length === 0 ? (
+            <ReadFailure error={error} what="the webhook logs" onRetry={() => void fetchLogs()} />
+          ) : logs.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Webhook className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>No webhook logs yet</p>

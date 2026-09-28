@@ -322,6 +322,7 @@ export default function TableKindsDemoPage() {
               What the legacy shape loses
               {outcome.typeLoss.length > 0 && (
                 <span className="ml-1.5 rounded-full bg-muted px-1.5 text-[10px]">
+                  {/* read-gate-exempt: figure from a read this page just ran; outcome is set only when that read returned */}
                   {outcome.typeLoss.length}
                 </span>
               )}
@@ -358,6 +359,7 @@ export default function TableKindsDemoPage() {
               />
             </DataTableMoreProvider>
             <p className="text-xs text-muted-foreground">
+              {/* read-gate-exempt: figure from a read this page just ran; outcome is set only when that read returned */}
               {`This read brought back ${rowCount.toLocaleString()} ${
                 rowCount === 1 ? "row" : "rows"
               }, and ${typedColumns} of ${columns.length} ${
@@ -379,6 +381,7 @@ export default function TableKindsDemoPage() {
               <div className="flex items-center gap-2 font-medium text-foreground">
                 <AlertTriangle className="h-4 w-4 text-warning" />
                 The node held full type metadata for {typedColumns} of{" "}
+                {/* read-gate-exempt: figure from a read this page just ran; outcome is set only when that read returned */}
                 {columns.length} columns and the legacy shape carries none of it.
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -445,6 +448,7 @@ export default function TableKindsDemoPage() {
                 <code className="text-xs">
                   {"{rows, row_count, command}"}
                 </code>{" "}
+                {/* read-gate-exempt: figure from a read this page just ran; outcome is set only when that read returned */}
                 — {legacyRows.length} rows,{" "}
                 <code className="text-xs">command</code> ={" "}
                 {outcome.legacy?.command === null ||

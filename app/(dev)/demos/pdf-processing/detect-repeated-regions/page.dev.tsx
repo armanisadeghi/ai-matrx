@@ -99,6 +99,7 @@ export default function DetectRepeatedRegionsDemo() {
   const results = result ? (
     <>
       <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+        {/* read-gate-exempt: summary of a finished detection; result is set only when the stream completed, failures show as the error */}
         <span className="font-medium">{regions.length}</span> region
         {regions.length === 1 ? "" : "s"} detected across{" "}
         <span className="font-medium">{result.page_count}</span> page

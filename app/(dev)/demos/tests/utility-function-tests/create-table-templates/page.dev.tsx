@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import UserTableViewer from '@/components/user-generated-table-data/UserTableViewer';
 import CreateTemplateModal from '@/components/user-generated-table-data/CreateTemplateModal';
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export default function UtilityTestPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +72,9 @@ export default function UtilityTestPage() {
   const [includeDataWithTable, setIncludeDataWithTable] = useState<boolean>(false);
   const [flashcardData, setFlashcardData] = useState<any[]>([]);
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState<boolean>(false);
+  const [flashcardsError, setFlashcardsError] = useState<unknown>(null);
+  const [templatesError, setTemplatesError] = useState<unknown>(null);
+  const [templateError, setTemplateError] = useState<unknown>(null);
   
   // View table modal state
   const [viewTableModalOpen, setViewTableModalOpen] = useState(false);
@@ -86,6 +90,7 @@ export default function UtilityTestPage() {
   // Function to load templates (extracted to its own function for reuse)
   const loadTemplates = async () => {
     setIsLoadingTemplates(true);
+    setTemplatesError(null);
     try {
       const templates = await getSchemaTemplates(supabase);
       setSchemaTemplates(templates);
@@ -96,6 +101,7 @@ export default function UtilityTestPage() {
       }
     } catch (error) {
       console.error('Error loading schema templates:', error);
+      setTemplatesError(error);
     } finally {
       setIsLoadingTemplates(false);
     }
@@ -115,6 +121,7 @@ export default function UtilityTestPage() {
     if (!selectedTemplateId) return;
     
     const loadTemplate = async () => {
+      setTemplateError(null);
       try {
         const template = await getSchemaTemplateById(supabase, selectedTemplateId);
         setSelectedTemplate(template);
@@ -125,6 +132,7 @@ export default function UtilityTestPage() {
         }
       } catch (error) {
         console.error('Error loading template details:', error);
+        setTemplateError(error);
       }
     };
     
@@ -150,11 +158,15 @@ export default function UtilityTestPage() {
     
     const loadFlashcardData = async () => {
       setIsLoadingFlashcards(true);
+      setFlashcardsError(null);
+      // Never show the previous set's cards under the newly picked set.
+      setFlashcardData([]);
       try {
         const data = await getFlashcardSet(selectedFlashcardSet);
         setFlashcardData(data);
       } catch (error) {
         console.error('Error loading flashcard data:', error);
+        setFlashcardsError(error);
       } finally {
         setIsLoadingFlashcards(false);
       }
@@ -372,6 +384,12 @@ export default function UtilityTestPage() {
               </SelectContent>
             </Select>
             {isLoadingTemplates && <p className="text-sm text-muted-foreground">Loading templates...</p>}
+            {templatesError != null && (
+              <ReadFailure error={templatesError} what="the schema templates" onRetry={() => void loadTemplates()} size="compact" />
+            )}
+            {templateError != null && (
+              <ReadFailure error={templateError} what="this template's details" size="compact" />
+            )}
             {selectedTemplate && (
               <p className="text-sm text-muted-foreground mt-1">
                 {selectedTemplate.description}
@@ -418,7 +436,10 @@ export default function UtilityTestPage() {
                   </SelectContent>
                 </Select>
                 {isLoadingFlashcards && <p className="text-sm text-muted-foreground">Loading flashcards...</p>}
-                {!isLoadingFlashcards && flashcardData.length > 0 && (
+                {flashcardsError != null && (
+                  <ReadFailure error={flashcardsError} what="this flashcard set" size="compact" />
+                )}
+                {!isLoadingFlashcards && flashcardsError == null && flashcardData.length > 0 && (
                   <p className="text-sm text-muted-foreground">
                     {flashcardData.length} flashcards available in this set
                   </p>
