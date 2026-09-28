@@ -182,6 +182,11 @@ interface CanvasState {
    */
   splitRatio: number;
   isAvailable: boolean; // Whether canvas is available in current context/layout
+  /** False until a front door (or a boundary) first reports availability —
+   *  i.e. on the server and until the deferred CanvasSideSheet mounts. The
+   *  shell header draws its canvas control in that window instead of an empty
+   *  gap, so the header never shifts when availability arrives. */
+  availabilityKnown: boolean;
   canvasWidth: number; // Width of canvas panel in pixels (persisted)
   renderMode: CanvasRenderMode; // Preferred render mode
 }
@@ -193,6 +198,7 @@ const initialState: CanvasState = {
   secondaryItemId: null,
   splitRatio: 55,
   isAvailable: false, // Default to false, layouts enable it
+  availabilityKnown: false,
   canvasWidth: 768, // Default width matches max-w-3xl so content fills perfectly
   renderMode: "auto", // Auto-detect best render mode
 };
@@ -545,6 +551,7 @@ export const canvasSlice = createSlice({
     // Set canvas availability (called by layouts that support canvas)
     setCanvasAvailable: (state, action: PayloadAction<boolean>) => {
       state.isAvailable = action.payload;
+      state.availabilityKnown = true;
     },
 
     // Set canvas width (for persistence)
@@ -602,6 +609,10 @@ export const selectCurrentItemId = (state: WithCanvas) =>
  */
 export const selectCanvasIsAvailable = (state: WithCanvas) =>
   state.canvas?.isAvailable ?? false;
+
+/** Whether anything has reported availability yet (see `availabilityKnown`). */
+export const selectCanvasAvailabilityKnown = (state: WithCanvas) =>
+  state.canvas?.availabilityKnown ?? false;
 
 // Get the currently active canvas item
 export const selectCurrentCanvasItem = (

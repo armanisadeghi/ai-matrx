@@ -67,7 +67,7 @@ export default function Header({ isAuthenticated }: HeaderProps) {
         <div className="shell-header-secondary">
           <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
           <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
-          <CanvasShellHeaderToggle />
+          <CanvasShellHeaderToggle reserveUntilKnown />
           <InboxHeaderButton isAuthenticated={isAuthenticated} />
         </div>
         <HeaderPhoneOverflow isAuthenticated={isAuthenticated} />

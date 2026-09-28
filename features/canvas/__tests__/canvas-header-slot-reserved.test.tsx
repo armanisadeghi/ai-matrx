@@ -119,6 +119,23 @@ describe("canvas shell header slot", () => {
     expect(h.host.innerHTML).toBe("");
   });
 
+  it("the shell header draws the empty control until availability is known (server HTML, no pop-in)", () => {
+    act(() => {
+      h.root.render(
+        <Provider store={h.store}>
+          <TooltipProvider>
+            <CanvasShellHeaderToggle reserveUntilKnown />
+          </TooltipProvider>
+        </Provider>,
+      );
+    });
+    expect(h.slot()?.getAttribute("data-canvas-header-slot-state")).toBe("empty");
+    act(() => {
+      h.store.dispatch(setCanvasAvailable(false));
+    });
+    expect(h.slot()).toBeNull();
+  });
+
   it("reserves the slot before any canvas item exists", () => {
     act(() => {
       h.store.dispatch(setCanvasAvailable(true));

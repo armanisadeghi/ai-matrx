@@ -10,6 +10,7 @@ import { useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   closeCanvas,
+  selectCanvasAvailabilityKnown,
   selectCanvasIsAvailable,
   selectCanvasIsOpen,
   selectCanvasItems,
@@ -27,6 +28,7 @@ export function useCanvasHeaderToggle() {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector(selectCanvasIsOpen);
   const isAvailable = useAppSelector(selectCanvasIsAvailable);
+  const availabilityKnown = useAppSelector(selectCanvasAvailabilityKnown);
   const items = useAppSelector(selectCanvasItems);
   const currentItemId = useAppSelector(selectCurrentItemId);
 
@@ -51,6 +53,7 @@ export function useCanvasHeaderToggle() {
   return {
     isOpen,
     isAvailable,
+    availabilityKnown,
     itemCount: items.length,
     headlineTitle,
     reopen,
@@ -98,11 +101,31 @@ export const CANVAS_EMPTY_TOOLTIP =
  *
  * Guard: `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx`.
  */
-export function CanvasShellHeaderToggle() {
-  const { isOpen, isAvailable, itemCount, headlineTitle, reopen, putAway } =
-    useCanvasHeaderToggle();
+export function CanvasShellHeaderToggle({
+  reserveUntilKnown = false,
+}: {
+  /** The AppShell header passes this: its routes ALWAYS mount the canvas
+   *  front door (DeferredIslands), just after hydration. */
+  reserveUntilKnown?: boolean;
+} = {}) {
+  const {
+    isOpen,
+    isAvailable,
+    availabilityKnown,
+    itemCount,
+    headlineTitle,
+    reopen,
+    putAway,
+  } = useCanvasHeaderToggle();
 
-  if (!isAvailable) return null;
+  // THE SERVER DRAWS THE CONTROL (2026-09-27). Every shell route mounts the
+  // canvas front door, but only after hydration (DeferredIslands), so the
+  // server and the first frames saw "unavailable" and the button popped in —
+  // shifting the whole header, title included, by 44px. Until availability is
+  // KNOWN the control renders in its empty (disabled) state, which is exactly
+  // what it becomes once the empty canvas reports in. It still leaves when a
+  // surface explicitly reports the canvas unavailable.
+  if (!isAvailable && (availabilityKnown || !reserveUntilKnown)) return null;
 
   const state = itemCount === 0 ? "empty" : isOpen ? "open" : "closed";
   const ariaLabel =
