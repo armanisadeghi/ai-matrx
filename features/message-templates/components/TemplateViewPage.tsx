@@ -599,7 +599,14 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
         onModeSelect={selectMode}
         entityStatus={
           mode === "edit" ? (
-            <span className="shrink-0 text-xs text-muted-foreground">
+            // On a phone the pinned Save already says there are changes; the
+            // words would only be clipped beside it.
+            <span
+              className={cn(
+                "shrink-0 text-xs text-muted-foreground",
+                isDirty && "hidden sm:inline",
+              )}
+            >
               {isSaving ? "Saving…" : isDirty ? "Unsaved changes" : "Saved"}
             </span>
           ) : undefined
