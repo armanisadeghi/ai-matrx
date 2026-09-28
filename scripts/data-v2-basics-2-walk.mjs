@@ -368,6 +368,22 @@ try {
     // ── 8 · a type change and its Undo (on the moved table) ────────────────────────────────────
     await open(T.orders);
     d = await columnSettings("Operatory");
+    if (/Number/.test(await d.getByRole("combobox").nth(0).innerText())) {
+      // A stopped earlier run left it a Number: changing it back is the other half of the promise.
+      await d.getByRole("combobox").nth(0).click();
+      await sleep(500);
+      await page.getByRole("option", { name: "Text", exact: true }).first().click();
+      await sleep(600);
+      await d.getByRole("button", { name: "Save", exact: true }).click();
+      await sleep(1200);
+      await page.getByRole("button", { name: "Change type", exact: true }).click().catch(() => {});
+      await sleep(5000);
+      await open(T.orders);
+      const back = (await rowTexts()).slice(0, 3);
+      step("Operatory changed back to Text first", { rows: back });
+      if (!back.some((r) => /Op \d/.test(r))) friction(`changed back to Text, the set-aside values did not come back: ${back.join(" | ")}`);
+      d = await columnSettings("Operatory");
+    }
     await d.getByRole("combobox").nth(0).click();
     await sleep(500);
     await page.getByRole("option", { name: "Number", exact: true }).first().click();
@@ -382,6 +398,8 @@ try {
     await shot("o09-type-change-notice");
     if (offered.v) await undo.first().click();
     await sleep(6000);
+    // The preview's walk cap may park the host meanwhile; the table is read again as it is now.
+    if (page.url().includes("__dev-walk")) await open(T.orders);
     const afterUndo = (await rowTexts()).slice(0, 3);
     step("Operatory to Number, then Undo", { confirm: confirmText, undo_offered: !!offered.v, whileNumber, afterUndo });
     if (!afterUndo.some((t) => t.includes("Op 3"))) friction("Undo did not bring Op 3 back");

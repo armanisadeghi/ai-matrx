@@ -62,6 +62,14 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import {
+  SurfaceRuntimeProvider,
+  useSurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationCreatorScope,
+  EDUCATION_CREATOR_SURFACE_NAME,
+} from "@/features/surfaces/manifests/education-creator.manifest";
 
 const RESOURCE_LABEL: Record<string, string> = {
   fc_set: "Flashcards",
@@ -76,6 +84,82 @@ function featuredKey(item: FeaturedItem, i: number): string {
   return `cls:${item.classId}`;
 }
 
+function readObject(target: string, value: unknown): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${target} expects one JSON object.`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function rejectUnknownKeys(
+  target: string,
+  record: Record<string, unknown>,
+  allowed: readonly string[],
+): void {
+  const unknown = Object.keys(record).filter((key) => !allowed.includes(key));
+  if (unknown.length) {
+    throw new Error(`${target} does not accept ${unknown.map((key) => `"${key}"`).join(", ")}. Nothing was changed.`);
+  }
+}
+
+function optionalString(target: string, record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") throw new Error(`${target}.${key} must be a string.`);
+  return value;
+}
+
+function readClaim(value: unknown): { handle: string; displayName?: string } {
+  const record = readObject("claim_creator_profile", value);
+  rejectUnknownKeys("claim_creator_profile", record, ["handle", "display_name"]);
+  const handle = optionalString("claim_creator_profile", record, "handle")?.trim();
+  if (!handle) throw new Error("claim_creator_profile.handle is required.");
+  return {
+    handle,
+    ...(optionalString("claim_creator_profile", record, "display_name") !== undefined
+      ? { displayName: optionalString("claim_creator_profile", record, "display_name") }
+      : {}),
+  };
+}
+
+function readLinks(value: unknown): CreatorLink[] {
+  if (!Array.isArray(value)) throw new Error("update_creator_profile.links must be an array.");
+  return value.map((item, index) => {
+    const record = readObject(`update_creator_profile.links[${index}]`, item);
+    rejectUnknownKeys(`update_creator_profile.links[${index}]`, record, ["label", "url"]);
+    const label = optionalString("update_creator_profile.links", record, "label")?.trim();
+    const url = optionalString("update_creator_profile.links", record, "url")?.trim();
+    if (!label || !url) throw new Error(`update_creator_profile.links[${index}] needs label and url strings.`);
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error();
+    } catch {
+      throw new Error(`update_creator_profile.links[${index}].url must be an http or https URL.`);
+    }
+    return { label, url };
+  });
+}
+
+function readProfilePatch(value: unknown) {
+  const record = readObject("update_creator_profile", value);
+  rejectUnknownKeys("update_creator_profile", record, ["display_name", "tagline", "bio", "links"]);
+  const displayName = optionalString("update_creator_profile", record, "display_name");
+  const tagline = optionalString("update_creator_profile", record, "tagline");
+  const bio = optionalString("update_creator_profile", record, "bio");
+  const links = record.links === undefined ? undefined : readLinks(record.links);
+  if (displayName === undefined && tagline === undefined && bio === undefined && links === undefined) {
+    throw new Error("update_creator_profile needs at least one profile field.");
+  }
+  return { displayName, tagline, bio, links };
+}
+
+function readVisibility(value: unknown): boolean {
+  const record = readObject("set_creator_page_visibility", value);
+  rejectUnknownKeys("set_creator_page_visibility", record, ["is_public"]);
+  if (typeof record.is_public !== "boolean") throw new Error("set_creator_page_visibility.is_public must be true or false.");
+  return record.is_public;
+}
+
 // ── Claim gate ────────────────────────────────────────────────────────────────
 function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void }) {
   const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
@@ -86,6 +170,28 @@ function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void
   // A check that FAILED is not "taken" — say which one happened (RC-B12 round 4).
   const [checkError, setCheckError] = useState<unknown>(null);
   const [claiming, setClaiming] = useState(false);
+
+  useSurfaceWriteHandlers(EDUCATION_CREATOR_SURFACE_NAME, {
+    claim_creator_profile: {
+      validate: (value) => {
+        readClaim(value);
+      },
+      apply: async (value) => {
+        const claimInput = readClaim(value);
+        const profile = await claimHandle(
+          claimInput.handle,
+          claimInput.displayName,
+          activeOrganizationId,
+        );
+        if (!profile?.handle) throw new Error("The creator profile was not returned after claiming the handle.");
+        onClaimed(profile);
+        return {
+          summary: `Claimed creator handle @${profile.handle}.`,
+          data: { creator_profile: profile },
+        };
+      },
+    },
+  });
 
   useEffect(() => {
     const h = handle.trim();
@@ -284,6 +390,41 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
   const [isPublic, setIsPublic] = useState(initial.is_public);
   const [saving, setSaving] = useState(false);
   const [ytInput, setYtInput] = useState("");
+
+  useSurfaceWriteHandlers(EDUCATION_CREATOR_SURFACE_NAME, {
+    update_creator_profile: {
+      validate: (value) => {
+        readProfilePatch(value);
+      },
+      apply: async (value) => {
+        const patch = readProfilePatch(value);
+        const profile = await updateCreatorProfile(patch);
+        if (!profile?.handle) throw new Error("The creator profile was not returned after saving.");
+        setDisplayName(profile.display_name ?? "");
+        setTagline(profile.tagline ?? "");
+        setBio(profile.bio ?? "");
+        setLinks(profile.links);
+        setFeatured(profile.featured);
+        setIsPublic(profile.is_public);
+        return { summary: `Updated creator profile @${profile.handle}.`, data: { creator_profile: profile } };
+      },
+    },
+    set_creator_page_visibility: {
+      validate: (value) => {
+        readVisibility(value);
+      },
+      apply: async (value) => {
+        const isPublic = readVisibility(value);
+        const profile = await setCreatorPublic(isPublic);
+        if (!profile?.handle) throw new Error("The creator profile was not returned after updating visibility.");
+        setIsPublic(profile.is_public);
+        return {
+          summary: profile.is_public ? "Published creator page." : "Unpublished creator page.",
+          data: { creator_profile: profile },
+        };
+      },
+    },
+  });
 
   const { classes } = useClasses();
   const [myResources, setMyResources] = useState<OwnedPublicResource[]>([]);
@@ -600,6 +741,7 @@ export function CreatorDashboard() {
   // A failed read is not "no creator page yet": offering the claim form here
   // told a creator their page was gone (RC-B12 round 4, nothing fails silently).
   const [loadError, setLoadError] = useState<unknown>(null);
+  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -614,6 +756,17 @@ export function CreatorDashboard() {
   }, [load]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_CREATOR_SURFACE_NAME}
+      getScope={() =>
+        createEducationCreatorScope({
+          creator_profile_loading: loading,
+          ...(profile ? { creator_profile: profile } : {}),
+          ...(loadError instanceof Error ? { creator_profile_error: loadError.message } : {}),
+          ...(activeOrganizationId ? { active_organization_id: activeOrganizationId } : {}),
+        })
+      }
+    >
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-3xl space-y-5 p-4 sm:p-6">
         {loading ? (
@@ -641,5 +794,6 @@ export function CreatorDashboard() {
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

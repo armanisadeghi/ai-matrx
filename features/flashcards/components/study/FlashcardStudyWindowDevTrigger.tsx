@@ -2,7 +2,7 @@
 
 import { TriangleAlertTapButton } from "@ai-matrx/tap-target/buttons";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsAdminDebugger } from "@/lib/redux/slices/userSlice";
 import { useOpenFlashcardStudyWindow } from "@/features/overlays/openers/flashcardStudyWindow";
 
 interface FlashcardStudyWindowDevTriggerProps {
@@ -17,7 +17,7 @@ export function FlashcardStudyWindowDevTrigger({
   title,
   disabled = false,
 }: FlashcardStudyWindowDevTriggerProps) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   const openStudyWindow = useOpenFlashcardStudyWindow();
 
   if (!isAdmin) return null;
