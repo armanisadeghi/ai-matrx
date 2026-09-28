@@ -24,7 +24,7 @@
  * handles conversation creation, source tracking, display-mode routing, and execution.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
@@ -158,6 +158,19 @@ interface ManagedLaunch {
   wanted: boolean;
 }
 
+/**
+ * Renderable managed-conversation identity. Refs retain in-flight launch
+ * ownership, while this state is the only source a render reads to select the
+ * input-bound conversation.
+ */
+interface ManagedConversationState {
+  surfaceKey: string | undefined;
+  freshSessionKey: number;
+  identity: string;
+  id: string | null;
+  followMinted: boolean;
+}
+
 function managedLaunchIdentity(
   agentId: string | undefined,
   mandateKey: AnyMandateKey | null | undefined,
@@ -198,18 +211,13 @@ export function useAgentLauncher(
     selectDisplayConversation(surfaceKey ?? ""),
   );
 
-  // Stable per-surface conversation id. Resolve it synchronously DURING render
-  // (reuse the focused id, else mint once into a ref and keep it) so the managed
-  // consumer renders against a real id from the very first paint — never null,
-  // never re-minted on re-render. The effect below performs the actual create
-  // (or reuse) using this same id. The id is client-authoritative end-to-end:
+  // Stable per-surface conversation id. The state initializer supplies the id
+  // for the first managed paint; effects below reconcile identity changes and
+  // perform the actual create/reuse. The id is client-authoritative end-to-end:
   // the server honors it (turn-1 body `conversation_id` + `X-Conversation-ID`).
   const isManagedHook = agentId != null && surfaceKey != null;
   const preferFresh = options?.preferFresh ?? false;
   const freshSessionKey = options?.freshSessionKey ?? 0;
-  const mintedIdRef = useRef<string | null>(null);
-  const mintedForKeyRef = useRef<string | undefined>(undefined);
-  const mintedFreshKeyRef = useRef<number>(-1);
   // The launch currently in flight (or last settled) for this hook. See
   // `ManagedLaunch` — it is what keeps a superseded launch from reaping the id
   // the composer is bound to.
@@ -217,10 +225,25 @@ export function useAgentLauncher(
   // Set when a key change mid-launch forced a fresh id: the surface's focus
   // still names the superseded launch's id until the new launch lands, so the
   // minted id wins until focus catches up.
-  const followMintedRef = useRef(false);
   const launchIdentity = managedLaunchIdentity(agentId, options?.mandateKey);
-  if (isManagedHook) {
-    const inFlight = launchRef.current;
+  const [managedConversation, setManagedConversation] =
+    useState<ManagedConversationState>(() => ({
+      surfaceKey,
+      freshSessionKey,
+      identity: launchIdentity,
+      id: isManagedHook
+        ? (preferFresh
+            ? generateConversationId()
+            : (focusedConversationId ?? generateConversationId()))
+        : null,
+      followMinted: false,
+    }));
+
+  useEffect(() => {
+    if (!isManagedHook) return;
+
+    setManagedConversation((previous) => {
+      const inFlight = launchRef.current;
     // THE KEY-CHANGE-MID-LAUNCH CLASS. A page/module override that finishes
     // loading while the launch is still in flight changes the answering agent
     // or mandate key. Relaunching under the SAME id raced two creates onto one
@@ -230,37 +253,50 @@ export function useAgentLauncher(
     const keyChangedMidLaunch =
       inFlight != null &&
       !inFlight.settled &&
-      inFlight.id === mintedIdRef.current &&
+      inFlight.id === previous.id &&
       inFlight.identity !== launchIdentity;
     const shouldRemint =
-      mintedForKeyRef.current !== surfaceKey ||
-      (preferFresh && mintedFreshKeyRef.current !== freshSessionKey) ||
+      previous.surfaceKey !== surfaceKey ||
+      (preferFresh && previous.freshSessionKey !== freshSessionKey) ||
       keyChangedMidLaunch;
-    if (shouldRemint) {
-      // First run, surface change, an explicit fresh-session bump (+), or a
-      // key change mid-launch. Fresh routes must never inherit stale surface
-      // focus — that is how clicking + from an existing conversation revives
-      // the old transcript — and neither may a key change (focus may already
-      // name the superseded launch's conversation).
-      mintedForKeyRef.current = surfaceKey;
-      mintedFreshKeyRef.current = freshSessionKey;
-      mintedIdRef.current =
+    if (!shouldRemint) {
+      const followMinted =
+        previous.followMinted && focusedConversationId === previous.id
+          ? false
+          : previous.followMinted;
+      if (
+        previous.identity === launchIdentity &&
+        followMinted === previous.followMinted
+      ) {
+        return previous;
+      }
+      return { ...previous, identity: launchIdentity, followMinted };
+    }
+
+    return {
+      surfaceKey,
+      freshSessionKey,
+      identity: launchIdentity,
+      id:
         preferFresh || keyChangedMidLaunch
           ? generateConversationId()
-          : (focusedConversationId ?? generateConversationId());
-      followMintedRef.current = keyChangedMidLaunch;
-    }
-    if (
-      followMintedRef.current &&
-      focusedConversationId === mintedIdRef.current
-    ) {
-      followMintedRef.current = false;
-    }
-  }
+          : (focusedConversationId ?? generateConversationId()),
+      followMinted: keyChangedMidLaunch,
+    };
+    });
+  }, [
+    focusedConversationId,
+    freshSessionKey,
+    isManagedHook,
+    launchIdentity,
+    preferFresh,
+    surfaceKey,
+  ]);
+
   const conversationId = isManagedHook
-    ? (preferFresh || followMintedRef.current) && mintedIdRef.current
-      ? mintedIdRef.current
-      : (focusedConversationId ?? mintedIdRef.current)
+    ? (preferFresh || managedConversation.followMinted) && managedConversation.id
+      ? managedConversation.id
+      : (focusedConversationId ?? managedConversation.id)
     : focusedConversationId;
 
   // ── Imperative methods (always created) ──────────────────────────────────
@@ -407,10 +443,15 @@ export function useAgentLauncher(
     if (!isManaged || !ready || !surfaceKey || !sourceFeature || !agentId)
       return undefined;
 
-    // The id resolved synchronously during render (isManagedHook mirrors
-    // isManaged above) — the instance is created (or reused) under THIS id,
-    // so the surface never re-keys.
-    const targetId = mintedIdRef.current;
+    // Wait for the identity-reconciliation effect above before creating. That
+    // prevents a new mandate key from ever launching against the old key's id.
+    if (
+      managedConversation.surfaceKey !== surfaceKey ||
+      managedConversation.identity !== launchIdentity
+    ) {
+      return undefined;
+    }
+    const targetId = managedConversation.id;
     if (!targetId) return undefined;
     const reap = () => {
       if (retainOnUnmount) dispatch(destroyInstanceIfAbandoned(targetId));
@@ -560,7 +601,6 @@ export function useAgentLauncher(
       // the next run adopts it first.
       if (launch.settled) reap();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     agentId,
     ready,
@@ -568,6 +608,9 @@ export function useAgentLauncher(
     surfaceKey,
     freshSessionKey,
     managedMandateKey,
+    managedConversation.id,
+    managedConversation.identity,
+    managedConversation.surfaceKey,
   ]);
 
   if (isManaged) {

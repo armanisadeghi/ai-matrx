@@ -116,8 +116,6 @@ interface Props {
   preferFresh: boolean;
 }
 
-const seen: { conversationId: string | null } = { conversationId: null };
-
 function Launcher({ agentId, mandateKey, ready, preferFresh }: Props) {
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey: "test-surface",
@@ -127,8 +125,7 @@ function Launcher({ agentId, mandateKey, ready, preferFresh }: Props) {
     preferFresh,
     retainOnUnmount: true,
   });
-  seen.conversationId = conversationId;
-  return null;
+  return <output data-conversation-id={conversationId ?? ""} />;
 }
 
 async function flush() {
@@ -155,7 +152,6 @@ describe("useAgentLauncher — agent/mandate key changes mid-launch", () => {
 
   beforeEach(() => {
     pendingLaunches.length = 0;
-    seen.conversationId = null;
     store = makeStore();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -169,7 +165,9 @@ describe("useAgentLauncher — agent/mandate key changes mid-launch", () => {
 
   const liveConversation = () =>
     store.getState().conversations.byConversationId[
-      seen.conversationId as string
+      container
+        .querySelector("output")
+        ?.getAttribute("data-conversation-id") as string
     ];
 
   for (const preferFresh of [true, false]) {
