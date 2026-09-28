@@ -185,6 +185,7 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-09-27 — **The Clean pane runs its own pass.** Clean / Re-clean now sits in the Clean pane header (same `handleProcess` as the sidebar's Clean Up), absent while a pass runs. Before, the page's main job lived only at the bottom of the sidebar — a header-menu "Controls" drawer on a phone (0-width there, verified at 375px) — and people faked a second of audio to re-trigger cleaning. Idle placeholder no longer says recording is the only way. Same fix on the floating window twin (`components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx`). Rule: a page's primary action is never reachable only through a drawer, collapsible sidebar, or menu.
 - 2026-08-29 — **Canonical ProTextarea fleet sweep.** An AST inventory found
   650 executable raw/basic multiline fields against 154 ProTextarea fields
   (including the legacy JSX surface). The tree now has 439 fewer raw/basic
