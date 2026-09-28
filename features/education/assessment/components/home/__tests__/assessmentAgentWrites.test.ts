@@ -67,7 +67,7 @@ describe("update_practice_tests / delete_practice_tests", () => {
     expect(plans.map((p) => p.changed)).toEqual([["exam_type"], ["archived"]]);
     expect(() =>
       parseUpdateAssessmentsValue("practice_tests", [{ id: "zzz", title: "Y" }], MINE),
-    ).toThrow(/update_practice_tests\[0\].*not one of the person's own/);
+    ).toThrow(/update_practice_tests\[0\].*not one the person may edit/);
     expect(() => parseUpdateAssessmentsValue("practice_tests", [{ id: "a3", title: "Y" }], MINE)).toThrow(
       /restore it first/,
     );
