@@ -1429,6 +1429,29 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
 
+  // ── Review what goes in (source review) ──────────────────────────────────
+  // The one follow-up for any set of Sources (features/resource-manager/
+  // source-input/review/). Opened via `openSourceReview(sourceSet, options)`,
+  // which awaits the person's choice and settles it through `callbackGroupId`
+  // — same callback-window shape as agentPickerWindow above, so it is
+  // addressed by whatever surface raised it and never carries a deep link:
+  // the sourceSet it reviews is in-memory caller state, not a durable,
+  // shareable subject.
+  {
+    slug: "source-review-window",
+    overlayId: "sourceReviewWindow",
+    kind: "window",
+    label: "Review what goes in",
+    defaultData: {
+      callbackGroupId: null as string | null,
+      sourceSet: null,
+      options: null,
+    },
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+    ephemeral: true,
+  },
+
   // ── Custom agent ────────────────────────────────────────────────────────
   // The agent picker window, then map inputs to what the menu captured.
   {

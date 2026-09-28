@@ -30,9 +30,12 @@ export type { SourceReviewOptions, SourceReviewOutcome } from "./types";
 
 export const SOURCE_REVIEW_OVERLAY_ID = "sourceReviewWindow";
 
-/** What travels through Redux — serialisable only. */
+/** What travels through Redux — serialisable only. Named `callbackGroupId` to match the
+ *  platform's callback-window convention (see agentPickerWindow and siblings), so the
+ *  window-address census recognizes this as a callback window and does not demand a
+ *  deep-linkable address for it — a review session is not a durable, shareable subject. */
 export interface SourceReviewWindowData {
-  callbackId: string;
+  callbackGroupId: string;
   sourceSet: SourceSet;
   options: SourceReviewOptions;
 }
@@ -69,7 +72,7 @@ export function openSourceReview(
       resolve(outcome),
     );
     openCallbackId = callbackId;
-    const data: SourceReviewWindowData = { callbackId, sourceSet, options };
+    const data: SourceReviewWindowData = { callbackGroupId: callbackId, sourceSet, options };
     store.dispatch(openOverlay({ overlayId: SOURCE_REVIEW_OVERLAY_ID, data }));
   });
 }

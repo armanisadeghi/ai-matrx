@@ -7331,7 +7331,7 @@ export default function OverlayController() {
         if (!isOpenById.sourceReviewWindow) return null;
         const data = dataById.sourceReviewWindow;
         const callbackId =
-          typeof data?.callbackId === "string" ? data.callbackId : null;
+          typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null;
         return (
           <SourceReviewWindow
             key={callbackId ?? "source-review"}
