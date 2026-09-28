@@ -1,4 +1,4 @@
--- draft: deep-lane read-lane-v2 — lands in the 2026-09-27 window before users.integration_connections is regenerated
+-- retired: superseded before it ran — access_ladder_t8b_confidential_tables_arman_approved.sql (production, 2026-09-26 20:22Z) already declares users.integration_connections client_excluded_columns = {vault_secret_key,credential_item_id,created_by,custom_fields}, a superset of this file's three that matches the live grants (authenticated holds no privilege on any of the four, read 2026-09-28). The chair's apply was refused by this file's own guard (0 rows); never run it.
 -- read_lane_v2_c_integration_connections_excluded_columns — declare the columns a signed-in client must
 -- NEVER hold on users.integration_connections, so iam.apply_table_grants (which grants every live column
 -- not declared excluded) keeps them withheld when the table is regenerated.
