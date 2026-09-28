@@ -12,7 +12,8 @@ export type GoogleRedirectConnectionPurpose =
   | "read_only_sweep"
   | "contacts_import"
   | "google_capability"
-  | "google_products";
+  | "google_products"
+  | "youtube_isolated";
 
 export type GoogleRedirectCapabilityKey =
   "contacts" | "calendar" | "tasks" | "tag_manager" | "youtube_analytics";
@@ -72,9 +73,12 @@ export function buildGoogleOAuthRedirectPending(
   if (!options.organizationContextId.trim()) {
     throw new Error("Choose an organization before connecting Google.");
   }
-  if (options.connectionPurpose === "google_products" &&
+  if ((options.connectionPurpose === "google_products" || options.connectionPurpose === "youtube_isolated") &&
       (!validSelection(options.capabilityKeys) || !validSelection(options.scopes))) {
     throw new Error("Choose Google products and permissions before continuing.");
+  }
+  if (options.connectionPurpose === "youtube_isolated" && options.targetConnectionId) {
+    throw new Error("YouTube connects separately from your other Google connections.");
   }
   return {
     state,
@@ -88,7 +92,7 @@ export function buildGoogleOAuthRedirectPending(
       ? { targetConnectionId: options.targetConnectionId }
       : {}),
     ...(options.capabilityKey ? { capabilityKey: options.capabilityKey } : {}),
-    ...(options.connectionPurpose === "google_products"
+    ...((options.connectionPurpose === "google_products" || options.connectionPurpose === "youtube_isolated")
       ? { capabilityKeys: [...(options.capabilityKeys ?? [])], scopes: [...(options.scopes ?? [])] }
       : {}),
   };
@@ -105,12 +109,13 @@ export function googleProductsRedirectFingerprint(
   options: Pick<GoogleOAuthRedirectStartOptions,
     "connectionPurpose" | "owner" | "organizationContextId" | "targetConnectionId" | "capabilityKeys" | "scopes">,
 ): string | undefined {
-  if (options.connectionPurpose !== "google_products") return undefined;
+  if (options.connectionPurpose !== "google_products" && options.connectionPurpose !== "youtube_isolated") return undefined;
   if (!validSelection(options.capabilityKeys) || !validSelection(options.scopes)) {
     throw new Error("Choose Google products and permissions before continuing.");
   }
   return JSON.stringify({
     owner: options.owner,
+    connectionPurpose: options.connectionPurpose,
     organizationContextId: options.organizationContextId,
     targetConnectionId: options.targetConnectionId ?? null,
     capabilityKeys: options.capabilityKeys,
@@ -152,7 +157,8 @@ export function readGoogleOAuthRedirectPending(
         value.connectionPurpose !== "read_only_sweep" &&
         value.connectionPurpose !== "contacts_import" &&
         value.connectionPurpose !== "google_capability" &&
-        value.connectionPurpose !== "google_products") ||
+        value.connectionPurpose !== "google_products" &&
+        value.connectionPurpose !== "youtube_isolated") ||
       (value.targetConnectionId !== undefined &&
         (typeof value.targetConnectionId !== "string" ||
           !value.targetConnectionId)) ||
@@ -164,9 +170,10 @@ export function readGoogleOAuthRedirectPending(
         value.capabilityKey !== "youtube_analytics") ||
       (value.connectionPurpose === "google_capability" &&
         (!value.targetConnectionId || !value.capabilityKey)) ||
-      (value.connectionPurpose === "google_products" &&
+      ((value.connectionPurpose === "google_products" || value.connectionPurpose === "youtube_isolated") &&
         (!validSelection(value.capabilityKeys) || !validSelection(value.scopes))) ||
-      (value.connectionPurpose !== "google_products" &&
+      (value.connectionPurpose === "youtube_isolated" && value.targetConnectionId !== undefined) ||
+      (value.connectionPurpose !== "google_products" && value.connectionPurpose !== "youtube_isolated" &&
         (value.capabilityKeys !== undefined || value.scopes !== undefined)) ||
       !value.owner ||
       (value.owner.type !== "user" && value.owner.type !== "organization")
@@ -194,7 +201,7 @@ export function readGoogleOAuthRedirectPending(
         ? { targetConnectionId: value.targetConnectionId }
         : {}),
       ...(value.capabilityKey ? { capabilityKey: value.capabilityKey } : {}),
-      ...(value.connectionPurpose === "google_products"
+      ...((value.connectionPurpose === "google_products" || value.connectionPurpose === "youtube_isolated")
         ? { capabilityKeys: [...(value.capabilityKeys ?? [])], scopes: [...(value.scopes ?? [])] }
         : {}),
     };

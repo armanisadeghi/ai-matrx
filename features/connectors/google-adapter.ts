@@ -160,6 +160,10 @@ export const GOOGLE_FAILURE_LANGUAGE: Record<string, string> = {
     "Our Google sign-in changed, so this account needs a fresh approval. Close the Google window, press Reconnect, and approve everything it asks for — nothing you picked is lost.",
   google_reconnect_target_conflict:
     "The Google window signed in as a different account, or for a different owner, than the one being reconnected. Nothing changed — try again and choose the account named on this screen.",
+  youtube_isolated_scope_conflict:
+    "Google did not return only the requested YouTube permissions. Your other Google connections were not changed. Try connecting YouTube again by itself.",
+  youtube_isolated_connection_conflict:
+    "This Google login has duplicate YouTube connections. Disconnect the extra YouTube connection in Settings, then reconnect YouTube; your other Google products are unaffected.",
 };
 
 /**
@@ -239,9 +243,10 @@ export function consentFailureAnswer(cause: unknown): ConsentFailureAnswer {
 export function googleAccount(row: GoogleConnectionSummary): ConnectorAccount {
   const diagnosis = diagnoseGoogleConnection(row);
   const recorded = parseGoogleCapabilityHealth(row.capability_health);
+  const isolatedYouTube = row.metadata.connection_purpose === "youtube_isolated";
   return {
     id: row.id,
-    label: row.account_email || row.account_name || "Google account",
+    label: `${row.account_email || row.account_name || "Google account"}${isolatedYouTube ? " — YouTube" : ""}`,
     ownerKind: row.owner_type === "organization" ? "organization" : "person",
     organizationId: row.organization_id,
     providerSubject: row.provider_subject,
@@ -372,10 +377,9 @@ export const MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE =
   "Connecting several Google products in one step needs the newest AI Matrx server, which is still rolling out. Nothing was changed and nothing was sent to Google — try again shortly.";
 
 /**
- * Run a consent request: ONE provider window, ONE exchange, carrying every
- * scope the account already holds so no existing grant and no picked file is
- * lost (the hub refuses a request that would drop one — that refusal is a
- * contract, and this is the client half of it).
+ * Run a consent request: ONE provider window, ONE exchange. Normal product
+ * additions carry existing scopes; the focused YouTube request uses its own
+ * canonical connection so existing grants and picked files remain untouched.
  *
  * A cancelled window is control flow, not a failure.
  */
@@ -419,7 +423,9 @@ export function useGoogleConsentRunner() {
         const code = await googleAuth.openAuthorizationWindow(
           request.scopes,
           options.loginHint ?? undefined,
-          undefined,
+          request.connectionPurpose === "youtube_isolated"
+            ? { forceConsent: true }
+            : undefined,
           gate,
         );
         const result = await connectGoogle.mutateAsync({
@@ -431,7 +437,7 @@ export function useGoogleConsentRunner() {
                   organizationId: options.owner.organizationId,
                 }
               : { type: "user" },
-          connectionPurpose: "google_products",
+          connectionPurpose: request.connectionPurpose,
           options: {
             organizationContextId: workspace.organizationId,
             expectedUserId: userId ?? undefined,
@@ -473,7 +479,8 @@ export function useGoogleConsentRunner() {
                 ? { type: "organization", organizationId: options.owner.organizationId }
                 : { type: "user" },
             organizationContextId: workspace.organizationId,
-            connectionPurpose: "google_products",
+            connectionPurpose: request.connectionPurpose,
+            forceConsent: request.connectionPurpose === "youtube_isolated",
             loginHint: options.loginHint ?? undefined,
             targetConnectionId: request.targetAccountId ?? undefined,
             capabilityKeys: request.capabilityKeys,
