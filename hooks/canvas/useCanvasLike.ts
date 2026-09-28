@@ -35,13 +35,20 @@ export function useCanvasLike(canvasId: string) {
             const userId = requireUserId();
             
 
+            // (canvas_id, user_id) is a FULL unique index, so a like that was
+            // moved to Trash by an unlike still holds the pair: upsert on it
+            // with deleted_at null revives that row instead of colliding.
             const { error } = await supabase
                 .schema('canvas').from('canvas_likes')
-                .insert({
-                    canvas_id: canvasId,
-                    user_id: userId,
-                    organization_id: await ensureOrgId(undefined)
-                });
+                .upsert(
+                    {
+                        canvas_id: canvasId,
+                        user_id: userId,
+                        organization_id: await ensureOrgId(undefined),
+                        deleted_at: null
+                    },
+                    { onConflict: 'canvas_id,user_id' }
+                );
 
             if (error) throw error;
         },
@@ -93,11 +100,14 @@ export function useCanvasLike(canvasId: string) {
             const userId = requireUserId();
             
 
+            // Delete means archive: the like moves to Trash (deleted_at); the
+            // like_count trigger counts live likes only.
             const { error } = await supabase
                 .schema('canvas').from('canvas_likes')
-                .delete()
+                .update({ deleted_at: new Date().toISOString() })
                 .eq('canvas_id', canvasId)
-                .eq('user_id', userId);
+                .eq('user_id', userId)
+                .is('deleted_at', null);
 
             if (error) throw error;
         },
