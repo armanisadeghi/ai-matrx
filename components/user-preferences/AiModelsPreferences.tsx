@@ -18,26 +18,29 @@
 
 import { useState } from "react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SegmentedControl,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
 import { SearchInput } from "@/components/official/SearchInput";
-import { CopyTapButton } from "@ai-matrx/tap-target/buttons";
+import { Button } from "@/components/ui/button";
+import { CopyTapButton, FilterTapButton } from "@ai-matrx/tap-target/buttons";
 import { toast } from "@/lib/toast";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
-import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useModels } from "@/features/ai-models/hooks/useModels";
 import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import {
   useSurfaceScopeContribution,
   useSurfaceWriteHandlers,
@@ -62,6 +65,9 @@ const AiModelsPreferences = () => {
   // The render-ready catalog carries what each model takes and makes, and its
   // one-line description — used only to group and describe the rows.
   const { models: catalog } = useModelCatalog("user");
+  // Supplied like every other tab (organization_state). Hiding a model is
+  // saved to the person's account, so nothing here waits on an organization.
+  const { organizationState } = useOrganizationRequired();
   const catalogById = new Map(catalog.map((m) => [m.id, m]));
 
   const [query, setQuery] = useState("");
@@ -92,16 +98,17 @@ const AiModelsPreferences = () => {
     );
 
   // Agent twin: the hidden list and the same switch (`hidden_models`).
-  useSurfaceScopeContribution("matrx-user/settings", "models-tab", () =>
-    models.length === 0
+  useSurfaceScopeContribution("matrx-user/settings", "models-tab", () => ({
+    organization_state: organizationState,
+    ...(models.length === 0
       ? {}
       : {
           hidden_models: models
             .filter((m) => hidden.has(m.id))
             .map((m) => ({ id: m.id, name: m.common_name || m.name, maker: m.maker ?? null })),
           model_catalog_count: models.length,
-        },
-  );
+        }),
+  }));
   // An agent names models the way a person does ("ALLaM 2 7B") or by id; both
   // resolve here, and anything unknown or ambiguous is refused before the card.
   const resolveModelRefs = (value: unknown): string[] => {
@@ -162,6 +169,28 @@ const AiModelsPreferences = () => {
 
   const hiddenCount = models.filter((m) => hidden.has(m.id)).length;
   const shownCount = models.length - hiddenCount;
+  const activeFilters = (show !== "all" ? 1 : 0) + (maker !== ALL_MAKERS ? 1 : 0);
+  // The filter button names what is narrowing the list, so a filtered list
+  // never reads as the whole catalog.
+  const filterLabel =
+    [show === "shown" ? "In pickers" : show === "hidden" ? "Hidden" : null, maker !== ALL_MAKERS ? maker : null]
+      .filter(Boolean)
+      .join(" · ") || "Filter";
+  const clearFilters = () => {
+    setShow("all");
+    setMaker(ALL_MAKERS);
+    setQuery("");
+  };
+  const emptyTitle =
+    show === "hidden" && hiddenCount === 0 && !q && maker === ALL_MAKERS
+      ? "No hidden models"
+      : "No models match";
+  const emptyHint =
+    emptyTitle === "No hidden models"
+      ? "Every model is in your pickers. Switch one off to hide it."
+      : q
+        ? `Nothing matches "${query.trim()}" with these filters.`
+        : "Nothing matches these filters.";
 
   // Group by what a model is FOR, from the catalog's modalities.
   const typeOf = (id: string): ModelType => {
@@ -187,43 +216,65 @@ const AiModelsPreferences = () => {
 
   return (
     <div className="space-y-3">
-      {/* The toolbar stays in reach while the list scrolls, edge-aligned with
-          the cards below it. */}
-      <div className="sticky top-[var(--shell-header-h)] z-10 -mx-1 flex flex-wrap items-center gap-2 bg-textured px-1 py-2">
+      {/* ONE compact row that stays in reach while the list scrolls: search,
+          plus one filter menu holding Show and Maker (page-pass 2026-09-28 —
+          three stacked rows took ~180px of a phone's first screen). */}
+      <div className="sticky top-[var(--shell-header-h)] z-10 -mx-1 flex items-center gap-2 bg-textured px-1 py-2">
         <SearchInput
           value={query}
           onValueChange={setQuery}
           placeholder="Search models"
           aria-label="Search models"
           debounceTime={0}
-          className="min-w-48 flex-1"
+          className="min-w-0 flex-1"
         />
-        <SegmentedControl
-          value={show}
-          onValueChange={(v) => setShow(v as ShowFilter)}
-          data={[
-            { value: "all", label: `All ${models.length}` },
-            { value: "shown", label: `Shown ${shownCount}` },
-            { value: "hidden", label: `Hidden ${hiddenCount}` },
-          ]}
-        />
-        <Select value={maker} onValueChange={setMaker}>
-          <SelectTrigger className="w-44" aria-label="Maker">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_MAKERS}>All makers</SelectItem>
-            {makers.map((m) => (
-              <SelectItem key={m} value={m}>
-                {m}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <FilterTapButton
+              variant="transparent"
+              ariaLabel={`Filter models${activeFilters ? ` (${activeFilters} on)` : ""}`}
+              label={filterLabel}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuLabel>Show</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={show} onValueChange={(v) => setShow(v as ShowFilter)}>
+              <DropdownMenuRadioItem value="all">All models · {models.length}</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="shown">In your pickers · {shownCount}</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="hidden">Hidden · {hiddenCount}</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Maker</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={maker} onValueChange={setMaker}>
+              <DropdownMenuRadioItem value={ALL_MAKERS}>All makers</DropdownMenuRadioItem>
+              {makers.map((m) => (
+                <DropdownMenuRadioItem key={m} value={m}>
+                  {m}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+            {hiddenCount > 0 ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setHidden([])}>
+                  Show all {hiddenCount} hidden again
+                </DropdownMenuItem>
+              </>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {groups.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-muted-foreground">No models match.</p>
+        <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+          <p className="text-sm font-medium text-foreground">{emptyTitle}</p>
+          <p className="text-sm text-muted-foreground">{emptyHint}</p>
+          {activeFilters > 0 || q ? (
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              Show all models
+            </Button>
+          ) : null}
+        </div>
       ) : (
         groups.map((group) => (
           <SettingsSection
@@ -253,7 +304,6 @@ const AiModelsPreferences = () => {
                       />
                     </span>
                   }
-                  badge={shown ? undefined : { label: "Hidden", variant: "default" }}
                   checked={shown}
                   onCheckedChange={(next: boolean) => toggle(model.id, next)}
                   last={index === group.models.length - 1}
@@ -263,18 +313,6 @@ const AiModelsPreferences = () => {
           </SettingsSection>
         ))
       )}
-      {hiddenCount > 0 ? (
-        <SettingsSection title="Hidden models">
-          <SettingsButton
-            label={`${hiddenCount} hidden from your pickers`}
-            actionLabel="Show all again"
-            kind="outline"
-            size="sm"
-            onClick={() => setHidden([])}
-            last
-          />
-        </SettingsSection>
-      ) : null}
     </div>
   );
 };

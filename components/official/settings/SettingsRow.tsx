@@ -4,12 +4,6 @@ import { AlertTriangle, AlertCircle, HelpCircle } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import { useId } from "react";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import type {
   SettingsCommonProps,
   SettingsRowVariant,
@@ -164,31 +158,11 @@ export function SettingsRow({
           </label>
         )}
         {badge && <BadgePill badge={badge} />}
-        {/* The description is printed in full under the label, so the help
-            icon only exists for extra help — never to repeat the line below. */}
-        {designVariant === "compact" && helpText && (
-          // The description is already printed under the label; the popover
-          // holds only the extra help, never a repeat of it.
-          <CompactHelpPopover label={label} helpText={helpText} />
-        )}
-        {helpText && designVariant !== "compact" && (
-          <TooltipProvider delayDuration={150}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Help"
-                  className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
-                >
-                  <HelpCircle className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs text-xs">
-                {helpText}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        {/* The description is printed in full under the label; the help
+            popover holds only the extra help, never a repeat of it. One
+            popover for every design variant: a hover tooltip never opens on a
+            phone, and its contents (a copy button) could not be reached. */}
+        {helpText && <CompactHelpPopover label={label} helpText={helpText} />}
       </div>
       {meta ? (
         <div
@@ -313,10 +287,14 @@ export function CompactHelpPopover({
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
+        {/* Icon-sized so it never makes the label line taller (on a phone a
+            44px-tall help button pushed the description a blank line down);
+            `matrx-tap-area` gives it the 44px finger ring without growing it. */}
         <button
           type="button"
           aria-label={`About ${label}`}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-6 sm:w-6"
+          data-touch-exempt
+          className="matrx-tap-area inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
         </button>

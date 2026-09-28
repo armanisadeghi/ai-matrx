@@ -215,11 +215,15 @@ export default function FirstScreenTab() {
   });
 
   return (
-    // One compact column: labels and their controls sit together instead of
-    // at opposite edges of a wide page.
-    <div className="mx-auto w-full max-w-3xl">
+    // Two columns once there is room (page-pass 2026-09-28: one centred
+    // column left a 408px empty band and used 28% of the first screen): the
+    // account basics on the left, the AI and voice defaults on the right. Each
+    // column stays narrow enough that a label and its control sit together.
+    <div className="@container/landing mx-auto w-full max-w-5xl">
       {settings.editingContext === "system" && <RegistryCoverage />}
 
+      <div className="grid grid-cols-1 gap-x-6 @[52rem]/landing:grid-cols-2 [&>*]:min-w-0">
+      <div>
       {settings.editingContext === "user" && <SettingsSection title="Appearance">
         <SettingsSelect<ThemeMode>
           label="Theme"
@@ -264,7 +268,9 @@ export default function FirstScreenTab() {
         </SettingsSection>
       </PreferencesLoadGate>
       }
+      </div>
 
+      <div>
       {/* Said once, where it is needed: the AI and voice rows are the only part
           of this screen that needs an organization. */}
       {settings.editingContext === "user" && organizationState !== "ready" && (
@@ -304,7 +310,8 @@ export default function FirstScreenTab() {
       )}
 
       {ladderKnobs.length > 0 && <UniversalSettingsRows knobs={ladderKnobs} hideKey />}
-
+      </div>
+      </div>
     </div>
   );
 }

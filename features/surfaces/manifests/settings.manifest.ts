@@ -319,7 +319,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "organization_state",
     label: "Organization state",
     description:
-      "Whether an organization is selected for this session: ready, resolving, required (none chosen — the page shows the user's organizations to pick from), unavailable (the organization read failed), or signed_out. On the landing page the AI and voice defaults appear only when ready; on the Notifications tab notices are shown read-only until ready (choices are saved per organization). Absent on other tabs.",
+      "Whether an organization is selected for this session: ready, resolving, required (none chosen — the page shows the user's organizations to pick from), unavailable (the organization read failed), or signed_out. On the landing page the AI and voice defaults appear only when ready; on the Notifications tab notices are shown read-only until ready (choices are saved per organization); on the Models tab it is informational only (hidden models are saved to the account, so nothing there waits on it). The account-wide preferences (theme_mode, text_generation_style, language_defaults, assistant_name, voice_persona) never depend on it. Absent on other tabs.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
@@ -414,7 +414,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "text_generation_style",
     label: "Text generation style",
     description:
-      "Default writing style for text-generation surfaces, as one object: { tone, creativity }.",
+      "Default writing style for text-generation surfaces, as one object: { tone, creativity }. Saved to the account (not per organization), so it is present and changeable with no organization selected.",
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 60,
@@ -435,7 +435,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "assistant_name",
     label: "Assistant name",
     description:
-      "What the user's AI assistant calls itself. Empty when the user has not named it. This is the ASSISTANT's nickname, never the user's own name.",
+      "What the user's AI assistant calls itself. Empty when the user has not named it. This is the ASSISTANT's nickname, never the user's own name. Saved to the account (not per organization), so it is present with no organization selected.",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 12,
@@ -445,7 +445,7 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "voice_persona",
     label: "Voice persona",
-    description: `Spoken-reply persona as one object: { emotion }. \`emotion\` is one of: ${VOICE_EMOTION_ENUM_TEXT}.`,
+    description: `Spoken-reply persona as one object: { emotion }. \`emotion\` is one of: ${VOICE_EMOTION_ENUM_TEXT}. Saved to the account (not per organization); not the per-organization default voice in ai_voice_defaults.`,
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 60,
