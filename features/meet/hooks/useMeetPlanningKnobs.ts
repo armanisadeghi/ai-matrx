@@ -16,7 +16,7 @@
 //
 // A missing value reads as the platform default and never blocks a screen.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import {
   knobRefusalSentence,
@@ -79,10 +79,12 @@ export function useMeetPlanningKnobs(
 ): MeetPlanningKnobsResult {
   const [state, setState] = useState<MeetPlanningKnobs>(PLANNING_DEFAULTS);
   const [nonce, setNonce] = useState(0);
+  const writeGeneration = useRef(0);
 
   useEffect(() => {
     if (userId === null) return undefined;
     let live = true;
+    const readGeneration = writeGeneration.current;
     const read = (key: string) =>
       supabase.schema("platform").rpc("knob_resolve", {
         p_feature: "meet",
@@ -92,7 +94,7 @@ export function useMeetPlanningKnobs(
       });
     void Promise.all(KEYS.map(read)).then(
       ([show, start, end, days, step, count, horizon]) => {
-        if (!live) return;
+        if (!live || readGeneration !== writeGeneration.current) return;
         const failure = [show, start, end, days, step, count, horizon].find(
           (result) => result.error,
         )?.error;
@@ -137,7 +139,8 @@ export function useMeetPlanningKnobs(
       if (resolvedOrganizationId === null || userId === null) {
         throw new Error("Choose an organization to save this setting.");
       }
-      setState((s) => ({ ...s, showExternalEvents: show }));
+      writeGeneration.current += 1;
+      setState((s) => ({ ...s, showExternalEvents: show, failure: null }));
       const result = await setKnobOverride({
         feature: "meet",
         key: "show_external_calendar_events",

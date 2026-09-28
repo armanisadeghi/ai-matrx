@@ -40,4 +40,21 @@ describe("useExternalEvents", () => {
     });
     await hook.unmount();
   });
+
+  it("retries a failed calendar read and clears its visible failure on success", async () => {
+    limit.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Calendar is unavailable." },
+    });
+    const hook = await renderHook(() => useExternalEvents("member-73", true));
+    await settle(hook, (value) => value.failure !== null, "calendar outage");
+    limit.mockResolvedValueOnce({ data: [], error: null });
+    await hook.act(() => hook.current.retry());
+    await settle(
+      hook,
+      (value) => value.failure === null && !value.loading,
+      "calendar retry success",
+    );
+    await hook.unmount();
+  });
 });

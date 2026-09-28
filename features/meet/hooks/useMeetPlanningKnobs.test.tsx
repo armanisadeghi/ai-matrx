@@ -41,6 +41,29 @@ describe("useMeetPlanningKnobs", () => {
     await hook.unmount();
   });
 
+  it("retries a failed planning read and only then enables the successful default", async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Settings offline." },
+    });
+    const hook = await renderHook(() =>
+      useMeetPlanningKnobs("org-recycling", "member-73"),
+    );
+    await settle(
+      hook,
+      (value) => value.failure !== null,
+      "initial settings failure",
+    );
+    rpc.mockResolvedValue({ data: null, error: null });
+    await hook.act(() => hook.current.retry());
+    await settle(
+      hook,
+      (value) => value.loaded && value.showExternalEvents,
+      "retried settings success",
+    );
+    await hook.unmount();
+  });
+
   it("saves through the organization chosen after the hook first rendered without one", async () => {
     rpc.mockResolvedValue({ data: null, error: null });
     setKnobOverride.mockResolvedValue({ ok: true });
