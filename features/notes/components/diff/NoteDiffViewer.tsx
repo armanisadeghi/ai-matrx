@@ -109,9 +109,16 @@ export function NoteDiffViewer({
   const newContent = typeof newNote.content === "string" ? newNote.content : "";
 
   const diffResult = useMemo(() => {
+    // Compare like with like: a version snapshot carries only the fields it
+    // saved (label, content, folder, tags…), while the live note carries every
+    // column. Fields the snapshot never had are not changes — counting them
+    // printed "+13 added" over a Content tab that (correctly) said "No changes".
+    const comparableNew = Object.fromEntries(
+      Object.entries(newNote as Record<string, unknown>).filter(([key]) => key in oldNote),
+    );
     const result = computeDiff(
       oldNote as Record<string, unknown>,
-      newNote as Record<string, unknown>,
+      comparableNew,
       NOTE_DIFF_OPTIONS,
     );
     return { ...result, root: reorderNodes(result.root) };
@@ -141,7 +148,7 @@ export function NoteDiffViewer({
           </TabsList>
           <div className="flex-1" />
           {hasChanges ? (
-            <div className="flex items-center gap-2 text-[0.625rem]">
+            <div className="flex items-center gap-2 text-xs">
               {stats.added > 0 && (
                 <span className="text-green-600 dark:text-green-400">
                   +{stats.added} added

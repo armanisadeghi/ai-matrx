@@ -195,32 +195,25 @@ export default function MobileNotesView({
             {/* The record's actions live in the shell's ⋮ sheet ("This page"),
                 so the title keeps the row — one overflow per phone header
                 (page-pass shared defects, 2026-09-27). */}
-            {/* The view switch sits IN the header row, one tap per view, with
-                the same words as desktop — portaled into the ⋮ sheet it was
-                two taps away and easy to miss (page-pass 2026-09-27). */}
-            <div
-              role="group"
-              aria-label="Note view"
-              className="flex flex-shrink-0 items-center gap-0.5 rounded-full bg-muted/60 p-0.5"
-            >
-              {NOTE_PHONE_VIEW_MODES.map(({ mode, label, hint }) => (
+            {/* The view switch sits IN the header row as ONE labelled button
+                that switches to the other view (44px on touch): two pills left
+                the title "Clinic in…". The title keeps the room. */}
+            {(() => {
+              const next =
+                NOTE_PHONE_VIEW_MODES.find((m) => m.mode !== editorMode) ??
+                NOTE_PHONE_VIEW_MODES[0];
+              return (
                 <button
-                  key={mode}
                   type="button"
-                  onClick={() => setEditorMode(mode)}
-                  aria-pressed={editorMode === mode}
-                  title={hint}
-                  className={cn(
-                    "h-8 rounded-full px-3 text-xs font-medium transition-colors pointer-coarse:h-9",
-                    editorMode === mode
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
+                  onClick={() => setEditorMode(next.mode)}
+                  aria-label={`Switch to ${next.label}: ${next.hint}`}
+                  title={next.hint}
+                  className="h-9 flex-shrink-0 rounded-full bg-muted/60 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted pointer-coarse:h-11"
                 >
-                  {label}
+                  {next.label}
                 </button>
-              ))}
-            </div>
+              );
+            })()}
 
             <PageHeaderRightPortal>
               {/* Clean up content — mutates the note, so viewers don't get it.
