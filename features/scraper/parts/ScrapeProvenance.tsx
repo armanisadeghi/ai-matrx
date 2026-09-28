@@ -53,6 +53,18 @@ const ENGINE_LABEL: Record<ScrapeEngine, string> = {
   cache: "From cache",
 };
 
+export function scrapeEngineLabel(
+  engine: ScrapeEngine | null | undefined,
+): string | null {
+  return engine ? ENGINE_LABEL[engine] : null;
+}
+
+export function contentWarningSentence(
+  warning: ContentWarning | null | undefined,
+): string | null {
+  return warning ? CONTENT_WARNING_SENTENCE[warning] : null;
+}
+
 const ENGINE_ICON: Record<
   ScrapeEngine,
   React.ComponentType<{ className?: string }>
@@ -109,7 +121,7 @@ export function ScrapeProvenance({
           className="w-fit gap-1 px-1.5 py-0 text-[11px] font-normal"
         >
           {Icon ? <Icon className="h-3 w-3" aria-hidden="true" /> : null}
-          {ENGINE_LABEL[engine]}
+          {scrapeEngineLabel(engine)}
         </Badge>
       ) : null}
       {escalated === true ? (
@@ -120,7 +132,7 @@ export function ScrapeProvenance({
       {contentWarning ? (
         <p className="flex items-start gap-1 text-xs text-amber-600 dark:text-amber-500">
           <ShieldAlert className="mt-0.5 h-3 w-3 flex-shrink-0" aria-hidden="true" />
-          {CONTENT_WARNING_SENTENCE[contentWarning]}
+          {contentWarningSentence(contentWarning)}
         </p>
       ) : null}
       {proxyBypassed === true ? (

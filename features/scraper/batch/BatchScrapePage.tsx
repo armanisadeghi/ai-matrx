@@ -94,7 +94,12 @@ import {
   useScraperApi,
   type BatchScrapeRow,
 } from "@/features/scraper/hooks/useScraperApi";
-import { ScrapeProvenance } from "@/features/scraper/parts/ScrapeProvenance";
+import {
+  contentWarningSentence,
+  escalationSentence,
+  scrapeEngineLabel,
+  ScrapeProvenance,
+} from "@/features/scraper/parts/ScrapeProvenance";
 import {
   parseUrlList,
   describeParsedUrlList,
@@ -117,7 +122,7 @@ type RowStatus = "pending" | "success" | "failed";
  * satisfying that interface is what lets the rule live in one place instead of
  * being re-typed here as a filter over `result`.
  */
-interface BatchRow extends LadderCandidate {
+export interface BatchRow extends LadderCandidate {
   url: string;
   status: RowStatus;
   result: BatchScrapeRow["result"];
@@ -142,9 +147,26 @@ function toPending(url: string): BatchRow {
   };
 }
 
-function fromBatchRow(row: BatchScrapeRow): BatchRow {
+export const MISSING_BATCH_RESULT_MESSAGE =
+  "The scraper finished without a result for this page. Retry to ask it again.";
+
+/**
+ * Compare the URL identity the browser uses. This makes a root URL with or
+ * without its trailing slash one request while keeping distinct paths distinct.
+ */
+export function sameRequestedUrl(requestedUrl: string, returnedUrl: string): boolean {
+  try {
+    return new URL(requestedUrl).href === new URL(returnedUrl).href;
+  } catch {
+    return requestedUrl === returnedUrl;
+  }
+}
+
+function fromBatchRow(row: BatchScrapeRow, requestedUrl = row.url): BatchRow {
   return {
-    url: row.url,
+    // The pasted URL remains the row identity even when the scraper normalizes
+    // its root URL with a trailing slash or reports a resolved URL.
+    url: requestedUrl,
     status: row.success ? "success" : "failed",
     result: row.result,
     failureMessage: row.failureMessage,
@@ -156,9 +178,70 @@ function fromBatchRow(row: BatchScrapeRow): BatchRow {
   };
 }
 
-function wordCount(chars: number | null | undefined): number | null {
-  if (!chars) return null;
+export function batchCharacterCount(row: Pick<BatchRow, "result">): number | null {
+  return row.result?.contentChars ?? row.result?.overview.char_count ?? null;
+}
+
+/** A reading estimate derived from characters; it is never an observed word count. */
+export function estimatedWordCount(chars: number | null | undefined): number | null {
+  if (chars == null) return null;
   return Math.round(chars / 5.5);
+}
+
+export function batchRungFilterText(row: BatchRow): string {
+  if (row.status === "pending") return "";
+  const rung = describeRung(row.ladder, row.status === "success");
+  return rung ? [rung.reached, rung.next].filter(Boolean).join(" ") : "not said";
+}
+
+export function batchSourceFilterText(row: BatchRow): string {
+  if (row.status !== "success") return "";
+  if (!row.processedDocumentId) {
+    return row.sourceNotices[0]?.message ?? "This page did not become a Source.";
+  }
+  return ["Open", row.kept ? "Saved" : null, row.processedDocumentId.slice(0, 8), ...row.sourceNotices.map((notice) => notice.message)]
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function batchNotesFilterText(row: BatchRow): string {
+  if (row.status === "pending") return "reading";
+  if (row.status === "failed") return row.failureMessage ?? "We could not read that page.";
+  const result = row.result;
+  return [
+    scrapeEngineLabel(result?.engine),
+    result?.escalated
+      ? result.escalationNote?.trim() || escalationSentence(result.escalationReason)
+      : null,
+    contentWarningSentence(result?.contentWarning),
+    result?.proxyBypassed ? "A configured proxy was skipped for this page." : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+/** Apply a terminal result to the originally requested row, never to a lookalike path. */
+export function applyBatchResult(
+  rows: BatchRow[],
+  result: BatchScrapeRow,
+): BatchRow[] {
+  const index = rows.findIndex((row) => sameRequestedUrl(row.url, result.url));
+  if (index === -1) return rows;
+  const next = rows.slice();
+  next[index] = fromBatchRow(result, rows[index].url);
+  return next;
+}
+
+/** A completed stream that omitted a requested URL must leave an honest retryable row. */
+export function markMissingBatchResults(
+  rows: BatchRow[],
+  requestedUrls: readonly string[],
+): BatchRow[] {
+  return rows.map((row) =>
+    row.status === "pending" && requestedUrls.some((url) => sameRequestedUrl(url, row.url))
+      ? { ...row, status: "failed", failureMessage: MISSING_BATCH_RESULT_MESSAGE }
+      : row,
+  );
 }
 
 function StatusBadge({ status }: { status: RowStatus }) {
@@ -225,17 +308,33 @@ export default function BatchScrapePage() {
     });
   }, []);
 
+  function applyResultRow(result: BatchScrapeRow) {
+    setRows((previous) => applyBatchResult(previous, result));
+  }
+
+  function markUnreportedRows(requestedUrls: readonly string[], token: number) {
+    setRows((previous) =>
+      runToken.current === token
+        ? markMissingBatchResults(previous, requestedUrls)
+        : previous,
+    );
+  }
+
   const handleRun = useCallback(async () => {
     if (parsed.urls.length === 0) return;
     const token = ++runToken.current;
     setHasRun(true);
     setSelectedIds([]);
     setRows(parsed.urls.map(toPending));
-    await scrapeUrlsBatch(parsed.urls, (row) => {
-      if (runToken.current !== token) return;
-      updateRow(fromBatchRow(row));
-    });
-  }, [parsed.urls, scrapeUrlsBatch, updateRow]);
+    try {
+      await scrapeUrlsBatch(parsed.urls, (row) => {
+        if (runToken.current !== token) return;
+        applyResultRow(row);
+      });
+    } finally {
+      markUnreportedRows(parsed.urls, token);
+    }
+  }, [applyResultRow, markUnreportedRows, parsed.urls, scrapeUrlsBatch]);
 
   const handleRetry = useCallback(
     async (url: string) => {
@@ -247,11 +346,12 @@ export default function BatchScrapePage() {
           [url],
           (row) => {
             if (runToken.current !== token) return;
-            updateRow(fromBatchRow(row));
+            applyResultRow(row);
           },
           { use_cache: false },
         );
       } finally {
+        markUnreportedRows([url], token);
         setRetrying((prev) => {
           const next = new Set(prev);
           next.delete(url);
@@ -259,7 +359,7 @@ export default function BatchScrapePage() {
         });
       }
     },
-    [scrapeUrlsBatch, updateRow],
+    [applyResultRow, markUnreportedRows, scrapeUrlsBatch, updateRow],
   );
 
   /**
@@ -374,28 +474,52 @@ export default function BatchScrapePage() {
       cell: (row) => <StatusBadge status={row.status} />,
     },
     {
-      id: "size",
-      header: "Chars / Words",
-      accessorFn: (row) =>
-        row.result?.contentChars ?? row.result?.overview.char_count ?? null,
+      id: "characters",
+      header: <span title="Characters reported by the scraper for this result.">Characters</span>,
+      label: "Characters",
+      accessorFn: batchCharacterCount,
+      filter: "number",
+      width: 130,
       cell: (row) => {
-        const chars =
-          row.result?.contentChars ?? row.result?.overview.char_count ?? null;
+        const chars = batchCharacterCount(row);
         if (chars == null)
           return <span className="text-muted-foreground">—</span>;
-        const words = wordCount(chars);
         return (
-          <span className="text-sm text-muted-foreground">
-            {chars.toLocaleString()} chars
-            {words != null ? ` · ${words.toLocaleString()} words` : ""}
+          <span className="text-sm text-muted-foreground" title="Characters reported by the scraper for this result.">
+            {chars.toLocaleString()}
           </span>
         );
       },
     },
     {
+      id: "estimated_words",
+      header: <span title="Estimated from characters at roughly 5.5 characters per word; this is not an observed word count.">Estimated words</span>,
+      label: "Estimated words",
+      accessorFn: (row) => estimatedWordCount(batchCharacterCount(row)),
+      filter: "number",
+      width: 150,
+      cell: (row) => {
+        const words = estimatedWordCount(batchCharacterCount(row));
+        if (words == null)
+          return <span className="text-muted-foreground">—</span>;
+        return (
+          <span
+            className="text-sm text-muted-foreground"
+            title="Estimated from characters at roughly 5.5 characters per word; this is not an observed word count."
+          >
+            {words.toLocaleString()}
+          </span>
+        );
+      },
+    },
+    // Purpose: preserve the capture ladder's reached and next-step sentences
+    // while making every displayed sentence filterable. Decision-maker: surface owner, 2026-09-28.
+    {
       id: "rung",
       header: "Rung",
-      filter: false,
+      accessorFn: batchRungFilterText,
+      filter: "text",
+      width: 300,
       cell: (row) => {
         if (row.status === "pending") {
           return <span className="text-xs text-muted-foreground">—</span>;
@@ -415,17 +539,21 @@ export default function BatchScrapePage() {
           );
         }
         return (
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-xs font-medium text-foreground">
+          <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
+            <span
+              className="min-w-0 truncate text-xs font-medium text-foreground"
+              title={rung.reached}
+            >
               {rung.reached}
             </span>
             {rung.next ? (
               <span
                 className={
                   rung.waitingOnYou
-                    ? "text-[11px] text-amber-700 dark:text-amber-400"
-                    : "text-[11px] text-muted-foreground"
+                    ? "min-w-0 truncate text-[11px] text-amber-700 dark:text-amber-400"
+                    : "min-w-0 truncate text-[11px] text-muted-foreground"
                 }
+                title={rung.next}
               >
                 {rung.next}
               </span>
@@ -434,43 +562,48 @@ export default function BatchScrapePage() {
         );
       },
     },
+    // Purpose: retain Source doors, notices, and kept state in the domain cell
+    // while making their visible words filterable. Decision-maker: surface owner, 2026-09-28.
     {
       id: "source",
       header: "Source",
-      filter: false,
+      accessorFn: batchSourceFilterText,
+      filter: "text",
+      width: 300,
       cell: (row) => {
         if (row.status !== "success") {
           return <span className="text-xs text-muted-foreground">—</span>;
         }
         if (!row.processedDocumentId) {
           return (
-            <span className="text-xs text-amber-700 dark:text-amber-400">
+            <span
+              className="block truncate text-xs text-amber-700 dark:text-amber-400"
+              title={row.sourceNotices[0]?.message ?? "This page did not become a Source."}
+            >
               {row.sourceNotices[0]?.message ??
                 "This page did not become a Source."}
             </span>
           );
         }
         return (
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="flex items-center gap-1.5">
-              <Link
-                href={sourceHref(row.processedDocumentId)}
-                className="text-xs font-medium text-primary hover:underline"
-                onClick={(e) => e.stopPropagation()}
+          <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
+            <Link
+              href={sourceHref(row.processedDocumentId)}
+              className="shrink-0 text-xs font-medium text-primary hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Open
+            </Link>
+            {row.kept ? (
+              <Badge
+                variant="neutral"
+                className="h-4 shrink-0 px-1 text-[10px] font-normal text-emerald-700 dark:text-emerald-400"
               >
-                Open
-              </Link>
-              {row.kept ? (
-                <Badge
-                  variant="neutral"
-                  className="h-4 px-1 text-[10px] font-normal text-emerald-700 dark:text-emerald-400"
-                >
-                  Saved
-                </Badge>
-              ) : null}
-            </span>
+                Saved
+              </Badge>
+            ) : null}
             <span
-              className="font-mono text-[10px] text-muted-foreground"
+              className="shrink-0 font-mono text-[10px] text-muted-foreground"
               title={row.processedDocumentId}
             >
               {row.processedDocumentId.slice(0, 8)}
@@ -478,7 +611,8 @@ export default function BatchScrapePage() {
             {row.sourceNotices.map((n) => (
               <span
                 key={n.code + n.message}
-                className="text-[10px] text-muted-foreground"
+                className="min-w-0 truncate text-[10px] text-muted-foreground"
+                title={n.message}
               >
                 {n.message}
               </span>
@@ -487,10 +621,14 @@ export default function BatchScrapePage() {
         );
       },
     },
+    // Purpose: retain provenance warnings and failure Alchemy in the domain cell
+    // while making their source-provided text filterable. Decision-maker: surface owner, 2026-09-28.
     {
       id: "notes",
       header: "Engine & Notes",
-      filter: false,
+      accessorFn: batchNotesFilterText,
+      filter: "text",
+      width: 360,
       cell: (row) => {
         if (row.status === "pending") {
           return (
@@ -501,21 +639,29 @@ export default function BatchScrapePage() {
         }
         if (row.status === "failed") {
           return (
-            <span className="text-xs text-destructive">
-              {row.failureMessage ?? "We could not read that page."}
+            <span className="flex min-w-0 items-center gap-1 text-xs text-destructive">
+              <span
+                className="min-w-0 truncate"
+                title={row.failureMessage ?? "We could not read that page."}
+              >
+                {row.failureMessage ?? "We could not read that page."}
+              </span>
               <ErrorAlchemyMenu error={row.failureMessage} />
             </span>
           );
         }
         return (
-          <ScrapeProvenance
-            engine={row.result?.engine}
-            escalated={row.result?.escalated}
-            escalationReason={row.result?.escalationReason}
-            escalationNote={row.result?.escalationNote}
-            contentWarning={row.result?.contentWarning}
-            proxyBypassed={row.result?.proxyBypassed}
-          />
+          <div className="min-w-0" title={batchNotesFilterText(row)}>
+            <ScrapeProvenance
+              engine={row.result?.engine}
+              escalated={row.result?.escalated}
+              escalationReason={row.result?.escalationReason}
+              escalationNote={row.result?.escalationNote}
+              contentWarning={row.result?.contentWarning}
+              proxyBypassed={row.result?.proxyBypassed}
+              className="min-w-0 flex-row items-center gap-1.5 whitespace-nowrap [&>p]:min-w-0 [&>p]:truncate [&>p]:whitespace-nowrap"
+            />
+          </div>
         );
       },
     },

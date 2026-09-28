@@ -18,8 +18,10 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
+  contentWarningSentence,
   ScrapeProvenance,
   escalationSentence,
+  scrapeEngineLabel,
 } from "@/features/scraper/parts/ScrapeProvenance";
 
 (
@@ -61,6 +63,7 @@ describe("ScrapeProvenance", () => {
     ["browser", "Server browser"],
     ["cache", "From cache"],
   ] as const)("names the %s engine as %s", (engine, label) => {
+    expect(scrapeEngineLabel(engine)).toBe(label);
     const text = render(
       <ScrapeProvenance
         engine={engine}
@@ -71,6 +74,29 @@ describe("ScrapeProvenance", () => {
     expect(text).toContain(label);
     // Not escalated → no escalation sentence at all.
     expect(text).not.toContain("server browser.");
+  });
+
+  it("returns no engine label when the backend did not name an engine", () => {
+    expect(scrapeEngineLabel(null)).toBeNull();
+    expect(scrapeEngineLabel(undefined)).toBeNull();
+  });
+
+  it.each([
+    ["thin_content", "This page came back with very little readable text — it may not be the full content."],
+    ["wrong_resource", "What we opened does not look like the kind of page you asked for."],
+  ] as const)("owns the visible %s warning sentence", (warning, sentence) => {
+    const warningText = contentWarningSentence(warning);
+    expect(warningText).toBe(sentence);
+    if (warningText === null) throw new Error("A declared warning must have visible copy.");
+    const text = render(
+      <ScrapeProvenance
+        engine={null}
+        escalated={false}
+        escalationReason={null}
+        contentWarning={warning}
+      />,
+    );
+    expect(text).toContain(warningText);
   });
 
   it("explains an escalation in one plain sentence, naming the real reason", () => {
