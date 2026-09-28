@@ -238,6 +238,37 @@ export function formulaBack(
 
 // ─── Faces bridge (what the study deck renders) ───────────────────────────────
 
+/** A written blank: `_____`, `[blank]`, `[____]`, `[ … ]`, `[...]`. */
+const PLAIN_BLANK_RE = /\[\s*(?:blank|_{2,}|…|\.{3})\s*\]|_{3,}/gi;
+/** Longer than this, the back is an explanation, not the missing words. */
+const FILLABLE_ANSWER_MAX = 80;
+
+/**
+ * A cloze card written with a plain blank ("…stored in ______.") and its
+ * answer on the back — how generated cards arrive, with no `{{c1::…}}`
+ * markup. The back used to be the blanked question again plus the answer
+ * (page-pass 2026-09-28): now it is the sentence with the blank FILLED
+ * (answer bolded) when the back is the missing words, or the back alone
+ * when it is an explanation. Never the question repeated.
+ */
+export function plainBlankFaces(
+  front: string,
+  back: string | null | undefined,
+): { front: string; back: string } {
+  const answer = back?.trim() ?? "";
+  if (!answer) return { front, back: front };
+  PLAIN_BLANK_RE.lastIndex = 0;
+  const blanks = front.match(PLAIN_BLANK_RE)?.length ?? 0;
+  const fillable =
+    blanks === 1 && answer.length <= FILLABLE_ANSWER_MAX && !answer.includes("\n");
+  if (!fillable) return { front, back: answer };
+  PLAIN_BLANK_RE.lastIndex = 0;
+  return {
+    front,
+    back: front.replace(PLAIN_BLANK_RE, () => `**${answer.replace(/[.\s]+$/, "")}**`),
+  };
+}
+
 /**
  * The flip faces to render for a card in study. `basic` and `cloze` are flip
  * cards; `matching` is NOT a flip (the deck branches to MatchingCardPlayer) —
@@ -249,6 +280,7 @@ export function studyFaces(
 ): { front: string; back: string } {
   const kind = asCardKind(card.card_kind);
   if (kind === CARD_KIND.cloze) {
+    if (!hasClozeMarkup(card.front)) return plainBlankFaces(card.front, card.back);
     const faces = clozeFaces(card.front);
     const extra = card.back?.trim() ? `\n\n${card.back.trim()}` : "";
     return { front: faces.front, back: `${faces.back}${extra}` };
