@@ -21,8 +21,9 @@
  *   while later, smaller ones may still go in.
  *
  * Budget tokens use the ONE client estimator (`lib/tokens/estimate.ts`,
- * conservative). The server checks its window with a laxer ratio, so any set
- * this planner says fits, the server also says fits — and Sources the planner
+ * measured 2.9 / 2.4 chars per token). The server uses the SAME measured
+ * ratios since 2026-09-28 (aidream `CHARS_PER_TOKEN_MEASURED`), so the two
+ * sides agree on what fits — and Sources the planner
  * leaves out are REMOVED from the returned set (named on screen first), so
  * the server never drops something the review showed as going in.
  */
