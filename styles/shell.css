@@ -1604,6 +1604,16 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
     display: none;
   }
 }
+/* …and with its center gone to the sheet, a phone RouteHeader is a plain
+   title-left / actions-right row (flex), not the three-track grid — the
+   server's grid would give the actions only the leftover track. */
+@media (max-width: 767px) {
+  .page-header-ghost [data-route-header-root],
+  [data-page-header-settling] [data-route-header-root] {
+    display: flex;
+    justify-content: space-between;
+  }
+}
 
 /* ---------------------------------------------------------------------------
    11. Auth Island — Immutable Glass Container
