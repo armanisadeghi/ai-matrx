@@ -214,7 +214,6 @@ export function InputActionButtons({
       <Button
         onClick={handleStop}
         className="h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
-        tabIndex={-1}
         title="Stop the run (everything streamed so far is kept)"
         aria-label="Stop the run"
       >
@@ -227,7 +226,6 @@ export function InputActionButtons({
       onClick={handleSend}
       disabled={isSendDisabled}
       className={sendBtnClass}
-      tabIndex={-1}
       title={
         isExecuting
           ? "Queue message — sends when the agent finishes (⌘Enter steers in now, ⌘⇧Enter interrupts)"

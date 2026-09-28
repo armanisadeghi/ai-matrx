@@ -5043,47 +5043,59 @@ export type Database = {
         Row: {
           capability: string
           created_at: string
+          created_by: string | null
           custom_fields: Json
           effective_from: string
           expires_at: string | null
           granted_by: string | null
           id: string
           limit_value: number | null
+          metadata: Json
           note: string | null
           organization_id: string
           period: Database["billing"]["Enums"]["meter_period"] | null
           source: string
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           capability: string
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           effective_from?: string
           expires_at?: string | null
           granted_by?: string | null
           id?: string
           limit_value?: number | null
+          metadata?: Json
           note?: string | null
           organization_id: string
           period?: Database["billing"]["Enums"]["meter_period"] | null
           source?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           capability?: string
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           effective_from?: string
           expires_at?: string | null
           granted_by?: string | null
           id?: string
           limit_value?: number | null
+          metadata?: Json
           note?: string | null
           organization_id?: string
           period?: Database["billing"]["Enums"]["meter_period"] | null
           source?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -5213,11 +5225,13 @@ export type Database = {
           buyer_user_id: string
           class_id: string
           created_at: string
+          created_by: string | null
           creator_amount: number
           creator_user_id: string
           currency: string
           custom_fields: Json
           id: string
+          metadata: Json
           organization_id: string
           paid_at: string | null
           refunded_at: string | null
@@ -5226,6 +5240,8 @@ export type Database = {
           stripe_checkout_session_id: string
           stripe_payment_intent_id: string | null
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           amount_total: number
@@ -5233,11 +5249,13 @@ export type Database = {
           buyer_user_id: string
           class_id: string
           created_at?: string
+          created_by?: string | null
           creator_amount: number
           creator_user_id: string
           currency?: string
           custom_fields?: Json
           id?: string
+          metadata?: Json
           organization_id: string
           paid_at?: string | null
           refunded_at?: string | null
@@ -5246,6 +5264,8 @@ export type Database = {
           stripe_checkout_session_id: string
           stripe_payment_intent_id?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           amount_total?: number
@@ -5253,11 +5273,13 @@ export type Database = {
           buyer_user_id?: string
           class_id?: string
           created_at?: string
+          created_by?: string | null
           creator_amount?: number
           creator_user_id?: string
           currency?: string
           custom_fields?: Json
           id?: string
+          metadata?: Json
           organization_id?: string
           paid_at?: string | null
           refunded_at?: string | null
@@ -5266,6 +5288,8 @@ export type Database = {
           stripe_checkout_session_id?: string
           stripe_payment_intent_id?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -5335,10 +5359,13 @@ export type Database = {
       org_plan: {
         Row: {
           created_at: string
+          created_by: string | null
           custom_fields: Json
           effective_from: string
           expires_at: string | null
           granted_by: string | null
+          id: string
+          metadata: Json
           note: string | null
           organization_id: string
           plan_id: string | null
@@ -5350,10 +5377,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           effective_from?: string
           expires_at?: string | null
           granted_by?: string | null
+          id?: string
+          metadata?: Json
           note?: string | null
           organization_id: string
           plan_id?: string | null
@@ -5365,10 +5395,13 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           effective_from?: string
           expires_at?: string | null
           granted_by?: string | null
+          id?: string
+          metadata?: Json
           note?: string | null
           organization_id?: string
           plan_id?: string | null
@@ -5914,34 +5947,46 @@ export type Database = {
           capability: string
           check_id: string | null
           created_at: string
+          created_by: string | null
           custom_fields: Json
           id: string
           metadata: Json
           organization_id: string
           quantity: number
+          updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           capability: string
           check_id?: string | null
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           id?: string
           metadata?: Json
           organization_id: string
           quantity?: number
+          updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           capability?: string
           check_id?: string | null
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           id?: string
           metadata?: Json
           organization_id?: string
           quantity?: number
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -6041,10 +6086,13 @@ export type Database = {
         Args: never
         Returns: {
           created_at: string
+          created_by: string | null
           custom_fields: Json
           effective_from: string
           expires_at: string | null
           granted_by: string | null
+          id: string
+          metadata: Json
           note: string | null
           organization_id: string
           plan_id: string | null
@@ -21361,6 +21409,7 @@ export type Database = {
       io_contract: {
         Row: {
           created_at: string
+          created_by: string | null
           custom_fields: Json
           direction: string
           family: string
@@ -21368,16 +21417,19 @@ export type Database = {
           id: string
           json_schema: Json
           label: string
+          metadata: Json
           organization_id: string
           retired_at: string | null
           slug: string
           source_id: string | null
           source_name: string
           updated_at: string
+          updated_by: string | null
           version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           direction: string
           family: string
@@ -21385,16 +21437,19 @@ export type Database = {
           id?: string
           json_schema: Json
           label?: string
+          metadata?: Json
           organization_id: string
           retired_at?: string | null
           slug: string
           source_id?: string | null
           source_name: string
           updated_at?: string
+          updated_by?: string | null
           version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           direction?: string
           family?: string
@@ -21402,12 +21457,14 @@ export type Database = {
           id?: string
           json_schema?: Json
           label?: string
+          metadata?: Json
           organization_id?: string
           retired_at?: string | null
           slug?: string
           source_id?: string | null
           source_name?: string
           updated_at?: string
+          updated_by?: string | null
           version?: number
         }
         Relationships: []
@@ -23280,37 +23337,55 @@ export type Database = {
           active_entity_id: string | null
           active_entity_type: string | null
           app_source: string
+          created_at: string
+          created_by: string | null
           custom_fields: Json
+          id: string
           last_activity: string
+          metadata: Json
           organization_id: string
           project_id: string | null
           task_id: string | null
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           active_entity_id?: string | null
           active_entity_type?: string | null
           app_source?: string
+          created_at?: string
+          created_by?: string | null
           custom_fields?: Json
+          id?: string
           last_activity?: string
+          metadata?: Json
           organization_id: string
           project_id?: string | null
           task_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           active_entity_id?: string | null
           active_entity_type?: string | null
           app_source?: string
+          created_at?: string
+          created_by?: string | null
           custom_fields?: Json
+          id?: string
           last_activity?: string
+          metadata?: Json
           organization_id?: string
           project_id?: string | null
           task_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -24753,6 +24828,7 @@ export type Database = {
           accepted_by: string
           accepted_text: string
           created_at: string
+          created_by: string | null
           custom_fields: Json
           id: string
           lane: string
@@ -24760,13 +24836,16 @@ export type Database = {
           organization_id: string
           policy_version: string
           updated_at: string
+          updated_by: string | null
           user_agent: string | null
+          version: number
         }
         Insert: {
           accepted_at?: string
           accepted_by: string
           accepted_text: string
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           id?: string
           lane: string
@@ -24774,13 +24853,16 @@ export type Database = {
           organization_id: string
           policy_version: string
           updated_at?: string
+          updated_by?: string | null
           user_agent?: string | null
+          version?: number
         }
         Update: {
           accepted_at?: string
           accepted_by?: string
           accepted_text?: string
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           id?: string
           lane?: string
@@ -24788,7 +24870,9 @@ export type Database = {
           organization_id?: string
           policy_version?: string
           updated_at?: string
+          updated_by?: string | null
           user_agent?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -26136,7 +26220,9 @@ export type Database = {
         Row: {
           contact_medium_id: string
           created_at: string
+          created_by: string | null
           custom_fields: Json
+          id: string
           issued_at: string
           last_user_agent: string | null
           metadata: Json
@@ -26146,13 +26232,17 @@ export type Database = {
           sending_identity_id: string | null
           token: string
           updated_at: string
+          updated_by: string | null
           use_count: number
           used_at: string | null
+          version: number
         }
         Insert: {
           contact_medium_id: string
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
+          id?: string
           issued_at?: string
           last_user_agent?: string | null
           metadata?: Json
@@ -26162,13 +26252,17 @@ export type Database = {
           sending_identity_id?: string | null
           token: string
           updated_at?: string
+          updated_by?: string | null
           use_count?: number
           used_at?: string | null
+          version?: number
         }
         Update: {
           contact_medium_id?: string
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
+          id?: string
           issued_at?: string
           last_user_agent?: string | null
           metadata?: Json
@@ -26178,8 +26272,10 @@ export type Database = {
           sending_identity_id?: string | null
           token?: string
           updated_at?: string
+          updated_by?: string | null
           use_count?: number
           used_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -38496,45 +38592,60 @@ export type Database = {
       study_streak: {
         Row: {
           created_at: string
+          created_by: string | null
           current_streak: number
           custom_fields: Json
           freezes_available: number
           freezes_used: number
           frozen_dates: string[]
+          id: string
           last_active_date: string | null
           longest_streak: number
+          metadata: Json
           organization_id: string
           rest_weekdays: number[]
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           current_streak?: number
           custom_fields?: Json
           freezes_available?: number
           freezes_used?: number
           frozen_dates?: string[]
+          id?: string
           last_active_date?: string | null
           longest_streak?: number
+          metadata?: Json
           organization_id: string
           rest_weekdays?: number[]
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           current_streak?: number
           custom_fields?: Json
           freezes_available?: number
           freezes_used?: number
           frozen_dates?: string[]
+          id?: string
           last_active_date?: string | null
           longest_streak?: number
+          metadata?: Json
           organization_id?: string
           rest_weekdays?: number[]
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -38543,46 +38654,55 @@ export type Database = {
           body: string
           claims: Json
           created_at: string
+          created_by: string | null
           custom_fields: Json
           id: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           owner_id: string
           project_id: string | null
           summary: string | null
           title: string
           topic: string
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           body: string
           claims?: Json
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           owner_id: string
           project_id?: string | null
           summary?: string | null
           title: string
           topic: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           body?: string
           claims?: Json
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           owner_id?: string
           project_id?: string | null
           summary?: string | null
           title?: string
           topic?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -41933,6 +42053,7 @@ export type Database = {
         Row: {
           consecutive_failures: number
           created_at: string
+          created_by: string | null
           custom_fields: Json
           deleted_at: string | null
           description: string | null
@@ -41942,16 +42063,20 @@ export type Database = {
           last_attempt_at: string | null
           last_success_at: string | null
           max_consecutive_failures: number
+          metadata: Json
           organization_id: string
           owner_id: string
           resource_types: string[] | null
           secret: string
           target_url: string
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           consecutive_failures?: number
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
           description?: string | null
@@ -41961,16 +42086,20 @@ export type Database = {
           last_attempt_at?: string | null
           last_success_at?: string | null
           max_consecutive_failures?: number
+          metadata?: Json
           organization_id: string
           owner_id: string
           resource_types?: string[] | null
           secret: string
           target_url: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           consecutive_failures?: number
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
           description?: string | null
@@ -41980,12 +42109,15 @@ export type Database = {
           last_attempt_at?: string | null
           last_success_at?: string | null
           max_consecutive_failures?: number
+          metadata?: Json
           organization_id?: string
           owner_id?: string
           resource_types?: string[] | null
           secret?: string
           target_url?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -42131,6 +42263,7 @@ export type Database = {
         Returns: {
           consecutive_failures: number
           created_at: string
+          created_by: string | null
           custom_fields: Json
           deleted_at: string | null
           description: string | null
@@ -42140,12 +42273,15 @@ export type Database = {
           last_attempt_at: string | null
           last_success_at: string | null
           max_consecutive_failures: number
+          metadata: Json
           organization_id: string
           owner_id: string
           resource_types: string[] | null
           secret: string
           target_url: string
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         SetofOptions: {
           from: "*"
@@ -65507,7 +65643,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "content_lane_entered_world_by_fkey_p"
+            foreignKeyName: "content_lane_entered_world_by_fkey"
             columns: ["entered_world_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -65823,7 +65959,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "industry_curators_user_id_fkey_p"
+            foreignKeyName: "industry_curators_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -66411,6 +66547,27 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "permissions_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permissions_granted_to_user_id_fkey_p"
+            columns: ["granted_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permissions_reviewed_by_fkey_p"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       publish_binding: {
@@ -66859,16 +67016,6 @@ export type Database = {
           p_table: string
           p_token: string
           p_variant?: string
-        }
-        Returns: undefined
-      }
-      _audience_grant: {
-        Args: {
-          p_actor: string
-          p_level: Database["public"]["Enums"]["permission_level"]
-          p_resource_id: string
-          p_resource_type: string
-          p_user_id: string
         }
         Returns: undefined
       }
@@ -67756,6 +67903,14 @@ export type Database = {
         Args: { p_org: string; p_user: string }
         Returns: boolean
       }
+      may_manage_sharing_as: {
+        Args: {
+          p_actor: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: boolean
+      }
       may_touch_field: {
         Args: {
           p_action?: string
@@ -67852,6 +68007,7 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      my_admin_orgs: { Args: never; Returns: string[] }
       my_orgs: { Args: never; Returns: string[] }
       my_orgs_all: { Args: never; Returns: string[] }
       my_team_ids: { Args: { p_organization_id: string }; Returns: string[] }
@@ -68165,6 +68321,17 @@ export type Database = {
       scraper_visible: {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: boolean
+      }
+      share_with_person: {
+        Args: {
+          p_actor: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_resource_id: string
+          p_resource_type: string
+          p_restore_removed?: boolean
+          p_target_user_id: string
+        }
+        Returns: Json
       }
       shareable_registry_repoint_plan: {
         Args: never
@@ -69149,6 +69316,8 @@ export type Database = {
       }
       ingest_runs: {
         Row: {
+          created_at: string
+          created_by: string | null
           custom_fields: Json
           error_message: string | null
           finished_at: string | null
@@ -69163,9 +69332,14 @@ export type Database = {
           started_at: string
           status: string
           triggered_by: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
           watermark: string | null
         }
         Insert: {
+          created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           error_message?: string | null
           finished_at?: string | null
@@ -69180,9 +69354,14 @@ export type Database = {
           started_at?: string
           status?: string
           triggered_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           watermark?: string | null
         }
         Update: {
+          created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           error_message?: string | null
           finished_at?: string | null
@@ -69197,6 +69376,9 @@ export type Database = {
           started_at?: string
           status?: string
           triggered_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           watermark?: string | null
         }
         Relationships: []
@@ -74383,22 +74565,7 @@ export type Database = {
           settled_at?: string | null
           state?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "_google_calendar_event_create_intent_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "_google_calendar_event_create_intent_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       _google_task_create_intent: {
         Row: {
@@ -74443,22 +74610,7 @@ export type Database = {
           state?: string
           task_list_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "_google_task_create_intent_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "_google_task_create_intent_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       _oauth_handoff_claim: {
         Row: {
@@ -74899,34 +75051,6 @@ export type Database = {
             referencedRelation: "actor_token"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "actor_session_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "actor_session_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "actor_session_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "actor_session_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
         ]
       }
       actor_token: {
@@ -75160,38 +75284,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "actor_token_event_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "actor_token_event_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "actor_token_event_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "actor_session"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "actor_token_event_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "actor_token_event_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -75900,36 +75996,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "platform_assurance_level_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_assurance_level_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_assurance_level_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_assurance_level_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       categories: {
         Row: {
@@ -76106,36 +76173,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "platform_change_type_default_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_change_type_default_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_change_type_default_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_change_type_default_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       class_approval_by_arman: {
         Row: {
@@ -76639,36 +76677,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "custom_entity_definition_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_entity_definition_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_entity_definition_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_entity_definition_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       custom_field_definition: {
         Row: {
@@ -76790,20 +76799,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "custom_field_definition_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_field_definition_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "custom_field_definition_reference_target_definition_id_fkey"
             columns: ["reference_target_definition_id"]
             isOneToOne: false
@@ -76815,20 +76810,6 @@ export type Database = {
             columns: ["target_definition_id"]
             isOneToOne: false
             referencedRelation: "custom_entity_definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_field_definition_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_field_definition_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -76897,36 +76878,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "custom_field_target_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_field_target_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_field_target_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_field_target_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       custom_record: {
         Row: {
@@ -76982,38 +76934,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "custom_record_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_record_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "custom_record_entity_definition_id_fkey"
             columns: ["entity_definition_id"]
             isOneToOne: false
             referencedRelation: "custom_entity_definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_record_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_record_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -77353,6 +77277,99 @@ export type Database = {
             referencedColumns: ["seam_key"]
           },
         ]
+      }
+      dated_change: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          effective_at: string
+          effective_local: string
+          effective_note: string | null
+          expected: Json
+          id: string
+          metadata: Json
+          new_value: Json
+          organization_id: string
+          outcome: Json
+          reason: string
+          remind_days: number
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          source_read_at: string
+          source_url: string | null
+          status: string
+          target: string
+          target_row_id: string
+          time_zone: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_at: string
+          effective_local: string
+          effective_note?: string | null
+          expected: Json
+          id?: string
+          metadata?: Json
+          new_value: Json
+          organization_id: string
+          outcome?: Json
+          reason: string
+          remind_days?: number
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_read_at?: string
+          source_url?: string | null
+          status?: string
+          target: string
+          target_row_id: string
+          time_zone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_at?: string
+          effective_local?: string
+          effective_note?: string | null
+          expected?: Json
+          id?: string
+          metadata?: Json
+          new_value?: Json
+          organization_id?: string
+          outcome?: Json
+          reason?: string
+          remind_days?: number
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_read_at?: string
+          source_url?: string | null
+          status?: string
+          target?: string
+          target_row_id?: string
+          time_zone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
       }
       ddl_guard_log: {
         Row: {
@@ -78799,9 +78816,12 @@ export type Database = {
       knob_override: {
         Row: {
           created_at: string
+          created_by: string | null
           custom_fields: Json
           feature: string
+          id: string
           key: string
+          metadata: Json
           organization_id: string
           scope_id: string
           scope_kind: string
@@ -78809,12 +78829,16 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           value: Json
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           feature: string
+          id?: string
           key: string
+          metadata?: Json
           organization_id: string
           scope_id: string
           scope_kind: string
@@ -78822,12 +78846,16 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value: Json
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           feature?: string
+          id?: string
           key?: string
+          metadata?: Json
           organization_id?: string
           scope_id?: string
           scope_kind?: string
@@ -78835,6 +78863,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value?: Json
+          version?: number
         }
         Relationships: [
           {
@@ -78911,36 +78940,48 @@ export type Database = {
       knob_rung_lock: {
         Row: {
           created_at: string
+          created_by: string | null
           custom_fields: Json
           feature: string
+          id: string
           key: string
           locked_kinds: string[]
+          metadata: Json
           note: string | null
           organization_id: string
           updated_at: string
           updated_by: string | null
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           feature: string
+          id?: string
           key: string
           locked_kinds: string[]
+          metadata?: Json
           note?: string | null
           organization_id: string
           updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           feature?: string
+          id?: string
           key?: string
           locked_kinds?: string[]
+          metadata?: Json
           note?: string | null
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -80062,14 +80103,18 @@ export type Database = {
         Row: {
           change_type_key: string
           created_at: string
+          created_by: string | null
           created_by_system: string | null
           created_by_tier: string | null
           custom_fields: Json
           handling_mode: string
+          id: string
+          metadata: Json
           organization_id: string
           timeout_expiry: string | null
           timeout_minutes: number | null
           updated_at: string
+          updated_by: string | null
           updated_by_system: string | null
           updated_by_tier: string | null
           version: number
@@ -80077,14 +80122,18 @@ export type Database = {
         Insert: {
           change_type_key: string
           created_at?: string
+          created_by?: string | null
           created_by_system?: string | null
           created_by_tier?: string | null
           custom_fields?: Json
           handling_mode: string
+          id?: string
+          metadata?: Json
           organization_id: string
           timeout_expiry?: string | null
           timeout_minutes?: number | null
           updated_at?: string
+          updated_by?: string | null
           updated_by_system?: string | null
           updated_by_tier?: string | null
           version?: number
@@ -80092,14 +80141,18 @@ export type Database = {
         Update: {
           change_type_key?: string
           created_at?: string
+          created_by?: string | null
           created_by_system?: string | null
           created_by_tier?: string | null
           custom_fields?: Json
           handling_mode?: string
+          id?: string
+          metadata?: Json
           organization_id?: string
           timeout_expiry?: string | null
           timeout_minutes?: number | null
           updated_at?: string
+          updated_by?: string | null
           updated_by_system?: string | null
           updated_by_tier?: string | null
           version?: number
@@ -80650,36 +80703,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "outsider_consumer_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outsider_consumer_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outsider_consumer_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outsider_consumer_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       provision_base_contract_pending: {
         Row: {
@@ -81944,36 +81968,7 @@ export type Database = {
           viewed_at?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "secure_delivery_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "secure_delivery_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "secure_delivery_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "secure_delivery_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       share_links: {
         Row: {
@@ -82212,36 +82207,7 @@ export type Database = {
           use_count?: number
           version?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "short_links_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "short_links_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "short_links_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "short_links_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       sign_in_fk_legacy: {
         Row: {
@@ -82361,36 +82327,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "platform_source_authority_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_source_authority_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_source_authority_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_source_authority_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       stamped_write_table: {
         Row: {
@@ -83323,6 +83260,11 @@ export type Database = {
         Args: { p_org: string; p_seam: string }
         Returns: Json
       }
+      _dated_change_caller_ok: { Args: never; Returns: boolean }
+      _dated_change_check_value: {
+        Args: { p_label: string; p_target: string; p_value: Json }
+        Returns: undefined
+      }
       _decorations_in_older_words: {
         Args: { p_decorations: Json; p_style: Json; p_table: string }
         Returns: Json
@@ -83754,6 +83696,8 @@ export type Database = {
         Returns: string
       }
       anon_function_birth_schemas: { Args: never; Returns: string[] }
+      apply_dated_change: { Args: { p_change_id: string }; Returns: Json }
+      apply_due_dated_changes: { Args: never; Returns: Json }
       archived_parent_of: {
         Args: { p_id: string; p_token: string }
         Returns: {
@@ -84150,6 +84094,65 @@ export type Database = {
           organization_name: string
           switched_at: string
           switched_by: string
+        }[]
+      }
+      dated_change_cancel: {
+        Args: { p_change_id: string; p_note: string }
+        Returns: undefined
+      }
+      dated_change_create: {
+        Args: {
+          p_actor?: string
+          p_effective_local: string
+          p_effective_note: string
+          p_expected: Json
+          p_new_value: Json
+          p_organization_id: string
+          p_provenance?: string
+          p_reason: string
+          p_source_read_at?: string
+          p_source_url: string
+          p_target: string
+          p_target_row_id: string
+          p_time_zone: string
+        }
+        Returns: string
+      }
+      dated_change_resolve: {
+        Args: { p_change_id: string; p_note: string }
+        Returns: undefined
+      }
+      dated_changes_for_attention: {
+        Args: { p_include_all?: boolean }
+        Returns: {
+          applied_at: string
+          attention: string
+          created_at: string
+          created_by: string
+          current_value: Json
+          drift: boolean
+          effective_at: string
+          effective_local: string
+          effective_note: string
+          expected: Json
+          id: string
+          metadata: Json
+          mutable: boolean
+          new_value: Json
+          organization_id: string
+          outcome: Json
+          projected_expected: Json
+          reason: string
+          remind_days: number
+          resolution_note: string
+          resolved_at: string
+          source_read_at: string
+          source_url: string
+          status: string
+          target: string
+          target_label: string
+          target_row_id: string
+          time_zone: string
         }[]
       }
       dd166_table_rung_scope_rows_ok: { Args: never; Returns: Json }
@@ -99263,44 +99266,56 @@ export type Database = {
         Row: {
           centroid: string | null
           created_at: string
+          created_by: string | null
           custom_fields: Json
           id: string
           kind: string
           label: string
           level: number
           member_count: number
+          metadata: Json
           organization_id: string
           parent_cluster_id: string | null
           summary: string | null
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           centroid?: string | null
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           id?: string
           kind?: string
           label: string
           level?: number
           member_count?: number
+          metadata?: Json
           organization_id: string
           parent_cluster_id?: string | null
           summary?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           centroid?: string | null
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           id?: string
           kind?: string
           label?: string
           level?: number
           member_count?: number
+          metadata?: Json
           organization_id?: string
           parent_cluster_id?: string | null
           summary?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -99383,6 +99398,7 @@ export type Database = {
           cluster_id: string | null
           confidence_avg: number | null
           created_at: string
+          created_by: string | null
           custom_fields: Json
           embedding: string | null
           id: string
@@ -99390,9 +99406,12 @@ export type Database = {
           is_concept: boolean | null
           kind: string
           mention_count: number
+          metadata: Json
           name: string
           organization_id: string
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           attrs?: Json
@@ -99400,6 +99419,7 @@ export type Database = {
           cluster_id?: string | null
           confidence_avg?: number | null
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           embedding?: string | null
           id?: string
@@ -99407,9 +99427,12 @@ export type Database = {
           is_concept?: boolean | null
           kind: string
           mention_count?: number
+          metadata?: Json
           name: string
           organization_id: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           attrs?: Json
@@ -99417,6 +99440,7 @@ export type Database = {
           cluster_id?: string | null
           confidence_avg?: number | null
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           embedding?: string | null
           id?: string
@@ -99424,9 +99448,12 @@ export type Database = {
           is_concept?: boolean | null
           kind?: string
           mention_count?: number
+          metadata?: Json
           name?: string
           organization_id?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -100099,6 +100126,7 @@ export type Database = {
       retrieval_audit: {
         Row: {
           created_at: string
+          created_by: string | null
           custom_fields: Json
           generation_id: string | null
           id: string
@@ -100110,10 +100138,14 @@ export type Database = {
           query_hash: string
           rerank_scores: number[] | null
           returned_chunk_ids: string[]
+          updated_at: string
+          updated_by: string | null
           user_id: string | null
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           generation_id?: string | null
           id?: string
@@ -100125,10 +100157,14 @@ export type Database = {
           query_hash: string
           rerank_scores?: number[] | null
           returned_chunk_ids?: string[]
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           generation_id?: string | null
           id?: string
@@ -100140,7 +100176,10 @@ export type Database = {
           query_hash?: string
           rerank_scores?: number[] | null
           returned_chunk_ids?: string[]
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -119458,12 +119497,14 @@ export type Database = {
       }
       user_analysis_preferences: {
         Row: {
+          created_at: string
           created_by: string | null
           custom_fields: Json
           custom_patterns: Json
           default_redaction_mode: string
           default_tier_per_detector: Json
           deleted_at: string | null
+          id: string
           metadata: Json
           organization_id: string
           per_detector_enabled: Json
@@ -119473,14 +119514,17 @@ export type Database = {
           updated_by: string | null
           user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           custom_patterns?: Json
           default_redaction_mode?: string
           default_tier_per_detector?: Json
           deleted_at?: string | null
+          id?: string
           metadata?: Json
           organization_id: string
           per_detector_enabled?: Json
@@ -119490,14 +119534,17 @@ export type Database = {
           updated_by?: string | null
           user_id: string
           version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           custom_patterns?: Json
           default_redaction_mode?: string
           default_tier_per_detector?: Json
           deleted_at?: string | null
+          id?: string
           metadata?: Json
           organization_id?: string
           per_detector_enabled?: Json
@@ -119507,6 +119554,7 @@ export type Database = {
           updated_by?: string | null
           user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -119985,6 +120033,7 @@ export type Database = {
           custom_fields: Json
           default_organization_id: string | null
           deleted_at: string | null
+          id: string
           metadata: Json
           organization_id: string
           preferences: Json
@@ -120000,6 +120049,7 @@ export type Database = {
           custom_fields?: Json
           default_organization_id?: string | null
           deleted_at?: string | null
+          id?: string
           metadata?: Json
           organization_id: string
           preferences: Json
@@ -120015,6 +120065,7 @@ export type Database = {
           custom_fields?: Json
           default_organization_id?: string | null
           deleted_at?: string | null
+          id?: string
           metadata?: Json
           organization_id?: string
           preferences?: Json
@@ -126776,6 +126827,7 @@ export type Database = {
       extract_sweep_state: {
         Row: {
           created_at: string
+          created_by: string | null
           custom_fields: Json
           definition_watermark: string | null
           id: string
@@ -126786,11 +126838,13 @@ export type Database = {
           proposals_created_total: number
           sweeps_total: number
           updated_at: string
+          updated_by: string | null
           user_id: string
           version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           definition_watermark?: string | null
           id?: string
@@ -126801,11 +126855,13 @@ export type Database = {
           proposals_created_total?: number
           sweeps_total?: number
           updated_at?: string
+          updated_by?: string | null
           user_id: string
           version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           definition_watermark?: string | null
           id?: string
@@ -126816,6 +126872,7 @@ export type Database = {
           proposals_created_total?: number
           sweeps_total?: number
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
           version?: number
         }

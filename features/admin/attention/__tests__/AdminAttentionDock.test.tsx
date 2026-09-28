@@ -31,7 +31,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import AdminAttentionDock from "../AdminAttentionDock";
 import { clearMutes, muteItem, readMuteMap } from "../item-mute";
-import { clearSnooze } from "../dock-snooze";
+import { clearSnooze, writeSnooze } from "../dock-snooze";
 import type { OpenOutage } from "@/features/admin/system-errors/open-outages";
 import type { SystemScheduleAlarm } from "@/features/scheduling/service/queries";
 
@@ -44,6 +44,12 @@ const fetchOpenOutages = jest.fn();
 jest.mock("@/features/admin/system-errors/open-outages", () => {
   const actual = jest.requireActual("@/features/admin/system-errors/open-outages");
   return { ...actual, fetchOpenOutages: () => fetchOpenOutages() };
+});
+
+const fetchDatedChanges = jest.fn();
+jest.mock("@/features/admin/dated-changes/service", () => {
+  const actual = jest.requireActual("@/features/admin/dated-changes/service");
+  return { ...actual, fetchDatedChanges: (all: boolean) => fetchDatedChanges(all) };
 });
 
 const fetchSystemScheduleAlarms = jest.fn();
@@ -250,6 +256,8 @@ beforeEach(() => {
   selectedOrganizationId = "org-admin";
   fetchOpenOutages.mockReset();
   fetchSystemScheduleAlarms.mockReset();
+  fetchDatedChanges.mockReset();
+  fetchDatedChanges.mockResolvedValue([]);
   muteSystemScheduleAlarm.mockClear();
   window.localStorage.clear();
   window.sessionStorage.clear();
@@ -453,6 +461,31 @@ describe("AdminAttentionDock", () => {
     await mount();
     expect(container.innerHTML).toBe("");
     expect(document.documentElement.dataset.adminAttention).toBeUndefined();
+  });
+
+  it("a snooze hides mutable items but NEVER a refused dated change (it has no Mute either)", async () => {
+    const base = {
+      organizationId: "o", target: "ai.offering.pricing", targetRowId: "r", targetLabel: "gemini-3.8-flash",
+      expected: [{ input_price: 0.75, output_price: 3.75 }], newValue: [{ input_price: 1.5, output_price: 7.5 }],
+      currentValue: [{ input_price: 0.9, output_price: 3.75 }], projectedExpected: [{ input_price: 0.9, output_price: 3.75 }],
+      drift: false, effectiveLocal: "2027-01-01T00:00:00", timeZone: "UTC", effectiveAt: "2027-01-01T00:00:00Z",
+      effectiveNote: null, appliedAt: null, reason: "Intro price ends.", sourceUrl: null,
+      createdAt: "2026-09-28T00:00:00Z", resolvedAt: null, resolutionNote: null,
+    };
+    fetchDatedChanges.mockResolvedValue([
+      { ...base, id: "refused-1", status: "refused", attention: "refused", mutable: false,
+        outcome: { reason: "drift", observed: [{ input_price: 0.9, output_price: 3.75 }], sentence: "Nothing was changed." } },
+      { ...base, id: "created-1", status: "scheduled", attention: "created", mutable: true, outcome: {} },
+    ]);
+    fetchSystemScheduleAlarms.mockResolvedValue([alarm()]);
+    fetchOpenOutages.mockResolvedValue([]);
+    writeSnooze(3_600_000);
+    await mount();
+    await expand();
+    const rows = [...container.querySelectorAll("[data-testid='attention-row']")];
+    expect(rows.map((r) => r.getAttribute("data-attention-key"))).toEqual(["dated-changes:refused-1:refused"]);
+    expect(container.textContent).toContain("found $0.90 in / $3.75 out");
+    expect(container.querySelector("[aria-label^='Mute gemini-3.8-flash']")).toBeNull();
   });
 
   it("an expired local mute stored before mount is never honoured", async () => {

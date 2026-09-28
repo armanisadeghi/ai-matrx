@@ -59,7 +59,6 @@ export function RowChoicesButton({
       <PopoverTrigger asChild>
         <button
           type="button"
-          tabIndex={-1}
           aria-label={`Choose ${label}`}
           title="Show choices"
           data-row-choices

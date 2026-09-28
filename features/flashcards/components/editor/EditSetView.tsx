@@ -92,6 +92,10 @@ import { CardImageSlot } from "./CardImageSlot";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  parseMatchingCardUpdate,
+  parseNewMatchingCard,
+} from "./flashcardEditorAgentWrites";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -482,6 +486,37 @@ export function EditSetView({ setId }: { setId: string }) {
       setCardRevisions((r) => ({ ...r, [saved.id]: (r[saved.id] ?? 0) + 1 }));
     },
 
+    matching_card_content: async (value: unknown) => {
+      if (!data) throw new Error("matching_card_content: the set has not loaded.");
+      const plan = parseMatchingCardUpdate(value, data.cards);
+      const card = data.cards.find((current) => current.id === plan.id);
+      if (!card) throw new Error("matching_card_content: this card is no longer in the open set.");
+      const result = await fcService.updateCardVersioned(card.id, plan.expectedVersion, {
+        ...(plan.prompt === undefined ? {} : { front: plan.prompt }),
+        ...(plan.pairs === undefined
+          ? {}
+          : { dynamic_content: matchingDynamicContent(plan.pairs) }),
+        card_kind: CARD_KIND.matching,
+      });
+      if (result.error || !result.data)
+        throw new Error(result.error ?? "Couldn't save the matching card.");
+      const saved = result.data;
+      setData((previous) =>
+        previous
+          ? {
+              ...previous,
+              cards: previous.cards.map((current) =>
+                current.id === saved.id ? { ...current, ...saved } : current,
+              ),
+            }
+          : previous,
+      );
+      setCardRevisions((revisions) => ({
+        ...revisions,
+        [saved.id]: (revisions[saved.id] ?? 0) + 1,
+      }));
+    },
+
     add_cards: async (value: unknown) => {
       const obj = writeRecord(value, "add_cards");
       const raw = obj.cards;
@@ -506,16 +541,29 @@ export function EditSetView({ setId }: { setId: string }) {
           `add_cards: cards[${index}]`,
         );
         // Enum check against the real vocabulary constant, never a re-typed
-        // literal. `matching` needs structured pairs, so it is not addable here.
+        // literal. Matching cards carry structured pairs in dynamic_content.
         const kind = rawKind?.trim();
         if (
           kind !== undefined &&
           kind !== CARD_KIND.basic &&
-          kind !== CARD_KIND.cloze
+          kind !== CARD_KIND.cloze &&
+          kind !== CARD_KIND.matching
         ) {
           throw new Error(
-            `add_cards: cards[${index}].card_kind must be "${CARD_KIND.basic}" or "${CARD_KIND.cloze}" (matching cards need structured pairs — add those on the page).`,
+            `add_cards: cards[${index}].card_kind must be "${CARD_KIND.basic}", "${CARD_KIND.cloze}", or "${CARD_KIND.matching}".`,
           );
+        }
+        if (kind === CARD_KIND.matching) {
+          const matching = parseNewMatchingCard(
+            record,
+            `add_cards: cards[${index}]`,
+          );
+          return {
+            front: matching.front,
+            back: "",
+            card_kind: CARD_KIND.matching,
+            dynamic_content: matchingDynamicContent(matching.pairs),
+          };
         }
         return {
           front: front.trim(),

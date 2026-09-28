@@ -46,6 +46,11 @@ const NAV_ITEMS: AdminSectionTab[] = [
     icon: ServerCog,
   },
   {
+    label: "Dated changes",
+    href: "/administration/automation/scheduling/dated-changes",
+    icon: CalendarClock,
+  },
+  {
     label: "Orphan leases",
     href: "/administration/automation/scheduling/orphan-leases",
     icon: AlertTriangle,

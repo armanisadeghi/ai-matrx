@@ -876,6 +876,54 @@ export const fcService = {
     }
   },
 
+  /** Save a card only when it still has the revision the editor showed. */
+  async updateCardVersioned(
+    cardId: string,
+    expectedVersion: number,
+    patch: Partial<
+      Pick<
+        FcCardRow,
+        | "front"
+        | "back"
+        | "card_kind"
+        | "difficulty"
+        | "topic"
+        | "lesson"
+        | "personal_notes"
+        | "dynamic_content"
+      >
+    >,
+  ): Promise<FcResult<FcCardRow>> {
+    try {
+      const result = await guardedUpdate<FcCardRow>({
+        expectedVersion,
+        applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
+          EDU()
+            .from("fc_card")
+            .update({ ...patch, version: nextVersion })
+            .eq("id", cardId)
+            .eq("version", expected)
+            .is("deleted_at", null)
+            .select("*")
+            .maybeSingle(),
+        fetchCurrent: () =>
+          EDU()
+            .from("fc_card")
+            .select("*")
+            .eq("id", cardId)
+            .is("deleted_at", null)
+            .maybeSingle(),
+      });
+      if (result.status === "conflict")
+        return fail("updateCardVersioned", "This card changed elsewhere. Reload before editing it.");
+      if (result.status === "not_found")
+        return fail("updateCardVersioned", "This card is no longer available.");
+      return { data: result.row, error: null };
+    } catch (error) {
+      return fail("updateCardVersioned", error);
+    }
+  },
+
   /**
    * Merge a value into ONE of a card's jsonb columns (FOUND_DEFECTS D151).
    *

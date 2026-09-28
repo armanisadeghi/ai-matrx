@@ -24,6 +24,8 @@ export interface AttentionNotice {
 }
 
 function isLive(item: AttentionItem, localMutes: Record<string, number>, now: number): boolean {
+  // An unmutable item is always live — no server or local mute can hide it.
+  if (item.mute === null) return true;
   const server = item.mute.current?.until;
   if (server && new Date(server).getTime() > now) return false;
   const local = localMutes[item.key];

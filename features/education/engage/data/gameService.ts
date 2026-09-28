@@ -140,6 +140,8 @@ export const gameService = {
   // ─── ROOMS ─────────────────────────────────────────────────────────────
   /** Host creates a room. Retries once on a (rare) join-code collision. */
   async createRoom(input: {
+    /** The active organization selected by the host; resolved by ensureOrgId when unset. */
+    organizationId?: string | null;
     sourceKind: "set" | "topic" | "due";
     sourceSetId?: string | null;
     sourceTitle?: string | null;
@@ -147,7 +149,7 @@ export const gameService = {
     hostUserId: string;
   }): Promise<EngageResult<GameRoomRow>> {
     try {
-      const orgId = await ensureOrgId(null);
+      const orgId = await ensureOrgId(input.organizationId ?? null);
       for (let attempt = 0; attempt < 3; attempt++) {
         const payload = {
           organization_id: orgId,

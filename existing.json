@@ -1,0 +1,3006 @@
+{
+  "result": [
+    {
+      "ex": [
+        {
+          "id": "b5ad1fc5-4d9b-4651-a7ab-df9b4b8b5bca",
+          "data": {
+            "id": "c2",
+            "fit": "possible",
+            "rank": 2,
+            "__kind": "media_candidate_verdict",
+            "reason": "Marcus Lee covers cloud infra, which is adjacent to a vector database announcement, but his last byline was 14 months ago and only an unconfirmed address is available.",
+            "concerns": [
+              "appears to have gone stale, with no byline in 14 months",
+              "only an unconfirmed candidate address is available",
+              "cloud infra is an adjacent topic, not a direct match for databases or developer tools"
+            ],
+            "reachability": "candidate_only"
+          },
+          "canon": true,
+          "status": "passed"
+        }
+      ],
+      "id": "ae45ce36-3ec5-4695-9854-54112ae516d3",
+      "kind": "media_candidate_verdict",
+      "edges": null,
+      "metadata": {
+        "family": "user_authored",
+        "generated": false,
+        "title_key": "id",
+        "created_via": "kind_create",
+        "description": "One ranked media/PR candidate verdict emitted by the crm.media_list_ranker mandate: candidate id, fit grade, rank, reasoning, reachability status, and up to three concerns. Provider-enforced schema — every field required, additionalProperties false.",
+        "activation_note": "Output component media_candidate_verdict_card v1.0.1 (streaming-first single verdict); canonical example passing.",
+        "loading_component": "card"
+      },
+      "emitted_json_schema": {
+        "type": "object",
+        "required": [
+          "__kind",
+          "concerns",
+          "fit",
+          "id",
+          "rank",
+          "reachability",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Candidate identifier as supplied to the ranker."
+          },
+          "fit": {
+            "enum": [
+              "strong",
+              "possible",
+              "poor",
+              "insufficient_evidence"
+            ],
+            "type": "string",
+            "description": "Fit grade for this candidate against the announcement."
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "1-based rank; 0 means unranked."
+          },
+          "__kind": {
+            "const": "media_candidate_verdict"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Plain-language justification for the fit grade and rank."
+          },
+          "concerns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "description": "Up to three concerns that limit the fit or reachability."
+          },
+          "reachability": {
+            "enum": [
+              "confirmed",
+              "candidate_only",
+              "none",
+              "unknown"
+            ],
+            "type": "string",
+            "description": "Contact reachability status for this candidate."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "ex": [
+        {
+          "id": "a975af2f-d06b-40f1-abdf-c59d2cecc8bb",
+          "data": {
+            "__kind": "media_list_ranking_result",
+            "results": [
+              {
+                "id": "c1",
+                "fit": "strong",
+                "rank": 1,
+                "__kind": "media_candidate_verdict",
+                "reason": "Priya Shah is a Senior Editor at DevWeekly who covers databases, open source, and developer tools, and has written 3 pieces on vector databases in 2026, making her a direct match for this announcement, and she has a confirmed contact.",
+                "concerns": [],
+                "reachability": "confirmed"
+              },
+              {
+                "id": "c2",
+                "fit": "possible",
+                "rank": 2,
+                "__kind": "media_candidate_verdict",
+                "reason": "Marcus Lee covers cloud infra, which is adjacent to a vector database announcement, but his last byline was 14 months ago and only an unconfirmed address is available.",
+                "concerns": [
+                  "appears to have gone stale, with no byline in 14 months",
+                  "only an unconfirmed candidate address is available",
+                  "cloud infra is an adjacent topic, not a direct match for databases or developer tools"
+                ],
+                "reachability": "candidate_only"
+              },
+              {
+                "id": "c3",
+                "fit": "insufficient_evidence",
+                "rank": 0,
+                "__kind": "media_candidate_verdict",
+                "reason": "TechBits has only a generic newsroom desk entry with no topics, role, or facts supplied, so there is nothing to judge fit against.",
+                "concerns": [
+                  "no reachability information is available, only a generic desk listing"
+                ],
+                "reachability": "none"
+              }
+            ]
+          },
+          "canon": true,
+          "status": "passed"
+        },
+        {
+          "id": "ad179fdb-655c-4447-b867-87cc6bc0164c",
+          "data": {
+            "__kind": "media_list_ranking_result",
+            "results": [
+              {
+                "id": "c4",
+                "fit": "poor",
+                "rank": 3,
+                "__kind": "media_candidate_verdict",
+                "reason": "Dana Okafor writes consumer gadget reviews and has no database, infrastructure, or developer tooling coverage, so a vector database launch is outside her beat even though her desk address is on file.",
+                "concerns": [
+                  "beat is consumer hardware, not infrastructure or databases",
+                  "no prior coverage of the category in the supplied facts"
+                ],
+                "reachability": "confirmed"
+              },
+              {
+                "id": "c5",
+                "fit": "possible",
+                "rank": 4,
+                "__kind": "media_candidate_verdict",
+                "reason": "The Data Layer newsletter covers database tooling for practitioners, which matches the announcement, but the supplied record does not say whether the listed address is monitored.",
+                "concerns": [
+                  "contact status could not be established from the supplied record"
+                ],
+                "reachability": "unknown"
+              }
+            ]
+          },
+          "canon": false,
+          "status": "passed"
+        }
+      ],
+      "id": "63521e93-adac-420b-b4bf-411458d7eb4f",
+      "kind": "media_list_ranking_result",
+      "edges": [
+        {
+          "f": "results",
+          "child": "ae45ce36-3ec5-4695-9854-54112ae516d3"
+        }
+      ],
+      "metadata": {
+        "family": "user_authored",
+        "generated": false,
+        "created_via": "kind_create",
+        "description": "Batch output of the crm.media_list_ranker mandate: a single `results` array of per-candidate media verdicts (fit, rank, reason, reachability, concerns). Provider-enforced schema, consumed server-side 1:1 by aidream/services/crm/media_list_ranking.py.",
+        "activation_note": "Output component media_list_ranking_board v1.0.2 (streaming-first ranked board) plus loading frame media_list_ranking_skeleton; canonical example passing.",
+        "loading_component": "list"
+      },
+      "emitted_json_schema": {
+        "type": "object",
+        "required": [
+          "__kind",
+          "results"
+        ],
+        "properties": {
+          "__kind": {
+            "const": "media_list_ranking_result"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "__kind",
+                "concerns",
+                "fit",
+                "id",
+                "rank",
+                "reachability",
+                "reason"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Candidate identifier as supplied to the ranker."
+                },
+                "fit": {
+                  "enum": [
+                    "strong",
+                    "possible",
+                    "poor",
+                    "insufficient_evidence"
+                  ],
+                  "type": "string",
+                  "description": "Fit grade for this candidate against the announcement."
+                },
+                "rank": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "1-based rank; 0 means unranked."
+                },
+                "__kind": {
+                  "const": "media_candidate_verdict"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "Plain-language justification for the fit grade and rank."
+                },
+                "concerns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 3,
+                  "description": "Up to three concerns that limit the fit or reachability."
+                },
+                "reachability": {
+                  "enum": [
+                    "confirmed",
+                    "candidate_only",
+                    "none",
+                    "unknown"
+                  ],
+                  "type": "string",
+                  "description": "Contact reachability status for this candidate."
+                }
+              },
+              "additionalProperties": false
+            },
+            "description": "One verdict per candidate supplied to the ranker."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "ex": [
+        {
+          "id": "cb6a1a88-f197-4cec-91a5-3616f640d89f",
+          "data": {
+            "notes": [
+              "No heading in the article starts with 'Recycle Coach', so section scope could not apply; the clip is the whole article."
+            ],
+            "scope": "whole",
+            "__kind": "press_clip_render",
+            "byline": "Megan Quinn",
+            "headline": "Kanopy integrates recycling monitoring and AI tools under new parent company",
+            "logo_url": "https://d12v9rtnomnebu.cloudfront.net/logo/publications/waste_black.svg",
+            "source_url": "https://www.wastedive.com/news/kanopy-integrates-recycling-monitoring-tools-recycle-coach-re-trac/831358/",
+            "logo_source": "article_masthead",
+            "outlet_name": "Waste Dive",
+            "pdf_file_id": "5b0e0c5e-3f4f-4b8e-9d1c-6a3a9f2f7c11",
+            "published_at": "2026-09-25",
+            "preview_file_id": "0d7f2a41-8c55-4a51-a5a0-2b9c6f3e1d22",
+            "root_selector_used": "article.brief",
+            "client_found_in_text": true,
+            "page_raster_file_ids": [
+              "a1f0c2d3-1111-4c4c-9a9a-000000000001",
+              "a1f0c2d3-1111-4c4c-9a9a-000000000002",
+              "a1f0c2d3-1111-4c4c-9a9a-000000000003",
+              "a1f0c2d3-1111-4c4c-9a9a-000000000004"
+            ],
+            "removed_placeholders": [],
+            "blocked_request_count": 3
+          },
+          "canon": true,
+          "status": "passed"
+        }
+      ],
+      "id": "75efdf98-afb1-4dc7-a7f7-b28dc42e8908",
+      "kind": "press_clip_render",
+      "edges": null,
+      "metadata": {
+        "family": "press",
+        "source": "kind_sdk",
+        "category": "data",
+        "maturity": "distilled"
+      },
+      "emitted_json_schema": {
+        "type": "object",
+        "title": "PressClipRender",
+        "required": [
+          "pdf_file_id",
+          "preview_file_id",
+          "logo_source",
+          "root_selector_used",
+          "source_url",
+          "client_found_in_text",
+          "scope"
+        ],
+        "properties": {
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "description": "Every fallback, override miss and late-overlay removal, said out loud."
+          },
+          "scope": {
+            "enum": [
+              "whole",
+              "section"
+            ],
+            "type": "string",
+            "title": "Scope",
+            "description": "The scope actually applied; a requested section with no matching heading falls back to 'whole'."
+          },
+          "__kind": {
+            "type": "string",
+            "const": "press_clip_render",
+            "title": "Kind",
+            "default": "press_clip_render",
+            "description": "The registered kind this payload is an instance of."
+          },
+          "byline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Byline",
+            "default": null,
+            "description": "Read from the page; null when absent."
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline",
+            "default": null,
+            "description": "Read from the page; null when absent."
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url",
+            "default": null,
+            "description": "The logo image stamped at the top; null for an inline SVG or a wordmark."
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url",
+            "description": "The URL the browser ended on."
+          },
+          "logo_source": {
+            "enum": [
+              "explicit",
+              "article_masthead",
+              "home_masthead",
+              "og_logo_or_favicon",
+              "text_wordmark"
+            ],
+            "type": "string",
+            "title": "Logo Source",
+            "description": "Where the stamped logo came from, in ladder order. 'text_wordmark' means no real logo was found anywhere and the clip is NOT shippable."
+          },
+          "outlet_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Name",
+            "default": null,
+            "description": "The publication's name as the page states it."
+          },
+          "pdf_file_id": {
+            "type": "string",
+            "title": "Pdf File Id",
+            "description": "The A4 clip PDF, in the organization's file store."
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At",
+            "default": null,
+            "description": "Read from the page as written (ISO or visible text); null when absent."
+          },
+          "preview_file_id": {
+            "type": "string",
+            "title": "Preview File Id",
+            "description": "A full-page PNG screenshot of the clipped page."
+          },
+          "root_selector_used": {
+            "type": "string",
+            "title": "Root Selector Used",
+            "description": "The article container the surgery kept (the caller's root, or the one picked structurally)."
+          },
+          "client_found_in_text": {
+            "type": "boolean",
+            "title": "Client Found In Text",
+            "description": "Whether the client's name appears in the article text (plain, case-insensitive search)."
+          },
+          "page_raster_file_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Page Raster File Ids",
+            "description": "Every PDF page rasterized to PNG, in page order — every page borders a page break and the last page is always included. Review THESE, not the preview: trailing bands and content cut at a break exist only in the PDF."
+          },
+          "removed_placeholders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Removed Placeholders",
+            "description": "Every empty placeholder box swept from the article, as 'tag.class [W×H]'."
+          },
+          "blocked_request_count": {
+            "type": "integer",
+            "title": "Blocked Request Count",
+            "default": 0,
+            "minimum": 0,
+            "description": "Requests aborted because they went to an ad/recirculation/comment network."
+          }
+        },
+        "description": "One live article rendered as a press clip: PDF, preview and page rasters.",
+        "additionalProperties": false
+      }
+    },
+    {
+      "ex": [
+        {
+          "id": "9b43b1dd-a851-483f-a04f-0c3b67c4d404",
+          "data": {
+            "__kind": "voice_fingerprint",
+            "idioms": {
+              "signature_words": [],
+              "signature_phrases": [],
+              "hedges_you_never_use": [],
+              "hedges_you_actually_use": []
+            },
+            "intent": [],
+            "cadence": {
+              "sentence_length": {
+                "p10": 0,
+                "p90": 24,
+                "mean": 11.2,
+                "stdev": 0,
+                "median": 0,
+                "length_cv": 0.7,
+                "long_sentence_frequency": 0,
+                "one_word_sentence_frequency": 0
+              },
+              "paragraph_length": {
+                "mean_sentences": 0,
+                "one_sentence_paragraph_frequency": 0
+              },
+              "rhythm_signature": "mixed"
+            },
+            "closers": {
+              "observed": [],
+              "banned_from_use": []
+            },
+            "lexical": {
+              "mattr": 0,
+              "delta_band": 1,
+              "mattr_by_window": {},
+              "baseline_version": "english_baseline_v1",
+              "function_word_zvector": {}
+            },
+            "openers": {
+              "observed": [],
+              "banned_from_use": [],
+              "pos_distribution": {}
+            },
+            "mechanics": {
+              "contractions": "mixed",
+              "oxford_comma": "unknown",
+              "smart_quotes": "no",
+              "em_dash_usage": "never",
+              "ellipsis_usage": "never",
+              "contraction_rate": 0.82,
+              "punctuation_classes": {},
+              "em_dash_per_1k_words": 0,
+              "capitalization_quirks": {
+                "lowercase_i": false,
+                "all_caps_for_emphasis": "never",
+                "sentence_case_headers": false
+              },
+              "ellipsis_per_1k_words": 0,
+              "semicolon_per_1k_words": 0,
+              "parenthesis_per_1k_words": 0,
+              "question_rate_per_1k_words": 0,
+              "exclamation_rate_per_1k_words": 0,
+              "parenthetical_aside_frequency": "low"
+            },
+            "created_at": null,
+            "extraction": {
+              "triage": null,
+              "warnings": [],
+              "confidence": "medium",
+              "rules_version": "voice-extractor@092d882+matrx.1",
+              "baseline_version": "english_baseline_v1",
+              "extractor_version": "brand.voice_measure/1.0.0"
+            },
+            "profile_id": "jane-doe-personal",
+            "sample_count": 8,
+            "profile_scope": "person",
+            "register_axis": {
+              "per_sample": [],
+              "involved_band": 0.25,
+              "involved_score": 0
+            },
+            "samples_index": [],
+            "refresh_due_at": null,
+            "register_label": "casual-professional",
+            "schema_version": 1,
+            "sentence_initial": {
+              "uses_imagine_if": false,
+              "transitions_used": [],
+              "conjunction_start_rate": 0,
+              "participial_start_rate": 0,
+              "conjunction_starts_allowed": false,
+              "uses_in_conclusion_in_summary": false,
+              "uses_however_furthermore_moreover": false
+            },
+            "topic_signatures": {
+              "recurring_themes": [],
+              "perspective_anchors": {
+                "third_person_rate": 0,
+                "second_person_rate": 0,
+                "first_person_plural_rate": 0,
+                "first_person_singular_rate": 0
+              }
+            },
+            "banned_structures": [],
+            "last_extracted_at": null,
+            "sample_word_count": 1240,
+            "banned_words_global": [],
+            "sample_age_p50_days": null,
+            "sample_age_oldest_days": null,
+            "global_words_in_samples": [],
+            "banned_words_user_specific": [],
+            "banned_words_global_allowed": []
+          },
+          "canon": true,
+          "status": "passed"
+        }
+      ],
+      "id": "c8f18bbd-83f0-433a-89c2-02f74349649a",
+      "kind": "voice_fingerprint",
+      "edges": null,
+      "metadata": {
+        "family": "brand",
+        "source": "kind_sdk",
+        "category": "data",
+        "maturity": "distilled"
+      },
+      "emitted_json_schema": {
+        "type": "object",
+        "$defs": {
+          "Idioms": {
+            "type": "object",
+            "title": "Idioms",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "signature_words": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Signature Words",
+                "description": "Candidates for the person to confirm."
+              },
+              "signature_phrases": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Signature Phrases",
+                "description": "Candidates for the person to confirm."
+              },
+              "hedges_you_never_use": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Hedges You Never Use"
+              },
+              "hedges_you_actually_use": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Hedges You Actually Use"
+              }
+            },
+            "additionalProperties": false
+          },
+          "Cadence": {
+            "type": "object",
+            "title": "Cadence",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "sentence_length": {
+                "$ref": "#/$defs/SentenceLengthStats"
+              },
+              "paragraph_length": {
+                "$ref": "#/$defs/ParagraphStats"
+              },
+              "rhythm_signature": {
+                "enum": [
+                  "short-burst",
+                  "flowing",
+                  "mixed",
+                  "listy"
+                ],
+                "type": "string",
+                "title": "Rhythm Signature",
+                "default": "mixed"
+              }
+            },
+            "additionalProperties": false
+          },
+          "Lexical": {
+            "type": "object",
+            "title": "Lexical",
+            "properties": {
+              "mattr": {
+                "type": "number",
+                "title": "Mattr",
+                "default": 0,
+                "description": "Moving-average type-token ratio over a 100-token window."
+              },
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "delta_band": {
+                "type": "number",
+                "title": "Delta Band",
+                "default": 1,
+                "description": "Delta distance above which a draft has drifted."
+              },
+              "mattr_by_window": {
+                "type": "object",
+                "title": "Mattr By Window",
+                "properties": {
+                  "__kind": {
+                    "type": "string",
+                    "description": "The registered kind this payload is an instance of, when it is one."
+                  }
+                },
+                "description": "MATTR at windows 25, 50 and 100, so a short draft is compared on a window it can fill.",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "baseline_version": {
+                "type": "string",
+                "title": "Baseline Version",
+                "default": "english_baseline_v1"
+              },
+              "function_word_zvector": {
+                "type": "object",
+                "title": "Function Word Zvector",
+                "properties": {
+                  "__kind": {
+                    "type": "string",
+                    "description": "The registered kind this payload is an instance of, when it is one."
+                  }
+                },
+                "description": "Burrows's Delta z-scores of the baseline function words.",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "CloserSet": {
+            "type": "object",
+            "title": "CloserSet",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "observed": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Observed"
+              },
+              "banned_from_use": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Banned From Use"
+              }
+            },
+            "additionalProperties": false
+          },
+          "Mechanics": {
+            "type": "object",
+            "title": "Mechanics",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "contractions": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "mixed"
+                ],
+                "type": "string",
+                "title": "Contractions",
+                "default": "mixed"
+              },
+              "oxford_comma": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "inconsistent",
+                  "unknown"
+                ],
+                "type": "string",
+                "title": "Oxford Comma",
+                "default": "unknown"
+              },
+              "smart_quotes": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "mixed"
+                ],
+                "type": "string",
+                "title": "Smart Quotes",
+                "default": "no"
+              },
+              "em_dash_usage": {
+                "enum": [
+                  "never",
+                  "rare",
+                  "habitual"
+                ],
+                "type": "string",
+                "title": "Em Dash Usage",
+                "default": "rare"
+              },
+              "ellipsis_usage": {
+                "enum": [
+                  "never",
+                  "rare",
+                  "habitual"
+                ],
+                "type": "string",
+                "title": "Ellipsis Usage",
+                "default": "never"
+              },
+              "contraction_rate": {
+                "type": "number",
+                "title": "Contraction Rate",
+                "default": 0,
+                "description": "Contracted / (contracted + expanded) contractible pairs."
+              },
+              "punctuation_classes": {
+                "type": "object",
+                "title": "Punctuation Classes",
+                "properties": {
+                  "__kind": {
+                    "type": "string",
+                    "description": "The registered kind this payload is an instance of, when it is one."
+                  }
+                },
+                "description": "never | rare | habitual per mark, by fixed cut-offs (< 0.5 per 1k never, < 3 rare).",
+                "additionalProperties": {
+                  "enum": [
+                    "never",
+                    "rare",
+                    "habitual"
+                  ],
+                  "type": "string"
+                }
+              },
+              "em_dash_per_1k_words": {
+                "type": "number",
+                "title": "Em Dash Per 1K Words",
+                "default": 0
+              },
+              "capitalization_quirks": {
+                "$ref": "#/$defs/CapitalizationQuirks"
+              },
+              "ellipsis_per_1k_words": {
+                "type": "number",
+                "title": "Ellipsis Per 1K Words",
+                "default": 0
+              },
+              "semicolon_per_1k_words": {
+                "type": "number",
+                "title": "Semicolon Per 1K Words",
+                "default": 0
+              },
+              "parenthesis_per_1k_words": {
+                "type": "number",
+                "title": "Parenthesis Per 1K Words",
+                "default": 0
+              },
+              "question_rate_per_1k_words": {
+                "type": "number",
+                "title": "Question Rate Per 1K Words",
+                "default": 0
+              },
+              "exclamation_rate_per_1k_words": {
+                "type": "number",
+                "title": "Exclamation Rate Per 1K Words",
+                "default": 0
+              },
+              "parenthetical_aside_frequency": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string",
+                "title": "Parenthetical Aside Frequency",
+                "default": "low"
+              }
+            },
+            "additionalProperties": false
+          },
+          "OpenerSet": {
+            "type": "object",
+            "title": "OpenerSet",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "observed": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Observed"
+              },
+              "banned_from_use": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Banned From Use"
+              },
+              "pos_distribution": {
+                "type": "object",
+                "title": "Pos Distribution",
+                "properties": {
+                  "__kind": {
+                    "type": "string",
+                    "description": "The registered kind this payload is an instance of, when it is one."
+                  }
+                },
+                "description": "Share of sentences by the part of speech of their first token (spaCy).",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "Extraction": {
+            "type": "object",
+            "title": "Extraction",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "triage": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CorpusTriage"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "warnings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Warnings"
+              },
+              "confidence": {
+                "enum": [
+                  "insufficient",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string",
+                "title": "Confidence",
+                "default": "medium"
+              },
+              "rules_version": {
+                "type": "string",
+                "title": "Rules Version",
+                "default": "voice-extractor@092d882+matrx.1"
+              },
+              "baseline_version": {
+                "type": "string",
+                "title": "Baseline Version",
+                "default": "english_baseline_v1"
+              },
+              "extractor_version": {
+                "type": "string",
+                "title": "Extractor Version",
+                "default": "brand.voice_measure/1.0.0"
+              }
+            },
+            "additionalProperties": false
+          },
+          "CorpusTriage": {
+            "type": "object",
+            "title": "CorpusTriage",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "warnings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Warnings"
+              },
+              "confidence": {
+                "enum": [
+                  "insufficient",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string",
+                "title": "Confidence",
+                "default": "insufficient"
+              },
+              "total_words": {
+                "type": "integer",
+                "title": "Total Words",
+                "default": 0
+              },
+              "sample_count": {
+                "type": "integer",
+                "title": "Sample Count",
+                "default": 0
+              },
+              "ai_tell_share": {
+                "type": "number",
+                "title": "Ai Tell Share",
+                "default": 0,
+                "description": "Share of samples showing two or more named AI tells."
+              },
+              "register_split": {
+                "type": "boolean",
+                "title": "Register Split",
+                "default": false,
+                "description": "True when the samples split into two registers."
+              },
+              "ai_tell_samples": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Ai Tell Samples",
+                "description": "Source ids of the samples flagged."
+              },
+              "per_sample_involved": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/SampleInvolved"
+                },
+                "title": "Per Sample Involved"
+              }
+            },
+            "additionalProperties": false
+          },
+          "RegisterAxis": {
+            "type": "object",
+            "title": "RegisterAxis",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "per_sample": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/SampleInvolved"
+                },
+                "title": "Per Sample"
+              },
+              "involved_band": {
+                "type": "number",
+                "title": "Involved Band",
+                "default": 0.25,
+                "description": "One band on the involved axis."
+              },
+              "involved_score": {
+                "type": "number",
+                "title": "Involved Score",
+                "default": 0,
+                "description": "(contraction + first_person + private_verb) - (noun_ratio + nominalization), all as shares."
+              }
+            },
+            "additionalProperties": false
+          },
+          "ParagraphStats": {
+            "type": "object",
+            "title": "ParagraphStats",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "mean_sentences": {
+                "type": "number",
+                "title": "Mean Sentences",
+                "default": 0,
+                "description": "Mean sentences per paragraph (blank-line separated)."
+              },
+              "one_sentence_paragraph_frequency": {
+                "type": "number",
+                "title": "One Sentence Paragraph Frequency",
+                "default": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "SampleInvolved": {
+            "type": "object",
+            "title": "SampleInvolved",
+            "required": [
+              "source_id",
+              "involved_score"
+            ],
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "source_id": {
+                "type": "string",
+                "title": "Source Id"
+              },
+              "involved_score": {
+                "type": "number",
+                "title": "Involved Score"
+              }
+            },
+            "additionalProperties": false
+          },
+          "BannedStructure": {
+            "type": "object",
+            "title": "BannedStructure",
+            "required": [
+              "id",
+              "pattern"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "title": "Id"
+              },
+              "why": {
+                "type": "string",
+                "title": "Why",
+                "default": ""
+              },
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "pattern": {
+                "type": "string",
+                "title": "Pattern"
+              },
+              "severity": {
+                "enum": [
+                  "block",
+                  "warn"
+                ],
+                "type": "string",
+                "title": "Severity",
+                "default": "block"
+              },
+              "threshold": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Threshold",
+                "default": null
+              }
+            },
+            "additionalProperties": false
+          },
+          "SentenceInitial": {
+            "type": "object",
+            "title": "SentenceInitial",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "uses_imagine_if": {
+                "type": "boolean",
+                "title": "Uses Imagine If",
+                "default": false
+              },
+              "transitions_used": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Transitions Used",
+                "description": "Which of however / furthermore / moreover / additionally the samples really open with."
+              },
+              "conjunction_start_rate": {
+                "type": "number",
+                "title": "Conjunction Start Rate",
+                "default": 0
+              },
+              "participial_start_rate": {
+                "type": "number",
+                "title": "Participial Start Rate",
+                "default": 0
+              },
+              "conjunction_starts_allowed": {
+                "type": "boolean",
+                "title": "Conjunction Starts Allowed",
+                "default": false
+              },
+              "uses_in_conclusion_in_summary": {
+                "type": "boolean",
+                "title": "Uses In Conclusion In Summary",
+                "default": false
+              },
+              "uses_however_furthermore_moreover": {
+                "type": "boolean",
+                "title": "Uses However Furthermore Moreover",
+                "default": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "TopicSignatures": {
+            "type": "object",
+            "title": "TopicSignatures",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "recurring_themes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Recurring Themes"
+              },
+              "perspective_anchors": {
+                "$ref": "#/$defs/PerspectiveAnchors"
+              }
+            },
+            "additionalProperties": false
+          },
+          "SampleIndexEntry": {
+            "type": "object",
+            "title": "SampleIndexEntry",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "title": "Id",
+                "description": "The Source (processed document) id the text was read from."
+              },
+              "date": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Date",
+                "default": null
+              },
+              "hash": {
+                "type": "string",
+                "title": "Hash",
+                "default": "",
+                "description": "sha256 of the sample text; the text itself is never stored."
+              },
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "source": {
+                "type": "string",
+                "title": "Source",
+                "default": "other"
+              },
+              "audience": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Audience",
+                "default": null
+              },
+              "word_count": {
+                "type": "integer",
+                "title": "Word Count",
+                "default": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "PerspectiveAnchors": {
+            "type": "object",
+            "title": "PerspectiveAnchors",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "third_person_rate": {
+                "type": "number",
+                "title": "Third Person Rate",
+                "default": 0
+              },
+              "second_person_rate": {
+                "type": "number",
+                "title": "Second Person Rate",
+                "default": 0
+              },
+              "first_person_plural_rate": {
+                "type": "number",
+                "title": "First Person Plural Rate",
+                "default": 0
+              },
+              "first_person_singular_rate": {
+                "type": "number",
+                "title": "First Person Singular Rate",
+                "default": 0,
+                "description": "Per 1,000 words."
+              }
+            },
+            "additionalProperties": false
+          },
+          "SentenceLengthStats": {
+            "type": "object",
+            "title": "SentenceLengthStats",
+            "properties": {
+              "p10": {
+                "type": "number",
+                "title": "P10",
+                "default": 0,
+                "description": "10th percentile, linear interpolation."
+              },
+              "p90": {
+                "type": "number",
+                "title": "P90",
+                "default": 0,
+                "description": "90th percentile, linear interpolation."
+              },
+              "mean": {
+                "type": "number",
+                "title": "Mean",
+                "default": 0,
+                "description": "Mean words per sentence."
+              },
+              "stdev": {
+                "type": "number",
+                "title": "Stdev",
+                "default": 0,
+                "description": "Population standard deviation of sentence length."
+              },
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "median": {
+                "type": "number",
+                "title": "Median",
+                "default": 0
+              },
+              "length_cv": {
+                "type": "number",
+                "title": "Length Cv",
+                "default": 0,
+                "description": "Burstiness: stdev / mean. AI prose clusters low."
+              },
+              "long_sentence_frequency": {
+                "type": "number",
+                "title": "Long Sentence Frequency",
+                "default": 0,
+                "description": "Share of sentences of 35 or more words."
+              },
+              "one_word_sentence_frequency": {
+                "type": "number",
+                "title": "One Word Sentence Frequency",
+                "default": 0,
+                "description": "Share of sentences of one to three words."
+              }
+            },
+            "additionalProperties": false
+          },
+          "CapitalizationQuirks": {
+            "type": "object",
+            "title": "CapitalizationQuirks",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "lowercase_i": {
+                "type": "boolean",
+                "title": "Lowercase I",
+                "default": false
+              },
+              "all_caps_for_emphasis": {
+                "enum": [
+                  "never",
+                  "occasional",
+                  "habitual"
+                ],
+                "type": "string",
+                "title": "All Caps For Emphasis",
+                "default": "never"
+              },
+              "sentence_case_headers": {
+                "type": "boolean",
+                "title": "Sentence Case Headers",
+                "default": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "title": "VoiceFingerprint",
+        "required": [
+          "profile_id"
+        ],
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "voice_fingerprint",
+            "title": "Kind",
+            "default": "voice_fingerprint",
+            "description": "The registered kind this payload is an instance of."
+          },
+          "idioms": {
+            "$ref": "#/$defs/Idioms"
+          },
+          "intent": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Intent"
+          },
+          "cadence": {
+            "$ref": "#/$defs/Cadence"
+          },
+          "closers": {
+            "$ref": "#/$defs/CloserSet"
+          },
+          "lexical": {
+            "$ref": "#/$defs/Lexical"
+          },
+          "openers": {
+            "$ref": "#/$defs/OpenerSet"
+          },
+          "mechanics": {
+            "$ref": "#/$defs/Mechanics"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "default": null
+          },
+          "extraction": {
+            "$ref": "#/$defs/Extraction"
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id",
+            "description": "Human-readable profile handle."
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "default": 0
+          },
+          "profile_scope": {
+            "enum": [
+              "person",
+              "brand"
+            ],
+            "type": "string",
+            "title": "Profile Scope",
+            "default": "person"
+          },
+          "register_axis": {
+            "$ref": "#/$defs/RegisterAxis"
+          },
+          "samples_index": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/SampleIndexEntry"
+            },
+            "title": "Samples Index"
+          },
+          "refresh_due_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Due At",
+            "default": null,
+            "description": "last_extracted_at + 90 days."
+          },
+          "register_label": {
+            "enum": [
+              "formal",
+              "professional",
+              "casual-professional",
+              "casual",
+              "irreverent"
+            ],
+            "type": "string",
+            "title": "Register Label",
+            "default": "professional",
+            "description": "voice.yaml's `register` (renamed: `register` shadows a pydantic model attribute)."
+          },
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version",
+            "default": 1
+          },
+          "sentence_initial": {
+            "$ref": "#/$defs/SentenceInitial"
+          },
+          "topic_signatures": {
+            "$ref": "#/$defs/TopicSignatures"
+          },
+          "banned_structures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/BannedStructure"
+            },
+            "title": "Banned Structures"
+          },
+          "last_extracted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Extracted At",
+            "default": null
+          },
+          "sample_word_count": {
+            "type": "integer",
+            "title": "Sample Word Count",
+            "default": 0
+          },
+          "banned_words_global": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Banned Words Global"
+          },
+          "sample_age_p50_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Age P50 Days",
+            "default": null
+          },
+          "sample_age_oldest_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Age Oldest Days",
+            "default": null
+          },
+          "global_words_in_samples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Global Words In Samples",
+            "description": "Globally banned words found in the real samples, flagged for review."
+          },
+          "banned_words_user_specific": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Banned Words User Specific"
+          },
+          "banned_words_global_allowed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Banned Words Global Allowed",
+            "description": "Globally banned words the person confirmed as genuinely theirs; the check lets them through."
+          }
+        },
+        "description": "A measured writing voice: cadence, mechanics, lexicon, openers, register, idioms.",
+        "additionalProperties": false
+      }
+    },
+    {
+      "ex": [
+        {
+          "id": "27b782de-3185-4e43-8a30-aeba5aaa1985",
+          "data": {
+            "stats": {
+              "draft_mean": 10.2,
+              "drift_score": 0.31,
+              "fingerprint_mean": 11.2
+            },
+            "__kind": "voice_measure_result",
+            "action": "check",
+            "triage": null,
+            "profile": null,
+            "summary": null,
+            "verdict": "fail",
+            "pass_rate": 0.2,
+            "regenerate": true,
+            "violations": [
+              {
+                "span": [
+                  128,
+                  137
+                ],
+                "match": "leverages",
+                "rule_id": "banned-word-global",
+                "fix_hint": "Use a plain verb such as 'uses', or rewrite the sentence.",
+                "severity": "block"
+              }
+            ],
+            "fingerprint": "jane-doe-personal@2026-05-18",
+            "fingerprint_id": null
+          },
+          "canon": true,
+          "status": "passed"
+        }
+      ],
+      "id": "9d22dbfb-84e3-4a49-9529-9a5af4208dd0",
+      "kind": "voice_measure_result",
+      "edges": [
+        {
+          "f": "profile",
+          "child": "c8f18bbd-83f0-433a-89c2-02f74349649a"
+        }
+      ],
+      "metadata": {
+        "family": "brand",
+        "source": "kind_sdk",
+        "category": "data",
+        "maturity": "distilled"
+      },
+      "emitted_json_schema": {
+        "type": "object",
+        "$defs": {
+          "Idioms": {
+            "type": "object",
+            "title": "Idioms",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "signature_words": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Signature Words",
+                "description": "Candidates for the person to confirm."
+              },
+              "signature_phrases": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Signature Phrases",
+                "description": "Candidates for the person to confirm."
+              },
+              "hedges_you_never_use": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Hedges You Never Use"
+              },
+              "hedges_you_actually_use": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Hedges You Actually Use"
+              }
+            },
+            "additionalProperties": false
+          },
+          "Cadence": {
+            "type": "object",
+            "title": "Cadence",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "sentence_length": {
+                "$ref": "#/$defs/SentenceLengthStats"
+              },
+              "paragraph_length": {
+                "$ref": "#/$defs/ParagraphStats"
+              },
+              "rhythm_signature": {
+                "enum": [
+                  "short-burst",
+                  "flowing",
+                  "mixed",
+                  "listy"
+                ],
+                "type": "string",
+                "title": "Rhythm Signature",
+                "default": "mixed"
+              }
+            },
+            "additionalProperties": false
+          },
+          "Lexical": {
+            "type": "object",
+            "title": "Lexical",
+            "properties": {
+              "mattr": {
+                "type": "number",
+                "title": "Mattr",
+                "default": 0,
+                "description": "Moving-average type-token ratio over a 100-token window."
+              },
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "delta_band": {
+                "type": "number",
+                "title": "Delta Band",
+                "default": 1,
+                "description": "Delta distance above which a draft has drifted."
+              },
+              "mattr_by_window": {
+                "type": "object",
+                "title": "Mattr By Window",
+                "properties": {
+                  "__kind": {
+                    "type": "string",
+                    "description": "The registered kind this payload is an instance of, when it is one."
+                  }
+                },
+                "description": "MATTR at windows 25, 50 and 100, so a short draft is compared on a window it can fill.",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "baseline_version": {
+                "type": "string",
+                "title": "Baseline Version",
+                "default": "english_baseline_v1"
+              },
+              "function_word_zvector": {
+                "type": "object",
+                "title": "Function Word Zvector",
+                "properties": {
+                  "__kind": {
+                    "type": "string",
+                    "description": "The registered kind this payload is an instance of, when it is one."
+                  }
+                },
+                "description": "Burrows's Delta z-scores of the baseline function words.",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "CloserSet": {
+            "type": "object",
+            "title": "CloserSet",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "observed": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Observed"
+              },
+              "banned_from_use": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Banned From Use"
+              }
+            },
+            "additionalProperties": false
+          },
+          "Mechanics": {
+            "type": "object",
+            "title": "Mechanics",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "contractions": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "mixed"
+                ],
+                "type": "string",
+                "title": "Contractions",
+                "default": "mixed"
+              },
+              "oxford_comma": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "inconsistent",
+                  "unknown"
+                ],
+                "type": "string",
+                "title": "Oxford Comma",
+                "default": "unknown"
+              },
+              "smart_quotes": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "mixed"
+                ],
+                "type": "string",
+                "title": "Smart Quotes",
+                "default": "no"
+              },
+              "em_dash_usage": {
+                "enum": [
+                  "never",
+                  "rare",
+                  "habitual"
+                ],
+                "type": "string",
+                "title": "Em Dash Usage",
+                "default": "rare"
+              },
+              "ellipsis_usage": {
+                "enum": [
+                  "never",
+                  "rare",
+                  "habitual"
+                ],
+                "type": "string",
+                "title": "Ellipsis Usage",
+                "default": "never"
+              },
+              "contraction_rate": {
+                "type": "number",
+                "title": "Contraction Rate",
+                "default": 0,
+                "description": "Contracted / (contracted + expanded) contractible pairs."
+              },
+              "punctuation_classes": {
+                "type": "object",
+                "title": "Punctuation Classes",
+                "properties": {
+                  "__kind": {
+                    "type": "string",
+                    "description": "The registered kind this payload is an instance of, when it is one."
+                  }
+                },
+                "description": "never | rare | habitual per mark, by fixed cut-offs (< 0.5 per 1k never, < 3 rare).",
+                "additionalProperties": {
+                  "enum": [
+                    "never",
+                    "rare",
+                    "habitual"
+                  ],
+                  "type": "string"
+                }
+              },
+              "em_dash_per_1k_words": {
+                "type": "number",
+                "title": "Em Dash Per 1K Words",
+                "default": 0
+              },
+              "capitalization_quirks": {
+                "$ref": "#/$defs/CapitalizationQuirks"
+              },
+              "ellipsis_per_1k_words": {
+                "type": "number",
+                "title": "Ellipsis Per 1K Words",
+                "default": 0
+              },
+              "semicolon_per_1k_words": {
+                "type": "number",
+                "title": "Semicolon Per 1K Words",
+                "default": 0
+              },
+              "parenthesis_per_1k_words": {
+                "type": "number",
+                "title": "Parenthesis Per 1K Words",
+                "default": 0
+              },
+              "question_rate_per_1k_words": {
+                "type": "number",
+                "title": "Question Rate Per 1K Words",
+                "default": 0
+              },
+              "exclamation_rate_per_1k_words": {
+                "type": "number",
+                "title": "Exclamation Rate Per 1K Words",
+                "default": 0
+              },
+              "parenthetical_aside_frequency": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string",
+                "title": "Parenthetical Aside Frequency",
+                "default": "low"
+              }
+            },
+            "additionalProperties": false
+          },
+          "OpenerSet": {
+            "type": "object",
+            "title": "OpenerSet",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "observed": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Observed"
+              },
+              "banned_from_use": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Banned From Use"
+              },
+              "pos_distribution": {
+                "type": "object",
+                "title": "Pos Distribution",
+                "properties": {
+                  "__kind": {
+                    "type": "string",
+                    "description": "The registered kind this payload is an instance of, when it is one."
+                  }
+                },
+                "description": "Share of sentences by the part of speech of their first token (spaCy).",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "Extraction": {
+            "type": "object",
+            "title": "Extraction",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "triage": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CorpusTriage"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "warnings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Warnings"
+              },
+              "confidence": {
+                "enum": [
+                  "insufficient",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string",
+                "title": "Confidence",
+                "default": "medium"
+              },
+              "rules_version": {
+                "type": "string",
+                "title": "Rules Version",
+                "default": "voice-extractor@092d882+matrx.1"
+              },
+              "baseline_version": {
+                "type": "string",
+                "title": "Baseline Version",
+                "default": "english_baseline_v1"
+              },
+              "extractor_version": {
+                "type": "string",
+                "title": "Extractor Version",
+                "default": "brand.voice_measure/1.0.0"
+              }
+            },
+            "additionalProperties": false
+          },
+          "CorpusTriage": {
+            "type": "object",
+            "title": "CorpusTriage",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "warnings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Warnings"
+              },
+              "confidence": {
+                "enum": [
+                  "insufficient",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string",
+                "title": "Confidence",
+                "default": "insufficient"
+              },
+              "total_words": {
+                "type": "integer",
+                "title": "Total Words",
+                "default": 0
+              },
+              "sample_count": {
+                "type": "integer",
+                "title": "Sample Count",
+                "default": 0
+              },
+              "ai_tell_share": {
+                "type": "number",
+                "title": "Ai Tell Share",
+                "default": 0,
+                "description": "Share of samples showing two or more named AI tells."
+              },
+              "register_split": {
+                "type": "boolean",
+                "title": "Register Split",
+                "default": false,
+                "description": "True when the samples split into two registers."
+              },
+              "ai_tell_samples": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Ai Tell Samples",
+                "description": "Source ids of the samples flagged."
+              },
+              "per_sample_involved": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/SampleInvolved"
+                },
+                "title": "Per Sample Involved"
+              }
+            },
+            "additionalProperties": false
+          },
+          "RegisterAxis": {
+            "type": "object",
+            "title": "RegisterAxis",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "per_sample": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/SampleInvolved"
+                },
+                "title": "Per Sample"
+              },
+              "involved_band": {
+                "type": "number",
+                "title": "Involved Band",
+                "default": 0.25,
+                "description": "One band on the involved axis."
+              },
+              "involved_score": {
+                "type": "number",
+                "title": "Involved Score",
+                "default": 0,
+                "description": "(contraction + first_person + private_verb) - (noun_ratio + nominalization), all as shares."
+              }
+            },
+            "additionalProperties": false
+          },
+          "ParagraphStats": {
+            "type": "object",
+            "title": "ParagraphStats",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "mean_sentences": {
+                "type": "number",
+                "title": "Mean Sentences",
+                "default": 0,
+                "description": "Mean sentences per paragraph (blank-line separated)."
+              },
+              "one_sentence_paragraph_frequency": {
+                "type": "number",
+                "title": "One Sentence Paragraph Frequency",
+                "default": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "SampleInvolved": {
+            "type": "object",
+            "title": "SampleInvolved",
+            "required": [
+              "source_id",
+              "involved_score"
+            ],
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "source_id": {
+                "type": "string",
+                "title": "Source Id"
+              },
+              "involved_score": {
+                "type": "number",
+                "title": "Involved Score"
+              }
+            },
+            "additionalProperties": false
+          },
+          "VoiceViolation": {
+            "type": "object",
+            "title": "VoiceViolation",
+            "required": [
+              "rule_id",
+              "match",
+              "span",
+              "severity",
+              "fix_hint"
+            ],
+            "properties": {
+              "span": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "title": "Span",
+                "description": "[start, end] character offsets into the draft."
+              },
+              "match": {
+                "type": "string",
+                "title": "Match",
+                "description": "The exact matched text (empty for whole-draft statistics)."
+              },
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "rule_id": {
+                "type": "string",
+                "title": "Rule Id"
+              },
+              "fix_hint": {
+                "type": "string",
+                "title": "Fix Hint"
+              },
+              "severity": {
+                "enum": [
+                  "block",
+                  "warn",
+                  "info"
+                ],
+                "type": "string",
+                "title": "Severity"
+              }
+            },
+            "additionalProperties": false
+          },
+          "BannedStructure": {
+            "type": "object",
+            "title": "BannedStructure",
+            "required": [
+              "id",
+              "pattern"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "title": "Id"
+              },
+              "why": {
+                "type": "string",
+                "title": "Why",
+                "default": ""
+              },
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "pattern": {
+                "type": "string",
+                "title": "Pattern"
+              },
+              "severity": {
+                "enum": [
+                  "block",
+                  "warn"
+                ],
+                "type": "string",
+                "title": "Severity",
+                "default": "block"
+              },
+              "threshold": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Threshold",
+                "default": null
+              }
+            },
+            "additionalProperties": false
+          },
+          "SentenceInitial": {
+            "type": "object",
+            "title": "SentenceInitial",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "uses_imagine_if": {
+                "type": "boolean",
+                "title": "Uses Imagine If",
+                "default": false
+              },
+              "transitions_used": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Transitions Used",
+                "description": "Which of however / furthermore / moreover / additionally the samples really open with."
+              },
+              "conjunction_start_rate": {
+                "type": "number",
+                "title": "Conjunction Start Rate",
+                "default": 0
+              },
+              "participial_start_rate": {
+                "type": "number",
+                "title": "Participial Start Rate",
+                "default": 0
+              },
+              "conjunction_starts_allowed": {
+                "type": "boolean",
+                "title": "Conjunction Starts Allowed",
+                "default": false
+              },
+              "uses_in_conclusion_in_summary": {
+                "type": "boolean",
+                "title": "Uses In Conclusion In Summary",
+                "default": false
+              },
+              "uses_however_furthermore_moreover": {
+                "type": "boolean",
+                "title": "Uses However Furthermore Moreover",
+                "default": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "TopicSignatures": {
+            "type": "object",
+            "title": "TopicSignatures",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "recurring_themes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Recurring Themes"
+              },
+              "perspective_anchors": {
+                "$ref": "#/$defs/PerspectiveAnchors"
+              }
+            },
+            "additionalProperties": false
+          },
+          "VoiceCheckStats": {
+            "type": "object",
+            "title": "VoiceCheckStats",
+            "required": [
+              "draft_mean",
+              "fingerprint_mean",
+              "drift_score"
+            ],
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "draft_mean": {
+                "type": "number",
+                "title": "Draft Mean"
+              },
+              "drift_score": {
+                "type": "number",
+                "title": "Drift Score",
+                "description": "0 = on the fingerprint, 1 = fully off it (mean of capped drifts)."
+              },
+              "fingerprint_mean": {
+                "type": "number",
+                "title": "Fingerprint Mean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "SampleIndexEntry": {
+            "type": "object",
+            "title": "SampleIndexEntry",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "title": "Id",
+                "description": "The Source (processed document) id the text was read from."
+              },
+              "date": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Date",
+                "default": null
+              },
+              "hash": {
+                "type": "string",
+                "title": "Hash",
+                "default": "",
+                "description": "sha256 of the sample text; the text itself is never stored."
+              },
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "source": {
+                "type": "string",
+                "title": "Source",
+                "default": "other"
+              },
+              "audience": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Audience",
+                "default": null
+              },
+              "word_count": {
+                "type": "integer",
+                "title": "Word Count",
+                "default": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "VoiceFingerprint": {
+            "type": "object",
+            "title": "VoiceFingerprint",
+            "required": [
+              "profile_id"
+            ],
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "const": "voice_fingerprint",
+                "title": "Kind",
+                "default": "voice_fingerprint",
+                "description": "The registered kind this payload is an instance of."
+              },
+              "idioms": {
+                "$ref": "#/$defs/Idioms"
+              },
+              "intent": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Intent"
+              },
+              "cadence": {
+                "$ref": "#/$defs/Cadence"
+              },
+              "closers": {
+                "$ref": "#/$defs/CloserSet"
+              },
+              "lexical": {
+                "$ref": "#/$defs/Lexical"
+              },
+              "openers": {
+                "$ref": "#/$defs/OpenerSet"
+              },
+              "mechanics": {
+                "$ref": "#/$defs/Mechanics"
+              },
+              "created_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Created At",
+                "default": null
+              },
+              "extraction": {
+                "$ref": "#/$defs/Extraction"
+              },
+              "profile_id": {
+                "type": "string",
+                "title": "Profile Id",
+                "description": "Human-readable profile handle."
+              },
+              "sample_count": {
+                "type": "integer",
+                "title": "Sample Count",
+                "default": 0
+              },
+              "profile_scope": {
+                "enum": [
+                  "person",
+                  "brand"
+                ],
+                "type": "string",
+                "title": "Profile Scope",
+                "default": "person"
+              },
+              "register_axis": {
+                "$ref": "#/$defs/RegisterAxis"
+              },
+              "samples_index": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/SampleIndexEntry"
+                },
+                "title": "Samples Index"
+              },
+              "refresh_due_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Refresh Due At",
+                "default": null,
+                "description": "last_extracted_at + 90 days."
+              },
+              "register_label": {
+                "enum": [
+                  "formal",
+                  "professional",
+                  "casual-professional",
+                  "casual",
+                  "irreverent"
+                ],
+                "type": "string",
+                "title": "Register Label",
+                "default": "professional",
+                "description": "voice.yaml's `register` (renamed: `register` shadows a pydantic model attribute)."
+              },
+              "schema_version": {
+                "type": "integer",
+                "title": "Schema Version",
+                "default": 1
+              },
+              "sentence_initial": {
+                "$ref": "#/$defs/SentenceInitial"
+              },
+              "topic_signatures": {
+                "$ref": "#/$defs/TopicSignatures"
+              },
+              "banned_structures": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/BannedStructure"
+                },
+                "title": "Banned Structures"
+              },
+              "last_extracted_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Extracted At",
+                "default": null
+              },
+              "sample_word_count": {
+                "type": "integer",
+                "title": "Sample Word Count",
+                "default": 0
+              },
+              "banned_words_global": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Banned Words Global"
+              },
+              "sample_age_p50_days": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Sample Age P50 Days",
+                "default": null
+              },
+              "sample_age_oldest_days": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Sample Age Oldest Days",
+                "default": null
+              },
+              "global_words_in_samples": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Global Words In Samples",
+                "description": "Globally banned words found in the real samples, flagged for review."
+              },
+              "banned_words_user_specific": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Banned Words User Specific"
+              },
+              "banned_words_global_allowed": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Banned Words Global Allowed",
+                "description": "Globally banned words the person confirmed as genuinely theirs; the check lets them through."
+              }
+            },
+            "description": "A measured writing voice: cadence, mechanics, lexicon, openers, register, idioms.",
+            "additionalProperties": false
+          },
+          "PerspectiveAnchors": {
+            "type": "object",
+            "title": "PerspectiveAnchors",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "third_person_rate": {
+                "type": "number",
+                "title": "Third Person Rate",
+                "default": 0
+              },
+              "second_person_rate": {
+                "type": "number",
+                "title": "Second Person Rate",
+                "default": 0
+              },
+              "first_person_plural_rate": {
+                "type": "number",
+                "title": "First Person Plural Rate",
+                "default": 0
+              },
+              "first_person_singular_rate": {
+                "type": "number",
+                "title": "First Person Singular Rate",
+                "default": 0,
+                "description": "Per 1,000 words."
+              }
+            },
+            "additionalProperties": false
+          },
+          "SentenceLengthStats": {
+            "type": "object",
+            "title": "SentenceLengthStats",
+            "properties": {
+              "p10": {
+                "type": "number",
+                "title": "P10",
+                "default": 0,
+                "description": "10th percentile, linear interpolation."
+              },
+              "p90": {
+                "type": "number",
+                "title": "P90",
+                "default": 0,
+                "description": "90th percentile, linear interpolation."
+              },
+              "mean": {
+                "type": "number",
+                "title": "Mean",
+                "default": 0,
+                "description": "Mean words per sentence."
+              },
+              "stdev": {
+                "type": "number",
+                "title": "Stdev",
+                "default": 0,
+                "description": "Population standard deviation of sentence length."
+              },
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "median": {
+                "type": "number",
+                "title": "Median",
+                "default": 0
+              },
+              "length_cv": {
+                "type": "number",
+                "title": "Length Cv",
+                "default": 0,
+                "description": "Burstiness: stdev / mean. AI prose clusters low."
+              },
+              "long_sentence_frequency": {
+                "type": "number",
+                "title": "Long Sentence Frequency",
+                "default": 0,
+                "description": "Share of sentences of 35 or more words."
+              },
+              "one_word_sentence_frequency": {
+                "type": "number",
+                "title": "One Word Sentence Frequency",
+                "default": 0,
+                "description": "Share of sentences of one to three words."
+              }
+            },
+            "additionalProperties": false
+          },
+          "CapitalizationQuirks": {
+            "type": "object",
+            "title": "CapitalizationQuirks",
+            "properties": {
+              "__kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one."
+              },
+              "lowercase_i": {
+                "type": "boolean",
+                "title": "Lowercase I",
+                "default": false
+              },
+              "all_caps_for_emphasis": {
+                "enum": [
+                  "never",
+                  "occasional",
+                  "habitual"
+                ],
+                "type": "string",
+                "title": "All Caps For Emphasis",
+                "default": "never"
+              },
+              "sentence_case_headers": {
+                "type": "boolean",
+                "title": "Sentence Case Headers",
+                "default": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "title": "VoiceMeasureResult",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "stats": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/VoiceCheckStats"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "__kind": {
+            "type": "string",
+            "const": "voice_measure_result",
+            "title": "Kind",
+            "default": "voice_measure_result",
+            "description": "The registered kind this payload is an instance of."
+          },
+          "action": {
+            "enum": [
+              "extract",
+              "check"
+            ],
+            "type": "string",
+            "title": "Action"
+          },
+          "triage": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CorpusTriage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/VoiceFingerprint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The extracted fingerprint."
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary",
+            "default": null,
+            "description": "Plain-English summary for the confirm step."
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pass",
+                  "fail"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict",
+            "default": null
+          },
+          "pass_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pass Rate",
+            "default": null,
+            "description": "Share of the draft's sentences with no violation."
+          },
+          "regenerate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regenerate",
+            "default": null,
+            "description": "True when any block violation means redraft."
+          },
+          "violations": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/VoiceViolation"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violations",
+            "default": null
+          },
+          "fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fingerprint",
+            "default": null,
+            "description": "profile_id@YYYY-MM-DD of the fingerprint used."
+          },
+          "fingerprint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fingerprint Id",
+            "default": null,
+            "description": "The saved voice_fingerprint row id."
+          }
+        },
+        "description": "One result of ``brand_voice_measure``: an extraction or a draft check.",
+        "additionalProperties": false
+      }
+    }
+  ]
+}

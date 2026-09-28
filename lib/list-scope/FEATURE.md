@@ -247,8 +247,39 @@ Invariants the template carries, all of them learned the hard way:
    helpers (folder ids, question counts, my-attempts) are read only for the
    page's rows, or per row only when the active filter or sort key needs them.
    Worked example: `migrations/education_list_rpcs_no_per_row_replan.sql`.
+   The same class hides one level down: a `LANGUAGE sql` function called once
+   per ORGANIZATION from a plpgsql loop is re-planned per call too
+   (`iam.team_members_resolved`, ~3.6 ms × every organization, now plpgsql).
+10. **Build a lane's inputs only in the lane that reads them.** `v_ctx :=
+    platform.shown_to_context(...)` in DECLARE ran for every lane, but only the
+    `orgs`/`team` arms pass it to `platform.shown_to_lists` — ~190 ms per token
+    for an admin in 47 organizations, four tokens on `/education/library`.
+    Assign it after the scope is known: `IF v_scope IN ('orgs','team') THEN
+    v_ctx := ...; END IF;`. The same goes for any per-viewer context a single
+    arm consumes.
+11. **Under RLS, join a row-secured table on a plain column, and read it once.**
+    Every table the list touches is read as the caller (these RPCs are
+    `SECURITY INVOKER`), so each scan of a table whose policy calls
+    `iam.accessible_entity_ids(...)` builds that access set (0.3–1 s for an
+    admin on `seo_collection_run`, `seo_rank_target`, `transcript`,
+    `studio_session`, `seo_reputation_case`). Two consequences: (a) a join key
+    COMPUTED from other columns (`NULLIF(x.attributes #>> ..., '')::uuid`) is
+    not leakproof, so the planner may not use it as an index condition below the
+    RLS quals — it scans the whole table instead; materialize the computing CTE
+    (`AS MATERIALIZED`) so the key is a plain column and the join is a
+    primary-key lookup; (b) two subqueries on the same row-secured table build
+    the access set twice — read it once into a `MATERIALIZED` CTE and aggregate
+    from that. Worked example for 10 and 11:
+    `migrations/list_rpcs_no_wasted_rls_work.sql`. What remains slow after it is
+    the access-set cost itself (`iam.accessible_entity_ids` for those types),
+    which belongs to the access resolver, not to any one list.
 
 ## Change log
+
+- 2026-09-28 — Invariants 10 and 11 (lane-only Shown-to context, cross-token
+  teammate cache, plpgsql `iam.team_members_resolved`, materialized join keys,
+  one read per row-secured table): see the numbers in
+  `migrations/list_rpcs_no_wasted_rls_work.sql`; results proven identical.
 
 - 2026-09-28 — Invariant 9 (no per-row replanning, per-row helpers after the
   page): education fc_set / assessment lists 212→58 ms and 75→41 ms, facets

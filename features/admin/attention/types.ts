@@ -96,7 +96,13 @@ export interface AttentionItem {
    */
   impactDeclared: boolean | null;
   actions: AttentionAction[];
-  mute: AttentionMute;
+  /**
+   * `null`: this item can NOT be muted, dismissed or snoozed away — it stays on the dock until
+   * its cause is resolved (a refused, failed or overdue dated change). No Mute control is
+   * rendered for it (absent, never disabled), stale local mutes do not apply to it, and the
+   * whole-dock snooze still shows it.
+   */
+  mute: AttentionMute | null;
 }
 
 export interface AttentionSourceState {

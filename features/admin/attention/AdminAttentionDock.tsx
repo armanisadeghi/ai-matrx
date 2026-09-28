@@ -85,6 +85,7 @@ import { NOTE_MUTE, touchMutes } from "./item-mute";
 import { useLocalMutes } from "./useLocalMutes";
 import { useProviderOutageSource } from "./sources/useProviderOutageSource";
 import { useScheduleAlarmSource } from "./sources/useScheduleAlarmSource";
+import { useDatedChangeSource } from "./sources/useDatedChangeSource";
 import type { AttentionAction, AttentionItem } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
@@ -132,7 +133,8 @@ export default function AdminAttentionDock() {
 
   const schedules = useScheduleAlarmSource(canRead);
   const outages = useProviderOutageSource(canRead);
-  const sources = [schedules, outages];
+  const datedChanges = useDatedChangeSource(canRead);
+  const sources = [datedChanges, schedules, outages];
 
   const float = useDraggableFloat({
     storageKey: POSITION_KEY,
@@ -157,7 +159,7 @@ export default function AdminAttentionDock() {
       const out: number[] = [];
       const local = localMutes[item.key];
       if (typeof local === "number") out.push(local);
-      if (item.mute.current) out.push(new Date(item.mute.current.until).getTime());
+      if (item.mute?.current) out.push(new Date(item.mute.current.until).getTime());
       return out;
     })
     .filter((t) => Number.isFinite(t) && t > now)
@@ -195,8 +197,15 @@ export default function AdminAttentionDock() {
     return () => window.removeEventListener("focus", onFocus);
   }, [canRead]);
 
-  const notice = canRead ? buildAttentionNotice(sources, localMutes, now) : null;
-  const loudFailures = canRead ? sources.filter((s) => s.status === "failed" && s.loud) : [];
+  // A snooze quiets the dock — except items that can never be muted (a refused, failed or
+  // overdue dated change): while snoozed, the dock shows ONLY those.
+  const snoozed = snoozedUntil !== null;
+  const shownSources = snoozed
+    ? sources.map((s) => ({ ...s, items: s.items.filter((item) => item.mute === null) }))
+    : sources;
+  const notice = canRead ? buildAttentionNotice(shownSources, localMutes, now) : null;
+  const loudFailures =
+    canRead && !snoozed ? sources.filter((s) => s.status === "failed" && s.loud) : [];
   const visible = notice !== null || loudFailures.length > 0;
   // On a source's OWN review page the page is the expanded view: the card
   // would only float over the very rows (and Unmute buttons) it points at.
@@ -210,7 +219,7 @@ export default function AdminAttentionDock() {
   // marker is the one shared contract every shell scroll owner can consume.
   useEffect(() => {
     const root = document.documentElement;
-    if (!visible || snoozedUntil !== null) {
+    if (!visible) {
       delete root.dataset.adminAttention;
       return;
     }
@@ -218,12 +227,12 @@ export default function AdminAttentionDock() {
     return () => {
       delete root.dataset.adminAttention;
     };
-  }, [collapsed, snoozedUntil, visible]);
+  }, [collapsed, visible]);
 
   if (!canRead) return null;
+  // Snoozed: silent, and silent on purpose — it returns on its own — unless an
+  // unmutable item is live (then `visible` is true and only those rows show).
   if (!visible) return null;
-  // Snoozed: silent, and silent on purpose — it returns on its own.
-  if (snoozedUntil !== null) return null;
 
   const toggleCollapsed = () => {
     if (onReviewPage) return;
@@ -252,10 +261,12 @@ export default function AdminAttentionDock() {
   };
 
   const onMute = async (item: AttentionItem, ms: number, note: string | null = null) => {
+    const mute = item.mute;
+    if (!mute) return;
     try {
-      await item.mute.apply(Date.now() + ms, note);
+      await mute.apply(Date.now() + ms, note);
       toast.success(
-        item.mute.scope === "server"
+        mute.scope === "server"
           ? `"${item.title}" is muted for every super-admin — it comes back on its own.`
           : `"${item.title}" is muted in this browser — it comes back on its own.`,
       );
@@ -265,9 +276,10 @@ export default function AdminAttentionDock() {
   };
 
   const onUnmute = async (item: AttentionItem) => {
-    if (!item.mute.clear) return;
+    const clear = item.mute?.clear;
+    if (!clear) return;
     try {
-      await item.mute.clear();
+      await clear();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     }

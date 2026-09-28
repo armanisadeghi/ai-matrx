@@ -180,7 +180,7 @@ export function AttentionItemRow({
             </Button>
           ))}
 
-        {muted && item.mute.current ? (
+        {item.mute === null ? null : muted && item.mute.current ? (
           <>
             <span className="text-[11px] text-muted-foreground" data-testid="attention-mute-state">
               Muted until {humanizeRelative(item.mute.current.until).replace(/^in /, "")} from now

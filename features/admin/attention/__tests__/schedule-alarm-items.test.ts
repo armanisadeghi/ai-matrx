@@ -69,8 +69,8 @@ describe("scheduleAlarmItems", () => {
     expect(item.impactDeclared).toBe(true);
     expect(item.actions.map((a) => a.id)).toEqual(["reenable"]);
     expect(item.actions[0].confirm?.description).toContain("A run has already succeeded since the guard switched it off");
-    expect(item.mute.scope).toBe("server");
-    expect(item.mute.current).toBeNull();
+    expect(item.mute?.scope).toBe("server");
+    expect(item.mute?.current).toBeNull();
   });
 
   it("a failing row opens the run that failed, and says so when no impact was declared", () => {
@@ -106,13 +106,13 @@ describe("scheduleAlarmItems", () => {
   it("the mute writes an ISO `until` and the note; unmute clears it", async () => {
     const d = deps();
     const [item] = scheduleAlarmItems([row({})], d);
-    await item.mute.apply(NOW + 8 * 24 * 3_600_000, "commerce is not built yet");
+    await item.mute?.apply(NOW + 8 * 24 * 3_600_000, "commerce is not built yet");
     expect(d.mute).toHaveBeenCalledWith(
       "a7c1e2d3-0000-4e5f-9a00-000000000544",
       "2026-09-22T20:00:00.000Z",
       "commerce is not built yet",
     );
-    await item.mute.clear!();
+    await item.mute?.clear?.();
     expect(d.unmute).toHaveBeenCalledWith("a7c1e2d3-0000-4e5f-9a00-000000000544");
   });
 
@@ -121,9 +121,9 @@ describe("scheduleAlarmItems", () => {
       [row({ muted_until: "2026-09-22T00:00:00Z", mute_reason: "unbuilt", mute_by: "admin@admin.com" })],
       deps(),
     );
-    expect(live.mute.current).toEqual({ until: "2026-09-22T00:00:00Z", reason: "unbuilt", by: "admin@admin.com" });
+    expect(live.mute?.current).toEqual({ until: "2026-09-22T00:00:00Z", reason: "unbuilt", by: "admin@admin.com" });
     const [expired] = scheduleAlarmItems([row({ muted_until: "2026-09-01T00:00:00Z" })], deps());
-    expect(expired.mute.current).toBeNull();
+    expect(expired.mute?.current).toBeNull();
   });
 
   it("Re-enable runs the injected write for that row", async () => {

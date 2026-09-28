@@ -222,7 +222,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "card_content",
     label: "Card content",
     description:
-      "Rewrite ONE existing card's front and/or back. Value: { card_id: string, front?: string, back?: string } — `card_id` is REQUIRED and must be the id of a card in this set (read `cards` to get it), and you must provide `front` and/or `back`; the omitted face keeps its current text. Front and back are PLAIN TEXT (markdown and LaTeX render), not JSON and not JSON-encoded — no code fence, no surrounding quotes, real newlines. For a cloze card, `front` holds the deletion markup `{{c1::answer}}`. Matching cards cannot be edited through this target — their pairs are structured rows, so edit them on the page. Persists immediately through fcService.updateCard and the card's editor updates in place.",
+      "Rewrite ONE existing non-matching card's front and/or back. Value: { card_id: string, front?: string, back?: string } — `card_id` is REQUIRED and must be the id of a card in this set (read `cards` to get it), and you must provide `front` and/or `back`; the omitted face keeps its current text. Front and back are PLAIN TEXT (markdown and LaTeX render), not JSON and not JSON-encoded — no code fence, no surrounding quotes, real newlines. For a cloze card, `front` holds the deletion markup `{{c1::answer}}`. Use matching_card_content for matching cards. Persists immediately through fcService.updateCard and the card's editor updates in place.",
     valueType: "object",
     updatesValue: "cards",
     mode: "entity",
@@ -231,10 +231,22 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 110,
   },
   {
+    name: "matching_card_content",
+    label: "Matching card content",
+    description:
+      "Rewrite ONE existing matching card's prompt and/or left/right pairs. Value: { card_id: string, expected_version: positive integer from cards, prompt?: non-empty plain text, pairs?: [{ left: non-empty plain text, right: non-empty plain text }] }. `card_id` and `expected_version` are required; provide prompt and/or a non-empty pairs array. The exact card version is compared again when saving, so a changed or deleted card is refused rather than overwritten. Persists immediately through fcService.updateCardVersioned and updates the matching editor in place.",
+    valueType: "object",
+    updatesValue: "cards",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "cards",
+    sortOrder: 115,
+  },
+  {
     name: "add_cards",
     label: "Add cards",
     description:
-      "Add one or more NEW cards to this set. Value: { cards: [{ front: string, back?: string, card_kind?: 'basic' | 'cloze' }] } — `front` is required on every entry; `back` defaults to empty. `card_kind` defaults to 'basic'; use 'cloze' when `front` carries `{{c1::answer}}` deletion markup, in which case `back` is optional extra notes. Every field is PLAIN TEXT, not JSON and not JSON-encoded — no code fence, no surrounding quotes. ADDS to the set — it never replaces or removes existing cards. New cards take the same placement the Add card button produces (they are not guaranteed to land last). Persists immediately through the same fcService.addCards that button calls.",
+      "Add one or more NEW cards to this set. Value: { cards: [{ front: string, back?: string, card_kind?: 'basic' | 'cloze' | 'matching', pairs?: [{ left: string, right: string }] }] } — `front` is required on every entry; `back` defaults to empty. `card_kind` defaults to 'basic'; use 'cloze' when `front` carries `{{c1::answer}}` deletion markup, in which case `back` is optional extra notes. A matching card requires a non-empty `pairs` array whose left/right text is non-empty; its `back` is unused. Every field is PLAIN TEXT, not JSON and not JSON-encoded — no code fence, no surrounding quotes. ADDS to the set — it never replaces or removes existing cards. New cards take the same placement the Add card button produces (they are not guaranteed to land last). Persists immediately through the same fcService.addCards that button calls.",
     valueType: "object",
     updatesValue: "cards",
     mode: "entity",
@@ -270,7 +282,7 @@ export const educationFlashcardEditorManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on the flashcard set EDITOR at /education/flashcards/[setId]/edit — ONE set open for authoring, not the flashcards library and not a study session. The page shows the set's name, topic, and description, then every card in the set with an inline front/back editor.
 Check set_loaded first — while it is false the set is still in flight (or load_error explains a real failure), and you must not describe the set as empty. Read cards for the actual card content; each entry carries the id you need to edit that card, and card_kind tells you how to read it — a cloze card's front holds {{c1::answer}} deletion markup rather than a plain question, and a matching card's content lives in its pairs.
-You can WRITE here: set_details rewrites the header, card_content rewrites one card's front and/or back, add_cards appends new cards, and delete_cards archives selected cards. Drafting cards from material the learner gives you, tightening a wordy back, or splitting one overloaded card into several is exactly the work this surface exists for. Every write asks the learner first, so propose confidently — declining is normal and costs nothing.
+You can WRITE here: set_details rewrites the header, card_content rewrites one non-matching card's front and/or back, matching_card_content rewrites one matching card's prompt and/or pairs, add_cards appends new cards of every editor-supported kind, and delete_cards archives selected cards. Drafting cards from material the learner gives you, tightening a wordy back, or splitting one overloaded card into several is exactly the work this surface exists for. Every write asks the learner first, so propose confidently — declining is normal and costs nothing.
 card_mastery is DERIVED from the learner's real review history. Use it to aim your help (a card that keeps failing is usually badly worded, not badly learned) and never present it as something you can change.
 </surface_intro>`,
   groups,
