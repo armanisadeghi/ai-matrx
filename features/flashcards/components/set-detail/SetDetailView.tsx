@@ -56,6 +56,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
@@ -422,6 +423,9 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [cardSearch, setCardSearch] = useState("");
   // WP3 gap 5 — card merge selection.
   const [selecting, setSelecting] = useState(false);
+  // Phone-only layout choices (Deck tools sheet, audio status-only) key off
+  // this; desktop always shows the whole deck toolset on the page.
+  const isPhone = useIsMobile();
   // The Deck tools menu starts the audio jobs; the section on the page runs
   // them and shows their progress (page-pass 2026-09-27).
   const [audioRun, setAudioRun] = useState<DeckAudioRunSignals>({
@@ -1007,16 +1011,111 @@ export function SetDetailView({ setId }: { setId: string }) {
                     }}
                   />
                 )}
-                {/* ONE menu for everything else (page-pass 2026-09-27: the
-                    deck page stacked five rows of mixed buttons). History,
-                    export, print, offline, enrich, illustrate and convert
-                    live in Deck tools — the same panel the phone uses. */}
+                {/* Desktop keeps every deck action on the page. Deck tools is
+                    the PHONE's sheet only — on 2026-09-27 it was applied to
+                    every width and desktop lost History, Export, Print,
+                    offline, Enrich, Illustrate and Convert behind one button. */}
                 <Button
                   variant="outline"
-                  onClick={() => setDeckToolsOpen(true)}
+                  onClick={() =>
+                    navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
+                  }
+                  disabled={isPending}
+                  className={cn(pendingAction === "sessions" && "opacity-70")}
                 >
-                  <Ellipsis className="mr-1.5 h-4 w-4" />
-                  Deck tools
+                  <History className="mr-1.5 h-4 w-4" />
+                  History
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={data.cards.length === 0}
+                    >
+                      <Download className="mr-1.5 h-4 w-4" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {(["csv", "anki", "md", "json"] as const).map((format) => (
+                      <DropdownMenuItem
+                        key={format}
+                        onClick={() => exportDeck(format)}
+                      >
+                        {DECK_EXPORT_FILE[format].label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  variant="outline"
+                  onClick={handlePrint}
+                  disabled={data.cards.length === 0}
+                >
+                  <Printer className="mr-1.5 h-4 w-4" />
+                  Print
+                </Button>
+                {/* Download for offline — keeps THIS deck studiable in THIS
+                    app with no connection (Export hands you a file). */}
+                <OfflineDeckButton
+                  setId={setId}
+                  disabled={data.cards.length === 0}
+                />
+                {canEdit && (
+                  <div className="flex flex-col items-start gap-0.5">
+                    <Button
+                      variant="outline"
+                      onClick={() => void runBulkEnrich()}
+                      disabled={
+                        data.cards.length === 0 ||
+                        enrichGuard.isChecking ||
+                        bulkRun.phase === "running"
+                      }
+                      title="Add explanations, examples and memory tricks to every card in this deck — read them while studying under &quot;More on this card&quot;"
+                    >
+                      {bulkRun.phase === "running" ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Lightbulb className="mr-1.5 h-4 w-4" />
+                      )}
+                      {bulkEnrichActionLabel(enrichPlan)}
+                    </Button>
+                    {/* Limit shown BEFORE the action (TRUST mandate). */}
+                    <EntitlementMeter capability="education.card_enrichment" />
+                  </div>
+                )}
+                {canEdit && (
+                  <div className="flex flex-col items-start gap-0.5">
+                    <Button
+                      variant="outline"
+                      disabled={
+                        data.cards.length === 0 ||
+                        illustrate.isChecking ||
+                        illustrateRun.phase === "starting" ||
+                        illustrateRun.phase === "running"
+                      }
+                      onClick={() => void illustrate.guard(runIllustrate)}
+                      title="An agent finds an expert image on the open web for each card's front, judges the source, and attaches only what clears the bar"
+                    >
+                      {illustrateRun.phase === "starting" ||
+                      illustrateRun.phase === "running" ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Images className="mr-1.5 h-4 w-4" />
+                      )}
+                      Illustrate this set
+                    </Button>
+                    {/* Limits BEFORE the cap — never ambush a batch mid-run. */}
+                    <EntitlementMeter capability="education.card_image_source" />
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => setConvertOpen(true)}
+                  disabled={data.cards.length === 0}
+                >
+                  <Boxes className="mr-1.5 h-4 w-4" />
+                  Convert
                 </Button>
               </div>
             </div>
@@ -1132,11 +1231,12 @@ export function SetDetailView({ setId }: { setId: string }) {
               </div>
             )}
 
-            {/* Audio overview (Phase 7 — podcast-from-deck): the player and any
-                running audio job. Its buttons live in Deck tools. */}
+            {/* Audio overview (Phase 7 — podcast-from-deck). On a phone the
+                page shows only the player and running jobs (the buttons live
+                in Deck tools); desktop keeps the whole section. */}
             <div className="mt-4 empty:hidden">
               <AudioOverviewSection
-                statusOnly
+                statusOnly={isPhone}
                 runSignals={audioRun}
                 setId={setId}
                 set={data.set}
@@ -1175,7 +1275,9 @@ export function SetDetailView({ setId }: { setId: string }) {
                       cards who wants 10 enriched picks them here. Selection
                       stays opt-in so a normal visit is unchanged, and the bar
                       states exactly what each action will do. */}
-                  {canEdit && selecting && (
+                  {/* Desktop keeps "Select cards" on the page; the phone
+                      opens selection from Deck tools. */}
+                  {canEdit && (selecting || !isPhone) && (
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       {selecting ? (
                         <>
@@ -1223,7 +1325,17 @@ export function SetDetailView({ setId }: { setId: string }) {
                             Cancel
                           </Button>
                         </>
-                      ) : null}
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelecting(true)}
+                          disabled={data.cards.length === 0}
+                        >
+                          <MousePointerClick className="mr-1.5 h-3.5 w-3.5" />
+                          Select cards
+                        </Button>
+                      )}
                     </div>
                   )}
                   {filteredCards.length === 0 ? (
@@ -1362,8 +1474,9 @@ export function SetDetailView({ setId }: { setId: string }) {
               </DrawerContent>
             </Drawer>
 
-            {/* Deck tools: one panel on every width — a dialog on desktop,
-                a bottom sheet on a phone (Dialog does that by itself). */}
+            {/* Deck tools: the PHONE's home for every secondary deck action
+                (only the phone row opens it; desktop shows them on the page).
+                Dialog becomes a bottom sheet on a phone by itself. */}
             <Dialog open={deckToolsOpen} onOpenChange={setDeckToolsOpen}>
               <DialogContent className="matrx-touch-targets flex max-h-[85dvh] flex-col sm:max-w-lg">
                 <DialogHeader>

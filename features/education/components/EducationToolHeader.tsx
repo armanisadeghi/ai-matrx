@@ -17,27 +17,20 @@
 // glyphs nobody could read, and at 800px the nav collapsed into a clipped
 // "Menu" stub that ran into them. Now:
 //   - an action marked `primary` is a LABELLED button (one or two per page);
-//   - every other action lives in ONE labelled "More" menu (icon + name);
-//   - with no `primary` and at most two actions, they stay icons — each with a
-//     tooltip and an accessible name;
+//   - every other action is an icon with a tooltip and an accessible name,
+//     ON the header at every width — RouteHeader folds the lowest-priority
+//     ones into its own "…" only when the real row width runs out (a fixed
+//     "More" menu on desktop hid every secondary action; reverted 2026-09-27);
 //   - navigation is a real link (`href`), so it opens in a new tab, prefetches,
 //     and shows the route's loading state at once.
 // On a phone RouteHeader moves the actions into the shell's ⋮ sheet, which
 // prints each one's name — so there they are handed over one by one.
 
-import Link from "next/link";
-import { Ellipsis } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 import LucideIcon from "@/features/shell/components/header/variants/shared/LucideIcon";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   EDUCATION_NAV_FALLBACK_LABEL,
@@ -59,9 +52,6 @@ export interface EducationToolAction {
   /** True while the action runs (e.g. "Exporting…"): shown, not pressable. */
   disabled?: boolean;
 }
-
-/** More than this many unmarked actions go into the labelled "More" menu. */
-const MAX_LOOSE_ICONS = 2;
 
 function ActionIcon({ name }: { name: string }) {
   return <LucideIcon name={name} size={16} />;
@@ -89,43 +79,6 @@ function ActionButton({
   );
 }
 
-/** ONE labelled menu holding every secondary action, each with its name. */
-function MoreActionsMenu({ actions }: { actions: EducationToolAction[] }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <TapTargetButton
-          icon={<Ellipsis className="h-4 w-4" />}
-          label="More"
-          ariaLabel="More actions"
-        />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
-        {actions.map((action) =>
-          action.href && !action.disabled ? (
-            <DropdownMenuItem key={action.label} asChild className="gap-2">
-              <Link href={action.href}>
-                <ActionIcon name={action.icon} />
-                {action.label}
-              </Link>
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              key={action.label}
-              className="gap-2"
-              disabled={action.disabled}
-              onSelect={() => action.onPress?.()}
-            >
-              <ActionIcon name={action.icon} />
-              {action.label}
-            </DropdownMenuItem>
-          ),
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 export function EducationToolHeader({
   title,
   actions,
@@ -147,27 +100,22 @@ export function EducationToolHeader({
   const list = actions ?? [];
   const primary = list.filter((a) => a.primary);
   const secondary = list.filter((a) => !a.primary);
-  const looseIcons = primary.length === 0 && secondary.length <= MAX_LOOSE_ICONS;
 
-  // Order is lowest priority first (RouteHeader folds from the left and keeps
-  // the last action visible): intelligence mark, bespoke node, More, primary.
-  const actionNodes = isPhone
-    ? // The ⋮ sheet names each item itself; a menu inside a sheet is a maze.
-      list.map((action) => (
-        <ActionButton key={action.label} action={action} iconOnly />
-      ))
-    : [
-        ...(looseIcons
-          ? secondary.map((action) => (
-              <ActionButton key={action.label} action={action} iconOnly />
-            ))
-          : secondary.length > 0
-            ? [<MoreActionsMenu key="more" actions={secondary} />]
-            : []),
-        ...primary.map((action) => (
-          <ActionButton key={action.label} action={action} />
-        )),
-      ];
+  // Every action stays ON the header at every width, lowest priority first
+  // (RouteHeader folds from the left into its own "…" only when the row does
+  // not fit, and keeps the last action visible). Primary actions carry their
+  // label on desktop; the rest are icons with a tooltip and accessible name.
+  // On 2026-09-27 a phone-style "More" menu was applied at every width and
+  // desktop lost every secondary action behind it — never again: the fold is
+  // RouteHeader's job, driven by real width, not a fixed count.
+  const actionNodes = [
+    ...secondary.map((action) => (
+      <ActionButton key={action.label} action={action} iconOnly />
+    )),
+    ...primary.map((action) => (
+      <ActionButton key={action.label} action={action} iconOnly={isPhone} />
+    )),
+  ];
 
   return (
     <RouteHeader
