@@ -93,7 +93,16 @@ function DetailTable({ spec }: { spec: SignalSpec }) {
       getRowId={(row) => row.id}
       detail={{ enabled: false }}
       pageSize={10}
-      hidePagination={spec.rows.length <= 10}
+      coverage={
+        spec.key !== "unpriced" && spec.n > spec.listed
+          ? {
+              loaded: spec.listed,
+              total: spec.n,
+              answeredBy: "client",
+              noun: "result",
+            }
+          : undefined
+      }
       className="text-xs"
       tableClassName="[&_td]:py-1 [&_th]:py-1"
       emptyState={{ title: "No matching rows." }}
@@ -101,12 +110,6 @@ function DetailTable({ spec }: { spec: SignalSpec }) {
         title: spec.title,
         search: true,
         searchPlaceholder: `Search ${spec.title.toLowerCase()}…`,
-        leading:
-          spec.n > spec.listed ? (
-            <span className="text-[11px] tabular-nums text-muted-foreground">
-              {spec.listed} of {spec.n} listed
-            </span>
-          ) : undefined,
       }}
       rowActions={(row) =>
         row.href ? (
@@ -504,7 +507,6 @@ export function DigHerePanel({
         reorderableColumns={false}
         defaultSort={{ id: "cost", direction: "desc" }}
         pageSize={0}
-        hidePagination
         className="text-xs"
         tableClassName="[&_td]:py-1 [&_th]:py-1"
         toolbar={{ title: "Dig here", search: false }}

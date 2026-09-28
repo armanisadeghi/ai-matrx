@@ -34,10 +34,10 @@
  *   join_room       The join composer: room code entry
  *   room_session     Current multiplayer room and the host's safe cancellation action
  *
- * ONE WRITE TARGET. `delete_game_rooms` retires only the host's current lobby
- * room, after approval. It cannot touch an active room because that would
- * interrupt players and their study sessions. `host`'s source picker and
- * `join`'s code field remain human-pressed composite actions.
+ * TWO WRITE TARGETS. `create_game_room` creates one waiting room from the
+ * current host composer after approval. `delete_game_rooms` retires only the
+ * host's current lobby room, after approval. Neither target can start a round
+ * or a study session.
  *
  * Emitters: `EngageHome.tsx`, `HostSetupImpl.tsx`, `JoinRoomImpl.tsx`, and
  * `MultiplayerGameImpl.tsx` — all in `features/education/engage/components/`.
@@ -249,6 +249,18 @@ const surfaceSpecific: SurfaceValue[] = [
 
 const writeTargets: SurfaceWriteTarget[] = [
   {
+    name: "create_game_room",
+    label: "Create waiting room",
+    description:
+      'Creates one waiting room from the host composer currently visible on /education/game/host, saved immediately. Value must be exactly { "source": "current_host_composer" }. The person must approve. The target uses the selected due queue or deck, the displayed room-size entitlement, the active organization, and the signed-in host already on the page. It refuses any supplied deck, room size, game configuration, extra field, unsigned host, or duplicate request while room creation is in flight. It only creates a waiting room: it does not start a game, create a study session, or spend metered study work.',
+    valueType: "object",
+    updatesValue: "host_creating",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "host_setup",
+    sortOrder: 320,
+  },
+  {
     name: "delete_game_rooms",
     label: "Cancel waiting room",
     description:
@@ -276,10 +288,10 @@ export const educationGameManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are in Study Games at /education/game — play-as-review: every question in every mode is scheduled by the same spaced-repetition engine as the rest of the app. Read \`view\` FIRST — it is "home", "host", "join", or "play", and it decides which other values are even present. A live Solo Arcade round (/education/game/solo) is a separate surface — see matrx-user/education-game-solo.
 On "home" the learner sees their streak, weekly league standing, badges, and three entry points: Solo Arcade, Host a game, Join a game. Nothing here is editable.
-On "host" they are composing a room: \`host_source_kind\` is "due" (their cross-deck due queue, the adaptive default) or "set" (one specific deck, from \`host_available_sets\`); a private deck can't be used for a cross-account room, which the picker itself flags. \`host_max_players\` is the entitlement-capped room size, shown before creating. The learner still presses Create room.
+On "host" they are composing a room: \`host_source_kind\` is "due" (their cross-deck due queue, the adaptive default) or "set" (one specific deck, from \`host_available_sets\`); a private deck can't be used for a cross-account room, which the picker itself flags. \`host_max_players\` is the entitlement-capped room size, shown before creating. create_game_room can create exactly that visible setup after the learner approves by sending \`{ "source": "current_host_composer" }\`; it never accepts a different deck, room size, or configuration and only opens a waiting room. It does not start a round or a study session.
 On "join" they are typing a 5-character room code (\`join_code\`); \`join_error\` explains a bad or unknown code.
 On "play", room_id, room_phase, and room_player_count describe the verified room currently open. owned_game_rooms contains that one room only for its host. delete_game_rooms cancels a host-owned lobby by its id after the person approves; it soft-deletes the room and disables the join code. It refuses guests and active or ended rooms, because interrupting a live round would harm players and their study sessions.
-Creating and joining rooms remain actions the learner triggers themselves; never use generic tools for those composite actions.
+Joining rooms remains a learner-triggered action; never use generic tools for it. Room creation is available only through create_game_room's approval-gated current-composer contract.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

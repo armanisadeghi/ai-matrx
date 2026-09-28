@@ -57,4 +57,19 @@ describe("versioned card deletion", () => {
     log.mockRestore();
     expect(result.error).toMatch(/changed elsewhere/);
   });
+
+  it("updates matching content only at the loaded revision", async () => {
+    const db = installCard(4);
+    const result = await fcService.updateCardVersioned("card-1", 4, {
+      front: "Match the organs",
+      card_kind: "matching",
+      dynamic_content: { pairs: [{ left: "Heart", right: "Pumps blood" }] },
+    });
+    expect(result.error).toBeNull();
+    expect(db.patch()).toMatchObject({
+      version: 5,
+      front: "Match the organs",
+      card_kind: "matching",
+    });
+  });
 });

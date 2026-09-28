@@ -5635,7 +5635,8 @@ export interface paths {
         /**
          * Effective Env
          * @description Personal-over-organization effective environment for the actor,
-         *     minus sealed aliases.
+         *     minus sealed aliases. Organization values the actor may use but not view
+         *     are withheld by name, never returned.
          */
         get: operations["effective_env_vault_effective_env_get"];
         put?: never;
@@ -5936,8 +5937,12 @@ export interface paths {
          * Browser Login Materialize
          * @description Transient username/password for ONE fill on the CURRENT tab.
          *
-         *     Re-runs the SAME matcher the discovery call used, so advertisement and
-         *     enforcement cannot drift; refusals are audited. `no-store`.
+         *     The fill path only: a request signed by a registered browser-extension fill
+         *     device over that extension's own OAuth session (``fill_devices``). The web
+         *     sign-in token, a forged origin, or any other API caller is refused and audited —
+         *     a value a person may only use is never returned to them. Re-runs the SAME
+         *     matcher the discovery call used, so advertisement and enforcement cannot
+         *     drift; refusals are audited. `no-store`.
          */
         post: operations["browser_login_materialize_vault_browser_login__item_id__materialize_post"];
         delete?: never;
@@ -5965,6 +5970,51 @@ export interface paths {
          *     ``no-store`` prevents intermediary/browser caching.
          */
         post: operations["browser_authenticator_materialize_vault_browser_login__item_id__authenticator_materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/fill-devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Fill Devices
+         * @description The browsers that may fill this person's saved passwords, newest first.
+         */
+        get: operations["list_fill_devices_vault_fill_devices_get"];
+        put?: never;
+        /**
+         * Register Fill Device
+         * @description Register this fill client install's public key: its own OAuth session plus the
+         *     person's password on this request (the step-up).
+         */
+        post: operations["register_fill_device_vault_fill_devices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/fill-devices/{device_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke Fill Device
+         * @description Turn filling off for one browser (kept in the list as revoked, audited).
+         */
+        post: operations["revoke_fill_device_vault_fill_devices__device_id__revoke_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -40845,6 +40895,23 @@ export interface paths {
         get: operations["read_test_handset_inbox_communications_internal_test_handset_inbox_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/communications/sms/inbound-fallback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inbound Sms Fallback */
+        post: operations["inbound_sms_fallback_communications_sms_inbound_fallback_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -79318,6 +79385,16 @@ export interface components {
             /** Connection Id */
             connection_id: string;
         };
+        /** GoogleDisconnectResponse */
+        GoogleDisconnectResponse: {
+            /**
+             * Google Authorization Status
+             * @enum {string}
+             */
+            google_authorization_status: "active_for_other_connection" | "revocation_unconfirmed" | "revoked";
+            /** Google Authorization Remains Active */
+            google_authorization_remains_active: boolean;
+        };
         /** GoogleExchangeRequest */
         GoogleExchangeRequest: {
             /** Code */
@@ -79337,7 +79414,7 @@ export interface components {
              * @default general
              * @enum {string}
              */
-            connection_purpose?: "contacts_import" | "general" | "google_ads_isolated" | "google_capability" | "google_products" | "read_only_sweep";
+            connection_purpose?: "contacts_import" | "general" | "google_ads_isolated" | "google_capability" | "google_products" | "read_only_sweep" | "youtube_isolated";
             /** Capability Key */
             capability_key?: ("calendar" | "contacts" | "tag_manager" | "tasks" | "youtube_analytics") | null;
             /** Capability Keys */
@@ -95580,7 +95657,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "credential_unavailable" | "invalid_request" | "item_unavailable" | "native_session_required" | "native_unavailable" | "organization_required" | "request_too_large";
+            code: "credential_unavailable" | "fill_device_required" | "invalid_request" | "item_unavailable" | "native_session_required" | "native_unavailable" | "organization_required" | "request_too_large";
         };
         /** NativeErrorOut */
         NativeErrorOut: {
@@ -108645,6 +108722,11 @@ export interface components {
              * @description Why the filter is approximate or unresolved, when it is.
              */
             note?: string | null;
+            /**
+             * Suggestions
+             * @description An unmatched #tag: the closest existing tag names.
+             */
+            suggestions?: string[];
         };
         /** QuerySelectorsCommand */
         QuerySelectorsCommand: {
@@ -121676,6 +121758,8 @@ export interface components {
             page?: number | null;
             /** Chars */
             chars: number;
+            /** Preview */
+            preview?: string | null;
         };
         /**
          * SourceSet
@@ -132898,6 +132982,13 @@ export interface components {
             };
             /** Count */
             count: number;
+            /**
+             * Withheld
+             * @description Organization keys you may use but not view (values never returned).
+             */
+            withheld?: string[];
+            /** Withheld Note */
+            withheld_note?: string | null;
         };
         /**
          * VaultFieldMetadataRequest
@@ -133051,6 +133142,84 @@ export interface components {
             value: string;
         } & {
             [key: string]: unknown;
+        };
+        /** VaultFillDeviceListResponse */
+        VaultFillDeviceListResponse: {
+            /** Devices */
+            devices: components["schemas"]["VaultFillDeviceOut"][];
+        };
+        /**
+         * VaultFillDeviceOut
+         * @description One browser that may fill saved passwords. Never carries key material
+         *     beyond its public thumbprint.
+         */
+        VaultFillDeviceOut: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Extension Origin */
+            extension_origin?: string | null;
+            /** Registered At */
+            registered_at?: string | null;
+            /** Last Used At */
+            last_used_at?: string | null;
+            /** Revoked At */
+            revoked_at?: string | null;
+            /** Revoke Reason */
+            revoke_reason?: string | null;
+            /** Key Thumbprint */
+            key_thumbprint: string;
+        };
+        /**
+         * VaultFillDeviceRegisterRequest
+         * @description The browser extension registers the PUBLIC half of its non-extractable
+         *     P-256 key. Accepted only over the extension's own OAuth session.
+         */
+        VaultFillDeviceRegisterRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /** Public Key Jwk */
+            public_key_jwk: {
+                [key: string]: string;
+            };
+            /** Label */
+            label: string;
+            /** Extension Origin */
+            extension_origin?: string | null;
+            /**
+             * Password
+             * Format: password
+             */
+            password: string;
         };
         /** VaultForkRequest */
         VaultForkRequest: {
@@ -151094,6 +151263,105 @@ export interface operations {
             };
         };
     };
+    list_fill_devices_vault_fill_devices_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultFillDeviceListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_fill_device_vault_fill_devices_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultFillDeviceRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultFillDeviceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_fill_device_vault_fill_devices__device_id__revoke_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                device_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultFillDeviceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     browser_login_result_vault_browser_login__item_id__result_post: {
         parameters: {
             query?: never;
@@ -154171,11 +154439,13 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GoogleDisconnectResponse"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -205211,6 +205481,26 @@ export interface operations {
             };
         };
     };
+    inbound_sms_fallback_communications_sms_inbound_fallback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     cast_preview_endpoint_podcast_cast_preview_get: {
         parameters: {
             query: {
@@ -206482,7 +206772,7 @@ export interface operations {
                 since?: string | null;
                 /** @description Only rows with occurred_at < this instant (ISO-8601). */
                 until?: string | null;
-                /** @description JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id. */
+                /** @description JSON-encoded dashboard filters for kind, route, error_text, user_id, request_id, source_app, and source_feature. */
                 column_filters?: string | null;
                 limit?: number;
                 offset?: number;

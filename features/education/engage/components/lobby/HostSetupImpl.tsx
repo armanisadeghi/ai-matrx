@@ -30,7 +30,10 @@ import { cn } from "@/lib/utils";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { useEntitlement } from "@/features/entitlements/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationGameScope,
   type GameDeckOption,
@@ -39,6 +42,7 @@ import { gameService } from "../../data/gameService";
 import { useCurrentPlayer } from "../../data/useCurrentPlayer";
 import { DEFAULT_ROOM_CONFIG } from "../../types";
 import { ENGAGE_ROUTES } from "../../constants";
+import { parseCurrentHostRoomCreation } from "../../gameRoomAgentWrites";
 
 const SURFACE_NAME = "matrx-user/education-game";
 
@@ -49,6 +53,7 @@ type Source =
 export function HostSetupImpl() {
   const router = useRouter();
   const { userId } = useCurrentPlayer();
+  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
   const roomSize = useEntitlement("education.game_room_size");
   const setsRead = useRead(
     async () => {
@@ -85,30 +90,67 @@ export function HostSetupImpl() {
       host_creating: creating,
     });
 
-  const create = (): void => {
+  const createCurrentHostRoom = async () => {
     if (!userId) {
-      toast.error("You must be signed in to host");
-      return;
+      throw new Error("You must be signed in to host.");
     }
+    // Server-truth entitlement check (permissive at launch; never blocks the
+    // generous free default). Creating a waiting room does not start a game
+    // session or spend metered study work.
+    await roomSize.check();
+    const config = { ...DEFAULT_ROOM_CONFIG, maxPlayers };
+    const res = await gameService.createRoom({
+      organizationId: activeOrganizationId,
+      hostUserId: userId,
+      sourceKind: source.kind === "set" ? "set" : "due",
+      sourceSetId: source.kind === "set" ? source.set.id : null,
+      sourceTitle: source.kind === "set" ? source.set.name : "Due review",
+      config,
+    });
+    if (res.error || !res.data) {
+      throw new Error(res.error ?? "Could not create room");
+    }
+    return res.data;
+  };
+
+  const create = (): void => {
     startCreate(async () => {
-      // Server-truth entitlement check (permissive at launch; never blocks the
-      // generous free default).
-      await roomSize.check();
-      const config = { ...DEFAULT_ROOM_CONFIG, maxPlayers };
-      const res = await gameService.createRoom({
-        hostUserId: userId,
-        sourceKind: source.kind === "set" ? "set" : "due",
-        sourceSetId: source.kind === "set" ? source.set.id : null,
-        sourceTitle: source.kind === "set" ? source.set.name : "Due review",
-        config,
-      });
-      if (res.error || !res.data) {
-        toast.error(res.error ?? "Could not create room");
-        return;
+      try {
+        const room = await createCurrentHostRoom();
+        router.push(ENGAGE_ROUTES.play(room.id, room.join_code));
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Could not create room",
+        );
       }
-      router.push(ENGAGE_ROUTES.play(res.data.id, res.data.join_code));
     });
   };
+
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    create_game_room: {
+      validate: (value) => {
+        parseCurrentHostRoomCreation(value);
+        if (creating) {
+          throw new Error("A room is already being created. Nothing was changed.");
+        }
+        if (!userId) {
+          throw new Error("You must be signed in to host. Nothing was changed.");
+        }
+      },
+      apply: async (value) => {
+        parseCurrentHostRoomCreation(value);
+        if (creating) {
+          throw new Error("A room is already being created. Nothing was changed.");
+        }
+        const room = await createCurrentHostRoom();
+        router.push(ENGAGE_ROUTES.play(room.id, room.join_code));
+        return {
+          summary: `Created a waiting room from the current host setup. Join code: ${room.join_code}.`,
+          data: { id: room.id, join_code: room.join_code, status: room.status },
+        };
+      },
+    },
+  });
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>

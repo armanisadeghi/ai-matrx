@@ -3,6 +3,26 @@
 // current waiting room. Pure by design: it runs before the approval card and
 // again when the approved write is applied.
 
+/**
+ * An agent may create one room from the host composer currently on screen.
+ * The target intentionally accepts no source, room size, or game config: those
+ * values belong to the learner's visible host form and use the same path as
+ * its Create room button.
+ */
+export function parseCurrentHostRoomCreation(value: unknown): void {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.keys(value).length !== 1 ||
+    (value as { source?: unknown }).source !== "current_host_composer"
+  ) {
+    throw new Error(
+      'create_game_room expects { "source": "current_host_composer" }. It can only create the room currently configured on this page. Nothing was changed.',
+    );
+  }
+}
+
 /** Read the sole current-room id from a delete_game_rooms request. */
 export function parseLobbyRoomCancellation(
   value: unknown,
