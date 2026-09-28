@@ -1,0 +1,864 @@
+{
+  "_note": "GOLDEN VECTORS for the draft_critique score mapping (BRIEFS-MEDIA-WRITING-CRISIS.md section 6). The SAME file lives in aidream (aidream/services/crm/draft_critique_vectors.json) and matrx-frontend (features/crm/draft-critique/draft-critique.vectors.json); both test suites run it, and the aidream test fails if the two copies differ. 'corrections' is the exact number of corrections the function must report.",
+  "vectors": [
+    {
+      "name": "points 7 but criteria sum 8 -> points 8, score 3, start_over",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 1,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 1,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 1,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 1,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 1,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 1,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 1,
+            "note": "c7"
+          },
+          {
+            "id": 8,
+            "score": 1,
+            "note": "c8"
+          },
+          {
+            "id": 9,
+            "score": 0,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 0,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 0,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 0,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 0,
+            "note": "c13"
+          }
+        ],
+        "points": 7,
+        "score": 4,
+        "verdict": "workshopable"
+      },
+      "expect": {
+        "points": 8,
+        "score": 3,
+        "verdict": "start_over"
+      },
+      "corrections": 3
+    },
+    {
+      "name": "consistent pitch at 23 -> 9 publishable, no corrections",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 2,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 2,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 2,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 2,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 2,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 2,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 2,
+            "note": "c7"
+          },
+          {
+            "id": 8,
+            "score": 1,
+            "note": "c8"
+          },
+          {
+            "id": 9,
+            "score": 2,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 2,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 2,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 1,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 1,
+            "note": "c13"
+          }
+        ],
+        "points": 23,
+        "score": 9,
+        "verdict": "publishable"
+      },
+      "expect": {
+        "points": 23,
+        "score": 9,
+        "verdict": "publishable"
+      },
+      "corrections": 0
+    },
+    {
+      "name": "release, criterion 8 omitted, 24 of 24 -> scaled 26 -> 10",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 2,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 2,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 2,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 2,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 2,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 2,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 2,
+            "note": "c7"
+          },
+          {
+            "id": 9,
+            "score": 2,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 2,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 2,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 2,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 2,
+            "note": "c13"
+          }
+        ],
+        "points": 24,
+        "score": 9,
+        "verdict": "publishable"
+      },
+      "expect": {
+        "points": 24,
+        "score": 10,
+        "verdict": "publishable"
+      },
+      "corrections": 1
+    },
+    {
+      "name": "release 12 of 24 -> scaled 13 -> lower half of 11-16 -> 5 workshopable",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 1,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 1,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 1,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 1,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 1,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 1,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 1,
+            "note": "c7"
+          },
+          {
+            "id": 9,
+            "score": 1,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 1,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 1,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 1,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 1,
+            "note": "c13"
+          }
+        ],
+        "points": 12,
+        "score": 5,
+        "verdict": "workshopable"
+      },
+      "expect": {
+        "points": 12,
+        "score": 5,
+        "verdict": "workshopable"
+      },
+      "corrections": 0
+    },
+    {
+      "name": "pitch 20 -> top half of 17-21 -> 8 publishable",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 2,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 2,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 2,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 2,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 2,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 2,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 2,
+            "note": "c7"
+          },
+          {
+            "id": 8,
+            "score": 2,
+            "note": "c8"
+          },
+          {
+            "id": 9,
+            "score": 2,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 2,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 0,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 0,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 0,
+            "note": "c13"
+          }
+        ],
+        "points": 20,
+        "score": 7,
+        "verdict": "publishable"
+      },
+      "expect": {
+        "points": 20,
+        "score": 8,
+        "verdict": "publishable"
+      },
+      "corrections": 1
+    },
+    {
+      "name": "a criterion scored 3 is clamped to 2 -> points 2 -> 1 start_over",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 3,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 0,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 0,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 0,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 0,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 0,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 0,
+            "note": "c7"
+          },
+          {
+            "id": 8,
+            "score": 0,
+            "note": "c8"
+          },
+          {
+            "id": 9,
+            "score": 0,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 0,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 0,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 0,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 0,
+            "note": "c13"
+          }
+        ],
+        "points": 3,
+        "score": 1,
+        "verdict": "start_over"
+      },
+      "expect": {
+        "points": 2,
+        "score": 1,
+        "verdict": "start_over"
+      },
+      "corrections": 2
+    },
+    {
+      "name": "all zero -> 1 start_over",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 0,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 0,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 0,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 0,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 0,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 0,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 0,
+            "note": "c7"
+          },
+          {
+            "id": 8,
+            "score": 0,
+            "note": "c8"
+          },
+          {
+            "id": 9,
+            "score": 0,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 0,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 0,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 0,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 0,
+            "note": "c13"
+          }
+        ],
+        "points": 0,
+        "score": 1,
+        "verdict": "start_over"
+      },
+      "expect": {
+        "points": 0,
+        "score": 1,
+        "verdict": "start_over"
+      },
+      "corrections": 0
+    },
+    {
+      "name": "pitch 13 -> lower half of 11-16 -> 5; model said 6 publishable",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 1,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 1,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 1,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 1,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 1,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 1,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 1,
+            "note": "c7"
+          },
+          {
+            "id": 8,
+            "score": 1,
+            "note": "c8"
+          },
+          {
+            "id": 9,
+            "score": 1,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 1,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 1,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 1,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 1,
+            "note": "c13"
+          }
+        ],
+        "points": 13,
+        "score": 6,
+        "verdict": "publishable"
+      },
+      "expect": {
+        "points": 13,
+        "score": 5,
+        "verdict": "workshopable"
+      },
+      "corrections": 2
+    },
+    {
+      "name": "duplicate criterion id -> first kept -> 14 -> 6 workshopable",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 2,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 2,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 2,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 2,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 2,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 2,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 2,
+            "note": "c7"
+          },
+          {
+            "id": 8,
+            "score": 0,
+            "note": "c8"
+          },
+          {
+            "id": 9,
+            "score": 0,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 0,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 0,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 0,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 0,
+            "note": "c13"
+          },
+          {
+            "id": 1,
+            "score": 0,
+            "note": "dup"
+          }
+        ],
+        "points": 14,
+        "score": 6,
+        "verdict": "workshopable"
+      },
+      "expect": {
+        "points": 14,
+        "score": 6,
+        "verdict": "workshopable"
+      },
+      "corrections": 1
+    },
+    {
+      "name": "press_release declared but criterion 8 present -> 8 dropped -> 24/24 -> 10",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 2,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 2,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 2,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 2,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 2,
+            "note": "c5"
+          },
+          {
+            "id": 6,
+            "score": 2,
+            "note": "c6"
+          },
+          {
+            "id": 7,
+            "score": 2,
+            "note": "c7"
+          },
+          {
+            "id": 8,
+            "score": 2,
+            "note": "c8"
+          },
+          {
+            "id": 9,
+            "score": 2,
+            "note": "c9"
+          },
+          {
+            "id": 10,
+            "score": 2,
+            "note": "c10"
+          },
+          {
+            "id": 11,
+            "score": 2,
+            "note": "c11"
+          },
+          {
+            "id": 12,
+            "score": 2,
+            "note": "c12"
+          },
+          {
+            "id": 13,
+            "score": 2,
+            "note": "c13"
+          }
+        ],
+        "points": 26,
+        "score": 10,
+        "verdict": "publishable"
+      },
+      "expect": {
+        "points": 24,
+        "score": 10,
+        "verdict": "publishable"
+      },
+      "corrections": 2,
+      "draft_type": "press_release"
+    },
+    {
+      "name": "pitch with only 5 criteria -> 8 missing counted as 0 -> 10 -> 4 start_over",
+      "input": {
+        "__kind": "draft_critique",
+        "criteria": [
+          {
+            "id": 1,
+            "score": 2,
+            "note": "c1"
+          },
+          {
+            "id": 2,
+            "score": 2,
+            "note": "c2"
+          },
+          {
+            "id": 3,
+            "score": 2,
+            "note": "c3"
+          },
+          {
+            "id": 4,
+            "score": 2,
+            "note": "c4"
+          },
+          {
+            "id": 5,
+            "score": 2,
+            "note": "c5"
+          }
+        ],
+        "points": 10,
+        "score": 4,
+        "verdict": "start_over"
+      },
+      "expect": {
+        "points": 10,
+        "score": 4,
+        "verdict": "start_over"
+      },
+      "corrections": 1,
+      "draft_type": "pitch_email"
+    }
+  ]
+}
