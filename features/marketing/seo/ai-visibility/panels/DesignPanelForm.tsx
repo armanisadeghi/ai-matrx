@@ -14,10 +14,10 @@
 import { useMutation } from "@tanstack/react-query";
 import { ClipboardList, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { Input } from "@ai-matrx/design-system";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useBrand } from "@/features/marketing/data/hooks";

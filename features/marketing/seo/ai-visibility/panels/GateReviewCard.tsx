@@ -18,11 +18,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, EyeOff, Forward, Pencil, Plus, X } from "lucide-react";
 import { useState } from "react";
+import { Input } from "@ai-matrx/design-system";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/features/marketing/components/shared/MarketingUi";
 import { useAppDispatch } from "@/lib/redux/hooks";
