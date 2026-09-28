@@ -51,6 +51,25 @@ describe("catalogConnectionPresentation", () => {
       { state: "checking", connected: false, reason: null },
     );
   });
+
+  it("turns an expired catalog token into the shared re-auth state", () => {
+    const presentation = catalogConnectionPresentation(
+      {
+        ...githubEntry,
+        slug: "supabase",
+        connectionId: "supabase-connection",
+        connectionStatus: "connected",
+        tokenExpiresAt: "2026-08-27T00:00:00.000Z",
+      },
+      null,
+      false,
+    );
+
+    expect(presentation).toMatchObject({
+      state: "needs_reauth",
+      connected: false,
+    });
+  });
 });
 
 describe("catalogActionPresentation", () => {

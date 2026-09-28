@@ -63,24 +63,17 @@ export function catalogConnectionPresentation(
   firstPartyStatus: FirstPartyStatus,
   firstPartyLoading: boolean,
 ): CatalogConnectionPresentation {
-  if (mcpConnectionRouteFor(entry) !== "github") {
-    return {
-      state: entry.connectionStatus,
-      connected: entry.connectionStatus === "connected",
-      reason: null,
-    };
-  }
-
-  if (firstPartyLoading) {
+  const hasFirstPartyPath = mcpConnectionRouteFor(entry) === "github";
+  if (hasFirstPartyPath && firstPartyLoading) {
     return { state: "checking", connected: false, reason: null };
   }
 
   const truth = deriveMcpConnectionState(entry, {
-    hasFirstPartyPath: true,
-    firstPartyStatus,
+    hasFirstPartyPath,
+    firstPartyStatus: hasFirstPartyPath ? firstPartyStatus : undefined,
   });
   return {
-    state: truth.state === "connected" ? "connected" : "disconnected",
+    state: truth.state === "not_connected" ? "disconnected" : truth.state,
     connected: truth.state === "connected",
     reason: truth.reason,
   };
