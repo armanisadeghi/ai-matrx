@@ -441,11 +441,22 @@ export function hubTableColumns(
         ),
       filter: "text",
     },
-    ...(single ? [] : [{ id: "kind", header: "Kind", accessorFn: (h: KnowledgeHit) => kindLabel(h), filter: "select" as const }]),
+    ...(single
+      ? []
+      : [
+          {
+            id: "kind",
+            header: "Kind",
+            minWidth: 130,
+            cell: (h: KnowledgeHit) => <span className="whitespace-nowrap">{kindLabel(h)}</span>,
+            accessorFn: (h: KnowledgeHit) => kindLabel(h),
+            filter: "select" as const,
+          },
+        ]),
     ...(any((h) => Boolean(h.captured_by?.name))
       ? [{ id: "captured_by", header: "Captured by", accessorFn: (h: KnowledgeHit) => capturedByLabel(h), filter: "select" as const }]
       : []),
-    ...(stage
+    ...(stage && any((h) => h.entity === "processed_document")
       ? [
           {
             id: "stage",
@@ -535,6 +546,7 @@ function TableLayout({
         detail={{ enabled: false }}
         // The hub pages its own rows (one pager: the list's infinite read); the table shows every loaded row.
         pageSize={0}
+        hidePagination
         // The row's own menu (Open, Keep, Archive, Tag, File to, Copy, Trash) in the Actions column.
         copy={false}
         rowActions={handlers.rowMenu ? (h) => handlers.rowMenu?.(h) : undefined}
@@ -585,7 +597,7 @@ function BoardLayout({ hits, handlers, more }: { hits: KnowledgeHit[]; handlers:
           <section key={label} className="flex w-full flex-col gap-2 md:w-72" aria-label={label}>
             <h3 className="px-1 text-xs font-medium text-muted-foreground">{label}</h3>
             {items.map((h) => (
-              <ResultCard key={hitKey(h)} hit={h} handlers={handlers} hideKind={hideKind} />
+              <ResultCard key={hitKey(h)} hit={h} handlers={handlers} hideKind={hideKind || by === "kind"} />
             ))}
           </section>
         ))}
