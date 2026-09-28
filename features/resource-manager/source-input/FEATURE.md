@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-09-27`
+**Last updated:** `2026-09-28`
 
 ---
 
@@ -22,8 +22,10 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 - `components/SourceCard.tsx` — one Source: name (opens it — `EntityRef`, new tab), kind, size, state, "Use: <form> ▾", "Choose parts", remove, processing line with "Wait for the clean version".
 
 **Hooks**
-- `useSourceSet(surfaceKey, { defaultForm?, organizationId? })` — THE client handler. `sources`, `topic/setTopic`, `addReady/addPending/settle/fail/remove`, `updateRef` (form, parts, cap, delivery), `setWaitForClean`, `toSourceSet()`, `applySourceSet()` (from the review page), `manifest()`, `resolve()`, `totalChars`, `manifestError`, `settled`. A host that needs the payload calls `useSourceSet` with the SAME `surfaceKey` it gave `<SourceInput>`.
-- `useSourceIntake(set, { attachTo, runner })` — every way new material becomes a Source, through the existing doors (below).
+- `useSourceSet(surfaceKey, { defaultForm?, organizationId? })` — THE client handler. `sources`, `topic/setTopic`, `addReady/addPending/settle/fail/remove`, `updateRef` (form, parts, cap, delivery), `setWaitForClean`, `toSourceSet()`, `applySourceSet()` (from the review page), `manifest()`, `resolve()`, `totalChars`, `manifestError`, `settled`, and (USI-3b, additive) `restoring` (the saved draft is not read back yet — show a loading state, never "nothing picked"), `restart(id)`, `updateDraft(id, patch)`. Landing the same Source twice keeps ONE card and says so on it. A host that needs the payload calls `useSourceSet` with the SAME `surfaceKey` it gave `<SourceInput>`.
+- `useSourceIntake(set, { attachTo, runner })` — every way new material becomes a Source, through the existing doors (below). USI-3b adds `resume(card)` (land the kept input again), `retryFile(card, file)`, `fileLanded(card, processedDocumentId)`.
+- `useSourceRecovery(set, intake, runner)` — UI-free: re-lands what a reload cut off (once per card, module-scope guard) and keeps + files an uploaded file's Source when reading makes one. Any UI on this core calls it once.
+- `interrupted.ts` — THE decision for a card cut off mid-landing (`reloadedCard`): resume from the kept input, re-offer a file whose bytes were lost (keeps its name), or the plain remedy.
 
 **Registry**
 - `sourceKinds.ts` — THE tile list. Each entry names its existing door: a resource-picker sub-picker (`pickerViews`), an upload (`accept`), paste, URL, YouTube, audio, topic. `fallbackNote` is shown for kinds with no landing door of their own.
@@ -36,7 +38,7 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 
 **Redux**
 - `instanceResources` (extended, no new slice): key `source-input:<surfaceKey>`; block type `source_ref`; `source` = `SourceDraft`, `preview` = the manifest entry; reducer `setResourceSource` added for pointer changes.
-- `wizardDraft` (the generic persisted-draft primitive): wizardId `source-input:<surfaceKey>` holds `{ sources, topic }` — written on every change, restored on mount. A Source still landing when the page reloaded comes back as an error with "Add it again".
+- `wizardDraft` (the generic persisted-draft primitive): wizardId `source-input:<surfaceKey>` holds `{ sources, topic }` — written on every change, restored on mount. Never lose input: a Source still landing keeps what the person handed over in `SourceDraft.input` (pasted text up to 2M characters, a link, an uploaded recording's file id — never bytes) until it settles. After a reload it is landed again by itself (the door dedupes by content hash, so it is the same Source); a failed one offers "Try again"; a file cut off mid-upload says it did not arrive, keeps its name, and offers "Choose it again".
 
 **Knob**
 - `sources.review_threshold_chars` (default 100,000; organizations and people may override) — above it, "Review what goes in" opens by itself once per crossing.
@@ -49,7 +51,7 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 |---|---|---|
 | Paste text | `buildPastedTextLanding` → `POST /sources/land` (kept, filed against `attachTo`) | `processed_document` |
 | A web page | scraper → lands → `keep` against `attachTo` | `processed_document` |
-| Upload a file / An image | `useFileUpload().uploadMany` (SHA-256 "use the one you already have"), then `useProcessingRunner().runForCldFile` | `file` |
+| Upload a file / An image | `useFileUpload().uploadMany` (SHA-256 "use the one you already have"), filed at once `file → attachTo` through `associationsService` (the edge task attachments use), then `useProcessingRunner().runForCldFile`; when the run reports its Source it is kept + filed through `keepSource` | `file` |
 | A YouTube video | fallback: `fetchYouTubeTranscript` → `POST /sources/land` (identity `youtube:<id>`) | `processed_document` |
 | A recording | fallback: upload → `transcribeCloudFile` → `POST /sources/land` (identity `audio-transcript:<fileId>`) | `processed_document` |
 | Your files / A note / Documents & tables | `ResourcePickerMenu initialView` → `resourceToSourceRef` (lane USI-1's total mapping) | the record's token |
@@ -70,16 +72,17 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 ## Known gaps (named, not silent)
 
 - YouTube and recordings have no landing door of their own; the transcript is read client-side and landed. Tracked in DESIGN.md A3 as fallback rows.
-- An uploaded file is not yet filed against `attachTo` (the file's Source row may not exist at upload time).
+- An uploaded file's Source is kept + filed only when THIS page's processing run reports it. The legacy ingest (`runForCldFile`) chunks a plain-text file without making a Source row at all, so such a file stays "Still being read" in the manifest and only the `file → attachTo` edge exists; a reload during processing also loses the run (no keep). Needs the file door to land a Source (server).
 - `pnpm sync-types` is refused at the time of writing by an unrelated drop in the aidream checkout (ai-visibility `PanelTrend`), so `/sources/manifest|resolve` are typed from the shared package, not the generated file.
 - "Wait for the clean version" is recorded on the draft; the host that runs the request must honour it (USI-5 onward).
 - Pasted text and transcripts land without `clean_content` (the clean stage is skipped for them), so `/sources/manifest` reports them "processing" forever while the stage table says "cleaned". Server-side (source resolution) — the card shows both honestly until it is fixed.
-- A new Source still landing when the page reloads is lost mid-flight (the card says "Add it again"; the Source itself usually landed and appears in Your sources).
 - Parts are per form: changing the form clears the picked parts and says so.
 
 ---
 
 ## Change log
+
+- 2026-09-28 — USI-3b: never lose input (kept input + auto re-land after reload, "Try again", "Choose it again"; `interrupted.ts` + test), uploads filed `file → attachTo` via `associationsService` and their Source kept when reading makes one, the family chooser (`ResourceFamilyPolicyEditor`, shared with chat) speaks in outcomes (`resource-family-words.ts` + test; chat chip reads "Best · All", "What the AI reads"), a stable "Bringing back what you picked…" state replaces the false "Nothing picked yet." (server HTML carries no empty state), one card per Source, a kept web page drops the stale "not saved" notice, recovery logic in the UI-free `useSourceRecovery`, demo takes `?attach=<type>:<id>[:label]`. Verified on the shared preview as admin@admin.com (1024 and 375): paste and web page reloaded mid-land came back landed, one row each, kept and filed against the test project; a repeat paste returned the same Source; the upload's `file → project` edge shows on the file's Info tab.
 
 - 2026-09-27 — Verified on the shared preview as admin@admin.com (desktop 1440, phone 375): paste → landed + kept; web page → landed; stored 240-page PDF → measured (359k), 3 of 73 parts picked, form switched to raw, review auto-opened above 100k; note picked; remove; reload keeps picks; max 3 enforced. YouTube reached the transcript route, which failed server-side (shown on the card).
 

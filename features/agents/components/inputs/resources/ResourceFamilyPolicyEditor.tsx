@@ -121,7 +121,9 @@ export function ResourceFamilyPolicyEditor({
                 <span className="block">
                   <span className="block font-medium">{choice.label}</span>
                   <span className="block text-[11px] text-muted-foreground">
-                    {choice.detail}
+                    {choice.value !== "auto" && !primaryAvailable(choice.value)
+                      ? `Not made for this file yet. ${choice.detail}`
+                      : choice.detail}
                   </span>
                 </span>
               </SelectItem>
