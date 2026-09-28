@@ -52,6 +52,7 @@ import {
 } from "@/features/marketing/seo/serp/metrics";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 type EditorTab = "meta" | "html" | "preview";
 
@@ -226,6 +227,8 @@ export default function HtmlPageEditor({
   const [nav, setNav] = useState(() =>
     getAdjacentHtmlPageIds(page.id, getHtmlPagesNavOrder()),
   );
+  // The pager's page list read — a failure shows "—", never "/0".
+  const [navError, setNavError] = useState<unknown>(null);
   const [htmlEditorRef, { height: htmlEditorHeight }] =
     useMeasure<HTMLDivElement>();
   const metaDescriptionRef = useRef<HTMLTextAreaElement | null>(null);
@@ -395,13 +398,16 @@ export default function HtmlPageEditor({
     const order = getHtmlPagesNavOrder();
     // Direct deep-link: seed order from the full user list so prev/next work.
     if (order.length === 0 || !order.includes(page.id)) {
-      void HTMLPageService.getUserPages().then((list: { id: string }[]) => {
-        const ids = (list ?? []).map((p) => p.id);
-        if (ids.length > 0) {
-          setHtmlPagesNavOrder(ids);
-          setNav(getAdjacentHtmlPageIds(page.id, ids));
-        }
-      });
+      void HTMLPageService.getUserPages()
+        .then((list: { id: string }[]) => {
+          const ids = (list ?? []).map((p) => p.id);
+          setNavError(null);
+          if (ids.length > 0) {
+            setHtmlPagesNavOrder(ids);
+            setNav(getAdjacentHtmlPageIds(page.id, ids));
+          }
+        })
+        .catch((err: unknown) => setNavError(err));
     } else {
       setNav(getAdjacentHtmlPageIds(page.id, order));
     }
@@ -707,7 +713,8 @@ export default function HtmlPageEditor({
                   }}
                 />
                 <span className="text-[11px] text-muted-foreground tabular-nums px-0.5">
-                  {nav.index >= 0 ? nav.index + 1 : "—"}/{nav.total}
+                  {nav.index >= 0 ? nav.index + 1 : "—"}/
+                  <UntrustedCount value={nav.total} trustworthy={navError == null} label="Pages" />
                 </span>
                 <ChevronRightTapButton
                   variant="transparent"

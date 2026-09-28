@@ -36,6 +36,7 @@ import {
   DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_HEADING_KEY, type ResolvedContextMenuContext } from "@/features/context-menu-v3/types";
 import { ItemMenuDrawer } from "./ItemMenuDrawer";
 import { itemMenuConfigToExtraSections } from "./itemMenuToV3";
 import { runCommand, runToggle } from "./run-entry";
@@ -580,7 +581,24 @@ export function ItemContextMenu({
         // the re-render this setState triggers, before MenuContent mounts.
         const item = resolveItemOnOpen?.(target);
         setResolved(resolveItemMenuConfig(item?.config ?? config));
-        return item?.context ?? null;
+        const context = item?.context ?? null;
+        // A list row is a RECORD, not text: its menu is headed with the
+        // record's name ("Note · Clinic intake checklist"), never "Content:"
+        // plus the row's text — unless the row names itself already.
+        if (
+          entity?.title &&
+          !(context && (context as Record<string, unknown>)[CONTEXT_MENU_HEADING_KEY])
+        ) {
+          const type = String(entity.type ?? "Item").replace(/[_-]+/g, " ");
+          return {
+            ...((context as Record<string, unknown> | null) ?? {}),
+            [CONTEXT_MENU_HEADING_KEY]: {
+              label: type.charAt(0).toUpperCase() + type.slice(1),
+              text: entity.title,
+            },
+          } as ResolvedContextMenuContext;
+        }
+        return context;
       }}
       extraSections={resolved ? itemMenuConfigToExtraSections(resolved) : []}
       onMenuOpenChange={onOpenChange}

@@ -29,6 +29,10 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { readOf } from '@/components/read-state/ReadGate';
+import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
+import { UntrustedCount } from '@/components/official/stale-data/UntrustedCount';
+import { ErrorAlchemyMenu } from '@/components/errors/ErrorAlchemyMenu';
 import { toast } from "@/lib/toast";
 import FeedbackDetailDialog from './FeedbackDetailDialog';
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
@@ -56,6 +60,7 @@ export default function WorkQueueTab() {
     const [categories, setCategories] = useState<FeedbackCategory[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<unknown>(null);
+    const [categoriesFailed, setCategoriesFailed] = useState(false);
     const [reordering, setReordering] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<UserFeedback | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
@@ -66,20 +71,26 @@ export default function WorkQueueTab() {
             const [queueResult] = await Promise.all([
                 getAgentWorkQueue(),
                 fetch('/api/admin/feedback/categories')
-                    .then(r => r.json())
-                    .then(d => setCategories(d.categories ?? []))
-                    .catch(() => {}),
+                    .then(r => {
+                        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+                        return r.json();
+                    })
+                    .then(d => {
+                        setCategories(d.categories ?? []);
+                        setCategoriesFailed(false);
+                    })
+                    // Category labels are a garnish; their failure is said under the header.
+                    .catch(() => setCategoriesFailed(true)),
             ]);
+            // A failed read is said ONCE: ReadFailure with no rows, a stale notice over rows.
             if (queueResult.success && queueResult.data) {
                 setItems(queueResult.data);
                 setLoadError(null);
             } else {
                 setLoadError(queueResult.error ? new Error(queueResult.error) : true);
-                toast.error(`Failed to load work queue: ${queueResult.error}`);
             }
         } catch (error) {
             setLoadError(error);
-            toast.error('Failed to load work queue');
         } finally {
             setLoading(false);
         }
@@ -142,7 +153,12 @@ export default function WorkQueueTab() {
                     <div className="flex items-center gap-2">
                         <ListOrdered className="w-5 h-5 text-muted-foreground" />
                         <span className="text-sm font-medium">
-                            {items.length} item{items.length !== 1 ? 's' : ''} in queue
+                            <UntrustedCount
+                                read={readOf({ loading, error: loadError, hasData: items.length > 0 })}
+                                label="Items in queue"
+                                value={items.length}
+                            />{' '}
+                            item{items.length !== 1 ? 's' : ''} in queue
                         </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -198,6 +214,20 @@ export default function WorkQueueTab() {
                     </div>
                 </div>
 
+                {loadError && items.length > 0 ? (
+                    <StaleDataNotice
+                        className="mb-3"
+                        hasData
+                        what="the agent work queue"
+                        onRetry={() => void loadQueue()}
+                    />
+                ) : null}
+                {categoriesFailed ? (
+                    <p className="mb-3 text-xs text-muted-foreground">
+                        Couldn&apos;t load feedback categories, so category labels are missing below.
+                        <ErrorAlchemyMenu operation="Load feedback categories" />
+                    </p>
+                ) : null}
                 {loadError && items.length === 0 ? (
                     <ReadFailure error={loadError} what="the agent work queue" onRetry={() => void loadQueue()} />
                 ) : items.length === 0 ? (

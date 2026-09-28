@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   updateFeedback,
   setAdminDecision,
@@ -218,6 +219,8 @@ export default function FeedbackDetailDialog({
     feedback.category_id ?? "none",
   );
   const [categories, setCategories] = useState<FeedbackCategory[]>([]);
+  const [pickerReadFailures, setPickerReadFailures] = useState<string[]>([]);
+  const [pickerReadAttempt, setPickerReadAttempt] = useState(0);
   const [assigneeId, setAssigneeId] = useState<string>(
     feedback.assigned_to ?? "none",
   );
@@ -477,32 +480,50 @@ export default function FeedbackDetailDialog({
     setAssigneeId(feedback.assigned_to ?? "none");
   }, [feedback.id, feedback.updated_at]); // Re-sync on different item OR fresher data from parent
 
-  // Load categories, assignable admins, and parent-picker list when dialog opens
+  // Load categories, assignable admins, and parent-picker list when dialog opens.
+  // A failed picker read is SAID (one line under the header, with a retry) —
+  // never an empty dropdown that reads as "there are none".
   useEffect(() => {
+    const readJson = async (url: string) => {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      return r.json();
+    };
+    const failed = (what: string) => () =>
+      setPickerReadFailures((prev) => (prev.includes(what) ? prev : [...prev, what]));
+    const succeeded = (what: string) =>
+      setPickerReadFailures((prev) => prev.filter((w) => w !== what));
     if (open && categories.length === 0) {
-      fetch("/api/admin/feedback/categories")
-        .then((r) => r.json())
-        .then((d) => setCategories(d.categories ?? []))
-        .catch(() => {});
+      readJson("/api/admin/feedback/categories")
+        .then((d) => {
+          setCategories(d.categories ?? []);
+          succeeded("categories");
+        })
+        .catch(failed("categories"));
     }
     if (open && assignableAdmins.length === 0) {
-      fetch("/api/admin/feedback/assignable-admins")
-        .then((r) => r.json())
-        .then((d) => setAssignableAdmins(d.admins ?? []))
-        .catch(() => {});
+      readJson("/api/admin/feedback/assignable-admins")
+        .then((d) => {
+          setAssignableAdmins(d.admins ?? []);
+          succeeded("assignable admins");
+        })
+        .catch(failed("assignable admins"));
     }
     if (open && allFeedbackItems.length === 0) {
       // Load light list of all feedback items for parent picker
-      fetch("/api/admin/feedback/list-lite")
-        .then((r) => r.json())
-        .then((d) => setAllFeedbackItems(d.items ?? []))
-        .catch(() => {});
+      readJson("/api/admin/feedback/list-lite")
+        .then((d) => {
+          setAllFeedbackItems(d.items ?? []);
+          succeeded("parent items");
+        })
+        .catch(failed("parent items"));
     }
   }, [
     open,
     categories.length,
     assignableAdmins.length,
     allFeedbackItems.length,
+    pickerReadAttempt,
   ]);
 
   // Reset UI interaction state only when a completely different item is opened
@@ -1102,6 +1123,20 @@ export default function FeedbackDetailDialog({
               </div>
             </div>
           </DialogHeader>
+          {pickerReadFailures.length > 0 ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Couldn&apos;t load {pickerReadFailures.join(", ")} — those pickers
+              are incomplete.{" "}
+              <button
+                type="button"
+                className="font-medium text-primary underline-offset-2 hover:underline"
+                onClick={() => setPickerReadAttempt((n) => n + 1)}
+              >
+                Try again
+              </button>
+              <ErrorAlchemyMenu operation={`Load ${pickerReadFailures.join(", ")}`} />
+            </p>
+          ) : null}
         </div>
 
         {/* Tabbed Content */}

@@ -1326,6 +1326,26 @@ export async function resolveCredentialHome(
     }
     if (data.user_id === user.id)
       return { state: "found", scope: { kind: "mine" } };
+    // Someone else's personal credential reaches me one of two ways: shared
+    // with me by name ("Shared with me" lists it), or shared into one of my
+    // organizations' vaults (only that organization's list holds it). RLS
+    // returns my own grant rows and the organization grants of vaults I may
+    // open, so the row that exists names the list — carrying an org-vault
+    // share to "Shared with me" opened nothing (access ladder T-28).
+    const { data: grants, error: grantsError } = await supabase
+      .schema("users")
+      .from("user_secret_grants")
+      .select("user_id, organization_id")
+      .eq("credential_item_id", itemId);
+    if (grantsError) return { state: "unavailable", why: grantsError.message };
+    const byName = (grants ?? []).some((g) => g.user_id === user.id);
+    const orgShare = (grants ?? []).find((g) => g.organization_id);
+    if (!byName && orgShare?.organization_id) {
+      return {
+        state: "found",
+        scope: { kind: "organization", organizationId: orgShare.organization_id },
+      };
+    }
     return { state: "found", scope: { kind: "shared" } };
   } catch (e) {
     return {

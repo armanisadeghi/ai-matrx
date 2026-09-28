@@ -4,8 +4,9 @@
 // `*_list_scoped` RPC. The RPCs narrow with `iam.my_team_reach` in SQL; this is
 // the same answer for the client: (organization, person) pairs where the person
 // shares a live team with the signed-in person in that organization, the
-// person themselves always included (a person on no team sees exactly their
-// own items). A team is a list filter, never row security — see
+// person themselves included; an organization where they are on no team
+// contributes nothing, so a person on no team gets an empty reach and the
+// list says there is no team (2026-09-28). A team is a list filter, never row security — see
 // common-docs /systems/platform/teams/FEATURE.md.
 
 import { supabase } from "@/utils/supabase/client";

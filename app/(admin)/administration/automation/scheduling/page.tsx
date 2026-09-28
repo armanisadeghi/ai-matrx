@@ -3,6 +3,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  UntrustedCount,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
 import AppLink from "@/components/navigation/AppLink";
 import {
   Activity,
@@ -51,6 +55,12 @@ export default function SchedulingAdminOverview() {
       );
   }, []);
 
+  const healthRead: CountRead = {
+    status: error ? "error" : health ? "ready" : "loading",
+    error,
+    hasData: health !== null,
+  };
+
   return (
     <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
       <div className="flex items-center gap-2">
@@ -71,30 +81,35 @@ export default function SchedulingAdminOverview() {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <Stat
+          read={healthRead}
           label="Total tasks"
           value={health?.taskCount}
           icon={ListChecks}
           surfaceValue="task_total_count"
         />
         <Stat
+          read={healthRead}
           label="Enabled"
           value={health?.enabledCount}
           icon={CalendarCheck}
           surfaceValue="task_enabled_count"
         />
         <Stat
+          read={healthRead}
           label="Due in next hour"
           value={health?.upcomingNextHour}
           icon={CalendarClock}
           surfaceValue="task_due_next_hour_count"
         />
         <Stat
+          read={healthRead}
           label="Runs (24h)"
           value={health?.runsLast24h}
           icon={Activity}
           surfaceValue="runs_last_24h_count"
         />
         <Stat
+          read={healthRead}
           label="Failures (24h)"
           value={health?.failuresLast24h}
           icon={ShieldAlert}
@@ -102,6 +117,7 @@ export default function SchedulingAdminOverview() {
           surfaceValue="failures_last_24h_count"
         />
         <Stat
+          read={healthRead}
           label="Orphan leases"
           value={health?.orphanLeases}
           icon={AlertTriangle}
@@ -166,9 +182,12 @@ function Stat({
   icon: Icon,
   tone = "default",
   surfaceValue,
+  read,
 }: {
   label: string;
   value: number | undefined;
+  /** The health read behind `value`: a failed read shows "—", never a forever-skeleton. */
+  read: CountRead;
   icon: typeof Activity;
   tone?: "default" | "warning";
   surfaceValue: string;
@@ -179,10 +198,10 @@ function Stat({
         <div className="min-w-0">
           <div className="text-xs text-muted-foreground">{label}</div>
           <div className="text-2xl font-semibold leading-none mt-1">
-            {value === undefined ? (
+            {value === undefined && read.status === "loading" ? (
               <Skeleton className="h-7 w-12 inline-block" />
             ) : (
-              value
+              <UntrustedCount read={read} label={label} value={value ?? 0} />
             )}
           </div>
         </div>

@@ -73,8 +73,9 @@ export type ListScope =
   | { kind: "mine" }
   /**
    * MY TEAM (access ladder: "my team or department"). Rows in an organization I
-   * belong to, made by someone who shares a live team with me THERE — me always
-   * included, so a person on no team sees exactly their own items. A team is a
+   * belong to, made by someone who shares a live team with me THERE — me
+   * included where I am on a team. A person on no team sees NOTHING here (and
+   * the list says so) — never a copy of Mine (2026-09-28). A team is a
    * list filter, never an access boundary: every row here is one "orgs" would
    * also show. Server reach: `iam.my_team_reach(p_org_id)` (teams FEATURE.md).
    * `organizationId: null` = blended across every organization I belong to.

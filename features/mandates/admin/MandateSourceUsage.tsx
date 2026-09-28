@@ -239,7 +239,7 @@ export function MandateSourceUsage({
         </div>
       ) : null}
 
-      {report && !error && report.unscanned_repos.length > 0 ? (
+      {!error && report && report.unscanned_repos.length > 0 ? (
         <div
           role="status"
           className="flex items-start gap-2 rounded-md border border-warning p-3 text-sm"

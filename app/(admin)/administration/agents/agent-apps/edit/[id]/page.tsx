@@ -7,6 +7,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink, Loader2, Pencil } from "lucide-react";
@@ -95,6 +96,8 @@ export default function AdminEditAgentAppPage({
   const [app, setApp] = useState<AgentAppAdminView | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  // A failed read is not "not found": it is said as a failure, with a retry.
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [metadataOpen, setMetadataOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"admin" | "code">("admin");
   // The system category vocabulary (platform.categories, dimension='app').
@@ -106,6 +109,7 @@ export default function AdminEditAgentAppPage({
   const load = useCallback(async () => {
     setLoading(true);
     setNotFound(false);
+    setLoadError(null);
     try {
       const data = await getAgentAppById(id);
       if (!data) {
@@ -115,17 +119,11 @@ export default function AdminEditAgentAppPage({
         setApp(data);
       }
     } catch (err) {
-      toast({
-        title: "Error",
-        description:
-          err instanceof Error ? err.message : "Failed to load agent app",
-        variant: "destructive",
-      });
-      setNotFound(true);
+      setLoadError(err ?? new Error("Failed to load agent app"));
     } finally {
       setLoading(false);
     }
-  }, [id, toast]);
+  }, [id]);
 
   useEffect(() => {
     void load();
@@ -295,6 +293,19 @@ export default function AdminEditAgentAppPage({
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading agent app...
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center p-6 bg-textured">
+        <ReadFailure
+          error={loadError}
+          what="this agent app"
+          onRetry={() => void load()}
+          size="default"
+        />
       </div>
     );
   }

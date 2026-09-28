@@ -512,6 +512,7 @@ export default function AgentAppsAnalyticsPage() {
                 actions: viewApps.length > 0 ? (
                   <CopyButtons
                     size="icon"
+                    // read-gate-exempt: copy-button label counting rows the table is showing now; rendered only when there are some
                     label={`App performance (${viewApps.length})`}
                     human={() => viewApps.map(humanAgentApp).join("\n\n")}
                     json={() => viewApps}

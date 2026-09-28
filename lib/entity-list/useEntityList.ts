@@ -29,11 +29,12 @@ import {
   type EntityScopeCounts,
 } from "./types";
 import {
+  ENTITY_LIST_URL_PARAMS,
   historyModeFor,
   queryToParamPatch,
   readQueryFromParams,
 } from "./urlQuery";
-import type { ListScope } from "@/lib/list-scope/types";
+import { scopeKey, type ListScope } from "@/lib/list-scope/types";
 import { defaultListScopeFor } from "@/lib/list-scope";
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -172,10 +173,25 @@ function useQueryState(
       defaults,
     );
     const next = updater(current);
-    commitUrlParams(
-      queryToParamPatch(next, defaults),
-      historyModeFor(current, next),
+    const patch = queryToParamPatch(next, defaults);
+    // 🚨 THE LANE IS NEVER DROPPED FROM THE ADDRESS (list-shell fix D,
+    // 2026-09-28). "Absent means default" is only safe for a default that is
+    // already known — and the registry's lane lands AFTER the first render.
+    // `?scope=mine&page=2` on a list whose registry says My Orgs: any write in
+    // that window (a page change, a filter) saw `mine` equal to the not-yet-
+    // resolved default, dropped it, and the page then read the late default
+    // and opened on My Orgs page 1 — and Back returned there too. So a lane
+    // the address already names, or one the person just chose, is always
+    // written explicitly; only an untouched default stays absent.
+    const scopeParam = ENTITY_LIST_URL_PARAMS.scope;
+    const urlNamesScope = new URLSearchParams(window.location.search).has(
+      scopeParam,
     );
+    const scopeChosen = scopeKey(next.scope) !== scopeKey(current.scope);
+    if (patch[scopeParam] === null && (urlNamesScope || scopeChosen)) {
+      patch[scopeParam] = scopeKey(next.scope);
+    }
+    commitUrlParams(patch, historyModeFor(current, next));
   };
 
   return [query, setQuery];

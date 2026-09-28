@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useState, useTransition } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useRouter } from "next/navigation";
 import {
   Activity,
@@ -159,6 +161,9 @@ export default function AgentAppsAdminDashboardPage() {
       })),
     });
 
+  // Counts come from the apps read: "—" when it failed, last known when a refresh failed.
+  const appsRead = readOf({ loading, error: loadError, hasData: apps.length > 0 });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
@@ -291,7 +296,7 @@ export default function AgentAppsAdminDashboardPage() {
                           )}
                         </div>
                         <Badge variant="secondary" className="text-xs">
-                          {count.toLocaleString()}
+                          <UntrustedCount read={appsRead} label="Apps" value={count.toLocaleString()} />
                         </Badge>
                       </div>
                       <div>
@@ -316,7 +321,10 @@ export default function AgentAppsAdminDashboardPage() {
                 <Star className="h-4 w-4 text-warning" />
                 Featured apps
                 <span className="text-xs font-normal text-muted-foreground">
-                  (showing {featuredApps.length} of {allFeaturedApps.length})
+                  (showing{" "}
+                  <UntrustedCount read={appsRead} label="Featured apps shown" value={featuredApps.length} />{" "}
+                  of{" "}
+                  <UntrustedCount read={appsRead} label="Featured apps" value={allFeaturedApps.length} />)
                 </span>
               </h2>
               <div className="flex items-center gap-1.5">
@@ -335,6 +343,7 @@ export default function AgentAppsAdminDashboardPage() {
                 {allFeaturedApps.length > 0 && (
                   <CopyButtons
                     size="icon"
+                    // read-gate-exempt: copy-button label counting the rows it copies; rendered only when there are some
                     label={`Featured apps (${allFeaturedApps.length})`}
                     human={() => allFeaturedApps.map(humanAgentApp).join("\n\n")}
                     json={() => allFeaturedApps}
@@ -413,7 +422,10 @@ export default function AgentAppsAdminDashboardPage() {
                 <Activity className="h-4 w-4 text-primary" />
                 Recently updated
                 <span className="text-xs font-normal text-muted-foreground">
-                  (showing {recentlyUpdated.length} of {allRecentlyUpdated.length})
+                  (showing{" "}
+                  <UntrustedCount read={appsRead} label="Recent apps shown" value={recentlyUpdated.length} />{" "}
+                  of{" "}
+                  <UntrustedCount read={appsRead} label="Recently updated apps" value={allRecentlyUpdated.length} />)
                 </span>
               </h2>
               <div className="flex items-center gap-1.5">
@@ -432,6 +444,7 @@ export default function AgentAppsAdminDashboardPage() {
                 {allRecentlyUpdated.length > 0 && (
                   <CopyButtons
                     size="icon"
+                    // read-gate-exempt: copy-button label counting the rows it copies; rendered only when there are some
                     label={`Recently updated apps (${allRecentlyUpdated.length})`}
                     human={() =>
                       allRecentlyUpdated.map(humanAgentApp).join("\n\n")

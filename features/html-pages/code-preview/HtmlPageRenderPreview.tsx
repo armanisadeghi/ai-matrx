@@ -7,6 +7,7 @@ import { selectTabById } from "@/features/code/redux/tabsSlice";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import type { HtmlPageRecord } from "@/features/html-pages/types";
 import type { RenderPreviewerProps } from "@/features/code/preview/renderPreviewRegistry";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Render-preview for `html-page:` library tabs.
@@ -28,6 +29,8 @@ export function HtmlPageRenderPreview({
   const sourceTab = useAppSelector(selectTabById(sourceTabId));
   const isDirty = sourceTab?.dirty === true;
   const [page, setPage] = useState<HtmlPageRecord | null>(null);
+  // The fallback to the buffer is said, never silent.
+  const [metaError, setMetaError] = useState<unknown>(null);
 
   // Load (and re-load after save) so clean-state URL preview picks up the
   // latest published `updated_at` / content. Dirty edits stay on srcDoc.
@@ -38,13 +41,15 @@ export function HtmlPageRenderPreview({
       .then((data) => {
         if (cancelled) return;
         setPage(data as HtmlPageRecord);
+        setMetaError(null);
       })
       .catch((err: unknown) => {
-        // Non-fatal: live buffer still previews via srcDoc.
+        // Non-fatal: live buffer still previews via srcDoc — and says so.
         console.error(
           "[HtmlPageRenderPreview] failed to load page metadata:",
           err,
         );
+        if (!cancelled) setMetaError(err);
       });
     return () => {
       cancelled = true;
@@ -74,6 +79,14 @@ export function HtmlPageRenderPreview({
   const useLiveUrl = !!page?.url && !isDirty;
 
   return (
+    <div className="flex h-full w-full flex-col">
+    {metaError != null && !isDirty && (
+      <p className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1 text-[11px] text-muted-foreground">
+        Previewing your buffer — the published page couldn&apos;t be read, so
+        relative assets may not resolve.
+        <ErrorAlchemyMenu error={metaError} size="xs" operation="Load the published page" />
+      </p>
+    )}
     <iframe
       key={
         useLiveUrl ? `live-${page!.id}-${page!.updated_at}` : `draft-${rowId}`
@@ -85,9 +98,10 @@ export function HtmlPageRenderPreview({
           }
         : { srcDoc: code })}
       sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-      className="block h-full w-full border-0 bg-white dark:bg-zinc-950"
+      className="block min-h-0 w-full flex-1 border-0 bg-white dark:bg-zinc-950"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
       allowFullScreen
     />
+    </div>
   );
 }

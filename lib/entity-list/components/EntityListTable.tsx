@@ -490,7 +490,16 @@ export function EntityListTable<TRow>({
       tableClassName="h-auto max-h-full"
       query={{
         mode: "controlled",
-        totalItems: total,
+        // 🚨 A PAGE THE URL NAMES SURVIVES THE LOAD (list-shell fix D,
+        // 2026-09-28). The table clamps `page` to the page count it can see
+        // and reports the clamp as a state change. While the rows are still
+        // loading (or the read failed) the total is 0, so `?scope=mine&page=2`
+        // was clamped to page 1 before the first answer arrived — and that
+        // write dropped the lane from the address too. No total is known yet,
+        // so the table is told the named page exists; it clamps only against
+        // a real count.
+        totalItems:
+          isLoading || totalUnknown ? Math.max(total, page * pageSize) : total,
         state: {
           page,
           pageSize,
