@@ -200,11 +200,14 @@ function ActiveBadge({ active }: { active: boolean }) {
  * While Peek is open the table gets what is left of the width, so it keeps
  * only the triage columns that fit whole beside the pinned Actions column
  * (a column half under Actions read as "4 in DI"). `wide` = the viewport
- * has room for Values and Checked too.
+ * has room for Tools and Values too.
  */
 const PEEK_COLUMNS = {
-  wide: new Set(["name", "readiness", "agentCount", "toolCount", "surfaceValueCount", "lastChecked"]),
-  narrow: new Set(["name", "readiness", "agentCount", "toolCount"]),
+  // Measured live on manage.aimatrx.com (header sort/filter icons make each
+  // column wider than its declared width): at 1280 Checked was cut, at 1024
+  // Tools was. The Peek's own tabs carry Values/Agents/Tools counts.
+  wide: new Set(["name", "readiness", "agentCount", "toolCount", "surfaceValueCount"]),
+  narrow: new Set(["name", "readiness", "agentCount"]),
 };
 
 function surfaceColumns(
