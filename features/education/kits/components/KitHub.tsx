@@ -8,6 +8,7 @@
 // the learner one inviting next move.
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -15,9 +16,13 @@ import {
   FileSearch,
   Flag,
   NotebookPen,
+  Pencil,
   Route,
+  Trash2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
@@ -38,13 +43,17 @@ import {
 } from "@/features/scopes/registry/entityRegistry";
 import {
   kitArtifactKey,
+  deleteKit,
   readKit,
   readKitArtifactStats,
+  removeKitMember,
+  renameKit,
   type KitArtifactStats,
   type StudyKit,
 } from "../kitService";
 import { MakeMoreFromKit } from "./MakeMoreFromKit";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/education-kits.manifest";
@@ -56,6 +65,9 @@ import {
   STUDY_PATH,
   TRACKED_KINDS,
 } from "../kitSurfaceScope";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { parseKitDeletes, parseKitUpdates } from "../kitWrites";
 
 const FORMAT_PROMISE: Record<TargetKind, string> = {
   deck: "Build recall one card at a time.",
@@ -86,6 +98,7 @@ function ArtifactCard({
   statsLoading: boolean;
   statsFailed: boolean;
 }) {
+  const router = useRouter();
   const kind = artifact.targetKind;
   if (!kind) return null;
   const look = TARGET_PRESENTATION[kind];
@@ -213,6 +226,10 @@ export function KitHub({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [managing, setManaging] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [writing, setWriting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -268,10 +285,35 @@ export function KitHub({
       statsLoading,
       statsFailed,
     });
+  const getWriteHandlers = () => {
+    if (!kit) return {};
+    return collectionWriteHandlers({
+      plural: "kits", singular: "kit",
+      update: {
+        parse: (value) => parseKitUpdates(value, [kit]),
+        run: async (plan) => {
+          await renameKit(plan.kit, plan.title);
+          setRefreshKey((key) => key + 1);
+          return { id: plan.kit.sourceId, name: plan.title };
+        },
+        nameOf: (plan) => plan.title,
+        changedOf: () => ["title"],
+      },
+      delete: {
+        parse: (value) => parseKitDeletes(value, [kit]),
+        run: async (plan) => {
+          await deleteKit(plan);
+          return { id: plan.sourceId, name: plan.title };
+        },
+        nameOf: (plan) => plan.title,
+      },
+    }, refuseSurfaceWrite);
+  };
   const withSurface = (children: ReactNode) => (
     <SurfaceRuntimeProvider
       surfaceName={EDUCATION_KITS_SURFACE_NAME}
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
       {children}
     </SurfaceRuntimeProvider>
@@ -358,6 +400,50 @@ export function KitHub({
     : undefined;
   const studyNotes = ordered.find((artifact) => artifact.targetKind === "notes");
 
+  const saveTitle = async () => {
+    setWriting(true);
+    setWriteError(null);
+    try {
+      await renameKit(kit, draftTitle);
+      setManaging(false);
+      setRefreshKey((key) => key + 1);
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : "Could not rename this study kit.");
+    } finally {
+      setWriting(false);
+    }
+  };
+  const removeMember = async (artifact: GeneratedArtifact) => {
+    setWriting(true);
+    setWriteError(null);
+    try {
+      await removeKitMember(kit, artifact);
+      setRefreshKey((key) => key + 1);
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : "Could not remove this study aid.");
+    } finally {
+      setWriting(false);
+    }
+  };
+  const removeWholeKit = async () => {
+    const accepted = await confirm({
+      title: "Delete this study kit?",
+      description: "This removes the kit grouping only. Your source material and study aids stay saved.",
+      confirmLabel: "Delete kit",
+      variant: "destructive",
+    });
+    if (!accepted) return;
+    setWriting(true);
+    setWriteError(null);
+    try {
+      await deleteKit(kit);
+      router.push("/education/kits");
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : "Could not delete this study kit.");
+      setWriting(false);
+    }
+  };
+
   return withSurface(
     <>
       <EducationToolHeader title={kit.title} />
@@ -390,7 +476,46 @@ export function KitHub({
             addTarget={addTarget}
             onConverted={() => setRefreshKey((key) => key + 1)}
           />
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 gap-1.5 sm:min-h-10"
+            onClick={() => {
+              setDraftTitle(kit.title);
+              setManaging((open) => !open);
+              setWriteError(null);
+            }}
+          >
+            {managing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+            {managing ? "Close" : "Manage kit"}
+          </Button>
         </div>
+
+        {managing && (
+          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5" aria-label="Manage study kit">
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="min-w-56 flex-1 text-sm font-medium text-foreground">
+                Kit title
+                <Input className="mt-1.5" value={draftTitle} disabled={writing} onChange={(event) => setDraftTitle(event.target.value)} />
+              </label>
+              <Button size="sm" disabled={writing || draftTitle.trim() === kit.title} onClick={() => void saveTitle()}>Save title</Button>
+            </div>
+            <p className="mt-4 text-xs text-muted-foreground">Make more from it adds a new study aid. Removing an aid only takes it out of this kit; it stays saved in your library.</p>
+            <div className="mt-3 divide-y divide-border rounded-xl border border-border">
+              {ordered.map((artifact) => (
+                <div key={artifact.edgeId} className="flex items-center gap-3 px-3 py-2.5">
+                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">{artifact.title}</span>
+                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" disabled={writing} onClick={() => void removeMember(artifact)}><X className="h-4 w-4" />Remove</Button>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground">Deleting removes the kit grouping only. Your source material and study aids remain saved.</p>
+              <Button size="sm" variant="destructive" disabled={writing} onClick={() => void removeWholeKit()}><Trash2 className="h-4 w-4" />Delete kit</Button>
+            </div>
+            {writeError && <p className="mt-3 text-sm text-destructive">{writeError} <ErrorAlchemyMenu error={writeError} /></p>}
+          </section>
+        )}
 
         <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card-textured p-5 sm:p-7">
           <div className="absolute -right-10 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />

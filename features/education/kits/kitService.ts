@@ -34,6 +34,7 @@ import {
 import { studyMediaService } from "@/features/education/media/service";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import type { TargetKind } from "@/features/education/convert/types";
+import type { AssociationTargetType } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 
 /** Artifact entity tokens a kit can contain (the converter's four writers). */
@@ -415,4 +416,59 @@ export function kitAddHref(
 ): string {
   const base = kitHref(sourceType, sourceId);
   return `${base}${base.includes("?") ? "&" : "?"}add=${target}`;
+}
+
+function writableTitle(value: string): string {
+  const title = value.trim();
+  if (!title) throw new Error("A study kit needs a title.");
+  if (title.length > 200) throw new Error("A study kit title must be 200 characters or fewer.");
+  return title;
+}
+
+/**
+ * A kit name belongs to its membership edges. Re-saving the same canonical
+ * edge updates its display metadata without touching either endpoint.
+ */
+export async function renameKit(kit: StudyKit, title: string): Promise<void> {
+  const sourceTitle = writableTitle(title);
+  for (const artifact of kit.artifacts) {
+    const result = await associationsService.add({
+      sourceType: artifact.artifactType,
+      sourceId: artifact.artifactId,
+      targetType: kit.sourceType as AssociationTargetType,
+      targetId: kit.sourceId,
+      role: "source",
+      label: artifact.title,
+      metadata: {
+        targetKind: artifact.targetKind,
+        href: artifact.href,
+        detail: artifact.detail,
+        sourceTitle,
+      },
+    });
+    if (!result.ok) throw new Error(result.error ?? "Could not rename this study kit.");
+  }
+}
+
+/** Detach one aid from this kit. Its saved artifact remains available elsewhere. */
+export async function removeKitMember(
+  kit: StudyKit,
+  artifact: Pick<GeneratedArtifact, "artifactType" | "artifactId">,
+): Promise<void> {
+  const result = await associationsService.remove({
+    sourceType: artifact.artifactType,
+    sourceId: artifact.artifactId,
+    targetType: kit.sourceType,
+    targetId: kit.sourceId,
+    role: "source",
+  });
+  if (!result.ok) throw new Error(result.error ?? "Could not remove this study aid from the kit.");
+}
+
+/**
+ * Delete this association-backed kit by removing all of its membership edges.
+ * The source material and every saved study aid remain intact.
+ */
+export async function deleteKit(kit: StudyKit): Promise<void> {
+  for (const artifact of kit.artifacts) await removeKitMember(kit, artifact);
 }

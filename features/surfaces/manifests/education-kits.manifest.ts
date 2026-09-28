@@ -14,9 +14,9 @@
  *   list    /education/kits             KitsHome — every kit the learner has
  *   detail  /education/kits/[sourceId]  KitHub   — one kit and its study path
  *
- * VIEW-ONLY: no write targets. The one action the page performs is "Make more"
- * (the ingest converter run from `MakeMoreFromKit`), a long-running generation
- * the learner starts, not a field an agent fills.
+ * Creation stays with the existing ingest flow at `/education/start`: a kit has
+ * no independent row. This surface owns the association-backed rename and
+ * delete writes; Make more remains the canonical generation door.
  */
 
 import type {
@@ -24,6 +24,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -224,6 +225,19 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "update_kits", label: "Rename study kits",
+    description: "Renames existing kits. Value is an ARRAY of { source_type: string, source_id: string, title: string }. Identity must be from kits or the open kit. This updates only the grouping title on its membership edges; source material and study aids are unchanged. The person approves before saving.",
+    valueType: "array", updatesValue: "kits", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 100,
+  },
+  {
+    name: "delete_kits", label: "Delete study kits",
+    description: "Deletes kit groupings. Value is an ARRAY of { source_type: string, source_id: string } from kits or the open kit. It removes only generated-artifact membership edges. The source material and every study aid remain saved and openable. The person approves every request.",
+    valueType: "array", updatesValue: "kits", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 110,
+  },
+];
+
 export const educationKitsManifest: SurfaceManifest = {
   surfaceName: EDUCATION_KITS_SURFACE_NAME,
   client: "matrx-user",
@@ -232,7 +246,7 @@ export const educationKitsManifest: SurfaceManifest = {
     "Study kits: every kit, and one kit's study aids with their practice progress (/education/kits).",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitters for both views (list / detail), view-only by design. Not yet stamped verified: no data-surface-value Locate anchors; no canonical v3 context menu.",
+    "Manifest + emitters for both views (list / detail), with association-backed rename and delete. Not yet stamped verified: no data-surface-value Locate anchors; no canonical v3 context menu.",
   label: "Study Kits",
   urlPattern: "/education/kits",
   intro: `<surface_intro>
@@ -240,14 +254,14 @@ You are on Study Kits at /education/kits. A study kit is one piece of the learne
 
 Read \`view\` first. In "list" the learner is choosing a kit: kits is every kit they have. In "detail" one kit is open: study_aids lists its aids along the page's study path (understand, make it stick, prove it), each with its real practice evidence, kit_totals the headline numbers, and next_challenge what the page suggests doing next.
 
-Progress numbers are measured from the learner's actual practice; explain them, never invent them. Nothing here is edited in place — new aids come from the page's Make more button, which runs the generator on the same material.
+Progress numbers are measured from the learner's actual practice; explain them, never invent them. A kit has no independent record: create one through the existing /education/start material workflow. On an open kit, update_kits renames the grouping and delete_kits removes the grouping only; it never deletes source material or study aids. New aids come from Make more, which runs the generator on the same material.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
-  writeTargets: [],
+  writeTargets,
 };
 
 export interface KitListEntry {
