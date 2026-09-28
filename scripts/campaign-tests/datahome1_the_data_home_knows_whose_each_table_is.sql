@@ -6,10 +6,12 @@
 --
 -- What must hold, from her seat:
 --   A. custom.data_home_tables() answers exactly the tables custom.tables_i_can_open() answers
---      (the same walk), in under 2 s;
+--      (the same walk) PLUS the tables the app keeps, in under 2 s;
+--   E. every table the app keeps says a kind other than "table", every other says "table"
+--      (Arman 21:40 PT: the home hides nothing, and says what each thing is);
 --   B. mine is true exactly where the Table record's created_by is her;
 --   C. shared_with_me is true exactly where a live grant names her and somebody else gave it;
---   D. the knob custom.data_home_default_scope resolves to "all" for her.
+--   D. the knobs custom.data_home_default_scope and custom.data_home_default_kind default to "all".
 --
 -- RUN IT (clone or production; always rolled back):
 --   psql "<DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/datahome1_the_data_home_knows_whose_each_table_is.sql
@@ -49,13 +51,21 @@ declare
   v_knob jsonb;
 begin
   select count(*) into v_diff from (
-    ((select table_id from _home) except (select table_id from _open))
+    ((select table_id from _home where not kept_by_the_app) except (select table_id from _open))
     union all
-    ((select table_id from _open) except (select table_id from _home))) d;
+    ((select table_id from _open) except (select table_id from _home where not kept_by_the_app))) d;
   if v_diff <> 0 then
     raise exception 'A FAILED: the home and tables_i_can_open disagree on % table(s)', v_diff;
   end if;
-  raise notice 'A passed: % tables, the same walk', (select count(*) from _home);
+  raise notice 'A passed: % tables, the same walk, plus % the app keeps',
+    (select count(*) from _home where not kept_by_the_app), (select count(*) from _home where kept_by_the_app);
+
+  select count(*) into v_diff from _home
+   where (kept_by_the_app and kind = 'table') or (not kept_by_the_app and kind <> 'table') or kind is null;
+  if v_diff <> 0 then
+    raise exception 'E FAILED: % row(s) name the wrong kind', v_diff;
+  end if;
+  raise notice 'E passed: kinds %', (select string_agg(distinct kind, ', ') from _home);
 
   select count(*) into v_diff
     from _home h join custom.record t on t.id = h.table_id
@@ -83,7 +93,12 @@ begin
   if v_knob is distinct from '"all"'::jsonb then
     raise exception 'D FAILED: custom.data_home_default_scope default is %, not "all"', coalesce(v_knob::text, 'absent');
   end if;
-  raise notice 'D passed: the home opens on All';
+  select default_value into v_knob from platform.feature_knob
+   where feature = 'custom' and key = 'data_home_default_kind';
+  if v_knob is distinct from '"all"'::jsonb then
+    raise exception 'D FAILED: custom.data_home_default_kind default is %, not "all"', coalesce(v_knob::text, 'absent');
+  end if;
+  raise notice 'D passed: the home opens on All, every kind';
 end $$;
 
 select case when :ms < 2000 then 'A timing passed: ' || round(:ms) || ' ms'
