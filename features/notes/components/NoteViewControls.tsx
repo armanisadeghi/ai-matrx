@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  setNoteEditorMode,
   setInstanceHistoryOpen,
   setInstanceOutlineOpen,
 } from "../redux/slice";
@@ -36,7 +35,7 @@ import {
 } from "../redux/selectors";
 import { cn } from "@/lib/utils";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
-import { useNoteEditorMode } from "../hooks/usePreferredDefaultEditorMode";
+import { useNoteEditorMode, useSelectNoteMode } from "../hooks/usePreferredDefaultEditorMode";
 
 /**
  * The note modes, in plain words, in the order a person meets them (Arman,
@@ -77,12 +76,10 @@ export function NoteViewControls({
   const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
   const editorMode = useNoteEditorMode(activeTabId);
 
-  const setMode = useCallback(
-    (mode: NoteViewMode) => {
-      if (activeTabId) dispatch(setNoteEditorMode({ id: activeTabId, mode }));
-    },
-    [dispatch, activeTabId],
-  );
+  const selectNoteMode = useSelectNoteMode();
+  const setMode = (mode: NoteViewMode) => {
+    if (activeTabId) selectNoteMode(activeTabId, mode);
+  };
 
   const toggleHistory = useCallback(() => {
     dispatch(setInstanceHistoryOpen({ instanceId, open: !historyOpen }));

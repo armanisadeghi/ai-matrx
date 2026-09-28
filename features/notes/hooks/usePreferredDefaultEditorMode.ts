@@ -20,12 +20,13 @@
 //   4. the person's default for the device — the knobs
 //      userPreferences.notes.defaultEditorMode (desktop, default Split) and
 //      userPreferences.notes.defaultPhoneEditorMode (phone, default Plain),
-//      saved when they pick a mode.
+//      set only on the Notes settings page (a mode click never writes them).
 //
 // Every stored value passes the one read path (`canonicalNoteEditorMode`), so a
 // value written before the one editor replaced Toast UI opens as its successor.
 
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { setNoteEditorMode } from "../redux/slice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import { canonicalNoteEditorMode } from "../redux/notes.types";
@@ -161,5 +162,23 @@ export function useRememberNoteEditorMode(): (noteId: string, mode: EditorMode) 
       mode === "write" ? "write" : mode === "plain" || mode === "split" ? "plain" : null;
     if (!remembered || memory?.[noteId] === remembered) return;
     setMemory(rememberNoteMode(memory, noteId, remembered));
+  };
+}
+
+/**
+ * THE mode click (Arman, 2026-09-27): picking a mode for a note changes ONLY
+ * that note — its mode now, and the mode it reopens in (Write, or text for
+ * Split / Plain; Read is not remembered). It NEVER writes the person's default
+ * (`notes.defaultEditorMode` / `notes.defaultPhoneEditorMode`): a click is not a
+ * choice for every note — that is how Toast UI once became everyone's default.
+ * Defaults change only on the Notes settings page. Guard:
+ * features/notes/__tests__/mode-click-never-writes-the-default.test.tsx.
+ */
+export function useSelectNoteMode(): (noteId: string, mode: EditorMode) => void {
+  const dispatch = useAppDispatch();
+  const remember = useRememberNoteEditorMode();
+  return (noteId: string, mode: EditorMode) => {
+    dispatch(setNoteEditorMode({ id: noteId, mode }));
+    remember(noteId, mode);
   };
 }

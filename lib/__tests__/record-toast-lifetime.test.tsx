@@ -179,6 +179,38 @@ it("shows a close button on an action toast and dismisses it", async () => {
   expect(toastText()).not.toContain("Saved submission to recover");
 });
 
+describe("a dismissal never overtakes the toast it dismisses", () => {
+  // Sonner's Toaster ADDS on setTimeout(0) and REMOVES through animation
+  // frames. On a busy page a frame runs first; the removal found nothing and
+  // the loading toast stayed forever (live 2026-09-28: "Preparing the latest
+  // note for editing…" over the Publish HTML dialog's Save button). Frames here
+  // run at once, before any timer — the order that loses the toast.
+  it("a loading toast dismissed right after it is raised is gone", async () => {
+    window.requestAnimationFrame = (cb: FrameRequestCallback) => {
+      cb(performance.now());
+      return nextFrameId++;
+    };
+    window.cancelAnimationFrame = () => {};
+    await act(async () => {
+      const id = toast.loading("Preparing the latest note for editing…");
+      await Promise.resolve();
+      toast.dismiss(id);
+      await wait(400);
+    });
+    expect(toastText()).not.toContain("Preparing the latest note");
+  });
+
+  it("a toast raised again under the same id after a dismissal stays (the re-create wins)", async () => {
+    await act(async () => {
+      const id = toast.loading("Uploading…");
+      toast.dismiss(id);
+      toast.success("Uploaded", { id, duration: Infinity });
+      await wait(400);
+    });
+    expect(toastText()).toContain("Uploaded");
+  });
+});
+
 describe("a record toast cannot outlive its record on screen", () => {
   it("expires on the wall clock even while the document is hidden — every toast raised through lib/toast, record or not", async () => {
     hideDocument();

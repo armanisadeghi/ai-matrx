@@ -172,6 +172,39 @@ function dismissInSonner(toastId?: ToastId): void {
   }
 }
 
+/**
+ * 🚨 A DISMISSAL NEVER OVERTAKES THE TOAST IT DISMISSES. Sonner 2.0.8's Toaster
+ * ADDS a toast on a `setTimeout(0)` but REMOVES it through requestAnimationFrame
+ * (two of them). When a frame runs before that timer — a busy page, a fast
+ * `const id = toast.loading(…); await quickWork(); toast.dismiss(id)` — the
+ * removal finds nothing, the add lands after it, and the toast stays on screen
+ * forever over whatever it covers (measured live 2026-09-28: the note editor's
+ * "Preparing the latest note for editing…" sat over the Publish HTML dialog's
+ * Save button). A dismissal of a known id is therefore queued behind every add
+ * already scheduled (timers run in order); a toast created again with the same
+ * id before it lands cancels it, as sonner itself does.
+ */
+const queuedDismissals = new Map<ToastId, ReturnType<typeof setTimeout>>();
+
+function cancelQueuedDismissal(toastId: ToastId | undefined): void {
+  if (toastId === undefined) return;
+  const timer = queuedDismissals.get(toastId);
+  if (timer === undefined) return;
+  clearTimeout(timer);
+  queuedDismissals.delete(toastId);
+}
+
+function queueDismissal(toastId: ToastId): void {
+  cancelQueuedDismissal(toastId);
+  queuedDismissals.set(
+    toastId,
+    setTimeout(() => {
+      queuedDismissals.delete(toastId);
+      dismissInSonner(toastId);
+    }, 0),
+  );
+}
+
 function forget(toastId: ToastId) {
   const entry = liveToasts.get(toastId);
   if (entry?.timer) clearTimeout(entry.timer);
@@ -353,6 +386,7 @@ function track(
     | ((t: unknown) => void)
     | undefined;
 
+  cancelQueuedDismissal(options?.id as ToastId | undefined);
   let toastId: ToastId = "";
   passthrough.onDismiss = (t: unknown) => {
     forget(toastId);
@@ -474,13 +508,20 @@ export const toast: MatrxToast = Object.assign(
     info: onWallClock(captured.toast.info as unknown as Emit),
     warning: onWallClock(captured.toast.warning as unknown as Emit, true),
     message: onWallClock(captured.toast.message as unknown as Emit),
+    // A loading toast re-created under the same id replaces the queued removal.
+    loading: ((message: unknown, options?: RecordToastOptions) => {
+      cancelQueuedDismissal(options?.id as ToastId | undefined);
+      return (captured.toast.loading as unknown as Emit)(message, options);
+    }) as typeof captured.toast.loading,
     dismiss: (id?: ToastId) => {
       if (id === undefined) {
         for (const entry of [...liveToasts.values()]) forget(entry.toastId);
-      } else {
-        forget(id);
+        for (const pending of [...queuedDismissals.keys()]) cancelQueuedDismissal(pending);
+        dismissInSonner(undefined);
+        return id;
       }
-      dismissInSonner(id);
+      forget(id);
+      queueDismissal(id);
       return id;
     },
   },

@@ -12,7 +12,7 @@ const note = (overrides: Partial<Note> = {}): Note => ({
   version: 0, content: "base", label: "Note", folder_name: null, folder_id: null, tags: [], metadata: {}, custom_fields: {},
   visibility: "personal", position: 0, project_id: null, task_id: null, created_at: "2026-09-12T00:00:00Z",
   created_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", updated_at: "2026-09-12T00:00:00Z", updated_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", deleted_at: null,
-  content_hash: null, file_path: null, last_device_id: null, sync_version: 0, ...overrides,
+  content_hash: null, file_path: null, last_device_id: null, sync_version: 0, search_engine_indexed: null, shown_to: null, ...overrides,
 });
 const source = () => captureNoteEditSource({ acknowledgedNote: note(), displayedNote: note({ content: "dirty" }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "editor", snapshotId: "snapshot" });
 const receipt = (overrides: Partial<NoteSaveReceipt> = {}): NoteSaveReceipt => ({ note: note({ content: "saved", version: 1 }), databaseWrite: "saved", succeededFields: [], failedFields: [], safeCauses: {}, ...overrides });
@@ -26,6 +26,13 @@ describe("prepared Notes receipt settlement", () => {
   it("requires an actual matching receipt and keeps wrong or void results from becoming success", async () => {
     await expect(savePreparedContentEdit({ ctx: ctx(async () => undefined as never), source: source(), newContent: "saved" })).rejects.toThrow(/receipt/i);
     await expect(savePreparedContentEdit({ ctx: ctx(async () => receipt({ note: note({ content: "other", version: 1 }) })), source: source(), newContent: "saved" })).rejects.toThrow(/does not match/i);
+  });
+
+  it("an unchanged save writes nothing and reports no error (Publish HTML → Save with no edit)", async () => {
+    const edit = jest.fn(async () => receipt({ databaseWrite: "unchanged", note: note({ content: "dirty", version: 7 }) }));
+    const prepared = source();
+    await expect(savePreparedContentEdit({ ctx: ctx(edit), source: prepared, newContent: "dirty", previousContent: "dirty" })).resolves.toBe(prepared);
+    expect(edit).not.toHaveBeenCalled();
   });
 
   it("advances only callback-local receipt state after a saved partial or post-acknowledgement failure", async () => {

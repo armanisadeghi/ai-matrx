@@ -126,6 +126,10 @@ export async function savePreparedContentEdit(args: {
   const edit = ctx.sourceAdapter.edit;
   if (!edit) throw new Error("This content no longer has a save target.");
   let source = args.source;
+  // Nothing changed since the editor opened: there is nothing to write, and a
+  // write that stores the same bytes answers with no new revision — which the
+  // receipt check reads as an impossible outcome ("invalid revision outcome").
+  if (previousContent !== undefined && newContent === previousContent) return source;
   try {
     const result = await edit({ newContent, previousContent, source, dispatch: ctx.dispatch });
     if (result && "kind" in result && result.kind === "chat-answer") onReceipt?.(result);

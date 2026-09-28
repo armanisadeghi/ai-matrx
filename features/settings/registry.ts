@@ -1,4 +1,5 @@
 import {
+  StickyNote,
   Palette,
   Bell,
   Keyboard,
@@ -87,6 +88,7 @@ import VoiceMicTab from "./tabs/VoiceMicTab";
 import MemoryTab from "./tabs/MemoryTab";
 import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
 import ListsTab from "./tabs/ListsTab";
+import NotesTab from "./tabs/NotesTab";
 import SourceLibrarySettingsTab from "@/features/source-library/settings/SourceLibrarySettingsTab";
 import type { SettingsTabDef, ResolvedSettingsTab } from "./types";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
@@ -364,6 +366,16 @@ export const settingsRegistry: SettingsTabDef[] = [
       "favorites",
     ],
     component: CodeWorkspaceTab,
+    persistence: "synced",
+  },
+  {
+    id: "editor.notes",
+    label: "Notes",
+    icon: StickyNote,
+    parentId: "editor",
+    description: "The mode a note opens in — on a computer and on a phone.",
+    searchKeywords: ["notes", "split", "plain", "write", "markdown", "default", "mode", "editor"],
+    component: NotesTab,
     persistence: "synced",
   },
   {

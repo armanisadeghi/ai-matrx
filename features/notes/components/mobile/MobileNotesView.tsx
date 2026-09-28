@@ -29,12 +29,10 @@ import MobileNotesList from "./MobileNotesList";
 import MobileNoteEditor, { type MobileEditorMode } from "./MobileNoteEditor";
 import { NOTE_PHONE_VIEW_MODES } from "../NoteViewControls";
 import {
-  DEFAULT_PHONE_EDITOR_MODE_SETTING,
   useNoteEditorMode,
+  useSelectNoteMode,
   type PhoneNoteMode,
 } from "../../hooks/usePreferredDefaultEditorMode";
-import { setNoteEditorMode } from "../../redux/slice";
-import { useSetting } from "@/features/settings/hooks/useSetting";
 
 import { NoteSyncStatusStrip } from "../NoteSyncStatusStrip";
 import { NoteCleanupButton } from "../cleanup/NoteCleanupButton";
@@ -68,10 +66,10 @@ export default function MobileNotesView({
   // default (Plain).
   const resolvedMode = useNoteEditorMode(selectedNoteId, "phone");
   const editorMode: MobileEditorMode = resolvedMode === "write" ? "write" : "plain";
-  const [, savePhoneDefaultMode] = useSetting<PhoneNoteMode>(DEFAULT_PHONE_EDITOR_MODE_SETTING);
+  // A mode tap changes only this note — never the phone default (settings page).
+  const selectNoteMode = useSelectNoteMode();
   const setEditorMode = (mode: PhoneNoteMode) => {
-    if (selectedNoteId) dispatch(setNoteEditorMode({ id: selectedNoteId, mode }));
-    savePhoneDefaultMode(mode);
+    if (selectedNoteId) selectNoteMode(selectedNoteId, mode);
   };
   // Shared filter state — owned here so header dropdown and list stay in sync
   const [filters, setFilters] =
