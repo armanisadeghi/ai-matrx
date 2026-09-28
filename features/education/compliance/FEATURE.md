@@ -400,3 +400,13 @@ education AI, and `/education/family` can set it.
   `useAiComplianceGate` primitive + consent dialog + age-band card. Wired the Study Kit
   front door. MCP-verified: under-13 + no guardian → blocked; +active guardian / adult / teen
   → allowed.
+- `2026-09-28` — Perf fix (education fleet wave 7): every education route was measured
+  live on production firing `edu_coppa_gate` TWICE per cold load — the platform-wide
+  `FirstSignInAgeGateMount` and the education-scoped `EducationAgeGateMount` each mount
+  their own `useAiComplianceGate()`, and each independently called `coppaService.getGate()`
+  on mount. Added a 3s in-flight+result cache inside `coppaService.getGate()` (module-level,
+  keyed by nothing since the gate has one subject per session) so near-simultaneous callers
+  share one round trip; `onPickBand`'s post-write re-check now passes `{ force: true }` so a
+  just-declared age band is never read stale. Proven with an isolated logic test
+  (`.scratch-perf/verify-dedup-logic.mjs`, not committed): two simultaneous mounts → 1 RPC
+  call; a forced re-check → a 2nd call. Files: `coppaService.ts`, `useAiComplianceGate.tsx`.

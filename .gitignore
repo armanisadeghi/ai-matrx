@@ -193,3 +193,4 @@ work/
 /tmp/
 /measurements/
 /scripts/.tmp-*
+.scratch-perf/
