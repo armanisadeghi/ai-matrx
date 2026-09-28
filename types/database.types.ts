@@ -22914,28 +22914,37 @@ export type Database = {
       }
       template_context_items: {
         Row: {
+          created_at: string
+          deleted_at: string | null
           description: string
           display_name: string
           id: string
           key: string
+          metadata: Json
           sort_order: number
           template_scope_type_id: string
           value_type: Database["public"]["Enums"]["context_value_type"]
         }
         Insert: {
+          created_at?: string
+          deleted_at?: string | null
           description?: string
           display_name: string
           id?: string
           key: string
+          metadata?: Json
           sort_order?: number
           template_scope_type_id: string
           value_type?: Database["public"]["Enums"]["context_value_type"]
         }
         Update: {
+          created_at?: string
+          deleted_at?: string | null
           description?: string
           display_name?: string
           id?: string
           key?: string
+          metadata?: Json
           sort_order?: number
           template_scope_type_id?: string
           value_type?: Database["public"]["Enums"]["context_value_type"]
