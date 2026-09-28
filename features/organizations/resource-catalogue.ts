@@ -162,7 +162,7 @@ export interface OrgResourceEntry {
   description: string;
 
   /**
-   * Public-schema table used for the org-owned count
+   * Table used for the org-owned count
    * (`where organization_id = orgId`) and the contribute item query
    * (owner column resolved from the canonical entity registry). Null = no
    * directly-queryable public table; only shared grants are counted.
@@ -306,7 +306,10 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: "utility",
     icon: Workflow,
     description: "Multi-step automations across agents and tools.",
-    table: "workflow",
+    table: "definition",
+    schemaName: "workflow",
+    archivedColumn: "is_archived",
+    deletedAtColumn: "deleted_at",
     hasOrgColumn: true,
     shareKey: "workflow",
     titleColumn: "name",
@@ -322,6 +325,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: LayoutTemplate,
     description: "Reusable content scaffolds and structures.",
     table: "message_template",
+    schemaName: "agent",
+    deletedAtColumn: "deleted_at",
     hasOrgColumn: true,
     shareKey: "message_template",
     titleColumn: "label",
@@ -374,6 +379,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: Table,
     description: "Structured tables of org data.",
     table: "udt_datasets",
+    schemaName: "workbench",
+    deletedAtColumn: "deleted_at",
     hasOrgColumn: true,
     shareKey: "udt_datasets",
     titleColumn: "description",
@@ -410,6 +417,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: Sheet,
     description: "Multi-sheet data workbooks.",
     table: "udt_workbooks",
+    schemaName: "workbench",
+    deletedAtColumn: "deleted_at",
     hasOrgColumn: true,
     shareKey: "udt_workbooks",
     titleColumn: "description",
@@ -425,6 +434,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: AudioLines,
     description: "Audio / meeting transcripts.",
     table: "transcripts",
+    schemaName: "transcripts",
+    deletedAtColumn: "deleted_at",
     hasOrgColumn: true,
     shareKey: "transcripts",
     titleColumn: "title",
@@ -457,6 +468,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: NotebookText,
     description: "Written notes and docs the team produces.",
     table: "notes",
+    schemaName: "workbench",
+    deletedAtColumn: "deleted_at",
     hasOrgColumn: true,
     shareKey: "notes",
     titleColumn: "label",
@@ -488,6 +501,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: Layers,
     description: "Study cards generated from your content.",
     table: "fc_set",
+    schemaName: "education",
+    deletedAtColumn: "deleted_at",
     hasOrgColumn: true,
     shareKey: "fc_set",
     titleColumn: "name",
@@ -503,6 +518,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: ListChecks,
     description: "Quizzes built from your knowledge.",
     table: "quiz_sessions",
+    schemaName: "education",
+    deletedAtColumn: "deleted_at",
     hasOrgColumn: true,
     shareKey: "quiz_session",
     titleColumn: "title",
@@ -518,6 +535,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: Frame,
     description: "Artifacts and visual canvases.",
     table: "canvas_items",
+    schemaName: "canvas",
+    deletedAtColumn: "deleted_at",
     hasOrgColumn: true,
     archivedColumn: "is_archived",
     shareKey: "canvas_items",
@@ -534,6 +553,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: Microscope,
     description: "Synthesized research topics.",
     table: "rs_topic",
+    schemaName: "research",
+    deletedAtColumn: "deleted_at",
     // rs_topic DOES carry organization_id (verified live 2026-06-27); the prior
     // `false` was stale catalogue drift.
     hasOrgColumn: true,
