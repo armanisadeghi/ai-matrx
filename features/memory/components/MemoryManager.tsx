@@ -152,20 +152,20 @@ export default function MemoryManager() {
   const handleDelete = useCallback(async () => {
     if (!selectedPath) return;
     const ok = await confirm({
-      title: "Delete memory file?",
-      description: `"${selectedPath}" will be removed from your agent memory. This cannot be undone.`,
-      confirmLabel: "Delete",
+      title: "Move memory file to Trash?",
+      description: `"${selectedPath}" will be removed from your agent memory. You can restore it from Trash.`,
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
     try {
       await deleteMemory(selectedPath);
-      toast.success("Memory deleted");
+      toast.success("Memory moved to Trash");
       setSelectedPath(null);
       setDraft("");
       await refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      toast.error(err instanceof Error ? err.message : "Failed to move to Trash");
     }
   }, [selectedPath, refresh]);
 

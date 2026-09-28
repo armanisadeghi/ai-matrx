@@ -32,6 +32,7 @@ export async function listMemory(): Promise<MemoryEntry[]> {
   const { data, error } = await supabase
     .schema("users").from("user_memory")
     .select("path, content, updated_at")
+    .is("deleted_at", null)
     .order("path");
   if (error) throw error;
   return data ?? [];
@@ -39,7 +40,9 @@ export async function listMemory(): Promise<MemoryEntry[]> {
 
 /**
  * Create or update one entry by path. The table's UNIQUE (created_by, path)
- * constraint makes this an idempotent upsert.
+ * constraint makes this an idempotent upsert. That index counts rows in Trash
+ * too, so writing a path that was moved to Trash revives that row
+ * (`deleted_at: null`) instead of colliding with it.
  */
 export async function upsertMemory(
   path: string,
@@ -49,17 +52,24 @@ export async function upsertMemory(
   const { error } = await supabase
     .schema("users").from("user_memory")
     .upsert(
-      { created_by: userId, organization_id: await ensureOrgId(undefined), path, content },
+      {
+        created_by: userId,
+        organization_id: await ensureOrgId(undefined),
+        path,
+        content,
+        deleted_at: null,
+      },
       { onConflict: "created_by,path" },
     );
   if (error) throw error;
 }
 
-/** Delete one entry by path. */
+/** Move one entry to Trash by path (soft delete; restorable from Trash). */
 export async function deleteMemory(path: string): Promise<void> {
   const { error } = await supabase
     .schema("users").from("user_memory")
-    .delete()
-    .eq("path", path);
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("path", path)
+    .is("deleted_at", null);
   if (error) throw error;
 }
