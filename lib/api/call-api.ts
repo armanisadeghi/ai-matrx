@@ -2076,7 +2076,8 @@ export function callConversationForkAndRun(
 
 // ─── Messages: Batch delete with tool-pair cascade ───────────────────────────
 //
-// POST /cx/conversations/{id}/messages/delete — hard delete. Smarter than the
+// POST /cx/conversations/{id}/messages/delete — moves messages to Trash
+// (deleted_at on the messages + their tool calls / artifacts / media). Smarter than the
 // per-row legacy path: keeps tool_use / tool_result adjacency intact so the
 // next provider call never sees an orphan tool block. Pass `dry_run: true` to
 // preview the resolved set without writing.

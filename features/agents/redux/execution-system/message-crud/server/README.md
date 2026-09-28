@@ -9,8 +9,9 @@ Thunks that talk to the **Python backend** via `callApi()` instead of going dire
   directory.** They exist so the two paths can be A/B'd in production, measured, and the loser
   deleted.
 - **Do not wire these into existing call sites silently; opt in per surface.**
-- `batchDeleteMessages` is a **hard** delete (the Supabase twin soft-deletes). Do not swap one for
-  the other on the assumption that they are equivalent.
+- `batchDeleteMessages` archives (sets `deleted_at` on the messages and their tool calls,
+  artifacts and media — the server twin of `cx_message_soft_delete`). It differs from the
+  Supabase path only in its selector grammar and tool-pair cascade. Nothing here destroys a row.
 - `ConversationForkedEvent` (`features/agents/types/conversation-stream-events.ts`) is deliberately
   NOT in `api-types.ts` — stream-event payloads are not OpenAPI-shaped. Do not "fix" that by adding
   it to the generated types.

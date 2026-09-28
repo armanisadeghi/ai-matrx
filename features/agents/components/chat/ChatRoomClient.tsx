@@ -1054,7 +1054,7 @@ export function ChatRoomClient({
       delete: {
         parse: (value) => parseDeleteMessagesValue(value, messageSnapshots()),
         run: async (message: ChatMessageSnapshot) => {
-          // The message menu's "Delete here".
+          // The message menu's "Move to Trash".
           await dispatch(
             deleteMessage({ conversationId, messageId: message.id }),
           ).unwrap();

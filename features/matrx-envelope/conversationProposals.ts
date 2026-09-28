@@ -59,6 +59,7 @@ export async function fetchStoredDirectiveShells(
     .select("id, content, created_at")
     .eq("conversation_id", conversationId)
     .eq("role", "assistant")
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
   if (error) {

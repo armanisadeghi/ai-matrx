@@ -229,6 +229,7 @@ export async function loadJudgedState(item: ReviewItem): Promise<JudgedState> {
     .select("content")
     .eq("conversation_id", item.conversationId)
     .eq("role", "user")
+    .is("deleted_at", null)
     .lt("position", answer.position)
     .order("position", { ascending: false })
     .limit(1)

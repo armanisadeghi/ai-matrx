@@ -1,13 +1,13 @@
 /**
- * batchDeleteMessages — server-side hard delete with smart tool-pair cascade.
+ * batchDeleteMessages — server-side move-to-Trash with smart tool-pair cascade.
  * Parallel to `deleteMessage` (looped soft-delete via the
  * `cx_message_soft_delete` Supabase RPC).
  *
  * Endpoint: `POST /cx/conversations/{id}/messages/delete`. The server
  * resolves the selector to a concrete set of message ids, optionally
  * extends the set to keep `tool_use` / `tool_result` pairs adjacent
- * (`cascade_tool_pairs: true` — default), and hard-deletes them in one
- * transaction. `dry_run: true` returns the resolved set without writing.
+ * (`cascade_tool_pairs: true` — default), and archives them (deleted_at) in one
+ * call. `dry_run: true` returns the resolved set without writing.
  *
  * After a successful delete, reloads the conversation bundle so messages
  * and observability slices mirror the new DB state exactly. Skips

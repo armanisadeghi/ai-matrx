@@ -464,7 +464,7 @@ const surfaceSpecific: SurfaceValue[] = [
 //                       editor's save). Both end in `cx_message_edit`, which
 //                       archives the prior text into `content_history`, marks
 //                       the row edited and busts the conversation cache.
-//   delete_messages   — `deleteMessage` (the message menu's "Delete here").
+//   delete_messages   — `deleteMessage` (the message menu's "Move to Trash").
 //   regenerate_last_answer — `regenerateAnswer` (the answer menu's Regenerate).
 //   fork_conversation — `forkConversation` + `promptForkOutcome` (Fork here).
 //   stop_response     — `cancelExecution` (the composer's Stop button).

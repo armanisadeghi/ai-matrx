@@ -3,7 +3,7 @@
 /**
  * DeleteMessageDialog — destructive-vs-fork choice for a single message.
  *
- * "Delete here" runs `deleteMessage` (in-place soft-delete + tool-call
+ * "Move to Trash" runs `deleteMessage` (in-place soft-delete + tool-call
  * cascade). "Fork without this message" forks at position - 1 then deletes
  * the message on the fork — preserving the original branch. Cancel closes.
  *
@@ -63,13 +63,13 @@ export function DeleteMessageDialog({
     selectToolCallsForMessage(messageId),
   );
 
-  const title = "Delete this message?";
+  const title = "Move this message to Trash?";
   const description = (() => {
     if (cascadedToolCalls.length === 0) {
-      return "This will permanently remove the message from the conversation.";
+      return "The message leaves the conversation and the model no longer sees it. You can restore it from Trash.";
     }
     const noun = cascadedToolCalls.length === 1 ? "tool call" : "tool calls";
-    return `This will remove the message and ${cascadedToolCalls.length} attached ${noun} from the conversation.`;
+    return `The message and ${cascadedToolCalls.length} attached ${noun} leave the conversation and the model no longer sees them. You can restore them from Trash.`;
   })();
 
   if (isMobile) {
@@ -88,7 +88,7 @@ export function DeleteMessageDialog({
                 onConfirmDelete();
               }}
             >
-              Delete here
+              Move to Trash
             </Button>
             {canFork && (
               <Button
@@ -136,7 +136,7 @@ export function DeleteMessageDialog({
               onConfirmDelete();
             }}
           >
-            Delete here
+            Move to Trash
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

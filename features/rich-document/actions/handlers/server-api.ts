@@ -160,7 +160,7 @@ registerAction({
 
 registerAction({
   id: "server-api-admin-delete-this",
-  label: "Delete this message (server)",
+  label: "Move this message to Trash (server)",
   icon: Trash2,
   iconColor: "text-red-500 dark:text-red-400",
   category: "admin",
@@ -177,11 +177,11 @@ registerAction({
         "@/components/dialogs/confirm/ConfirmDialogHost"
       );
       const ok = await confirm({
-        title: "Delete this message?",
+        title: "Move this message to Trash?",
         description:
-          "Hard delete via the new server endpoint. Tool pairs cascade automatically. Reload follows.",
+          "Archives it through the server endpoint; its tool pairs go with it. The model no longer sees it, and you can restore it from Trash. Reload follows.",
         variant: "destructive",
-        confirmLabel: "Delete",
+        confirmLabel: "Move to Trash",
       });
       if (!ok) return;
       const { batchDeleteMessages } = await import(
@@ -195,7 +195,7 @@ registerAction({
           }),
         )
         .unwrap();
-      toast.success("Message deleted (server)");
+      toast.success("Moved to Trash (server)");
     } catch (err) {
       toast.error(getErrorMessage(err, "Server delete failed"));
     }
@@ -204,7 +204,7 @@ registerAction({
 
 registerAction({
   id: "server-api-admin-delete-from-here",
-  label: "Delete this + everything after (server)",
+  label: "Move this + everything after to Trash (server)",
   icon: Trash2,
   iconColor: "text-red-600 dark:text-red-500",
   category: "admin",
@@ -223,9 +223,9 @@ registerAction({
       const ok = await confirm({
         title: "Truncate conversation from here?",
         description:
-          "Hard deletes this message and every message that comes after it. Cannot be undone.",
+          "Moves this message and every message after it to Trash. The model no longer sees them, and you can restore them from Trash.",
         variant: "destructive",
-        confirmLabel: "Delete forward",
+        confirmLabel: "Move to Trash",
       });
       if (!ok) return;
       const { batchDeleteMessages } = await import(
@@ -239,7 +239,7 @@ registerAction({
           }),
         )
         .unwrap();
-      toast.success("Truncated from here (server)");
+      toast.success("Moved to Trash from here (server)");
     } catch (err) {
       toast.error(getErrorMessage(err, "Server truncate failed"));
     }
@@ -248,7 +248,7 @@ registerAction({
 
 registerAction({
   id: "server-api-admin-delete-dryrun",
-  label: "Dry-run: delete this + after (server)",
+  label: "Dry-run: move this + after to Trash (server)",
   icon: ListFilter,
   iconColor: "text-slate-500 dark:text-slate-400",
   category: "admin",
@@ -281,7 +281,7 @@ registerAction({
           ? ` (incl. ${cascadedIds.length} cascaded tool row${cascadedIds.length === 1 ? "" : "s"})`
           : "";
       toast.info(
-        `Would delete ${allIds.length} message${allIds.length === 1 ? "" : "s"}${cascadeNote}`,
+        `Would move ${allIds.length} message${allIds.length === 1 ? "" : "s"}${cascadeNote}`,
         {
           description:
             allIds.length > 0
