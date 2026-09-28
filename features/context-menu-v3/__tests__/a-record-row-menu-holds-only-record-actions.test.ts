@@ -34,7 +34,7 @@ import type { ContextMenuActions } from "../hooks/useContextMenuActions";
 
 const noop = () => {};
 
-function engine(): ContextMenuActions {
+function engine(over: Partial<ContextMenuActions> = {}): ContextMenuActions {
   return {
     scope: { content: "Research" },
     actionText: { text: "Research", source: "content" },
@@ -70,6 +70,7 @@ function engine(): ContextMenuActions {
     surfaceSection: { id: "surface-info", items: [] },
     handleEntrySelect: noop,
     handleBoundAgentExecute: noop,
+    ...over,
   } as unknown as ContextMenuActions;
 }
 
@@ -83,8 +84,8 @@ const folderSection = {
   ],
 };
 
-async function ids(recordActionsOnly: boolean) {
-  const model = buildMenuModel(engine(), {
+async function ids(recordActionsOnly: boolean, over: Partial<ContextMenuActions> = {}) {
+  const model = buildMenuModel(engine(over), {
     selectedText: "",
     canUndo: false,
     canRedo: false,
@@ -135,6 +136,18 @@ describe("a record-actions-only menu (list row, folder)", () => {
       { id: "text-cleanup", category: "ai" },
     ]);
     expect(excluded.sort()).toEqual(["compare-with-base", "summarize-and-listen", "tts-play"]);
+  });
+
+  it("folder: over no record source (only a name), no Copy / Copy as / document rows — its own rows only", async () => {
+    const raw = {
+      registryActions: [{ id: "copy-markdown", label: "Copy as Markdown", category: "copy" }],
+      copyVariantActions: [{ id: "copy-markdown", label: "Copy as Markdown", category: "copy" }],
+      richDocCtx: { source: { type: "raw" } },
+    } as unknown as Partial<ContextMenuActions>;
+    const got = await ids(true, raw);
+    expect(got).not.toContain("cm:copy");
+    expect(got).not.toContain("cm:copy-as");
+    expect(got).toEqual(expect.arrayContaining(["cm:x:rename", "cm:x:archive"]));
   });
 
   it("full menu: without the mode the editor rows are still there", async () => {

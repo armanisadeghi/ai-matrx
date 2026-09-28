@@ -92,7 +92,12 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
     [registry, instanceId],
   );
 
-  const hasRichDocument = m.registryActions.length > 0;
+  // A record-actions-only menu over no record source (a folder: its name is the
+  // only text) contributes no document rows — no Copy as, Export, Save to or
+  // agent handoff of a folder's name (page-pass /notes, 2026-09-28).
+  const hasRichDocument =
+    m.registryActions.length > 0 &&
+    !(menuProps.recordActionsOnly && m.richDocCtx.source.type === "raw");
   // The source can be written back only when its adapter can save, or the
   // menu itself edits the field. A raw source (a table row's words, rendered
   // text) is read-only by definition — marking it writable put "Open in

@@ -990,13 +990,16 @@ export function buildMenuModel(
   // the registry's AI submenu); a folder has none. (page-pass /notes, 2026-09-28)
   if (recordActionsOnly) {
     const recordSections: MenuSection[] = [];
-    const clipboardRecord = compactNodes([hasRegistry ? copy : null, copyAs, json]);
+    // A record with no content source (a folder: only its NAME is on hand) has
+    // no document to copy, export or hand an agent — only its own rows.
+    const recordHasDocument = hasRegistry && m.richDocCtx?.source?.type !== "raw";
+    const clipboardRecord = compactNodes([recordHasDocument ? copy : null, recordHasDocument ? copyAs : null, recordHasDocument ? json : null]);
     if (clipboardRecord.length > 0) {
       recordSections.push({ id: "clipboard", group: "clipboard", nodes: clipboardRecord });
     }
-    if (registry) recordSections.push({ id: "registry", group: "document", nodes: registry });
+    if (registry && recordHasDocument) recordSections.push({ id: "registry", group: "document", nodes: registry });
     recordSections.push(...extras["after-clipboard"]);
-    if (exportMenu || convert) {
+    if (recordHasDocument && (exportMenu || convert)) {
       recordSections.push({ id: "document-out", group: "document", nodes: compactNodes([exportMenu, convert]) });
     }
     if (attach || share) {
