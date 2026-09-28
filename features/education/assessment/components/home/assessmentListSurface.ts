@@ -23,7 +23,7 @@ import {
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
 import { assessmentService } from "../../data/assessmentService";
-import { fetchOwnAssessmentsFor } from "../../data/assessmentListService";
+import { fetchEditableAssessmentsFor } from "../../data/assessmentListService";
 import type { AssessmentPatch } from "../../data/types";
 import { KIND_CONFIG, type KindConfig } from "../kindConfig";
 import { displayTitle } from "@/components/markdown-core/plain-title";
@@ -117,8 +117,10 @@ export function buildAssessmentListScope(input: {
           assessment_list: buildAssessmentListBundle(list),
           visible_assessments: list.rows.map(toSummary),
           visible_assessment_ids: list.rows.map((r) => r.id),
+          // The rows the person may EDIT (own or editor access) — the same
+          // set the row menu offers Edit/Archive on, so agent and person agree.
           my_assessments: list.rows
-            .filter((r) => r.created_by === userId)
+            .filter((r) => r.my_can_edit)
             .map(
               (r): MyAssessmentSummary => ({
                 id: r.id,
@@ -350,7 +352,7 @@ function bindOps(
   const { list, userId, config } = input;
   let current: CurrentAssessment[] = [];
   const load = async (value: unknown) => {
-    current = await fetchOwnAssessmentsFor({ userId, kind: config.kind, ...mentioned(value) });
+    current = await fetchEditableAssessmentsFor({ userId, kind: config.kind, ...mentioned(value) });
   };
   const afterWrite = () => list.refresh();
   const ops: CollectionOps = {

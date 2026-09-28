@@ -176,17 +176,19 @@ function AssessmentPhoneCard({
     <article
       // The shell's right-click / long-press menu resolves the row from this.
       data-row-id={row.id}
-      className="matrx-touch-targets rounded-lg border border-border bg-card px-3 py-1.5"
+      className="matrx-touch-targets rounded-lg border border-border bg-card py-1 pl-3 pr-1"
     >
-      <div className="flex items-start gap-1">
-        <div className="min-w-0 flex-1 text-sm font-medium leading-snug [&_.truncate]:!whitespace-normal [&_.truncate]:line-clamp-2 [&_a]:block [&_a]:py-2">
-          {controls.renderCell("title")}
+      {/* One row: the name (and its facts under it) beside Take and the menu —
+          about 72px a card, so a phone shows twice as many quizzes. */}
+      <div className="flex items-center gap-1">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium leading-5 [&_a]:block [&_a]:truncate">
+            {controls.renderCell("title")}
+          </div>
+          <p className="truncate text-xs leading-5 text-muted-foreground">{facts.join(" · ")}</p>
         </div>
-        <div className="flex shrink-0 items-center">{controls.actions}</div>
-      </div>
-      <div className="flex items-center justify-between gap-2 pb-1">
-        <p className="min-w-0 truncate text-xs text-muted-foreground">{facts.join(" · ")}</p>
         <TakeCell row={row} config={config} />
+        <div className="flex shrink-0 items-center">{controls.actions}</div>
       </div>
     </article>
   );
@@ -435,6 +437,12 @@ export function buildAssessmentListConfig(input: {
     prefsDefaults: { sort: "updated", direction: "desc" },
     getRowId: (row) => row.id,
     getRowName: (row) => row.title,
+    // Twins on screen (same title) are told apart by what differs most
+    // visibly — their question count — beside the shell's creation date. The
+    // note appears only when two visible rows share a name.
+    lookalike: {
+      detail: (row) => `${row.question_count} ${row.question_count === 1 ? "question" : "questions"}`,
+    },
     getRowEntity: (row) => ({
       type: "assessment",
       id: row.id,

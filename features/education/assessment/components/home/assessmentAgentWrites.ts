@@ -180,7 +180,7 @@ function findAssessment(
   const found = list.find((a) => a.id === id.trim());
   if (!found)
     throw new ListLevelProblem(
-      `${where}.id "${id}" is not one of the person's own assessments of this kind (my_assessments). Ones other people shared can be taken but not changed here.`,
+      `${where}.id "${id}" is not one the person may edit (my_assessments lists the ones on screen they may). Ones they can only take cannot be changed here.`,
     );
   return found;
 }

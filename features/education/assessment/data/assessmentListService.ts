@@ -12,6 +12,7 @@
 
 import { displayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
+import { canActOn } from "@/features/access-gate/service/canActOn";
 import type { Json } from "@/types/database.types";
 import type { AssessmentKind } from "./types";
 
@@ -154,42 +155,44 @@ export async function fetchAssessmentFacets(
 }
 
 /**
- * The person's own assessments of one kind that an agent write names — by id,
- * or (for create's duplicate check) by title — read narrowly, never the whole
- * library.
+ * The assessments of one kind that an agent write names and the person may
+ * EDIT — by id (their own, or any they hold editor access to: the same
+ * `iam.has_access` answer the list's `my_can_edit` gives, so the agent's
+ * editable set is exactly the person's), or by title among their own (create's
+ * duplicate check). Read narrowly, never the whole library.
  */
-export async function fetchOwnAssessmentsFor(input: {
+export async function fetchEditableAssessmentsFor(input: {
   userId: string;
   kind: AssessmentKind;
   ids: string[];
   titles: string[];
 }): Promise<{ id: string; title: string; archived: boolean }[]> {
   const out = new Map<string, { id: string; title: string; archived: boolean }>();
-  const add = (rows: { id: string; title: string; deleted_at: string | null }[] | null) => {
-    for (const r of rows ?? [])
-      out.set(r.id, { id: r.id, title: displayTitle(r.title), archived: r.deleted_at !== null });
-  };
+  type Row = { id: string; title: string; deleted_at: string | null; created_by: string | null };
+  const add = (r: Row) =>
+    out.set(r.id, { id: r.id, title: displayTitle(r.title), archived: r.deleted_at !== null });
   const ids = input.ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id));
   if (ids.length > 0) {
     const { data, error } = await EDU()
       .from("assessment")
-      .select("id, title, deleted_at")
-      .eq("created_by", input.userId)
+      .select("id, title, deleted_at, created_by")
       .eq("assessment_kind", input.kind)
       .in("id", ids);
     if (error) fail("read", error);
-    add(data as { id: string; title: string; deleted_at: string | null }[] | null);
+    for (const r of (data ?? []) as Row[]) {
+      if (r.created_by === input.userId || (await canActOn("assessment", r.id, "editor"))) add(r);
+    }
   }
   for (const title of input.titles.filter((t) => t.trim())) {
     const { data, error } = await EDU()
       .from("assessment")
-      .select("id, title, deleted_at")
+      .select("id, title, deleted_at, created_by")
       .eq("created_by", input.userId)
       .eq("assessment_kind", input.kind)
       .is("deleted_at", null)
       .ilike("title", title.trim().replace(/[\\%_]/g, (c) => `\\${c}`));
     if (error) fail("read", error);
-    add(data as { id: string; title: string; deleted_at: string | null }[] | null);
+    for (const r of (data ?? []) as Row[]) add(r);
   }
   return [...out.values()];
 }

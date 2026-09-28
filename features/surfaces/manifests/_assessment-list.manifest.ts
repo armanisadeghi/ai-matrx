@@ -120,7 +120,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     {
       name: "my_assessments",
       label: `My ${w.plural}`,
-      description: `The person's OWN ${w.plural} among the rows on screen (only these can be changed by update_${w.targetPlural} / delete_${w.targetPlural}) as { id, title, topic, exam_type, depth, description, archived }. The list pages on the server, so update/delete still accept the id of any ${w.noun} the person made. Absent until the list loads; an empty array when none on screen are theirs.`,
+      description: `The ${w.plural} on screen the person may EDIT — their own, and any they hold editor access to (an organization's, a grant) — the same rows that offer Edit and Archive; only these can be changed by update_${w.targetPlural} / delete_${w.targetPlural} as { id, title, topic, exam_type, depth, description, archived }. The list pages on the server, so update/delete still accept the id of any ${w.noun} the person may edit. Absent until the list loads; an empty array when none on screen are theirs.`,
       valueType: "array",
       alwaysAvailable: false,
       typicalCharCount: 2500,
@@ -219,7 +219,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     {
       name: `update_${w.targetPlural}`,
       label: `Update ${w.plural}`,
-      description: `Changes one or more of the person's OWN ${w.plural} (ids from my_assessments or assessment_list), saved immediately. Value is a JSON ARRAY of 1-25 objects, each { id: string (required), title?, topic?, description?, exam_type?, depth?: "recall" | "applied" | "exam" | null, archived?: boolean }. Only the fields you send change; "" or null clears topic, description, exam_type or depth. archived: true archives (restorable from Trash or the Archived filter); archived: false restores — send it in the same item to edit an archived one. Questions are not edited here. The whole list is refused, with nothing changed, on an unknown id, the same id twice, an item that changes nothing, or a rename onto a title another live ${w.noun} of the person has.`,
+      description: `Changes one or more ${w.plural} the person may edit (ids from my_assessments — their own or ones they hold editor access to), saved immediately. Value is a JSON ARRAY of 1-25 objects, each { id: string (required), title?, topic?, description?, exam_type?, depth?: "recall" | "applied" | "exam" | null, archived?: boolean }. Only the fields you send change; "" or null clears topic, description, exam_type or depth. archived: true archives (restorable from Trash or the Archived filter); archived: false restores — send it in the same item to edit an archived one. Questions are not edited here. The whole list is refused, with nothing changed, on an unknown id, the same id twice, an item that changes nothing, or a rename onto a title another of the person's own live ${w.plural} has.`,
       valueType: "array",
       updatesValue: "my_assessments",
       mode: "entity",
@@ -230,7 +230,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     {
       name: `delete_${w.targetPlural}`,
       label: `Move ${w.plural} to Trash`,
-      description: `Archives one or more of the person's OWN live ${w.plural} (moves them to Trash). Value is a JSON ARRAY of ids (or { id } objects). What happens: the ${w.noun} leaves this list, its questions and past results are kept, and it is restorable from Trash (or update_${w.targetPlural} with archived: false). Unknown, repeated or already-archived ids refuse the whole list, with nothing changed.`,
+      description: `Archives one or more live ${w.plural} the person may edit (ids from my_assessments) (moves them to Trash). Value is a JSON ARRAY of ids (or { id } objects). What happens: the ${w.noun} leaves this list, its questions and past results are kept, and it is restorable from Trash (or update_${w.targetPlural} with archived: false). Unknown, repeated or already-archived ids refuse the whole list, with nothing changed.`,
       valueType: "array",
       updatesValue: "my_assessments",
       mode: "entity",
@@ -252,7 +252,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     intro: `<surface_intro>
 You are on ${w.label} at ${w.urlPattern} — the person's LIST of ${w.plural}, not a ${w.noun} being taken. Lanes (Mine, My Orgs, Shared, Public), a search box, sort and filter on every column and an archive filter decide what is on screen; each row opens the ${w.noun}, Take starts it.
 Read assessment_list first: it is the page on screen, with ids. While assessments_loaded is false the list is loading (or load_error explains a real failure) — never say the person has none. If a lane, search, filter or the archive filter narrows the list (visibility_filter, search_query, list_filters, archive_filter), say so rather than concluding a ${w.noun} does not exist.
-To make a full ${w.noun} with AI questions use generate_${w.targetPlural} — it spends one generation from the person's plan, so say so before calling it. To change ${w.plural} use ONLY create_${w.targetPlural} (empty drafts), update_${w.targetPlural} (title, topic, description, exam, depth, archive/restore) and delete_${w.targetPlural} (archive), on ${w.plural} the person made. Questions are edited on each ${w.noun}'s own page.
+To make a full ${w.noun} with AI questions use generate_${w.targetPlural} — it spends one generation from the person's plan, so say so before calling it. To change ${w.plural} use ONLY create_${w.targetPlural} (empty drafts), update_${w.targetPlural} (title, topic, description, exam, depth, archive/restore) and delete_${w.targetPlural} (archive), on ${w.plural} the person may edit (my_assessments). Questions are edited on each ${w.noun}'s own page.
 </surface_intro>`,
     groups,
     values: mergeBaselineValues(pickBaseline("selection", "context"), values),
