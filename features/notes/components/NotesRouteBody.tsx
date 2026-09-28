@@ -8,17 +8,17 @@
 // div. Add future non-NotesView /notes/[id]/<segment> pages to DIFF_SUFFIXES.
 
 import { usePathname } from "next/navigation";
-import type { Layout } from "react-resizable-panels";
 import { NotesView } from "./NotesView";
+import type { NotesShellLayouts } from "./notesShellLayout";
 
 const STANDALONE_SUFFIXES = ["/diff"];
 
 export function NotesRouteBody({
   children,
-  sidebarLayout,
+  sidebarLayouts,
 }: {
   children: React.ReactNode;
-  sidebarLayout?: Layout;
+  sidebarLayouts?: NotesShellLayouts;
 }) {
   const pathname = usePathname();
   const isStandaloneRoute = STANDALONE_SUFFIXES.some((suffix) =>
@@ -31,7 +31,7 @@ export function NotesRouteBody({
 
   return (
     <>
-      <NotesView className="h-full" sidebarLayout={sidebarLayout} />
+      <NotesView className="h-full" sidebarLayouts={sidebarLayouts} />
       <div style={{ display: "none" }}>{children}</div>
     </>
   );

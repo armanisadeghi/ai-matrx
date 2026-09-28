@@ -9,7 +9,11 @@
 
 import "./notes.css";
 import { cookies } from "next/headers";
-import type { Layout } from "react-resizable-panels";
+import {
+  NOTES_SHELL_LAYOUT_COOKIE,
+  parseNotesShellLayout,
+  type NotesShellLayouts,
+} from "@/features/notes/components/notesShellLayout";
 import { NotesRouteBody } from "@/features/notes/components/NotesRouteBody";
 import NotesLanding from "@/features/auth/components/module-landing/landings/NotesLanding";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
@@ -18,14 +22,12 @@ import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-as
 
 /** Read the persisted notes sidebar/main split so the first paint matches the
  *  user's last layout (no resize flash). Written client-side by NotesView. */
-async function readSidebarLayout(): Promise<Layout | undefined> {
-  const raw = (await cookies()).get("panels:notes-shell")?.value;
-  if (!raw) return undefined;
-  try {
-    return JSON.parse(decodeURIComponent(raw)) as Layout;
-  } catch {
-    return undefined;
-  }
+async function readSidebarLayouts(): Promise<NotesShellLayouts> {
+  const jar = await cookies();
+  return {
+    wide: parseNotesShellLayout(jar.get(NOTES_SHELL_LAYOUT_COOKIE.wide)?.value),
+    md: parseNotesShellLayout(jar.get(NOTES_SHELL_LAYOUT_COOKIE.md)?.value),
+  };
 }
 
 export const metadata = createRouteMetadata("/notes", {
@@ -65,7 +67,7 @@ export default async function NotesV2Layout({
     return <NotesLanding />;
   }
 
-  const sidebarLayout = await readSidebarLayout();
+  const sidebarLayouts = await readSidebarLayouts();
 
   return (
     <>
@@ -74,7 +76,7 @@ export default async function NotesV2Layout({
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
         <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
-        <NotesRouteBody sidebarLayout={sidebarLayout}>
+        <NotesRouteBody sidebarLayouts={sidebarLayouts}>
           {children}
         </NotesRouteBody>
       </div>

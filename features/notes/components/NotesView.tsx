@@ -19,10 +19,16 @@ import { initialTabsFromUrl } from "@/features/notes/initialTabsFromUrl";
 import { X } from "lucide-react";
 import { NOTE_VIEW_MODES } from "./NoteViewControls";
 import {
+  useGroupRef,
   usePanelRef,
   type Layout,
   type OnPanelResize,
 } from "react-resizable-panels";
+import {
+  NOTES_SHELL_LAYOUT_COOKIE,
+  notesShellBucket,
+  type NotesShellLayouts,
+} from "./notesShellLayout";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -139,15 +145,15 @@ export interface NotesViewConfig {
 export interface NotesViewProps {
   config?: NotesViewConfig;
   className?: string;
-  /** Persisted sidebar/main split (percentages), read from the cookie by the
+  /** Persisted sidebar/main split per breakpoint, read from the cookies by the
    *  server layout so the first paint matches — see app/(core)/notes/layout.tsx. */
-  sidebarLayout?: Layout;
+  sidebarLayouts?: NotesShellLayouts;
 }
 
 export function NotesView({
   config,
   className,
-  sidebarLayout,
+  sidebarLayouts,
 }: NotesViewProps) {
   const dispatch = useAppDispatch();
   const { id: userId } = useAppSelector(selectUser);
@@ -182,11 +188,22 @@ export function NotesView({
     if (wasCollapsed !== isCollapsed) setSidebarCollapsed(isCollapsed);
   };
 
+  // Per breakpoint (notesShellLayout.ts): a phone never writes a split — the
+  // server paints this group before the phone view takes over, and the squeeze
+  // collapsed the sidebar into the desktop's cookie.
+  const shellGroupRef = useGroupRef();
   const persistShellLayout = (layout: Layout) => {
+    const bucket = notesShellBucket(window.innerWidth);
+    if (!bucket) return;
     document.cookie =
-      `panels:notes-shell=${encodeURIComponent(JSON.stringify(layout))}` +
+      `${NOTES_SHELL_LAYOUT_COOKIE[bucket]}=${encodeURIComponent(JSON.stringify(layout))}` +
       `; path=/; max-age=31536000; SameSite=Lax`;
   };
+  // The server paints the wide split; a laptop-width window applies its own.
+  useEffect(() => {
+    if (notesShellBucket(window.innerWidth) !== "md" || !sidebarLayouts?.md) return;
+    shellGroupRef.current?.setLayout(sidebarLayouts.md);
+  }, [shellGroupRef, sidebarLayouts?.md]);
 
   // ── URL param hydration: read ?tabs= and ?active= on mount ────────
   const searchParams = useSearchParams();
@@ -812,7 +829,8 @@ export function NotesView({
             <ResizablePanelGroup
               id="notes-shell"
               orientation="horizontal"
-              defaultLayout={sidebarLayout}
+              defaultLayout={sidebarLayouts?.wide}
+              groupRef={shellGroupRef}
               onLayoutChanged={persistShellLayout}
               className="min-h-0 flex-1"
             >
