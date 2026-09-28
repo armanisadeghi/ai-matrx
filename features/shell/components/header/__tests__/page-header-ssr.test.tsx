@@ -90,13 +90,28 @@ let root: Root | null = null;
 const slot = () => document.getElementById("shell-header-center")!;
 const realRect = HTMLElement.prototype.getBoundingClientRect;
 
+/** The ghost script draws a CENTER ghost in the next animation frame; tests
+ *  hold frames in a queue and flush them where a browser would paint. */
+let frameQueue: FrameRequestCallback[] = [];
+const realRaf = window.requestAnimationFrame;
+function flushFrame() {
+  const queued = frameQueue;
+  frameQueue = [];
+  queued.forEach((cb) => cb(performance.now()));
+}
+
 beforeAll(() => {
+  window.requestAnimationFrame = (cb) => {
+    frameQueue.push(cb);
+    return frameQueue.length;
+  };
   HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
     if (this.id !== "shell-header-center" && this.id !== "shell-header-right") return realRect.call(this);
     return { left: 120, top: 22, width: 640, height: 0, right: 760, bottom: 22, x: 120, y: 22, toJSON() {} } as DOMRect;
   };
 });
 afterAll(() => {
+  window.requestAnimationFrame = realRaf;
   HTMLElement.prototype.getBoundingClientRect = realRect;
 });
 
@@ -120,6 +135,7 @@ function parseLikeABrowser(html: string) {
     live.textContent = dead.textContent;
     dead.replaceWith(live);
   });
+  flushFrame();
 }
 
 describe("PageHeader is server-rendered", () => {
@@ -183,6 +199,36 @@ describe("PageHeader is server-rendered", () => {
     expect(app.childElementCount).toBe(0);
   });
 
+  it("draws the center ghost only in the next frame, after a right slot parsed behind it has reserved its width", () => {
+    // /notes/<id>: the center portal streams BEFORE the right one; drawn at
+    // once, the center painted at the wide slot and jumped 64px when the
+    // right reservation landed (2026-09-28).
+    const html = renderToString(
+      <Shell>
+        {header("Split")}
+        <PageHeaderRightPortal>
+          <button type="button" aria-label="Refresh notes" />
+        </PageHeaderRightPortal>
+      </Shell>,
+    );
+    app.innerHTML = html;
+    const scripts = [...app.querySelectorAll("script")];
+    // Parse the center's script only: nothing may be drawn yet.
+    const run = (dead: HTMLScriptElement) => {
+      const live = document.createElement("script");
+      live.textContent = dead.textContent;
+      dead.replaceWith(live);
+    };
+    run(scripts[0]!);
+    expect(document.querySelector("matrx-header-ghost.shell-header-center")).toBeNull();
+    // The right slot's script parses before the frame: it reserves at once.
+    run(scripts[1]!);
+    expect(document.head.querySelector('style[data-page-header-reserve="shell-header-right"]')).not.toBeNull();
+    // The frame: the center is laid out now, against the reserved row.
+    flushFrame();
+    expect(document.querySelector("matrx-header-ghost.shell-header-center")?.textContent).toContain("Split");
+  });
+
   it("server-renders the right slot, reserves its width before hydration, and moves it in", async () => {
     const tree = (
       <Shell>
@@ -241,6 +287,7 @@ describe("PageHeader is server-rendered", () => {
       live.textContent = dead.textContent;
       dead.replaceWith(live);
     });
+    flushFrame();
     expect(document.querySelector("matrx-header-ghost")?.textContent).toContain("Flashcard set");
   }
 

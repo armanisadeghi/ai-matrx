@@ -782,7 +782,14 @@ export function NotesView({
             </div>
           ) : (
             <>
-              <PageHeader>{headerChrome}</PageHeader>
+              {/* This is the DESKTOP tree; a phone renders MobileNotesView
+                  instead, with no header of its own. The server always renders
+                  this tree (it cannot know the width), so the header hides
+                  below the phone breakpoint by CSS from the first paint —
+                  it never flashes on a phone and then vanishes. */}
+              <PageHeader>
+                <div className="flex w-full min-w-0 max-md:hidden">{headerChrome}</div>
+              </PageHeader>
               <PageHeaderRightPortal>
                 {/* THE DOOR LAW — the Notes Organizer and the page assistant
                     are Mandates the user may re-point at their own agent, with
