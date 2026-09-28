@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bug } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger } from "@/lib/redux/slices/userSlice";
 import {
   selectIsOverlayOpen,
   toggleOverlay,
@@ -11,7 +11,7 @@ import {
 
 export default function SidebarAdminIndicatorToggle() {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsSuperAdmin) ?? false;
+  const isAdmin = useAppSelector(selectIsSuperAdminDebugger) ?? false;
   const isIndicatorOpen = useAppSelector((state) =>
     selectIsOverlayOpen(state, "adminIndicator"),
   );

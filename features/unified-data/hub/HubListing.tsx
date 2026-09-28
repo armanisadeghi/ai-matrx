@@ -56,11 +56,6 @@ export interface HubListingProps {
   groupByOrganization?: boolean | undefined;
   /** The one organization the dropdown chose (DATA-HOME-2): empty sentences name it. */
   inOrganization?: string | null | undefined;
-  /**
-   * Under All Orgs, a listing that reads only the working organization (DATA-HOME-2): its heading
-   * names that organization, so the listing never reads as everybody's.
-   */
-  workingOrganizationOnly?: string | null | undefined;
   /** This organization shows members only what is shared with them. */
   sharedOnly?: boolean | undefined;
   open: boolean;
@@ -206,7 +201,6 @@ export function HubListing({
   order = "updated",
   groupByOrganization = false,
   inOrganization = null,
-  workingOrganizationOnly = null,
   sharedOnly,
   open,
   onOpenChange,
@@ -262,9 +256,6 @@ export function HubListing({
             : sharedOnly && capability.whatWhenSharedOnly
               ? capability.whatWhenSharedOnly
               : capability.what}
-          {workingOrganizationOnly ? (
-            <span data-hub-listing-one-organization> Only {workingOrganizationOnly}&apos;s.</span>
-          ) : null}
         </span>
       </button>
 

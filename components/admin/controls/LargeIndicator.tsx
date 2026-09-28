@@ -30,7 +30,7 @@ import {
   selectShowCreatorPanel,
   toggleShowCreatorPanel,
 } from "@/lib/redux/preferences/creatorDebugSlice";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger } from "@/lib/redux/slices/userSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   selectActiveServer,
@@ -71,7 +71,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
   const [copied, setCopied] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
 
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector(selectIsSuperAdminDebugger);
   const reduxUser = useAppSelector(selectUser);
   const activeServer = useAppSelector(selectActiveServer);
   const resolvedUrl = useAppSelector(selectResolvedBaseUrl);

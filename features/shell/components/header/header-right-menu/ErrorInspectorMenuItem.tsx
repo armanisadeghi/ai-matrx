@@ -7,7 +7,7 @@ import { MenuItemCloseLabel } from "./menuCheckboxId";
 import { useToggleErrorInspector } from "@/features/admin/error-inspector/useOpenErrorInspector";
 import { useCapturedErrorStats } from "@/lib/diagnostics/useCapturedErrors";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 
 /**
  * Admin-menu entry that opens the systemwide Error Inspector. Shows a live
@@ -19,7 +19,7 @@ export function ErrorInspectorMenuItem() {
   const { red } = useCapturedErrorStats();
   // ADMIN POWER, the same bar as the sidebar toggle: the inspector is an admin
   // tool and exists only inside the admin section (utils/supabase/adminLane.ts).
-  const canUse = useAppSelector(selectIsAdmin);
+  const canUse = useAppSelector(selectIsAdminDebugger);
 
   if (!canUse) return null;
 

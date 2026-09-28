@@ -70,7 +70,7 @@ describe("Flashcards intelligence places", () => {
   it("finds the registering call sites (the parser is not blind)", () => {
     expect(registering.length).toBeGreaterThanOrEqual(10);
     const topic = registering.find((entry) =>
-      entry.file.endsWith("create/CreateFromTopic.tsx"),
+      entry.file.endsWith("create/CreateDeckPage.tsx"),
     );
     expect(topic?.jobs.has("generateCards")).toBe(true);
   });

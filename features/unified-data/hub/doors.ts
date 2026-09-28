@@ -305,31 +305,64 @@ export function dataHomeTables(
   );
 }
 
-/** One form or booking page on the data home (`custom.data_home_pages`, lane DATA-HOME-2). */
-export interface DataHomePageRow {
-  kind: "form" | "booking";
+/** Every kind of row the data home lists beside its tables (`custom.data_home_items`, DATA-HOME-2). */
+export type DataHomeItemKind =
+  | "form"
+  | "booking"
+  | "portal"
+  | "dashboard"
+  | "digest"
+  | "checklist"
+  | "automation"
+  | "share";
+
+/** One row the data home lists beside its tables. */
+export interface DataHomeItemRow {
+  kind: DataHomeItemKind;
   organization_id: string;
   organization_name: string;
-  page_id: string;
-  table_id: string;
-  table_name: string;
-  /** The row `custom.forms(org)` / `custom.bookings(org)` answer for it, unchanged. */
-  page_row: Record<string, unknown>;
+  item_id: string;
+  table_id: string | null;
+  table_name: string | null;
+  /** The row the store's own list door (custom.forms, custom.dashboards …) answers for it. */
+  item_row: Record<string, unknown>;
 }
 
 /**
- * EVERY FORM AND BOOKING PAGE THIS PERSON MAY SEE, IN EVERY ORGANIZATION THE DATA HOME WALKS — or in
- * the one named (lane DATA-HOME-2). The same organizations `custom.data_home_tables` walks; each
- * organization's rows are the store's own `custom.forms` / `custom.bookings` answers, so their
- * walls decide what is listed.
+ * EVERY FORM, BOOKING PAGE, PORTAL, DASHBOARD, DIGEST, CHECKLIST, AUTOMATION AND OUTSIDE SHARE THIS
+ * PERSON MAY SEE, IN EVERY ORGANIZATION THE DATA HOME WALKS — or in the one named (lane DATA-HOME-2).
+ * The same organizations `custom.data_home_tables` walks; each organization's rows are the store's
+ * own list doors' answers, so their walls decide what is listed.
  */
-export function dataHomePages(
+export function dataHomeItems(
   dataSource: RecordsDataSource,
   organizationId: string | null = null,
-): Promise<DoorAnswer<DataHomePageRow[]>> {
-  return call<DataHomePageRow[]>(
+): Promise<DoorAnswer<DataHomeItemRow[]>> {
+  return call<DataHomeItemRow[]>(
     dataSource,
-    "data_home_pages",
+    "data_home_items",
     organizationId ? { p_organization_id: organizationId } : {},
   );
+}
+
+/** One (organization, kind, ids) question for `custom.data_home_changed_by`. */
+export interface ChangedByAsk {
+  organization_id: string;
+  kind: ChangedByKind;
+  ids: string[];
+}
+
+/**
+ * WHO CHANGED EACH ROW, FOR EVERY ORGANIZATION SHOWN, IN ONE CALL (`custom.data_home_changed_by`,
+ * DATA-HOME-2): `custom.hub_changed_by` per organization, each decided by the door in its own name.
+ */
+export function dataHomeChangedBy(
+  dataSource: RecordsDataSource,
+  asks: readonly ChangedByAsk[],
+): Promise<DoorAnswer<Array<ChangedByRow & { organization_id: string }>>> {
+  const real = asks.filter((a) => a.ids.length > 0).map((a) => ({ ...a, ids: a.ids.slice(0, 500) }));
+  if (real.length === 0) return Promise.resolve({ ok: true, data: [] });
+  return call<Array<ChangedByRow & { organization_id: string }>>(dataSource, "data_home_changed_by", {
+    p_asks: real.slice(0, 200),
+  });
 }

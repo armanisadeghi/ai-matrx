@@ -86,7 +86,8 @@ jest.mock("../doors", () => ({
   tableKernelId: async () => ({ ok: true, data: "kernel" }),
   tableFacts: async () => ({ ok: true, data: [] }),
   dataHomeTables: async () => ({ ok: true, data: [] }),
-  dataHomePages: async () => ({ ok: true, data: [] }),
+  dataHomeItems: async () => ({ ok: true, data: [] }),
+  dataHomeChangedBy: async () => ({ ok: true, data: [] }),
 }));
 jest.mock("../capabilities", () => {
   const actual = jest.requireActual("../capabilities");

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import {
   clearBatchExtractDebugSessions,
   selectBatchExtractDebugSession,
@@ -305,7 +305,7 @@ function PdfBatchExtractDebugWindowInner({
   initialSessionId: string | null;
 }) {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   const sessions = useAppSelector(selectPdfBatchExtractDebugSessions);
   const selectedSession = useAppSelector(
     selectPdfBatchExtractDebugSelectedSession,
@@ -453,7 +453,7 @@ export default function PdfBatchExtractDebugWindow({
   onClose,
   initialSessionId = null,
 }: PdfBatchExtractDebugWindowProps) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   if (!isOpen || !isAdmin) return null;
   return (
     <PdfBatchExtractDebugWindowInner

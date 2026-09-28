@@ -1,14 +1,13 @@
-// /education/flashcards/new/from-source — create a flashcard set from a
-// curated selection of Knowledge-indexed document chunks. Server component shell
-// (no "use client"): metadata for SEO + the client create island.
-// CreateFromSource is a "use client" leaf, so importing it here forms the
-// client boundary and Next.js code-splits it automatically.
-import type { Metadata } from "next";
-import { toolMetadata } from "@/features/education/route-helpers";
-import { CreateFromSource } from "@/features/flashcards/components/create/CreateFromSource";
+// /education/flashcards/new/from-source — retired. "A deck from your material"
+// is now the Sources step of /education/flashcards/new; a document id in the
+// old link arrives there as a picked Source.
+import { redirect } from "next/navigation";
+import { createDeckHref } from "@/features/flashcards/components/create/createDeckHref";
 
-export const metadata: Metadata = toolMetadata("flashcards");
-
-export default function NewFlashcardSetFromSourcePage() {
-  return <CreateFromSource />;
+export default async function FromSourceRedirect({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  redirect(createDeckHref(await searchParams));
 }

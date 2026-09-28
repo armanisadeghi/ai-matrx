@@ -4,7 +4,7 @@ import SmallIndicator from "./SmallIndicator";
 import MediumIndicator from "./MediumIndicator";
 import LargeIndicator from "./LargeIndicator";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger } from "@/lib/redux/slices/userSlice";
 
 type IndicatorSize = "small" | "medium" | "large";
 
@@ -32,7 +32,7 @@ interface AdminIndicatorProps {
 }
 
 const AdminIndicator: React.FC<AdminIndicatorProps> = () => {
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdminDebugger);
   const [size, setSize] = useState<IndicatorSize>("small");
   const [position, setPosition] = useState<Position>({ x: 50, y: 5 });
   const [isDragging, setIsDragging] = useState(false);

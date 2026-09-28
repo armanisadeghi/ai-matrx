@@ -288,9 +288,8 @@ export function PartyProvenanceCard({
             ) : (
               <UserPlus className="h-3.5 w-3.5" />
             )}
-            {/* Short on a phone so the header stays one row. */}
-            <span className="max-sm:hidden">Add to my contacts</span>
-            <span className="sm:hidden">Add to contacts</span>
+            {/* One wording at every width (page-pass 2026-09-28). */}
+            Add to contacts
           </Button>
         ) : undefined
       }
@@ -298,18 +297,15 @@ export function PartyProvenanceCard({
       <div className="space-y-2">
         {(party.source || discovered) && (
           <p className="text-xs text-muted-foreground">
+            {/* ONE wording at every width (page-pass 2026-09-28): "Found by
+                the platform on YouTube" / "From YouTube", then "Open on
+                YouTube" — the phone once read a different sentence. */}
             {discovered ? (
-              // Phone: one short line ("From YouTube · Open"); the longer
-              // wording reads on wider screens.
-              <span
-                className="max-sm:hidden"
-                title="Not in your contact list yet, so it stays out of pickers and searches."
-              >
-                Found by the platform{party.source ? " · " : ""}
+              <span title="Not in your contact list yet, so it stays out of pickers and searches.">
+                Found by the platform{party.source ? " on " : ""}
               </span>
             ) : null}
-            {party.source ? <><span className="max-sm:hidden">Origin:{" "}</span>
-            <span className="sm:hidden">From </span>
+            {party.source ? <>{discovered ? null : "From "}
             <span className="text-foreground">
               {platformWord(party.source)}
             </span>
@@ -334,8 +330,7 @@ export function PartyProvenanceCard({
                     title={party.source_detail}
                     className="inline-flex min-h-11 items-center gap-1 text-primary hover:underline sm:min-h-0"
                   >
-                    <span className="sm:hidden">Open</span>
-                    <span className="max-sm:hidden">{`Open on ${platformWord(party.source) ?? "the web"}`}</span>
+                    {`Open on ${platformWord(party.source) ?? "the web"}`}
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (

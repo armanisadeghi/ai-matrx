@@ -23,10 +23,10 @@
 
 import type { RecordsClient } from "@ai-matrx/records/core";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
-import { visibilityLaneFor, type VisibilityLane } from "@ai-matrx/records-ui";
+import type { VisibilityLane } from "@ai-matrx/records-ui";
 
 import * as doors from "./doors";
-import type { ChangedByKind, DataHomePageRow, DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
+import type { ChangedByKind, DataHomeItemKind, DataHomeItemRow, DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
 import type { ScopeFacts } from "./dataHomeScope";
 import { openPath } from "@/lib/deep-link/openPath";
 
@@ -59,6 +59,8 @@ export interface HubItem {
    * organization at once, so every row names its own.
    */
   organizationName?: string | null | undefined;
+  /** And its id — who-changed-it is asked of the organization each row lives in (DATA-HOME-2). */
+  organizationId?: string | null | undefined;
   /** The four facts the data home's filters read (`dataHomeScope.ts`). Set by the hub. */
   scope?: ScopeFacts | undefined;
   /** What it is, in the store's one word (`custom.data_home_tables().kind`, or the listing's own). */
@@ -79,10 +81,11 @@ export interface HubReadContext {
    */
   everywhere?: { ok: true; rows: readonly DataHomeTableRow[] } | { ok: false; error: DoorFailure } | undefined;
   /**
-   * EVERY FORM AND BOOKING PAGE, IN EVERY ORGANIZATION (`custom.data_home_pages`, lane DATA-HOME-2)
-   * — or the one organization the dropdown names. The Forms and Bookings listings are these rows.
+   * EVERYTHING ELSE THE HOME LISTS, IN EVERY ORGANIZATION (`custom.data_home_items`, lane
+   * DATA-HOME-2) — or the one organization the dropdown names. Every listing but Tables and Shared
+   * with me is these rows.
    */
-  pages?: { ok: true; rows: readonly DataHomePageRow[] } | { ok: false; error: DoorFailure } | undefined;
+  items?: { ok: true; rows: readonly DataHomeItemRow[] } | { ok: false; error: DoorFailure } | undefined;
 }
 
 export type HubRead =
@@ -116,12 +119,6 @@ export interface HubCapability {
    * false.
    */
   whatInOrganization?: ((organizationName: string) => string) | undefined;
-  /**
-   * This listing reads EVERY organization the data home walks (and one when the dropdown names one).
-   * A listing without it reads the working organization only, and says so on its heading under
-   * All Orgs (DATA-HOME-2).
-   */
-  everyOrganization?: boolean | undefined;
   /** The store door this listing reads, named on screen so nobody has to guess. */
   door: string;
   /** Which kind `custom.hub_changed_by` answers for these, or null when the store cannot say. */
@@ -137,24 +134,6 @@ export interface HubCapability {
 }
 
 // ── the small shared helpers ────────────────────────────────────────────────
-
-function byId(tables: readonly Table[]): Map<string, Table> {
-  return new Map(tables.map((t) => [t.id, t]));
-}
-
-/**
- * THE LANE OF A TABLE IS ITS VISIBILITY — my organization, community or world
- * (Mine is ownership, and is decided on the hub from the Table's own
- * `created_by`; see `OrganizationHub`'s `inLane`) — decided ONCE, by
- * `@ai-matrx/records-ui`'s `visibilityLaneFor`
- * (records-ui 0.83.0, VERIFIER-15). A kernel table, the app's bookkeeping and a
- * store-kept choice list answer `null`: nobody chose a visibility for them, so
- * they show under Everything and under no lane. The store's own marker for the
- * last of those is the record's own `kept_by_the_app`, read by that function.
- */
-function laneOfTable(table: Table): VisibilityLane | null {
-  return visibilityLaneFor(table);
-}
 
 /**
  * THE STORE'S TABLE FACTS, FOLDED ONTO THE TABLE LIST — `custom.table_facts`' columns the lane
@@ -185,58 +164,46 @@ export function withHubTableFacts(
 /** Another organization's table: in none of this organization's lanes. */
 const OUTSIDE_LANE: VisibilityLane | null = null;
 
-/** The lane of a thing is the lane of the table it belongs to (the ONE `laneFor`). */
-function laneOf(
-  index: Map<string, Table>,
-  tableId: string | null | undefined,
-): VisibilityLane | null {
-  const table = tableId ? index.get(tableId) : undefined;
-  return table ? laneOfTable(table) : null;
-}
-
-function nameOf(
-  index: Map<string, Table>,
-  tableId: string | null | undefined,
-  fallback?: string | null,
-): string | null {
-  const table = tableId ? index.get(tableId) : undefined;
-  return table?.name ?? fallback ?? null;
-}
-
 function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
 /** The store's refusal, carried as-is. A client that rewrote it would be inventing. */
-/** The data home's forms or booking pages (DATA-HOME-2), or the listing's refusal. */
-function pagesOf(
+/** The data home's rows of one kind (DATA-HOME-2), or the listing's refusal. */
+function itemsOf(
   ctx: HubReadContext,
-  kind: DataHomePageRow["kind"],
-): { ok: true; rows: Array<{ row: DataHomePageRow; page: Record<string, unknown> }> } | { ok: false; error: DoorFailure } {
-  if (!ctx.pages) {
-    return { ok: false, error: { message: "The forms and pages across your organizations were not read, so none is listed." } };
+  kind: DataHomeItemKind,
+): { ok: true; rows: Array<{ row: DataHomeItemRow; item: Record<string, unknown> }> } | { ok: false; error: DoorFailure } {
+  if (!ctx.items) {
+    return { ok: false, error: { message: "The listings across your organizations were not read, so none is listed." } };
   }
-  if (!ctx.pages.ok) return { ok: false, error: ctx.pages.error };
+  if (!ctx.items.ok) return { ok: false, error: ctx.items.error };
   return {
     ok: true,
-    rows: ctx.pages.rows.filter((r) => r.kind === kind).map((row) => ({ row, page: row.page_row })),
+    rows: ctx.items.rows.filter((r) => r.kind === kind).map((row) => ({ row, item: row.item_row })),
   };
 }
 
 /**
- * WHAT EVERY FORM OR PAGE ROW CARRIES FROM ITS TABLE: the table, its organization, and the four
- * facts the five lanes read — the Table's own, from `custom.data_home_tables` (the page is Mine
- * when its Table is, Shared when its Table was shared with her …). A page whose Table the tables
- * door did not list keeps the organization's member facts and nothing else.
+ * WHAT EVERY ROW CARRIES FROM ITS TABLE AND ORGANIZATION: the table, its organization, and the four
+ * facts the five lanes read — the Table's own, from `custom.data_home_tables` (a dashboard is Mine
+ * when its Table is, Shared when its Table was shared with her …). A row with no Table, or one the
+ * tables door did not list, keeps the organization's member facts and nothing else.
  */
-function pageFacts(ctx: HubReadContext, row: DataHomePageRow): Pick<HubItem, "tableId" | "tableName" | "lane" | "organizationName" | "scope"> {
+function rowFacts(
+  ctx: HubReadContext,
+  row: DataHomeItemRow,
+): Pick<HubItem, "tableId" | "tableName" | "lane" | "organizationName" | "organizationId" | "scope"> {
   const table =
-    ctx.everywhere && ctx.everywhere.ok ? ctx.everywhere.rows.find((t) => t.table_id === row.table_id) : undefined;
+    row.table_id && ctx.everywhere && ctx.everywhere.ok
+      ? ctx.everywhere.rows.find((t) => t.table_id === row.table_id)
+      : undefined;
   return {
     tableId: row.table_id,
     tableName: row.table_name || null,
     lane: null,
     organizationName: row.organization_name,
+    organizationId: row.organization_id,
     scope: table
       ? { mine: table.mine, member: table.member, sharedWithMe: table.shared_with_me, visibility: table.visibility }
       : { mine: false, member: true, sharedWithMe: false, visibility: null },
@@ -285,7 +252,6 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Tables",
     // THE COUNT BESIDE IT IS WHAT THIS PERSON CAN OPEN, so the sentence says exactly that.
     what: "Every table you can open, in every organization you belong to — yours and the ones the app keeps.",
-    everyOrganization: true,
     whatInOrganization: (organizationName) =>
       `Every table you can open in ${organizationName} — yours and the ones the app keeps.`,
     whatWhenSharedOnly:
@@ -315,6 +281,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
           tableName: row.table_name || null,
           lane: null,
           organizationName: row.organization_name,
+          organizationId: row.organization_id,
           kind: row.kind,
           scope: {
             mine: row.mine,
@@ -335,17 +302,16 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Forms",
     what: "Questions a stranger answers with no account — the answer lands as a record.",
     empty: "No forms yet. Open a table, press Forms, write the questions and publish it.",
-    door: "custom.data_home_pages (custom.forms, every organization)",
+    door: "custom.data_home_items (custom.forms, every organization)",
     changedByKind: "form",
-    everyOrganization: true,
     whatInOrganization: (organizationName) =>
       `Questions a stranger answers with no account, in ${organizationName} — the answer lands as a record.`,
     async read(ctx) {
-      const pages = pagesOf(ctx, "form");
-      if (!pages.ok) return pages;
+      const found = itemsOf(ctx, "form");
+      if (!found.ok) return found;
       return {
         ok: true,
-        items: pages.rows.map(({ row, page }) => {
+        items: found.rows.map(({ row, item: page }) => {
           const form = page as {
             form_id: string;
             table_id: string;
@@ -356,7 +322,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             published_at: string | null;
           };
           return {
-            ...pageFacts(ctx, row),
+            ...rowFacts(ctx, row),
             id: form.form_id,
             title: form.title || "(untitled form)",
             facts: [
@@ -380,17 +346,16 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Bookings",
     what: "A page that offers only the times you are free, and writes the appointment into a table.",
     empty: "No booking pages yet. Open a table, press Bookings, and say how long a slot is.",
-    door: "custom.data_home_pages (custom.bookings, every organization)",
+    door: "custom.data_home_items (custom.bookings, every organization)",
     changedByKind: "form",
-    everyOrganization: true,
     whatInOrganization: (organizationName) =>
       `Pages in ${organizationName} that offer only the times you are free, and write the appointment into a table.`,
     async read(ctx) {
-      const pages = pagesOf(ctx, "booking");
-      if (!pages.ok) return pages;
+      const found = itemsOf(ctx, "booking");
+      if (!found.ok) return found;
       return {
         ok: true,
-        items: pages.rows.map(({ row, page }) => {
+        items: found.rows.map(({ row, item: page }) => {
           const booking = page as {
             form_id: string;
             table_id: string;
@@ -402,7 +367,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             published_at: string | null;
           };
           return {
-            ...pageFacts(ctx, row),
+            ...rowFacts(ctx, row),
             id: booking.form_id,
             title: booking.title || "(untitled booking page)",
             facts: [
@@ -427,48 +392,45 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Portals",
     what: "A door for people outside this organization — each one sees only their own rows.",
     empty: "No portals yet. A portal names the table whose records ARE your clients, and invites them.",
-    door: "custom.list_portals",
+    door: "custom.data_home_items (custom.list_portals + custom.portal_tables, every organization)",
     changedByKind: "portal",
     async read(ctx) {
-      const answered = await ctx.client.listPortals({ archived: "active" });
-      if (!answered.ok) return failed(answered.error, "list_portals");
-      // WHICH TABLES EACH PORTAL SHOWS, in one call for the organization. The
-      // row opens on a table the portal SHOWS: the clients table is only who
-      // signs in, and its own Portals rail truthfully says the portal is not
-      // part of it (VERIFIER-15 H5).
-      const shown = await ctx.client.portalTables();
-      const firstShown = new Map<string, string>();
-      if (shown.ok) {
-        for (const ref of [...shown.data].sort((a, b) => a.name.localeCompare(b.name))) {
-          if (!firstShown.has(ref.portal_id)) firstShown.set(ref.portal_id, ref.table_id);
-        }
-      }
-      const index = byId(ctx.tables);
+      const found = itemsOf(ctx, "portal");
+      if (!found.ok) return found;
       return {
         ok: true,
-        items: answered.data.map((portal) => ({
-          id: portal.portal_id,
-          title: portal.title || "(untitled portal)",
-          tableId: portal.client_table_id,
-          tableName: nameOf(index, portal.client_table_id, portal.client_table),
-          lane: laneOf(index, portal.client_table_id),
-          facts: [
-            portal.is_active ? "open" : "closed",
-            plural(portal.tables ?? 0, "table"),
-            `${portal.invited ?? 0} invited, ${portal.signed_in ?? 0} signed in`,
-          ],
-          // THE PORTAL'S OWN CARD, opened, on a table the portal SHOWS — the rail
-          // lists a portal only on the tables it exposes. A portal that shows no
-          // table yet opens its clients table and says so, never a dead card.
-          href: `/data-v2/${firstShown.get(portal.portal_id) ?? portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
-          trouble: firstShown.has(portal.portal_id)
-            ? undefined
-            : shown.ok
-              ? "This portal shows no table yet, so there is nothing for a client to see. Open its clients table, press Portals, and add the table they should see."
-              : `The list of tables this portal shows did not answer, so the row opens its clients table instead. ${shown.error.message}`,
-          publicHref: `/portal/${ctx.organizationId}`,
-          publicLabel: "Where an outsider signs in",
-        })),
+        items: found.rows.map(({ row, item }) => {
+          const portal = item as {
+            portal_id: string;
+            title: string | null;
+            client_table_id: string;
+            is_active: boolean;
+            tables: number | null;
+            invited: number | null;
+            signed_in: number | null;
+            shows: Array<{ table_id: string; name: string }> | null;
+          };
+          // WHICH TABLES EACH PORTAL SHOWS, from the store's own custom.portal_tables. The row
+          // opens on a table the portal SHOWS: the clients table is only who signs in, and its own
+          // Portals rail truthfully says the portal is not part of it (VERIFIER-15 H5).
+          const firstShown = portal.shows?.[0]?.table_id;
+          return {
+            ...rowFacts(ctx, row),
+            id: portal.portal_id,
+            title: portal.title || "(untitled portal)",
+            facts: [
+              portal.is_active ? "open" : "closed",
+              plural(portal.tables ?? 0, "table"),
+              `${portal.invited ?? 0} invited, ${portal.signed_in ?? 0} signed in`,
+            ],
+            href: `/data-v2/${firstShown ?? portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
+            trouble: firstShown
+              ? undefined
+              : "This portal shows no table yet, so there is nothing for a client to see. Open its clients table, press Portals, and add the table they should see.",
+            publicHref: `/portal/${row.organization_id}`,
+            publicLabel: "Where an outsider signs in",
+          };
+        }),
       };
     },
   },
@@ -478,28 +440,26 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Dashboards",
     what: "Charts over your own records — every number is counted under the reader's own eyes.",
     empty: "No dashboards yet. Open a table, press Dashboards, and add a block.",
-    door: "custom.dashboards",
+    door: "custom.data_home_items (custom.dashboards, every organization)",
     changedByKind: "structure",
     async read(ctx) {
-      const answered = await ctx.client.dashboards();
-      if (!answered.ok) return failed(answered.error, "dashboards");
-      const index = byId(ctx.tables);
+      const found = itemsOf(ctx, "dashboard");
+      if (!found.ok) return found;
       return {
         ok: true,
-        items: answered.data.map((dash) => ({
-          id: dash.dashboard_id,
-          title: dash.name || "(untitled dashboard)",
-          tableId: dash.table_id ?? null,
-          tableName: nameOf(index, dash.table_id ?? null),
-          lane: laneOf(index, dash.table_id ?? null),
-          facts: [plural(dash.block_count ?? 0, "block")],
-          href: dash.table_id
-            ? `/data-v2/${dash.table_id}?dashboard=${dash.dashboard_id}`
-            : "/data-v2",
-          trouble: dash.table_id
-            ? undefined
-            : "This dashboard names no table, so there is nothing for it to count. Open it from the table it was meant for, or make it again.",
-        })),
+        items: found.rows.map(({ row, item }) => {
+          const dash = item as { dashboard_id: string; table_id: string | null; name: string | null; block_count: number | null };
+          return {
+            ...rowFacts(ctx, row),
+            id: dash.dashboard_id,
+            title: dash.name || "(untitled dashboard)",
+            facts: [plural(dash.block_count ?? 0, "block")],
+            href: dash.table_id ? `/data-v2/${dash.table_id}?dashboard=${dash.dashboard_id}` : "/data-v2",
+            trouble: dash.table_id
+              ? undefined
+              : "This dashboard names no table, so there is nothing for it to count. Open it from the table it was meant for, or make it again.",
+          };
+        }),
       };
     },
   },
@@ -509,39 +469,45 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Digests and notifications",
     what: "A rule over a saved view, in English: what gets sent, to whom, how often.",
     empty: "No subscriptions yet. Save a view on a table, then say when it should tell you.",
-    door: "custom.subscriptions",
+    door: "custom.data_home_items (custom.subscriptions, every organization)",
     changedByKind: "structure",
     async read(ctx) {
-      const answered = await ctx.client.subscriptions();
-      if (!answered.ok) return failed(answered.error, "subscriptions");
-      const index = byId(ctx.tables);
+      const found = itemsOf(ctx, "digest");
+      if (!found.ok) return found;
       return {
         ok: true,
-        items: answered.data.map((sub) => ({
-          id: sub.rule_id,
-          title: sub.name || "(unnamed subscription)",
-          tableId: sub.table_id ?? null,
-          tableName: nameOf(index, sub.table_id ?? null),
-          lane: laneOf(index, sub.table_id ?? null),
-          facts: [
-            sub.muted ? "muted" : "on",
-            sub.cadence ?? "",
-            sub.channel ?? "",
-            sub.mine ? "yours" : "someone else's",
-          ].filter(Boolean) as string[],
-          // THE RULE ITSELF, through the one address (lane ROUTE-RESOLVER): `/o/<rule>`
-          // asks `platform.resolve_id`, which opens the table's notifications rail on this
-          // rule inside the organization the rule LIVES in. A rule that is somebody else's
-          // is said so by the rail, never swapped.
-          href: sub.table_id
-            ? openPath(sub.rule_id, {
-                fallback: `/data-v2/${sub.table_id}?rail=notifications&item=${sub.rule_id}`,
-              })
-            : "/data-v2",
-          trouble: sub.table_id
-            ? undefined
-            : "This subscription names no table any more, so nothing can send it. Open the table it watched and write it again.",
-        })),
+        items: found.rows.map(({ row, item }) => {
+          const sub = item as {
+            rule_id: string;
+            name: string | null;
+            table_id: string | null;
+            muted: boolean | null;
+            cadence: string | null;
+            channel: string | null;
+            mine: boolean | null;
+          };
+          return {
+            ...rowFacts(ctx, row),
+            id: sub.rule_id,
+            title: sub.name || "(unnamed subscription)",
+            facts: [
+              sub.muted ? "muted" : "on",
+              sub.cadence ?? "",
+              sub.channel ?? "",
+              sub.mine ? "yours" : "someone else's",
+            ].filter(Boolean) as string[],
+            // THE RULE ITSELF, through the one address (lane ROUTE-RESOLVER): `/o/<rule>` opens the
+            // table's notifications rail on this rule inside the organization the rule LIVES in.
+            href: sub.table_id
+              ? openPath(sub.rule_id, {
+                  fallback: `/data-v2/${sub.table_id}?rail=notifications&item=${sub.rule_id}`,
+                })
+              : "/data-v2",
+            trouble: sub.table_id
+              ? undefined
+              : "This subscription names no table any more, so nothing can send it. Open the table it watched and write it again.",
+          };
+        }),
       };
     },
   },
@@ -551,29 +517,40 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Checklists and runs",
     what: "A process written down once: its steps, who does each one, and what each step waits for.",
     empty: "No checklists yet. Write the steps once and every run follows them.",
-    door: "custom.checklist_templates",
+    door: "custom.data_home_items (custom.checklist_templates, every organization)",
     changedByKind: "structure",
     async read(ctx) {
-      const answered = await ctx.client.checklistTemplates({});
-      if (!answered.ok) return failed(answered.error, "checklist_templates");
-      const index = byId(ctx.tables);
+      const found = itemsOf(ctx, "checklist");
+      if (!found.ok) return found;
       return {
         ok: true,
-        items: answered.data.map((template) => ({
-          id: template.template_id,
-          title: template.name || "(unnamed checklist)",
-          tableId: template.about_table_id ?? null,
-          tableName: nameOf(index, template.about_table_id ?? null, template.about_table),
-          lane: laneOf(index, template.about_table_id ?? null),
-          facts: [
-            plural(template.steps ?? 0, "step"),
-            `${template.open_runs ?? 0} open of ${template.total_runs ?? 0} runs`,
-          ],
-          href: template.about_table_id ? `/data-v2/${template.about_table_id}` : "/data-v2",
-          trouble: template.about_table_id
-            ? undefined
-            : "This checklist is not about a table, so a run has nothing to attach to. Point it at one before starting it.",
-        })),
+        items: found.rows.map(({ row, item }) => {
+          const template = item as {
+            template_id: string;
+            name: string | null;
+            about_table_id: string | null;
+            about_table: string | null;
+            steps: number | null;
+            open_runs: number | null;
+            total_runs: number | null;
+            updated_at: string | null;
+          };
+          return {
+            ...rowFacts(ctx, row),
+            tableName: row.table_name || template.about_table || null,
+            id: template.template_id,
+            title: template.name || "(unnamed checklist)",
+            facts: [
+              plural(template.steps ?? 0, "step"),
+              `${template.open_runs ?? 0} open of ${template.total_runs ?? 0} runs`,
+            ],
+            href: template.about_table_id ? `/data-v2/${template.about_table_id}` : "/data-v2",
+            trouble: template.about_table_id
+              ? undefined
+              : "This checklist is not about a table, so a run has nothing to attach to. Point it at one before starting it.",
+            changedAt: template.updated_at,
+          };
+        }),
       };
     },
   },
@@ -584,61 +561,78 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     what: "Boards whose records move through stages, and the rules checked on every move.",
     empty:
       "No boards yet. Give a table a column of choices and call it the stage — the board and its rules follow.",
-    door: "custom.pipelines",
+    door: "custom.data_home_items (custom.pipelines, every organization)",
     changedByKind: "structure",
     async read(ctx) {
-      const answered = await doors.pipelines(ctx.dataSource, ctx.organizationId);
-      if (!answered.ok) return { ok: false, error: answered.error };
-      const index = byId(ctx.tables);
+      const found = itemsOf(ctx, "automation");
+      if (!found.ok) return found;
       return {
         ok: true,
-        items: answered.data.map((board) => ({
-          id: board.table_id,
-          title: board.table_name,
-          tableId: board.table_id,
-          tableName: board.table_name,
-          lane: laneOf(index, board.table_id),
-          facts: board.broken
-            ? []
-            : [
-                `${board.stage_label ?? "Stage"}: ${plural(board.stages, "stage")}`,
-                plural(board.rules, "rule"),
-              ],
-          href: `/data-v2/${board.table_id}?view=kanban`,
-          trouble: board.broken ?? undefined,
-          changedAt: board.updated_at,
-        })),
+        items: found.rows.map(({ row, item }) => {
+          const board = item as {
+            table_id: string;
+            table_name: string;
+            stage_label: string | null;
+            stages: number;
+            rules: number;
+            broken: string | null;
+            updated_at: string | null;
+          };
+          return {
+            ...rowFacts(ctx, row),
+            id: board.table_id,
+            title: board.table_name,
+            tableName: board.table_name,
+            facts: board.broken
+              ? []
+              : [`${board.stage_label ?? "Stage"}: ${plural(board.stages, "stage")}`, plural(board.rules, "rule")],
+            href: `/data-v2/${board.table_id}?view=kanban`,
+            trouble: board.broken ?? undefined,
+            changedAt: board.updated_at,
+          };
+        }),
       };
     },
   },
 
   {
     id: "shared-outside",
-    title: "Shared outside this organization",
-    what: "Everyone outside who has been given one of these tables, and what they hold.",
+    title: "Shared outside",
+    what: "Everyone outside the organization who has been given one of its tables, and what they hold.",
     empty:
-      "Nothing is shared outside this organization. Open a table, press Share, and invite somebody by email.",
-    door: "custom.shares_outside",
+      "Nothing is shared outside. Open a table, press Share, and invite somebody by email.",
+    door: "custom.data_home_items (custom.shares_outside, every organization)",
     changedByKind: null,
     async read(ctx) {
-      const answered = await doors.sharesOutside(ctx.dataSource, ctx.organizationId);
-      if (!answered.ok) return { ok: false, error: answered.error };
-      const index = byId(ctx.tables);
+      const found = itemsOf(ctx, "share");
+      if (!found.ok) return found;
       return {
         ok: true,
-        items: answered.data.map((share) => ({
-          id: share.invitation_id,
-          title: share.email,
-          tableId: share.table_id,
-          tableName: nameOf(index, share.table_id, share.table_name),
-          lane: laneOf(index, share.table_id),
-          facts: [share.level_label, share.joined ? "joined" : share.expired ? "run out" : "invited"],
-          // THE SHARE DIALOG over that table — where the invitation is resent,
-          // changed or taken back — not the table's grid.
-          href: `/data-v2/${share.table_id}?rail=share`,
-          trouble: share.expired ? share.say : undefined,
-          changedAt: share.invited_at,
-        })),
+        items: found.rows.map(({ row, item }) => {
+          const share = item as {
+            invitation_id: string;
+            table_id: string;
+            table_name: string | null;
+            email: string;
+            level_label: string;
+            joined: boolean;
+            expired: boolean;
+            invited_at: string | null;
+            say: string | null;
+          };
+          return {
+            ...rowFacts(ctx, row),
+            tableName: row.table_name || share.table_name || null,
+            id: share.invitation_id,
+            title: share.email,
+            facts: [share.level_label, share.joined ? "joined" : share.expired ? "run out" : "invited"],
+            // THE SHARE DIALOG over that table — where the invitation is resent, changed or taken
+            // back — not the table's grid.
+            href: `/data-v2/${share.table_id}?rail=share`,
+            trouble: share.expired ? (share.say ?? undefined) : undefined,
+            changedAt: share.invited_at,
+          };
+        }),
       };
     },
   },
@@ -649,7 +643,6 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     what: "Tables another organization has shared with the person signed in — theirs, not this organization's.",
     empty: "Nobody outside has shared a table with you.",
     door: "custom.tables_shared_with_me + custom.table_share_outside_for_me",
-    everyOrganization: true,
     changedByKind: null,
     async read(ctx) {
       // TWO DOORS, BECAUSE A SHARE HAS TWO STATES, and a row must stay on this
@@ -727,16 +720,24 @@ export async function attachChangedBy(
   items: HubItem[],
 ): Promise<void> {
   if (!capability.changedByKind || items.length === 0) return;
-  const answered = await doors.changedBy(
+  // EVERY ORGANIZATION SHOWN, IN ONE CALL (DATA-HOME-2): each row is asked of the organization it
+  // lives in, never of the one being worked in.
+  const byOrganization = new Map<string, string[]>();
+  for (const item of items) {
+    const organization = item.organizationId ?? ctx.organizationId;
+    const ids = byOrganization.get(organization) ?? [];
+    ids.push(item.id);
+    byOrganization.set(organization, ids);
+  }
+  const kind = capability.changedByKind;
+  const answered = await doors.dataHomeChangedBy(
     ctx.dataSource,
-    ctx.organizationId,
-    capability.changedByKind,
-    items.map((item) => item.id),
+    [...byOrganization.entries()].map(([organization_id, ids]) => ({ organization_id, kind, ids })),
   );
   if (!answered.ok) return;
-  const found = new Map(answered.data.map((row) => [row.id, row]));
+  const found = new Map(answered.data.map((row) => [`${row.organization_id}:${row.id}`, row]));
   for (const item of items) {
-    const row = found.get(item.id);
+    const row = found.get(`${item.organizationId ?? ctx.organizationId}:${item.id}`);
     if (!row) continue;
     item.changedAt = row.at ?? item.changedAt ?? null;
     item.changedBy = row.who ?? null;

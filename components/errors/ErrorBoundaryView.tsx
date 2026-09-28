@@ -18,7 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin, selectUser } from "@/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger, selectUser } from "@/lib/redux/slices/userSlice";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
@@ -275,7 +275,7 @@ export function ErrorBoundaryView({
   context,
   homePath = "/",
 }: ErrorBoundaryViewProps) {
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector(selectIsSuperAdminDebugger);
   const router = useRouter();
   const [resetting, setResetting] = useState(false);
   const isChunkFailure = isChunkLoadError(error);

@@ -19,7 +19,7 @@ import { Copy } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import CaptureInspectorPanel from "@/features/admin/capture-inspector/CaptureInspectorPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsAdminDebugger } from "@/lib/redux/slices/userSlice";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { useCapturedExchange } from "@/lib/diagnostics/stream-capture/useCapturedExchanges";
@@ -40,7 +40,7 @@ function CaptureInspectorWindowInner({
   onClose: () => void;
   initialExchangeId: string | null;
 }) {
-  const isAdmin = useAppSelector(selectIsAdmin) ?? false;
+  const isAdmin = useAppSelector(selectIsAdminDebugger) ?? false;
   const [selectedId, setSelectedId] = useState<string | null>(initialExchangeId);
   // The panel already tracks the clicked/selected exchange as state (STATE,
   // not a ref), so the menu can read the same selection instead of inventing

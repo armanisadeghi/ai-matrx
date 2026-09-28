@@ -22,6 +22,7 @@ import {
   Volume2,
   Image as ImageIcon,
   Zap,
+  Wand,
   Pencil,
   Expand,
   History,
@@ -134,6 +135,7 @@ import { useEntitlementGuard } from "@/features/entitlements/components/useEntit
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
 import { serializeDeck } from "@/features/education/media/audio/audioBrief";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
+import { GenerateCardsDialog } from "./GenerateCardsDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
 import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { AddMoreCardsButton } from "./AddMoreCardsButton";
@@ -427,6 +429,7 @@ export function SetDetailView({
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [convertOpen, setConvertOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
   const [studyModesOpen, setStudyModesOpen] = useState(false);
   const [deckToolsOpen, setDeckToolsOpen] = useState(false);
   const [cardSearch, setCardSearch] = useState("");
@@ -811,6 +814,9 @@ export function SetDetailView({
     getScope: buildScope,
   });
 
+  /** A loaded deck with no cards: the page offers what makes cards. */
+  const deckEmpty = !!data && data.cards.length === 0;
+
   return (
     <div className="h-full w-full overflow-y-auto bg-textured">
       <EducationToolHeader title={data?.set.name ?? initialName ?? "Deck"} />
@@ -910,6 +916,16 @@ export function SetDetailView({
                   Study / Fast Fire are live; Edit graduates the view→edit split
                   (ROUTING.md); Enhance is the agentic-expansion placeholder. */}
               <div className="hidden flex-wrap items-center gap-2 md:flex">
+                {/* EMPTY DECK (page-pass 2026-09-28): every card action was
+                    drawn greyed with no reason. With no cards the row offers
+                    what makes cards; the rest appear once there are some. */}
+                {deckEmpty && canEdit && (
+                  <Button size="sm" onClick={() => setGenerateOpen(true)}>
+                    <Wand className="mr-1.5 h-4 w-4" />
+                    Generate cards
+                  </Button>
+                )}
+                {!deckEmpty && (<>
                 <Button
                   size="sm"
                   onClick={() =>
@@ -999,6 +1015,7 @@ export function SetDetailView({
                   <Zap className="mr-1.5 h-4 w-4" />
                   Fast Fire
                 </Button>
+                </>)}
                 {canEdit && (
                   <Button
                   size="sm"
@@ -1037,6 +1054,7 @@ export function SetDetailView({
                     the PHONE's sheet only — on 2026-09-27 it was applied to
                     every width and desktop lost History, Export, Print,
                     offline, Enrich, Illustrate and Convert behind one button. */}
+                {!deckEmpty && (<>
                 {/* Export, Print and Download for offline are one menu
                     (page-pass 2026-09-27): every one still one click away on
                     desktop, in one button instead of three. */}
@@ -1139,6 +1157,7 @@ export function SetDetailView({
                   <Boxes className="mr-1.5 h-4 w-4" />
                   Convert
                 </Button>
+                </>)}
                 {/* The deck's audio jobs — one menu in the same row (they
                     were their own row of three buttons). */}
                 {data.cards.length > 0 && (
@@ -1191,6 +1210,7 @@ export function SetDetailView({
               </div>
             </div>
 
+            {!deckEmpty && (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1 sm:[&>*:first-child]:flex-none">
                 <EducationCollectionSearch
@@ -1213,11 +1233,23 @@ export function SetDetailView({
                 </span>
               )}
             </div>
+            )}
 
             {/* Mobile is a study launchpad, not a desktop action matrix squeezed
                 into one column. The two fastest paths stay visible; every
                 secondary capability remains reachable in a stable bottom sheet. */}
             <div className="mt-4 space-y-2 md:hidden">
+              {deckEmpty && canEdit && (
+                <Button
+                  size="lg"
+                  className="h-12 w-full"
+                  onClick={() => setGenerateOpen(true)}
+                >
+                  <Wand className="mr-2 h-5 w-5" />
+                  Generate cards
+                </Button>
+              )}
+              {!deckEmpty && (
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   size="lg"
@@ -1243,16 +1275,18 @@ export function SetDetailView({
                   Fast Fire
                 </Button>
               </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
+                {!deckEmpty && (
                 <Button
                   variant="outline"
                   className="h-11"
                   onClick={() => setStudyModesOpen(true)}
-                  disabled={data.cards.length === 0}
                 >
                   <GraduationCap className="mr-2 h-4 w-4" />
                   Study modes
                 </Button>
+                )}
                 <Button
                   variant="outline"
                   className="h-11"
@@ -1344,9 +1378,23 @@ export function SetDetailView({
                   <p className="text-sm font-medium text-foreground">
                     This deck has no cards yet
                   </p>
-                  <p className="max-w-sm text-xs text-muted-foreground">
-                    Generate cards for this deck in chat to start studying.
-                  </p>
+                  {canEdit && (
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                      <Button onClick={() => setGenerateOpen(true)}>
+                        <Wand className="mr-1.5 h-4 w-4" />
+                        Generate cards
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() =>
+                          navigate("edit", `${EDU_BASE}/${setId}/edit`)
+                        }
+                      >
+                        <Pencil className="mr-1.5 h-4 w-4" />
+                        Write cards
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -1589,22 +1637,26 @@ export function SetDetailView({
                       >
                         <History className="mr-2 h-4 w-4" /> History
                       </Button>
-                      <OfflineDeckButton
-                        setId={setId}
-                        disabled={data.cards.length === 0}
-                        className="h-11 justify-start"
-                      />
-                      <Button
-                        variant="outline"
-                        className="h-11 justify-start"
-                        onClick={() => {
-                          setDeckToolsOpen(false);
-                          handlePrint();
-                        }}
-                        disabled={data.cards.length === 0}
-                      >
-                        <Printer className="mr-2 h-4 w-4" /> Print
-                      </Button>
+                      {/* An empty deck has nothing to keep offline or
+                          print: those appear with its first card. */}
+                      {!deckEmpty && (
+                        <OfflineDeckButton
+                          setId={setId}
+                          className="h-11 justify-start"
+                        />
+                      )}
+                      {!deckEmpty && (
+                        <Button
+                          variant="outline"
+                          className="h-11 justify-start"
+                          onClick={() => {
+                            setDeckToolsOpen(false);
+                            handlePrint();
+                          }}
+                        >
+                          <Printer className="mr-2 h-4 w-4" /> Print
+                        </Button>
+                      )}
                       {/* This deck is one printable; the hub is the index of
                           the rest (cheat sheets, practice tests, certificates,
                           labels, codes, booklets, printed copies). */}
@@ -1621,6 +1673,7 @@ export function SetDetailView({
                     </div>
                   </section>
 
+                  {!deckEmpty && (
                   <section className="space-y-2">
                     <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Export
@@ -1633,7 +1686,6 @@ export function SetDetailView({
                             variant="outline"
                             className="h-11 justify-start"
                             onClick={() => exportDeck(format)}
-                            disabled={data.cards.length === 0}
                           >
                             <Download className="mr-2 h-4 w-4" />
                             {DECK_EXPORT_FILE[format].label}
@@ -1642,6 +1694,7 @@ export function SetDetailView({
                       )}
                     </div>
                   </section>
+                  )}
 
                   {data.cards.length > 0 && (
                     <section className="space-y-2">
@@ -1706,6 +1759,7 @@ export function SetDetailView({
                     </section>
                   )}
 
+                  {!deckEmpty && (
                   <section className="space-y-2">
                     <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Improve and reuse
@@ -1766,6 +1820,7 @@ export function SetDetailView({
                       </Button>
                     </div>
                   </section>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
@@ -1807,6 +1862,19 @@ export function SetDetailView({
               }}
             />
 
+            {canEdit && deckEmpty && (
+              <GenerateCardsDialog
+                open={generateOpen}
+                onOpenChange={setGenerateOpen}
+                setId={setId}
+                defaultTopic={data.set.topic?.trim() || data.set.name}
+                difficulty={data.set.difficulty}
+                onAdded={() => {
+                  setReloadKey((k) => k + 1);
+                  setLineageKey((k) => k + 1);
+                }}
+              />
+            )}
             {/* Convert this deck into other study artifacts (shared primitive). */}
             <ConvertContentDialog
               open={convertOpen}

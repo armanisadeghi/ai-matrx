@@ -14,8 +14,8 @@ describe("Flashcards mandate disclosure", () => {
   });
 
   it.each([
-    ["components/create/CreateFromTopic.tsx", "generateCards"],
-    ["components/create/CreateFromSource.tsx", "generateFromSource"],
+    ["components/create/CreateDeckPage.tsx", "generateCards"],
+    ["components/create/CreateDeckPage.tsx", "generateFromSource"],
     ["components/set-detail/AddMoreCardsButton.tsx", "generateFromSource"],
     ["components/set-detail/EnhanceSetDialog.tsx", "enrichCard"],
     ["components/set-detail/EnhanceSetDialog.tsx", "expandCard"],

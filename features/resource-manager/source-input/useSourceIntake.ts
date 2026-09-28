@@ -91,6 +91,11 @@ function hostOf(url: string): string {
   }
 }
 
+/** A notice that asks the person to save (keep) the Source — moot once it is kept. */
+function isSaveItNotice(remedy: string | null | undefined): boolean {
+  return typeof remedy === "string" && remedy.startsWith("save_it");
+}
+
 function landedNotes(notices: { message: string }[] | undefined): string[] {
   return (notices ?? []).map((n) => n.message).filter(Boolean);
 }
@@ -193,19 +198,24 @@ export function useSourceIntake(
         );
         return;
       }
-      const notes = landedNotes(result.sourceNotices);
       // A Source picked for real work is kept (A3): its clean → segment →
-      // embed is queued, and it is filed against the thing being made.
-      {
-        try {
-          await keepSource(result.processedDocumentId, { attachTo, organizationId });
-        } catch (err) {
-          notes.push(
-            `It is in your Sources, but it could not be kept for reuse${
-              attachTo.length ? " or filed with what you are making" : ""
-            }: ${addFailureSentence(err)}`,
-          );
-        }
+      // embed is queued, and it is filed against the thing being made. Once
+      // kept, the capture's "not saved — save it" notices are no longer true;
+      // the keep's own notices replace them.
+      let notes: string[];
+      try {
+        const kept = await keepSource(result.processedDocumentId, { attachTo, organizationId });
+        notes = [
+          ...landedNotes(result.sourceNotices.filter((n) => !isSaveItNotice(n.remedy))),
+          ...landedNotes(kept.notices),
+        ];
+      } catch (err) {
+        notes = [
+          ...landedNotes(result.sourceNotices),
+          `It is in your Sources, but it could not be kept for reuse${
+            attachTo.length ? " or filed with what you are making" : ""
+          }: ${addFailureSentence(err)}`,
+        ];
       }
       set.settle(id, {
         label: result.overview?.page_title || hostOf(url),

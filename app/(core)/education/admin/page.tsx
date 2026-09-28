@@ -215,7 +215,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
       notes: [
         "Sub-routes: /[setId] (detail), /[setId]/{study,learn,test,match,write} (5 study modes), /admin (feature map)",
-        "Creation/AI flows: /new, /new/import, /new/from-source",
+        "Creation: /new (Sources, style, make — or import a deck file)",
       ],
     },
     {

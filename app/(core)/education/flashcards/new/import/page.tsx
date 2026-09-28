@@ -1,10 +1,12 @@
-// /education/flashcards/new/import — CSV/Quizlet-paste import (Phase 1A).
-import type { Metadata } from "next";
-import { toolMetadata } from "@/features/education/route-helpers";
-import { ImportSetView } from "@/features/flashcards/components/import/ImportSetView";
+// /education/flashcards/new/import — retired. Importing a deck file is now a
+// choice on /education/flashcards/new; this opens it there.
+import { redirect } from "next/navigation";
+import { createDeckHref } from "@/features/flashcards/components/create/createDeckHref";
 
-export const metadata: Metadata = toolMetadata("flashcards");
-
-export default function ImportFlashcardSetPage() {
-  return <ImportSetView />;
+export default async function ImportRedirect({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  redirect(createDeckHref(await searchParams, { start: "import" }));
 }

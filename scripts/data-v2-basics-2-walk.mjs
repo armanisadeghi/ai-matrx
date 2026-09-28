@@ -400,6 +400,49 @@ try {
     await page.keyboard.press("Escape");
     await sleep(500);
 
+    // ── 9b · Delete from the row's menu: apart from Duplicate and Edit, the confirm names the row ─
+    // The walk's own "Pinch gauges (set of 3)" rows (step 5 adds one each run) go this way.
+    await open(T.supplies, "?view=sheet");
+    let deletions = 0;
+    for (let k = 0; k < 12; k++) {
+      const pinch = page.locator("tbody tr", { hasText: "Pinch gauges (set of 3)" }).first();
+      if (!(await pinch.count())) break;
+      await pinch.locator("td").nth(1).click({ button: "right" });
+      await sleep(900);
+      // The row's own actions are in its "Row · <name>" submenu.
+      await page.locator("[role=menu] [role^=menuitem]").filter({ hasText: /^Row · / }).first().hover();
+      await sleep(900);
+      const shape = await page.evaluate(() => {
+        const menus = [...document.querySelectorAll("[role=menu]")];
+        const menu = menus[menus.length - 1];
+        if (!menu) return null;
+        return [...menu.querySelectorAll("[role^=menuitem], [role=separator]")].map((x) => (x.getAttribute("role") === "separator" ? "|" : x.innerText.trim().split("\n")[0]));
+      });
+      const di = shape?.findIndex((s) => /^Delete/.test(s)) ?? -1;
+      const near = shape ? shape.slice(Math.max(0, di - 2), di + 1) : [];
+      if (k === 0) {
+        await shot("o10b-row-menu-delete-apart");
+        step("the row menu: where Delete sits", { around_delete: near, duplicate_at: shape?.findIndex((s) => /^Duplicate/.test(s)), edit_at: shape?.findIndex((s) => /^Edit/.test(s)), delete_at: di });
+        if (di < 0) friction(`the row menu has no Delete: ${JSON.stringify(shape)}`);
+        else if (!shape.slice(Math.min(...[shape.findIndex((s) => /^Duplicate/.test(s)), shape.findIndex((s) => /^Edit/.test(s))].filter((x) => x >= 0)), di).includes("|"))
+          friction(`Delete is not set apart from Duplicate/Edit: ${JSON.stringify(shape)}`);
+      }
+      await page.locator("[role=menu]").last().locator("[role^=menuitem]").filter({ hasText: /^Delete/ }).first().click();
+      const ask = page.getByRole("alertdialog");
+      await ask.waitFor({ timeout: 15000 });
+      const asked = (await ask.innerText()).replace(/\s+/g, " ");
+      if (k === 0) {
+        await shot("o10c-delete-names-the-row");
+        step("Delete asks, naming the row", { asked: asked.slice(0, 300) });
+        if (!/Pinch gauges \(set of 3\)/.test(asked)) friction(`the Delete confirm does not name the row: ${asked.slice(0, 200)}`);
+      }
+      await ask.getByRole("button").filter({ hasText: /^Delete/ }).last().click();
+      await sleep(3500);
+      deletions++;
+    }
+    const deleteNotice = await page.evaluate(() => [...document.querySelectorAll("li, [role=status], [data-sonner-toast]")].map((x) => x.innerText.replace(/\s+/g, " ")).filter((x) => /Undo/.test(x)).slice(0, 1));
+    step("the walk's rows deleted from the row menu", { deletions, notice: deleteNotice, left: await page.locator("tbody tr", { hasText: "Pinch gauges (set of 3)" }).count() });
+
     // ── 10 · widths and themes ─────────────────────────────────────────────────────────────────
     for (const [w, h, dark, name] of [
       [390, 844, false, "o11-plans-390-light"],

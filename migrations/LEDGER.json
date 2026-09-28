@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-28T20:29:23.093Z",
+  "generated_at": "2026-09-28T20:44:37.854Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -776,6 +776,12 @@
       "checksum": "5291f3d038afbb8ff9d185ae6df5608860d6894fd5c720d446eeb6341b62b62b",
       "applied_at": "2026-09-28 19:58:47.230636+00"
     },
+    "migrations/campaign/datahome2_d_the_data_home_doors_decide_in_their_own_name.sql": {
+      "source": "matrx-frontend",
+      "filename": "datahome2_d_the_data_home_doors_decide_in_their_own_name.sql",
+      "checksum": "5599c20514984ed26e750e1da0afff47f83f394cac936c4e0ac618ee930e51dc",
+      "applied_at": "2026-09-28 20:34:17.935389+00"
+    },
     "migrations/campaign/datav2face2_a_copied_table_opens_as_the_sheet_it_was.sql": {
       "source": "campaign",
       "filename": "datav2face2_a_copied_table_opens_as_the_sheet_it_was.sql",
@@ -973,6 +979,12 @@
       "filename": "doorsdecidelast_the_last_four_store_door_findings_are_closed.sql",
       "checksum": "f983c6cf6f07ed468fe53a2c0d80fe18110a58aca359464ac0cc8c8c87a109f9",
       "applied_at": "2026-09-27 10:38:14.998823+00"
+    },
+    "migrations/campaign/doorsdecidereplan_two_helpers_the_ladder_reaches_plan_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "doorsdecidereplan_two_helpers_the_ladder_reaches_plan_once.sql",
+      "checksum": "a6022b3a28e88650f5c044424afb40d173ec1c14b1a0e768c251cec10c225f69",
+      "applied_at": "2026-09-28 20:44:36.689962+00"
     },
     "migrations/campaign/doorsgreen_a_capture_sheet_asks_the_wall_in_its_own_body.sql": {
       "source": "matrx-frontend",

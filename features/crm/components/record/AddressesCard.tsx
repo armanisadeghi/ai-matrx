@@ -63,8 +63,10 @@ export function AddressesCard({
   };
   const addressCopyViews = addresses.map(buildAddressCopyView);
 
+  const canAdd = line1.trim() !== "" || locality.trim() !== "";
+
   const submit = async () => {
-    if (!line1.trim() && !locality.trim()) {
+    if (!canAdd) {
       toast.error("Enter at least a street or a city");
       return;
     }
@@ -232,9 +234,12 @@ export function AddressesCard({
               size="sm"
               className="h-11 px-4 text-sm sm:h-7 sm:px-3 sm:text-xs"
               onClick={submit}
-              disabled={saving}
+              // Like every other add form on the record: enabled once the
+              // form can be saved (a street or a city), named "Add".
+              disabled={saving || !canAdd}
+              title={canAdd ? undefined : "Enter a street or a city"}
             >
-              Add address
+              Add
             </Button>
           </div>
         </div>

@@ -7,7 +7,10 @@ import {
   toast,
   dismissAllTrackedToasts,
   dismissRecordToastsOffRoute,
+  holdTrackedToasts,
+  releaseTrackedToasts,
   sweepExpiredToasts,
+  toastsHeldByPointer,
 } from "@/lib/toast"
 import { useThemeMode } from "@/styles/themes/useThemeMode"
 import { setErrorToastDecorator } from "@/lib/toast"
@@ -161,8 +164,51 @@ function useRecordToastLifetime() {
   }, [])
 }
 
+/**
+ * 🚨 A TOAST SOMEONE IS HOLDING NEVER CLOSES, AND ITS CLOCK RESTARTS WHEN THEY
+ * LET GO (Arman, 2026-09-28). Pointer or keyboard focus arriving on the
+ * toaster holds every live toast; leaving it restarts each one's FULL
+ * lifetime — unless a copy menu opened from a toast is still open, in which
+ * case `lib/toast.ts` keeps holding until that menu closes. Delegated from the
+ * document because sonner owns the toaster's DOM.
+ */
+function useToastHold() {
+  useEffect(() => {
+    const inToaster = (node: EventTarget | null) =>
+      node instanceof Element && node.closest("[data-sonner-toaster]") !== null
+    const onEnter = (e: Event) => {
+      const related = (e as PointerEvent | FocusEvent).relatedTarget
+      if (inToaster(e.target)) {
+        if (!inToaster(related)) holdTrackedToasts()
+        return
+      }
+      // A toast closed under the pointer is removed without a pointerout, so
+      // the first movement anywhere else ends a hold that nothing ended.
+      if (e.type === "pointerover" && toastsHeldByPointer()) releaseTrackedToasts()
+    }
+    const onLeave = (e: Event) => {
+      const related = (e as PointerEvent | FocusEvent).relatedTarget
+      if (inToaster(e.target) && !inToaster(related)) {
+        // Let the DOM settle (a menu opening or closing) before judging.
+        setTimeout(releaseTrackedToasts, 0)
+      }
+    }
+    document.addEventListener("pointerover", onEnter)
+    document.addEventListener("pointerout", onLeave)
+    document.addEventListener("focusin", onEnter)
+    document.addEventListener("focusout", onLeave)
+    return () => {
+      document.removeEventListener("pointerover", onEnter)
+      document.removeEventListener("pointerout", onLeave)
+      document.removeEventListener("focusin", onEnter)
+      document.removeEventListener("focusout", onLeave)
+    }
+  }, [])
+}
+
 const Toaster = ({ ...props }: ToasterProps) => {
   const theme = useThemeMode()
+  useToastHold()
   useStaleToastHeightHeal()
   useStaleToastSweepOnReturn()
   useRecordToastLifetime()

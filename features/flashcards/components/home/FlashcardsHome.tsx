@@ -9,38 +9,18 @@
 //
 // Page-level actions (review, weak areas, progress, import, export, …) live in
 // the shell header through EducationToolHeader; "Create deck" sits beside the
-// scope tabs. The cross-mode study streak rides the header too, so the list
-// starts right under it.
-//
-// `/education/flashcards-2` renders this with `actionLayout="page"` — an
-// isolated comparison concept that shows the actions as an in-page panel.
+// scope tabs and opens the ONE creation page (/education/flashcards/new —
+// Sources, including an imported deck file, then style, then the deck). The
+// cross-mode study streak rides the header too, so the list starts right
+// under it.
 
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-  type ComponentType,
-} from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  INTELLIGENCE_ICON,
-  INTELLIGENCE_ICON_NAME,
-} from "@/components/icons/domain-icons";
-import {
-  CalendarClock,
-  CloudOff,
-  Download,
-  FileSearch,
-  Flame,
-  Loader2,
-  Plus,
-  TrendingUp,
-  Upload,
-} from "lucide-react";
+import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
+import { Flame, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   EducationToolHeader,
@@ -94,11 +74,7 @@ function StreakChip({ streak }: { streak: StudyStreakRow | null }) {
   );
 }
 
-export function FlashcardsHome({
-  actionLayout = "header",
-}: {
-  actionLayout?: "header" | "page";
-}) {
+export function FlashcardsHome() {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const authReady = useAppSelector(selectAuthReady);
@@ -205,12 +181,6 @@ export function FlashcardsHome({
     },
     { icon: "TrendingUp", label: "Progress", href: `${EDU_BASE}/progress` },
     {
-      icon: "FileSearch",
-      label: "New deck from a document",
-      href: `${EDU_BASE}/new/from-source`,
-    },
-    { icon: "Upload", label: "Import decks", href: `${EDU_BASE}/new/import` },
-    {
       icon: "Download",
       label: exportingLibrary ? "Exporting library…" : "Export library",
       disabled: exportingLibrary,
@@ -285,7 +255,7 @@ export function FlashcardsHome({
     <>
       <EducationToolHeader
         title="Flashcard Studio"
-        actions={actionLayout === "header" ? headerActions : undefined}
+        actions={headerActions}
       />
       {config ? (
         <EntityListPage
@@ -294,18 +264,6 @@ export function FlashcardsHome({
           clearsShellHeader={false}
           headerActions={tabRowActions}
           emptyAction={createButton}
-          notice={
-            actionLayout === "page" ? (
-              <QuickActions
-                goTo={goTo}
-                isPending={isPending}
-                exporting={exportingLibrary}
-                onExport={() => {
-                  if (!exportingLibrary) void exportLibrary();
-                }}
-              />
-            ) : undefined
-          }
           surface={surface}
         />
       ) : authReady && !userId ? (
@@ -327,57 +285,5 @@ export function FlashcardsHome({
         </div>
       )}
     </>
-  );
-}
-
-/** The `/education/flashcards-2` comparison concept: actions as a panel. */
-function QuickActions({
-  goTo,
-  isPending,
-  exporting,
-  onExport,
-}: {
-  goTo: (path: string) => void;
-  isPending: boolean;
-  exporting: boolean;
-  onExport: () => void;
-}) {
-  const item = (
-    label: string,
-    Icon: ComponentType<{ className?: string }>,
-    onClick: () => void,
-    disabled = isPending,
-  ) => (
-    <Button
-      key={label}
-      variant="outline"
-      onClick={onClick}
-      disabled={disabled}
-      className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
-    >
-      <Icon className="h-4 w-4 shrink-0" />
-      <span className="text-left leading-tight">{label}</span>
-    </Button>
-  );
-  return (
-    <section
-      aria-label="Flashcard actions"
-      className="matrx-touch-targets rounded-xl border border-border bg-card/80 p-3"
-    >
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
-        {item("Review due", CalendarClock, () => goTo(`${EDU_BASE}/review`))}
-        {item("Drill weak areas", Flame, () => goTo(`${EDU_BASE}/weak-areas`))}
-        {item("Progress", TrendingUp, () => goTo(`${EDU_BASE}/progress`))}
-        {item("From a document", FileSearch, () =>
-          goTo(`${EDU_BASE}/new/from-source`),
-        )}
-        {item("Import decks", Upload, () => goTo(`${EDU_BASE}/new/import`))}
-        {item("Export library", exporting ? Loader2 : Download, onExport, exporting)}
-        {item("Downloaded & offline", CloudOff, () => goTo("/education/offline"))}
-        {item("Flashcards intelligence", INTELLIGENCE_ICON, () =>
-          goTo(featureIntelligenceHref("flashcards")),
-        )}
-      </div>
-    </section>
   );
 }

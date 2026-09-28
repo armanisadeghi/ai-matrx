@@ -26,7 +26,7 @@ import {
   toggleDebugMode,
   selectIsDebugMode,
 } from "@/lib/redux/preferences/adminDebugSlice";
-import { selectIsSuperAdmin, selectUser } from "@/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger, selectUser } from "@/lib/redux/slices/userSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   selectActiveServer,
@@ -96,7 +96,7 @@ const MediumIndicator: React.FC<MediumIndicatorProps> = ({
 
   // ── Selectors (all from Redux — no local state for these) ──
   const user = useAppSelector(selectUser);
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector(selectIsSuperAdminDebugger);
   const activeServer = useAppSelector(selectActiveServer);
   const resolvedUrl = useAppSelector(selectResolvedBaseUrl);
   const activeHealth = useAppSelector(selectActiveServerHealth);

@@ -62,6 +62,7 @@ export const ADMIN_LANE_PATH_PREFIXES = [
   "/education/flashcards/admin",
   "/education/learn/admin",
   "/files/admin",
+  "/knowledge/admin",
   "/knowledge/extractions/admin",
   "/marketing/admin",
   "/masterwork/admin",

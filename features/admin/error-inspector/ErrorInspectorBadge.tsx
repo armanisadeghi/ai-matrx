@@ -17,7 +17,7 @@ import { AlertTriangle } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import { useCapturedErrorStats } from "@/lib/diagnostics/useCapturedErrors";
 import { useToggleErrorInspector } from "./useOpenErrorInspector";
 import { suppressErrorInspectorBadge } from "./error-inspector-badge-state";
@@ -25,7 +25,7 @@ import { useFixedCornerClearance } from "./useFixedCornerClearance";
 
 export default function ErrorInspectorBadge() {
   const pathname = usePathname();
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   const { red, orange, unseenRed, unseenOrange } = useCapturedErrorStats();
   const toggle = useToggleErrorInspector();
   // This badge sits in the bottom-left corner OVER whatever the page put

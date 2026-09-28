@@ -3,7 +3,7 @@
 /**
  * SidebarErrorInspectorToggle — the always-present Administration-section entry
  * (sidebar footer) that opens the systemwide Error Inspector. Visible on every
- * route for ANY admin (selectIsAdmin), mirroring SidebarAdminIndicatorToggle.
+ * route for ANY admin (selectIsAdminDebugger), mirroring SidebarAdminIndicatorToggle.
  *
  * Shows the live tiered state inline: a red count when there are clear errors,
  * else a small orange dot for minor ones, else nothing — same priority the
@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsAdminDebugger } from "@/lib/redux/slices/userSlice";
 import {
   selectIsOverlayOpen,
   toggleOverlay,
@@ -25,7 +25,7 @@ import { ERROR_INSPECTOR_OVERLAY_ID } from "@/features/admin/error-inspector/use
 
 export default function SidebarErrorInspectorToggle() {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsAdmin) ?? false;
+  const isAdmin = useAppSelector(selectIsAdminDebugger) ?? false;
   const isOpen = useAppSelector((state) =>
     selectIsOverlayOpen(state, ERROR_INSPECTOR_OVERLAY_ID),
   );

@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger } from "@/lib/redux/slices/userSlice";
 import {
   toggleDebugMode,
   selectIsDebugMode,
@@ -68,7 +68,7 @@ function ChatDebugWindowInner({
   onClose: () => void;
 }) {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector(selectIsSuperAdminDebugger);
   const isGlobalDebugMode = useAppSelector(selectIsDebugMode);
   const showDebugInfo = useAppSelector((s) =>
     selectShowDebugInfo(s, sessionId),

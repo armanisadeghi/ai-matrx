@@ -31,8 +31,10 @@
  *       WALL CLOCK. Sonner is handed `duration: Infinity` so its
  *       visibility-paused timer is out of the loop; ours fires at the
  *       requested duration (sonner's own 4 s default otherwise) whether the
- *       document is hidden or not. Hovering the toaster still defers, because
- *       a person reading a toast is not a stale toast. `toast.loading`,
+ *       document is hidden or not. A HELD toast never closes (pointer over
+ *       the toaster, focus inside it, or its copy menu open) and its full
+ *       lifetime restarts when the hold ends — see `toasterIsHeld`. Error and
+ *       warning toasts last at least `MIN_ERROR_TOAST_MS`. `toast.loading`,
  *       `toast.promise`, `toast.custom` and any caller passing
  *       `duration: Infinity` are untouched: they end when their caller says.
  *       This is what closes the class for the hundreds of existing call
@@ -110,6 +112,13 @@ export type RecordToastOptions = Record<string, unknown> & {
  */
 const DEFAULT_TOAST_MS = 4000;
 
+/**
+ * 🚨 AN ERROR STAYS LONG ENOUGH TO READ (Arman, 2026-09-28: "errors aren't
+ * like positive things. They need to remain for 5 seconds min."). Error and
+ * warning toasts never leave sooner than this, whatever the caller asked.
+ */
+export const MIN_ERROR_TOAST_MS = 5000;
+
 /** A person reading a toast is not a stale toast: re-check this often. */
 const HOVER_DEFER_MS = 800;
 
@@ -119,6 +128,10 @@ interface LiveToast {
   record: ToastRecordRef | null;
   /** Wall-clock instant the toast is due to go. */
   expiresAt: number;
+  /** The full lifetime — what the clock restarts at after a hold ends. */
+  lifetimeMs: number;
+  /** A hold (hover, focus, an open copy menu) was seen and has not yet ended. */
+  held: boolean;
   timer: ReturnType<typeof setTimeout> | null;
 }
 
@@ -211,28 +224,94 @@ function forget(toastId: ToastId) {
   liveToasts.delete(toastId);
 }
 
-/** True while the pointer is over the toaster, so dismissal would be rude. */
-function toasterIsHovered(): boolean {
+/**
+ * 🚨 A TOAST SOMEONE IS HOLDING NEVER CLOSES (Arman, 2026-09-28: "if you hover
+ * it, it cannot close while you're hovering, and in fact, the timer to close
+ * must restart back each time you hover it again"). Held means: the pointer is
+ * over the toaster, keyboard focus is inside it, or a menu opened from a toast
+ * is still open — the Alchemy copy menu renders in a portal OUTSIDE the
+ * toaster, so a pointer inside that menu is not over the toaster, and without
+ * this the toast (and the menu with it) vanished mid-copy.
+ */
+/** Set by the Toaster's pointer/focus listeners — the hold as the events saw it. */
+let heldByPointer = false;
+
+/** True while the Toaster's listeners hold the toasts. */
+export function toastsHeldByPointer(): boolean {
+  return heldByPointer;
+}
+
+export function toasterIsHeld(): boolean {
+  if (heldByPointer) return true;
   if (typeof document === "undefined") return false;
   try {
-    return !!document.querySelector("[data-sonner-toaster]:hover");
+    const toaster = document.querySelector("[data-sonner-toaster]");
+    if (!toaster) return false;
+    if (toaster.matches(":hover") || toaster.querySelector(":hover")) return true;
+    if (document.activeElement && toaster.contains(document.activeElement)) return true;
+    return !!toaster.querySelector('[aria-expanded="true"], [data-state="open"]');
   } catch {
     return false;
   }
 }
 
+/** Restart one toast's clock at its FULL lifetime. */
+function restart(entry: LiveToast) {
+  if (entry.lifetimeMs === Infinity) return;
+  if (entry.timer) clearTimeout(entry.timer);
+  entry.held = false;
+  entry.expiresAt = Date.now() + entry.lifetimeMs;
+  arm(entry);
+}
+
+/** The pointer (or focus) arrived on the toaster: every live toast is held. */
+export function holdTrackedToasts(): void {
+  heldByPointer = true;
+  for (const entry of liveToasts.values()) {
+    if (entry.lifetimeMs === Infinity) continue;
+    entry.held = true;
+    entry.expiresAt = Infinity;
+  }
+}
+
+/**
+ * The pointer left the toaster. If nothing else still holds it (an open copy
+ * menu, focus inside), every held toast starts its full lifetime again.
+ */
+export function releaseTrackedToasts(): void {
+  heldByPointer = false;
+  if (toasterIsHeld()) return;
+  for (const entry of [...liveToasts.values()]) {
+    if (entry.held) restart(entry);
+  }
+}
+
 function arm(entry: LiveToast) {
   const remaining = Math.max(0, entry.expiresAt - Date.now());
-  entry.timer = setTimeout(() => {
-    entry.timer = null;
-    if (toasterIsHovered()) {
-      entry.expiresAt = Date.now() + HOVER_DEFER_MS;
-      arm(entry);
-      return;
-    }
-    forget(entry.toastId);
-    dismissInSonner(entry.toastId);
-  }, remaining);
+  entry.timer = setTimeout(
+    () => {
+      entry.timer = null;
+      if (entry.held || toasterIsHeld()) {
+        if (toasterIsHeld()) {
+          // Still held: look again shortly, never close.
+          entry.held = true;
+          entry.expiresAt = Infinity;
+          entry.timer = setTimeout(() => {
+            entry.timer = null;
+            arm(entry);
+          }, HOVER_DEFER_MS);
+          return;
+        }
+        // The hold ended without a pointerleave (a menu closed, focus moved):
+        // the full lifetime starts again.
+        restart(entry);
+        return;
+      }
+      forget(entry.toastId);
+      dismissInSonner(entry.toastId);
+    },
+    Number.isFinite(remaining) ? remaining : HOVER_DEFER_MS,
+  );
   // A background tab throttles timers to ~1/minute but never stops them, and
   // `sweepExpiredToasts()` (called by the Toaster on visibilitychange)
   // closes that gap the instant anyone looks.
@@ -246,7 +325,7 @@ function arm(entry: LiveToast) {
 export function sweepExpiredToasts(now: number = Date.now()): number {
   let dismissed = 0;
   for (const entry of [...liveToasts.values()]) {
-    if (entry.expiresAt > now) continue;
+    if (entry.expiresAt > now || entry.held) continue;
     forget(entry.toastId);
     dismissInSonner(entry.toastId);
     dismissed += 1;
@@ -321,6 +400,7 @@ export function dismissRecordToastsOffRoute(pathname: string): number {
  * entry outlives a toast that is already off screen.
  */
 export function dismissAllTrackedToasts(): number {
+  heldByPointer = false;
   let dismissed = 0;
   for (const entry of [...liveToasts.values()]) {
     forget(entry.toastId);
@@ -358,14 +438,16 @@ function track(
   message: unknown,
   options: RecordToastOptions | undefined,
   record: ToastRecordRef | null,
+  minimumMs = 0,
 ): ToastId {
   const requested = options?.duration;
-  const lifetimeMs =
+  const asked =
     requested === Infinity
       ? Infinity
       : typeof requested === "number" && Number.isFinite(requested)
         ? requested
         : DEFAULT_TOAST_MS;
+  const lifetimeMs = minimumMs > 0 ? Math.max(asked, minimumMs) : asked;
 
   // "Sonner, don't you time this" — not "forever".
   const passthrough: RecordToastOptions = { ...options, duration: Infinity };
@@ -403,6 +485,8 @@ function track(
     toastId,
     record,
     expiresAt: Date.now() + lifetimeMs,
+    lifetimeMs,
+    held: false,
     timer: null,
   };
   liveToasts.set(toastId, entry);
@@ -438,12 +522,12 @@ function isSilentNotice(message: unknown, options?: RecordToastOptions): boolean
 }
 
 /** Wrap one sonner method onto the wall clock; leave a missing one missing. */
-function onWallClock(emit: Emit | undefined, dropsSilentNotices = false) {
+function onWallClock(emit: Emit | undefined, dropsSilentNotices = false, minimumMs = 0) {
   if (typeof emit !== "function") return undefined;
   return (message: unknown, options?: RecordToastOptions) =>
     dropsSilentNotices && isSilentNotice(message, options)
       ? ("" as ToastId)
-      : track(emit, message, options, null);
+      : track(emit, message, options, null, minimumMs);
 }
 
 type MatrxToast = typeof captured.toast;
@@ -489,7 +573,7 @@ function errorOnWallClock(emit: Emit | undefined) {
   return (message: unknown, options?: RecordToastOptions) =>
     isSilentNotice(message, options)
       ? ("" as ToastId)
-      : track(emit, message, decorateError(message, options, null), null);
+      : track(emit, message, decorateError(message, options, null), null, MIN_ERROR_TOAST_MS);
 }
 
 /**
@@ -506,7 +590,7 @@ export const toast: MatrxToast = Object.assign(
     success: onWallClock(captured.toast.success as unknown as Emit),
     error: errorOnWallClock(captured.toast.error as unknown as Emit),
     info: onWallClock(captured.toast.info as unknown as Emit),
-    warning: onWallClock(captured.toast.warning as unknown as Emit, true),
+    warning: onWallClock(captured.toast.warning as unknown as Emit, true, MIN_ERROR_TOAST_MS),
     message: onWallClock(captured.toast.message as unknown as Emit),
     // A loading toast re-created under the same id replaces the queued removal.
     loading: ((message: unknown, options?: RecordToastOptions) => {
@@ -539,6 +623,7 @@ export const toastErrorAlreadyCaptured: typeof captured.toastErrorAlreadyCapture
     message,
     decorateError(message, options as RecordToastOptions | undefined, null),
     null,
+    MIN_ERROR_TOAST_MS,
   );
 
 // ---------------------------------------------------------------------------
@@ -559,6 +644,7 @@ function raise(
     message,
     kind === "error" ? decorateError(message, options, record) : options,
     record,
+    kind === "error" || kind === "warning" ? MIN_ERROR_TOAST_MS : 0,
   );
 }
 

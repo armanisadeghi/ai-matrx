@@ -36,36 +36,16 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       status: "Live",
       notes: [
         "Reads fcService.listSets() (RLS-filtered)",
-        "New-set / From document / Import buttons route to the three creation flows below",
+        "Create deck opens the one creation page below",
       ],
     },
     {
       url: "/education/flashcards/new",
-      label: "Create from topic (AI)",
+      label: "Create deck (one page)",
       description:
-        "CreateFromTopic — generate a set from a free-text topic via fc_generate_from_cards.",
+        "CreateDeckPage — Sources (SourceInput, incl. Just a topic) → Style and details → Make the deck; or Import a deck file (DeckFileImport). Sources resolve via POST /sources/resolve into segmentedGenerate (flashcards__generate_from_source); a topic alone runs flashcards__generate_cards. /new/from-source and /new/import redirect here.",
       filePath: "app/(core)/education/flashcards/new/page.tsx",
       status: "Live",
-    },
-    {
-      url: "/education/flashcards/new/import",
-      label: "Import (CSV/Quizlet)",
-      description:
-        "ImportSetView — paste/upload CSV/TSV, configurable delimiter, preview, fcService.createSetWithCards.",
-      filePath: "app/(core)/education/flashcards/new/import/page.tsx",
-      status: "Live",
-    },
-    {
-      url: "/education/flashcards/new/from-source",
-      label: "Generate from a document (Knowledge)",
-      description:
-        "CreateFromSource — two-step wizard: pick a Knowledge-indexed doc, curate which chunks to include, then fc_generate_from_source. Persists chunk/page lineage on each card's source field.",
-      filePath: "app/(core)/education/flashcards/new/from-source/page.tsx",
-      status: "Live",
-      notes: [
-        "Phase 5 of the competitive-parity push",
-        "Wires useGenerateCards' GenerateFromSourceVariables path",
-      ],
     },
     {
       url: "/education/flashcards/weak-areas",
@@ -303,24 +283,24 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       tier: "internal",
     },
     {
-      name: "CreateFromTopic",
-      filePath: "features/flashcards/components/create/CreateFromTopic.tsx",
+      name: "CreateDeckPage",
+      filePath: "features/flashcards/components/create/CreateDeckPage.tsx",
       description:
-        "AI generation from a free-text topic — the /new entry point.",
+        "The one creation page: Sources → Style and details → Make the deck, with a live card-by-card stream; honours Wait for the clean version.",
       tier: "internal",
     },
     {
-      name: "ImportSetView",
-      filePath: "features/flashcards/components/import/ImportSetView.tsx",
+      name: "DeckFileImport",
+      filePath: "features/flashcards/components/create/DeckFileImport.tsx",
       description:
-        "CSV/TSV/Quizlet-paste import: configurable delimiter, row preview, createSetWithCards.",
+        "No-AI deck import: Quizlet/CSV/TSV paste or file with preview, Anki .apkg, Matrx JSON, library zip — all through persistImportedDeck.",
       tier: "internal",
     },
     {
-      name: "CreateFromSource",
-      filePath: "features/flashcards/components/create/CreateFromSource.tsx",
+      name: "generateDeckFromSources",
+      filePath: "features/flashcards/data/generateDeckFromSources.ts",
       description:
-        "Knowledge-sourced generation: DocPickerStep (useLibrary) → CurateStep (chunk checklist via useDocumentChunks) → fc_generate_from_source, with source lineage backfilled from the picked document.",
+        "Resolved Sources → segmented generation → per-Source citations and card lineage → one deck + a source lineage edge per Source.",
       tier: "internal",
     },
     {

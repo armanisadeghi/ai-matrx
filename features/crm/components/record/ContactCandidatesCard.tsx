@@ -34,6 +34,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { formatCost } from "@ai-matrx/kit/format";
 import { extractErrorMessage } from "@/utils/errors";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,13 @@ import {
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { SectionCard } from "./SectionCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+
+/**
+ * The most one paid lookup is metered at, in USD — the server's fallback unit
+ * price in `aidream/services/crm/enrichment/calls.py` (PROVIDER_UNIT_COST_USD;
+ * its dearest named provider is 0.019). Shown to people only as points.
+ */
+const PAID_LOOKUP_MAX_USD = 0.02;
 
 interface Props {
   partyId: string;
@@ -131,11 +139,13 @@ export function ContactCandidatesCard({
     // record's own pages, the registries) always runs; the paid rung spends
     // this organization's monthly contact-finding budget. Answers are cached
     // server-side, so asking again soon costs nothing.
+    // The cost is shown in POINTS, never dollars (Arman, 2026-09-27: people
+    // see credits/points; dollars only behind a system admin's toggle). The
+    // title names what happens — there is no free-only choice on this button.
     const ok = await confirm({
-      title: "Search paid contact providers too?",
-      description:
-        "We check free sources first, then ask paid contact providers. Each paid lookup costs a few cents from this organization's monthly contact-finding budget; results are reused for two weeks, so repeating the search soon is free.",
-      confirmLabel: "Search, including paid",
+      title: "Find contact info?",
+      description: `We check free sources first, then paid contact providers. Each paid lookup uses up to ${formatCost(PAID_LOOKUP_MAX_USD)} from this organization's monthly contact-finding budget. Results are reused for two weeks, so searching again soon is free.`,
+      confirmLabel: "Find contact info",
     });
     if (!ok) return;
     setFinding(true);

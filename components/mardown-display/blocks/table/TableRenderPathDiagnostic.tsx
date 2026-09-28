@@ -3,7 +3,7 @@
 import { AlertTriangle } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 
 export interface TableRenderDiagnosticContext {
   /** Block type that routed here (usually "text"). */
@@ -29,7 +29,7 @@ interface TableRenderPathDiagnosticProps {
 export function TableRenderPathDiagnostic({
   context,
 }: TableRenderPathDiagnosticProps) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   if (!isAdmin) return null;
 
   return (

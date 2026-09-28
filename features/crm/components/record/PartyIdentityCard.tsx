@@ -125,13 +125,21 @@ function InlineField({
   };
 
   const inputClasses =
-    "min-h-11 w-full rounded border border-primary/40 bg-background px-1.5 py-0.5 text-base text-foreground outline-none focus:border-primary sm:min-h-0 sm:text-sm";
+    "min-h-11 w-full min-w-0 flex-1 rounded border border-primary/40 bg-background px-1.5 py-0.5 text-base text-foreground outline-none focus:border-primary sm:min-h-0 sm:text-sm";
 
   return (
-    // PHONE: the label sits ABOVE its value (no 96px label column eating a
-    // 375px row); DESKTOP: the dense two-column label | value row.
-    <div className="flex flex-col gap-0.5 py-1 sm:flex-row sm:items-start sm:gap-2 sm:py-0.5">
-      <span className="text-xs text-muted-foreground sm:w-24 sm:shrink-0 sm:pt-0.5 sm:text-right">
+    // Label and value INLINE at every width for short fields (phone: an 80px
+    // label column; desktop: the dense 96px right-aligned column). Stacking
+    // label over value made the phone card ~450px tall and pushed Contact
+    // points off the first screen (page-pass 2026-09-28). A multiline field
+    // (Bio) still stacks on a phone — it needs the width.
+    <div
+      className={cn(
+        "flex gap-2 py-0.5 sm:flex-row sm:items-start",
+        spec.multiline ? "max-sm:flex-col max-sm:gap-0.5" : "items-center",
+      )}
+    >
+      <span className="w-20 shrink-0 text-xs text-muted-foreground sm:w-24 sm:pt-0.5 sm:text-right">
         {spec.label}
       </span>
       {editing ? (
@@ -438,7 +446,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
         ))}
         {emptyFields.length > 0 && (
           <div className="flex items-center gap-2 py-0.5">
-            <span className="hidden sm:block sm:w-24 sm:shrink-0" />
+            <span className="w-20 shrink-0 sm:w-24" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -466,8 +474,8 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
 
         {/* Classification — the CRM stance on this record. */}
         <div className="mt-1.5 space-y-1.5 border-t border-border pt-2">
-          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-            <span className="text-xs text-muted-foreground sm:w-24 sm:shrink-0 sm:text-right">
+          <div className="flex items-center gap-2">
+            <span className="w-20 shrink-0 text-xs text-muted-foreground sm:w-24 sm:text-right">
               Stage
             </span>
             <div className="min-w-0 flex-1">
@@ -483,8 +491,8 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-            <span className="text-xs text-muted-foreground sm:w-24 sm:shrink-0 sm:text-right">
+          <div className="flex items-center gap-2">
+            <span className="w-20 shrink-0 text-xs text-muted-foreground sm:w-24 sm:text-right">
               Rating
             </span>
             <div className="min-w-0 flex-1">
@@ -498,8 +506,8 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-            <span className="text-xs text-muted-foreground sm:w-24 sm:shrink-0 sm:text-right">
+          <div className="flex items-center gap-2">
+            <span className="w-20 shrink-0 text-xs text-muted-foreground sm:w-24 sm:text-right">
               Roles
             </span>
             <div className="min-w-0 flex-1">

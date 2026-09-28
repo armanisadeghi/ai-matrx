@@ -404,7 +404,7 @@ The AI action is a two-choice menu at both inspector levels:
   re-renders are isolated to that leaf (zero page impact). Registered in
   `features/window-panels/registry/trayPreviewRegistry.ts`.
 
-UI self-gates on `selectIsAdmin` (any admin level), not super-admin.
+UI self-gates on `selectIsAdminDebugger` (any admin level, on EVERY page — admin debugging, not admin power; the admin lane made `selectIsAdmin` false outside `/administration` and blinded the inspector until 2026-09-28).
 
 ## Registration sites (keep in sync)
 
@@ -435,6 +435,18 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 - New downgrade → edit `DOWNGRADE_RULES` only.
 
 ## Change Log
+
+- 2026-09-28 — **The inspector sees every page again.** The admin-lane ruling
+  (2026-09-25) made `selectIsAdmin` / `selectIsSuperAdmin` false outside
+  `/administration`, which silently hid the Error Inspector badge, window, menu
+  item and sidebar toggle — and every other admin debug tool (admin indicator,
+  chat/canvas/PDF debug panels, the route error boundary's admin panel, the
+  overlay error fallback's diagnostics) — on all user pages. Capture and
+  persistence never stopped; only the admin's view of it did. New ADMIN
+  DEBUGGING selectors `selectIsAdminDebugger` / `selectIsSuperAdminDebugger`
+  (`lib/redux/selectors/userSelectors.ts`) read the admin identity on every page
+  for debug tooling ONLY — never data or a mutating control, which stay on the
+  lane-gated power selectors.
 
 - 2026-09-25 — **New `mandate-fast-path` source.** The one compliant exception to
   "nothing works around the mandate system" is a hard-coded fast path verified at

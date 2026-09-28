@@ -94,6 +94,27 @@ export const selectAdminLevelPerson = (state: RootState): AdminLevel | null =>
 export const selectIsSuperAdminPerson = (state: RootState): boolean =>
   state.userAuth.adminLevel === "super_admin";
 
+/*
+ * ADMIN DEBUGGING (Arman, 2026-09-28): "the system is still supposed to
+ * recognize admins, save it in redux and use it for certain added debugging
+ * and special functionality." The admin lane removed admin POWER from user
+ * pages; it never meant to blind the admin's own diagnostics. These two
+ * selectors gate DEBUG TOOLING ONLY — the Error Inspector, the admin
+ * indicator, debug panels, "Copy for AI", technical error detail — tools that
+ * show this browser's own session and grant no data, no control, and no
+ * record another person can't already see. Every database read behind them
+ * still runs without the lane, so RLS answers exactly as it does for anyone.
+ * Never gate data or a mutating control with them — use selectIsSuperAdmin.
+ */
+
+/** ADMIN DEBUGGING, any tier — true on every page for an admin. Debug tooling only. */
+export const selectIsAdminDebugger = (state: RootState): boolean =>
+  state.userAuth.isAdmin;
+
+/** ADMIN DEBUGGING, super admin — true on every page. Debug tooling only. */
+export const selectIsSuperAdminDebugger = (state: RootState): boolean =>
+  state.userAuth.adminLevel === "super_admin";
+
 /** True while the current page is in the admin section. */
 export const selectAdminLaneOpen = (state: RootState): boolean =>
   adminLaneOpen(state);

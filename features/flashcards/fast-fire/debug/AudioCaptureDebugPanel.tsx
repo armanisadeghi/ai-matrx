@@ -10,12 +10,12 @@
 // for non-admins, so it's safe to drop anywhere (capture-test surface now, a live
 // drill / window panel later). Temporary dev aid — removable.
 //
-// Gate: `selectIsAdmin` (admin sufficient, NOT super-admin) per owner.
+// Gate: `selectIsAdminDebugger` (admin sufficient, NOT super-admin) per owner.
 
 import { useEffect, useState } from "react";
 import { Activity, Mic, Waypoints } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import {
   subscribeDebug,
   type CaptureDebugSnapshot,
@@ -31,7 +31,7 @@ function fmtSec(s: number): string {
 }
 
 export function AudioCaptureDebugPanel({ className }: { className?: string }) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   const [snap, setSnap] = useState<CaptureDebugSnapshot | null>(null);
 
   useEffect(() => {

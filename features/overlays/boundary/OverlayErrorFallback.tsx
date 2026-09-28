@@ -44,7 +44,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import {
   buildOverlayErrorAgentPayload,
   buildOverlayErrorHuman,
@@ -76,7 +76,7 @@ export function OverlayErrorFallback({
   onReset,
   onClose,
 }: OverlayErrorFallbackProps) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   const store = useAppStore();
   const [expanded, setExpanded] = React.useState(false);
 

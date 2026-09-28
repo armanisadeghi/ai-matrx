@@ -4707,6 +4707,7 @@ export type Database = {
           referenced_columns: string[]
         }[]
       }
+      user_delete_probe: { Args: { p_persona: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
@@ -26284,6 +26285,9038 @@ export type Database = {
       [_ in never]: never
     }
   }
+  custom: {
+    Tables: {
+      _share_tails_mine_repair: {
+        Row: {
+          is_table: boolean
+          organization_id: string
+          record_id: string
+          repaired_at: string
+          visibility_before: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          is_table: boolean
+          organization_id: string
+          record_id: string
+          repaired_at?: string
+          visibility_before: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          is_table?: boolean
+          organization_id?: string
+          record_id?: string
+          repaired_at?: string
+          visibility_before?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      agent_table_origin: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          organization_id: string
+          table_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          organization_id: string
+          table_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          organization_id?: string
+          table_id?: string
+        }
+        Relationships: []
+      }
+      agg_digest_checked: {
+        Row: {
+          checked_at: string
+          organization_id: string
+          outcome: string
+          rule_id: string
+          slot_at: string
+        }
+        Insert: {
+          checked_at?: string
+          organization_id: string
+          outcome: string
+          rule_id: string
+          slot_at: string
+        }
+        Update: {
+          checked_at?: string
+          organization_id?: string
+          outcome?: string
+          rule_id?: string
+          slot_at?: string
+        }
+        Relationships: []
+      }
+      anon_form: {
+        Row: {
+          audience: string
+          capture_opened_at: string | null
+          capture_opened_by: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          exposed_field_keys: Json
+          honeypot_key: string | null
+          id: string
+          metadata: Json
+          notify_rule_id: string | null
+          organization_id: string
+          presentation: Json
+          published_at: string | null
+          published_by: string | null
+          quarantine_rule_id: string | null
+          rate_limit_per_window: number
+          rate_limit_window: string
+          required_field_keys: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string
+          submission_cap: number | null
+          table_id: string
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          audience?: string
+          capture_opened_at?: string | null
+          capture_opened_by?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          exposed_field_keys?: Json
+          honeypot_key?: string | null
+          id?: string
+          metadata?: Json
+          notify_rule_id?: string | null
+          organization_id: string
+          presentation?: Json
+          published_at?: string | null
+          published_by?: string | null
+          quarantine_rule_id?: string | null
+          rate_limit_per_window?: number
+          rate_limit_window?: string
+          required_field_keys?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string
+          submission_cap?: number | null
+          table_id: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          audience?: string
+          capture_opened_at?: string | null
+          capture_opened_by?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          exposed_field_keys?: Json
+          honeypot_key?: string | null
+          id?: string
+          metadata?: Json
+          notify_rule_id?: string | null
+          organization_id?: string
+          presentation?: Json
+          published_at?: string | null
+          published_by?: string | null
+          quarantine_rule_id?: string | null
+          rate_limit_per_window?: number
+          rate_limit_window?: string
+          required_field_keys?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug?: string
+          submission_cap?: number | null
+          table_id?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      anon_form_draft: {
+        Row: {
+          answers: Json
+          created_at: string
+          deleted_at: string | null
+          expires_at: string
+          form_id: string
+          id: string
+          organization_id: string
+          remote_origin: string | null
+          saved_at: string
+          saves: number
+          secret_hash: string
+          submission_id: string | null
+          submitted_at: string | null
+          window_saves: number
+          window_start: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          deleted_at?: string | null
+          expires_at: string
+          form_id: string
+          id?: string
+          organization_id: string
+          remote_origin?: string | null
+          saved_at?: string
+          saves?: number
+          secret_hash: string
+          submission_id?: string | null
+          submitted_at?: string | null
+          window_saves?: number
+          window_start?: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string
+          form_id?: string
+          id?: string
+          organization_id?: string
+          remote_origin?: string | null
+          saved_at?: string
+          saves?: number
+          secret_hash?: string
+          submission_id?: string | null
+          submitted_at?: string | null
+          window_saves?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
+      anon_hit: {
+        Row: {
+          bucket: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          form_id: string
+          hits: number
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          token_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          form_id: string
+          hits?: number
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          token_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          form_id?: string
+          hits?: number
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          token_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          window_start?: string
+        }
+        Relationships: []
+      }
+      anon_inbound: {
+        Row: {
+          address: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          disabled_at: string | null
+          form_id: string | null
+          id: string
+          last_received_at: string | null
+          metadata: Json
+          organization_id: string
+          secret_hash: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source: string
+          table_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          address: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disabled_at?: string | null
+          form_id?: string | null
+          id?: string
+          last_received_at?: string | null
+          metadata?: Json
+          organization_id: string
+          secret_hash?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source?: string
+          table_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          address?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disabled_at?: string | null
+          form_id?: string | null
+          id?: string
+          last_received_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          secret_hash?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source?: string
+          table_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      anon_replay: {
+        Row: {
+          captured_at: string | null
+          client_key: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          device: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          record_id: string | null
+          replays: number
+          sheet_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          submission_id: string | null
+          table_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          captured_at?: string | null
+          client_key: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          device?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          record_id?: string | null
+          replays?: number
+          sheet_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          submission_id?: string | null
+          table_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          captured_at?: string | null
+          client_key?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          device?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          record_id?: string | null
+          replays?: number
+          sheet_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          submission_id?: string | null
+          table_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      anon_submission: {
+        Row: {
+          booking_ref: string | null
+          cleared_at: string | null
+          cleared_by_rule_id: string | null
+          client_key: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          form_id: string | null
+          id: string
+          inbound_id: string | null
+          metadata: Json
+          organization_id: string
+          payload: Json
+          raw_payload: Json
+          record_id: string | null
+          rejection_reason: string | null
+          remote_origin: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source: string
+          state: string
+          table_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          booking_ref?: string | null
+          cleared_at?: string | null
+          cleared_by_rule_id?: string | null
+          client_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          form_id?: string | null
+          id?: string
+          inbound_id?: string | null
+          metadata?: Json
+          organization_id: string
+          payload?: Json
+          raw_payload?: Json
+          record_id?: string | null
+          rejection_reason?: string | null
+          remote_origin?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source?: string
+          state?: string
+          table_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          booking_ref?: string | null
+          cleared_at?: string | null
+          cleared_by_rule_id?: string | null
+          client_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          form_id?: string | null
+          id?: string
+          inbound_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          payload?: Json
+          raw_payload?: Json
+          record_id?: string | null
+          rejection_reason?: string | null
+          remote_origin?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source?: string
+          state?: string
+          table_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      anon_token: {
+        Row: {
+          allowed_origins: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string | null
+          form_id: string | null
+          id: string
+          last_used_at: string | null
+          metadata: Json
+          mode: string
+          organization_id: string
+          record_id: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          saved_view_id: string | null
+          secret_hash: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          allowed_origins?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          form_id?: string | null
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json
+          mode?: string
+          organization_id: string
+          record_id?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          saved_view_id?: string | null
+          secret_hash: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          allowed_origins?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          form_id?: string | null
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json
+          mode?: string
+          organization_id?: string
+          record_id?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          saved_view_id?: string | null
+          secret_hash?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      carrying_rule: {
+        Row: {
+          container_side: string
+          conveys_max: Database["public"]["Enums"]["permission_level"]
+          is_active: boolean
+          kind: string
+          note: string | null
+          role: string
+        }
+        Insert: {
+          container_side: string
+          conveys_max: Database["public"]["Enums"]["permission_level"]
+          is_active?: boolean
+          kind: string
+          note?: string | null
+          role: string
+        }
+        Update: {
+          container_side?: string
+          conveys_max?: Database["public"]["Enums"]["permission_level"]
+          is_active?: boolean
+          kind?: string
+          note?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
+      doc_render: {
+        Row: {
+          body: string
+          content_hash: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          record_id: string
+          rendered_at: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string
+          template_id: string
+          template_version: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          body: string
+          content_hash: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          record_id: string
+          rendered_at?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string
+          template_id: string
+          template_version: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          body?: string
+          content_hash?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          record_id?: string
+          rendered_at?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string
+          template_id?: string
+          template_version?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      doc_signature: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          document_hash: string
+          document_version: number
+          field_key: string
+          id: string
+          metadata: Json
+          organization_id: string
+          record_id: string
+          render_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          signed_at: string
+          signer_name: string
+          signer_user_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          document_hash: string
+          document_version: number
+          field_key: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          record_id: string
+          render_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          signed_at?: string
+          signer_name: string
+          signer_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          document_hash?: string
+          document_version?: number
+          field_key?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          record_id?: string
+          render_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          signed_at?: string
+          signer_name?: string
+          signer_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      external_link: {
+        Row: {
+          cached_title: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          external_key: string
+          fetched_at: string
+          id: string
+          link_url: string | null
+          metadata: Json
+          organization_id: string
+          record_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source_id: string
+          target_ref: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          cached_title?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          external_key: string
+          fetched_at?: string
+          id?: string
+          link_url?: string | null
+          metadata?: Json
+          organization_id: string
+          record_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_id: string
+          target_ref: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          cached_title?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          external_key?: string
+          fetched_at?: string
+          id?: string
+          link_url?: string | null
+          metadata?: Json
+          organization_id?: string
+          record_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_id?: string
+          target_ref?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_link_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "external_source"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_source: {
+        Row: {
+          connection_token: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          external_schema: string
+          external_table: string
+          id: string
+          link_template: string | null
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          tier: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          writes_enabled: boolean
+        }
+        Insert: {
+          connection_token: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          external_schema?: string
+          external_table: string
+          id?: string
+          link_template?: string | null
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          tier: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          writes_enabled?: boolean
+        }
+        Update: {
+          connection_token?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          external_schema?: string
+          external_table?: string
+          id?: string
+          link_template?: string | null
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          tier?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          writes_enabled?: boolean
+        }
+        Relationships: []
+      }
+      inbox_item_state: {
+        Row: {
+          cleared_at: string | null
+          cleared_version: number | null
+          created_at: string
+          item_id: string
+          organization_id: string
+          person_id: string
+          reminded_at: string | null
+          snoozed_until: string | null
+          updated_at: string
+          woke_at: string | null
+        }
+        Insert: {
+          cleared_at?: string | null
+          cleared_version?: number | null
+          created_at?: string
+          item_id: string
+          organization_id: string
+          person_id: string
+          reminded_at?: string | null
+          snoozed_until?: string | null
+          updated_at?: string
+          woke_at?: string | null
+        }
+        Update: {
+          cleared_at?: string | null
+          cleared_version?: number | null
+          created_at?: string
+          item_id?: string
+          organization_id?: string
+          person_id?: string
+          reminded_at?: string | null
+          snoozed_until?: string | null
+          updated_at?: string
+          woke_at?: string | null
+        }
+        Relationships: []
+      }
+      io_comment: {
+        Row: {
+          anchor: Json
+          body: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          parent_comment_id: string | null
+          record_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          anchor?: Json
+          body: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          parent_comment_id?: string | null
+          record_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          anchor?: Json
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          parent_comment_id?: string | null
+          record_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      io_import: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dedupe_key: string | null
+          deleted_at: string | null
+          duplicates: Json
+          file_bytes: number | null
+          file_hash: string | null
+          finished_at: string | null
+          format: string
+          id: string
+          mapping: Json
+          metadata: Json
+          organization_id: string
+          policy: Json
+          proposals: Json
+          refusals: Json
+          rows_duplicate: number
+          rows_seen: number
+          rows_written: number
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source_columns: Json
+          source_name: string | null
+          state: string
+          table_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          duplicates?: Json
+          file_bytes?: number | null
+          file_hash?: string | null
+          finished_at?: string | null
+          format?: string
+          id?: string
+          mapping?: Json
+          metadata?: Json
+          organization_id: string
+          policy?: Json
+          proposals?: Json
+          refusals?: Json
+          rows_duplicate?: number
+          rows_seen?: number
+          rows_written?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_columns?: Json
+          source_name?: string | null
+          state?: string
+          table_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          duplicates?: Json
+          file_bytes?: number | null
+          file_hash?: string | null
+          finished_at?: string | null
+          format?: string
+          id?: string
+          mapping?: Json
+          metadata?: Json
+          organization_id?: string
+          policy?: Json
+          proposals?: Json
+          refusals?: Json
+          rows_duplicate?: number
+          rows_seen?: number
+          rows_written?: number
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_columns?: Json
+          source_name?: string | null
+          state?: string
+          table_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      io_outbox: {
+        Row: {
+          actor: Json
+          changed_field_ids: Json
+          consumed_at: string | null
+          consumer: string | null
+          created_at: string
+          created_by: string | null
+          dedupe_key: string
+          deleted_at: string | null
+          event_key: string
+          id: string
+          metadata: Json
+          op_id: string | null
+          operation: string
+          organization_id: string
+          record_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          actor?: Json
+          changed_field_ids?: Json
+          consumed_at?: string | null
+          consumer?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key: string
+          deleted_at?: string | null
+          event_key?: string
+          id?: string
+          metadata?: Json
+          op_id?: string | null
+          operation: string
+          organization_id: string
+          record_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          actor?: Json
+          changed_field_ids?: Json
+          consumed_at?: string | null
+          consumer?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string
+          deleted_at?: string | null
+          event_key?: string
+          id?: string
+          metadata?: Json
+          op_id?: string | null
+          operation?: string
+          organization_id?: string
+          record_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      merge_field_provenance: {
+        Row: {
+          absent_reason: string | null
+          actual_source: string | null
+          candidates: Json
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          declared_source: string
+          deleted_at: string | null
+          field_id: string | null
+          freshness: string
+          id: string
+          merge_field_id: string | null
+          merge_field_key: string
+          metadata: Json
+          organization_id: string
+          outcome: string
+          override_by: string | null
+          record_id: string | null
+          rendered: string | null
+          resolved_at: string
+          rule_id: string | null
+          rule_version: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          tier: string
+          turn_id: string | null
+          updated_at: string
+          updated_by: string | null
+          value_version: number | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          absent_reason?: string | null
+          actual_source?: string | null
+          candidates?: Json
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          declared_source: string
+          deleted_at?: string | null
+          field_id?: string | null
+          freshness?: string
+          id?: string
+          merge_field_id?: string | null
+          merge_field_key: string
+          metadata?: Json
+          organization_id: string
+          outcome: string
+          override_by?: string | null
+          record_id?: string | null
+          rendered?: string | null
+          resolved_at?: string
+          rule_id?: string | null
+          rule_version?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          tier?: string
+          turn_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_version?: number | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          absent_reason?: string | null
+          actual_source?: string | null
+          candidates?: Json
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          declared_source?: string
+          deleted_at?: string | null
+          field_id?: string | null
+          freshness?: string
+          id?: string
+          merge_field_id?: string | null
+          merge_field_key?: string
+          metadata?: Json
+          organization_id?: string
+          outcome?: string
+          override_by?: string | null
+          record_id?: string | null
+          rendered?: string | null
+          resolved_at?: string
+          rule_id?: string | null
+          rule_version?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          tier?: string
+          turn_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_version?: number | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      organization_visibility_version: {
+        Row: {
+          bumped_at: string
+          organization_id: string
+          version: number
+        }
+        Insert: {
+          bumped_at?: string
+          organization_id: string
+          version?: number
+        }
+        Update: {
+          bumped_at?: string
+          organization_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      portal: {
+        Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
+          client_table_id: string
+          closed_at: string | null
+          config: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          opened_at: string | null
+          organization_id: string
+          sign_in_method: string
+          slug: string
+          title: string
+        }
+        Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          client_table_id: string
+          closed_at?: string | null
+          config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          opened_at?: string | null
+          organization_id: string
+          sign_in_method?: string
+          slug: string
+          title: string
+        }
+        Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          client_table_id?: string
+          closed_at?: string | null
+          config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          opened_at?: string | null
+          organization_id?: string
+          sign_in_method?: string
+          slug?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      portal_principal: {
+        Row: {
+          bound_at: string | null
+          client_record_id: string
+          email: string
+          id: string
+          invited_at: string
+          invited_by: string | null
+          is_active: boolean
+          organization_id: string
+          portal_id: string
+          revoked_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bound_at?: string | null
+          client_record_id: string
+          email: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          is_active?: boolean
+          organization_id: string
+          portal_id: string
+          revoked_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bound_at?: string | null
+          client_record_id?: string
+          email?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          is_active?: boolean
+          organization_id?: string
+          portal_id?: string
+          revoked_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_principal_portal_id_fkey"
+            columns: ["portal_id"]
+            isOneToOne: false
+            referencedRelation: "portal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_table: {
+        Row: {
+          comments_allowed: boolean
+          conveys_max: Database["public"]["Enums"]["permission_level"]
+          created_at: string
+          edge_role: string
+          editable_field_ids: string[]
+          editable_field_keys: Json
+          id: string
+          names_via_field_id: string
+          ord: number
+          organization_id: string
+          portal_id: string
+          table_id: string
+          visible_field_ids: string[]
+          visible_field_keys: Json
+        }
+        Insert: {
+          comments_allowed?: boolean
+          conveys_max?: Database["public"]["Enums"]["permission_level"]
+          created_at?: string
+          edge_role: string
+          editable_field_ids?: string[]
+          editable_field_keys?: Json
+          id?: string
+          names_via_field_id: string
+          ord?: number
+          organization_id: string
+          portal_id: string
+          table_id: string
+          visible_field_ids?: string[]
+          visible_field_keys?: Json
+        }
+        Update: {
+          comments_allowed?: boolean
+          conveys_max?: Database["public"]["Enums"]["permission_level"]
+          created_at?: string
+          edge_role?: string
+          editable_field_ids?: string[]
+          editable_field_keys?: Json
+          id?: string
+          names_via_field_id?: string
+          ord?: number
+          organization_id?: string
+          portal_id?: string
+          table_id?: string
+          visible_field_ids?: string[]
+          visible_field_keys?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_table_portal_id_fkey"
+            columns: ["portal_id"]
+            isOneToOne: false
+            referencedRelation: "portal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      record: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_alias: {
+        Row: {
+          aliased_at: string
+          migration_id: string | null
+          new_id: string
+          old_id: string
+          organization_id: string
+          reason: string | null
+          revoked_at: string | null
+          verb: string
+        }
+        Insert: {
+          aliased_at?: string
+          migration_id?: string | null
+          new_id: string
+          old_id: string
+          organization_id: string
+          reason?: string | null
+          revoked_at?: string | null
+          verb: string
+        }
+        Update: {
+          aliased_at?: string
+          migration_id?: string | null
+          new_id?: string
+          old_id?: string
+          organization_id?: string
+          reason?: string | null
+          revoked_at?: string | null
+          verb?: string
+        }
+        Relationships: []
+      }
+      record_p00: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p01: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p02: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p03: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p04: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p05: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p06: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p07: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p08: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p09: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p10: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p11: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p12: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p13: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p14: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      record_p15: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          data_class?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      visibility_cache: {
+        Row: {
+          computed_at: string
+          container_id: string
+          container_type: string
+          depth: number
+          item_id: string
+          item_type: string
+          max_level: Database["public"]["Enums"]["permission_level"]
+          stamp_epoch: number
+        }
+        Insert: {
+          computed_at?: string
+          container_id: string
+          container_type: string
+          depth: number
+          item_id: string
+          item_type: string
+          max_level: Database["public"]["Enums"]["permission_level"]
+          stamp_epoch: number
+        }
+        Update: {
+          computed_at?: string
+          container_id?: string
+          container_type?: string
+          depth?: number
+          item_id?: string
+          item_type?: string
+          max_level?: Database["public"]["Enums"]["permission_level"]
+          stamp_epoch?: number
+        }
+        Relationships: []
+      }
+      visibility_epoch: {
+        Row: {
+          bumped_at: string
+          entity_id: string
+          entity_type: string
+          epoch: number
+          organization_id: string
+        }
+        Insert: {
+          bumped_at?: string
+          entity_id: string
+          entity_type: string
+          epoch?: number
+          organization_id: string
+        }
+        Update: {
+          bumped_at?: string
+          entity_id?: string
+          entity_type?: string
+          epoch?: number
+          organization_id?: string
+        }
+        Relationships: []
+      }
+      whole_value_parked: {
+        Row: {
+          attempts: number
+          bytes: number
+          chars: number
+          field_key: string
+          id: string
+          last_error: string | null
+          organization_id: string
+          owner_id: string | null
+          parked_at: string
+          pointer: string
+          record_id: string
+          record_visibility: Database["platform"]["Enums"]["visibility"] | null
+          sha256: string
+          table_id: string | null
+          value_version: number | null
+          whole_text: string
+        }
+        Insert: {
+          attempts?: number
+          bytes: number
+          chars: number
+          field_key: string
+          id?: string
+          last_error?: string | null
+          organization_id: string
+          owner_id?: string | null
+          parked_at?: string
+          pointer: string
+          record_id: string
+          record_visibility?: Database["platform"]["Enums"]["visibility"] | null
+          sha256: string
+          table_id?: string | null
+          value_version?: number | null
+          whole_text: string
+        }
+        Update: {
+          attempts?: number
+          bytes?: number
+          chars?: number
+          field_key?: string
+          id?: string
+          last_error?: string | null
+          organization_id?: string
+          owner_id?: string | null
+          parked_at?: string
+          pointer?: string
+          record_id?: string
+          record_visibility?: Database["platform"]["Enums"]["visibility"] | null
+          sha256?: string
+          table_id?: string | null
+          value_version?: number | null
+          whole_text?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      carrying_edges: {
+        Row: {
+          container_id: string | null
+          container_type: string | null
+          conveys_max: Database["public"]["Enums"]["permission_level"] | null
+          item_id: string | null
+          item_type: string | null
+        }
+        Relationships: []
+      }
+      doc_template: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          created_by: string | null
+          data: Json | null
+          id: string | null
+          metadata: Json | null
+          name: string | null
+          organization_id: string | null
+          renders_table_id: string | null
+          template_version: number | null
+          token_count: number | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Insert: {
+          body?: never
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          id?: string | null
+          metadata?: Json | null
+          name?: never
+          organization_id?: string | null
+          renders_table_id?: never
+          template_version?: never
+          token_count?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Update: {
+          body?: never
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          id?: string | null
+          metadata?: Json | null
+          name?: never
+          organization_id?: string | null
+          renders_table_id?: never
+          template_version?: never
+          token_count?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: []
+      }
+      external_record: {
+        Row: {
+          cached_title: string | null
+          connection_token: string | null
+          created_at: string | null
+          created_by: string | null
+          external_key: string | null
+          external_schema: string | null
+          external_table: string | null
+          fetched_at: string | null
+          link_id: string | null
+          link_url: string | null
+          organization_id: string | null
+          record_id: string | null
+          source_id: string | null
+          staleness: string | null
+          table_id: string | null
+          target_ref: Json | null
+          tier: string | null
+          updated_at: string | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+          writes_enabled: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_link_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "external_source"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field: {
+        Row: {
+          applies_to_types: Json | null
+          compute_on: string | null
+          config: Json | null
+          context_policy: string | null
+          created_at: string | null
+          created_by: string | null
+          data: Json | null
+          dated: boolean | null
+          default: Json | null
+          depends_on: Json | null
+          entity_definition_id: string | null
+          format: string | null
+          id: string | null
+          inverse_key: string | null
+          key: string | null
+          label: string | null
+          metadata: Json | null
+          multi: boolean | null
+          name: string | null
+          on_target_delete: string | null
+          options_table_id: string | null
+          organization_id: string | null
+          relation_max: number | null
+          relation_target: string | null
+          required: boolean | null
+          review_interval_days: number | null
+          rules: Json | null
+          sensitivity: string | null
+          sort: number | null
+          source: string | null
+          source_config: Json | null
+          table_token: string | null
+          type: string | null
+          unit: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Insert: {
+          applies_to_types?: never
+          compute_on?: never
+          config?: never
+          context_policy?: never
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          dated?: never
+          default?: never
+          depends_on?: never
+          entity_definition_id?: never
+          format?: never
+          id?: string | null
+          inverse_key?: never
+          key?: never
+          label?: never
+          metadata?: Json | null
+          multi?: never
+          name?: never
+          on_target_delete?: never
+          options_table_id?: never
+          organization_id?: string | null
+          relation_max?: never
+          relation_target?: never
+          required?: never
+          review_interval_days?: never
+          rules?: never
+          sensitivity?: never
+          sort?: never
+          source?: never
+          source_config?: never
+          table_token?: never
+          type?: never
+          unit?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Update: {
+          applies_to_types?: never
+          compute_on?: never
+          config?: never
+          context_policy?: never
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          dated?: never
+          default?: never
+          depends_on?: never
+          entity_definition_id?: never
+          format?: never
+          id?: string | null
+          inverse_key?: never
+          key?: never
+          label?: never
+          metadata?: Json | null
+          multi?: never
+          name?: never
+          on_target_delete?: never
+          options_table_id?: never
+          organization_id?: string | null
+          relation_max?: never
+          relation_target?: never
+          required?: never
+          review_interval_days?: never
+          rules?: never
+          sensitivity?: never
+          sort?: never
+          source?: never
+          source_config?: never
+          table_token?: never
+          type?: never
+          unit?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: []
+      }
+      home: {
+        Row: {
+          home_record_id: string | null
+          kind: string | null
+          organization_id: string | null
+          relation_id: string | null
+          table_id: string | null
+        }
+        Relationships: []
+      }
+      merge_field: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          data: Json | null
+          format: string | null
+          id: string | null
+          key: string | null
+          label: string | null
+          metadata: Json | null
+          modifiers: Json | null
+          organization_id: string | null
+          override_policy: string | null
+          override_requires: string | null
+          semantic_type: string | null
+          source: string | null
+          source_config: Json | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          format?: never
+          id?: string | null
+          key?: never
+          label?: never
+          metadata?: Json | null
+          modifiers?: never
+          organization_id?: string | null
+          override_policy?: never
+          override_requires?: never
+          semantic_type?: never
+          source?: never
+          source_config?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          format?: never
+          id?: string | null
+          key?: never
+          label?: never
+          metadata?: Json | null
+          modifiers?: never
+          organization_id?: string | null
+          override_policy?: never
+          override_requires?: never
+          semantic_type?: never
+          source?: never
+          source_config?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: []
+      }
+      record_outbox: {
+        Row: {
+          actor: Json | null
+          changed_fields: Json | null
+          consumed_at: string | null
+          consumer: string | null
+          event_key: string | null
+          id: string | null
+          occurred_at: string | null
+          operation: string | null
+          organization_id: string | null
+          record_id: string | null
+          table_id: string | null
+        }
+        Insert: {
+          actor?: Json | null
+          changed_fields?: Json | null
+          consumed_at?: string | null
+          consumer?: string | null
+          event_key?: string | null
+          id?: string | null
+          occurred_at?: string | null
+          operation?: string | null
+          organization_id?: string | null
+          record_id?: string | null
+          table_id?: string | null
+        }
+        Update: {
+          actor?: Json | null
+          changed_fields?: Json | null
+          consumed_at?: string | null
+          consumer?: string | null
+          event_key?: string | null
+          id?: string | null
+          occurred_at?: string | null
+          operation?: string | null
+          organization_id?: string | null
+          record_id?: string | null
+          table_id?: string | null
+        }
+        Relationships: []
+      }
+      rule: {
+        Row: {
+          applies_to_types: Json | null
+          computes: boolean | null
+          created_at: string | null
+          created_by: string | null
+          data: Json | null
+          decides_applicability: boolean | null
+          defines_membership: boolean | null
+          expr: Json | null
+          id: string | null
+          kind: string | null
+          message: string | null
+          metadata: Json | null
+          name: string | null
+          organization_id: string | null
+          scope_table_id: string | null
+          sort: number | null
+          target_field_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+          use_types: Json | null
+          uses: Json | null
+          validates: boolean | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Insert: {
+          applies_to_types?: never
+          computes?: never
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          decides_applicability?: never
+          defines_membership?: never
+          expr?: never
+          id?: string | null
+          kind?: never
+          message?: never
+          metadata?: Json | null
+          name?: never
+          organization_id?: string | null
+          scope_table_id?: never
+          sort?: never
+          target_field_id?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          use_types?: never
+          uses?: never
+          validates?: never
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Update: {
+          applies_to_types?: never
+          computes?: never
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          decides_applicability?: never
+          defines_membership?: never
+          expr?: never
+          id?: string | null
+          kind?: never
+          message?: never
+          metadata?: Json | null
+          name?: never
+          organization_id?: string | null
+          scope_table_id?: never
+          sort?: never
+          target_field_id?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          use_types?: never
+          uses?: never
+          validates?: never
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: []
+      }
+      table: {
+        Row: {
+          agent_writable: boolean | null
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          data: Json | null
+          default_sort: Json | null
+          detail: boolean | null
+          display: string | null
+          fields: Json | null
+          home_id: string | null
+          icon: string | null
+          id: string | null
+          is_kernel: boolean | null
+          kept_by_the_app: boolean | null
+          kept_for: string | null
+          label_plural: string | null
+          label_singular: string | null
+          metadata: Json | null
+          name: string | null
+          offered_as_context: boolean | null
+          ordered: boolean | null
+          organization_id: string | null
+          parent_token: string | null
+          retention_days: number | null
+          row_order: string | null
+          slug: string | null
+          title_field: string | null
+          type: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+          weight: string | null
+        }
+        Insert: {
+          agent_writable?: never
+          color?: never
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          default_sort?: never
+          detail?: never
+          display?: never
+          fields?: never
+          home_id?: never
+          icon?: never
+          id?: string | null
+          is_kernel?: never
+          kept_by_the_app?: never
+          kept_for?: never
+          label_plural?: never
+          label_singular?: never
+          metadata?: Json | null
+          name?: never
+          offered_as_context?: never
+          ordered?: never
+          organization_id?: string | null
+          parent_token?: never
+          retention_days?: never
+          row_order?: never
+          slug?: never
+          title_field?: never
+          type?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+          weight?: never
+        }
+        Update: {
+          agent_writable?: never
+          color?: never
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          default_sort?: never
+          detail?: never
+          display?: never
+          fields?: never
+          home_id?: never
+          icon?: never
+          id?: string | null
+          is_kernel?: never
+          kept_by_the_app?: never
+          kept_for?: never
+          label_plural?: never
+          label_singular?: never
+          metadata?: Json | null
+          name?: never
+          offered_as_context?: never
+          ordered?: never
+          organization_id?: string | null
+          parent_token?: never
+          retention_days?: never
+          row_order?: never
+          slug?: never
+          title_field?: never
+          type?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+          weight?: never
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      _action_check: {
+        Args: { p_actions: Json; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      _action_coerce: { Args: { p_field: Json; p_value: Json }; Returns: Json }
+      _booking_availability: {
+        Args: { p_organization_id: string; p_raw: Json }
+        Returns: Json
+      }
+      _booking_release: {
+        Args: {
+          p_hold_id: string
+          p_organization_id: string
+          p_published_by: string
+        }
+        Returns: boolean
+      }
+      _booking_slots: {
+        Args: { p_avail: Json; p_days?: number }
+        Returns: {
+          member_user_id: string
+          slot_at: string
+          slot_key: string
+        }[]
+      }
+      _call_text: { Args: { p_body: string }; Returns: string }
+      _card_words: {
+        Args: { p_noun: string; p_organization_id: string; p_value: string }
+        Returns: string
+      }
+      _checklist_finished: {
+        Args: {
+          p_organization_id: string
+          p_status: string
+          p_table_id: string
+        }
+        Returns: boolean
+      }
+      _checklist_instantiate: {
+        Args: {
+          p_about_record_id: string
+          p_organization_id: string
+          p_origin: string
+          p_roles: Json
+          p_starting_at: string
+          p_template_id: string
+        }
+        Returns: Json
+      }
+      _checklist_refusal_for: {
+        Args: { p_data: Json; p_organization_id: string; p_step_id: string }
+        Returns: string
+      }
+      _checklist_run_visible: {
+        Args: { p_data: Json; p_organization_id: string; p_run_id: string }
+        Returns: boolean
+      }
+      _checklist_watch_for: {
+        Args: {
+          p_new: Record<string, unknown>
+          p_old: Record<string, unknown>
+          p_op: string
+        }
+        Returns: undefined
+      }
+      _choice_words_array: { Args: { p_entries: Json }; Returns: Json }
+      _context_side_effects: { Args: { p_events: Json }; Returns: undefined }
+      _copy_evaluation_is_open: {
+        Args: { p_id: string; p_org: string }
+        Returns: boolean
+      }
+      _copy_evaluation_note: {
+        Args: { p_class: string; p_id: string; p_org: string; p_table: string }
+        Returns: undefined
+      }
+      _copy_evaluation_reimage: {
+        Args: { p_id: string; p_image: Json; p_org: string }
+        Returns: undefined
+      }
+      _ctx_answer: {
+        Args: { p_id: string; p_org: string; p_row: Json }
+        Returns: Json
+      }
+      _ctx_bridge: {
+        Args: {
+          p_op: string
+          p_org: string
+          p_row: Json
+          p_table: string
+          p_type: string
+        }
+        Returns: undefined
+      }
+      _ctx_dataset_field_holds: {
+        Args: { p_org: string; p_spec: Json }
+        Returns: undefined
+      }
+      _ctx_field_doc: {
+        Args: {
+          p_depends: Json
+          p_display_bare: boolean
+          p_key: string
+          p_label: string
+          p_policy: string
+          p_required: boolean
+          p_review: number
+          p_sensitivity: string
+          p_shape: Json
+          p_sort: number
+          p_source: string
+          p_table: string
+        }
+        Returns: Json
+      }
+      _ctx_id: { Args: { p_parts: string[] }; Returns: string }
+      _ctx_iso: { Args: { p_at: string }; Returns: string }
+      _ctx_item_shape: {
+        Args: { p_as_text?: boolean; p_item: Json }
+        Returns: Json
+      }
+      _ctx_mark: { Args: { p_who: string }; Returns: string }
+      _ctx_marked: { Args: never; Returns: boolean }
+      _ctx_own_words: { Args: { p_kind: string; p_spec: Json }; Returns: Json }
+      _ctx_py_json: { Args: { p_v: Json }; Returns: string }
+      _ctx_rekey: {
+        Args: { p_from: string; p_org: string; p_to: string; p_type: string }
+        Returns: number
+      }
+      _ctx_scope_columns: {
+        Args: { p_org: string; p_type: string }
+        Returns: undefined
+      }
+      _ctx_scope_parent_holds: {
+        Args: { p_org: string; p_parent: string; p_type: string }
+        Returns: undefined
+      }
+      _ctx_scope_slug: { Args: { p: string }; Returns: string }
+      _ctx_slug: {
+        Args: { p_fallback?: string; p_name: string }
+        Returns: string
+      }
+      _ctx_store_item: {
+        Args: { p_item: string; p_org: string; p_spec: Json; p_type: string }
+        Returns: Json
+      }
+      _ctx_store_scope: {
+        Args: { p_org: string; p_scope: string; p_spec: Json; p_type: string }
+        Returns: Json
+      }
+      _ctx_store_tag: {
+        Args: {
+          p_organization_id: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+        }
+        Returns: string
+      }
+      _ctx_store_type: {
+        Args: { p_org: string; p_spec: Json; p_type: string }
+        Returns: Json
+      }
+      _ctx_store_value: { Args: { p_org: string; p_row: Json }; Returns: Json }
+      _ctx_table_fields: {
+        Args: { p_org: string; p_type: string }
+        Returns: Json
+      }
+      _ctx_table_live: {
+        Args: { p_org: string; p_type: string }
+        Returns: boolean
+      }
+      _ctx_upsert_doc: {
+        Args: {
+          p_class: string
+          p_created_by?: string
+          p_deleted: string
+          p_doc: Json
+          p_id: string
+          p_kernel: string
+          p_org: string
+          p_stamp: Json
+        }
+        Returns: string
+      }
+      _ctx_value_fits_its_scope: {
+        Args: {
+          p_field: Record<string, unknown>
+          p_rec: Record<string, unknown>
+        }
+        Returns: undefined
+      }
+      _ctx_value_of: { Args: { p_field: Json; p_row: Json }; Returns: Json }
+      _ctx_value_write_store: { Args: { p_payload: Json }; Returns: Json }
+      _ctx_word: { Args: { p_map: string; p_word: string }; Returns: string }
+      _ctx_words: { Args: { p_multi: boolean; p_v: Json }; Returns: Json }
+      _decoration_field_ok: {
+        Args: { p_field: string; p_organization_id: string; p_table_id: string }
+        Returns: boolean
+      }
+      _decorations_check: {
+        Args: {
+          p_organization_id: string
+          p_path: string[]
+          p_table_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      _display_format_check: { Args: { p_format: Json }; Returns: Json }
+      _display_of_field: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      _display_spec_for: {
+        Args: {
+          p_organization_id: string
+          p_raw: Json
+          p_target_table_id: string
+        }
+        Returns: Json
+      }
+      _entity_reference_target_ok: {
+        Args: { p_id: string; p_organization_id: string; p_token: string }
+        Returns: boolean
+      }
+      _example_placeholder: { Args: { p_text: string }; Returns: string }
+      _field_choices_save: {
+        Args: {
+          p_add_only?: boolean
+          p_entries: Json
+          p_options_table_id: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      _field_document_for: {
+        Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
+        Returns: Json
+      }
+      _field_kinds_sentence: { Args: never; Returns: string }
+      _field_value_carry: {
+        Args: {
+          p_from: Json
+          p_organization_id: string
+          p_to: Json
+          p_value: Json
+        }
+        Returns: Json
+      }
+      _first_words: { Args: { p_data: Json }; Returns: string }
+      _form_questions_asked: {
+        Args: { p_organization_id: string; p_questions: Json; p_values: Json }
+        Returns: {
+          asked: boolean
+          decided: boolean
+          field_key: string
+          said: string
+        }[]
+      }
+      _fx_autonumber: {
+        Args: {
+          p_key: string
+          p_organization_id: string
+          p_self_id: string
+          p_table_id: string
+        }
+        Returns: number
+      }
+      _fx_blank: { Args: { p_v: Json }; Returns: boolean }
+      _fx_cmp: { Args: { p_a: Json; p_b: Json }; Returns: number }
+      _fx_date: {
+        Args: { p_v: Json; p_what: string }
+        Returns: Record<string, unknown>
+      }
+      _fx_iso: { Args: { p_date_only: boolean; p_ts: string }; Returns: string }
+      _fx_loose: { Args: { p_v: Json }; Returns: number }
+      _fx_num: { Args: { p_v: Json; p_what: string }; Returns: number }
+      _fx_num_text: { Args: { p_n: number }; Returns: string }
+      _fx_text: { Args: { p_v: Json }; Returns: string }
+      _fx_truthy: { Args: { p_v: Json }; Returns: boolean }
+      _fx_unit: {
+        Args: { p_allowed: string[]; p_fn: string; p_v: Json }
+        Returns: string
+      }
+      _fxp_level: {
+        Args: { p_i: number; p_level: number; p_tokens: Json }
+        Returns: Json
+      }
+      _fxp_resolve: {
+        Args: { p_fields: Json; p_node: Json; p_refs: Json }
+        Returns: Json
+      }
+      _fxp_tokens: { Args: { p_src: string }; Returns: Json }
+      _fxp_type: { Args: { p_fields: Json; p_node: Json }; Returns: string }
+      _inbox_items: {
+        Args: {
+          p_include_decided?: boolean
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: {
+          actionable: boolean
+          at: string
+          cleared_at: string
+          decided_at: string
+          decided_by: string
+          decided_by_name: string
+          due_on: string
+          due_state: string
+          inbox_state: string
+          item_id: string
+          item_version: number
+          kind: string
+          origin: string
+          outcome: string
+          reminded_at: string
+          requested_by: string
+          requested_by_name: string
+          snoozed_until: string
+          sort_at: string
+          state: string
+          subject_id: string
+          subject_kind: string
+          summary: string
+          table_id: string
+          table_name: string
+          title: string
+          touched_by: string
+          woke_at: string
+        }[]
+      }
+      _inbox_now: { Args: never; Returns: string }
+      _io_declare_unmapped: {
+        Args: {
+          p_mapping?: Json
+          p_organization_id: string
+          p_rows: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      _older_table_copy_refusal: {
+        Args: { p_table_id: string }
+        Returns: string
+      }
+      _older_table_copy_verdict: {
+        Args: { p_table_id: string }
+        Returns: string
+      }
+      _options_table_for: {
+        Args: { p_label: string; p_options: Json; p_organization_id: string }
+        Returns: string
+      }
+      _organization_of_record: {
+        Args: { p_record_id: string }
+        Returns: string
+      }
+      _organization_work_return: {
+        Args: { p_by: string; p_organization_id: string }
+        Returns: Json
+      }
+      _organization_work_withdraw: {
+        Args: { p_by: string; p_organization_id: string }
+        Returns: Json
+      }
+      _parity_types_sentence: { Args: never; Returns: string }
+      _pick_list_index_of: {
+        Args: { p_me: string; p_organization_id: string }
+        Returns: Json
+      }
+      _pipeline_gate:
+        | {
+            Args: {
+              p_expr: Json
+              p_kind: string
+              p_message: string
+              p_name: string
+              p_on_fail: string
+              p_organization_id: string
+              p_sort: number
+              p_stage: string
+              p_table_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_expr: Json
+              p_gate: Json
+              p_kind: string
+              p_message: string
+              p_name: string
+              p_on_fail: string
+              p_organization_id: string
+              p_sort: number
+              p_stage: string
+              p_table_id: string
+            }
+            Returns: string
+          }
+      _pipeline_gate_expr: {
+        Args: { p_field_id: string; p_gate: Json; p_stage_key: string }
+        Returns: Json
+      }
+      _pipeline_rule:
+        | {
+            Args: {
+              p_expr: Json
+              p_kind: string
+              p_message: string
+              p_name: string
+              p_on_entry: Json
+              p_organization_id: string
+              p_stage: string
+              p_table_id: string
+              p_uses: Json
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_expr: Json
+              p_kind: string
+              p_message: string
+              p_name: string
+              p_on_entry: Json
+              p_organization_id: string
+              p_sort?: number
+              p_stage: string
+              p_table_id: string
+              p_uses: Json
+            }
+            Returns: string
+          }
+      _pipeline_stage_key: {
+        Args: { p_field_id: string; p_organization_id: string; p_word: string }
+        Returns: string
+      }
+      _portal_config_judge: {
+        Args: {
+          p_exposed: string[]
+          p_given: Json
+          p_organization_id: string
+          p_prior: Json
+        }
+        Returns: Json
+      }
+      _portal_forms: {
+        Args: {
+          p_config: Json
+          p_open_only: boolean
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      _portal_invite_deliver: {
+        Args: { p_invitation_id: string }
+        Returns: Json
+      }
+      _portal_invite_payload: {
+        Args: { p_invitation_id: string }
+        Returns: Json
+      }
+      _portal_picture_url: {
+        Args: {
+          p_file_id: string
+          p_organization_id: string
+          p_own_only: boolean
+        }
+        Returns: string
+      }
+      _portal_principal_here: {
+        Args: { p_door: string; p_organization_id: string; p_portal_id: string }
+        Returns: {
+          bound_at: string | null
+          client_record_id: string
+          email: string
+          id: string
+          invited_at: string
+          invited_by: string | null
+          is_active: boolean
+          organization_id: string
+          portal_id: string
+          revoked_at: string | null
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "portal_principal"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _portal_stage: {
+        Args: { p_organization_id: string; p_table_id: string; p_visible: Json }
+        Returns: Json
+      }
+      _portal_style: {
+        Args: { p_config: Json; p_organization_id: string }
+        Returns: Json
+      }
+      _public_choices_of: {
+        Args: { p_field: Json; p_organization_id: string }
+        Returns: Json
+      }
+      _read_record_with: {
+        Args: {
+          p_by_id: boolean
+          p_cache: Json
+          p_levels: Json
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Record<string, unknown>
+      }
+      _realtime_notice: {
+        Args: {
+          p_fields_changed: boolean
+          p_kind: string
+          p_op: string
+          p_organization_id: string
+          p_record_ids: Json
+          p_table_id: string
+        }
+        Returns: undefined
+      }
+      _record_defaults_filled: {
+        Args: { p_data: Json; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      _share_write_person: {
+        Args: {
+          p_by?: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_subject_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      _sign_request_resolve: {
+        Args: { p_token: string }
+        Returns: {
+          data: Json
+          ok: boolean
+          organization_id: string
+          request_id: string
+        }[]
+      }
+      _stage_field_key: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: string
+      }
+      _table_move_plan: {
+        Args: { p_me: string; p_table_id: string; p_to: string }
+        Returns: Json
+      }
+      _table_share_invite_deliver: {
+        Args: { p_invitation_id: string }
+        Returns: Json
+      }
+      _table_share_invite_payload: {
+        Args: { p_invitation_id: string }
+        Returns: Json
+      }
+      _take_op_id: { Args: { p_doc: Json; p_door: string }; Returns: Json }
+      _view_field_key: {
+        Args: {
+          p_known: string[]
+          p_organization_id: string
+          p_path: string
+          p_ref: Json
+          p_shape: string
+          p_table_id: string
+        }
+        Returns: string
+      }
+      _view_key_value: {
+        Args: {
+          p_old?: Json
+          p_organization_id: string
+          p_path: string
+          p_shape: string
+          p_table_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      _where_id_may_open: {
+        Args: {
+          p_organization_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_subject_id: string
+        }
+        Returns: boolean
+      }
+      _where_ids_open_with: {
+        Args: { p_ids: string[]; p_levels?: Json; p_user_id?: string }
+        Returns: Json
+      }
+      _with_display: {
+        Args: { p_document: Json; p_organization_id: string; p_spec: Json }
+        Returns: Json
+      }
+      _with_display_format: {
+        Args: { p_document: Json; p_spec: Json }
+        Returns: Json
+      }
+      _words_for: {
+        Args: {
+          p_display?: Json
+          p_hop?: number
+          p_noun?: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: string
+      }
+      absence_reasons: { Args: never; Returns: string[] }
+      action_declare: {
+        Args: { p_actions: Json; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      action_run: {
+        Args: {
+          p_action_id: string
+          p_organization_id: string
+          p_record_ids: string[]
+        }
+        Returns: Json
+      }
+      actor_vocabulary: { Args: never; Returns: string[] }
+      actor_word: { Args: { p_declared: string }; Returns: string }
+      addressed_cap: {
+        Args: {
+          p_id: string
+          p_organization_id?: string
+          p_table_id?: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
+      addressed_cap_specific: {
+        Args: {
+          p_id: string
+          p_organization_id?: string
+          p_table_id?: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
+      agent_change_approval: {
+        Args: {
+          p_conversation?: string
+          p_organization: string
+          p_table?: string
+        }
+        Returns: Json
+      }
+      agent_context: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      agent_context_value: {
+        Args: {
+          p_cap: number
+          p_doc: Json
+          p_key: string
+          p_organization_id: string
+          p_record_id: string
+          p_type: string
+        }
+        Returns: Json
+      }
+      agent_context_value_cap: {
+        Args: { p_organization_id: string }
+        Returns: number
+      }
+      agent_table_claim: {
+        Args: {
+          p_conversation?: string
+          p_organization: string
+          p_table: string
+        }
+        Returns: undefined
+      }
+      agg_assert_key: { Args: { p_key: string }; Returns: string }
+      agg_bucket_ordinal: {
+        Args: {
+          p_at: string
+          p_by: string
+          p_week_start: string
+          p_window_from: string
+        }
+        Returns: number
+      }
+      agg_buckets: { Args: never; Returns: string[] }
+      agg_cadence_normalize: { Args: { p_cadence: string }; Returns: string }
+      agg_calendar: { Args: { p_organization_id: string }; Returns: Json }
+      agg_compare_kinds: { Args: never; Returns: string[] }
+      agg_compare_windows: {
+        Args: { p_bucket?: Json; p_compare: Json; p_organization_id: string }
+        Returns: Json
+      }
+      agg_deliver: {
+        Args: {
+          p_body: string
+          p_channel: string
+          p_dedupe_suffix?: string
+          p_event_key: string
+          p_organization_id: string
+          p_payload?: Json
+          p_recipient_user_id: string
+          p_record_id: string
+          p_rule_id: string
+          p_subject: string
+        }
+        Returns: string
+      }
+      agg_deliver_quietly: {
+        Args: {
+          p_body: string
+          p_channel: string
+          p_dedupe_suffix?: string
+          p_event_key: string
+          p_link: string
+          p_organization_id: string
+          p_payload: Json
+          p_quiet_hours: Json
+          p_recipient_user_id: string
+          p_rule_id: string
+          p_subject: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      agg_delta: { Args: { p_current: Json; p_prior: Json }; Returns: Json }
+      agg_digest_assemble: {
+        Args: {
+          p_organization_id: string
+          p_rule_id: string
+          p_since?: string
+          p_until?: string
+        }
+        Returns: Json
+      }
+      agg_digest_due_at: {
+        Args: {
+          p_after: string
+          p_cadence: string
+          p_quiet: Json
+          p_schedule: string
+        }
+        Returns: string
+      }
+      agg_digest_judged_at: {
+        Args: { p_organization_id: string; p_rule_id: string }
+        Returns: string
+      }
+      agg_digest_run: {
+        Args: {
+          p_organization_id: string
+          p_rule_id?: string
+          p_since?: string
+        }
+        Returns: number
+      }
+      agg_digest_run_at: {
+        Args: {
+          p_now: string
+          p_organization_id: string
+          p_rule_id: string
+          p_since: string
+        }
+        Returns: number
+      }
+      agg_digest_tick: { Args: never; Returns: number }
+      agg_digest_tick_at: {
+        Args: { p_now: string; p_organization_id?: string }
+        Returns: number
+      }
+      agg_explain: {
+        Args: {
+          p_bucket?: Json
+          p_filter?: Json
+          p_group_by?: Json
+          p_measures?: Json
+          p_organization_id: string
+          p_required?: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      agg_fields_readable_assert: {
+        Args: {
+          p_keys: string[]
+          p_organization_id: string
+          p_required?: string
+          p_table_id: string
+        }
+        Returns: undefined
+      }
+      agg_last_digest_at: {
+        Args: { p_organization_id: string; p_rule_id: string }
+        Returns: string
+      }
+      agg_local_label: {
+        Args: { p_local: string; p_tz: string }
+        Returns: string
+      }
+      agg_moment_sql: { Args: { p_key: string; p_tz: string }; Returns: string }
+      agg_operations: { Args: never; Returns: string[] }
+      agg_parse_moment: {
+        Args: { p_raw: string; p_tz: string; p_what: string }
+        Returns: string
+      }
+      agg_period_start: {
+        Args: { p_by: string; p_local: string; p_week_start?: string }
+        Returns: string
+      }
+      agg_period_step: { Args: { p_by: string }; Returns: string }
+      agg_quiet_until: {
+        Args: { p_at: string; p_quiet: Json }
+        Returns: string
+      }
+      agg_record_name: {
+        Args: { p_organization_id: string; p_record_id: string; p_state?: Json }
+        Returns: string
+      }
+      agg_sql: {
+        Args: {
+          p_bucket?: Json
+          p_filter?: Json
+          p_group_by?: Json
+          p_limit?: number
+          p_measures?: Json
+          p_organization_id: string
+          p_required?: string
+          p_table_id: string
+          p_window?: Json
+        }
+        Returns: string
+      }
+      agg_subscription_cadences: { Args: never; Returns: string[] }
+      agg_subscription_fire: {
+        Args: {
+          p_changed_field_ids?: Json
+          p_organization_id: string
+          p_record_id: string
+          p_table_id?: string
+        }
+        Returns: number
+      }
+      agg_subscription_fire_entered: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_since?: string
+          p_table_id?: string
+        }
+        Returns: number
+      }
+      agg_subscription_tick: { Args: { p_window?: string }; Returns: number }
+      agg_subscriptions: {
+        Args: {
+          p_cadence?: string
+          p_organization_id: string
+          p_saved_view_id?: string
+        }
+        Returns: {
+          cadence: string
+          channel: string
+          event_key: string
+          name: string
+          quiet_hours: Json
+          recipient_user_id: string
+          rule_id: string
+          saved_view_id: string
+          schedule: string
+          table_id: string
+        }[]
+      }
+      agg_value_sql: { Args: { p_key: string }; Returns: string }
+      agg_view_admits: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_saved_view_id: string
+        }
+        Returns: boolean
+      }
+      agg_view_admits_state: {
+        Args: { p_definition: Json; p_state: Json }
+        Returns: boolean
+      }
+      agg_zero: { Args: { p_measures: Json }; Returns: Json }
+      anon_capture: {
+        Args: {
+          p_captured_at?: string
+          p_client_key: string
+          p_device?: string
+          p_organization_id: string
+          p_payload: Json
+          p_table_id: string
+        }
+        Returns: string
+      }
+      anon_clear: {
+        Args: { p_organization_id: string; p_submission_id: string }
+        Returns: string
+      }
+      anon_inbound_land: {
+        Args: {
+          p_address: string
+          p_client_key?: string
+          p_payload: Json
+          p_raw_payload?: Json
+          p_secret: string
+        }
+        Returns: string
+      }
+      anon_publish: {
+        Args: {
+          p_form_id: string
+          p_organization_id: string
+          p_published?: boolean
+        }
+        Returns: string
+      }
+      anon_rate_take: {
+        Args: {
+          p_bucket: string
+          p_form_id: string
+          p_organization_id: string
+          p_token_id?: string
+        }
+        Returns: number
+      }
+      anon_submissions: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_state?: string
+          p_table_id?: string
+        }
+        Returns: {
+          cleared_at: string
+          client_key: string
+          created_at: string
+          form_id: string
+          id: string
+          inbound_id: string
+          payload: Json
+          raw_payload: Json
+          record_id: string
+          rejection_reason: string
+          remote_origin: string
+          source: string
+          state: string
+          table_id: string
+        }[]
+      }
+      anon_token_issue: {
+        Args: {
+          p_allowed_origins: Json
+          p_expires_at?: string
+          p_form_id?: string
+          p_mode: string
+          p_organization_id: string
+          p_record_id?: string
+          p_saved_view_id?: string
+        }
+        Returns: {
+          secret: string
+          token_id: string
+        }[]
+      }
+      anon_token_revoke: {
+        Args: { p_organization_id: string; p_token_id: string }
+        Returns: boolean
+      }
+      anon_token_verify: {
+        Args: { p_origin: string; p_required_mode: string; p_secret: string }
+        Returns: {
+          form_id: string
+          mode: string
+          organization_id: string
+          record_id: string
+          saved_view_id: string
+          token_id: string
+        }[]
+      }
+      anon_write: {
+        Args: {
+          p_client_key?: string
+          p_origin: string
+          p_payload: Json
+          p_raw_payload?: Json
+          p_secret: string
+        }
+        Returns: string
+      }
+      applicable_fields: {
+        Args: {
+          p_organization_id: string
+          p_record_type?: string
+          p_table_id: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      archive_event_of: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Database["history"]["Tables"]["migration_log"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "migration_log"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      assert_client_may_change: {
+        Args: {
+          p_door: string
+          p_organization_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_subject_id: string
+          p_subject_word?: string
+        }
+        Returns: undefined
+      }
+      assert_client_may_open: {
+        Args: {
+          p_door: string
+          p_organization_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_subject_id: string
+          p_subject_word?: string
+        }
+        Returns: undefined
+      }
+      assert_client_may_reach: {
+        Args: { p_door: string; p_organization_id: string }
+        Returns: undefined
+      }
+      assert_columns_are_defined: {
+        Args: { p_organization_id: string; p_patch: Json; p_record_id: string }
+        Returns: undefined
+      }
+      assert_entity_door: {
+        Args: { p_door: string; p_organization_id: string }
+        Returns: undefined
+      }
+      assert_entity_is_organization_scoped: {
+        Args: { p_label: string; p_scoped: boolean; p_token: string }
+        Returns: undefined
+      }
+      assert_may_know_table: {
+        Args: { p_door: string; p_organization_id: string; p_table_id: string }
+        Returns: undefined
+      }
+      assert_organization_admin: {
+        Args: { p_door: string; p_organization_id: string; p_what: string }
+        Returns: undefined
+      }
+      assert_organization_wall: {
+        Args: { p_kind: string; p_organization_id: string; p_row: Json }
+        Returns: undefined
+      }
+      assert_scope_door: {
+        Args: { p_door: string; p_organization_id: string }
+        Returns: undefined
+      }
+      assert_store_door: {
+        Args: { p_door: string; p_organization_id: string }
+        Returns: undefined
+      }
+      autonumber_backfill: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      booking_cancel: {
+        Args: { p_booking_ref: string; p_origin?: string }
+        Returns: {
+          booking_ref: string
+          message: string
+          record_id: string
+          slot_key: string
+          state: string
+        }[]
+      }
+      booking_confirm: {
+        Args: {
+          p_bucket: string
+          p_client_key?: string
+          p_form_id: string
+          p_hold_id: string
+          p_honeypot?: string
+          p_origin: string
+          p_payload: Json
+        }
+        Returns: {
+          booking_ref: string
+          message: string
+          record_id: string
+          slot_at: string
+          slot_key: string
+          state: string
+          submission_id: string
+        }[]
+      }
+      booking_declare: {
+        Args: {
+          p_availability?: Json
+          p_form_id?: string
+          p_home_id?: string
+          p_notify_rule_id?: string
+          p_organization_id: string
+          p_presentation?: Json
+          p_quarantine_rule_id?: string
+          p_questions: Json
+          p_slug?: string
+          p_submission_cap?: number
+          p_table_id: string
+          p_title: string
+        }
+        Returns: Json
+      }
+      booking_hold: {
+        Args: {
+          p_bucket: string
+          p_client_key?: string
+          p_form_id: string
+          p_origin: string
+          p_slot_key: string
+        }
+        Returns: {
+          expires_at: string
+          hold_id: string
+          member_user_id: string
+          message: string
+          slot_key: string
+          state: string
+        }[]
+      }
+      booking_manage: {
+        Args: { p_booking_ref: string; p_days?: number }
+        Returns: {
+          availability: Json
+          booking_ref: string
+          form_id: string
+          message: string
+          slot_at: string
+          slot_key: string
+          slots: Json
+          state: string
+          status: string
+          title: string
+        }[]
+      }
+      booking_notify: {
+        Args: {
+          p_event: string
+          p_form_id: string
+          p_organization_id: string
+          p_record_id: string
+          p_submission_id: string
+          p_when: string
+        }
+        Returns: string
+      }
+      booking_public: {
+        Args: { p_days?: number; p_form_id: string }
+        Returns: {
+          availability: Json
+          fields: Json
+          form_id: string
+          honeypot_key: string
+          message: string
+          organization_id: string
+          presentation: Json
+          slots: Json
+          state: string
+          table_id: string
+          title: string
+        }[]
+      }
+      booking_reschedule: {
+        Args: {
+          p_booking_ref: string
+          p_bucket?: string
+          p_origin: string
+          p_slot_key: string
+        }
+        Returns: {
+          booking_ref: string
+          message: string
+          record_id: string
+          slot_at: string
+          slot_key: string
+          state: string
+        }[]
+      }
+      bookings: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: {
+          booked: number
+          cancelled: number
+          closed_at: string
+          form_id: string
+          held: number
+          next_at: string
+          published_at: string
+          slot_minutes: number
+          slot_table_id: string
+          slug: string
+          state: string
+          table_id: string
+          timezone: string
+          title: string
+          upcoming: number
+        }[]
+      }
+      bump_epoch: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_organization_id?: string
+        }
+        Returns: number
+      }
+      cache_lookup: {
+        Args: {
+          p_container_id: string
+          p_container_type: string
+          p_item_id: string
+          p_item_type: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
+      caller_role: { Args: never; Returns: unknown }
+      capture_open: {
+        Args: { p_organization_id: string; p_sheet_id: string }
+        Returns: {
+          fields: Json
+          may_capture: boolean
+          message: string
+          organization_id: string
+          presentation: Json
+          sheet_id: string
+          state: string
+          table_id: string
+          title: string
+        }[]
+      }
+      capture_publish: {
+        Args: {
+          p_open?: boolean
+          p_organization_id: string
+          p_sheet_id: string
+        }
+        Returns: string
+      }
+      capture_sheet_declare: {
+        Args: {
+          p_notify_rule_id?: string
+          p_organization_id: string
+          p_presentation?: Json
+          p_questions: Json
+          p_sheet_id?: string
+          p_table_id: string
+          p_title: string
+        }
+        Returns: string
+      }
+      capture_sheets: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: {
+          captures: number
+          last_capture_at: string
+          opened_at: string
+          presentation: Json
+          replays: number
+          sheet_id: string
+          slug: string
+          state: string
+          table_id: string
+          title: string
+        }[]
+      }
+      capture_submit: {
+        Args: {
+          p_captured_at?: string
+          p_client_key: string
+          p_device?: string
+          p_files?: Json
+          p_location?: Json
+          p_organization_id: string
+          p_payload: Json
+          p_sheet_id: string
+        }
+        Returns: {
+          file_ids: string[]
+          message: string
+          record_id: string
+          replay: boolean
+          state: string
+        }[]
+      }
+      carry_unchanged_value_stamps: {
+        Args: { p_new: Json; p_old: Json }
+        Returns: Json
+      }
+      carrying_edges_in: {
+        Args: { p_organization_id: string }
+        Returns: {
+          container_id: string
+          container_type: string
+          conveys_max: Database["public"]["Enums"]["permission_level"]
+          item_id: string
+          item_type: string
+        }[]
+      }
+      carrying_edges_of: {
+        Args: { p_item_id: string; p_item_type: string }
+        Returns: {
+          container_id: string
+          container_type: string
+          conveys_max: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      checklist_declare: {
+        Args: {
+          p_organization_id: string
+          p_spec: Json
+          p_template_id?: string
+        }
+        Returns: Json
+      }
+      checklist_refusal: { Args: { p_spec: Json }; Returns: string }
+      checklist_run: {
+        Args: { p_organization_id: string; p_run_id: string }
+        Returns: {
+          assignee_name: string
+          assignee_user_id: string
+          blocked_by: string[]
+          due_on: string
+          due_state: string
+          evidence: Json
+          finished: boolean
+          may_complete: boolean
+          ref: string
+          refusal: string
+          requires: string
+          requires_id: string
+          requires_key: string
+          requires_label: string
+          role: string
+          status: string
+          step_id: string
+          step_order: number
+          title: string
+        }[]
+      }
+      checklist_runs: {
+        Args: {
+          p_about_record_id?: string
+          p_about_table_id?: string
+          p_include_closed?: boolean
+          p_limit?: number
+          p_organization_id: string
+        }
+        Returns: {
+          about: string
+          about_record_id: string
+          about_table_id: string
+          closed_at: string
+          done: number
+          name: string
+          next_due: string
+          next_step: string
+          origin: string
+          overdue: number
+          run_id: string
+          started_at: string
+          started_by: string
+          step_count: number
+          template: string
+          template_id: string
+        }[]
+      }
+      checklist_start: {
+        Args: {
+          p_about_record_id?: string
+          p_organization_id: string
+          p_roles?: Json
+          p_starting_at?: string
+          p_template_id: string
+        }
+        Returns: Json
+      }
+      checklist_step_complete: {
+        Args: {
+          p_evidence?: Json
+          p_organization_id: string
+          p_step_id: string
+        }
+        Returns: Json
+      }
+      checklist_step_refusal: {
+        Args: { p_organization_id: string; p_step_id: string }
+        Returns: string
+      }
+      checklist_steps_table: {
+        Args: { p_organization_id: string }
+        Returns: string
+      }
+      checklist_template_shape: {
+        Args: { p_organization_id: string; p_template_id: string }
+        Returns: Json
+      }
+      checklist_templates: {
+        Args: {
+          p_about_table_id?: string
+          p_limit?: number
+          p_organization_id: string
+        }
+        Returns: {
+          about_table: string
+          about_table_id: string
+          name: string
+          open_runs: number
+          roles: number
+          steps: number
+          template_id: string
+          total_runs: number
+          trigger_kind: string
+          trigger_status: string
+          updated_at: string
+        }[]
+      }
+      choice_census: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: Json
+      }
+      choice_field_map: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      choice_filter_normalize: {
+        Args: { p_filter: Json; p_map: Json }
+        Returns: Json
+      }
+      choice_key_for: {
+        Args: {
+          p_exclude?: string
+          p_options_table_id: string
+          p_organization_id: string
+          p_title: string
+        }
+        Returns: string
+      }
+      choice_key_of: {
+        Args: { p_field: Json; p_token: string }
+        Returns: string
+      }
+      choice_nudge: { Args: { p_organization_id: string }; Returns: string }
+      choice_options: {
+        Args: { p_options_table_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      choice_render: {
+        Args: { p_doc: Json; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      choice_render_groups: {
+        Args: { p_groups: Json; p_map: Json }
+        Returns: Json
+      }
+      choice_render_note: {
+        Args: { p_field: Json; p_value: Json }
+        Returns: Json
+      }
+      choice_render_plan: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      choice_render_value: {
+        Args: { p_field: Json; p_value: Json }
+        Returns: Json
+      }
+      choice_render_with: {
+        Args: {
+          p_doc: Json
+          p_organization_id: string
+          p_plan: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      choice_slug: { Args: { p_word: string }; Returns: string }
+      choice_synonyms: {
+        Args: { p_organization_id: string; p_table_id: string; p_token: string }
+        Returns: string[]
+      }
+      choice_synonyms_in: {
+        Args: { p_map: Json; p_token: string }
+        Returns: string[]
+      }
+      choice_words: { Args: { p_field: Json }; Returns: string }
+      client_write_grants: {
+        Args: never
+        Returns: {
+          object_name: string
+          privilege: string
+          role_name: string
+        }[]
+      }
+      comment_mention_deliver: {
+        Args: {
+          p_author_name: string
+          p_body: string
+          p_comment_id: string
+          p_organization_id: string
+          p_recipient: string
+          p_record_id: string
+          p_record_title: string
+          p_table_id: string
+        }
+        Returns: string
+      }
+      comment_thread: {
+        Args: {
+          p_include_resolved?: boolean
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      comment_write: {
+        Args: {
+          p_anchor?: Json
+          p_body: string
+          p_mentions?: string[]
+          p_organization_id: string
+          p_parent_comment_id?: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      computed_block: { Args: { p_block: Json }; Returns: Json }
+      computed_provenance: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          computed_at: string
+          field_id: string
+          field_key: string
+          rule_id: string
+          rule_version: number
+          value: Json
+        }[]
+      }
+      containment_chain: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          ancestor_id: string
+          depth: number
+        }[]
+      }
+      containment_depth_ceiling: {
+        Args: { p_organization_id?: string }
+        Returns: number
+      }
+      containment_edges: {
+        Args: { p_organization_id: string }
+        Returns: {
+          child_id: string
+          parent_id: string
+          via: string
+        }[]
+      }
+      containment_parent: { Args: { p_data: Json }; Returns: string }
+      context_compare_facts: {
+        Args: {
+          p_cells?: Json
+          p_item_ids?: string[]
+          p_record_ids: string[]
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      context_item_archive: { Args: { p_item_id: string }; Returns: Json }
+      context_item_restore: { Args: { p_item_id: string }; Returns: Json }
+      context_item_write: {
+        Args: { p_item_id: string; p_scope_type_id: string; p_spec: Json }
+        Returns: Json
+      }
+      context_policy_rank: { Args: { p_policy: string }; Returns: number }
+      context_resolve: { Args: { p_bindings: Json }; Returns: Json }
+      context_scope_archive: { Args: { p_scope_id: string }; Returns: Json }
+      context_scope_restore: { Args: { p_scope_id: string }; Returns: Json }
+      context_scope_write: {
+        Args: {
+          p_organization_id: string
+          p_scope_id: string
+          p_spec: Json
+          p_type_id: string
+        }
+        Returns: Json
+      }
+      context_tag_copy: { Args: { p_organization_id: string }; Returns: Json }
+      context_tag_copy_batch: {
+        Args: { p_cursor?: Json; p_organization_id: string; p_rows?: number }
+        Returns: Json
+      }
+      context_tags_set: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_scope_ids: string[]
+        }
+        Returns: Json
+      }
+      context_template_apply: {
+        Args: { p_organization_id: string; p_template_id: string }
+        Returns: Json
+      }
+      context_template_define: {
+        Args: { p_definition: Json; p_organization_id: string }
+        Returns: Json
+      }
+      context_templates: { Args: never; Returns: Json[] }
+      context_type_archive: { Args: { p_type_id: string }; Returns: Json }
+      context_type_restore: { Args: { p_type_id: string }; Returns: Json }
+      context_type_write: {
+        Args: { p_organization_id: string; p_spec: Json; p_type_id: string }
+        Returns: Json
+      }
+      context_value_write: { Args: { p_payload: Json }; Returns: Json }
+      context_writer: { Args: { p_organization_id: string }; Returns: string }
+      conversation_scope: {
+        Args: { p_conversation_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      conversation_scope_bind: {
+        Args: {
+          p_conversation_id: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      conversation_scope_context: {
+        Args: {
+          p_conversation_id: string
+          p_history?: number
+          p_organization_id: string
+          p_relations?: number
+          p_siblings?: number
+        }
+        Returns: Json
+      }
+      conversation_scope_unbind: {
+        Args: { p_conversation_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      cross_organization_links_open: {
+        Args: {
+          p_source_organization_id: string
+          p_target_organization_id: string
+        }
+        Returns: boolean
+      }
+      custom_fields_tables: {
+        Args: never
+        Returns: {
+          schema_name: string
+          table_name: string
+          token: string
+        }[]
+      }
+      dashboard_block_normalize: {
+        Args: {
+          p_block: Json
+          p_organization_id: string
+          p_subject_table_id: string
+        }
+        Returns: Json
+      }
+      dashboard_class: { Args: never; Returns: string }
+      dashboard_declare: {
+        Args: {
+          p_blocks?: Json
+          p_dashboard_id?: string
+          p_name: string
+          p_organization_id: string
+          p_presentation?: Json
+          p_table_id: string
+        }
+        Returns: string
+      }
+      dashboard_delete: {
+        Args: { p_dashboard_id: string; p_organization_id: string }
+        Returns: boolean
+      }
+      dashboard_field_keys: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: string[]
+      }
+      dashboard_kinds: { Args: never; Returns: string[] }
+      dashboard_moment_sql: { Args: { p_key: string }; Returns: string }
+      dashboard_restore: {
+        Args: { p_dashboard_id: string; p_organization_id: string }
+        Returns: boolean
+      }
+      dashboard_run: {
+        Args: {
+          p_compare?: Json
+          p_dashboard_id: string
+          p_filter?: Json
+          p_grain?: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      dashboard_stuck: {
+        Args: {
+          p_days?: number
+          p_filter?: Json
+          p_limit?: number
+          p_organization_id: string
+          p_required?: string
+          p_state_key: string
+          p_table_id: string
+        }
+        Returns: {
+          days_unchanged: number
+          last_changed_at: string
+          measured_from: string
+          record_id: string
+          state: string
+          title: string
+        }[]
+      }
+      dashboard_target_field_assert: {
+        Args: {
+          p_field_key: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: undefined
+      }
+      dashboard_window_sql: {
+        Args: { p_key: string; p_window: Json }
+        Returns: string
+      }
+      dashboards: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: {
+          block_count: number
+          blocks: Json
+          created_at: string
+          dashboard_id: string
+          name: string
+          presentation: Json
+          table_id: string
+          updated_at: string
+          version: number
+        }[]
+      }
+      data_home_pages: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          kind: string
+          organization_id: string
+          organization_name: string
+          page_id: string
+          page_row: Json
+          table_id: string
+          table_name: string
+        }[]
+      }
+      data_home_tables: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          kept_by_the_app: boolean
+          kind: string
+          member: boolean
+          mine: boolean
+          organization_id: string
+          organization_name: string
+          shared_with_me: boolean
+          table_id: string
+          table_name: string
+          updated_at: string
+          visibility: string
+        }[]
+      }
+      decoration_colors: { Args: never; Returns: string[] }
+      decoration_rule_ops: {
+        Args: never
+        Returns: {
+          label: string
+          op: string
+          takes_value: boolean
+        }[]
+      }
+      delete_cascade_closure: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: string[]
+      }
+      delete_preview: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      delete_rule: {
+        Args: {
+          p_apply?: boolean
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      dependency_cycle: {
+        Args: { p_organization_id: string; p_row: Record<string, unknown> }
+        Returns: string[]
+      }
+      dependency_label: {
+        Args: { p_node: string; p_organization_id: string }
+        Returns: string
+      }
+      derive_visibility: {
+        Args: { p_container_id: string; p_container_type: string }
+        Returns: {
+          depth: number
+          item_id: string
+          item_type: string
+          max_level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      derived_value: {
+        Args: {
+          p_field_data: Json
+          p_organization_id: string
+          p_record_id: string
+          p_values?: Json
+        }
+        Returns: Json
+      }
+      derived_values: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      derived_values_of: {
+        Args: { v_rec: Record<string, unknown> }
+        Returns: Json
+      }
+      display_format_ids: { Args: never; Returns: string[] }
+      doc_content_hash: { Args: { p_body: string }; Returns: string }
+      doc_format_value: {
+        Args: { p_field_data: Json; p_value: Json }
+        Returns: string
+      }
+      doc_letterhead: { Args: { p_organization_id: string }; Returns: Json }
+      doc_name_token_pattern: { Args: never; Returns: string }
+      doc_name_tokens: {
+        Args: { p_body: string }
+        Returns: {
+          ordinal: number
+          raw: string
+        }[]
+      }
+      doc_render_body: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_template_id: string
+        }
+        Returns: string
+      }
+      doc_render_document: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_template_id: string
+        }
+        Returns: string
+      }
+      doc_render_read: {
+        Args: { p_organization_id: string; p_render_id: string }
+        Returns: Json
+      }
+      doc_render_write: {
+        Args: {
+          p_body: string
+          p_content_hash: string
+          p_organization_id: string
+          p_record_id: string
+          p_table_id: string
+          p_template_id: string
+          p_template_version: number
+        }
+        Returns: string
+      }
+      doc_renders: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          body: string
+          content_hash: string
+          record_id: string
+          render_id: string
+          rendered_at: string
+          table_id: string
+          template_id: string
+          template_version: number
+        }[]
+      }
+      doc_sign: {
+        Args: {
+          p_field_key: string
+          p_organization_id: string
+          p_render_id: string
+          p_signer_name: string
+          p_signer_user_id?: string
+        }
+        Returns: string
+      }
+      doc_signature_field_ok: { Args: { p_field_data: Json }; Returns: boolean }
+      doc_signature_intact: {
+        Args: { p_organization_id: string; p_signature_id: string }
+        Returns: Json
+      }
+      doc_signature_read: {
+        Args: { p_organization_id: string; p_signature_id: string }
+        Returns: Json
+      }
+      doc_signature_write: {
+        Args: {
+          p_document_hash: string
+          p_document_version: number
+          p_field_key: string
+          p_organization_id: string
+          p_record_id: string
+          p_render_id: string
+          p_signer_name: string
+          p_signer_user_id: string
+        }
+        Returns: string
+      }
+      doc_signatures: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          document_hash: string
+          document_version: number
+          field_key: string
+          record_id: string
+          render_id: string
+          signature_id: string
+          signed_at: string
+          signer_name: string
+          signer_user_id: string
+        }[]
+      }
+      doc_template_delete: {
+        Args: { p_organization_id: string; p_template_id: string }
+        Returns: boolean
+      }
+      doc_template_read: {
+        Args: { p_organization_id: string; p_template_id: string }
+        Returns: Json
+      }
+      doc_template_restore: {
+        Args: { p_organization_id: string; p_template_id: string }
+        Returns: boolean
+      }
+      doc_template_save: {
+        Args: {
+          p_body: string
+          p_name: string
+          p_organization_id: string
+          p_table_id: string
+          p_template_id?: string
+        }
+        Returns: string
+      }
+      doc_templates: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: {
+          body: string
+          name: string
+          renders_table_id: string
+          template_id: string
+          template_version: number
+          token_count: number
+          updated_at: string
+        }[]
+      }
+      doc_token_pattern: { Args: never; Returns: string }
+      doc_tokens: {
+        Args: { p_body: string }
+        Returns: {
+          field_id: string
+          ordinal: number
+          raw: string
+        }[]
+      }
+      doc_unresolved_tokens: {
+        Args: { p_body: string; p_organization_id: string; p_table_id: string }
+        Returns: {
+          field_id: string
+          raw: string
+          why: string
+        }[]
+      }
+      doors_not_deciding_the_caller: {
+        Args: never
+        Returns: {
+          function_name: string
+          identity_args: string
+        }[]
+      }
+      doors_not_deciding_the_record: {
+        Args: never
+        Returns: {
+          function_name: string
+          identity_args: string
+          why: string
+        }[]
+      }
+      doors_not_masking_fields: {
+        Args: never
+        Returns: {
+          function_name: string
+          identity_args: string
+          why: string
+        }[]
+      }
+      doors_not_on_one_ladder: {
+        Args: never
+        Returns: {
+          function_name: string
+          identity_args: string
+          why: string
+        }[]
+      }
+      doors_refusing_in_another_doors_name: {
+        Args: never
+        Returns: {
+          function_name: string
+          identity_args: string
+          why: string
+        }[]
+      }
+      effective_level: {
+        Args: {
+          p_id: string
+          p_organization_id: string
+          p_type?: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
+      enrich_cells: {
+        Args: {
+          p_field_keys?: string[]
+          p_organization_id: string
+          p_record_ids?: string[]
+          p_table_id: string
+        }
+        Returns: {
+          absent_reason: string
+          actor: string
+          agent_owned: boolean
+          alternates: Json
+          due_at: string
+          field_key: string
+          on_behalf_of: string
+          pinned: boolean
+          record_id: string
+          source: Json
+          stale: boolean
+          value: Json
+          value_version: number
+          written_at: string
+        }[]
+      }
+      enrich_declare: {
+        Args: { p_field_id: string; p_organization_id: string; p_spec: Json }
+        Returns: Json
+      }
+      enrich_due: {
+        Args: {
+          p_field_id: string
+          p_include_fresh?: boolean
+          p_limit?: number
+          p_organization_id: string
+        }
+        Returns: {
+          current_value: Json
+          inputs: Json
+          reason: string
+          record_id: string
+          title: string
+          trimmed_to: number
+          written_at: string
+        }[]
+      }
+      enrich_land: {
+        Args: {
+          p_field_id: string
+          p_organization_id: string
+          p_results: Json
+          p_run?: Json
+        }
+        Returns: Json
+      }
+      enrich_normalize: {
+        Args: {
+          p_field_key: string
+          p_organization_id: string
+          p_spec: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      enrich_pin: {
+        Args: {
+          p_field_key: string
+          p_organization_id: string
+          p_pinned?: boolean
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      enrich_run_class: { Args: never; Returns: string }
+      enrich_runs: {
+        Args: {
+          p_field_id?: string
+          p_limit?: number
+          p_organization_id: string
+        }
+        Returns: {
+          cost_cents: number
+          cost_per_row_cents: number
+          field_id: string
+          field_key: string
+          model: string
+          ran_at: string
+          rows_absent: number
+          rows_below_floor: number
+          rows_pinned: number
+          rows_refused: number
+          rows_seen: number
+          rows_written: number
+          run_id: string
+          trigger_word: string
+        }[]
+      }
+      enrich_sensitivity_rank: { Args: { p_word: string }; Returns: number }
+      enrich_triggers: { Args: never; Returns: string[] }
+      enrichments: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: {
+          cost_cents: number
+          cost_per_row_cents: number
+          enabled: boolean
+          enrichment: Json
+          field_id: string
+          field_key: string
+          label: string
+          last_run: Json
+          last_run_at: string
+          review_interval_days: number
+          rows_absent: number
+          rows_filled: number
+          rows_pinned: number
+          rows_stale: number
+          rows_total: number
+          runs: number
+          table_id: string
+        }[]
+      }
+      entity_field_declare: {
+        Args: { p_organization_id: string; p_spec: Json; p_token: string }
+        Returns: string
+      }
+      entity_field_retire: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: string
+      }
+      entity_field_rights: {
+        Args: { p_organization_id: string; p_token: string }
+        Returns: Json
+      }
+      entity_field_update: {
+        Args: { p_field_id: string; p_organization_id: string; p_patch: Json }
+        Returns: string
+      }
+      entity_fields: {
+        Args: { p_organization_id: string; p_token: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      entity_record_read: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      entity_records_find: {
+        Args: {
+          p_key: string
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_token: string
+          p_value?: Json
+        }
+        Returns: Json
+      }
+      entity_reference_fields: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      entity_reference_kinds: {
+        Args: never
+        Returns: {
+          category: string
+          label: string
+          token: string
+        }[]
+      }
+      entity_reference_render: {
+        Args: { p_doc: Json; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      entity_reference_render_with: {
+        Args: {
+          p_doc: Json
+          p_fields: Json
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      entity_reference_rows: {
+        Args: { p_ids: string[]; p_organization_id: string; p_token: string }
+        Returns: Json
+      }
+      entity_reference_search: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_search?: string
+          p_tokens: string[]
+        }
+        Returns: Json
+      }
+      entity_reference_target: { Args: { p_token: string }; Returns: Json }
+      entity_reference_words: {
+        Args: { p_organization_id: string; p_refs: Json }
+        Returns: Json
+      }
+      entity_table: {
+        Args: { p_token: string }
+        Returns: {
+          has_deleted_at: boolean
+          has_organization: boolean
+          label: string
+          schema_name: string
+          table_name: string
+          title_column: string
+          token: string
+          type: string
+        }[]
+      }
+      entity_value_write: {
+        Args: {
+          p_organization_id: string
+          p_patch: Json
+          p_record_id: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      export_ceiling: { Args: { p_organization_id?: string }; Returns: number }
+      export_records: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: {
+          document: Json
+          id: string
+        }[]
+      }
+      external_foreign_table_findings: { Args: never; Returns: string[] }
+      external_history_event: {
+        Args: {
+          p_link_id: string
+          p_operation: string
+          p_organization_id: string
+        }
+        Returns: number
+      }
+      external_rows: {
+        Args: { p_organization_id: string; p_source_id: string }
+        Returns: Json[]
+      }
+      external_source_declare: {
+        Args: {
+          p_connection_token: string
+          p_external_schema: string
+          p_external_table: string
+          p_link_template: string
+          p_organization_id: string
+          p_tier: string
+        }
+        Returns: string
+      }
+      external_stub_upsert: {
+        Args: {
+          p_cached_title: string
+          p_external_key: string
+          p_link_url: string
+          p_organization_id: string
+          p_source_id: string
+          p_table_id: string
+        }
+        Returns: string
+      }
+      external_tier_contract: { Args: never; Returns: Json }
+      external_write_through: {
+        Args: { p_organization_id: string; p_patch: Json; p_record_id: string }
+        Returns: undefined
+      }
+      external_writes_set: {
+        Args: {
+          p_enabled: boolean
+          p_organization_id: string
+          p_source_id: string
+        }
+        Returns: boolean
+      }
+      far_value: {
+        Args: {
+          p_key: string
+          p_organization_id: string
+          p_reader: Json
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      field_behaviour: { Args: { p_field_data: Json }; Returns: string }
+      field_choice_usage: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      field_context_policy_floor: {
+        Args: { p_field_data: Json; p_organization_id: string; p_self?: string }
+        Returns: {
+          context_policy: string
+          reads: Json
+        }[]
+      }
+      field_cycle: {
+        Args: { p_field_data: Json; p_organization_id: string; p_self: string }
+        Returns: string[]
+      }
+      field_declare: {
+        Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
+        Returns: string
+      }
+      field_dependants: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: {
+          dependant_id: string
+          how: string
+          kind: string
+          label: string
+        }[]
+      }
+      field_history: {
+        Args: {
+          p_field_key: string
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_record_id?: string
+          p_table_id: string
+        }
+        Returns: {
+          actor: Json
+          after: Json
+          before: Json
+          occurred_at: string
+          operation_label: string
+          record_id: string
+          record_title: string
+          version: number
+        }[]
+      }
+      field_input_closure: {
+        Args: { p_field_data: Json; p_organization_id: string; p_self?: string }
+        Returns: {
+          depth: number
+          input_id: string
+          input_key: string
+          input_label: string
+          input_table: string
+          retired: boolean
+          sensitivity: string
+        }[]
+      }
+      field_inputs_of: {
+        Args: { p_field_data: Json; p_organization_id: string }
+        Returns: {
+          how: string
+          input_id: string
+          input_key: string
+          input_label: string
+          input_table: string
+          retired: boolean
+          sensitivity: string
+        }[]
+      }
+      field_kernel_id: { Args: never; Returns: string }
+      field_kinds: {
+        Args: never
+        Returns: {
+          behavior: string
+          kind: string
+          made_of: string
+          parity: boolean
+        }[]
+      }
+      field_options: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      field_restore: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: boolean
+      }
+      field_retire: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: boolean
+      }
+      field_rules: {
+        Args: { p_field_data: Json }
+        Returns: {
+          kind: string
+          spec: Json
+        }[]
+      }
+      field_sensitivity_floor: {
+        Args: { p_field_data: Json; p_organization_id: string; p_self?: string }
+        Returns: {
+          reads: Json
+          sensitivity: string
+        }[]
+      }
+      field_update: {
+        Args: { p_field_id: string; p_organization_id: string; p_patch: Json }
+        Returns: string
+      }
+      field_update_rehoming_choices: {
+        Args: {
+          p_cells_back?: Json
+          p_field_id: string
+          p_organization_id: string
+          p_patch: Json
+          p_rehome?: Json
+        }
+        Returns: Json
+      }
+      field_value_convert: {
+        Args: { p_to: Json; p_value: Json }
+        Returns: Json
+      }
+      field_words: {
+        Args: { p_field_id: string; p_organization_id: string; p_value: Json }
+        Returns: string
+      }
+      file_kernel_id: { Args: never; Returns: string }
+      filter_is_rule: { Args: { p_filter: Json }; Returns: boolean }
+      form_declare: {
+        Args: {
+          p_form_id?: string
+          p_notify_rule_id?: string
+          p_organization_id: string
+          p_presentation?: Json
+          p_quarantine_rule_id?: string
+          p_questions: Json
+          p_slug?: string
+          p_submission_cap?: number
+          p_table_id: string
+          p_title: string
+        }
+        Returns: string
+      }
+      form_draft_read: {
+        Args: { p_form_id: string; p_secret: string }
+        Returns: {
+          answers: Json
+          expires_at: string
+          message: string
+          saved_at: string
+          state: string
+        }[]
+      }
+      form_draft_save: {
+        Args: {
+          p_answers: Json
+          p_bucket?: string
+          p_form_id: string
+          p_origin?: string
+          p_secret?: string
+        }
+        Returns: {
+          draft_secret: string
+          expires_at: string
+          message: string
+          saved_at: string
+          state: string
+        }[]
+      }
+      form_notify: {
+        Args: {
+          p_form_id: string
+          p_organization_id: string
+          p_record_id: string
+          p_submission_id: string
+        }
+        Returns: string
+      }
+      form_preview_asks: {
+        Args: {
+          p_organization_id: string
+          p_questions: Json
+          p_table_id: string
+          p_values: Json
+        }
+        Returns: {
+          asked: boolean
+          decided: boolean
+          field_key: string
+          said: string
+        }[]
+      }
+      form_public: {
+        Args: { p_form_id: string }
+        Returns: {
+          fields: Json
+          form_id: string
+          honeypot_key: string
+          message: string
+          organization_id: string
+          presentation: Json
+          state: string
+          table_id: string
+          title: string
+        }[]
+      }
+      form_public_asks: {
+        Args: {
+          p_form_id: string
+          p_origin?: string
+          p_secret?: string
+          p_values: Json
+        }
+        Returns: {
+          asked: boolean
+          decided: boolean
+          field_key: string
+          said: string
+        }[]
+      }
+      form_redirect_domains: {
+        Args: { p_organization_id: string }
+        Returns: string[]
+      }
+      form_redirect_refusal: {
+        Args: { p_organization_id: string; p_url: string }
+        Returns: string
+      }
+      form_slug: {
+        Args: { p_form_id?: string; p_organization_id: string; p_title: string }
+        Returns: string
+      }
+      form_submit: {
+        Args: {
+          p_bucket: string
+          p_client_key?: string
+          p_form_id: string
+          p_honeypot?: string
+          p_origin: string
+          p_payload: Json
+        }
+        Returns: {
+          message: string
+          record_id: string
+          state: string
+          submission_id: string
+        }[]
+      }
+      forms: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: {
+          closed_at: string
+          form_id: string
+          held: number
+          in_table: number
+          notify_rule_id: string
+          presentation: Json
+          published_at: string
+          quarantine_rule_id: string
+          rejected: number
+          responses: number
+          slug: string
+          state: string
+          submission_cap: number
+          table_id: string
+          title: string
+        }[]
+      }
+      formula_eval: {
+        Args: {
+          p_context?: Json
+          p_expr: Json
+          p_organization_id: string
+          p_values: Json
+        }
+        Returns: Json
+      }
+      formula_node_kinds: {
+        Args: never
+        Returns: {
+          max_args: number
+          min_args: number
+          node: string
+          result: string
+          says: string
+          signature: string
+        }[]
+      }
+      formula_parse: {
+        Args: { p_organization_id: string; p_table_id: string; p_text: string }
+        Returns: Json
+      }
+      formula_value: {
+        Args: {
+          p_field_data: Json
+          p_organization_id: string
+          p_record_id: string
+          p_values?: Json
+        }
+        Returns: Json
+      }
+      freshness_verdict: {
+        Args: { p_ceiling_seconds: number; p_written_at: string }
+        Returns: Json
+      }
+      grid_layout: {
+        Args: {
+          p_organization_id: string
+          p_table_id: string
+          p_view_id?: string
+        }
+        Returns: Json
+      }
+      grid_layout_check: {
+        Args: { p_layout: Json; p_scope?: string }
+        Returns: Json
+      }
+      guard_refusals_are_complete: {
+        Args: never
+        Returns: {
+          guard: string
+          said: string
+        }[]
+      }
+      has_visibility: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      has_visibility_at: {
+        Args: {
+          p_id: string
+          p_min_version?: number
+          p_organization_id?: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      hidden_field_notice: {
+        Args: { p_action?: string; p_field: Record<string, unknown> }
+        Returns: Json
+      }
+      history_actor: {
+        Args: {
+          p_actor_id: string
+          p_document: Json
+          p_people: Json
+          p_tier: string
+        }
+        Returns: Json
+      }
+      history_changes: {
+        Args: {
+          p_new: Json
+          p_old: Json
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      history_people: {
+        Args: { p_ids: string[]; p_organization_id: string }
+        Returns: Json
+      }
+      history_prune: {
+        Args: {
+          p_dry_run?: boolean
+          p_organization_id: string
+          p_scope?: string
+          p_table_id?: string
+        }
+        Returns: Json
+      }
+      history_restore_body:
+        | {
+            Args: { p_current: Json; p_field_key?: string; p_target: Json }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_author: Json
+              p_current: Json
+              p_field_key: string
+              p_target: Json
+            }
+            Returns: Json
+          }
+      history_retention: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: Json
+      }
+      history_retention_floor_raise: {
+        Args: { p_days: number; p_organization_id: string }
+        Returns: number
+      }
+      history_retention_set: {
+        Args: { p_days: number; p_organization_id: string; p_table_id: string }
+        Returns: number
+      }
+      home_add: {
+        Args: {
+          p_home_record_id: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: string
+      }
+      home_relations: {
+        Args: never
+        Returns: {
+          home_record_id: string
+          organization_id: string
+          relation_id: string
+          table_id: string
+        }[]
+      }
+      hub_changed_by: {
+        Args: { p_ids: string[]; p_kind: string; p_organization_id: string }
+        Returns: {
+          at: string
+          id: string
+          who: string
+        }[]
+      }
+      inbound_addresses: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: Json
+      }
+      inbound_declare: {
+        Args: {
+          p_label?: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      inbound_domain: { Args: { p_organization_id: string }; Returns: string }
+      inbound_mail_land: {
+        Args: { p_address: string; p_mail: Json; p_secret?: string }
+        Returns: Json
+      }
+      inbound_mail_map: {
+        Args: { p_mail: Json; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      inbound_set: {
+        Args: {
+          p_enabled: boolean
+          p_inbound_id: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      inbox_clear: {
+        Args: { p_item_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      inbox_counts: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          cleared: number
+          oldest_waiting_at: string
+          organization_id: string
+          organization_name: string
+          overdue: number
+          snoozed: number
+          waiting: number
+        }[]
+      }
+      inbox_remind_tick: { Args: never; Returns: Json }
+      inbox_snooze: {
+        Args: { p_item_id: string; p_organization_id: string; p_until: string }
+        Returns: Json
+      }
+      inbox_unclear: {
+        Args: { p_item_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      inbox_unsnooze: {
+        Args: { p_item_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      index_payload: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: {
+          id: string
+          searchable: string
+        }[]
+      }
+      intern_provenance: { Args: { p_data: Json }; Returns: Json }
+      io_cell: {
+        Args: {
+          p_date_order?: string
+          p_field: Json
+          p_organization_id: string
+          p_word: string
+        }
+        Returns: Json
+      }
+      io_changed_field_ids: {
+        Args: {
+          p_new: Json
+          p_old: Json
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      io_changed_keys: { Args: { p_new: Json; p_old: Json }; Returns: string[] }
+      io_comment_resolve: {
+        Args: {
+          p_comment_id: string
+          p_organization_id: string
+          p_resolved?: boolean
+        }
+        Returns: boolean
+      }
+      io_comment_write: {
+        Args: {
+          p_anchor?: Json
+          p_body: string
+          p_organization_id: string
+          p_parent_comment_id?: string
+          p_record_id: string
+        }
+        Returns: string
+      }
+      io_comments: {
+        Args: {
+          p_include_resolved?: boolean
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: {
+          anchor: Json
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          parent_comment_id: string
+          resolved_at: string
+          resolved_by: string
+        }[]
+      }
+      io_csv_escape: {
+        Args: { p_delimiter?: string; p_value: string }
+        Returns: string
+      }
+      io_csv_parse: {
+        Args: { p_delimiter?: string; p_text: string }
+        Returns: {
+          cells: string[]
+          row_number: number
+        }[]
+      }
+      io_export: {
+        Args: {
+          p_columns?: string[]
+          p_limit?: number
+          p_organization_id: string
+          p_required?: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      io_export_csv: {
+        Args: {
+          p_columns?: string[]
+          p_delimiter?: string
+          p_limit?: number
+          p_organization_id: string
+          p_required?: string
+          p_table_id: string
+        }
+        Returns: string
+      }
+      io_import_begin: {
+        Args: {
+          p_dedupe_key?: string
+          p_file_bytes?: number
+          p_file_hash?: string
+          p_force?: boolean
+          p_format?: string
+          p_organization_id: string
+          p_policy?: Json
+          p_source_columns?: Json
+          p_source_name?: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      io_import_declare_columns: {
+        Args: {
+          p_mapping?: Json
+          p_organization_id: string
+          p_rows: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      io_import_finish: {
+        Args: {
+          p_import_id: string
+          p_organization_id: string
+          p_unmapped?: string
+        }
+        Returns: Json
+      }
+      io_import_forget: {
+        Args: { p_import_id: string; p_organization_id: string }
+        Returns: boolean
+      }
+      io_import_open: {
+        Args: {
+          p_format?: string
+          p_organization_id: string
+          p_source_columns?: Json
+          p_source_name?: string
+          p_table_id: string
+        }
+        Returns: string
+      }
+      io_import_plan: {
+        Args: {
+          p_columns?: Json
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      io_import_report: {
+        Args: {
+          p_import_id: string
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_state?: string
+        }
+        Returns: Json
+      }
+      io_import_rows: {
+        Args: {
+          p_import_id: string
+          p_mapping?: Json
+          p_organization_id: string
+          p_rows: Json
+        }
+        Returns: Json
+      }
+      io_imports: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_table_id?: string
+        }
+        Returns: Json
+      }
+      io_infer_column: {
+        Args: {
+          p_header: string
+          p_organization_id: string
+          p_samples?: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      io_infer_type: { Args: { p_samples: Json }; Returns: string }
+      io_money_unit: { Args: { p_word: string }; Returns: string }
+      io_outbox_drain: {
+        Args: {
+          p_consumer: string
+          p_event_key?: string
+          p_limit?: number
+          p_organization_id: string
+        }
+        Returns: {
+          actor: Json
+          changed_field_ids: Json
+          occurred_at: string
+          operation: string
+          outbox_id: string
+          record_id: string
+          table_id: string
+        }[]
+      }
+      io_outbox_release: {
+        Args: {
+          p_consumer: string
+          p_older_than?: string
+          p_organization_id: string
+        }
+        Returns: number
+      }
+      io_proposal_accept: {
+        Args: {
+          p_column: string
+          p_import_id: string
+          p_label?: string
+          p_organization_id: string
+          p_type?: string
+        }
+        Returns: string
+      }
+      io_proposal_reject: {
+        Args: {
+          p_column: string
+          p_import_id: string
+          p_organization_id: string
+        }
+        Returns: boolean
+      }
+      io_proposal_spec: { Args: { p_proposal: Json }; Returns: Json }
+      io_relation_candidate: {
+        Args: {
+          p_organization_id: string
+          p_table_id: string
+          p_words: string[]
+        }
+        Returns: string
+      }
+      io_restore:
+        | {
+            Args: {
+              p_organization_id: string
+              p_record_id: string
+              p_version: number
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_author: Json
+              p_organization_id: string
+              p_record_id: string
+              p_version: number
+            }
+            Returns: number
+          }
+      io_revisions: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          changed_at: string
+          changed_by: string
+          changed_fields: Json
+          operation: string
+          summary: string
+          version: number
+        }[]
+      }
+      io_sample_words: {
+        Args: { p_samples: Json }
+        Returns: {
+          word: string
+        }[]
+      }
+      io_value_shape: { Args: { p_envelope: Json }; Returns: Json }
+      is_a_retirement: {
+        Args: {
+          p_new_class: string
+          p_new_data: Json
+          p_new_deleted: string
+          p_new_org: string
+          p_new_table: string
+          p_old_class: string
+          p_old_data: Json
+          p_old_deleted: string
+          p_old_org: string
+          p_old_table: string
+        }
+        Returns: boolean
+      }
+      ladder_replanners: {
+        Args: { p_roots?: string[] }
+        Returns: {
+          fn: string
+          lang: string
+          remedy: string
+          why: string
+        }[]
+      }
+      level_floor: {
+        Args: never
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
+      levels_of: { Args: { p_ids: string[]; p_user_id: string }; Returns: Json }
+      levels_raised_by_a_less_specific_rung: {
+        Args: never
+        Returns: {
+          addressed_level: Database["public"]["Enums"]["permission_level"]
+          answered_level: Database["public"]["Enums"]["permission_level"]
+          member_email: string
+          member_id: string
+          organization_id: string
+          organization_name: string
+          record_id: string
+        }[]
+      }
+      list_door_disagreements:
+        | {
+            Args: {
+              p_only_organization?: string
+              p_pretend?: string
+              p_sample?: number
+            }
+            Returns: {
+              door: string
+              member_id: string
+              organization_id: string
+              organization_name: string
+              record_id: string
+              table_id: string
+              why: string
+            }[]
+          }
+        | {
+            Args: {
+              p_exhaustive: boolean
+              p_only_organization: string
+              p_pretend: string
+              p_sample: number
+            }
+            Returns: {
+              door: string
+              member_id: string
+              organization_id: string
+              organization_name: string
+              record_id: string
+              table_id: string
+              why: string
+            }[]
+          }
+      list_portals: {
+        Args: { p_archived?: string; p_organization_id: string }
+        Returns: {
+          client_table: string
+          client_table_id: string
+          invited: number
+          is_active: boolean
+          opened_at: string
+          portal_id: string
+          sign_in_method: string
+          signed_in: number
+          slug: string
+          tables: number
+          title: string
+        }[]
+      }
+      lookup_value: {
+        Args: {
+          p_field_data: Json
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      mask_document:
+        | {
+            Args: {
+              p_by_id?: boolean
+              p_document: Json
+              p_key_ids?: Json
+              p_notices: Json
+              p_visible_keys: string[]
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_by_id?: boolean
+              p_declared_keys?: string[]
+              p_document: Json
+              p_key_ids?: Json
+              p_notices: Json
+              p_visible_keys: string[]
+            }
+            Returns: Json
+          }
+      mask_says_withheld: {
+        Args: { p_key: string; p_mask: Json }
+        Returns: boolean
+      }
+      may_invite_outside: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: boolean
+      }
+      member_personal_tables: {
+        Args: { p_organization_id: string; p_person: string }
+        Returns: Json
+      }
+      merge_field_kernel_id: { Args: never; Returns: string }
+      migrate_choice_keys: {
+        Args: {
+          p_dry_run?: boolean
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      migrate_delete: {
+        Args: {
+          p_note?: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      migrate_demote: {
+        Args: { p_note?: string; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      migrate_extract_parent: {
+        Args: {
+          p_id: string
+          p_moved_keys: string[]
+          p_note?: string
+          p_organization_id: string
+          p_parent_table_id: string
+        }
+        Returns: Json
+      }
+      migrate_merge: {
+        Args: {
+          p_loser_id: string
+          p_note?: string
+          p_organization_id: string
+          p_winner_id: string
+        }
+        Returns: Json
+      }
+      migrate_promote: {
+        Args: { p_note?: string; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      migrate_purge: {
+        Args: {
+          p_dry_run?: boolean
+          p_organization_id: string
+          p_table_id?: string
+        }
+        Returns: Json
+      }
+      migrate_purge_hard: {
+        Args: {
+          p_chunk?: number
+          p_compliance_reason?: string
+          p_dry_run?: boolean
+          p_organization_id: string
+          p_table_id?: string
+        }
+        Returns: Json
+      }
+      migrate_purge_hard_request: {
+        Args: {
+          p_compliance_reason: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: undefined
+      }
+      migrate_reclass: {
+        Args: {
+          p_id: string
+          p_note?: string
+          p_organization_id: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      migrate_rename: {
+        Args: {
+          p_id: string
+          p_note?: string
+          p_organization_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      migrate_reparent: {
+        Args: {
+          p_id: string
+          p_note?: string
+          p_organization_id: string
+          p_parent_id: string
+        }
+        Returns: Json
+      }
+      migrate_retype: {
+        Args: {
+          p_id: string
+          p_note?: string
+          p_organization_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      migrate_split: {
+        Args: {
+          p_moved_keys: string[]
+          p_note?: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      migrate_undo: {
+        Args: { p_log_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      migrations: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_target_id?: string
+        }
+        Returns: {
+          applied_at: string
+          applied_by: string
+          id: string
+          note: string
+          target_id: string
+          target_kind: string
+          undone_at: string
+          verb: string
+        }[]
+      }
+      mirror_asks_the_whole_database: {
+        Args: never
+        Returns: {
+          policy_name: string
+          schema_name: string
+          table_name: string
+          why: string
+        }[]
+      }
+      my_level: {
+        Args: { p_id: string; p_organization_id: string; p_type?: string }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
+      my_levels: {
+        Args: { p_ids: Json; p_organization_id: string; p_type?: string }
+        Returns: {
+          id: string
+          level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      organization_clear: {
+        Args: {
+          p_and_destroy?: boolean
+          p_confirm: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      organization_contents: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      organization_home_id: {
+        Args: { p_organization_id: string }
+        Returns: string
+      }
+      organization_kernel_id: { Args: never; Returns: string }
+      organization_pick_lists: {
+        Args: { p_organization_id: string }
+        Returns: {
+          description: string
+          id: string
+          list_name: string
+          lives_in: string
+          updated_at: string
+        }[]
+      }
+      organization_references: {
+        Args: { p_kind: string; p_organization_id: string; p_row: Json }
+        Returns: {
+          openable: boolean
+          ref_id: string
+          site: string
+          what: string
+        }[]
+      }
+      owning_table: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: string
+      }
+      owning_table_gone: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: boolean
+      }
+      page_ceiling: { Args: { p_organization_id?: string }; Returns: number }
+      page_contract: { Args: { p_organization_id: string }; Returns: Json }
+      page_size: {
+        Args: {
+          p_ceiling?: number
+          p_default?: number
+          p_door: string
+          p_limit: number
+          p_organization_id: string
+        }
+        Returns: number
+      }
+      parity_field_types: {
+        Args: never
+        Returns: {
+          behavior: string
+          made_of: string
+          parity_type: string
+        }[]
+      }
+      parity_type: { Args: { p_field_data: Json }; Returns: string }
+      parity_values: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          actor: string
+          behavior: string
+          field_id: string
+          field_key: string
+          format: string
+          parity_type: string
+          unit: string
+          value: Json
+          value_version: number
+          written_at: string
+        }[]
+      }
+      per_value_access_words: { Args: never; Returns: string[] }
+      person_kernel_id: { Args: never; Returns: string }
+      phone_canonical: { Args: { p_text: string }; Returns: string }
+      phone_display: { Args: { p_text: string }; Returns: string }
+      phone_pattern: { Args: never; Returns: string }
+      pick_list_index: { Args: { p_organization_id: string }; Returns: Json }
+      pick_list_index_everywhere: { Args: never; Returns: Json }
+      pin_agent_cells: {
+        Args: { p_agent_keys: string[]; p_new: Json; p_old: Json }
+        Returns: Json
+      }
+      pipeline_board:
+        | {
+            Args: {
+              p_measure?: string
+              p_organization_id: string
+              p_table_id: string
+            }
+            Returns: {
+              cards: number
+              over_limit: boolean
+              stage_key: string
+              stage_label: string
+              stage_position: number
+              total: number
+              wip_limit: number
+            }[]
+          }
+        | {
+            Args: {
+              p_filter: Json
+              p_measure: string
+              p_organization_id: string
+              p_table_id: string
+            }
+            Returns: {
+              cards: number
+              over_limit: boolean
+              stage_key: string
+              stage_label: string
+              stage_position: number
+              total: number
+              wip_limit: number
+            }[]
+          }
+      pipeline_declare: {
+        Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
+        Returns: Json
+      }
+      pipeline_gate_preview: {
+        Args: {
+          p_gate: Json
+          p_organization_id: string
+          p_stage: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      pipeline_move: {
+        Args: {
+          p_also?: Json
+          p_expected_version?: number
+          p_organization_id: string
+          p_record_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      pipeline_move_many: {
+        Args: { p_moves: Json; p_organization_id: string }
+        Returns: Json
+      }
+      pipeline_pending: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      pipeline_read: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      pipeline_transition_refusal: {
+        Args: { p_organization_id: string; p_record_id: string; p_to: string }
+        Returns: Json
+      }
+      pipelines: {
+        Args: { p_organization_id: string }
+        Returns: {
+          broken: string
+          rules: number
+          stage_field: string
+          stage_label: string
+          stages: number
+          table_id: string
+          table_name: string
+          updated_at: string
+          updated_by: string
+        }[]
+      }
+      plural_of: { Args: { p_word: string }; Returns: string }
+      portal_accents: { Args: never; Returns: string[] }
+      portal_admits: {
+        Args: { p_organization_id: string; p_user_id?: string }
+        Returns: boolean
+      }
+      portal_archive: {
+        Args: {
+          p_confirm_title: string
+          p_organization_id: string
+          p_portal_id: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      portal_card: {
+        Args: { p_organization_id: string; p_portal_id: string }
+        Returns: Json
+      }
+      portal_declare: {
+        Args: {
+          p_client_table_id: string
+          p_config?: Json
+          p_organization_id: string
+          p_portal_id?: string
+          p_sign_in_method?: string
+          p_slug?: string
+          p_tables: Json
+          p_title: string
+        }
+        Returns: string
+      }
+      portal_field_map: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: {
+          field_id: string
+          field_key: string
+          field_type: string
+          points_at: string
+        }[]
+      }
+      portal_form: {
+        Args: {
+          p_form_id: string
+          p_organization_id: string
+          p_portal_id: string
+        }
+        Returns: Json
+      }
+      portal_form_submit: {
+        Args: {
+          p_client_key?: string
+          p_form_id: string
+          p_organization_id: string
+          p_payload: Json
+          p_portal_id: string
+        }
+        Returns: Json
+      }
+      portal_invitation: {
+        Args: { p_email: string; p_slug: string }
+        Returns: Json
+      }
+      portal_invite: {
+        Args: {
+          p_client_record_id: string
+          p_email: string
+          p_organization_id: string
+          p_portal_id: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      portal_invite_accept: { Args: { p_token: string }; Returns: Json }
+      portal_me: { Args: never; Returns: Json }
+      portal_preview: {
+        Args: {
+          p_organization_id: string
+          p_portal_id: string
+          p_principal_id: string
+          p_table_id: string
+        }
+        Returns: {
+          record_id: string
+          title: string
+        }[]
+      }
+      portal_principal_bind: {
+        Args: {
+          p_organization_id: string
+          p_principal_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      portal_public: { Args: { p_slug: string }; Returns: Json }
+      portal_record_title: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: string
+      }
+      portal_restore: {
+        Args: {
+          p_confirm_title: string
+          p_organization_id: string
+          p_portal_id: string
+        }
+        Returns: Json
+      }
+      portal_revoke: {
+        Args: {
+          p_organization_id: string
+          p_portal_id: string
+          p_principal_id: string
+        }
+        Returns: Json
+      }
+      portal_slug: {
+        Args: {
+          p_organization_id: string
+          p_portal_id?: string
+          p_title: string
+        }
+        Returns: string
+      }
+      portal_tables: {
+        Args: { p_organization_id: string }
+        Returns: {
+          name: string
+          portal_id: string
+          table_id: string
+        }[]
+      }
+      portals: {
+        Args: { p_organization_id: string }
+        Returns: {
+          client_table: string
+          client_table_id: string
+          invited: number
+          is_active: boolean
+          opened_at: string
+          portal_id: string
+          sign_in_method: string
+          signed_in: number
+          slug: string
+          tables: number
+          title: string
+        }[]
+      }
+      presentation_kernel_id: { Args: never; Returns: string }
+      promote_field: {
+        Args: {
+          p_field_id: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      promote_table: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      promoted_field_cap: { Args: never; Returns: number }
+      promoted_fields: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: {
+          field_id: string
+          field_key: string
+          index_arm: string
+          index_expr: string
+          index_name: string
+          indexable: boolean
+          is_unique: boolean
+          parity_type: string
+          value_path: string
+          why_not: string
+        }[]
+      }
+      promoted_index_arm: { Args: { p_field_data: Json }; Returns: string }
+      promoted_index_ddl: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: {
+          purpose: string
+          statement: string
+          step: number
+        }[]
+      }
+      promoted_index_expr: { Args: { p_field_data: Json }; Returns: string }
+      promoted_index_name: {
+        Args: { p_field_key: string; p_table_id: string; p_unique: boolean }
+        Returns: string
+      }
+      promoted_query_sql: {
+        Args: {
+          p_field_key: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: string
+      }
+      promoted_read: {
+        Args: {
+          p_field_key: string
+          p_organization_id: string
+          p_table_id: string
+          p_value: string
+        }
+        Returns: string[]
+      }
+      promoted_value_path: { Args: { p_field_data: Json }; Returns: string }
+      promotion_inline_ceiling: { Args: never; Returns: number }
+      provenance_prune: {
+        Args: {
+          p_dry_run?: boolean
+          p_limit?: number
+          p_organization_id?: string
+        }
+        Returns: Json
+      }
+      provenance_retention_days: {
+        Args: { p_organization_id: string }
+        Returns: number
+      }
+      provenance_write: {
+        Args: {
+          p_conversation_id: string
+          p_organization_id: string
+          p_rows: Json
+          p_turn_id: string
+        }
+        Returns: number
+      }
+      query_access_ids: {
+        Args: { p_organization_id: string; p_required?: string }
+        Returns: string[]
+      }
+      query_across_homes: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_required?: string
+          p_table_id: string
+        }
+        Returns: {
+          created_at: string
+          data: Json
+          home_record_id: string
+          record_id: string
+        }[]
+      }
+      query_by_coordinates: {
+        Args: {
+          p_coordinates?: Json
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_required?: string
+          p_table_id?: string
+        }
+        Returns: {
+          coordinates_matched: number
+          data: Json
+          record_id: string
+          table_id: string
+        }[]
+      }
+      query_can_see: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_required?: string
+        }
+        Returns: boolean
+      }
+      query_hot_paths: {
+        Args: never
+        Returns: {
+          name: string
+          statement: string
+        }[]
+      }
+      query_hot_paths_prepared: {
+        Args: never
+        Returns: {
+          generic_plans: number
+          name: string
+          prepared: boolean
+        }[]
+      }
+      query_is_store_owner: { Args: never; Returns: boolean }
+      query_prepare_hot: { Args: never; Returns: number }
+      query_principal: { Args: never; Returns: string }
+      query_record_as_of: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_recorded_at?: string
+          p_required?: string
+          p_world_on?: string
+        }
+        Returns: Json
+      }
+      query_relation_edges: {
+        Args: { p_flavor?: string; p_organization_id: string; p_role?: string }
+        Returns: {
+          child_id: string
+          flavor: string
+          parent_id: string
+          role: string
+        }[]
+      }
+      query_rollup: {
+        Args: {
+          p_flavor?: string
+          p_max_depth?: number
+          p_organization_id: string
+          p_required?: string
+          p_role?: string
+          p_roots: string[]
+        }
+        Returns: {
+          depth: number
+          record_id: string
+        }[]
+      }
+      query_rollup_sum: {
+        Args: {
+          p_field_key: string
+          p_flavor?: string
+          p_max_depth?: number
+          p_organization_id: string
+          p_required?: string
+          p_role?: string
+          p_roots: string[]
+        }
+        Returns: number
+      }
+      query_table_as_of: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_recorded_at?: string
+          p_required?: string
+          p_table_id: string
+          p_world_on?: string
+        }
+        Returns: {
+          data: Json
+          record_id: string
+        }[]
+      }
+      query_table_homes: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: string[]
+      }
+      query_visibility_parity: {
+        Args: { p_organization_id: string }
+        Returns: {
+          container_id: string
+          container_type: string
+          derived_level: Database["public"]["Enums"]["permission_level"]
+          item_id: string
+          item_type: string
+          reason: string
+          side: string
+          stored_level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      query_visible_ids: {
+        Args: {
+          p_organization_id: string
+          p_required?: string
+          p_table_id?: string
+        }
+        Returns: string[]
+      }
+      reachable_from: {
+        Args: { p_organization_id: string; p_roots: string[] }
+        Returns: {
+          depth: number
+          record_id: string
+          via: string
+        }[]
+      }
+      reaches_directly: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      read_door_carried_ids: {
+        Args: {
+          p_organization_id: string
+          p_required: Database["public"]["Enums"]["permission_level"]
+          p_table_id: string
+          p_user: string
+        }
+        Returns: Record<string, unknown>
+      }
+      read_door_granted_ids: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: string[]
+      }
+      read_door_ladder_ceiling: { Args: never; Returns: number }
+      read_door_parity: {
+        Args: {
+          p_organization_id: string
+          p_required: Database["public"]["Enums"]["permission_level"]
+          p_sample: number
+          p_table_id: string
+          p_user: string
+        }
+        Returns: {
+          per_row: boolean
+          record_id: string
+          set_based: boolean
+          verdict: string
+        }[]
+      }
+      read_mask: {
+        Args: {
+          p_action?: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      read_mask_at: {
+        Args: {
+          p_action?: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_level_given: boolean
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      read_mask_for: {
+        Args: {
+          p_action?: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_table_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      read_paths_outside_the_door: {
+        Args: never
+        Returns: {
+          object_name: string
+          why: string
+        }[]
+      }
+      read_record: {
+        Args: {
+          p_by_id?: boolean
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      read_records: {
+        Args: {
+          p_by_id?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: {
+          document: Json
+          id: string
+          level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      read_records_archived: {
+        Args: {
+          p_by_id?: boolean
+          p_lane?: string
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: {
+          archived_at: string
+          archived_by: string
+          archived_by_name: string
+          document: Json
+          id: string
+          level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      read_records_by_ids: {
+        Args: {
+          p_by_id?: boolean
+          p_organization_id: string
+          p_record_ids: string[]
+          p_table_id: string
+        }
+        Returns: {
+          document: Json
+          id: string
+          level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      read_records_in_view_order: {
+        Args: {
+          p_by_id?: boolean
+          p_filter?: Json
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_view_id: string
+        }
+        Returns: {
+          document: Json
+          id: string
+          level: Database["public"]["Enums"]["permission_level"]
+          position: number
+        }[]
+      }
+      read_records_matching: {
+        Args: {
+          p_by_id?: boolean
+          p_filter?: Json
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: {
+          document: Json
+          id: string
+          level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      read_records_page: {
+        Args: {
+          p_by_id?: boolean
+          p_filter?: Json
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_search?: string
+          p_sort?: Json
+          p_table_id: string
+          p_view_id?: string
+        }
+        Returns: Json
+      }
+      realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
+      record_aggregate: {
+        Args: {
+          p_bucket?: Json
+          p_compare?: Json
+          p_filter?: Json
+          p_group_by?: Json
+          p_limit?: number
+          p_measures?: Json
+          p_organization_id: string
+          p_required?: string
+          p_table_id: string
+        }
+        Returns: {
+          compare: Json
+          delta: Json
+          groups: Json
+          measures: Json
+          prior_groups: Json
+          prior_measures: Json
+          prior_row_count: number
+          row_count: number
+        }[]
+      }
+      record_applicability: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          answer: Json
+          applies: boolean
+          rule_id: string
+          rule_name: string
+          rule_version: number
+        }[]
+      }
+      record_archiver: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: string
+      }
+      record_as_of: {
+        Args: { p_at: string; p_organization_id: string; p_record_id: string }
+        Returns: {
+          replayed: boolean
+          state: Json
+        }[]
+      }
+      record_card: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_viewer: string
+        }
+        Returns: Json
+      }
+      record_carrying_edges: {
+        Args: {
+          p_data: Json
+          p_data_class: string
+          p_deleted_at: string
+          p_id: string
+        }
+        Returns: {
+          container_id: string
+          edge_role: string
+          item_id: string
+        }[]
+      }
+      record_change_actions: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      record_change_many: {
+        Args: { p_changes: Json; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      record_delete: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: string
+      }
+      record_entity_edges: {
+        Args: {
+          p_data: Json
+          p_data_class: string
+          p_deleted_at: string
+          p_id: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: {
+          edge_role: string
+          field_id: string
+          ord: number
+          target_id: string
+          target_type: string
+        }[]
+      }
+      record_filter_sql:
+        | { Args: { p_filter: Json }; Returns: string }
+        | {
+            Args: {
+              p_filter: Json
+              p_organization_id: string
+              p_table_id: string
+            }
+            Returns: string
+          }
+      record_headers: {
+        Args: { p_ids: string[]; p_organization_id: string }
+        Returns: {
+          created_at: string
+          created_by: string
+          deleted_at: string
+          id: string
+          mine: boolean
+          table_id: string
+          updated_at: string
+          version: number
+        }[]
+      }
+      record_history: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: {
+          actor: Json
+          changes: Json
+          migration_id: string
+          occurred_at: string
+          operation: string
+          operation_label: string
+          undoable: boolean
+          version: number
+        }[]
+      }
+      record_platform_keys: { Args: never; Returns: string[] }
+      record_relation_edges: {
+        Args: {
+          p_data: Json
+          p_data_class: string
+          p_deleted_at: string
+          p_id: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: {
+          edge_role: string
+          field_id: string
+          ord: number
+          target_id: string
+        }[]
+      }
+      record_reparent: {
+        Args: {
+          p_organization_id: string
+          p_parent_id: string
+          p_record_id: string
+        }
+        Returns: undefined
+      }
+      record_resolve: {
+        Args: { p_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      record_restore: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: undefined
+      }
+      record_restore_preview: {
+        Args: {
+          p_field_key?: string
+          p_organization_id: string
+          p_record_id: string
+          p_version: number
+        }
+        Returns: Json
+      }
+      record_restore_version:
+        | {
+            Args: {
+              p_organization_id: string
+              p_record_id: string
+              p_version: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_author: Json
+              p_organization_id: string
+              p_record_id: string
+              p_version: number
+            }
+            Returns: Json
+          }
+      record_scope_context: {
+        Args: {
+          p_history?: number
+          p_organization_id: string
+          p_record_id: string
+          p_relations?: number
+          p_siblings?: number
+        }
+        Returns: Json
+      }
+      record_source_key: { Args: { p_table_id: string }; Returns: string }
+      record_source_keys: { Args: { p_table_id: string }; Returns: string[] }
+      record_source_table: { Args: { p_key: string }; Returns: string }
+      record_stage_pending: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      record_state_as_of: {
+        Args: { p_at: string; p_record_id: string }
+        Returns: {
+          replayed: boolean
+          state: Json
+        }[]
+      }
+      record_table: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: string
+      }
+      record_update: {
+        Args: {
+          p_expected_version?: number
+          p_organization_id: string
+          p_patch: Json
+          p_record_id: string
+        }
+        Returns: number
+      }
+      record_update_adding_choices: {
+        Args: {
+          p_add: Json
+          p_expected_version?: number
+          p_organization_id: string
+          p_patch: Json
+          p_record_id: string
+        }
+        Returns: number
+      }
+      record_value_one: {
+        Args: { p_key: string; p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      record_values: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      record_values_of: {
+        Args: { p_row: Record<string, unknown> }
+        Returns: Json
+      }
+      record_values_step: {
+        Args: { p_cache?: Json; p_row: Record<string, unknown> }
+        Returns: Record<string, unknown>
+      }
+      record_values_versioned: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          absent_reason: string
+          actor: string
+          alternates: Json
+          field_id: string
+          field_key: string
+          on_behalf_of: string
+          source: Json
+          value: Json
+          value_version: number
+          written_at: string
+        }[]
+      }
+      record_words: {
+        Args: {
+          p_noun?: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: string
+      }
+      record_write: {
+        Args: { p_data: Json; p_organization_id: string; p_table_id: string }
+        Returns: string
+      }
+      record_write_graph: {
+        Args: {
+          p_children?: Json
+          p_edges?: Json
+          p_organization_id: string
+          p_parent: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      record_write_many: {
+        Args: {
+          p_ids?: string[]
+          p_organization_id: string
+          p_rows: Json[]
+          p_table_id: string
+        }
+        Returns: string[]
+      }
+      refusals_claiming_a_level_never_asked: {
+        Args: never
+        Returns: {
+          function_name: string
+          identity_args: string
+          why: string
+        }[]
+      }
+      relation_carry: {
+        Args: {
+          p_container_id: string
+          p_item_id: string
+          p_organization_id: string
+        }
+        Returns: string
+      }
+      relation_edges_withdraw: {
+        Args: {
+          p_field_ids: string[]
+          p_organization_id: string
+          p_why: string
+        }
+        Returns: number
+      }
+      relation_halves_disagreements: {
+        Args: { p_organization_id?: string; p_record_id?: string }
+        Returns: {
+          direction: string
+          field_id: string
+          field_key: string
+          organization_id: string
+          record_id: string
+          remedy: string
+          target_id: string
+          why: string
+        }[]
+      }
+      relation_halves_repair: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      relation_kernel_record: {
+        Args: {
+          p_id: string
+          p_kernel_table_id: string
+          p_organization_id: string
+        }
+        Returns: string
+      }
+      relation_own: {
+        Args: {
+          p_organization_id: string
+          p_owner_id: string
+          p_target_id: string
+        }
+        Returns: string
+      }
+      relation_restore: {
+        Args: { p_organization_id: string; p_relation_id: string }
+        Returns: boolean
+      }
+      relation_target_card: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_via_key?: string
+        }
+        Returns: {
+          card: Json
+          is_foreign: boolean
+          masked: boolean
+          reader_level: Database["public"]["Enums"]["permission_level"]
+          target_id: string
+          target_organization_id: string
+          why: string
+        }[]
+      }
+      relation_target_external: {
+        Args: {
+          p_connection_token: string
+          p_external_key: string
+          p_external_table: string
+        }
+        Returns: Json
+      }
+      relation_target_ours: {
+        Args: { p_entity_token: string; p_row_id: string }
+        Returns: Json
+      }
+      relation_targets: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_via_key: string
+        }
+        Returns: string[]
+      }
+      relation_uncarry: {
+        Args: {
+          p_container_id: string
+          p_item_id: string
+          p_organization_id: string
+        }
+        Returns: number
+      }
+      relation_value_target_ok: {
+        Args: {
+          p_field_data: Json
+          p_field_id: string
+          p_organization_id: string
+          p_target_id: string
+        }
+        Returns: boolean
+      }
+      relation_words: {
+        Args: { p_field_id: string; p_organization_id: string; p_value: string }
+        Returns: string
+      }
+      relation_words_many: {
+        Args: {
+          p_field_id: string
+          p_organization_id: string
+          p_record_ids: string[]
+        }
+        Returns: {
+          record_id: string
+          words: string
+        }[]
+      }
+      reopen_declared_doors: {
+        Args: never
+        Returns: {
+          reopened: string
+        }[]
+      }
+      required_epoch: {
+        Args: {
+          p_container_id: string
+          p_container_type: string
+          p_item_id: string
+          p_item_type: string
+        }
+        Returns: number
+      }
+      resolve_context: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_record_ids?: string[]
+          p_system_item_refs?: string[]
+          p_table_ids?: string[]
+        }
+        Returns: Json
+      }
+      resolve_first_match: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      resolve_id: {
+        Args: { p_id: string; p_organization_id: string }
+        Returns: string
+      }
+      retired_actor_words: { Args: never; Returns: Json }
+      rollup_value: {
+        Args: {
+          p_field_data: Json
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      row_actions: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      row_sits_in_a_personal_table: {
+        Args: { p_id: string; p_organization_id: string; p_type: string }
+        Returns: boolean
+      }
+      rule_applies: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_rule_id: string
+        }
+        Returns: Json
+      }
+      rule_context: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      rule_declare: {
+        Args: { p_organization_id: string; p_rule_id?: string; p_spec: Json }
+        Returns: string
+      }
+      rule_dependency_edges: {
+        Args: { p_organization_id: string; p_row?: Record<string, unknown> }
+        Returns: {
+          needed: string
+          needs: string
+        }[]
+      }
+      rule_eval: {
+        Args: {
+          p_context?: Json
+          p_expr: Json
+          p_organization_id: string
+          p_values: Json
+        }
+        Returns: Json
+      }
+      rule_field_key: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: string
+      }
+      rule_field_label: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: string
+      }
+      rule_filter_node_sql: {
+        Args: {
+          p_map: Json
+          p_node: Json
+          p_organization_id: string
+          p_table_id: string
+          p_visible: string[]
+        }
+        Returns: string
+      }
+      rule_kernel_id: { Args: never; Returns: string }
+      rule_members: {
+        Args: { p_organization_id: string; p_rule_id: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rule_members_visible: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_rule_id: string
+        }
+        Returns: {
+          document: Json
+          id: string
+          level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      rule_membership: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_rule_id: string
+        }
+        Returns: Json
+      }
+      rule_node_kinds: {
+        Args: never
+        Returns: {
+          evaluated_by: string
+          node: string
+          note: string
+        }[]
+      }
+      rule_restore: {
+        Args: { p_organization_id: string; p_rule_id: string }
+        Returns: boolean
+      }
+      rule_run: {
+        Args: {
+          p_context?: Json
+          p_organization_id: string
+          p_rule_id: string
+          p_values: Json
+        }
+        Returns: Json
+      }
+      rule_sql_op: {
+        Args: { p_a: Json; p_b?: Json; p_op: string }
+        Returns: Json
+      }
+      rule_truth: { Args: { p_answer: Json }; Returns: boolean }
+      rule_uses: { Args: never; Returns: string[] }
+      rule_version: {
+        Args: { p_organization_id: string; p_rule_id: string }
+        Returns: number
+      }
+      said: {
+        Args: { p_value: string; p_when_there_is_none: string }
+        Returns: string
+      }
+      scope_member_reaches: {
+        Args: {
+          p_record_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      scope_table_provision: {
+        Args: {
+          p_home_id?: string
+          p_item_id: string
+          p_organization_id: string
+          p_scope_id: string
+        }
+        Returns: string
+      }
+      sensitivity_rank: { Args: { p_sensitivity: string }; Returns: number }
+      share_access: {
+        Args: { p_organization_id: string; p_subject_id: string }
+        Returns: {
+          level: Database["public"]["Enums"]["permission_level"]
+          principal_id: string
+          principal_kind: string
+          principal_label: string
+          reason: string
+          reason_detail: string
+          revocable: boolean
+          via_id: string
+          via_type: string
+        }[]
+      }
+      share_grant: {
+        Args: {
+          p_level?: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_principal_id: string
+          p_principal_kind: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      share_lane_set: {
+        Args: {
+          p_choice: string
+          p_level?: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      share_lanes: {
+        Args: never
+        Returns: {
+          choice: string
+          discoverable: boolean
+          label: string
+          lane: string
+          means: string
+        }[]
+      }
+      share_levels: {
+        Args: never
+        Returns: {
+          label: string
+          level: Database["public"]["Enums"]["permission_level"]
+          means: string
+          ordinal: number
+        }[]
+      }
+      share_people: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_query?: string
+          p_subject_id?: string
+        }
+        Returns: {
+          already_at: Database["public"]["Enums"]["permission_level"]
+          already_why: string
+          display_name: string
+          email: string
+          membership: string
+          user_id: string
+        }[]
+      }
+      share_revoke: {
+        Args: {
+          p_organization_id: string
+          p_principal_id: string
+          p_principal_kind: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      share_subject_name: {
+        Args: { p_id: string; p_organization_id: string; p_type: string }
+        Returns: string
+      }
+      shared_only_disagreements: {
+        Args: { p_pretend?: string }
+        Returns: {
+          ladder: boolean
+          member_id: string
+          organization_id: string
+          organization_name: string
+          read_door: boolean
+          record_id: string
+          rls_mirror: boolean
+          table_id: string
+          why: string
+        }[]
+      }
+      shares_outside: {
+        Args: { p_organization_id: string }
+        Returns: {
+          email: string
+          expired: boolean
+          expires_at: string
+          invitation_id: string
+          invited_at: string
+          joined: boolean
+          level: string
+          level_label: string
+          say: string
+          status: string
+          table_id: string
+          table_name: string
+        }[]
+      }
+      sign_request_cancel: {
+        Args: {
+          p_organization_id: string
+          p_reason?: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      sign_request_create: {
+        Args: {
+          p_expires_in?: string
+          p_field_key: string
+          p_organization_id: string
+          p_render_id: string
+          p_signer_email: string
+          p_signer_name: string
+        }
+        Returns: Json
+      }
+      sign_request_decline: {
+        Args: {
+          p_ip?: string
+          p_reason?: string
+          p_token: string
+          p_user_agent?: string
+        }
+        Returns: Json
+      }
+      sign_request_public: {
+        Args: { p_origin?: string; p_token: string }
+        Returns: Json
+      }
+      sign_request_remind: {
+        Args: { p_organization_id: string; p_request_id: string }
+        Returns: Json
+      }
+      sign_request_sentence: { Args: { p_data: Json }; Returns: string }
+      sign_request_sign: {
+        Args: {
+          p_image?: string
+          p_ip?: string
+          p_mark: string
+          p_origin?: string
+          p_signed_name: string
+          p_token: string
+          p_user_agent?: string
+        }
+        Returns: Json
+      }
+      sign_request_state: { Args: { p_data: Json }; Returns: string }
+      sign_request_unchanged: {
+        Args: { p_organization_id: string; p_request_id: string }
+        Returns: boolean
+      }
+      sign_requests: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          declined_at: string
+          document_hash: string
+          document_title: string
+          document_version: number
+          expires_at: string
+          field_key: string
+          invalidated_at: string
+          record_id: string
+          reminder_count: number
+          render_id: string
+          request_id: string
+          sent_at: string
+          sentence: string
+          signature_id: string
+          signature_mark: string
+          signed_at: string
+          signer_email: string
+          signer_has_account: boolean
+          signer_name: string
+          state: string
+          viewed_at: string
+        }[]
+      }
+      sign_token_decode: { Args: { p_token: string }; Returns: string }
+      sign_token_encode: { Args: { p_bytes: string }; Returns: string }
+      silent_page_doors: {
+        Args: never
+        Returns: {
+          door: string
+          why: string
+        }[]
+      }
+      size_refusal: {
+        Args: { p_data: Json; p_organization_id: string }
+        Returns: string
+      }
+      source_next_pointer: { Args: { p_sources: Json }; Returns: string }
+      source_pointer: {
+        Args: { p_source: Json; p_sources: Json }
+        Returns: string
+      }
+      stage_rule_enforcement: {
+        Args: { p_organization_id: string }
+        Returns: string
+      }
+      stage_rule_on_fail_kinds: {
+        Args: never
+        Returns: {
+          behaviour: string
+          note: string
+        }[]
+      }
+      stamp_value_envelopes: {
+        Args: {
+          p_actor: string
+          p_at: string
+          p_data: Json
+          p_on_behalf_of: string
+        }
+        Returns: Json
+      }
+      storage_modes: { Args: never; Returns: string[] }
+      store_census_pair_ceiling: { Args: never; Returns: number }
+      store_is_open: { Args: { p_organization_id?: string }; Returns: boolean }
+      store_off_sentence: {
+        Args: { p_organization_id: string }
+        Returns: string
+      }
+      subscription_cadences: {
+        Args: { p_organization_id: string }
+        Returns: string[]
+      }
+      subscription_declare: {
+        Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
+        Returns: string
+      }
+      subscription_mute: {
+        Args: {
+          p_muted?: boolean
+          p_organization_id: string
+          p_rule_id: string
+        }
+        Returns: boolean
+      }
+      subscription_preview: {
+        Args: { p_organization_id: string; p_rule_id: string }
+        Returns: Json
+      }
+      subscriptions: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: {
+          cadence: string
+          channel: string
+          event_key: string
+          i_may_mute: boolean
+          last_sent_at: string
+          mine: boolean
+          muted: boolean
+          name: string
+          next_digest_at: string
+          quiet_hours: Json
+          recipient_user_id: string
+          rule_id: string
+          saved_view_id: string
+          schedule: string
+          table_id: string
+        }[]
+      }
+      table_archive: {
+        Args: {
+          p_chunk?: number
+          p_include_table?: boolean
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      table_capacity: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      table_carries_its_rows: {
+        Args: {
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_table_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      table_column_source: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: string
+      }
+      table_contents: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: {
+          goes_at: number
+          kind: string
+          record_id: string
+        }[]
+      }
+      table_copy_evaluation_state: {
+        Args: { p_table_id: string }
+        Returns: Json
+      }
+      table_declare: {
+        Args: { p_organization_id: string; p_spec: Json }
+        Returns: string
+      }
+      table_decorate: {
+        Args: {
+          p_organization_id: string
+          p_path: string[]
+          p_table_id: string
+          p_value?: Json
+        }
+        Returns: Json
+      }
+      table_decorations: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      table_facts: {
+        Args: { p_organization_id: string }
+        Returns: {
+          keeper_group: string
+          keeper_says: string
+          kept_by_the_app: boolean
+          kept_for: string
+          mine: boolean
+          offered_as_context: boolean
+          table_id: string
+          used_in_id: string
+          used_in_kind: string
+          used_in_table_id: string
+          visibility: string
+        }[]
+      }
+      table_from_example: {
+        Args: { p_example: Json; p_home_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      table_has_a_visible_record: {
+        Args: { p_organization_id: string; p_table_id: string; p_user: string }
+        Returns: boolean
+      }
+      table_home: {
+        Args: { p_table_id: string; p_to_organization_id?: string }
+        Returns: Json
+      }
+      table_is_live: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: boolean
+      }
+      table_is_options_table: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: boolean
+      }
+      table_kept_for_derived: {
+        Args: { p_data: Json; p_is_kernel: boolean; p_is_options: boolean }
+        Returns: string
+      }
+      table_kernel_id: { Args: never; Returns: string }
+      table_list_everywhere: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      table_move: {
+        Args: {
+          p_expected_version?: number
+          p_table_id: string
+          p_to_organization_id: string
+        }
+        Returns: Json
+      }
+      table_placement: {
+        Args: {
+          p_data: Json
+          p_is_kernel?: boolean
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      table_record_ceiling:
+        | { Args: never; Returns: number }
+        | { Args: { p_organization_id: string }; Returns: number }
+      table_row_counts: {
+        Args: { p_organization_id: string; p_table_ids: string[] }
+        Returns: {
+          table_id: string
+          visible_rows: number
+        }[]
+      }
+      table_rules: {
+        Args: {
+          p_organization_id: string
+          p_record_type?: string
+          p_table_id: string
+          p_use: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      table_share_outside: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      table_share_outside_accept: { Args: { p_token: string }; Returns: Json }
+      table_share_outside_for_me: {
+        Args: never
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          level: string
+          level_label: string
+          organization: string
+          organization_id: string
+          say: string
+          table_id: string
+          table_name: string
+          token: string
+        }[]
+      }
+      table_share_outside_grant: {
+        Args: {
+          p_level?: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_person: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      table_share_outside_invite: {
+        Args: {
+          p_email: string
+          p_level?: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      table_share_outside_resend: {
+        Args: { p_invitation_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      table_share_outside_revoke: {
+        Args: { p_invitation_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      table_stage_field: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: string
+      }
+      table_storage: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: string
+      }
+      table_sync: {
+        Args: { p_home_id: string; p_organization_id: string; p_spec: Json }
+        Returns: Json
+      }
+      table_transfer_owner: {
+        Args: { p_reason: string; p_table_id: string; p_to_person: string }
+        Returns: Json
+      }
+      table_type_field: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: string
+      }
+      table_unique_rule_fields: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      table_webhook_archive: {
+        Args: { p_organization_id: string; p_webhook_id: string }
+        Returns: boolean
+      }
+      table_webhook_declare: {
+        Args: {
+          p_description?: string
+          p_events?: string[]
+          p_organization_id: string
+          p_table_id: string
+          p_target_url: string
+        }
+        Returns: Json
+      }
+      table_webhooks: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: {
+          consecutive_failures: number
+          created_at: string
+          description: string
+          events: string[]
+          is_active: boolean
+          last_attempt_at: string
+          last_success_at: string
+          owner_id: string
+          target_url: string
+          webhook_id: string
+        }[]
+      }
+      table_work_kind: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: string
+      }
+      tables_at_home: {
+        Args: { p_home_ids: string[]; p_organization_id: string }
+        Returns: {
+          home_record_id: string
+          kind: string
+          table_id: string
+        }[]
+      }
+      tables_described_without_asking: {
+        Args: never
+        Returns: {
+          function_name: string
+          identity_args: string
+          why: string
+        }[]
+      }
+      tables_i_can_open: {
+        Args: never
+        Returns: {
+          member: boolean
+          organization_id: string
+          organization_name: string
+          table_id: string
+          table_name: string
+          updated_at: string
+          visibility: string
+        }[]
+      }
+      tables_shared_with_me: {
+        Args: never
+        Returns: {
+          level: string
+          level_label: string
+          opens: boolean
+          organization: string
+          organization_id: string
+          say: string
+          shared_at: string
+          table_id: string
+          table_name: string
+        }[]
+      }
+      text_head_bytes: {
+        Args: { p_bytes: number; p_text: string }
+        Returns: string
+      }
+      undeclared_keys: {
+        Args: { p_data: Json; p_organization_id: string; p_table_id: string }
+        Returns: string[]
+      }
+      unresolved_sources_of: {
+        Args: {
+          p_by_id?: boolean
+          p_key_ids?: Json
+          p_sources: Json
+          p_visible: string[]
+        }
+        Returns: Json
+      }
+      validate_custom_fields: {
+        Args: { p_organization_id: string; p_token: string; p_values: Json }
+        Returns: undefined
+      }
+      validate_value_envelope: {
+        Args: {
+          p_data: Json
+          p_fields: Record<string, unknown>[]
+          p_organization_id: string
+        }
+        Returns: undefined
+      }
+      validate_values: {
+        Args: {
+          p_fields: Record<string, unknown>[]
+          p_organization_id: string
+          p_record_type?: string
+          p_values: Json
+        }
+        Returns: undefined
+      }
+      value_alternate_keys: { Args: never; Returns: string[] }
+      value_envelope_keys: { Args: never; Returns: string[] }
+      value_envelope_ok: { Args: { p_data: Json }; Returns: boolean }
+      value_envelope_refusal: { Args: { p_data: Json }; Returns: string }
+      value_read: {
+        Args: { p_key: string; p_organization_id: string; p_record_id: string }
+        Returns: {
+          absent_reason: string
+          actor: string
+          alternates: Json
+          field_id: string
+          field_key: string
+          on_behalf_of: string
+          source: Json
+          value: Json
+          value_version: number
+          written_at: string
+        }[]
+      }
+      value_restore:
+        | {
+            Args: {
+              p_field_key: string
+              p_organization_id: string
+              p_record_id: string
+              p_version: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_author: Json
+              p_field_key: string
+              p_organization_id: string
+              p_record_id: string
+              p_version: number
+            }
+            Returns: Json
+          }
+      value_versions: { Args: { p_new: Json; p_old: Json }; Returns: Json }
+      view_declare: {
+        Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
+        Returns: string
+      }
+      view_designate: {
+        Args: {
+          p_layout?: string
+          p_organization_id: string
+          p_table_id: string
+          p_view_id: string
+        }
+        Returns: string
+      }
+      view_keys: {
+        Args: never
+        Returns: {
+          layouts: string[]
+          path: string
+          sentence: string
+          shape: string
+          writer: string
+        }[]
+      }
+      view_keys_check: {
+        Args: {
+          p_old?: Json
+          p_organization_id: string
+          p_set: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      view_look_read: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      view_look_set: {
+        Args: {
+          p_look: Json
+          p_organization_id: string
+          p_table_id: string
+          p_view_id: string
+        }
+        Returns: Json
+      }
+      view_record_order_set: {
+        Args: {
+          p_organization_id: string
+          p_record_ids: string[]
+          p_view_id: string
+        }
+        Returns: Json
+      }
+      views: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: {
+          created_at: string
+          definition: Json
+          filters: Json
+          name: string
+          table_id: string
+          view_id: string
+        }[]
+      }
+      visibility_ancestors: {
+        Args: { p_item_id: string; p_item_type: string }
+        Returns: {
+          container_id: string
+          container_type: string
+          depth: number
+          max_level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      visibility_as_of: {
+        Args: { p_at: string; p_organization_id: string; p_record_id: string }
+        Returns: {
+          held_from: string
+          held_to: string
+          level: Database["public"]["Enums"]["permission_level"]
+          principal_id: string
+          principal_kind: string
+          reason: string
+          replayed: boolean
+          through_id: string
+          through_kind: string
+        }[]
+      }
+      visibility_cache_rebuild: { Args: never; Returns: number }
+      visibility_parity: {
+        Args: never
+        Returns: {
+          container_id: string
+          container_type: string
+          derived_level: Database["public"]["Enums"]["permission_level"]
+          item_id: string
+          item_type: string
+          reason: string
+          side: string
+          stored_level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      visibility_warm: {
+        Args: { p_container_id: string; p_container_type: string }
+        Returns: number
+      }
+      visible_predicate_sql: {
+        Args: {
+          p_alias?: string
+          p_organization_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_table_id: string
+          p_user: string
+        }
+        Returns: string
+      }
+      visible_record_ids: {
+        Args: {
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_user_id: string
+        }
+        Returns: {
+          id: string
+        }[]
+      }
+      visible_set: {
+        Args: {
+          p_organization_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_table_id: string
+          p_user: string
+        }
+        Returns: Record<string, unknown>
+      }
+      where_id_opens: { Args: { p_id: string }; Returns: Json }
+      where_lists_live: {
+        Args: { p_list_ids: string[] }
+        Returns: {
+          address: string
+          list_id: string
+          lives_in: string
+          why: string
+        }[]
+      }
+      where_tables_live: {
+        Args: { p_table_ids: string[] }
+        Returns: {
+          lives_in: string
+          table_id: string
+          why: string
+        }[]
+      }
+      whole_value_ceiling: {
+        Args: { p_organization_id: string }
+        Returns: number
+      }
+      whole_value_complete: {
+        Args: {
+          p_field_key: string
+          p_file_id: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      whole_value_head: { Args: { p_text: string }; Returns: string }
+      whole_value_park: {
+        Args: {
+          p_data: Json
+          p_organization_id: string
+          p_owner_id: string
+          p_park: Json
+          p_record_id: string
+          p_table_id: string
+          p_visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Returns: undefined
+      }
+      whole_value_pointer_of: {
+        Args: { p_key: string; p_sources: Json; p_values: Json }
+        Returns: Json
+      }
+      whole_value_source: {
+        Args: { p_text: string; p_writer_src: Json }
+        Returns: Json
+      }
+      whole_values_waiting: {
+        Args: { p_organization_id: string; p_record_ids: string[] }
+        Returns: {
+          bytes: number
+          chars: number
+          field_key: string
+          owner_id: string
+          pointer: string
+          record_id: string
+          record_visibility: string
+          sha256: string
+          table_id: string
+          table_name: string
+          value_version: number
+        }[]
+      }
+      widget_kernel_id: { Args: never; Returns: string }
+      with_whole_value_pointers: {
+        Args: {
+          p_by_id?: boolean
+          p_document: Json
+          p_key_ids?: Json
+          p_sources: Json
+          p_values: Json
+          p_visible: string[]
+        }
+        Returns: Json
+      }
+      withheld_marker: { Args: { p_key: string; p_mask: Json }; Returns: Json }
+      withheld_sentence: {
+        Args: { p_key: string; p_mask: Json }
+        Returns: string
+      }
+      work_approval_approvers: {
+        Args: {
+          p_approver_id?: string
+          p_organization_id: string
+          p_subject_id: string
+        }
+        Returns: {
+          name: string
+          user_id: string
+          why: string
+        }[]
+      }
+      work_approval_decide: {
+        Args: {
+          p_approval_id: string
+          p_approve: boolean
+          p_note?: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      work_approval_kinds: { Args: never; Returns: string[] }
+      work_approval_may_decide: {
+        Args: { p_approval_id: string; p_organization_id: string }
+        Returns: boolean
+      }
+      work_approval_read: {
+        Args: { p_approval_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      work_approval_request: {
+        Args: {
+          p_approver_id?: string
+          p_change: Json
+          p_conversation_id?: string
+          p_note?: string
+          p_organization_id: string
+          p_origin?: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      work_approval_withdrawal: {
+        Args: { p_data: Json; p_organization_id: string }
+        Returns: string
+      }
+      work_assign: {
+        Args: {
+          p_assignee_user_id: string
+          p_clear_due?: boolean
+          p_due_date?: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
+      work_assignment_fields: {
+        Args: { p_options_table_id?: string }
+        Returns: {
+          key: string
+          label: string
+          spec: Json
+        }[]
+      }
+      work_decide_many: {
+        Args: { p_decisions: Json; p_organization_id: string }
+        Returns: Json
+      }
+      work_has_assignment: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: boolean
+      }
+      work_inbox: {
+        Args: {
+          p_include_decided?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_view?: string
+        }
+        Returns: {
+          actionable: boolean
+          at: string
+          cleared_at: string
+          cleared_count: number
+          decided_at: string
+          decided_by: string
+          decided_by_name: string
+          due_on: string
+          due_state: string
+          item_id: string
+          kind: string
+          origin: string
+          outcome: string
+          requested_by: string
+          requested_by_name: string
+          snoozed_count: number
+          snoozed_until: string
+          state: string
+          subject_id: string
+          subject_kind: string
+          summary: string
+          table_id: string
+          table_name: string
+          title: string
+          undo_refusal: string
+          undo_seconds: number
+        }[]
+      }
+      work_instantiation_shape: {
+        Args: { p_instantiation_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      work_list: {
+        Args: {
+          p_flavour?: string
+          p_include_finished?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+        }
+        Returns: {
+          assigned_by: string
+          assignee_id: string
+          assignee_name: string
+          assignee_user_id: string
+          due_on: string
+          due_state: string
+          record_id: string
+          status: string
+          table_id: string
+          table_name: string
+          terminal: boolean
+          title: string
+          updated_at: string
+        }[]
+      }
+      work_person: {
+        Args: {
+          p_create?: boolean
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      work_record_states: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          allowed: boolean
+          is_current: boolean
+          name: string
+          refusal: string
+          sort: number
+          state_id: string
+          terminal: boolean
+        }[]
+      }
+      work_relation_kinds: {
+        Args: never
+        Returns: {
+          available: boolean
+          kind: string
+          why: string
+        }[]
+      }
+      work_set_state: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_state_id: string
+        }
+        Returns: Json
+      }
+      work_slot_expire: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: number
+      }
+      work_slot_hold: {
+        Args: {
+          p_holder: string
+          p_organization_id: string
+          p_slot_key: string
+          p_table_id: string
+          p_ttl?: string
+        }
+        Returns: Json
+      }
+      work_slot_holds: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: {
+          expired: boolean
+          expires_at: string
+          hold_id: string
+          holder: string
+          slot_key: string
+        }[]
+      }
+      work_slot_index_name: { Args: { p_table_id: string }; Returns: string }
+      work_slot_release: {
+        Args: { p_hold_id: string; p_organization_id: string }
+        Returns: boolean
+      }
+      work_slots_declare: {
+        Args: {
+          p_home_id?: string
+          p_name: string
+          p_organization_id: string
+          p_slug: string
+        }
+        Returns: Json
+      }
+      work_state_id: {
+        Args: { p_organization_id: string; p_table_id: string; p_value: string }
+        Returns: string
+      }
+      work_states: {
+        Args: never
+        Returns: {
+          name: string
+          next: string[]
+          sort: number
+          terminal: boolean
+        }[]
+      }
+      work_take_assignment: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      work_template_declare: {
+        Args: { p_graph: Json; p_name: string; p_organization_id: string }
+        Returns: string
+      }
+      work_template_instantiate: {
+        Args: {
+          p_organization_id: string
+          p_overrides?: Json
+          p_template_id: string
+        }
+        Returns: Json
+      }
+      work_template_refusal: { Args: { p_graph: Json }; Returns: string }
+      work_template_shape: {
+        Args: { p_organization_id: string; p_template_id: string }
+        Returns: Json
+      }
+      work_templates: {
+        Args: { p_limit?: number; p_organization_id: string }
+        Returns: {
+          created_at: string
+          name: string
+          nodes: number
+          relations: number
+          template_id: string
+        }[]
+      }
+      work_transition_refusal: {
+        Args: {
+          p_from_state_id: string
+          p_organization_id: string
+          p_to_state_id: string
+        }
+        Returns: string
+      }
+      work_whose_turn: {
+        Args: {
+          p_include_finished?: boolean
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: {
+          assignee_id: string
+          due_on: string
+          record_id: string
+          state: string
+          status: string
+          terminal: boolean
+          title: string
+          turn: string
+        }[]
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   dictionary: {
     Tables: {
       dict_entries: {
@@ -26627,7 +35660,7 @@ export type Database = {
           validates_job_id?: string | null
           variable_mapping?: Json
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           agent_id?: string | null
@@ -56066,10 +65099,45 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "access_audit_actor_user_id_fkey_p"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_granted_to_user_id_fkey_p"
+            columns: ["granted_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "access_audit_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_subject_user_id_fkey_p"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -56229,10 +65297,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "access_requests_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_requests_decided_by_fkey_p"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "access_requests_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_requests_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -56309,10 +65398,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "api_keys_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "api_keys_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_keys_service_user_id_fkey_p"
+            columns: ["service_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_keys_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -56358,6 +65468,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "content_lane_entered_world_by_fkey_p"
+            columns: ["entered_world_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_lane_organization_id_fkey"
             columns: ["organization_id"]
@@ -56481,10 +65598,45 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "emergency_door_request_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_door_request_decided_by_fkey_p"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "emergency_door_request_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_door_request_requested_by_fkey_p"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_door_request_subject_user_id_fkey_p"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_door_request_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -56555,10 +65707,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "iam_industries_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "iam_industries_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iam_industries_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -56616,6 +65782,13 @@ export type Database = {
             columns: ["industry_id"]
             isOneToOne: false
             referencedRelation: "industries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "industry_curators_user_id_fkey_p"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -56683,10 +65856,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "invitations_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "invitations_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -56766,10 +65953,38 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "memberships_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_invited_by_fkey_p"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "memberships_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_user_id_fkey_p"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -56932,10 +66147,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "org_member_controls_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "org_member_controls_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_member_controls_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_member_controls_user_id_fkey_p"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -57060,7 +66296,22 @@ export type Database = {
           updated_by?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permissions: {
         Row: {
@@ -57347,10 +66598,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "team_created_by_fkey_p"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "team_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_updated_by_fkey_p"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -57521,10 +66786,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "memberships_invited_by_fkey_p"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "memberships_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_user_id_fkey_p"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -57896,6 +67175,15 @@ export type Database = {
         Args: { p_id: string; p_token: string }
         Returns: boolean
       }
+      auth_users_hands_off: {
+        Args: never
+        Returns: {
+          con_oid: unknown
+          kind: string
+          name: string
+          relation: unknown
+        }[]
+      }
       auto_organization_name: {
         Args: { p_email: string; p_meta: Json }
         Returns: string
@@ -58114,6 +67402,13 @@ export type Database = {
       }
       entity_read_kernel_expected: { Args: never; Returns: string }
       entity_read_kernel_fingerprint: { Args: never; Returns: string }
+      entity_read_kernel_members: {
+        Args: never
+        Returns: {
+          function_name: string
+          schema_name: string
+        }[]
+      }
       entity_read_kernel_members_expected: { Args: never; Returns: Json }
       entity_read_kernel_members_live: { Args: never; Returns: Json }
       entity_read_lane_correct: {
@@ -74704,6 +83999,7 @@ export type Database = {
         Returns: boolean
       }
       cutover_scope_own_words: { Args: { p_org: string }; Returns: Json }
+      cutover_scope_rows_copied: { Args: { p_org: string }; Returns: Json }
       cutover_scopes_census_record: { Args: { p_census: Json }; Returns: Json }
       cutover_seam_measure_record: {
         Args: {
@@ -78665,6 +87961,15 @@ export type Database = {
         }[]
       }
       __keyword_placement_tenancy_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
+      __list_counts_conformance: {
         Args: never
         Returns: {
           check_key: string
@@ -87710,6 +97015,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      team_organization_id: { Args: { p_team_id: string }; Returns: string }
       team_restore: { Args: { p_team_id: string }; Returns: undefined }
       team_set_hr_department: {
         Args: { p_hr_department_id: string; p_team_id: string }
@@ -110877,6 +120183,16 @@ export type Database = {
           file_count: number
         }[]
       }
+      guest_conversion_sweep: { Args: { p_budget_ms?: number }; Returns: Json }
+      guest_transfer_link_columns: {
+        Args: { p_inline_max_bytes?: number; p_links_to: string }
+        Returns: {
+          col: unknown
+          deferred: boolean
+          sch: unknown
+          tbl: unknown
+        }[]
+      }
       heal_user_preferences_drift: { Args: never; Returns: number }
       my_organization_vault_access: {
         Args: { p_organization_id: string }
@@ -116811,6 +126127,7 @@ export type Database = {
         Returns: Json
       }
       udt_dataset_unarchive: { Args: { p_table_id: string }; Returns: Json }
+      udt_refuse_row_in_trash: { Args: never; Returns: undefined }
       udt_row_words_many: {
         Args: {
           p_display: Json
@@ -119843,6 +129160,9 @@ export const Constants = {
     Enums: {},
   },
   crm: {
+    Enums: {},
+  },
+  custom: {
     Enums: {},
   },
   dictionary: {

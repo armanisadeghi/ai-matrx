@@ -22,7 +22,7 @@ import React, { Suspense } from "react";
 import { AdminDebugContextCollector } from "@/components/admin/debug/AdminDebugContextCollector";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger } from "@/lib/redux/slices/userSlice";
 import dynamic from "next/dynamic";
 
 const StreamProfilerOverlay = dynamic(
@@ -34,7 +34,7 @@ const StreamProfilerOverlay = dynamic(
 );
 
 const AdminIndicatorWrapper = () => {
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector(selectIsSuperAdminDebugger);
   const isOverlayOpen = useAppSelector((state) =>
     selectIsOverlayOpen(state, "adminIndicator"),
   );

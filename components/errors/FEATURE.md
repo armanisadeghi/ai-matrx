@@ -52,6 +52,14 @@ Arman: an error must be copyable for AI with everything needed to act on it. One
 
 ## Change Log
 
+- 2026-09-28 — **An error toast can be read and its Alchemy menu reached.**
+  Error and warning toasts last at least `MIN_ERROR_TOAST_MS` (5 s,
+  `lib/toast.ts`). A toast someone holds — pointer over the toaster, focus
+  inside it, or its Alchemy menu open (the menu portals outside the toaster,
+  so before this the toast and the menu vanished mid-copy) — never closes, and
+  its FULL lifetime restarts when the hold ends (`useToastHold` in
+  `components/ui/sonner.tsx`). Guard: `lib/__tests__/toast-hold-and-error-minimum.test.tsx`.
+
 - 2026-09-27 — page-pass shared fix: `ReadFailure` always offers a way forward. A server page cannot pass `onRetry`, so its "Couldn't load …" card had none (`/chat/message-templates/<id>`); without `onRetry` it now renders `read-state/ReloadPageButton` ("Reload page", same URL). Guard: `read-state/__tests__/read-gate.test.tsx`.
 - 2026-09-26 — RC-B12 round 13: list/table primitives know their read's outcome. `ReadOutcome` + `readOf` + `ReadEmpty` / `ReadStaleNotice` (read-state); `read` on MatrxDataTable (package 0.47.0, host ports wired), GenericDataTable, TopicTree, ReviewDeck, SortableList, TagList, FileChipList, SourceResultsTable, EntityListTable; FlatEmbeddedList gates on the file-tree read. Census + lint flag `emptyState=` without `read=` over read-backed rows, and counts from a read with no failure check; burn-down baselined.
 - 2026-09-26 — RC-B12 layout rule (Arman: a control never pushes content): measured every sampled error box with and without its menu at 1400px and 375px — 0px on every visible box. The Alert corner menu no longer reserves `padding-right: 2.5rem` on the whole box; a 1.5rem float on the FIRST text line is all it takes. Menus that had their own list row or sat in a button moved onto the error's line. A count, a type/kind badge or a status chip ("Not saved") is a fact about errors, never carries a menu; the census says so.

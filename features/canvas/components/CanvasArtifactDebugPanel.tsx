@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Bug } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
@@ -24,7 +24,7 @@ export function CanvasArtifactDebugPanel({
   item,
   className,
 }: CanvasArtifactDebugPanelProps) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   const [expanded, setExpanded] = useState(true);
 
   const artifactId =
@@ -215,7 +215,7 @@ export function InlineArtifactDebugStrip({
   busy?: boolean;
 }) {
   const showAdminDebug = useAppSelector(
-    (state) => selectIsAdmin(state) && selectIsDebugMode(state),
+    (state) => selectIsAdminDebugger(state) && selectIsDebugMode(state),
   );
   if (!showAdminDebug) return null;
 

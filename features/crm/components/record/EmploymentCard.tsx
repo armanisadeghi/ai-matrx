@@ -456,27 +456,37 @@ export function EmploymentCard(props: Props) {
             rows.length > 0 && "mb-2 border-b border-border pb-2",
           )}
         >
-          <div className="flex flex-wrap items-center gap-1.5">
-            <EmployerPicker
-              orgId={props.orgId}
-              excludeId={props.partyId}
-              selected={employer}
-              onSelect={setEmployer}
-              kind={isPerson ? "organization" : "person"}
-            />
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title"
-              className="h-11 w-36 text-base sm:h-7 sm:w-32 sm:text-xs"
-            />
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="h-11 w-36 text-base sm:h-7 sm:w-32 sm:text-xs"
-              aria-label="Start date"
-            />
+          {/* Labelled fields, like the address form: every field names
+              itself above its box (a bare date box read "mm/dd/yyyy" with no
+              name). On a phone Title and Start date share a row at half width
+              each, so the date's calendar icon is never clipped. */}
+          <div className="grid grid-cols-2 items-end gap-x-2 gap-y-1.5 sm:flex sm:flex-wrap sm:items-end sm:gap-1.5">
+            <div className="col-span-2 sm:col-span-1">
+              <EmployerPicker
+                orgId={props.orgId}
+                excludeId={props.partyId}
+                selected={employer}
+                onSelect={setEmployer}
+                kind={isPerson ? "organization" : "person"}
+              />
+            </div>
+            <label className="grid min-w-0 gap-0.5 text-xs text-muted-foreground">
+              Title
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="h-11 w-full min-w-0 text-base sm:h-7 sm:w-32 sm:text-xs"
+              />
+            </label>
+            <label className="grid min-w-0 gap-0.5 text-xs text-muted-foreground">
+              Start date
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-11 w-full min-w-0 pr-2 text-base sm:h-7 sm:w-36 sm:text-xs"
+              />
+            </label>
             <label className="flex min-h-11 items-center gap-1.5 text-sm text-foreground sm:min-h-7 sm:text-xs">
               <Checkbox
                 checked={isCurrent}
@@ -486,7 +496,7 @@ export function EmploymentCard(props: Props) {
             </label>
             <Button
               size="sm"
-              className="h-11 px-3 text-sm sm:h-7 sm:px-2 sm:text-xs"
+              className="h-11 justify-self-end px-3 text-sm sm:h-7 sm:px-2 sm:text-xs"
               onClick={submit}
               disabled={saving || !employer}
             >

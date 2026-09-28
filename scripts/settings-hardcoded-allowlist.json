@@ -5297,10 +5297,6 @@
       "name": "SAVE_DEBOUNCE_MS"
     },
     {
-      "file": "matrx-frontend/features/flashcards/components/create/CreateFromSource.tsx",
-      "name": "CHUNK_FETCH_LIMIT"
-    },
-    {
       "file": "matrx-frontend/features/flashcards/components/study/StudyDeck.tsx",
       "name": "MIN_CARDS_FOR_REVIEW"
     },

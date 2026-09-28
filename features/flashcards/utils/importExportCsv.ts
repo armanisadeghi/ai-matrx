@@ -2,7 +2,7 @@
 //
 // Phase 1A (Flashcards Competitive Parity Push) — CSV/TSV import & export.
 // Pure, DB-free parsing/formatting utilities consumed by
-// `components/import/ImportSetView.tsx` (import), `SetDetailView.tsx`
+// `components/create/DeckFileImport.tsx` (import), `SetDetailView.tsx`
 // (export), and `features/education/onboard/import/importDeck.ts` (the IC-11
 // import entry). Reference-only relationship to
 // `components/mardown-display/blocks/flashcards/flashcard-parser.ts` — that

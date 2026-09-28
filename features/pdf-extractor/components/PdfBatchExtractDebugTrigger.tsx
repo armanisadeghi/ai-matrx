@@ -11,7 +11,7 @@ import { useEffect, useRef } from "react";
 import { Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import {
   selectPdfBatchExtractDebugSelectedSession,
   selectPdfBatchExtractDebugSessions,
@@ -29,7 +29,7 @@ export function PdfBatchExtractDebugTrigger({
   autoOpenOnStream = true,
   className,
 }: PdfBatchExtractDebugTriggerProps) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   const openDebugWindow = useOpenPdfBatchExtractDebugWindow();
   const isOpen = useAppSelector((s) =>
     selectIsOverlayOpen(s, "pdfBatchExtractDebugWindow"),

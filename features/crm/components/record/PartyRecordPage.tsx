@@ -5,7 +5,7 @@
 // The party 360° — identity, contact points (joined to their media),
 // addresses, employment both directions, interaction timeline, notes
 // (platform.comments), and attached tasks/files via the canonical
-// AssociationCardGrid (PrimaryEntityProvider type "party").
+// AssociationCard tiles (PrimaryEntityProvider type "party").
 //
 // Dense two-column layout on desktop (identity rail + activity main), single
 // stacked scroll on mobile. One scroll area per view.
@@ -27,20 +27,12 @@ import {
 } from "lucide-react";
 import { contactPointBlockReason } from "../../reachability";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import {
-  ChevronLeftTapButton,
-  MoreHorizontalTapButton,
-} from "@ai-matrx/tap-target/buttons";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButton } from "@ai-matrx/tap-target";
+import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
-import { AssociationCardGrid } from "@ai-matrx/associations/react";
+import { AssociationCard } from "@ai-matrx/associations/react";
 import { PrimaryEntityProvider } from "@ai-matrx/associations/react";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -192,20 +184,40 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
 
   const copyLink = async () => {
     if (!party) return;
+    const href = resolveEntityDoors("party", party.id).href;
+    if (!href) {
+      toast.error("This record has no link to copy.");
+      return;
+    }
+    const url = `${window.location.origin}${href}`;
     try {
-      const href = resolveEntityDoors("party", party.id).href;
-      if (!href) throw new Error("This record has no link.");
-      await navigator.clipboard.writeText(`${window.location.origin}${href}`);
+      await navigator.clipboard.writeText(url);
       toast.success("Link copied");
     } catch {
-      toast.error("Could not copy the link — your browser blocked the clipboard.");
+      // A blocked clipboard never ends in a dead toast: the link is put in
+      // front of the person, selected, so they can still copy it.
+      showManualCopy({
+        text: url,
+        title: "Copy this link",
+        description: "Your browser blocked the clipboard. The link is selected — press Ctrl+C (⌘C on a Mac) to copy it.",
+      });
     }
   };
 
+  // Opens the activity composer on its first TEXT field (Subject) — never the
+  // Minutes number field, which raised a number keypad on phones. Deferred a
+  // frame so a closing menu or sheet that restores focus to its trigger
+  // cannot steal it back.
   const jumpToActivity = () => {
     const activity = document.getElementById("crm-record-activity");
-    activity?.scrollIntoView({ block: "start", behavior: "smooth" });
-    activity?.querySelector<HTMLElement>("input, textarea")?.focus({ preventScroll: true });
+    if (!activity) return;
+    activity.scrollIntoView({ block: "start", behavior: "smooth" });
+    window.setTimeout(() => {
+      const first =
+        activity.querySelector<HTMLElement>('[aria-label="Activity subject"]') ??
+        activity.querySelector<HTMLElement>("textarea");
+      first?.focus({ preventScroll: true });
+    }, 50);
   };
 
   const onDelete = async () => {
@@ -397,9 +409,11 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
         right={
           party ? (
             isMobile ? (
-              // PHONE: plain named actions, no menu of our own — RouteHeader
-              // lists each one as a row under "This page" in the shell's ⋮
-              // sheet (one tap, never a dropdown inside a sheet).
+              // PHONE: the record's NAME has the row. RouteHeader keeps the
+              // last non-destructive action in the row — "Log an activity",
+              // a 44px icon whose name is its accessible name and tooltip —
+              // and lists the rest under "This page" in the shell's ⋮ sheet,
+              // the destructive one last after a divider.
               <>
                 {emailAction === "send" && (
                   <Button variant="ghost" size="sm" onClick={openCompose}>
@@ -417,10 +431,12 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                   <Link2 className="mr-1 h-3.5 w-3.5" />
                   Copy link
                 </Button>
-                <Button variant="ghost" size="sm" onClick={jumpToActivity}>
-                  <History className="mr-1 h-3.5 w-3.5" />
-                  Log an activity
-                </Button>
+                <TapTargetButton
+                  icon={<History />}
+                  ariaLabel="Log an activity"
+                  tooltip="Log an activity"
+                  onClick={jumpToActivity}
+                />
                 <Button
                   variant="ghost"
                   size="sm"
@@ -432,11 +448,10 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                 </Button>
               </>
             ) : (
-              // DESKTOP: the primary action first, then the record's one "…"
-              // menu (secondary actions, destructive set apart). The email
-              // action is icon-only below lg so the title keeps the row, which
-              // leaves nothing for RouteHeader to fold — so there is never a
-              // second "…" beside ours.
+              // DESKTOP KEEPS EVERY ACTION VISIBLE (owner ruling, 2026-09-27:
+              // only the phone folds). Labelled from lg; icon-only below lg
+              // (name kept as aria-label + tooltip) so the title keeps its
+              // room. The destructive action sits last, after a divider.
               <>
                 {/* 🚨 EMAILING A PERSON IS A FIRST-CLASS ACTION ON THE RECORD
                     (VERIFY-B1-B2 A1): it opens the compose window over the
@@ -478,47 +493,57 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                     <span className="max-lg:sr-only">Email blocked for this record</span>
                   </span>
                 )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <MoreHorizontalTapButton ariaLabel="More actions" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => void copyLink()}>
-                      <Link2 className="mr-2 h-3.5 w-3.5" />
-                      Copy link
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={jumpToActivity}>
-                      <History className="mr-2 h-3.5 w-3.5" />
-                      Log an activity
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onSelect={() => void onDelete()}
-                    >
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />
-                      Move to trash…
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void copyLink()}
+                  aria-label="Copy link"
+                  title="Copy link"
+                  className="h-7 px-2 text-xs"
+                >
+                  <Link2 className="h-3.5 w-3.5 lg:mr-1" />
+                  <span className="max-lg:sr-only">Copy link</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={jumpToActivity}
+                  aria-label="Log an activity"
+                  title="Log an activity"
+                  className="h-7 px-2 text-xs"
+                >
+                  <History className="h-3.5 w-3.5 lg:mr-1" />
+                  <span className="max-lg:sr-only">Log an activity</span>
+                </Button>
+                <span className="ml-1 flex items-center border-l border-border pl-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void onDelete()}
+                    aria-label="Move to trash…"
+                    title="Move to trash…"
+                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 lg:mr-1" />
+                    <span className="max-lg:sr-only">Move to trash…</span>
+                  </Button>
+                </span>
               </>
             )
           ) : initialHeading ? (
             // BEFORE THE RECORD LOADS (server HTML included): the phone row's
-            // primary — "Log an activity", the one the phone set keeps in the
-            // row — is drawn from the server-read heading, so the title never
-            // re-truncates when the record lands. Desktop draws nothing here
-            // (its actions arrive with the record, right of a title that
-            // already has its room).
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden"
-              onClick={jumpToActivity}
-            >
-              <History className="mr-1 h-3.5 w-3.5" />
-              Log an activity
-            </Button>
+            // kept action — "Log an activity", as its 44px icon — is drawn
+            // from the server-read heading, so the title never re-truncates
+            // when the record lands. Desktop draws nothing here (its actions
+            // arrive with the record, right of a title that has its room).
+            <span className="flex md:hidden">
+              <TapTargetButton
+                icon={<History />}
+                ariaLabel="Log an activity"
+                tooltip="Log an activity"
+                onClick={jumpToActivity}
+              />
+            </span>
           ) : undefined
         }
       />
@@ -644,7 +669,10 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                   )}
                 </div>
                 {/* Files and Tasks sit in the rail, where their tiles use the
-                    full width. */}
+                    full width. The cards themselves, not the grid: the grid's
+                    loose group labels ("SOURCES", "WORKSPACES") sat outside
+                    any card and read as two more section names (page-pass
+                    2026-09-28) — each card already names what it holds. */}
                 <div className="max-lg:order-18">
                   <PrimaryEntityProvider
                     value={{
@@ -654,7 +682,10 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                       label: party.display_name,
                     }}
                   >
-                    <AssociationCardGrid tokens={["task", "file"]} />
+                    <div className="@container space-y-3">
+                      <AssociationCard token="file" />
+                      <AssociationCard token="task" />
+                    </div>
                   </PrimaryEntityProvider>
                 </div>
               </div>
@@ -663,7 +694,7 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
               <div className="min-w-0 max-lg:contents lg:space-y-3">
                 <div className="empty:hidden max-lg:order-5">
                   {/* "Why is this org in my CRM?" — the G1 provenance edge,
-                      rendered as real doors, with "Add to my contacts".
+                      rendered as real doors, with "Add to contacts".
                       Renders nothing for a record the user typed in. */}
                   <PartyProvenanceCard party={party} onChanged={refresh} />
                 </div>

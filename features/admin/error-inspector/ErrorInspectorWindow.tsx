@@ -19,7 +19,7 @@ import { Input } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
@@ -117,7 +117,7 @@ export default function ErrorInspectorWindow({
   isOpen,
   onClose,
 }: ErrorInspectorWindowProps) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
   const errors = useCapturedErrors();
   const [query, setQuery] = useState("");
   const [tierFilter, setTierFilter] = useState<TierFilter>("all");

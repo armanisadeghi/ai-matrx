@@ -29,6 +29,8 @@ export {
   selectIsAdminPerson,
   selectIsSuperAdminPerson,
   selectAdminLevelPerson,
+  selectIsAdminDebugger,
+  selectIsSuperAdminDebugger,
   selectAdminLaneOpen,
   selectAccessToken,
   selectFingerprintId,

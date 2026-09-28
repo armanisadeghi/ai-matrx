@@ -212,9 +212,22 @@ function PageActionsSection({
       style={anyDrawn ? undefined : { display: "none" }}
     >
       <p className="px-3 pb-1 pt-1 text-xs font-medium text-muted-foreground">This page</p>
+      {/* 🚨 A PAGE ROW LOOKS LIKE A SHELL ROW (page-pass 2026-09-28). A page's
+          header actions arrive as desktop-sized buttons (14px text, 14px
+          icons, medium weight) and sat above the shell's 16px/20px rows in
+          the same sheet. The contract restyles them here, once, for every
+          page: 48px rows, 16px regular text, 20px icons, 12px icon gap, the
+          icon column aligned with Search / Agents / Inbox below. */}
       <div
         ref={slotRef}
-        className="[&_[data-route-header-overflow-item]]:min-h-12 [&_[data-route-header-overflow-item]]:px-2 [&_[data-route-header-overflow-item]_span]:text-base [&_[data-route-header-overflow-item]_span]:text-foreground"
+        className={cn(
+          "[&_[data-route-header-overflow-item]]:min-h-12 [&_[data-route-header-overflow-item]]:px-2",
+          "[&_[data-route-header-overflow-item]_span]:text-base [&_[data-route-header-overflow-item]_span]:text-foreground",
+          // Action rows only — the folded section nav keeps its own styling.
+          "[&_[data-route-header-overflow-item]:not([data-route-header-phone-nav])]:px-0",
+          "[&_[data-route-header-overflow-item]:not([data-route-header-phone-nav])>button]:h-auto [&_[data-route-header-overflow-item]:not([data-route-header-phone-nav])>button]:min-h-12 [&_[data-route-header-overflow-item]:not([data-route-header-phone-nav])>button]:gap-3 [&_[data-route-header-overflow-item]:not([data-route-header-phone-nav])>button]:text-base [&_[data-route-header-overflow-item]:not([data-route-header-phone-nav])>button]:font-normal",
+          "[&_[data-route-header-overflow-item]:not([data-route-header-phone-nav])_svg]:size-5 [&_[data-route-header-overflow-item]:not([data-route-header-phone-nav])_svg]:mr-0",
+        )}
         onClick={(event) => {
           const target = event.target as HTMLElement;
           if (target.closest("[aria-haspopup]")) return;

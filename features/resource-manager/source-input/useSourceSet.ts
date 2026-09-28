@@ -309,6 +309,26 @@ export function useSourceSet(
   const settle: UseSourceSetResult["settle"] = (id, patch) => {
     const draft = readDraft(id);
     if (!draft) return; // removed while it was landing — nothing to finish
+    // The door dedupes by content: landing the same thing twice returns the
+    // Source already picked. Keep ONE card and say so on it — never two.
+    const live = store.getState().instanceResources.byConversationId[key] ?? {};
+    const twin = Object.values(live)
+      .map(toCard)
+      .find((c) => c && c.id !== id && c.draft.ref && sameRef(c.draft.ref, patch.ref));
+    if (twin) {
+      dispatch(removeResource({ conversationId: key, resourceId: id }));
+      const note = "You added this again — it is the same Source, so it is listed once.";
+      if (!twin.draft.notes?.includes(note))
+        dispatch(
+          setResourceSource({
+            conversationId: key,
+            resourceId: twin.id,
+            source: { ...twin.draft, notes: [...(twin.draft.notes ?? []), note] },
+          }),
+        );
+      persist();
+      return;
+    }
     dispatch(
       setResourceSource({
         conversationId: key,

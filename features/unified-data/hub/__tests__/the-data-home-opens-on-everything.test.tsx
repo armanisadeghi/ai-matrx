@@ -85,34 +85,89 @@ const ROWS = [
 const doorAskedFor: Array<string | null> = [];
 const pagesAskedFor: Array<string | null> = [];
 
-/** Forms and booking pages, as custom.data_home_pages answers (DATA-HOME-2 tail). */
+/** Everything beside the tables, as custom.data_home_items answers (DATA-HOME-2 tails). */
 const PAGES = [
   {
     kind: "form",
     organization_id: HARBOR,
     organization_name: "Harbor Dental Group",
-    page_id: "f1000000-0000-4000-8000-000000000001",
+    item_id: "f1000000-0000-4000-8000-000000000001",
     table_id: "a1000000-0000-4000-8000-000000000001",
     table_name: "Patient recall list",
-    page_row: { form_id: "f1000000-0000-4000-8000-000000000001", table_id: "a1000000-0000-4000-8000-000000000001", title: "New patient intake", state: "open", responses: 12, held: 0, published_at: "2026-09-20T10:00:00Z" },
+    item_row: { form_id: "f1000000-0000-4000-8000-000000000001", table_id: "a1000000-0000-4000-8000-000000000001", title: "New patient intake", state: "open", responses: 12, held: 0, published_at: "2026-09-20T10:00:00Z" },
   },
   {
     kind: "form",
     organization_id: OJAI,
     organization_name: "Ojai Valley Home Services",
-    page_id: "f1000000-0000-4000-8000-000000000002",
+    item_id: "f1000000-0000-4000-8000-000000000002",
     table_id: "a1000000-0000-4000-8000-000000000003",
     table_name: "Backflow test schedule",
-    page_row: { form_id: "f1000000-0000-4000-8000-000000000002", table_id: "a1000000-0000-4000-8000-000000000003", title: "Backflow test request", state: "open", responses: 3, held: 1, published_at: "2026-09-22T10:00:00Z" },
+    item_row: { form_id: "f1000000-0000-4000-8000-000000000002", table_id: "a1000000-0000-4000-8000-000000000003", title: "Backflow test request", state: "open", responses: 3, held: 1, published_at: "2026-09-22T10:00:00Z" },
   },
   {
     kind: "booking",
     organization_id: RINCON,
     organization_name: "Rincon Plumbing Co",
-    page_id: "f1000000-0000-4000-8000-000000000003",
+    item_id: "f1000000-0000-4000-8000-000000000003",
     table_id: "a1000000-0000-4000-8000-000000000002",
     table_name: "Service calls",
-    page_row: { form_id: "f1000000-0000-4000-8000-000000000003", table_id: "a1000000-0000-4000-8000-000000000002", title: "Book a drain inspection", state: "open", slot_minutes: 60, booked: 4, upcoming: 2, published_at: "2026-09-21T10:00:00Z" },
+    item_row: { form_id: "f1000000-0000-4000-8000-000000000003", table_id: "a1000000-0000-4000-8000-000000000002", title: "Book a drain inspection", state: "open", slot_minutes: 60, booked: 4, upcoming: 2, published_at: "2026-09-21T10:00:00Z" },
+  },
+  // THE OTHER SIX LISTINGS, each with one row in Harbor Dental (not the organization mounted).
+  {
+    kind: "portal",
+    organization_id: HARBOR,
+    organization_name: "Harbor Dental Group",
+    item_id: "p1000000-0000-4000-8000-000000000001",
+    table_id: "a1000000-0000-4000-8000-000000000001",
+    table_name: "Patient recall list",
+    item_row: { portal_id: "p1000000-0000-4000-8000-000000000001", title: "Patient portal", client_table_id: "a1000000-0000-4000-8000-000000000001", is_active: true, tables: 1, invited: 8, signed_in: 3, shows: [{ table_id: "a1000000-0000-4000-8000-000000000001", name: "Patient recall list" }] },
+  },
+  {
+    kind: "dashboard",
+    organization_id: HARBOR,
+    organization_name: "Harbor Dental Group",
+    item_id: "d1000000-0000-4000-8000-000000000001",
+    table_id: "a1000000-0000-4000-8000-000000000001",
+    table_name: "Patient recall list",
+    item_row: { dashboard_id: "d1000000-0000-4000-8000-000000000001", table_id: "a1000000-0000-4000-8000-000000000001", name: "Recalls due this month", block_count: 3 },
+  },
+  {
+    kind: "digest",
+    organization_id: HARBOR,
+    organization_name: "Harbor Dental Group",
+    item_id: "r1000000-0000-4000-8000-000000000001",
+    table_id: "a1000000-0000-4000-8000-000000000001",
+    table_name: "Patient recall list",
+    item_row: { rule_id: "r1000000-0000-4000-8000-000000000001", name: "Monday recall digest", table_id: "a1000000-0000-4000-8000-000000000001", muted: false, cadence: "weekly", channel: "email", mine: true },
+  },
+  {
+    kind: "checklist",
+    organization_id: HARBOR,
+    organization_name: "Harbor Dental Group",
+    item_id: "c1000000-0000-4000-8000-000000000001",
+    table_id: "a1000000-0000-4000-8000-000000000001",
+    table_name: "Patient recall list",
+    item_row: { template_id: "c1000000-0000-4000-8000-000000000001", name: "New hygienist onboarding", about_table_id: "a1000000-0000-4000-8000-000000000001", about_table: "Patient recall list", steps: 6, open_runs: 1, total_runs: 2, updated_at: "2026-09-24T10:00:00Z" },
+  },
+  {
+    kind: "automation",
+    organization_id: HARBOR,
+    organization_name: "Harbor Dental Group",
+    item_id: "a1000000-0000-4000-8000-000000000001",
+    table_id: "a1000000-0000-4000-8000-000000000001",
+    table_name: "Patient recall list",
+    item_row: { table_id: "a1000000-0000-4000-8000-000000000001", table_name: "Patient recall list", stage_label: "Recall stage", stages: 4, rules: 2, broken: null, updated_at: "2026-09-23T10:00:00Z" },
+  },
+  {
+    kind: "share",
+    organization_id: HARBOR,
+    organization_name: "Harbor Dental Group",
+    item_id: "s1000000-0000-4000-8000-000000000001",
+    table_id: "a1000000-0000-4000-8000-000000000001",
+    table_name: "Patient recall list",
+    item_row: { invitation_id: "s1000000-0000-4000-8000-000000000001", table_id: "a1000000-0000-4000-8000-000000000001", table_name: "Patient recall list", email: "billing@harborortho.example.org", level_label: "Can view", joined: true, expired: false, invited_at: "2026-09-19T10:00:00Z", say: null },
   },
 ];
 const listArchived = jest.fn(async () => ({ ok: true as const, data: { rows: [], total: 0 } }));
@@ -196,7 +251,7 @@ jest.mock("../doors", () => ({
     return { ok: true, data: organizationId ? ROWS.filter((r) => r.organization_id === organizationId) : ROWS };
   },
   tablesICanOpen: async () => ({ ok: true, data: ROWS }),
-  dataHomePages: async (_ds: unknown, organizationId?: string | null) => {
+  dataHomeItems: async (_ds: unknown, organizationId?: string | null) => {
     pagesAskedFor.push(organizationId ?? null);
     return { ok: true, data: organizationId ? PAGES.filter((p) => p.organization_id === organizationId) : PAGES };
   },
@@ -206,7 +261,7 @@ jest.mock("../capabilities", () => {
   return {
     ...actual,
     HUB_CAPABILITIES: actual.HUB_CAPABILITIES.filter((c: { id: string }) =>
-      ["tables", "forms", "bookings"].includes(c.id),
+      ["tables", "forms", "bookings", "portals", "dashboards", "digests", "checklists", "automations", "shared-outside"].includes(c.id),
     ),
     attachChangedBy: async () => undefined,
   };
@@ -512,5 +567,34 @@ describe("the data home · forms and booking pages follow the organization dropd
     await mount("scope=shared", { filter: "all" });
     await openListing("forms");
     expect(listingRows("forms").map((r) => r.title)).toEqual(["Backflow test request"]);
+  });
+});
+
+// ── DATA-HOME-2, FINISH THE CLASS (chair, 2026-09-28): portals, dashboards, digests, checklists,
+// automations and outside shares still read the working organization only ("Only <org>'s." on each
+// heading). RED on the tail-1 hub: each of these listings read the mounted organization's own door.
+describe("the data home · every listing follows the organization dropdown", () => {
+  const OTHER_LISTINGS: Array<[string, string]> = [
+    ["portals", "Patient portal"],
+    ["dashboards", "Recalls due this month"],
+    ["digests", "Monday recall digest"],
+    ["checklists", "New hygienist onboarding"],
+    ["automations", "Patient recall list"],
+    ["shared-outside", "billing@harborortho.example.org"],
+  ];
+
+  it.each(OTHER_LISTINGS)("All Orgs: %s lists Harbor Dental's row, labelled, while working in Rincon Plumbing", async (listing, title) => {
+    await mount("", { filter: "all" });
+    await openListing(listing);
+    expect(listingRows(listing)).toEqual([{ title, organization: "Harbor Dental Group" }]);
+    expect(container.querySelector("[data-hub-listing-one-organization]")).toBeNull();
+    expect(container.querySelector(`[data-hub-listing-toggle="${listing}"]`)?.textContent ?? "").not.toMatch(/Only /);
+  });
+
+  it.each(OTHER_LISTINGS)("Rincon Plumbing picked: %s narrows with the tables (Harbor Dental's row gone)", async (listing) => {
+    await mount("", { filter: RINCON });
+    await openListing(listing);
+    expect(pagesAskedFor).toEqual([RINCON]);
+    expect(listingRows(listing)).toEqual([]);
   });
 });

@@ -15,27 +15,14 @@ export const FLASHCARDS_PLACES: FeaturePlaces = {
   label: "Flashcards",
   places: [
     {
-      id: "new-from-topic",
-      label: "New deck from a topic",
-      trigger: "Generate button",
+      // The one creation page (2026-09-28): a topic alone runs generateCards;
+      // picked Sources run generateFromSource.
+      id: "new-deck",
+      label: "Create deck",
+      trigger: "Make the deck button",
       urlPattern: "/education/flashcards/new",
-      mandateKeys: [FC_MANDATES.generateCards],
-      // CreateDeckPage (the one-page create, 2026-09-28) runs both create jobs.
-      sources: [
-        "features/flashcards/components/create/CreateFromTopic.tsx",
-        "features/flashcards/components/create/CreateDeckPage.tsx",
-      ],
-    },
-    {
-      id: "new-from-source",
-      label: "New deck from your material",
-      trigger: "Make flashcards button",
-      urlPattern: "/education/flashcards/new/from-source",
-      mandateKeys: [FC_MANDATES.generateFromSource],
-      sources: [
-        "features/flashcards/components/create/CreateFromSource.tsx",
-        "features/flashcards/components/create/CreateDeckPage.tsx",
-      ],
+      mandateKeys: [FC_MANDATES.generateCards, FC_MANDATES.generateFromSource],
+      sources: ["features/flashcards/components/create/CreateDeckPage.tsx"],
     },
     {
       id: "deck",
