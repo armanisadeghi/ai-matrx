@@ -36,7 +36,6 @@ import {
   Clock,
   FileSpreadsheet,
   Loader2,
-  Sparkle,
 } from "lucide-react";
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
@@ -87,6 +86,9 @@ import {
   backfillFileIds,
   generateDeckFromSources,
 } from "../../data/generateDeckFromSources";
+import { useSuppressAmbientAssistant } from "@/features/agents/components/ambient-assistant/ambientAssistantSuppression";
+import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
+import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { DeckFileImport } from "./DeckFileImport";
 
@@ -107,6 +109,34 @@ const COUNT_MAX = 50;
 const WAIT_POLL_MS = 5_000;
 
 type StartMode = "make" | "import";
+
+/** The Style and details answers, kept across a reload like the Sources are. */
+export const CREATE_DECK_STYLE_DRAFT_ID = "flashcards:new:style";
+interface StyleDraft {
+  count?: number;
+  difficulty?: Difficulty;
+  depth?: Depth;
+  gradeLevel?: string;
+  focus?: string;
+  deckName?: string;
+}
+
+/** Map the stored bag back to the form — refusing (and naming) anything unknown. */
+export function restoreStyleDraft(data: Record<string, unknown>): {
+  values: StyleDraft;
+  rejectedKeys: string[];
+} {
+  const values: StyleDraft = {};
+  const rejectedKeys: string[] = [];
+  for (const [key, v] of Object.entries(data)) {
+    if (key === "count" && typeof v === "number" && v >= COUNT_MIN && v <= COUNT_MAX) values.count = v;
+    else if (key === "difficulty" && DIFFICULTIES.some((d) => d.value === v)) values.difficulty = v as Difficulty;
+    else if (key === "depth" && DEPTH_TIERS.some((t) => t.value === v)) values.depth = v as Depth;
+    else if ((key === "gradeLevel" || key === "focus" || key === "deckName") && typeof v === "string") values[key] = v;
+    else rejectedKeys.push(key);
+  }
+  return { values, rejectedKeys };
+}
 type Phase = "idle" | "reading" | "generating" | "saving";
 
 export function CreateDeckPage() {
@@ -122,6 +152,12 @@ export function CreateDeckPage() {
   const coppa = useAiComplianceGate();
   const [isNavigating, startNavigation] = useTransition();
   const [isLeaving, startLeaving] = useTransition();
+  // A form page: the floating ask-anything bar sat on top of Deck name and
+  // Grade (verify-1, 2026-09-28). The page keeps it away, as FastFire does.
+  useSuppressAmbientAssistant(true);
+  const styleDraft = useWizardDraft<StyleDraft>(CREATE_DECK_STYLE_DRAFT_ID, {
+    restore: restoreStyleDraft,
+  });
 
   const [mode, setMode] = useState<StartMode>(
     params.get("start") === "import" ? "import" : "make",
@@ -132,6 +168,24 @@ export function CreateDeckPage() {
   const [gradeLevel, setGradeLevel] = useState("");
   const [focus, setFocus] = useState("");
   const [deckName, setDeckName] = useState("");
+
+  // Never lose input: the Style and details answers come back after a reload,
+  // said out loud (the Sources and topic are kept by the Source input itself).
+  const applyStyleDraft = useEffectEvent(() =>
+    styleDraft.applyOnce((v) => {
+      if (v.count !== undefined) setCount(v.count);
+      if (v.difficulty) setDifficulty(v.difficulty);
+      if (v.depth) setDepth(v.depth);
+      if (v.gradeLevel !== undefined) setGradeLevel(v.gradeLevel);
+      if (v.focus !== undefined) setFocus(v.focus);
+      if (v.deckName !== undefined) setDeckName(v.deckName);
+    }),
+  );
+  const styleDraftStatus = styleDraft.status;
+  useEffect(() => {
+    if (styleDraftStatus === "found") applyStyleDraft();
+  }, [styleDraftStatus]);
+  const keep = (fields: StyleDraft) => styleDraft.patch({ ...fields });
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [liveRequestId, setLiveRequestId] = useState<string | null>(null);
@@ -204,6 +258,7 @@ export function CreateDeckPage() {
   const clearDraft = () => {
     for (const s of set.sources) set.remove(s.id);
     set.setTopic("");
+    styleDraft.clear();
   };
 
   const finish = async (setId: string, name: string, cards: number, gap: string | null) => {
@@ -396,6 +451,21 @@ export function CreateDeckPage() {
 
               <Step n={2} title="Style and details">
                 <div className="flex flex-col gap-4">
+                  {styleDraft.didRestore ? (
+                    <WizardDraftRestored
+                      what="your style and details"
+                      onDismiss={styleDraft.acknowledge}
+                      onStartFresh={() => {
+                        styleDraft.discard();
+                        setCount(10);
+                        setDifficulty("medium");
+                        setDepth("recall");
+                        setGradeLevel("");
+                        setFocus("");
+                        setDeckName("");
+                      }}
+                    />
+                  ) : null}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="fc-count">Number of cards</Label>
@@ -406,9 +476,11 @@ export function CreateDeckPage() {
                         min={COUNT_MIN}
                         max={COUNT_MAX}
                         value={count}
-                        onChange={(e) =>
-                          setCount(Number.parseInt(e.target.value, 10) || 0)
-                        }
+                        onChange={(e) => {
+                          const n = Number.parseInt(e.target.value, 10) || 0;
+                          setCount(n);
+                          if (n >= COUNT_MIN && n <= COUNT_MAX) keep({ count: n });
+                        }}
                         className="h-11 text-base sm:h-9"
                         disabled={busy}
                       />
@@ -422,7 +494,10 @@ export function CreateDeckPage() {
                       <Label htmlFor="fc-difficulty">Difficulty</Label>
                       <Select
                         value={difficulty}
-                        onValueChange={(v) => setDifficulty(v as Difficulty)}
+                        onValueChange={(v) => {
+                          setDifficulty(v as Difficulty);
+                          keep({ difficulty: v as Difficulty });
+                        }}
                         disabled={busy}
                       >
                         <SelectTrigger id="fc-difficulty" className="h-11 text-base sm:h-9">
@@ -447,7 +522,10 @@ export function CreateDeckPage() {
                           key={tier.value}
                           type="button"
                           disabled={busy}
-                          onClick={() => setDepth(tier.value)}
+                          onClick={() => {
+                            setDepth(tier.value);
+                            keep({ depth: tier.value });
+                          }}
                           aria-pressed={depth === tier.value}
                           className={cn(
                             "min-h-11 rounded-lg border px-3 py-2 text-left transition-colors disabled:opacity-50",
@@ -471,7 +549,10 @@ export function CreateDeckPage() {
                       <Input
                         id="fc-grade"
                         value={gradeLevel}
-                        onChange={(e) => setGradeLevel(e.target.value)}
+                        onChange={(e) => {
+                          setGradeLevel(e.target.value);
+                          keep({ gradeLevel: e.target.value });
+                        }}
                         placeholder="e.g. 9th grade, first-year nursing"
                         className="h-11 text-base sm:h-9"
                         disabled={busy}
@@ -484,7 +565,10 @@ export function CreateDeckPage() {
                       <Input
                         id="fc-name"
                         value={deckName}
-                        onChange={(e) => setDeckName(e.target.value)}
+                        onChange={(e) => {
+                          setDeckName(e.target.value);
+                          keep({ deckName: e.target.value });
+                        }}
                         placeholder="We name it for you if you leave this empty"
                         className="h-11 text-base sm:h-9"
                         disabled={busy}
@@ -499,7 +583,10 @@ export function CreateDeckPage() {
                     <ProTextarea
                       id="fc-focus"
                       value={focus}
-                      onChange={(e) => setFocus(e.target.value)}
+                      onChange={(e) => {
+                        setFocus(e.target.value);
+                        keep({ focus: e.target.value });
+                      }}
                       placeholder="Anything to cover or skip — e.g. key vocabulary only, skip the dates."
                       className="min-h-20 resize-y text-base"
                       disabled={busy}
@@ -616,7 +703,7 @@ export function CreateDeckPage() {
                         {busy ? (
                           <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                         ) : (
-                          <Sparkle className="mr-1.5 h-4 w-4" />
+                          <AGENT_ICON className="mr-1.5 h-4 w-4" />
                         )}
                         {isNavigating ? "Opening…" : "Make the deck"}
                       </Button>

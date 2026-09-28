@@ -119,7 +119,13 @@ export const CHAT_LANE_FEATURES: readonly string[] = [
 
 export function laneOfClientMintedRow(
   sourceFeature: string | null | undefined,
+  originClass?: string | null,
 ): ConversationLane {
+  // A run client code fired on its own (`initiation: "auto"`) is classified
+  // `client_auto` by the server — the Auto lane, same as the chat.conversation_lane
+  // auto arm. Without this the live insert put every background generation run
+  // into the sidebar until the next fetch removed it.
+  if (originClass === "client_auto") return "auto";
   return sourceFeature && CHAT_LANE_FEATURES.includes(sourceFeature)
     ? "chat"
     : "matrx";

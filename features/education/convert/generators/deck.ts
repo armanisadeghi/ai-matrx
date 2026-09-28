@@ -24,7 +24,11 @@ import {
 } from "@/features/flashcards/data/coerce-card";
 import { CONVERT_MANDATES } from "../mandates";
 import { recordSourceLineage } from "../recordSourceLineage";
-import { looseKey, segmentedGenerate } from "../segmentedGenerate";
+import {
+  isNearDuplicateQA,
+  looseKey,
+  segmentedGenerate,
+} from "../segmentedGenerate";
 import { mergeTrustEnvelopes } from "../trustMerge";
 import type {
   ConvertContext,
@@ -71,6 +75,12 @@ async function run(
     // Two sections that both define the same term produce the same card; ship
     // it once.
     identity: (card) => looseKey(card.front),
+    // "What is osmosis?" written twice by two sections is one card.
+    sameAs: (a, b) =>
+      isNearDuplicateQA(
+        { question: a.front, answer: a.back },
+        { question: b.front, answer: b.back },
+      ),
   });
 
   const cards = covered.items;

@@ -116,6 +116,7 @@ marketing) and `/education/features/data-security` (the T5 posture statement).
 
 ## Change log
 
+- **2026-09-28 (V1-B)** — `plainWords.ts`: every trust surface renders "Grounded in" without chunk ids (`plainGroundedIn`), locators as "Page 22" (`plainLocator`), and the open action as "Open the web page" only for a real web URL (`openSourceLabel`) — `SourceCitations`, `CardTrustFooter`, tutor strips. Guard `__tests__/plain-words.test.ts`.
 - **2026-09-08** — `VerifyVerdict` renders the `card_verification` kind through its component (`card_verification_callout`); the host keeps only the checked-at line and the D151 *Use this correction* apply control.
 - **2026-08-22** — `coerceGradeVerdict` is THE ONE verdict reader (`answer_grade` core): accepts the
   boolean contract AND a `result`/`grade` token, `explanation` falls back through `feedback`/`reason`;

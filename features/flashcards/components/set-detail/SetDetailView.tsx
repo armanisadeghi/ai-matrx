@@ -1043,7 +1043,8 @@ export function SetDetailView({
                 {canEdit && (
                   <AddMoreCardsButton
                     setId={setId}
-                    existingFronts={data.cards.map((c) => c.front)}
+                    existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
+                    deckName={data.set.name}
                     onAdded={() => {
                       setReloadKey((k) => k + 1);
                       setLineageKey((k) => k + 1);
@@ -1318,7 +1319,8 @@ export function SetDetailView({
               <div className="md:hidden">
               <AddMoreCardsButton
                 setId={setId}
-                existingFronts={data.cards.map((c) => c.front)}
+                existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
+                    deckName={data.set.name}
                 onAdded={() => {
                   setReloadKey((k) => k + 1);
                   setLineageKey((k) => k + 1);

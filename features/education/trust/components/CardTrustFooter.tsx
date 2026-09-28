@@ -10,6 +10,7 @@
 // chrome. The verify affordance is the shared <VerifyAgainstSourceButton/> — the
 // same one quiz items, summaries, and mind-map nodes mount.
 
+import { plainGroundedIn } from "../plainWords";
 import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readStoredVerification, type TrustEnvelope } from "../types";
@@ -45,6 +46,7 @@ export function CardTrustFooter({
 }: CardTrustFooterProps) {
   if (!trust) return null;
   const citations = trust.citations ?? [];
+  const groundedIn = plainGroundedIn(trust.groundedIn);
 
   return (
     <div
@@ -55,10 +57,10 @@ export function CardTrustFooter({
     >
       <div className="flex flex-wrap items-center gap-2">
         <ConfidenceBadge confidence={trust.confidence} />
-        {trust.groundedIn && (
+        {groundedIn && (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <ShieldCheck className="h-3 w-3" aria-hidden />
-            Grounded in {trust.groundedIn}
+            Grounded in {groundedIn}
           </span>
         )}
       </div>
