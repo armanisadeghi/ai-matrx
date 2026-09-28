@@ -81,6 +81,7 @@ import {
   isMenuAction,
   OverflowMenuItem,
   overflowItemLabel,
+  RESPONSIVE_DISPLAY,
   toIconOnly,
 } from "./route-header-layout";
 
@@ -134,6 +135,36 @@ function iconControlsWidth(el: HTMLElement): number {
 }
 
 /**
+ * Whether `el` (or an ancestor, up to `boundary` inclusive) is hidden at the
+ * narrow width the phone sheet renders at: Tailwind's `hidden <bp>:<display>`
+ * pair (e.g. `hidden sm:inline`) draws only at `<bp>` and wider — invisible on
+ * every phone width — while its text still sits in `textContent` regardless
+ * (2026-09-27 follow-up: ConversationRecordsChip's "Records" caption).
+ */
+function isHiddenAtPhoneWidth(el: HTMLElement | null, boundary: HTMLElement): boolean {
+  let node = el;
+  while (node) {
+    const classes = typeof node.className === "string" ? node.className.split(/\s+/).filter(Boolean) : [];
+    if (classes.includes("hidden") && classes.some((c) => RESPONSIVE_DISPLAY.test(c))) return true;
+    if (node === boundary) break;
+    node = node.parentElement;
+  }
+  return false;
+}
+
+/** Whether `root` renders any real word text a phone actually draws. */
+function hasVisibleWords(root: HTMLElement | null): boolean {
+  if (!root) return false;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const text = n.textContent ?? "";
+    if (!/[\p{L}\p{N}]{2,}/u.test(text)) continue;
+    if (!isHiddenAtPhoneWidth(n.parentElement, root)) return true;
+  }
+  return false;
+}
+
+/**
  * One action in the phone sheet's "This page" section: the control plus its
  * name. The declared name first (`overflowItemLabel`); a control that declares
  * none (a record's own "…" menu) is named by the accessible name it renders —
@@ -147,8 +178,10 @@ export function PhoneSheetAction({ action }: { action: ReturnType<typeof flatten
     if (declared) return;
     const control = ref.current?.querySelector<HTMLElement>("[aria-label], [title]");
     const name = control?.getAttribute("aria-label") ?? control?.getAttribute("title") ?? null;
-    // Visible words already name it; a glyph ("…", "+") does not.
-    const words = /[\p{L}\p{N}]{2,}/u.test(ref.current?.textContent ?? "");
+    // Visible words already name it; a glyph ("…", "+") does not — but a
+    // caption `hidden` at this width (a desktop-only `sm:inline` label) is
+    // neither: it never draws here, so it never already named the row.
+    const words = hasVisibleWords(ref.current);
     setRendered(words ? null : name);
   }, [declared]);
   const label = declared ?? rendered;

@@ -78,6 +78,12 @@ export function ChatCanvasButton({ conversationId }: ChatCanvasButtonProps) {
       onClick={handleClick}
       aria-label="Canvas"
       title="Canvas (⌘\\)"
+      // The shell's phone ⋮ sheet also carries a generic Canvas row
+      // (HeaderPhoneOverflow); this one is smarter — it opens THIS
+      // conversation's own working document rather than just disabling when
+      // empty — so it replaces the generic row instead of duplicating it
+      // (page-pass shared defects, 2026-09-27 follow-up).
+      data-phone-sheet-replaces="canvas"
       className={cn(
         "relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors",
         isOpen

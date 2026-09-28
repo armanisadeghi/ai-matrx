@@ -133,7 +133,7 @@ export function isMenuAction(node: ReactNode): boolean {
   return false;
 }
 
-const RESPONSIVE_DISPLAY = /^(sm|md|lg|xl|2xl|max-\w+|min-\[[^\]]+\]|@\w+):(flex|inline-flex|block|inline-block|inline|grid|inline-grid|contents|table)$/;
+export const RESPONSIVE_DISPLAY = /^(sm|md|lg|xl|2xl|max-\w+|min-\[[^\]]+\]|@\w+):(flex|inline-flex|block|inline-block|inline|grid|inline-grid|contents|table)$/;
 
 /**
  * A host element that is never drawn at any width: `type="hidden"`, the `hidden`

@@ -248,3 +248,47 @@ describe("HeaderPhoneOverflow — no 0×0 pieces in 'This page'", () => {
     act(() => probeRoot.unmount());
   });
 });
+
+/**
+ * CANVAS SHOWS ONCE (page-pass shared defects, 2026-09-27 follow-up):
+ * `/chat/[id]` folds `ChatCanvasButton` into "This page" via
+ * `HeaderActionsSlot` — it also names its own conversation's working
+ * document, unlike the generic menu row's plain open/close/disabled states —
+ * so the sheet drew BOTH the generic "Canvas" row here and the page's own
+ * "Canvas" row in "This page". A page action that opts in with
+ * `data-phone-sheet-replaces="canvas"` now suppresses the generic row so the
+ * control appears once. PROVEN FAILING BEFORE PASSING: against the pre-fix
+ * `HeaderPhoneOverflow`, both rows are present.
+ */
+describe("HeaderPhoneOverflow — Canvas shows once when a page provides its own", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const store = require("./phone-page-actions") as typeof import("./phone-page-actions");
+
+  it("hides the generic Canvas row once a page action declares data-phone-sheet-replaces=\"canvas\"", () => {
+    let host: HTMLElement | null = null;
+    const Probe = () => {
+      host = store.usePhonePageActions().host;
+      return null;
+    };
+    mount(true);
+    const probeRoot = createRoot(document.createElement("div"));
+    act(() => probeRoot.render(<Probe />));
+    const item = document.createElement("div");
+    item.setAttribute("data-route-header-overflow-item", "");
+    const pageCanvas = document.createElement("button");
+    pageCanvas.setAttribute("data-phone-sheet-replaces", "canvas");
+    pageCanvas.textContent = "Canvas";
+    item.appendChild(pageCanvas);
+    host!.appendChild(item);
+    act(() => store.setPhonePageActionCount("route-chat", 1));
+    openSheet();
+    const genericRows = [...document.querySelectorAll("button")].filter((b) =>
+      b.textContent?.trim().startsWith("Canvas"),
+    );
+    // Only the page's own row remains — the generic menu row is gone.
+    expect(genericRows).toHaveLength(1);
+    expect(genericRows[0]).toBe(pageCanvas);
+    act(() => store.setPhonePageActionCount("route-chat", 0));
+    act(() => probeRoot.unmount());
+  });
+});

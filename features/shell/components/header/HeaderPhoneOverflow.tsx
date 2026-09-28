@@ -254,6 +254,29 @@ export function HeaderPhoneOverflow({
     };
   }, [holder]);
 
+  // CANVAS SHOWS ONCE (page-pass shared defects, 2026-09-27 follow-up): a
+  // page's own Canvas action in "This page" (e.g. `/chat/[id]`'s
+  // ChatCanvasButton, which opens THIS conversation's working document
+  // instead of the generic disabled-when-empty row below) opts in with
+  // `data-phone-sheet-replaces="canvas"` on its control. When one is present
+  // the generic row is redundant — hide it so Canvas appears exactly once.
+  const [pageReplacesCanvas, setPageReplacesCanvas] = useState(false);
+  useLayoutEffect(() => {
+    // `host` is created once and never nulled again while this component is
+    // mounted, so there is no live case to unset — the initial `false` above
+    // already covers "not mounted yet".
+    if (!host) return;
+    const read = () =>
+      setPageReplacesCanvas(host.querySelector('[data-phone-sheet-replaces="canvas"]') != null);
+    // Synchronous on mount/open (host's content is already settled by the time
+    // the menu draws — same guarantee `PageActionsSection`'s own prune relies
+    // on) plus a live watch for a page action that appears/disappears later.
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(host, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [host, open]);
+
   const close = () => setOpen(false);
   const onOpenChange = (next: boolean) => {
     setOpen(next);
@@ -313,7 +336,7 @@ export function HeaderPhoneOverflow({
                 }}
                 trailing={<ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}
               />
-              {canvas.isAvailable ? (
+              {canvas.isAvailable && !pageReplacesCanvas ? (
                 <Row
                   icon={<Layers className="h-5 w-5" />}
                   label={

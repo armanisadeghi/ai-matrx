@@ -98,6 +98,10 @@ export interface AmbientPageGuidanceOffer {
 export interface AudioSpeechOffer {
   __kind?: "audio.speech.offer";
   text: string;
+  requested_voice?: string;
+  requested_format?: string;
+  requested_quality?: string;
+  character_count: number;
 }
 
 /** Offered shape of provision `brand.voice_rewrite` (kind `brand.voice_rewrite.offer`). */
@@ -464,6 +468,15 @@ export interface ContentPlanBranchPurposeOffer {
   __kind?: "content_plan.branch_purpose.offer";
   site: unknown;
   branches: string;
+  composed_message: string;
+  site_domain: string;
+  site_name?: string;
+  site_description?: string;
+  plan_page_count: number;
+  plan_skeleton: string[];
+  branch_routes: string[];
+  branch_count: number;
+  branches_json: string;
 }
 
 /** Offered shape of provision `content_plan.deepen_page` (kind `content_plan.deepen_page.offer`). */
@@ -472,6 +485,23 @@ export interface ContentPlanDeepenPageOffer {
   page: unknown;
   keyword_rule?: string;
   research?: string;
+  composed_message: string;
+  node_id: string;
+  site_id: string;
+  page_label: string;
+  page_route?: string;
+  page_type?: string;
+  node_type: string;
+  pillar_label?: string;
+  cluster_label?: string;
+  existing_brief: string[];
+  meta_title?: string;
+  meta_description?: string;
+  primary_keyword_phrase?: string;
+  needs_keyword: boolean;
+  keyword_library_json?: string;
+  research_report_markdown?: string;
+  page_json: string;
 }
 
 /** Offered shape of provision `content_plan.entity_attachment` (kind `content_plan.entity_attachment.offer`). */
@@ -524,7 +554,23 @@ export interface ContentPlanMergeWaveOffer {
   page_type_vocabulary: string;
   hub_rule?: string;
   max_nodes: number;
+  composed_message: string;
+  site_id: string;
+  site_domain: string;
+  site_name?: string;
+  site_description?: string;
+  brand_name?: string;
+  brand_description?: string;
+  audience_profiles_json: string;
+  keyword_library_json: string;
+  keyword_count: number;
+  strategy_guidance?: string;
+  research_report_markdown?: string;
+  research_topic_requested: boolean;
+  operator_guidance?: string;
   candidates: unknown;
+  candidate_plans_json: string;
+  candidate_count: number;
 }
 
 /** Offered shape of provision `content_plan.page_brief` (kind `content_plan.page_brief.offer`). */
@@ -677,6 +723,20 @@ export interface ContentPlanResearchWaveOffer {
   page_type_vocabulary: string;
   hub_rule?: string;
   max_nodes: number;
+  composed_message: string;
+  site_id: string;
+  site_domain: string;
+  site_name?: string;
+  site_description?: string;
+  brand_name?: string;
+  brand_description?: string;
+  audience_profiles_json: string;
+  keyword_library_json: string;
+  keyword_count: number;
+  strategy_guidance?: string;
+  research_report_markdown?: string;
+  research_topic_requested: boolean;
+  operator_guidance?: string;
 }
 
 /** Offered shape of provision `conversation.analysis` (kind `conversation.analysis.offer`). */
@@ -885,6 +945,15 @@ export interface DocprocContentStructureOffer {
   audience: string;
   topic?: string;
   max_sections: number;
+  composed_message: string;
+  chunk_ids: string[];
+  chunk_count: number;
+  source_labels: string[];
+  source_kinds: string[];
+  total_chars: number;
+  sources_requested: number;
+  sources_failed: number;
+  ingest_errors: string[];
 }
 
 /** Offered shape of provision `education.analytics_narrate` (kind `education.analytics_narrate.offer`). */
@@ -1464,6 +1533,11 @@ export interface HumanDecisionsAbsentHumanDecisionOffer {
 export interface ImageGenerateOffer {
   __kind?: "image.generate.offer";
   prompt: string;
+  subject_description: string;
+  style?: string;
+  size?: string;
+  aspect_ratio?: string;
+  image_count: number;
 }
 
 /** Offered shape of provision `image_pipeline.concept` (kind `image_pipeline.concept.offer`). */
@@ -2910,6 +2984,11 @@ export interface RagGroundedSynthesisOffer {
   question: string;
   contexts: string;
   system_addendum?: string;
+  composed_message: string;
+  context_tags: string[];
+  chunk_ids: string[];
+  context_count: number;
+  citations_json: string;
 }
 
 /** Offered shape of provision `rag.grounding_claim_extract` (kind `rag.grounding_claim_extract.offer`). */
@@ -2962,6 +3041,10 @@ export interface RagKindsGroundedSynthesisOffer {
   __kind?: "rag_kinds.grounded_synthesis.offer";
   question: string;
   contexts: string;
+  composed_message: string;
+  chunk_ids: string[];
+  chunk_count: number;
+  source_kinds?: string[];
 }
 
 /** Offered shape of provision `records.enrichment` (kind `records.enrichment.offer`). */
@@ -2969,6 +3052,16 @@ export interface RecordsEnrichmentOffer {
   __kind?: "records.enrichment.offer";
   column: string;
   records: unknown;
+  composed_message: string;
+  column_label: string;
+  column_type: string;
+  column_key: string;
+  column_instruction: string;
+  table_id: string;
+  record_ids: string[];
+  record_count: number;
+  records_json: string;
+  web_search_allowed: boolean;
 }
 
 /** Offered shape of provision `research.capture_coverage` (kind `research.capture_coverage.offer`). */

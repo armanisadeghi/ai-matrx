@@ -55,6 +55,11 @@ export function ConversationRecordsChip({
         <button
           type="button"
           data-conversation-records-trigger
+          aria-label={
+            state.status === "ready" && state.active.length > 0
+              ? `Records this chat produced: ${state.active.length}`
+              : "Records this chat produced"
+          }
           className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <Boxes className="h-4 w-4" aria-hidden />

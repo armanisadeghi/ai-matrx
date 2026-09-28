@@ -256,3 +256,48 @@ describe("PageHeaderRightPortal on a phone", () => {
     expect(store.getPhonePageActionCountForTest()).toBe(1);
   });
 });
+
+/**
+ * A HIDDEN-ON-PHONE CAPTION IS NOT A VISIBLE NAME (page-pass shared defects,
+ * 2026-09-27 follow-up). ConversationRecordsChip/ConversationAttachmentsChip
+ * caption their icon with `<span className="hidden sm:inline">Records</span>`
+ * — invisible below the `sm` breakpoint, which is every phone width the sheet
+ * renders at. `PhoneSheetAction`'s "visible words already name it" check read
+ * `textContent`, which still holds that caption's text even though the class
+ * hides it, so it wrongly treated the row as already named and threw away the
+ * real name (an `aria-label`/`title` on the control) — the sheet drew the
+ * icon alone. PROVEN FAILING BEFORE PASSING: against the pre-fix
+ * `PhoneSheetAction`, `[data-phone-sheet-label]` is absent and the row's only
+ * name is the CSS-hidden caption text.
+ */
+describe("the phone sheet — a caption hidden on this width is not a visible name", () => {
+  it("still prints the control's declared aria-label when its own caption is `hidden sm:inline`", () => {
+    PHONE = true;
+    rowEl = document.createElement("div");
+    document.body.appendChild(rowEl);
+    root = createRoot(rowEl);
+    const RecordsChip = () => (
+      <button type="button" aria-label="Records">
+        <i data-icon />
+        <span className="hidden sm:inline">Records</span>
+      </button>
+    );
+    act(() => {
+      root.render(
+        <RouteHeader
+          left={<span>Chat</span>}
+          right={
+            <>
+              <RecordsChip />
+              <button type="button">Canvas</button>
+            </>
+          }
+        />,
+      );
+    });
+    const item = [...hostEl.querySelectorAll("[data-route-header-overflow-item]")].find((el) =>
+      el.querySelector('[aria-label="Records"]'),
+    );
+    expect(item?.querySelector("[data-phone-sheet-label]")?.textContent).toBe("Records");
+  });
+});
