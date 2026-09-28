@@ -1629,7 +1629,7 @@ export const restoreNote = createAsyncThunk<void, string>(
           .from("note_folders")
           .update({ deleted_at: null })
           .eq("id", folder.id);
-        if (reviveError?.code === "23505") {
+        if (reviveError?.code === "23505" && folder.created_by) {
           // A same-name folder is live again — file the note there.
           const { data: live, error: liveError } = await supabase
             .schema("workbench")
