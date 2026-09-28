@@ -116,6 +116,26 @@ export function noteFolderReference(
     };
 }
 
+/**
+ * Where a "+ New Note" in a folder files the draft. A folder that has an id
+ * files by id; a folder shown by NAME only (older notes carry `folder_name`
+ * with no `folder_id`) files by that name through the atomic get-or-create —
+ * never a refusal telling the person to choose the folder she just chose.
+ */
+export function newNoteFolderDestination(
+    target: Pick<Note, "organization_id" | "folder_id" | "folder_name"> | undefined,
+    folder: string,
+    organizationId: string,
+):
+    | { kind: "existing"; folder: FolderReference }
+    | { kind: "create"; name: string; organizationId: string }
+    | { kind: "unfiled"; organizationId: string } {
+    const reference = target ? noteFolderReference(target) : null;
+    if (reference) return { kind: "existing", folder: reference };
+    if (target && target.folder_name === null) return { kind: "unfiled", organizationId };
+    return { kind: "create", name: target?.folder_name ?? folder, organizationId };
+}
+
 export function noteFolderIdentityKey(note: Pick<Note, "organization_id" | "folder_id" | "folder_name">): string {
     return note.folder_id
         ? `folder:${note.organization_id ?? "unassigned"}:${note.folder_id}`
