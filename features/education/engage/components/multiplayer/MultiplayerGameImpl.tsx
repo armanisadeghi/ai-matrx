@@ -370,7 +370,11 @@ function Lobby({
         </ul>
       </div>
 
-      {queueError && <p className="text-sm text-destructive">{queueError} <ErrorAlchemyMenu /></p>}
+      {queueError && (
+        <p className="text-sm text-destructive">
+          {queueError} <ErrorAlchemyMenu />
+        </p>
+      )}
 
       {isHost ? (
         <div className="flex flex-wrap justify-center gap-2">
@@ -392,7 +396,12 @@ function Lobby({
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="lg" disabled={cancelling} className="gap-2">
+              <Button
+                variant="outline"
+                size="lg"
+                disabled={cancelling}
+                className="gap-2"
+              >
                 <X className="h-4 w-4" /> Cancel room
               </Button>
             </AlertDialogTrigger>
@@ -400,12 +409,18 @@ function Lobby({
               <AlertDialogHeader>
                 <AlertDialogTitle>Cancel this room?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This ends the waiting room and invalidates its join code. No new players can join after you confirm.
+                  This ends the waiting room and invalidates its join code. No
+                  new players can join after you confirm.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={cancelling}>Keep room</AlertDialogCancel>
-                <AlertDialogAction onClick={() => void onCancel()} disabled={cancelling}>
+                <AlertDialogCancel disabled={cancelling}>
+                  Keep room
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => void onCancel()}
+                  disabled={cancelling}
+                >
                   {cancelling ? "Cancelling…" : "Cancel room"}
                 </AlertDialogAction>
               </AlertDialogFooter>

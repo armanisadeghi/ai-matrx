@@ -33,7 +33,11 @@ function fail<T>(where: string, error: unknown): EngageResult<T> {
   // programmer, so the remedy sentence replaces it and the console noise is
   // dropped. Law: common-docs/policies/context-is-carried-never-rebuilt.md.
   if (isOrganizationRequiredError(error)) {
-    return { data: null, error: "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu." };
+    return {
+      data: null,
+      error:
+        "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu.",
+    };
   }
   const message =
     typeof error === "string"
