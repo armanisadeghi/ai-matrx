@@ -609,7 +609,7 @@ function SurfaceLink({ name }: { name: string }) {
   return (
     <Link
       href={href}
-      className="font-mono text-foreground underline-offset-2 hover:underline"
+      className="font-mono text-primary underline-offset-2 hover:underline"
       title={`Open ${getSurfaceDisplayLabel(name)}`}
     >
       {name}

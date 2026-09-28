@@ -472,7 +472,6 @@ export function SurfaceDetailPanel({
                         token="agent"
                         id={b.agent_id}
                         name={b.agent_name}
-                        wrap
                         className="min-w-0 flex-1"
                         nameClassName="text-xs"
                       />
