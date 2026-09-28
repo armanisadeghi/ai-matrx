@@ -299,11 +299,17 @@ export function PartyProvenanceCard({
         {(party.source || discovered) && (
           <p className="text-xs text-muted-foreground">
             {discovered ? (
-              <span title="Not in your contact list yet, so it stays out of pickers and searches.">
+              // Phone: one short line ("From YouTube · Open"); the longer
+              // wording reads on wider screens.
+              <span
+                className="max-sm:hidden"
+                title="Not in your contact list yet, so it stays out of pickers and searches."
+              >
                 Found by the platform{party.source ? " · " : ""}
               </span>
             ) : null}
-            {party.source ? <>Origin:{" "}
+            {party.source ? <><span className="max-sm:hidden">Origin:{" "}</span>
+            <span className="sm:hidden">From </span>
             <span className="text-foreground">
               {platformWord(party.source)}
             </span>
@@ -328,7 +334,8 @@ export function PartyProvenanceCard({
                     title={party.source_detail}
                     className="inline-flex min-h-11 items-center gap-1 text-primary hover:underline sm:min-h-0"
                   >
-                    {`Open on ${platformWord(party.source) ?? "the web"}`}
+                    <span className="sm:hidden">Open</span>
+                    <span className="max-sm:hidden">{`Open on ${platformWord(party.source) ?? "the web"}`}</span>
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (
