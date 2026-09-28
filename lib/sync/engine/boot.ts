@@ -356,6 +356,16 @@ function scheduleColdBootFallbacks(
             hydrated.has(policy.config.sliceName) &&
             cachedStateIsSufficient(policy, store)
         ) {
+            // Stale-while-revalidate: the cache painted; now ask the server,
+            // as a background refresh so a loaded slice stays loaded.
+            if (policy.config.remote.revalidateOnBoot === true) {
+                void invokeRemoteFetch({
+                    policy,
+                    store,
+                    getIdentity,
+                    reason: "stale-refresh",
+                });
+            }
             continue;
         }
         if (hydrated.has(policy.config.sliceName)) {

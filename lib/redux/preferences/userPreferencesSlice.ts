@@ -13,6 +13,7 @@ import {
 import type { CatalogVoice } from "@/features/audio/service/engines";
 import type { TableViewSnapshot } from "@ai-matrx/design-system/data-table";
 import { definePolicy } from "@/lib/sync/policies/define";
+import { savePreferencePatch } from "./preferencePatch";
 import {
   REHYDRATE_ACTION_TYPE,
   type RehydrateAction,
@@ -1774,8 +1775,13 @@ const userPreferencesSlice = createSlice({
           ...loaded.lists,
         };
 
-      // Snapshot the loaded state so `resetToLoadedPreferences` still works.
-      const { _meta, ...currentPreferences } = state;
+      // Snapshot the loaded state so `resetToLoadedPreferences` still works —
+      // and so the sync engine's write base (`remote.baseline`) is the record
+      // WITHOUT the held edits replayed below. `current()`, never the draft:
+      // a shallow copy of the draft shares its module objects, so an edit
+      // replayed in place (`state.favorites.items = …`) rewrote the snapshot
+      // too and that edit then read as "unchanged" and was never saved.
+      const { _meta, ...currentPreferences } = current(state);
       state._meta.loadedPreferences = {
         ...currentPreferences,
       } as UserPreferences;
@@ -1937,10 +1943,27 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
   // over it. Edits made meanwhile are held in `_meta.pendingEdits`, replayed
   // on the loaded record, and saved once (`persistAfterLoad`).
   persistWhen: (state) => state._meta.loadStatus === "loaded",
+  // Every save is a per-key merge (see `remote.write`), so a tab reconciles
+  // with the server the moment it boots and whenever the person comes back
+  // to it — never showing a stale cache for a minute, never saving on one.
   persistAfterLoad: (state) => state._meta.unsavedAfterLoad === true,
   staleAfter: 60_000, // background refresh after 1 min idle
   remote: {
     debounceMs: 250, // prefs edits are noisy (typing, slider drags)
+    revalidateOnBoot: true,
+    revalidateOnFocus: true,
+    // The record as the server held it at the last load — BEFORE any held
+    // edits were replayed onto it, so those edits read as changes and are
+    // saved. No record loaded yet (the server said "none") = the defaults.
+    baseline: (state) => {
+      const loaded = state._meta.loadedPreferences;
+      const source: Record<string, unknown> = loaded
+        ? (loaded as unknown as Record<string, unknown>)
+        : (initializeUserPreferencesState() as unknown as Record<string, unknown>);
+      const base: Record<string, unknown> = {};
+      for (const key of PREFERENCE_MODULE_KEYS) base[key] = source[key];
+      return base;
+    },
     fetch: async ({ identity, signal }) => {
       if (identity.type !== "auth") return null; // guests have no server state
       const { supabase } = await import("@/utils/supabase/client");
@@ -1959,7 +1982,7 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       if (!data) return null;
       return data.preferences as Partial<UserPreferencesState>;
     },
-    write: async ({ identity, signal, body }) => {
+    write: async ({ identity, signal, body, base }) => {
       if (identity.type !== "auth") return; // guests only live in client storage
       const { supabase } = await import("@/utils/supabase/client");
       // `users.user_preferences` is a user-global singleton (PK = user_id),
@@ -1968,21 +1991,21 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       // existing row and never chooses an organization for it — the selected
       // workspace org is unrelated here and can fail RLS when the user is
       // working in HR.
-      const { data: written, error } = await supabase
-        .schema("users")
-        .from("user_preferences")
-        .update({ preferences: body })
-        .eq("user_id", identity.userId)
-        .select("user_id")
-        .abortSignal(signal);
-      if (!error && (!written || written.length === 0)) {
-        throw new Error(
-          "Your preferences could not be saved: this account has no preferences record. " +
-            "Sign out and back in; if it persists, report it so the record can be restored.",
-        );
-      }
-      if (error) throw error;
-      void signal; // AbortSignal forwarded via query builder above
+      //
+      // 🚨 A save sends ONLY what this tab changed (body − base), merged into
+      // the CURRENT row under compare-and-swap on `version`. Never
+      // `update({ preferences: body })`: that put a stale tab's whole cached
+      // record back over every newer change (2026-09-27, an agent's
+      // default-organization write reverted 15s later). Guard:
+      // lib/redux/preferences/__tests__/preference-writes-never-clobber.test.ts
+      await savePreferencePatch({
+        db: supabase.schema("users"),
+        userId: identity.userId,
+        base,
+        body,
+        modules: PREFERENCE_MODULE_KEYS,
+        signal,
+      });
     },
   },
 });
