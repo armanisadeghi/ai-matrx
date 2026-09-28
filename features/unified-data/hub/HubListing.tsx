@@ -23,7 +23,7 @@ import { cn } from "@ai-matrx/design-system";
 
 
 import type { HubCapability, HubItem } from "./capabilities";
-import { emptyInScope, type DataHomeScope } from "./dataHomeScope";
+import { ALL_KINDS, DATA_HOME_SCOPE_TITLE, emptyInScope, kindOne, kindTitle, type DataHomeScope } from "./dataHomeScope";
 import type { DoorFailure } from "./doors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -37,6 +37,8 @@ export interface HubListingProps {
   state: HubListingState;
   /** The data home's filter the whole hub is under, for the sentence an empty filter gets. */
   scope?: DataHomeScope | undefined;
+  /** The Kind filter the listing is under ("all" for every kind). */
+  kind?: string | undefined;
   /** This organization shows members only what is shared with them. */
   sharedOnly?: boolean | undefined;
   open: boolean;
@@ -73,7 +75,13 @@ function Row({ item }: { item: HubItem }) {
         {item.tableName && item.tableId !== item.id ? (
           <span className="truncate text-xs text-muted-foreground">in {item.tableName}</span>
         ) : null}
-        {/* WHERE IT LIVES (lane DATA-HOME-1): the home lists every organization at once. */}
+        {/* WHAT IT IS AND WHERE IT LIVES (lane DATA-HOME-1): the home lists every kind, in every
+            organization, at once. */}
+        {item.kind ? (
+          <span data-hub-row-kind={item.kind} className="shrink-0 text-[11px] leading-5 text-muted-foreground">
+            {kindOne(item.kind)}
+          </span>
+        ) : null}
         {item.organizationName ? (
           <span
             data-hub-row-organization
@@ -172,6 +180,7 @@ export function HubListing({
   capability,
   state,
   scope = "all",
+  kind = ALL_KINDS,
   sharedOnly,
   open,
   onOpenChange,
@@ -236,7 +245,9 @@ export function HubListing({
             </div>
           ) : state.items.length === 0 ? (
             <p className="px-3 py-3 text-xs text-muted-foreground">
-              {scope !== "all"
+              {kind !== ALL_KINDS
+                ? `No ${kindTitle(kind).toLowerCase()}${scope !== "all" ? ` under ${DATA_HOME_SCOPE_TITLE[scope]}` : ""} in any of your organizations.`
+                : scope !== "all"
                 ? emptyInScope(capability.title, scope)
                 : sharedOnly && capability.emptyWhenSharedOnly
                   ? capability.emptyWhenSharedOnly

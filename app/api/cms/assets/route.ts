@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
+import { archiveLive, archiveNotLiveResponse, archiveRow, onlyLive } from "../_lib/cmsArchive";
 import { getCmsClient, verifySiteOwnership, verifyAssetOwnership } from "../_lib/cmsDb";
 import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
@@ -102,15 +103,21 @@ async function scanUsage(
     // Completeness read: an unscanned page makes an in-use asset report
     // `inUse: false` AND overwrites `used_in_pages` with a short array — a
     // deletion-safety answer, so a truncated read is not survivable here.
+    // Only LIVE pages and components can break when an asset goes (CMS 0041).
+    const pagesArchive = await archiveLive(db, "client_pages");
+    const componentsArchive = await archiveLive(db, "client_components");
     const pages = await readAllRows<Record<string, unknown>>(
       ({ from, to }) =>
-        db
-          .from("client_pages")
-          .select(
-            "id, slug, title, html_content, html_content_draft, css_content, css_content_draft, js_content, js_content_draft, featured_image, og_image, og_image_draft",
-            { count: "exact" },
-          )
-          .eq("client_id", asset.client_id)
+        onlyLive(
+          db
+            .from("client_pages")
+            .select(
+              "id, slug, title, html_content, html_content_draft, css_content, css_content_draft, js_content, js_content_draft, featured_image, og_image, og_image_draft",
+              { count: "exact" },
+            )
+            .eq("client_id", asset.client_id),
+          pagesArchive,
+        )
           .order("id", { ascending: true })
           .range(from, to),
       { label: "cms.client_pages" },
@@ -128,13 +135,16 @@ async function scanUsage(
     }
     const components = await readAllRows<Record<string, unknown>>(
       ({ from, to }) =>
-        db
-          .from("client_components")
-          .select(
-            "id, component_type, name, html_content, html_content_draft, css_content, css_content_draft",
-            { count: "exact" },
-          )
-          .eq("client_id", asset.client_id)
+        onlyLive(
+          db
+            .from("client_components")
+            .select(
+              "id, component_type, name, html_content, html_content_draft, css_content, css_content_draft",
+              { count: "exact" },
+            )
+            .eq("client_id", asset.client_id),
+          componentsArchive,
+        )
           .order("id", { ascending: true })
           .range(from, to),
       { label: "cms.client_components" },
@@ -205,10 +215,10 @@ export async function POST(request: NextRequest) {
         if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json({ error: "Site not found or access denied" }, { status: 403 });
         }
-        let query = db
-          .from("client_assets")
-          .select("*")
-          .eq("client_id", siteId)
+        let query = onlyLive(
+          db.from("client_assets").select("*").eq("client_id", siteId),
+          await archiveLive(db, "client_assets"),
+        )
           .order("created_at", { ascending: false })
           // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
           .order("id", { ascending: false });
@@ -409,22 +419,31 @@ export async function POST(request: NextRequest) {
             { status: 409 },
           );
         }
-        const { error } = await db.from("client_assets").delete().eq("id", assetId);
+        // ARCHIVE, never destroy (CMS 0041); refuse before the column exists.
+        if (!(await archiveLive(db, "client_assets"))) {
+          return archiveNotLiveResponse("an asset");
+        }
+        const { error } = await archiveRow(db, "client_assets", assetId);
         if (error) {
-          console.error("[cms/assets] delete error:", error);
+          console.error("[cms/assets] archive error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
         await logCmsActivity(db, {
           siteId: asset.client_id,
-          activityType: "asset.delete",
+          activityType: "asset.archive",
           entityType: "asset",
           entityId: assetId,
-          description: `Deleted asset '${asset.file_name}'${usage.inUse ? " (forced while in use)" : ""}`,
+          description: `Archived asset '${asset.file_name}'${usage.inUse ? " (forced while in use)" : ""}`,
           userId: user.id,
           userEmail: user.email,
           changes: { forced: Boolean(force && usage.inUse), was_used_in_pages: usage.usedInPages.map((u) => u.page_id) },
         });
-        return NextResponse.json({ success: true, deleted_id: assetId, was_in_use: usage.inUse });
+        return NextResponse.json({
+          success: true,
+          archived: true,
+          deleted_id: assetId,
+          was_in_use: usage.inUse,
+        });
       }
 
       default:

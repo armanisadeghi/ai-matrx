@@ -513,19 +513,36 @@ try {
   if (opts.org) {
     await page.goto(`${opts.base}${opts.routes[0]}`, { timeout: 600000 });
     await page.waitForTimeout(opts.settle);
-    const trigger = page
-      .locator('button[aria-label="Choose an organization"], button[aria-label^="Workspace:"], button[aria-label="Change workspace"]')
-      .first();
-    const current = (await trigger.getAttribute("aria-label").catch(() => null)) ?? "";
-    if (!current.startsWith(`Workspace: ${opts.org}.`) && (await trigger.count())) {
-      await trigger.click();
+    // The chip is reached with the same dispatched pointer sequence as every
+    // other click here: on some pages (education) a full-height scroll layer
+    // sits over the header, so a coordinate click never reaches it.
+    const chipSel =
+      'button[aria-label="Choose an organization"], button[aria-label^="Workspace:"], button[aria-label="Change workspace"]';
+    const current = await page.evaluate(
+      (sel) =>
+        Array.from(document.querySelectorAll(sel))
+          .map((e) => e.getAttribute("aria-label") || "")
+          .find((l) => l.startsWith("Workspace:")) ?? "",
+      chipSel,
+    );
+    if (!current.startsWith(`Workspace: ${opts.org}.`) && (await pointerClick(page, chipSel))) {
       await page.waitForTimeout(2500);
-      const option = page
-        .locator("[data-radix-popper-content-wrapper] button, [data-radix-popper-content-wrapper] [role=option], [role=dialog] button")
-        .filter({ hasText: opts.org })
-        .first();
-      if (await option.count()) {
-        await option.click();
+      // Each option's text starts with the avatar initials ("ASWadmin's
+      // Workspace"), so match the name anywhere in it, not as a prefix.
+      const picked = await page.evaluate((name) => {
+        const el = Array.from(
+          document.querySelectorAll(
+            "[data-radix-popper-content-wrapper] [role=option], [role=dialog] [role=option]",
+          ),
+        ).find((e) => (e.textContent || "").trim().endsWith(name));
+        if (!el) return false;
+        for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+          const Ctor = type.startsWith("pointer") ? PointerEvent : MouseEvent;
+          el.dispatchEvent(new Ctor(type, { bubbles: true, cancelable: true }));
+        }
+        return true;
+      }, opts.org);
+      if (picked) {
         await page.waitForTimeout(2500);
         await page.keyboard.press("Escape");
       } else console.error(`[surface-probe] organization "${opts.org}" not found in the header picker`);

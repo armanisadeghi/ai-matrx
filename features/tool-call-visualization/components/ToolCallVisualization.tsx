@@ -88,6 +88,14 @@ export interface ToolCallVisualizationProps {
   /** Persisted (post-stream) snapshot — some renderers render compactly. */
   isPersisted?: boolean;
   className?: string;
+  /**
+   * True on a read-only shared surface (a link holder, never the chat's own
+   * owner/participant) — threaded straight to every renderer's `readOnly`
+   * prop so an owner-only action (e.g. Cloud Browser's "View live browser")
+   * is never rendered rather than rendered dead. Set once here, not per
+   * card. See `ToolRendererProps.readOnly`.
+   */
+  readOnly?: boolean;
 }
 
 // ─── Held writes ──────────────────────────────────────────────────────────────
@@ -121,12 +129,14 @@ const ToolCallVisualizationInner: React.FC<{
   hasContent?: boolean;
   isPersisted?: boolean;
   className?: string;
+  readOnly?: boolean;
 }> = ({
   entries,
   requestId,
   conversationId,
   isPersisted = false,
   className,
+  readOnly = false,
 }) => {
   const dispatch = useAppDispatch();
 
@@ -480,6 +490,7 @@ const ToolCallVisualizationInner: React.FC<{
           requestId,
           expanded: cardOpen,
           onToggleExpanded: toggleCard,
+          readOnly,
         })
       ) : (
         <button
@@ -644,6 +655,7 @@ const ToolCallVisualizationInner: React.FC<{
                         conversationId={conversationId}
                         requestId={requestId}
                         attached={!!artifact}
+                        readOnly={readOnly}
                       />
                     )}
                   </div>
@@ -676,6 +688,7 @@ export const ToolCallVisualization: React.FC<ToolCallVisualizationProps> = ({
   hasContent,
   isPersisted,
   className,
+  readOnly,
 }) => (
   <ToolCallVisualizationInner
     entries={entries}
@@ -684,6 +697,7 @@ export const ToolCallVisualization: React.FC<ToolCallVisualizationProps> = ({
     hasContent={hasContent}
     isPersisted={isPersisted}
     className={className}
+    readOnly={readOnly}
   />
 );
 

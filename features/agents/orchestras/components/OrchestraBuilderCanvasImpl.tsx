@@ -219,7 +219,7 @@ function NestedNode({ data }: NodeProps) {
   // MATRX-EXCEPTION: same React Flow generic-data-bag cast as ConductorNode.
   const d = data as unknown as NestedData;
   return (
-    <div style={{ width: NEST_W, height: NEST_H }}>
+    <div className="max-w-none" style={{ width: NEST_W, height: NEST_H }}>
       <Handle id="top" type="target" position={Position.Top} className="!h-2 !w-2 !border-0 !bg-transparent" />
       {/* Stacked teams hang off a trunk, so their links arrive from the side. */}
       <Handle id="left" type="target" position={Position.Left} className="!h-2 !w-2 !border-0 !bg-transparent" />

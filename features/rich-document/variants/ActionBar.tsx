@@ -44,7 +44,14 @@ export function ActionBar(props: ActionBarProps): React.ReactElement {
   return (
     <div
       className={cn(
-        mini ? "inline-flex items-center gap-0.5 px-0.5 py-0.5" : "inline-flex items-center gap-1 px-1 py-1",
+        // flex-wrap, never squeeze: a host narrower than the row (the compact
+        // modal, the Chat window at 375) wrapped nothing, so the 44px touch
+        // targets shrank-and-spilled under the ⋯ — tapping 👍 opened the menu.
+        // Wrapping keeps every target whole and apart (guard:
+        // answer-bar-targets-never-overlap).
+        mini
+          ? "inline-flex max-w-full flex-wrap items-center gap-0.5 px-0.5 py-0.5"
+          : "inline-flex max-w-full flex-wrap items-center gap-1 px-1 py-1",
         className,
       )}
     >
@@ -55,6 +62,7 @@ export function ActionBar(props: ActionBarProps): React.ReactElement {
         target={target}
         mini={mini}
         restrict={BAR_RESTRICT}
+        className="flex-wrap"
         // ⋯ is ALWAYS the one context-menu engine — the content's own menu when
         // one encloses it, else a shell of the same content (StandaloneOneMenu).
         hideOverflow

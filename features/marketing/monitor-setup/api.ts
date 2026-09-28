@@ -57,15 +57,22 @@ function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
   return event.event === "data" ? (event.data as Record<string, unknown>) : null;
 }
 
+/**
+ * Every call carries the BRAND's organization explicitly: the editor works for
+ * that brand's organization, whatever organization the person has selected
+ * elsewhere (a write names its organization; nothing picks one).
+ */
 export async function getSetupFacts(
   dispatch: AppDispatch,
   brandId: string,
+  organizationId: string,
 ): Promise<SetupFacts> {
   const outcome = await dispatch(
     callApi({
       path: "/news/setup/facts",
       method: "GET",
       queryParams: { brand_id: brandId },
+      scopeOverrides: { organization_id: organizationId },
     }),
   );
   if (outcome.error) {
@@ -82,6 +89,7 @@ const STAGE_LABELS: Record<string, string> = {
 export async function proposeMonitorSetup(
   dispatch: AppDispatch,
   brandId: string,
+  organizationId: string,
   trackerId: string | null,
   onStage?: (label: string) => void,
 ): Promise<ProposalResult> {
@@ -91,6 +99,7 @@ export async function proposeMonitorSetup(
       path: "/news/setup/propose",
       method: "POST",
       body: { brand_id: brandId, tracker_id: trackerId },
+      scopeOverrides: { organization_id: organizationId },
       stream: true,
       onStreamEvent: (event) => {
         const data = streamData(event);
@@ -118,9 +127,15 @@ export async function proposeMonitorSetup(
 export async function saveMonitor(
   dispatch: AppDispatch,
   body: DeclareTrackerBody,
+  organizationId: string,
 ): Promise<TrackerView> {
   const outcome = await dispatch(
-    callApi({ path: "/coverage/trackers", method: "POST", body }),
+    callApi({
+      path: "/coverage/trackers",
+      method: "POST",
+      body,
+      scopeOverrides: { organization_id: organizationId },
+    }),
   );
   if (outcome.error) {
     throw new Error(outcome.error.message ?? "The monitor could not be saved.");
@@ -131,6 +146,7 @@ export async function saveMonitor(
 export async function runMonitorNow(
   dispatch: AppDispatch,
   trackerId: string,
+  organizationId: string,
 ): Promise<CoverageRunResult> {
   let result: CoverageRunResult | undefined;
   const outcome = await dispatch(
@@ -139,6 +155,7 @@ export async function runMonitorNow(
       pathParams: { tracker_id: trackerId },
       method: "POST",
       body: { force: true },
+      scopeOverrides: { organization_id: organizationId },
       stream: true,
       onStreamEvent: (event) => {
         const data = streamData(event);

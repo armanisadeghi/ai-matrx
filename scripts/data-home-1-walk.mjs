@@ -16,13 +16,15 @@
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { signIn, until, sleep } from "./lib/seat-browser.mjs";
+import { signIn, until, sleep, setOrganization } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://s96c6068c.localhost:3001";
 const PHASE = process.env.PHASE ?? "after";
 const SEAT = process.env.SEAT ?? "admin";
 const SHOTS = process.env.SHOTS ?? "/tmp";
 const WIDTH = Number(process.env.WIDTH ?? 1600);
+/** The organization the seat is working in — the page is gated on one being picked. */
+const ORG = process.env.ORG ?? "Harbor Dental Group";
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")
     .split("\n")
@@ -76,12 +78,16 @@ async function tablesListing() {
     const rows = [...(section?.querySelectorAll("li") ?? [])].map((li) => ({
       title: li.querySelector("a")?.textContent ?? "",
       organization: li.querySelector("[data-hub-row-organization]")?.textContent ?? null,
+      kind: li.querySelector("[data-hub-row-kind]")?.textContent ?? null,
     }));
     const organizations = [...new Set(rows.map((r) => r.organization).filter(Boolean))];
+    const kinds = {};
+    for (const r of rows) kinds[r.kind ?? "?"] = (kinds[r.kind ?? "?"] ?? 0) + 1;
     return {
       heading: section?.querySelector("[data-hub-listing-toggle]")?.textContent ?? null,
       rows: rows.length,
       organizations: organizations.length,
+      kinds,
       first: rows.slice(0, 3),
       empty: rows.length === 0 ? (section?.querySelector("p")?.textContent ?? null) : null,
     };
@@ -90,6 +96,18 @@ async function tablesListing() {
 
 const who = await signIn(page, ORIGIN, email, password, SEAT);
 step("signed in as", { who });
+await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+await until(
+  "the hub or the organization notice",
+  async () =>
+    (await page.locator("[data-hub-root]").count()) > 0 ||
+    (await page.getByText(/no organization is selected/i).count()) > 0,
+  240000,
+);
+if ((await page.locator("[data-hub-root]").count()) === 0) {
+  await setOrganization(page, ORG);
+  step("working in", { organization: ORG });
+}
 
 if (PHASE === "before") {
   await home();
@@ -117,8 +135,22 @@ if (PHASE === "before") {
     choices: await page.locator("[data-hub-scope-choice]").allTextContents(),
     selected: await page.locator('[data-hub-scope-choice][aria-selected="true"]').allTextContents(),
   });
+  step("kind filter", {
+    value: await page.locator("[data-hub-kind]").inputValue().catch(() => null),
+    options: await page.locator("[data-hub-kind] option").allTextContents(),
+  });
+  step("show-everything fold present", { present: (await page.getByText(/Show everything/i).count()) > 0 });
   step("tables under the default", await tablesListing());
   await shot("01-home-default-all");
+
+  await page.locator("[data-hub-kind]").selectOption("list");
+  await until("?kind=list", async () => path().includes("kind=list"), 20000);
+  await sleep(1500);
+  step("kind list", { path: path(), ...(await tablesListing()) });
+  await shot("02-kind-lists");
+  await page.goBack({ timeout: 30000 });
+  await until("back from kind", async () => !path().includes("kind="), 20000);
+  step("Back from a kind", { path: path() });
 
   for (const scope of ["mine", "orgs", "shared", "public"]) {
     await page.locator(`[data-hub-scope-choice="${scope}"]`).click();

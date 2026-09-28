@@ -36,6 +36,14 @@ interface CloudBrowserRunCardProps {
   onToggleExpanded?: () => void;
   className?: string;
   compact?: boolean;
+  /**
+   * True on a read-only shared surface (a link holder, not this chat's
+   * owner). "View live browser" opens the OWNER's cloud-browser session —
+   * a link holder can never reach it, so the control is omitted entirely
+   * rather than rendered dead (access ladder: absent or honest, never
+   * dead). See `ToolRendererProps.readOnly`.
+   */
+  readOnly?: boolean;
 }
 
 function ScreenshotPreview({
@@ -90,6 +98,7 @@ export function CloudBrowserRunCard({
   onToggleExpanded,
   className,
   compact = false,
+  readOnly = false,
 }: CloudBrowserRunCardProps) {
   const openBrowser = useOpenCloudBrowserCanvas();
   const runId = cloudBrowserRunId(entries);
@@ -181,23 +190,25 @@ export function CloudBrowserRunCard({
               <ActivityUrl url={latestUrl} />
             </span>
           )}
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            onClick={() =>
-              openBrowser({
-                initialProfileId: profileId,
-                runId,
-                conversationId,
-              })
-            }
-            className="ml-auto size-7 shrink-0 rounded-md"
-            aria-label={browserIsClosed ? "View browser" : "View live browser"}
-            title={browserIsClosed ? "View browser" : "View live browser"}
-          >
-            <MonitorUp className="size-3.5" />
-          </Button>
+          {!readOnly && (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={() =>
+                openBrowser({
+                  initialProfileId: profileId,
+                  runId,
+                  conversationId,
+                })
+              }
+              className="ml-auto size-7 shrink-0 rounded-md"
+              aria-label={browserIsClosed ? "View browser" : "View live browser"}
+              title={browserIsClosed ? "View browser" : "View live browser"}
+            >
+              <MonitorUp className="size-3.5" />
+            </Button>
+          )}
         </div>
         {expanded && <div className="mt-1">{activityBody}</div>}
       </div>
@@ -214,22 +225,24 @@ export function CloudBrowserRunCard({
       onToggleExpanded={onToggleExpanded}
       className={className}
       headerAction={
-        <Button
-          type="button"
-          size="sm"
-          variant={browserIsClosed ? "outline" : "default"}
-          onClick={() =>
-            openBrowser({
-              initialProfileId: profileId,
-              runId,
-              conversationId,
-            })
-          }
-          className="h-8 rounded-lg px-2.5 text-xs"
-        >
-          <MonitorUp className="size-3.5" />
-          {browserIsClosed ? "View browser" : "View live browser"}
-        </Button>
+        readOnly ? undefined : (
+          <Button
+            type="button"
+            size="sm"
+            variant={browserIsClosed ? "outline" : "default"}
+            onClick={() =>
+              openBrowser({
+                initialProfileId: profileId,
+                runId,
+                conversationId,
+              })
+            }
+            className="h-8 rounded-lg px-2.5 text-xs"
+          >
+            <MonitorUp className="size-3.5" />
+            {browserIsClosed ? "View browser" : "View live browser"}
+          </Button>
+        )
       }
     >
       {activityBody}
@@ -242,12 +255,14 @@ export const CloudBrowserInline: React.FC<ToolRendererProps> = ({
   conversationId,
   expanded,
   onToggleExpanded,
+  readOnly,
 }) => (
   <CloudBrowserRunCard
     entries={[entry]}
     conversationId={conversationId}
     expanded={expanded}
     onToggleExpanded={onToggleExpanded}
+    readOnly={readOnly}
   />
 );
 

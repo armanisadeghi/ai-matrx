@@ -9,6 +9,7 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import { archiveLive, onlyLive } from "./cmsArchive";
 import {
   canAccessCmsSite,
   type CmsSiteAccessRow,
@@ -70,11 +71,14 @@ export async function lookupCmsSiteAccess(
   caller: CmsCaller,
   level: CmsAccessLevel = "editor",
 ): Promise<CmsSiteAccessLookup> {
-  const { data, error } = await db
-    .from("client_sites")
-    .select("id, name, owner_user_id, organization_id, visibility")
-    .eq("id", siteId)
-    .maybeSingle();
+  // An archived site (CMS 0041) answers exactly like a missing one.
+  const { data, error } = await onlyLive(
+    db
+      .from("client_sites")
+      .select("id, name, owner_user_id, organization_id, visibility")
+      .eq("id", siteId),
+    await archiveLive(db, "client_sites"),
+  ).maybeSingle();
   if (error) return { status: "error", error };
   if (!data) return { status: "not_found" };
   return canAccessCmsSite(caller, data, level)
@@ -89,11 +93,10 @@ export async function lookupCmsPageAccess(
   caller: CmsCaller,
   level: CmsAccessLevel = "editor",
 ): Promise<CmsPageAccessLookup> {
-  const { data: page, error } = await db
-    .from("client_pages")
-    .select("id, client_id, title")
-    .eq("id", pageId)
-    .maybeSingle();
+  const { data: page, error } = await onlyLive(
+    db.from("client_pages").select("id, client_id, title").eq("id", pageId),
+    await archiveLive(db, "client_pages"),
+  ).maybeSingle();
   if (error) return { status: "error", error };
   if (!page) return { status: "not_found" };
 
@@ -144,11 +147,10 @@ export async function verifyComponentOwnership(
   caller: CmsCaller,
   level: CmsAccessLevel = "editor",
 ): Promise<{ ok: boolean; clientId: string | null }> {
-  const { data: comp } = await db
-    .from("client_components")
-    .select("client_id")
-    .eq("id", componentId)
-    .single();
+  const { data: comp } = await onlyLive(
+    db.from("client_components").select("client_id").eq("id", componentId),
+    await archiveLive(db, "client_components"),
+  ).maybeSingle();
   if (!comp) return { ok: false, clientId: null };
   const ok = await verifySiteOwnership(db, comp.client_id, caller, level);
   return { ok, clientId: comp.client_id };
@@ -161,11 +163,10 @@ export async function verifyAssetOwnership(
   caller: CmsCaller,
   level: CmsAccessLevel = "editor",
 ): Promise<boolean> {
-  const { data: asset } = await db
-    .from("client_assets")
-    .select("client_id")
-    .eq("id", assetId)
-    .single();
+  const { data: asset } = await onlyLive(
+    db.from("client_assets").select("client_id").eq("id", assetId),
+    await archiveLive(db, "client_assets"),
+  ).maybeSingle();
   if (!asset) return false;
   return verifySiteOwnership(db, asset.client_id, caller, level);
 }
@@ -198,11 +199,9 @@ export async function verifyHtmlPageOwnership(
   pageId: string,
   userId: string,
 ): Promise<boolean> {
-  const { data } = await db
-    .from("html_pages")
-    .select("id")
-    .eq("id", pageId)
-    .eq("user_id", userId)
-    .single();
+  const { data } = await onlyLive(
+    db.from("html_pages").select("id").eq("id", pageId).eq("user_id", userId),
+    await archiveLive(db, "html_pages"),
+  ).maybeSingle();
   return !!data;
 }

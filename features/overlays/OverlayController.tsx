@@ -20,6 +20,8 @@ import { storedMandateKey } from "@/features/mandates/mandate-key";
 import { isMandateKey } from "@ai-matrx/agents/mandates";
 import type { ReactNode } from "react";
 import { lazyOverlay } from "@/features/overlays/boundary/lazyOverlay";
+import { isSourceSet } from "@ai-matrx/agents/sources";
+import type { SourceReviewOptions } from "@/features/resource-manager/source-input/review/types";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -1120,6 +1122,11 @@ const ApprovalsWindow = lazyOverlay(
   () => import("@/features/approvals/windows/ApprovalsWindow"),
   { ssr: false },
 );
+const SourceReviewWindow = lazyOverlay(
+  () =>
+    import("@/features/resource-manager/source-input/review/SourceReviewWindow"),
+  { ssr: false },
+);
 const ScraperWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ScraperWindow"),
   { ssr: false },
@@ -1685,6 +1692,9 @@ export default function OverlayController() {
     approvalsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "approvalsWindow"),
     ),
+    sourceReviewWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "sourceReviewWindow"),
+    ),
     scraperWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scraperWindow"),
     ),
@@ -1750,6 +1760,9 @@ export default function OverlayController() {
   };
 
   const dataById = {
+    sourceReviewWindow: useAppSelector((s) =>
+      selectOverlayData(s, "sourceReviewWindow"),
+    ) as Record<string, unknown> | null,
     adminIndicator: useAppSelector((s) =>
       selectOverlayData(s, "adminIndicator"),
     ) as Record<string, unknown> | null,
@@ -7311,6 +7324,29 @@ export default function OverlayController() {
           />
         );
       })}
+
+      {/* sourceReviewWindow — "Review what goes in"; keyed by the opener's
+          callback so a second open starts fresh and settles once. */}
+      {(() => {
+        if (!isOpenById.sourceReviewWindow) return null;
+        const data = dataById.sourceReviewWindow;
+        const callbackId =
+          typeof data?.callbackId === "string" ? data.callbackId : null;
+        return (
+          <SourceReviewWindow
+            key={callbackId ?? "source-review"}
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "sourceReviewWindow" }))
+            }
+            callbackId={callbackId}
+            sourceSet={isSourceSet(data?.sourceSet) ? data.sourceSet : null}
+            options={
+              (data?.options as SourceReviewOptions | undefined) ?? {}
+            }
+          />
+        );
+      })()}
 
       {/* approvalsWindow — THE approval queue, same surface as /approvals */}
       {isOpenById.approvalsWindow ? (

@@ -1977,6 +1977,7 @@ function AuthenticatorSection({ item }: { item: VaultItem }) {
               becomes fully automatic.
             </p>
           )}
+          {item.capabilities.can_manage ? (
           <div className="flex items-center gap-2">
             <Input
               value={setupKey}
@@ -1995,6 +1996,11 @@ function AuthenticatorSection({ item }: { item: VaultItem }) {
               Turn on codes
             </Button>
           </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Only this credential&apos;s owner can turn on codes.
+            </p>
+          )}
         </div>
       )}
     </div>

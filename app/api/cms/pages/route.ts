@@ -19,6 +19,11 @@ import {
   verifyPageOwnership,
   verifyHtmlPageOwnership,
 } from "../_lib/cmsDb";
+import {
+  archiveLive,
+  archiveNotLiveResponse,
+  onlyLive,
+} from "../_lib/cmsArchive";
 import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import {
@@ -123,10 +128,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        let query = db
-          .from("client_pages")
-          .select(LIST_COLUMNS)
-          .eq("client_id", siteId);
+        let query = onlyLive(
+          db.from("client_pages").select(LIST_COLUMNS).eq("client_id", siteId),
+          await archiveLive(db, "client_pages"),
+        );
         if (category) {
           query = query.eq("category", category);
         }
@@ -362,11 +367,14 @@ export async function POST(request: NextRequest) {
 
         // Idempotency: same html_page already promoted onto this site → reuse.
         if (!forceNew) {
-          const { data: existing } = await db
-            .from("client_pages")
-            .select("*")
-            .eq("client_id", siteId)
-            .eq("source_html_page_id", htmlPageId)
+          const { data: existing } = await onlyLive(
+            db
+              .from("client_pages")
+              .select("*")
+              .eq("client_id", siteId)
+              .eq("source_html_page_id", htmlPageId),
+            await archiveLive(db, "client_pages"),
+          )
             .order("created_at", { ascending: false })
             // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
             .order("id", { ascending: false })
@@ -431,12 +439,18 @@ export async function POST(request: NextRequest) {
         // slug + category alone.
         // Uniqueness check: `taken.has(...)` decides 409-vs-create. A truncated
         // read lets a real route collision through to the DB unique constraint.
+        // After CMS 0041 an archived page frees its route (the unique index is
+        // partial), so only LIVE routes are taken; before it every row counts.
+        const pagesArchive = await archiveLive(db, "client_pages");
         const siblingRows = await readAllRows<{ route: string }>(
           ({ from, to }) =>
-            db
-              .from("client_pages")
-              .select("route", { count: "exact" })
-              .eq("client_id", siteId)
+            onlyLive(
+              db
+                .from("client_pages")
+                .select("route", { count: "exact" })
+                .eq("client_id", siteId),
+              pagesArchive,
+            )
               .order("route", { ascending: true })
               .range(from, to),
           { label: "cms.client_pages" },
@@ -1053,27 +1067,33 @@ export async function POST(request: NextRequest) {
           .eq("id", pageId)
           .single();
 
-        const { error } = await db
-          .from("client_pages")
-          .delete()
-          .eq("id", pageId);
+        // ARCHIVE, never destroy (CMS 0041): `cms_archive_page` stamps the page
+        // and its live sub-pages with one timestamp. Before 0041 lands the
+        // delete REFUSES; there is no hard-delete fallback.
+        if (!(await archiveLive(db, "client_pages"))) {
+          return archiveNotLiveResponse("a page");
+        }
+        const { data: archive, error } = await db.rpc("cms_archive_page", {
+          p_page_id: pageId,
+        });
 
         if (error) {
-          console.error("[cms/pages] delete error:", error);
+          console.error("[cms/pages] archive error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
         await logCmsActivity(db, {
           siteId: pageToDelete?.client_id ?? null,
-          activityType: "page.delete",
+          activityType: "page.archive",
           entityType: "page",
           entityId: pageId,
-          description: `Deleted page "${pageToDelete?.title ?? pageId}" (${pageToDelete?.slug ?? ""})`,
+          description: `Archived page "${pageToDelete?.title ?? pageId}" (${pageToDelete?.slug ?? ""})`,
           userId: user.id,
           userEmail: user.email,
+          changes: { archive },
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, archived: true, archive });
       }
 
       // ── Admin: fleet-wide page-tree read, requireSuperAdmin ────────

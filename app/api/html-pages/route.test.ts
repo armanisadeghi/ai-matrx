@@ -43,6 +43,15 @@ jest.mock("@/utils/supabase/resolveUser", () => ({
 jest.mock("@supabase/supabase-js", () => ({
   createClient: () => ({ from }),
 }));
+// The CMS 0041 archive gate probes the live column; these list tests are about
+// pagination, so the archive column is reported absent (pre-migration) and the
+// probe issues no query of its own. The gate itself is covered by
+// app/api/cms/_lib/cmsArchive.test.ts and the delete tests below.
+const archiveLive = jest.fn(async () => false);
+jest.mock("@/app/api/cms/_lib/cmsArchive", () => {
+  const actual = jest.requireActual("@/app/api/cms/_lib/cmsArchive");
+  return { ...actual, archiveLive: (...args: unknown[]) => archiveLive(...(args as [])) };
+});
 
 process.env.NEXT_PUBLIC_SUPABASE_HTML_URL = "https://html.test.invalid";
 process.env.SUPABASE_HTML_SECRET_KEY = "test-secret-not-a-real-key";

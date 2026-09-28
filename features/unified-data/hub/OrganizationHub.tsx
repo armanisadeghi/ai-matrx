@@ -28,7 +28,6 @@ import { ArchivedDisclosure, ArchivedPortals, TablesHome } from "@ai-matrx/recor
 import { useRecordsClient, useTables } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
 import { Button, cn } from "@ai-matrx/design-system";
-import { KeptByTheAppLine } from "./KeptByTheAppLine";
 
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
@@ -37,6 +36,19 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { useUserRole } from "@/features/organizations/hooks";
 import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
+
+/** What each listing's rows are, in the store's kind words — every row on the home says its kind. */
+const LISTING_KIND: Record<string, string> = {
+  forms: "form",
+  bookings: "booking",
+  portals: "portal",
+  dashboards: "dashboard",
+  digests: "digest",
+  checklists: "checklist",
+  automations: "automation",
+  "shared-outside": "share",
+  "shared-with-me": "table",
+};
 
 /** The organization's member-visibility setting, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -54,11 +66,18 @@ import { HubListing, type HubListingState } from "./HubListing";
 import * as doors from "./doors";
 import type { DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
 import {
+  ALL_KINDS,
+  DATA_HOME_DEFAULT_KIND_KNOB,
   DATA_HOME_DEFAULT_SCOPE_KNOB,
   DATA_HOME_SCOPES,
   DATA_HOME_SCOPE_TITLE,
   dataHomeScopeHref,
   inDataHomeScope,
+  dataHomeKindHref,
+  kindTitle,
+  kindsOnOffer,
+  listingShownUnderKind,
+  resolveDataHomeKind,
   resolveDataHomeScope,
   visibilityOfLane,
   type DataHomeScope,
@@ -120,6 +139,16 @@ export function OrganizationHub({
   const knobUserId = useAppSelector(selectUserId);
   const defaultScope = useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_SCOPE_KNOB);
   const scope: DataHomeScope = resolveDataHomeScope(searchParams.get("scope"), defaultScope);
+  const defaultKind = useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_KIND_KNOB);
+  const kind = resolveDataHomeKind(searchParams.get("kind"), defaultKind);
+  const chooseKind = useCallback(
+    (next: string) => {
+      const href = dataHomeKindHref(pathname, searchParams, next);
+      const here = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+      if (href !== here) router.push(href, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
   const chooseScope = useCallback(
     (next: DataHomeScope) => {
       const href = dataHomeScopeHref(pathname, searchParams, next);
@@ -188,15 +217,11 @@ export function OrganizationHub({
   }, [tablesRead.data, facts, userIdForFacts]);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  /**
-   * "SHOW EVERYTHING" (SCOPES-CONTEXT-TRANSITION SC-1', finished by SC-1-TAILS). What the app keeps
-   * for itself — a column's choices, the context system's scope tables, its own bookkeeping — is
-   * marked and never hidden from its owner, but it is not the organization's own data, so its
-   * section waits behind one control that says how many there are. The owner (2026-09-23):
-   * "the user will not see it as data in a normal view … There should be options for someone to
-   * see all, but not at random."
+  /*
+   * NO "SHOW EVERYTHING" FOLD ON THIS PAGE (Arman, 2026-09-27 21:40 PT): the home hides nothing.
+   * What the app keeps for itself is listed with the rest, each row saying its kind, and the Kind
+   * filter on the bar narrows it. (The fold still serves the organization's own Tables page.)
    */
-  const [showEverything, setShowEverything] = useState(false);
   /**
    * DOES THIS ORGANIZATION SHOW A MEMBER ONLY WHAT IS SHARED WITH THEM? The
    * organization's own setting, read through the one knob reader. An
@@ -399,12 +424,14 @@ export function OrganizationHub({
           if (id === "shared-with-me") {
             return {
               ...item,
+              kind: "table",
               organizationName: item.tableName,
               scope: { mine: false, member: false, sharedWithMe: true, visibility: null },
             };
           }
           return {
             ...item,
+            kind: item.kind ?? LISTING_KIND[id] ?? id,
             organizationName: organizationName ?? null,
             scope: {
               mine: Boolean(item.tableId && ownedTableIds.has(item.tableId)),
@@ -419,16 +446,28 @@ export function OrganizationHub({
     return out;
   }, [states, tableIdsListed, organizationName, ownedTableIds, sharedWithMeIds]);
   const filtered = useMemo(() => {
-    if (scope === "all") return labelled;
+    if (scope === "all" && kind === ALL_KINDS) return labelled;
     const out: Record<string, HubListingState> = {};
     for (const [id, state] of Object.entries(labelled)) {
       out[id] =
         state.phase === "read"
-          ? { phase: "read", items: state.items.filter((item) => item.scope && inDataHomeScope(item.scope, scope)) }
+          ? {
+              phase: "read",
+              items: state.items.filter(
+                (item) =>
+                  (scope === "all" || (item.scope && inDataHomeScope(item.scope, scope))) &&
+                  (kind === ALL_KINDS || id !== "tables" || item.kind === kind),
+              ),
+            }
           : state;
     }
     return out;
-  }, [labelled, scope]);
+  }, [labelled, scope, kind]);
+  /** Every kind the store's rows carry, for the Kind filter — never a kind with nothing behind it. */
+  const kinds = useMemo(
+    () => kindsOnOffer(everywhere.phase === "read" ? everywhere.rows.map((r) => r.kind) : [], kind),
+    [everywhere, kind],
+  );
 
   /**
    * THE LIST'S ONE PLACE TO NARROW IT: exactly All · Mine · My Orgs · Shared · Public, on ONE
@@ -461,6 +500,24 @@ export function OrganizationHub({
           </button>
         ))}
       </div>
+      {/* KIND — the store's own words, only kinds something here carries (more than four, so a
+          select, never a row of pills). Arman 21:40 PT: one bar, no new rows. */}
+      <label className="inline-flex items-center gap-1 text-muted-foreground">
+        <span className="sr-only">Kind</span>
+        <select
+          data-hub-kind
+          aria-label="Kind"
+          value={kind}
+          onChange={(event) => chooseKind(event.target.value)}
+          className="h-6 rounded-full border border-border bg-background px-2 text-xs text-foreground"
+        >
+          {kinds.map((candidate) => (
+            <option key={candidate} value={candidate}>
+              {kindTitle(candidate)}
+            </option>
+          ))}
+        </select>
+      </label>
       <span className="ml-auto inline-flex items-center gap-x-1 whitespace-nowrap text-muted-foreground">
         Forms and pages from <span className="font-medium text-foreground">{organizationName ?? "the organization you are working in"}</span>
         <OrganizationPickerPopover
@@ -505,26 +562,18 @@ export function OrganizationHub({
         }
       />
 
-      {HUB_CAPABILITIES.filter((capability) => capability.id !== "kept-by-the-app" || showEverything).map((capability) => (
+      {HUB_CAPABILITIES.filter((capability) => listingShownUnderKind(capability.id, kind)).map((capability) => (
         <HubListing
           key={capability.id}
           capability={capability}
           state={filtered[capability.id] ?? { phase: "reading" }}
           scope={scope}
+          kind={capability.id === "tables" ? kind : ALL_KINDS}
           sharedOnly={sharedOnly}
           open={open[capability.id] ?? false}
           onOpenChange={(next) => setOpen((prev) => ({ ...prev, [capability.id]: next }))}
         />
       ))}
-
-      <KeptByTheAppLine
-        keptCount={(() => {
-          const kept = states["kept-by-the-app"];
-          return kept?.phase === "read" ? kept.items.length : 0;
-        })()}
-        showEverything={showEverything}
-        onToggle={() => setShowEverything((on) => !on)}
-      />
 
       {/* THE QUEUE, UNDER THE FRONT DOOR RATHER THAN OVER IT. See `inbox` above. */}
       {inbox}

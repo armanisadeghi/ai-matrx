@@ -273,13 +273,21 @@ export interface DataHomeTableRow {
   mine: boolean;
   /** A live grant names the person signed in, given by somebody else. */
   shared_with_me: boolean;
+  /** The store keeps this Table for itself (custom.table_placement). Listed all the same. */
+  kept_by_the_app: boolean;
+  /**
+   * What it is, in the store's one word: table (the person's own) · list · scope · form · view ·
+   * comment · dashboard · action · checklist · booking · workflow · kit · store · demo · app.
+   */
+  kind: string;
 }
 
 /**
  * EVERY TABLE THIS PERSON CAN OPEN, IN EVERY ORGANIZATION SHE CAN REACH, WITH THE FOUR FACTS THE
  * DATA HOME'S FILTERS READ — `custom.data_home_tables()` (lane DATA-HOME-1). The walk is
- * `custom.tables_i_can_open()`'s own; the door adds whether she made each one and whether
- * somebody shared it with her. It takes no organization; the door skips every organization whose
+ * `custom.tables_i_can_open()`'s own; the door adds whether she made each one, whether
+ * somebody shared it with her, and — because the home hides nothing (Arman, 21:40 PT) — the
+ * tables the app keeps for itself, each with its kind. It takes no organization; the door skips every organization whose
  * store is off, so there is no single switch to ask here.
  */
 export function dataHomeTables(dataSource: RecordsDataSource): Promise<DoorAnswer<DataHomeTableRow[]>> {

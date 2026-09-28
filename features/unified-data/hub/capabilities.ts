@@ -61,6 +61,8 @@ export interface HubItem {
   organizationName?: string | null | undefined;
   /** The four facts the data home's filters read (`dataHomeScope.ts`). Set by the hub. */
   scope?: ScopeFacts | undefined;
+  /** What it is, in the store's one word (`custom.data_home_tables().kind`, or the listing's own). */
+  kind?: string | undefined;
 }
 
 export interface HubReadContext {
@@ -230,7 +232,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     id: "tables",
     title: "Tables",
     // THE COUNT BESIDE IT IS WHAT THIS PERSON CAN OPEN, so the sentence says exactly that.
-    what: "The tables you can open, in every organization you belong to.",
+    what: "Every table you can open, in every organization you belong to — yours and the ones the app keeps.",
     whatWhenSharedOnly:
       "The tables shared with you here. This organization shows each member only what is shared with them.",
     empty: "No tables yet. Press New table above, or start from an example.",
@@ -238,53 +240,36 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     door: "custom.read_records over the Table kernel",
     changedByKind: "structure",
     async read(ctx) {
-      // THE DATA HOME'S TABLES ARE EVERY ORGANIZATION'S (lane DATA-HOME-1, Arman 2026-09-27):
-      // one row per table she can open, each naming its organization and carrying the facts the
-      // five filters read. The per-organization list below is what a host without the door gets.
-      if (ctx.everywhere) {
-        if (!ctx.everywhere.ok) return { ok: false, error: ctx.everywhere.error };
+      // THE DATA HOME'S TABLES ARE EVERY ORGANIZATION'S, AND EVERY KIND (lane DATA-HOME-1, Arman
+      // 2026-09-27 21:20 and 21:40 PT): one row per table she can open — hers and the ones the app
+      // keeps for itself — each naming its organization and its kind, and carrying the facts the
+      // five filters read. It is ONE door (`custom.data_home_tables()`); there is no second list.
+      if (!ctx.everywhere) {
         return {
-          ok: true,
-          items: ctx.everywhere.rows.map((row) => ({
-            id: row.table_id,
-            title: row.table_name || "(unnamed table)",
-            tableId: row.table_id,
-            tableName: row.table_name || null,
-            lane: null,
-            organizationName: row.organization_name,
-            scope: {
-              mine: row.mine,
-              member: row.member,
-              sharedWithMe: row.shared_with_me,
-              visibility: row.visibility,
-            },
-            facts: row.member ? [] : ["shared with you"],
-            href: row.member ? `/data-v2/${row.table_id}` : `/data-v2/${row.table_id}?org=${row.organization_id}`,
-            changedAt: row.updated_at,
-          })),
+          ok: false,
+          error: { message: "The tables across your organizations were not read, so none is listed." },
         };
       }
+      if (!ctx.everywhere.ok) return { ok: false, error: ctx.everywhere.error };
       return {
         ok: true,
-        // THE PERSON'S TABLES, AND ONLY THOSE. What the store keeps for itself
-        // is listed below under "Kept by the app" — same doors, same rows, one
-        // listing further down, so nothing is hidden and nothing is buried.
-        // A person's tables are exactly the ones in one of the four visibility
-        // lanes, so Tables is the sum of the lanes and nothing else (VERIFIER-16
-        // M6: "Saved views" was in Tables and in no lane, so Everything counted
-        // one more than the lanes added up to).
-        items: ctx.tables.filter((table) => laneOfTable(table) !== null).map((table) => ({
-          id: table.id,
-          title: table.name ?? "(unnamed table)",
-          tableId: table.id,
-          tableName: table.name ?? null,
-          lane: laneOfTable(table),
-          // A SCREEN NEVER PRINTS THE MACHINE'S WORD. `table.type` is the
-            // store's own token ("entity", "options", …) and it read as jargon on
-            // every row of Rincon's list; the column count is the fact a person
-            // actually uses, and the type is on the table's own screen.
-          facts: [plural(table.fields?.length ?? 0, "column")],
-          href: `/data-v2/${table.id}`,
+        items: ctx.everywhere.rows.map((row) => ({
+          id: row.table_id,
+          title: row.table_name || "(unnamed table)",
+          tableId: row.table_id,
+          tableName: row.table_name || null,
+          lane: null,
+          organizationName: row.organization_name,
+          kind: row.kind,
+          scope: {
+            mine: row.mine,
+            member: row.member,
+            sharedWithMe: row.shared_with_me,
+            visibility: row.visibility,
+          },
+          facts: row.member ? [] : ["shared with you"],
+          href: row.member ? `/data-v2/${row.table_id}` : `/data-v2/${row.table_id}?org=${row.organization_id}`,
+          changedAt: row.updated_at,
         })),
       };
     },
@@ -647,29 +632,6 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     },
   },
 
-  {
-    id: "kept-by-the-app",
-    title: "Kept by the app",
-    what: "Tables the store made for itself — the choice lists behind your dropdowns, and its own saved views.",
-    empty: "The store keeps nothing of its own here yet.",
-    door: "custom.read_records over the Table kernel",
-    changedByKind: "structure",
-    groupDuplicateTitles: true,
-    async read(ctx) {
-      return {
-        ok: true,
-        items: ctx.tables.filter((table) => laneOfTable(table) === null).map((table) => ({
-          id: table.id,
-          title: table.name ?? "(unnamed table)",
-          tableId: table.id,
-          tableName: table.name ?? null,
-          lane: null,
-          facts: [plural(table.fields?.length ?? 0, "column")],
-          href: `/data-v2/${table.id}`,
-        })),
-      };
-    },
-  },
 ] as const;
 
 /**

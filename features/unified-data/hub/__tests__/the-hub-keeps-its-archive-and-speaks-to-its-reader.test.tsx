@@ -154,7 +154,7 @@ describe("UI-FIX-19 · the Tables sentence speaks to its reader", () => {
     await mount();
     const heading = container.querySelector('[data-hub-listing-toggle="tables"]')?.textContent ?? "";
     // DATA-HOME-1: the Tables listing is every organization's now, and the sentence says so.
-    expect(heading).toMatch(/The tables you can open, in every organization you belong to/);
+    expect(heading).toMatch(/Every table you can open, in every organization you belong to/);
     expect(heading).not.toMatch(/only what is shared/);
   });
 

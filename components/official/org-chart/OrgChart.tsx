@@ -290,12 +290,19 @@ export function OrgChart<T>({
           }}
         />
 
+        {/* The world layer has the chart's real size and opts out of the phone
+            `* { max-width: 100% }` default (globals.css): with a 0px-wide parent
+            that default collapsed every card to a sliver on screens ≤768px. */}
         <div
-          className={cn("absolute left-0 top-0 origin-top-left will-change-transform", smooth && glide)}
-          style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}
+          className={cn("absolute left-0 top-0 max-w-none origin-top-left will-change-transform", smooth && glide)}
+          style={{
+            width: layout.width,
+            height: layout.height,
+            transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`,
+          }}
         >
           <svg
-            className="pointer-events-none absolute left-0 top-0 overflow-visible"
+            className="pointer-events-none absolute left-0 top-0 max-w-none overflow-visible"
             width={layout.width}
             height={layout.height}
           >
@@ -323,7 +330,7 @@ export function OrgChart<T>({
             return (
               <div
                 key={n.key}
-                className={cn("absolute left-0 top-0", glide)}
+                className={cn("absolute left-0 top-0 max-w-none", glide)}
                 style={{
                   transform: `translate(${n.x}px, ${n.y}px)`,
                   width: cardWidth,
@@ -438,7 +445,7 @@ export function OrgChart<T>({
             className="absolute bottom-3 left-3 z-20 max-w-[calc(100%-1.5rem)] rounded-lg border border-border bg-card/95 px-3 py-2 shadow-sm backdrop-blur sm:max-w-xs"
             data-no-pan
           >
-            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="mb-1 hidden text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:block">
               Links
             </div>
             <ul className="space-y-1.5">
@@ -459,7 +466,7 @@ export function OrgChart<T>({
                   <div className="min-w-0">
                     <div className="text-xs font-medium text-foreground">{kind.label}</div>
                     {kind.description && (
-                      <div className="text-[11px] leading-snug text-muted-foreground">{kind.description}</div>
+                      <div className="hidden text-[11px] leading-snug text-muted-foreground sm:block">{kind.description}</div>
                     )}
                   </div>
                 </li>

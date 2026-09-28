@@ -14,6 +14,13 @@ import {
   verifySiteOwnership,
   verifyComponentOwnership,
 } from "../_lib/cmsDb";
+import {
+  archiveLive,
+  archiveNotLiveResponse,
+  archiveRow,
+  isLive,
+  onlyLive,
+} from "../_lib/cmsArchive";
 import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import {
@@ -74,10 +81,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { data, error } = await db
-          .from("client_components")
-          .select("*")
-          .eq("client_id", siteId)
+        const { data, error } = await onlyLive(
+          db.from("client_components").select("*").eq("client_id", siteId),
+          await archiveLive(db, "client_components"),
+        )
           .order("component_type")
           .order("name");
 
@@ -104,7 +111,8 @@ export async function POST(request: NextRequest) {
           .eq("id", componentId)
           .single();
 
-        if (error || !comp) {
+        // An archived component (CMS 0041) is not found.
+        if (error || !comp || !isLive(comp)) {
           return NextResponse.json(
             { error: "Component not found" },
             { status: 404 },
@@ -286,11 +294,14 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { data: comp } = await db
-          .from("client_components")
-          .select("client_id, name, component_type")
-          .eq("id", componentId)
-          .single();
+        const componentsArchive = await archiveLive(db, "client_components");
+        const { data: comp } = await onlyLive(
+          db
+            .from("client_components")
+            .select("client_id, name, component_type")
+            .eq("id", componentId),
+          componentsArchive,
+        ).maybeSingle();
 
         if (!comp) {
           return NextResponse.json(
@@ -303,27 +314,28 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "Access denied" }, { status: 403 });
         }
 
-        const { error } = await db
-          .from("client_components")
-          .delete()
-          .eq("id", componentId);
+        // ARCHIVE, never destroy (CMS 0041); refuse before the column exists.
+        if (!componentsArchive) {
+          return archiveNotLiveResponse("a component");
+        }
+        const { error } = await archiveRow(db, "client_components", componentId);
 
         if (error) {
-          console.error("[cms/components] delete error:", error);
+          console.error("[cms/components] archive error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
         await logCmsActivity(db, {
           siteId: comp.client_id,
-          activityType: "component.delete",
+          activityType: "component.archive",
           entityType: "component",
           entityId: componentId,
-          description: `Deleted ${comp.component_type} component "${comp.name}"`,
+          description: `Archived ${comp.component_type} component "${comp.name}"`,
           userId: user.id,
           userEmail: user.email,
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, archived: true });
       }
 
       default:

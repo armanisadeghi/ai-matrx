@@ -30,6 +30,11 @@ import { isJsonObject } from "@/types/json";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  archiveLive,
+  archiveNotLiveResponse,
+  onlyLive,
+} from "@/app/api/cms/_lib/cmsArchive";
 
 const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL ?? "";
 const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
@@ -162,11 +167,15 @@ export async function POST(request: NextRequest) {
         // never break.
         if (sourceMessageId && !forceNew) {
           try {
-            const { data: existing } = await htmlDb
-              .from("html_pages")
-              .select("id")
-              .eq("user_id", user.id)
-              .eq("source_message_id", sourceMessageId)
+            // An archived page (CMS 0041) is never the one a re-publish reuses.
+            const { data: existing } = await onlyLive(
+              htmlDb
+                .from("html_pages")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("source_message_id", sourceMessageId),
+              await archiveLive(htmlDb, "html_pages"),
+            )
               .order("created_at", { ascending: false })
               .limit(1)
               .maybeSingle();
@@ -401,16 +410,22 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // ARCHIVE, never destroy (CMS 0041). Before the column exists the delete
+        // REFUSES; there is no hard-delete fallback.
+        if (!(await archiveLive(htmlDb, "html_pages"))) {
+          return archiveNotLiveResponse("a page");
+        }
         const { data: deleted, error } = await htmlDb
           .from("html_pages")
-          .delete()
+          .update({ deleted_at: new Date().toISOString() })
           .eq("id", pageId)
           .eq("user_id", user.id)
+          .is("deleted_at", null)
           .select("id")
           .maybeSingle();
 
         if (error) {
-          console.error("[html-pages API] delete error:", error);
+          console.error("[html-pages API] archive error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
@@ -421,7 +436,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, archived: true });
       }
 
       case "list": {
@@ -433,15 +448,19 @@ export async function POST(request: NextRequest) {
         // The table is rendered and searched as the user's complete library.
         // PostgREST caps a bare select at 1,000 rows, so this must read every
         // counted page or fail the request rather than report an incomplete list.
+        const pagesArchive = await archiveLive(htmlDb, "html_pages");
         const readUserPages = async (columns: string): Promise<unknown[] | null> => {
           let missingColumn = false;
           try {
             return await readAllRows<unknown>(
               async ({ from, to }) => {
-                const result = await htmlDb
-                  .from("html_pages")
-                  .select(columns, { count: "exact" })
-                  .eq("user_id", user.id)
+                const result = await onlyLive(
+                  htmlDb
+                    .from("html_pages")
+                    .select(columns, { count: "exact" })
+                    .eq("user_id", user.id),
+                  pagesArchive,
+                )
                   .order("updated_at", { ascending: false })
                   .order("id", { ascending: false })
                   .range(from, to);
@@ -515,12 +534,14 @@ export async function POST(request: NextRequest) {
         // could read any page (incl. unpublished drafts + internal source ids)
         // by guessing/enumerating UUIDs. Published pages are served publicly by
         // the mymatrx site itself — this authoring endpoint is owner-only.
-        const { data, error } = await htmlDb
-          .from("html_pages")
-          .select("*")
-          .eq("id", pageId)
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const { data, error } = await onlyLive(
+          htmlDb
+            .from("html_pages")
+            .select("*")
+            .eq("id", pageId)
+            .eq("user_id", user.id),
+          await archiveLive(htmlDb, "html_pages"),
+        ).maybeSingle();
 
         if (error) {
           console.error("[html-pages API] get error:", error);

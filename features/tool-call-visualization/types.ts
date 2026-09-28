@@ -110,6 +110,17 @@ export interface ToolRendererProps {
    * without a surface can ignore it.
    */
   attached?: boolean;
+
+  /**
+   * True when this card is rendered for a link holder on a read-only shared
+   * surface (e.g. the signed-out `/s/[token]` shared-chat page) rather than
+   * the chat's own owner/participant. A renderer must not offer an action
+   * that cannot work for such a viewer (opening a live session only the
+   * owner can reach, editing, re-running) — omit the control entirely
+   * rather than rendering it disabled (access ladder: a control is absent
+   * or honest, never dead). Undefined/false for every normal chat surface.
+   */
+  readOnly?: boolean;
 }
 
 /**

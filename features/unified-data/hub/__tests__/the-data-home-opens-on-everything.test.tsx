@@ -36,6 +36,8 @@ const ROWS = [
     updated_at: "2026-09-26T17:05:00Z",
     mine: true,
     shared_with_me: false,
+    kept_by_the_app: false,
+    kind: "table",
   },
   {
     table_id: "a1000000-0000-4000-8000-000000000002",
@@ -47,6 +49,8 @@ const ROWS = [
     updated_at: "2026-09-27T15:40:00Z",
     mine: false,
     shared_with_me: false,
+    kept_by_the_app: false,
+    kind: "table",
   },
   {
     table_id: "a1000000-0000-4000-8000-000000000003",
@@ -58,6 +62,22 @@ const ROWS = [
     updated_at: "2026-09-25T09:12:00Z",
     mine: false,
     shared_with_me: true,
+    kept_by_the_app: false,
+    kind: "table",
+  },
+  {
+    // The choices behind Service calls' Status column: kept by the app, and listed all the same.
+    table_id: "a1000000-0000-4000-8000-000000000004",
+    table_name: "Status choices",
+    organization_id: RINCON,
+    organization_name: "Rincon Plumbing Co",
+    member: true,
+    visibility: "internal",
+    updated_at: "2026-09-27T15:41:00Z",
+    mine: false,
+    shared_with_me: false,
+    kept_by_the_app: true,
+    kind: "list",
   },
 ];
 
@@ -91,11 +111,16 @@ jest.mock("@ai-matrx/records-ui", () => {
 jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
   UNIFIED_DATA_CAMPAIGN: { check: async () => ({ state: "on" }) },
 }));
-/** The knob answers per key: the default-scope knob is what the test sets; nothing else is set. */
+/** The knob answers per key: the two default knobs are what the test sets; nothing else is set. */
 let defaultScopeKnob: unknown = undefined;
+let defaultKindKnob: unknown = undefined;
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
   useEffectiveKnob: (_org: string, _user: string, ref: { key: string }) =>
-    ref.key === "data_home_default_scope" ? defaultScopeKnob : undefined,
+    ref.key === "data_home_default_scope"
+      ? defaultScopeKnob
+      : ref.key === "data_home_default_kind"
+        ? defaultKindKnob
+        : undefined,
 }));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => ME,
@@ -153,10 +178,11 @@ async function mount(query = "") {
   // The Tables listing opens by default; its rows are what the filters narrow.
 }
 
-function tableRows(): Array<{ title: string; organization: string }> {
+function tableRows(): Array<{ title: string; organization: string; kind: string }> {
   return [...container.querySelectorAll('[data-hub-listing="tables"] li')].map((li) => ({
     title: li.querySelector("a")?.textContent ?? "",
     organization: li.querySelector("[data-hub-row-organization]")?.textContent ?? "",
+    kind: li.querySelector("[data-hub-row-kind]")?.textContent ?? "",
   }));
 }
 
@@ -170,16 +196,18 @@ afterEach(async () => {
   ROUTER.push.mockClear();
   ROUTER.replace.mockClear();
   defaultScopeKnob = undefined;
+  defaultKindKnob = undefined;
 });
 
 describe("the data home · default is everything", () => {
-  it("opens on All — every organization's tables, each naming its organization", async () => {
+  it("opens on All — every organization's tables and every kind, each naming its kind and organization", async () => {
     await mount();
     expect(container.querySelector('[data-hub-scope-choice="all"]')?.getAttribute("aria-selected")).toBe("true");
     expect(tableRows()).toEqual([
-      { title: "Patient recall list", organization: "Harbor Dental Group" },
-      { title: "Service calls", organization: "Rincon Plumbing Co" },
-      { title: "Backflow test schedule", organization: "Ojai Valley Home Services" },
+      { title: "Patient recall list", organization: "Harbor Dental Group", kind: "Table" },
+      { title: "Service calls", organization: "Rincon Plumbing Co", kind: "Table" },
+      { title: "Backflow test schedule", organization: "Ojai Valley Home Services", kind: "Table" },
+      { title: "Status choices", organization: "Rincon Plumbing Co", kind: "List" },
     ]);
   });
 
@@ -200,7 +228,7 @@ describe("the data home · exactly five filters, each the store's fact", () => {
 
   it.each([
     ["mine", ["Patient recall list"]],
-    ["orgs", ["Patient recall list", "Service calls"]],
+    ["orgs", ["Patient recall list", "Service calls", "Status choices"]],
     ["shared", ["Backflow test schedule"]],
   ])("?scope=%s lists exactly what the store says", async (scope, titles) => {
     await mount(`scope=${scope}`);
@@ -222,5 +250,42 @@ describe("the data home · Back returns", () => {
     });
     expect(ROUTER.push).toHaveBeenCalledWith("/data-v2?scope=mine", { scroll: false });
     expect(ROUTER.replace).not.toHaveBeenCalled();
+  });
+});
+
+describe("the data home · hides nothing, and a Kind filter narrows it", () => {
+  it("offers All kinds and every kind a row carries, the person's own tables first", async () => {
+    await mount();
+    const kind = container.querySelector("[data-hub-kind]") as HTMLSelectElement | null;
+    expect(kind?.value).toBe("all");
+    expect([...(kind?.options ?? [])].map((o) => o.textContent)).toEqual(["All kinds", "Tables", "Lists"]);
+  });
+
+  it("?kind=list lists only the lists, and the five filters still apply", async () => {
+    await mount("kind=list");
+    expect(tableRows().map((r) => r.title)).toEqual(["Status choices"]);
+  });
+
+  it("an empty kind under a filter says so in one sentence", async () => {
+    await mount("kind=list&scope=mine");
+    expect(tableRows()).toEqual([]);
+    expect(listingText()).toMatch(/No lists under Mine in any of your organizations\./);
+  });
+
+  it("opens on the kind the knob names", async () => {
+    defaultKindKnob = "list";
+    await mount();
+    expect((container.querySelector("[data-hub-kind]") as HTMLSelectElement | null)?.value).toBe("list");
+    expect(tableRows().map((r) => r.title)).toEqual(["Status choices"]);
+  });
+
+  it("choosing a kind pushes a history entry", async () => {
+    await mount();
+    const kind = container.querySelector("[data-hub-kind]") as HTMLSelectElement;
+    await act(async () => {
+      kind.value = "list";
+      kind.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(ROUTER.push).toHaveBeenCalledWith("/data-v2?kind=list", { scroll: false });
   });
 });

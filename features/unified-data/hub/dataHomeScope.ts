@@ -111,3 +111,109 @@ export const DATA_HOME_SCOPE_EMPTY: Record<Exclude<DataHomeScope, "all">, string
 export function emptyInScope(capabilityTitle: string, scope: Exclude<DataHomeScope, "all">): string {
   return `No ${capabilityTitle.toLowerCase()} under ${DATA_HOME_SCOPE_TITLE[scope]}. ${DATA_HOME_SCOPE_EMPTY[scope]}`;
 }
+
+// ── THE KIND FILTER (Arman, 2026-09-27 21:40 PT) ────────────────────────────────────────────────
+//
+// The home hides nothing: every table in the store is listed, the person's own AND the ones the
+// app keeps for itself (the lists behind dropdowns, scopes, booking slots, checklists, workflows,
+// kits). The "Show everything" fold is gone from this page; a Kind filter on the same bar
+// narrows instead. The kind is the store's word (`custom.data_home_tables().kind`), and which
+// kind the home opens on is the Feature Knob `custom.data_home_default_kind` (default all).
+
+export const ALL_KINDS = "all" as const;
+export type DataHomeKind = string;
+
+export const DATA_HOME_DEFAULT_KIND_KNOB = { feature: "custom", key: "data_home_default_kind" } as const;
+
+/** Plural, for the filter. A word the store adds later is shown in its own words. */
+const KIND_TITLE: Record<string, string> = {
+  table: "Tables",
+  list: "Lists",
+  scope: "Scopes",
+  form: "Forms",
+  view: "Saved views",
+  comment: "Comments",
+  dashboard: "Dashboards",
+  action: "Actions",
+  checklist: "Checklists",
+  booking: "Bookings",
+  workflow: "Workflows",
+  kit: "Kits",
+  store: "The store itself",
+  demo: "Demonstrations",
+  app: "Kept by the app",
+};
+
+/** Singular, for the row. */
+const KIND_ONE: Record<string, string> = {
+  table: "Table",
+  list: "List",
+  scope: "Scope",
+  form: "Form",
+  view: "Saved view",
+  comment: "Comments",
+  dashboard: "Dashboard",
+  action: "Actions",
+  checklist: "Checklist",
+  booking: "Booking",
+  workflow: "Workflow",
+  kit: "Kit",
+  store: "Store",
+  demo: "Demonstration",
+  app: "Kept by the app",
+};
+
+function wordsOf(kind: string): string {
+  const spaced = kind.replace(/_/g, " ");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+export function kindTitle(kind: string): string {
+  return kind === ALL_KINDS ? "All kinds" : (KIND_TITLE[kind] ?? wordsOf(kind));
+}
+
+export function kindOne(kind: string): string {
+  return KIND_ONE[kind] ?? wordsOf(kind);
+}
+
+/** The address first, then the knob, then every kind. Any store word is a kind. */
+export function resolveDataHomeKind(fromAddress: string | null | undefined, fromKnob: unknown): DataHomeKind {
+  const valid = (v: unknown): v is string => typeof v === "string" && /^[a-z_]{1,40}$/.test(v);
+  if (valid(fromAddress)) return fromAddress;
+  if (valid(fromKnob)) return fromKnob;
+  return ALL_KINDS;
+}
+
+/** The kinds on offer: every kind a row carries (the person's own tables first), and the chosen one. */
+export function kindsOnOffer(kinds: readonly string[], chosen: DataHomeKind): string[] {
+  const counts = new Map<string, number>();
+  for (const k of kinds) counts.set(k, (counts.get(k) ?? 0) + 1);
+  if (chosen !== ALL_KINDS && !counts.has(chosen)) counts.set(chosen, 0);
+  const ordered = [...counts.entries()]
+    .sort(([a, na], [b, nb]) => (a === "table" ? -1 : b === "table" ? 1 : nb - na || a.localeCompare(b)))
+    .map(([k]) => k);
+  return [ALL_KINDS, ...ordered];
+}
+
+/**
+ * THE OTHER LISTINGS UNDER A KIND. The Tables listing narrows to the kind; a listing of things of
+ * that kind (Forms under Form) stays; everything else waits under All kinds.
+ */
+const KIND_LISTING: Record<string, readonly string[]> = {
+  table: ["shared-with-me"],
+  form: ["forms"],
+  booking: ["bookings"],
+  checklist: ["checklists"],
+  dashboard: ["dashboards"],
+};
+
+export function listingShownUnderKind(capabilityId: string, kind: DataHomeKind): boolean {
+  if (kind === ALL_KINDS || capabilityId === "tables") return true;
+  return (KIND_LISTING[kind] ?? []).includes(capabilityId);
+}
+
+export function dataHomeKindHref(pathname: string, current: URLSearchParams, kind: DataHomeKind): string {
+  const next = new URLSearchParams(current.toString());
+  next.set("kind", kind);
+  return `${pathname}?${next.toString()}`;
+}

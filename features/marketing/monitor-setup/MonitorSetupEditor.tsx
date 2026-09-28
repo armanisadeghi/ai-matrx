@@ -282,13 +282,13 @@ export function MonitorSetupEditor() {
 
   useEffect(() => {
     let live = true;
-    getSetupFacts(dispatch, brandCtx.id)
+    getSetupFacts(dispatch, brandCtx.id, brandCtx.organizationId)
       .then((next) => live && setSetup(next))
       .catch((error: unknown) => live && setSetupError(error));
     return () => {
       live = false;
     };
-  }, [dispatch, brandCtx.id]);
+  }, [dispatch, brandCtx.id, brandCtx.organizationId]);
 
   const brandRow = brand.data;
   const aliases = (() => {
@@ -358,7 +358,7 @@ export function MonitorSetupEditor() {
   const propose = async () => {
     setProposing("Starting…");
     try {
-      const result = await proposeMonitorSetup(dispatch, brandCtx.id, trackerId, setProposing);
+      const result = await proposeMonitorSetup(dispatch, brandCtx.id, brandCtx.organizationId, trackerId, setProposing);
       setProposal(result);
       setDraft((current) => (current ? applyProposal(current, result.proposal) : current));
       const dropped = result.proposal.dropped_without_basis?.length ?? 0;
@@ -401,6 +401,7 @@ export function MonitorSetupEditor() {
             xTrendsWoeids: xLocations.map((loc) => loc.woeid),
           },
         ),
+        brandRow.organization_id,
       );
       setDraft({ ...draft, briefSourceId });
       setTrackerId(saved.id);
@@ -414,7 +415,7 @@ export function MonitorSetupEditor() {
         toast.success("Monitor saved.");
         return;
       }
-      const result = await runMonitorNow(dispatch, saved.id);
+      const result = await runMonitorNow(dispatch, saved.id, brandRow.organization_id);
       setRun(result);
       setRunKey((k) => k + 1);
     } catch (error) {

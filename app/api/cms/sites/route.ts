@@ -19,6 +19,11 @@ import { lookup, resolveNs } from "node:dns/promises";
 import { isIP } from "node:net";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import {
+  archiveLive,
+  archiveNotLiveResponse,
+  onlyLive,
+} from "../_lib/cmsArchive";
 import { getCmsClient, lookupCmsSiteAccess } from "../_lib/cmsDb";
 import {
   canAccessCmsSite,
@@ -141,11 +146,11 @@ export async function POST(request: NextRequest) {
       | { ok: true; site: Record<string, unknown> }
       | { ok: false; status: 403 | 404 }
     > => {
-      const { data } = await db
-        .from("client_sites")
-        .select(columns)
-        .eq("id", siteId)
-        .single();
+      // An archived site (CMS 0041) is not found by any action.
+      const { data } = await onlyLive(
+        db.from("client_sites").select(columns).eq("id", siteId),
+        await archiveLive(db, "client_sites"),
+      ).maybeSingle();
       if (!data) return { ok: false, status: 404 };
       const site = data as unknown as Record<string, unknown> & {
         owner_user_id: string | null;
@@ -194,6 +199,7 @@ export async function POST(request: NextRequest) {
         query = orFilter
           ? query.or(orFilter)
           : query.eq("owner_user_id", user.id);
+        query = onlyLive(query, await archiveLive(db, "client_sites"));
 
         const { data, error } = await query.order("name");
 
@@ -720,10 +726,14 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { count: pageCount } = await db
-          .from("client_pages")
-          .select("id", { count: "exact", head: true })
-          .eq("client_id", siteId);
+        const pagesArchive = await archiveLive(db, "client_pages");
+        const { count: pageCount } = await onlyLive(
+          db
+            .from("client_pages")
+            .select("id", { count: "exact", head: true })
+            .eq("client_id", siteId),
+          pagesArchive,
+        );
 
         if ((pageCount ?? 0) > 0 && !force) {
           return NextResponse.json(
@@ -735,40 +745,40 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // FK chain (client_pages, client_components, client_assets,
-        // client_activity_log) is ON DELETE CASCADE — verified live against
-        // viyklljfdhtidwecakwx (2026-07-10). Page history in
-        // `history.row_versions` has no FK and is deliberately NOT cascaded:
-        // the append-only log outlives the rows it describes.
-        const { error } = await db
-          .from("client_sites")
-          .delete()
-          .eq("id", siteId);
+        // ARCHIVE, never destroy (CMS 0041): `cms_archive_site` stamps the site
+        // and every live page, component, asset, redirect, collection and item
+        // with ONE timestamp, so a restore brings back exactly this set. Before
+        // 0041 lands the column does not exist and the delete REFUSES — there
+        // is no hard-delete fallback.
+        if (!(await archiveLive(db, "client_sites"))) {
+          return archiveNotLiveResponse("a site");
+        }
+        const { data: archive, error } = await db.rpc("cms_archive_site", {
+          p_site_id: siteId,
+        });
 
         if (error) {
-          console.error("[cms/sites] delete error:", error);
+          console.error("[cms/sites] archive error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        // Logged after delete with client_id null — the FK cascade already
-        // removed any rows scoped to this site, and the row must survive the
-        // site it describes so the deletion itself stays visible in the feed.
         await logCmsActivity(db, {
-          siteId: null,
-          activityType: "site.delete",
+          siteId,
+          activityType: "site.archive",
           entityType: "site",
           entityId: siteId,
-          description: `Deleted site "${site.name}" (${site.slug})${force && (pageCount ?? 0) > 0 ? ` — forced, ${pageCount} page(s)` : ""}`,
+          description: `Archived site "${site.name}" (${site.slug})${force && (pageCount ?? 0) > 0 ? ` — forced, ${pageCount} page(s)` : ""}`,
           userId: user.id,
           userEmail: user.email,
           changes: {
             slug: site.slug,
             forced: !!force,
             pageCount: pageCount ?? 0,
+            archive,
           },
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, archived: true, archive });
       }
 
       // ── Admin: fleet-wide reads/writes, requireSuperAdmin ────────────

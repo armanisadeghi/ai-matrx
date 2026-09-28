@@ -24,6 +24,7 @@ import { setContextEntries } from "@/features/agents/redux/execution-system/inst
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 
@@ -139,8 +140,11 @@ export function PrDirectorPanel({ brandId, brandName, organizationId, className 
     [conversationId, dispatch],
   );
 
-  const landing = (
-    <div className="flex flex-col gap-3 px-1 py-4">
+  // The starting points sit ABOVE the composer (never as `landingContent`, which replaces the composer
+  // with nothing) and fall away once the conversation has its first message.
+  const messageCount = useAppSelector((state) => (conversationId ? selectMessageCount(conversationId)(state) : 0));
+  const landing = messageCount > 0 ? null : (
+    <div className="flex flex-col gap-3 px-1 py-3">
       <div className="flex items-center gap-2">
         <Megaphone className="size-4 text-primary" aria-hidden />
         <p className="text-sm font-semibold">Your PR director</p>
@@ -194,7 +198,7 @@ export function PrDirectorPanel({ brandId, brandName, organizationId, className 
         <p className="p-3 text-xs text-muted-foreground">Opening your PR director…</p>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
-          <AgentConversationColumn conversationId={conversationId} surfaceKey={surfaceKey} landingContent={landing} />
+          <AgentConversationColumn conversationId={conversationId} surfaceKey={surfaceKey} aboveInput={landing} />
         </div>
       )}
     </section>

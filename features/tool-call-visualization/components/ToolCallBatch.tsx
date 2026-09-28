@@ -66,6 +66,8 @@ export interface ToolCallBatchProps {
   browserRunOrder?: number;
   browserBreakBefore?: boolean;
   browserBreakAfter?: boolean;
+  /** See `ToolRendererProps.readOnly` — threaded straight to the batch's own Cloud Browser card. */
+  readOnly?: boolean;
 }
 
 export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
@@ -77,6 +79,7 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
   browserRunOrder = 0,
   browserBreakBefore = false,
   browserBreakAfter = false,
+  readOnly = false,
 }) => {
   const count = entries.length;
   const cloudBrowserRun = isCloudBrowserRun(entries);
@@ -199,6 +202,7 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
           setUserChoiceState(!browserExpanded);
         }}
         className={className}
+        readOnly={readOnly}
       />
     );
   }

@@ -44,6 +44,7 @@ function OneTool({
         conversationId={conversationId}
         hasContent
         isPersisted
+        readOnly
       />
       {tool.withheld ? <WithheldNote /> : null}
       {tool.outputTruncated ? (
@@ -70,6 +71,7 @@ export default function SharedConversationToolSteps({
       entries={tools.map(sharedToolEntry)}
       conversationId={conversationId}
       isPersisted
+      readOnly
     >
       {tools.map((tool) => (
         <OneTool key={tool.callId} tool={tool} conversationId={conversationId} />
