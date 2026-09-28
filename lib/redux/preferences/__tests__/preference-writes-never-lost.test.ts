@@ -197,3 +197,61 @@ describe("only a pending REMOTE write holds a refresh back", () => {
     scheduler.dispose();
   });
 });
+
+describe("a save that keeps failing is told to the person, and works offline", () => {
+  it("after 3 failures the notice fires once with a working Retry now; success withdraws it", async () => {
+    let fail = true;
+    const sent: unknown[] = [];
+    const notices: string[] = [];
+    let retryNow: (() => void) | null = null;
+    const remote = {
+      config: {
+        sliceName: "noticeProbe",
+        preset: "warm-cache",
+        version: 1,
+        remote: {
+          debounceMs: 50,
+          write: async ({ body }: { body: unknown }) => {
+            sent.push(body);
+            if (fail) throw new Error("Failed to fetch");
+          },
+        },
+      },
+    } as never;
+    const scheduler = createRemoteWriteScheduler({
+      policies: [remote],
+      store: { getState: () => ({}), dispatch: () => undefined } as never,
+      getIdentity: () => person,
+      attachPageHide: () => () => {},
+      failureNotice: {
+        failing: (_s, _m, retry) => {
+          notices.push("failing");
+          retryNow = retry;
+        },
+        recovered: () => notices.push("recovered"),
+      },
+    });
+    scheduler.schedule("noticeProbe", { n: 1 });
+    await wait(6_700); // 50ms + 2s + 4s → third failure
+    expect(sent.length).toBe(3);
+    expect(notices).toEqual(["failing"]);
+    expect(scheduler.hasPending("noticeProbe")).toBe(true);
+
+    fail = false;
+    retryNow!();
+    await wait(100);
+    expect(sent.length).toBe(4);
+    expect(notices).toEqual(["failing", "recovered"]);
+    expect(scheduler.hasPending("noticeProbe")).toBe(false);
+    scheduler.dispose();
+  }, 20_000);
+
+  it("the notice is imported statically — a lazy chunk cannot load while offline", () => {
+    const src = require("node:fs").readFileSync(
+      require("node:path").join(process.cwd(), "lib/sync/engine/remoteWrite.ts"),
+      "utf8",
+    ) as string;
+    expect(src).toMatch(/^import \{ toast \} from "@\/lib\/toast";$/m);
+    expect(src).not.toMatch(/import\(\s*["']@\/lib\/toast["']\s*\)/);
+  });
+});
