@@ -2005,13 +2005,21 @@
                             width-less absolute <svg>; clamped to 0px wide an
                             SVG does not render at all, so every React Flow
                             arrow in the app was invisible on phones.
+         .leaflet-*         Leaflet's panes are 0x0 absolute boxes; it exempts
+                            its own tiles and overlay SVG, but not div markers
+                            (collapsed to their 2px border), popups or tooltips
+                            (0px) — measured on /free/zip-code-heatmap.
        (`.recharts-wrapper` is exempted unlayered further down.) Same layer,
        higher specificity than `*`, so an explicit `max-w-*` utility on the
        element still wins. */
     .react-flow__node,
     .react-flow__edges svg,
     .react-flow__nodesselection-rect,
-    .react-flow__edgelabel-renderer > * {
+    .react-flow__edgelabel-renderer > *,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow,
+    .leaflet-popup,
+    .leaflet-tooltip {
       max-width: none;
     }
 
