@@ -395,7 +395,13 @@ export default function ModelControlsEditor({
           >
             <SelectTrigger className="h-7 w-72 text-xs">
               <SelectValue
-                placeholder={hasOffering ? "Select offering" : "No offerings"}
+                placeholder={
+                  hasOffering
+                    ? "Select offering"
+                    : loadError
+                      ? "Offerings couldn't be read"
+                      : "No offerings"
+                }
               />
             </SelectTrigger>
             <SelectContent>
@@ -409,7 +415,7 @@ export default function ModelControlsEditor({
               })}
             </SelectContent>
           </Select>
-          {api && (
+          {!loadError && api && (
             <span className="text-[10px] text-muted-foreground">
               Family <span className="font-mono">{api.name}</span> serves{" "}
               <span className="font-medium text-foreground">
@@ -508,7 +514,7 @@ export default function ModelControlsEditor({
                       </span>
                     </button>
                   ))}
-                  {unusedSettings.length === 0 && (
+                  {!loadError && unusedSettings.length === 0 && (
                     <p className="text-[10px] text-muted-foreground px-2 py-1">
                       No unused settings match.
                     </p>
@@ -564,7 +570,7 @@ export default function ModelControlsEditor({
         <div className="space-y-2 pt-1.5">
           <JsonFieldEditor
             title={`Family rules — ai.api.rules${api ? ` (${api.name})` : ""}`}
-            description={`Shared wire-contract envelope — affects ${familyModelCount} models`}
+            description={`Shared wire-contract envelope — affects ${loadError ? "an unknown number of" : familyModelCount} models`}
             data={api?.rules ?? null}
             onSave={async (data) => {
               if (!api)

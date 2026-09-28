@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
@@ -720,6 +721,9 @@ export default function ConstraintsEditor({
       await onSave(local);
     } catch (err) {
       console.error("Failed to save constraints", err);
+      toast.error(
+        `Couldn't save the constraints: ${err instanceof Error ? err.message : String(err)}`,
+      );
     } finally {
       setSaving(false);
     }
@@ -735,6 +739,9 @@ export default function ConstraintsEditor({
       onChange?.(parsed);
     } catch (err) {
       console.error("Failed to save constraints (raw)", err);
+      toast.error(
+        `Couldn't save the constraints: ${err instanceof Error ? err.message : String(err)}`,
+      );
     } finally {
       setSaving(false);
     }
@@ -792,6 +799,7 @@ export default function ConstraintsEditor({
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
+          {/* read-gate-exempt: counts of the editor's own draft (seeded from props, replaced only after a save succeeded), not a read */}
           <Badge variant="secondary" className="text-[10px] font-mono h-5">
             {local.length} constraint{local.length !== 1 ? "s" : ""}
           </Badge>
@@ -800,6 +808,7 @@ export default function ConstraintsEditor({
               variant="outline"
               className="text-[9px] h-4 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
             >
+              {/* read-gate-exempt: a count of the editor's own draft, not a read */}
               {simpleCount} simple
             </Badge>
           )}
@@ -808,6 +817,7 @@ export default function ConstraintsEditor({
               variant="outline"
               className="text-[9px] h-4 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
             >
+              {/* read-gate-exempt: a count of the editor's own draft, not a read */}
               {condCount} conditional
             </Badge>
           )}

@@ -7,6 +7,7 @@
 // formats must never leak to user-facing surfaces.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -957,6 +958,13 @@ export default function EndpointsApisContainer() {
     apiForm.translator_key.trim().length > 0 &&
     apiForm.transport.trim().length > 0;
 
+  // Tab counts come from the catalog read: "—" when it failed, never 0.
+  const catalogRead = readOf({
+    loading,
+    error: loadError,
+    hasData: endpoints.length > 0 || apis.length > 0,
+  });
+
   return (
     <Tabs defaultValue="endpoints" className="flex flex-col h-full min-h-0">
       <div className="border-b px-3 shrink-0 bg-card">
@@ -967,7 +975,7 @@ export default function EndpointsApisContainer() {
           >
             Endpoints
             <Badge variant="outline" className="ml-1.5 text-xs h-4 px-1">
-              {endpoints.length}
+              <UntrustedCount read={catalogRead} label="Endpoints" value={endpoints.length} />
             </Badge>
           </TabsTrigger>
           <TabsTrigger
@@ -976,7 +984,7 @@ export default function EndpointsApisContainer() {
           >
             APIs
             <Badge variant="outline" className="ml-1.5 text-xs h-4 px-1">
-              {apis.length}
+              <UntrustedCount read={catalogRead} label="APIs" value={apis.length} />
             </Badge>
           </TabsTrigger>
         </TabsList>

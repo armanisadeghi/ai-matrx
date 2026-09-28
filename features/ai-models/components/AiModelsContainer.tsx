@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import AiModelTable from "./AiModelTable";
@@ -356,7 +358,11 @@ export default function AiModelsContainer() {
                   variant="outline"
                   className="h-4 px-1 text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
                 >
-                  {deprecatedCount}
+                  <UntrustedCount
+                    read={readOf({ loading: isLoading, error: loadError, hasData: models.length > 0 })}
+                    label="Deprecated references"
+                    value={deprecatedCount}
+                  />
                 </Badge>
               </Button>
             )}

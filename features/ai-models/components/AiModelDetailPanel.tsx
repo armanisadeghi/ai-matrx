@@ -1464,7 +1464,7 @@ export default function AiModelDetailPanel({
                   className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Pricing
-                  {offerings.length > 0 && (
+                  {!offeringsError && offerings.length > 0 && (
                     <Badge
                       variant="outline"
                       className="ml-1.5 text-xs h-4 px-1"

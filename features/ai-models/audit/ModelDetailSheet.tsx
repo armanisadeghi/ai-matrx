@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ArrowUpRight } from "lucide-react";
 import AiModelDetailPanel from "../components/AiModelDetailPanel";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { aiModelService } from "../service";
 import type { AiModel, AiProvider } from "../types";
 
@@ -24,6 +25,10 @@ export default function ModelDetailSheet({
 }: ModelDetailSheetProps) {
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
+  // A failed providers read is said above the panel — its provider picker
+  // would otherwise read as "there are no providers".
+  const [providersError, setProvidersError] = useState<unknown>(null);
+  const [providersAttempt, setProvidersAttempt] = useState(0);
 
   // Load providers once on first open
   useEffect(() => {
@@ -31,10 +36,16 @@ export default function ModelDetailSheet({
     setLoadingProviders(true);
     aiModelService
       .fetchProviders()
-      .then(setProviders)
-      .catch(console.error)
+      .then((rows) => {
+        setProviders(rows);
+        setProvidersError(null);
+      })
+      .catch((err: unknown) => {
+        console.error(err);
+        setProvidersError(err ?? new Error("The providers read failed"));
+      })
       .finally(() => setLoadingProviders(false));
-  }, [modelId, providers.length]);
+  }, [modelId, providers.length, providersAttempt]);
 
   const model = allModels.find((m) => m.id === modelId) ?? null;
 
@@ -55,6 +66,14 @@ export default function ModelDetailSheet({
           Loading…
         </div>
       ) : model ? (
+        <>
+        {providersError ? (
+          <ReadFailure
+            error={providersError}
+            what="AI providers"
+            onRetry={() => setProvidersAttempt((n) => n + 1)}
+          />
+        ) : null}
         <AiModelDetailPanel
           model={model}
           isNew={false}
@@ -66,6 +85,7 @@ export default function ModelDetailSheet({
           }}
           onDeleted={onClose}
         />
+        </>
       ) : modelId ? (
         // The id came from the audit tables but isn't in the loaded registry —
         // the gate resolves whether it was deleted, denied, or never existed.
