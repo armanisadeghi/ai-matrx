@@ -47,7 +47,7 @@ export const CONTEXT_MENU_ENGINE_ROWS: readonly InventoryRow[] = [
   { id: "cm:save", label: "Save", category: "edit" },
   { id: "cm:delete", label: "Delete", category: "edit" },
   { id: "cm:admin", label: "Admin Tools", category: "admin" },
-  { id: "cm:surface", label: "This page (location, context, agents)", category: "surface-info" },
+  { id: "cm:x:surface", label: "This page (location, context, agents)", category: "surface-info" },
 ];
 
 /** Engine rows whose ids are generated per library (one per agent category or placement). */

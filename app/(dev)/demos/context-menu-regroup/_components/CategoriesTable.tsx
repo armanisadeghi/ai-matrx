@@ -18,10 +18,16 @@ interface Item {
   label: string;
 }
 
+/** A row whose label depends on state (Play / Stop, Pin / Unpin) is named from its id. */
+function stateLabel(id: string): string {
+  const words = id.replace(/^tts-/, "read aloud ").replace(/-/g, " ");
+  return `${words.charAt(0).toUpperCase()}${words.slice(1)}`;
+}
+
 function inventory(): { id: string; label: string; action: Pick<Action, "id" | "category" | "section"> }[] {
   const rich = getAllActions().map((rd) => {
     const action = toAlchemyAction(rd);
-    return { id: rd.id, label: typeof rd.label === "string" ? rd.label : rd.id, action };
+    return { id: rd.id, label: typeof rd.label === "string" ? rd.label : stateLabel(rd.id), action };
   });
   const engine = CONTEXT_MENU_ENGINE_ROWS.map((row) => ({
     id: row.id,
