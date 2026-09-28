@@ -1027,6 +1027,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
           <div className="flex items-start gap-2 border-b border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-300">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
+              {/* read-gate-exempt: a positive count of wrapped rows among rows that did load; the banner shows only when that count is above zero */}
               {unwrappedCount} stored row
               {unwrappedCount === 1 ? " was" : "s were"} still wrapped and had
               to be unwrapped in the browser. The backend should store flat rows
@@ -1148,6 +1149,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
           onOpenChange={(o) => {
             if (!o && !busy) setConfirmKind(null);
           }}
+          // read-gate-exempt: the bulk count is how many rows the person selected (selection state), not a count from a read
           title={
             confirmKind === "clear"
               ? "Move all rows to Trash?"
