@@ -580,7 +580,7 @@ export function buildMenuModel(
     | "entity"
     | "getTextarea"
   > &
-    Partial<Pick<MenuContentProps, "selectionRange">>,
+    Partial<Pick<MenuContentProps, "selectionRange" | "recordActionsOnly">>,
 ): MenuModel {
   const {
     extraSections,
@@ -599,6 +599,7 @@ export function buildMenuModel(
     entity,
     selectionRange,
     getTextarea,
+    recordActionsOnly = false,
   } = props;
   const { actionText, quickActions } = m;
 
@@ -980,6 +981,42 @@ export function buildMenuModel(
     group: "surface-info",
     nodes: m.surfaceSection.items.map(fromExtraItem),
   };
+
+  // ── Record actions only (a list row, a folder) ──────────────────────────
+  // A row is a thing you act ON, not text you are in: the editor's items
+  // (Select All, Find, Cut/Paste, Undo/Redo/History, Insert/Copy reference,
+  // Speak, Listen, Compare, Chat, Quick Actions) are absent. The agent
+  // libraries stay only where there is content for them to act on (they ride
+  // the registry's AI submenu); a folder has none. (page-pass /notes, 2026-09-28)
+  if (recordActionsOnly) {
+    const recordSections: MenuSection[] = [];
+    const clipboardRecord = compactNodes([hasRegistry ? copy : null, copyAs, json]);
+    if (clipboardRecord.length > 0) {
+      recordSections.push({ id: "clipboard", group: "clipboard", nodes: clipboardRecord });
+    }
+    if (registry) recordSections.push({ id: "registry", group: "document", nodes: registry });
+    recordSections.push(...extras["after-clipboard"]);
+    if (exportMenu || convert) {
+      recordSections.push({ id: "document-out", group: "document", nodes: compactNodes([exportMenu, convert]) });
+    }
+    if (attach || share) {
+      recordSections.push({ id: "share", group: "share", nodes: compactNodes([attach, share]) });
+    }
+    recordSections.push(...extras["after-compare"]);
+    recordSections.push(...extras["after-placements"]);
+    if (save || del) recordSections.push({ id: "editable", group: "editable", nodes: compactNodes([save, del]) });
+    if (admin) recordSections.push({ id: "admin", group: "admin", nodes: [admin] });
+    recordSections.push(surfaceInfo);
+    return {
+      header,
+      sections: liftPrimarySections(recordSections),
+      roles: {
+        copy, speak, listen: null, copyAs, json, cut, paste, selectAll, find, insertReference, chat,
+        undo, redo, viewHistory, compare: null, exportMenu, convert, attach, share,
+        placements: [], registry, quickActions: null, save, del, admin, extras, surfaceInfo,
+      },
+    };
+  }
 
   // ── Classic order (the historical arrangement, separator for separator) ──
   const sections: MenuSection[] = [];

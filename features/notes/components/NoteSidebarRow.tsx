@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import { cn } from "@/lib/utils";
 import type { ContentSource } from "@/features/rich-document/types";
 import { saveNoteField, ensureNoteBodiesLoaded } from "../redux/thunks";
@@ -192,6 +193,13 @@ export function NoteSidebarRow({
   return (
     <NonEditableContextMenu
       sourceFeature="notes"
+      // A row is a record you act ON: no Select All, Find, Compare or read-aloud.
+      recordActionsOnly
+      // The menu names the note ("Note: Clinic intake checklist"), never
+      // "Content: <its body>" — desktop header and phone sheet title alike.
+      resolveContextOnOpen={() => ({
+        [CONTEXT_MENU_HEADING_KEY]: { label: "Note", text: displayLabel(note.label) || "Untitled note" },
+      })}
       // Only a fully read note has a body to hand the menu. A preview-only row
       // passes nothing, so an agent is never told "" IS the note; the body is
       // loaded the moment the menu is requested (onContextMenuCapture above)

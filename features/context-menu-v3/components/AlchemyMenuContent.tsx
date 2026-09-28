@@ -31,6 +31,21 @@ import type { MenuContentProps } from "../types";
 
 export type AlchemyMenuMode = "context" | "sheet" | "palette";
 
+/**
+ * Registry rows that belong to reading or editing text, not to a record: every
+ * listen / read-aloud row ("Read aloud selection"), Compare, and Find. A
+ * record-actions-only menu (a list row, a folder) leaves them out.
+ */
+const EDITOR_ONLY_RICH_IDS = new Set([
+  "compare-with-clipboard",
+  "set-compare-base",
+  "compare-with-base",
+  "conversation-find",
+]);
+export function editorOnlyRichActionIds(actions: ReadonlyArray<{ id: string; category?: string }>): string[] {
+  return actions.filter((a) => a.category === "listen" || EDITOR_ONLY_RICH_IDS.has(a.id)).map((a) => a.id);
+}
+
 export interface AlchemyMenuContentProps extends Omit<MenuContentProps, "variant"> {
   mode: AlchemyMenuMode;
   /** Viewport point for the desktop menu (pointer, ⋯ button or floating icon). */
@@ -91,7 +106,11 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
       readOnly: hasRichDocument ? !sourceWritable : !menuProps.isEditable,
       writable: sourceWritable ? [SOURCE_WRITE_TARGET] : [],
       // The strip's Copy IS the registry's one-tap copy here — one row, not two.
-      excludedActionIds: [...m.excludedRichActionIds, ...(hasRichDocument ? ["copy"] : [])],
+      excludedActionIds: [
+        ...m.excludedRichActionIds,
+        ...(hasRichDocument ? ["copy"] : []),
+        ...(menuProps.recordActionsOnly ? editorOnlyRichActionIds(m.registryActions) : []),
+      ],
       organizationId: m.richDocCtx.organizationId,
       auth: {
         authenticated: m.richDocCtx.isAuthenticated,

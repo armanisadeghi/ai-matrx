@@ -339,6 +339,16 @@ export interface ContextMenuV3CoreProps {
    */
   excludedRichActions?: string[];
   /**
+   * RECORD ACTIONS ONLY — the menu of a list row or a folder (a thing you act
+   * ON, not text you are in). The editor's items are absent: Select All, Find,
+   * Cut / Paste, Undo / Redo / View History, Insert/Copy reference, Speak and
+   * every read-aloud / listen row, Compare, Chat, Quick Actions and the agent
+   * libraries. What stays is what acts on the record: its own sections
+   * (`extraSections`), Copy / Copy as / Export / Save to, Attach To, Share,
+   * the record's AI rows, and the surface/admin footer. Default false.
+   */
+  recordActionsOnly?: boolean;
+  /**
    * Host-specific registry actions (e.g. a surface's own "Edit note") — rendered
    * inside the ONE registry tree, in its extras group, never a parallel section.
    */
@@ -497,6 +507,8 @@ export interface MenuContentProps {
   /** EFFECTIVE entity for this open: the resolved per-row one, else the prop. */
   entity?: ContextMenuEntityRef;
   excludedRichActions?: string[];
+  /** See `ContextMenuV3CoreProps.recordActionsOnly`. */
+  recordActionsOnly?: boolean;
   /**
    * Host-specific registry actions (e.g. a surface's own "Edit note") — rendered
    * inside the ONE registry tree, in its extras group, never a parallel section.

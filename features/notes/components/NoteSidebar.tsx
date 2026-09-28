@@ -1623,6 +1623,8 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                   {isFolderMode ? (
                     <NonEditableContextMenu
                       sourceFeature="notes"
+                      // Folder actions only — no Copy / Speak / Compare / Chat / agent rows.
+                      recordActionsOnly
                       // The notes surface: "Save to Notes" is absent inside Notes.
                       surfaceName="matrx-user/notes"
                       // The folder's NAME heads the menu — never the group key
