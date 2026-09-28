@@ -35,7 +35,7 @@ export function TranscriptFacetBar({
   counts: Record<TranscriptFacet, { value: string; count: number }[]>;
   selection: TranscriptFacetSelection;
   onChange: (next: TranscriptFacetSelection) => void;
-  /** e.g. "Facets narrow the 50 rows loaded so far; load more to check the rest." */
+  /** e.g. "Of 40 loaded" — the facets narrowed only the rows loaded so far. */
   note?: string | null;
   /**
    * The rows' own fields have been read. Until then every facet shows (its menu

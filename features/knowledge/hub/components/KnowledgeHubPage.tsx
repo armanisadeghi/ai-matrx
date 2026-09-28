@@ -1641,7 +1641,7 @@ export function KnowledgeHubPage({
         <ReadFailure error={librariesRead.error ?? true} what="your libraries" onRetry={librariesRead.retry} className="m-2" />
       ) : noLibraries ? (
         <p className="px-2 py-4 text-sm text-muted-foreground" role="status">
-          You have no libraries you can open yet, so nothing is in any library. Create a library and add Sources to it.
+          No libraries yet.
         </p>
       ) : expanding ? (
         <p className="px-2 py-4 text-sm text-muted-foreground" role="status">Reading your libraries…</p>
