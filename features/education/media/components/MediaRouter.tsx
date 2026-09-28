@@ -13,14 +13,22 @@ import { AudioStudyDetail } from "../audio/components/AudioStudyDetail";
 import { MindMapDetail } from "../mindmap/components/MindMapDetail";
 import { MemoryDetail } from "@/features/education/memory/components/MemoryDetail";
 import { SummaryDetail } from "@/features/education/onboard/components/SummaryDetail";
+import { useStudyMediaAuthReady } from "../authLoad";
 import { studyMediaService } from "../service";
 import type { EduMediaKind } from "../types";
 
 export function MediaRouter({ mediaId }: { mediaId: string }) {
   const [kind, setKind] = useState<EduMediaKind | null>(null);
   const [loading, setLoading] = useState(true);
+  // A persisted Redux identity can briefly precede Supabase's restored
+  // browser session; firing getById before all three signals are ready sends
+  // it as `anon`, which a private study_media row refuses with 42501 —
+  // stranding a real shared link on the spinner forever. See
+  // features/education/media/authLoad.ts.
+  const authReady = useStudyMediaAuthReady();
 
   useEffect(() => {
+    if (!authReady) return undefined;
     let active = true;
     studyMediaService.getById(mediaId).then((res) => {
       if (!active) return;
@@ -30,7 +38,7 @@ export function MediaRouter({ mediaId }: { mediaId: string }) {
     return () => {
       active = false;
     };
-  }, [mediaId]);
+  }, [mediaId, authReady]);
 
   if (loading) {
     return (

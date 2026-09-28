@@ -36,6 +36,7 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAccess } from "@/utils/permissions/access";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationAudioStudyScope } from "@/features/surfaces/manifests/education-audio-study.manifest";
+import { useStudyMediaAuthReady } from "../../authLoad";
 import { studyMediaService } from "../../service";
 import { useAudioStudyRunPersistence } from "../useAudioStudyRunPersistence";
 import { AudioPlayback } from "./AudioPlayback";
@@ -69,6 +70,12 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const { isOwner } = useAccess("study_media", mediaId);
+  // A persisted Redux identity can briefly precede Supabase's restored
+  // browser session; firing getById before all three signals are ready sends
+  // it as `anon`, which a private study_media row refuses with 42501 —
+  // rendering a real record as a permanent "Something went wrong" on first
+  // load. See features/education/media/authLoad.ts.
+  const authReady = useStudyMediaAuthReady();
 
   // Read at trigger time, never from stale closure state.
   const buildScope = () => {
@@ -94,6 +101,7 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
   };
 
   useEffect(() => {
+    if (!authReady) return undefined;
     let active = true;
     studyMediaService.getById(mediaId).then((res) => {
       if (!active) return;
@@ -104,7 +112,7 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
     return () => {
       active = false;
     };
-  }, [mediaId, reloadKey]);
+  }, [mediaId, reloadKey, authReady]);
 
   if (loadedMediaId !== mediaId) {
     return (

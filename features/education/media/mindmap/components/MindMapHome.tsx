@@ -17,6 +17,13 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { authenticatedStudyMediaLoadKey } from "../../authLoad";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
 import {
@@ -28,17 +35,26 @@ import {
 
 export function MindMapHome() {
   const router = useRouter();
+  // A persisted Redux identity can briefly precede Supabase's restored
+  // browser session; firing the read before all three signals are ready
+  // sends it as `anon`, which private study media refuses with 42501 —
+  // "Couldn't load your mind maps" on every first load. Gate on the same
+  // signal the library hook uses (see features/education/media/authLoad.ts).
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
+  const loadKey = authenticatedStudyMediaLoadKey({ authReady, userId, accessToken });
   const read = useRead(
     async () => {
       const res = await studyMediaService.listByKind("mind_map");
       if (res.error) throw res.error;
       return res.data ?? [];
     },
-    [],
-    { initialData: [] as StudyMediaRow[] },
+    [loadKey],
+    { enabled: loadKey !== null, initialData: [] as StudyMediaRow[] },
   );
   const rows = read.data ?? [];
-  const loading = read.isLoading;
+  const loading = read.isLoading || loadKey === null;
   const [search, setSearch] = useState("");
   const filteredRows = filterEducationCollection(
     rows,
@@ -60,8 +76,8 @@ export function MindMapHome() {
   const getScope = () =>
     createEducationMindMapsScope({
       view: "list",
-      maps_loaded: read.status === "ready",
-      ...(read.status !== "ready"
+      maps_loaded: read.status === "ready" && loadKey !== null,
+      ...(read.status !== "ready" || loadKey === null
         ? {}
         : {
             mind_map_count: rows.length,

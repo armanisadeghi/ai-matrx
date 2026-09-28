@@ -23,6 +23,7 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { studyMediaService } from "@/features/education/media/service";
+import { useStudyMediaAuthReady } from "@/features/education/media/authLoad";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMemoryScope } from "@/features/surfaces/manifests/education-memory.manifest";
@@ -54,6 +55,12 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
   const access = useAccess("study_media", mediaId);
   const { isOwner } = access;
   const canEdit = !access.loading && canEditAccess(access.level);
+  // A persisted Redux identity can briefly precede Supabase's restored
+  // browser session; firing getById before all three signals are ready sends
+  // it as `anon`, which a private study_media row refuses with 42501 —
+  // rendering a real record as a permanent "Something went wrong" on first
+  // load. See features/education/media/authLoad.ts.
+  const authReady = useStudyMediaAuthReady();
   const getWriteHandlers = () => ({ ...collectionWriteHandlers({
     plural: "memory_aids", singular: "memory aid",
     create: {
@@ -147,6 +154,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
   };
 
   useEffect(() => {
+    if (!authReady) return undefined;
     let active = true;
     queueMicrotask(() => {
       if (!active) return;
@@ -161,7 +169,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
     return () => {
       active = false;
     };
-  }, [mediaId, reloadKey]);
+  }, [mediaId, reloadKey, authReady]);
 
   async function handleDelete() {
     if (!media) return;
