@@ -141,6 +141,12 @@ if (PHASE === "before") {
   });
   step("show-everything fold present", { present: (await page.getByText(/Show everything/i).count()) > 0 });
   step("tables under the default", await tablesListing());
+  step("organization groups", {
+    groups: (await page.locator('[data-hub-listing="tables"] [data-hub-organization-group]').evaluateAll((els) =>
+      els.map((e) => e.getAttribute("data-hub-organization-group")),
+    )).slice(0, 6),
+    count: await page.locator('[data-hub-listing="tables"] [data-hub-organization-group]').count(),
+  });
   await shot("01-home-default-all");
 
   const kindValues = await page.locator("[data-hub-kind] option").evaluateAll((os) => os.map((o) => o.value));
