@@ -46,6 +46,8 @@ interface MobileDrawerSurfaceProps {
    * a short form no longer sits on a band of empty sheet.
    */
   sizeToContent?: boolean;
+  /** No title-row ✕: the drag handle and the window's own Cancel dismiss it. */
+  hideClose?: boolean;
   /**
    * Whether the sidebar should collapse into a nested drawer when the user
    * taps the sidebar toggle. When "inline", the sidebar pushes the body
@@ -66,6 +68,7 @@ export default function MobileDrawerSurface({
   bodyClassName,
   surfaceLayer,
   sizeToContent = false,
+  hideClose = false,
   sidebarAs = "drawer",
 }: MobileDrawerSurfaceProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -108,17 +111,19 @@ export default function MobileDrawerSurface({
                 <SidebarIcon className="w-4 h-4" />
               </Button>
             )}
-            <DrawerClose asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </DrawerClose>
+            {hideClose ? null : (
+              <DrawerClose asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </DrawerClose>
+            )}
           </div>
         </div>
 

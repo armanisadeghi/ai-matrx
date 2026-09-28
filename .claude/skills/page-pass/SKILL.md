@@ -271,6 +271,7 @@ surface). Say which parts you judged as authored content.
   never landing inside a non-editable piece, Home/End/Enter at the edges, and
   the standard field toolbar (voice and the page-agent door). Test each one
   live by typing — every one of these failed on first build.
+- **A Stop / Cancel / Undo is proven by the server's state, not the client's.** Stopping a run means the server stops generating (reopen it: no finished answer), not that the screen hid it; after a stop the screen says "Stopped" and offers the next step.
 - **A control's saved value must change what it claims to change.** Prove it
   by the effect (switch the model off → it is gone from the picker), never by
   the saved row alone: a settings switch once wrote a list nothing read.

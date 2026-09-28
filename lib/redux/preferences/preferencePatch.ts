@@ -113,41 +113,14 @@ export function applyPreferenceChanges(
   return next;
 }
 
-interface PreferencesRow {
+export interface PreferencesRow {
   user_id: string;
   version: number;
   preferences: unknown;
 }
 
-const ROW_COLUMNS = "user_id, version, preferences";
-
-/**
- * The minimal client surface this needs — `supabase.schema("users")` from
- * `@/utils/supabase/client` satisfies it. Kept structural so the guard test
- * can hand it an in-memory row.
- */
-export interface PreferencesTableClient {
-  from(table: "user_preferences"): {
-    select(columns: string): {
-      eq(column: "user_id", value: string): {
-        abortSignal(signal: AbortSignal): {
-          maybeSingle(): PromiseLike<MaybeSingleResponse<PreferencesRow>>;
-        };
-      };
-    };
-    update(values: { preferences: JsonObject; version: number }): {
-      eq(column: "user_id", value: string): {
-        eq(column: "version", value: number): {
-          select(columns: string): {
-            abortSignal(signal: AbortSignal): {
-              maybeSingle(): PromiseLike<MaybeSingleResponse<PreferencesRow>>;
-            };
-          };
-        };
-      };
-    };
-  };
-}
+/** The columns both queries select. */
+export const PREFERENCES_ROW_COLUMNS = "user_id, version, preferences";
 
 export type PreferencePatchOutcome =
   | { status: "unchanged" }
@@ -159,36 +132,31 @@ export type PreferencePatchOutcome =
  * base, and sends the same changes again with the next save.
  */
 export async function savePreferencePatch(args: {
-  db: PreferencesTableClient;
-  userId: string;
   base: unknown;
   body: unknown;
   modules: readonly string[];
-  signal: AbortSignal;
+  /** Read the row by `user_id` alone, selecting `PREFERENCES_ROW_COLUMNS`, `.maybeSingle()`. */
+  fetchCurrent: () => PromiseLike<MaybeSingleResponse<PreferencesRow>>;
+  /**
+   * The guarded UPDATE: `{ preferences: value, version: nextVersion }`,
+   * `.eq("user_id", …).eq("version", expectedVersion)`, selecting
+   * `PREFERENCES_ROW_COLUMNS`, `.maybeSingle()`.
+   */
+  applyUpdate: (next: {
+    value: JsonObject;
+    expectedVersion: number;
+    nextVersion: number;
+  }) => PromiseLike<MaybeSingleResponse<PreferencesRow>>;
 }): Promise<PreferencePatchOutcome> {
-  const { db, userId, base, body, modules, signal } = args;
+  const { base, body, modules, fetchCurrent, applyUpdate } = args;
   const changes = diffPreferences(base, body, modules);
   if (changes.length === 0) return { status: "unchanged" };
 
   const result = await mergeJsonColumn<PreferencesRow>({
-    fetchCurrent: () =>
-      db
-        .from("user_preferences")
-        .select(ROW_COLUMNS)
-        .eq("user_id", userId)
-        .abortSignal(signal)
-        .maybeSingle(),
+    fetchCurrent,
     readColumn: (row) => row.preferences,
     merge: (current) => applyPreferenceChanges(asJsonObject(current), changes),
-    applyUpdate: ({ value, expectedVersion, nextVersion }) =>
-      db
-        .from("user_preferences")
-        .update({ preferences: value, version: nextVersion })
-        .eq("user_id", userId)
-        .eq("version", expectedVersion)
-        .select(ROW_COLUMNS)
-        .abortSignal(signal)
-        .maybeSingle(),
+    applyUpdate,
   });
 
   switch (result.status) {

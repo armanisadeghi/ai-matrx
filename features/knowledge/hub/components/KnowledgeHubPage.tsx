@@ -451,10 +451,11 @@ export function KnowledgeHubPage({
       : presetSavedView;
   // The open view's OWN filters never show as removable chips — its name already says
   // them. A saved view is the person's own filter set, so its filters stay visible.
-  const viewOwnQuery =
-    state.view.kind === "saved"
-      ? undefined
-      : selectionQuery(state.view, state.view.kind === "preset" ? presetDef : null).query;
+  const viewBaseQuery = selectionQuery(
+    state.view,
+    state.view.kind === "preset" ? presetDef : state.view.kind === "saved" ? (openSavedView?.definition ?? null) : null,
+  ).query;
+  const viewOwnQuery = state.view.kind === "saved" ? undefined : viewBaseQuery;
   const dirty = openSavedView ? viewIsDirty(openSavedView.definition, { query: state.query, layout: state.layout }) : false;
   // `library:*` waits on the libraries read; when that read FAILED it must say
   // so — "pending" forever ("Reading your libraries…") or "no libraries" are
@@ -498,6 +499,9 @@ export function KnowledgeHubPage({
         .reduce((n, s) => n + (s.section?.count ?? 0), 0)
     : undefined;
 
+  // The person narrowed the view beyond its own definition (the empty sentence says "these filters").
+  const viewFiltered =
+    JSON.stringify(normalizeQuery(state.query)) !== JSON.stringify(normalizeQuery(viewBaseQuery));
   // "24 of 180" while more pages wait; "3 matching" when facets or Stage narrow the loaded rows.
   const narrowed = hits.length !== baseHits.length;
   const resultNoun = transcriptsView ? "transcript" : "item";
@@ -1492,7 +1496,13 @@ export function KnowledgeHubPage({
               <TranscriptFacetBar
                 counts={transcriptFacetCounts(baseHits, transcriptFacts.factFor)}
                 selection={facetSel}
-                ready={transcriptFacts.status !== "loading" && transcriptFacts.status !== "idle"}
+                // Idle = nothing to read (no transcript rows, or Sample data): ready once the rows have answered.
+                ready={
+                  transcriptFacts.status === "loading"
+                    ? false
+                    : transcriptFacts.status !== "idle" ||
+                      (results.sections.length > 0 && results.sections.every((s) => s.status !== "loading"))
+                }
                 onChange={(next) => write({ group: facetSelectionToGroup(next, state.group) }, { replace: true })}
                 note={
                   hasFacetSelection(facetSel) && moreToLoad
@@ -1600,19 +1610,14 @@ export function KnowledgeHubPage({
             sections={triageView ? triageSections : state.view.kind === "favorites" ? [] : results.sections}
             hits={hits}
             handlers={handlers}
-            emptySentence={emptySentence(
-              state.view,
-              title,
-              JSON.stringify(normalizeQuery(state.query)) !==
-                JSON.stringify(normalizeQuery(selectionQuery(state.view).query)),
-            )}
+            emptySentence={emptySentence(state.view, title, viewFiltered)}
             onShowMore={triageView ? triage.showMore : results.showMore}
             onRetry={triageView ? triage.refresh : results.retry}
             stage={stageColumn}
             emptyExtra={
               state.view.kind === "everything" && !sample ? (
                 <HubGettingStarted />
-              ) : transcriptsView && !hasFacetSelection(facetSel) ? (
+              ) : transcriptsView && !viewFiltered && !hasFacetSelection(facetSel) ? (
                 <Button asChild size="sm" className="h-8 gap-1.5">
                   <Link href="/transcripts/new">
                     <Plus className="h-4 w-4" /> Record, upload or paste a transcript

@@ -88,6 +88,11 @@ export const MAX_COLUMN_WIDTH_PX = 1200;
 
 export type TableViewDefaults = {
   pageSize: number;
+  /**
+   * The table's own default sort (DATA-V2-BASICS-2 F10). A view sorted this way writes no `sort`:
+   * opening a table used to put `?sort=account.asc` into the address on its own.
+   */
+  sort?: { field: string; direction: SortDirection } | null;
 };
 
 /** Query-string keys this module owns. Nothing else may write them. */
@@ -243,9 +248,11 @@ export function tableViewParamPatch(
 
   return {
     q: state.search.trim() === "" ? null : state.search,
-    sort: state.sortField
-      ? `${state.sortField}.${state.sortDirection}`
-      : null,
+    sort:
+      !state.sortField ||
+      (defaults.sort?.field === state.sortField && (defaults.sort?.direction ?? "asc") === state.sortDirection)
+        ? null
+        : `${state.sortField}.${state.sortDirection}`,
     f: hasFilters ? JSON.stringify(active) : null,
     p: state.page > 1 ? String(state.page) : null,
     ps: state.pageSize === defaults.pageSize ? null : String(state.pageSize),

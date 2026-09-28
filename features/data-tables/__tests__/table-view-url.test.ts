@@ -284,3 +284,16 @@ describe("column visibility and order", () => {
     expect(parseFieldNameList(null)).toEqual([]);
   });
 });
+
+describe("the table's own default sort is never written into the address (DATA-V2-BASICS-2 F10)", () => {
+  // Harbor Dental's "Insurance Plan Accounts" opens sorted by its default (Account, A→Z); opening it
+  // wrote `?sort=account.asc` into the address, so every link carried noise that meant nothing.
+  const WITH_DEFAULT = { pageSize: 20, sort: { field: "account", direction: "asc" as const } };
+  it("sorted the table's default way: no sort parameter", () => {
+    expect(tableViewParamPatch(baseState({ sortField: "account", sortDirection: "asc" }), WITH_DEFAULT).sort).toBeNull();
+  });
+  it("sorted any other way: the sort is written", () => {
+    expect(tableViewParamPatch(baseState({ sortField: "account", sortDirection: "desc" }), WITH_DEFAULT).sort).toBe("account.desc");
+    expect(tableViewParamPatch(baseState({ sortField: "status", sortDirection: "asc" }), WITH_DEFAULT).sort).toBe("status.asc");
+  });
+});

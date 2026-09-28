@@ -4,6 +4,8 @@
 import {
   CHIP_ATTR,
   chipContaining,
+  clampBeforeSentinel,
+  hasContentAfterSentinel,
   hasUnrenderedField,
   needsTrailingLine,
   pointAtStoredOffset,
@@ -104,5 +106,22 @@ describe("merge-field DOM", () => {
     const chip = root.querySelector(`[${CHIP_ATTR}]`) as HTMLElement;
     expect(chipContaining(root, chip.firstChild)).toBe(chip);
     expect(chipContaining(root, root)).toBeNull();
+  });
+
+  it("never lets the caret sit past the filler <br> (Cmd/Ctrl+End)", () => {
+    const root = drawn("{{reply.body}}\n");
+    const n = root.childNodes.length; // chip, "\n", <br sentinel>
+    expect(clampBeforeSentinel(root, root, n)).toEqual({ node: root, offset: n - 1 });
+    expect(clampBeforeSentinel(root, root.lastChild as Node, 0)).toEqual({ node: root, offset: n - 1 });
+    expect(clampBeforeSentinel(root, root, n - 1)).toBeNull();
+    expect(clampBeforeSentinel(drawn("plain"), drawn("plain"), 1)).toBeNull();
+  });
+
+  it("notices text typed after the filler <br> so it is redrawn, never saved as an extra line", () => {
+    const root = drawn("{{reply.body}}\n");
+    expect(hasContentAfterSentinel(root)).toBe(false);
+    root.appendChild(document.createTextNode("x"));
+    expect(hasContentAfterSentinel(root)).toBe(true);
+    expect(serializeFrom(root)).toBe("{{reply.body}}\nx");
   });
 });

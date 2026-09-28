@@ -648,7 +648,17 @@ const UserTableViewer = ({
     applyViewState,
     resetView,
     isViewCustomized,
-  } = useTableViewUrlState({ defaultPageSize: 20, resetKey: tableId });
+  } = useTableViewUrlState({
+    defaultPageSize: 20,
+    resetKey: tableId,
+    // The table's own default sort writes no `sort` into the address (DATA-V2-BASICS-2 F10).
+    defaultSort: tableInfo?.row_ordering_config?.default_sort
+      ? {
+          field: tableInfo.row_ordering_config.default_sort.field,
+          direction: tableInfo.row_ordering_config.default_sort.direction ?? "asc",
+        }
+      : null,
+  });
 
   // ─── Column resizing (features/data-tables/table-view-url.ts `widths`) ────
   // Drag a header's right edge. The width is painted straight onto the header

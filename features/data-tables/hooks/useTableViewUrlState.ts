@@ -103,10 +103,17 @@ export function useTableViewUrlState(options: {
    * row. The URL is cleared when this changes.
    */
   resetKey?: string;
+  /** The table's own default sort: a view sorted this way writes no `sort` (F10). */
+  defaultSort?: { field: string; direction: SortDirection } | null;
 }): TableViewUrlState {
+  const defaultSortField = options.defaultSort?.field ?? null;
+  const defaultSortDirection = options.defaultSort?.direction ?? "asc";
   const defaults = useMemo(
-    () => ({ pageSize: options.defaultPageSize ?? 20 }),
-    [options.defaultPageSize],
+    () => ({
+      pageSize: options.defaultPageSize ?? 20,
+      sort: defaultSortField ? { field: defaultSortField, direction: defaultSortDirection } : null,
+    }),
+    [options.defaultPageSize, defaultSortField, defaultSortDirection],
   );
 
   // The whole two-way mirror is `useMirroredUrlState` — the canonical

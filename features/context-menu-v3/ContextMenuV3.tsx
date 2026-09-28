@@ -453,6 +453,18 @@ export function ContextMenuV3({
   const captureContext = (target: HTMLElement, containerEl: HTMLElement) => {
     resolvePerTargetContext(target);
     let captured = capturedSelection.current;
+    // A selection made somewhere ELSE is not what this right-click is about:
+    // the Subject field's menu headed itself with the Message's selected text
+    // (page-pass 2026-09-27). Keep a remembered selection only when it lies in
+    // the field under the pointer (or, outside any field, in this menu's own
+    // region); otherwise read afresh from the target.
+    const scopeEl: Node =
+      target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement
+        ? target
+        : (target.closest('[contenteditable="true"], [contenteditable=""]') ?? containerEl);
+    if (captured?.range && !scopeEl.contains(captured.range.commonAncestorContainer)) {
+      captured = null;
+    }
     if (!captured || !captured.text) {
       captured =
         target instanceof HTMLTextAreaElement ||

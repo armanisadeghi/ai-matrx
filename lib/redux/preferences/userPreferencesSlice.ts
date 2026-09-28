@@ -13,7 +13,7 @@ import {
 import type { CatalogVoice } from "@/features/audio/service/engines";
 import type { TableViewSnapshot } from "@ai-matrx/design-system/data-table";
 import { definePolicy } from "@/lib/sync/policies/define";
-import { savePreferencePatch } from "./preferencePatch";
+import { PREFERENCES_ROW_COLUMNS, savePreferencePatch } from "./preferencePatch";
 import {
   REHYDRATE_ACTION_TYPE,
   type RehydrateAction,
@@ -1998,13 +1998,25 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       // record back over every newer change (2026-09-27, an agent's
       // default-organization write reverted 15s later). Guard:
       // lib/redux/preferences/__tests__/preference-writes-never-clobber.test.ts
+      const table = () => supabase.schema("users").from("user_preferences");
       await savePreferencePatch({
-        db: supabase.schema("users"),
-        userId: identity.userId,
         base,
         body,
         modules: PREFERENCE_MODULE_KEYS,
-        signal,
+        fetchCurrent: () =>
+          table()
+            .select(PREFERENCES_ROW_COLUMNS)
+            .eq("user_id", identity.userId)
+            .abortSignal(signal)
+            .maybeSingle(),
+        applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+          table()
+            .update({ preferences: value, version: nextVersion })
+            .eq("user_id", identity.userId)
+            .eq("version", expectedVersion)
+            .select(PREFERENCES_ROW_COLUMNS)
+            .abortSignal(signal)
+            .maybeSingle(),
       });
     },
   },

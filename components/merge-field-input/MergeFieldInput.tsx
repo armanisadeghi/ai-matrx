@@ -37,6 +37,8 @@ import type { ProTextareaEditorHandle } from "@/components/official/pro-textarea
 import { MergeFieldHistory, historyKey, type HistoryKind } from "./merge-field-history";
 import {
   chipContaining,
+  clampBeforeSentinel,
+  hasContentAfterSentinel,
   hasUnrenderedField,
   needsTrailingLine,
   pointAtStoredOffset,
@@ -168,9 +170,36 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
       // own undo step.
       const chipped = hasUnrenderedField(root);
       const redraw =
-        chipped || needsTrailingLine(root) || (!multiline && text !== serializeFrom(root));
+        chipped ||
+        needsTrailingLine(root) ||
+        hasContentAfterSentinel(root) ||
+        (!multiline && text !== serializeFrom(root));
       commit(text, caret, chipped ? "hard" : kind, redraw);
     };
+
+    /** Keep the caret before the filler <br> (Cmd/Ctrl+End, a click below the text). */
+    const keepCaretBeforeSentinel = () => {
+      const root = rootRef.current;
+      const sel = window.getSelection();
+      if (!root || !sel || sel.rangeCount === 0 || !sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      if (!root.contains(range.startContainer)) return;
+      const fixed = clampBeforeSentinel(root, range.startContainer, range.startOffset);
+      if (!fixed) return;
+      const next = document.createRange();
+      next.setStart(fixed.node, fixed.offset);
+      next.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(next);
+    };
+
+    useEffect(() => {
+      const onSelectionChange = () => {
+        if (document.activeElement === rootRef.current) keepCaretBeforeSentinel();
+      };
+      document.addEventListener("selectionchange", onSelectionChange);
+      return () => document.removeEventListener("selectionchange", onSelectionChange);
+    }, []);
 
     /**
      * A caret must never sit inside a chip: the browser would put typed text
@@ -194,6 +223,7 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
 
     const insertText = (text: string) => {
       keepCaretOutOfChips();
+      keepCaretBeforeSentinel();
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0) return;
       const range = sel.getRangeAt(0);
@@ -287,6 +317,7 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
         }}
         onKeyUp={() => {
           keepCaretOutOfChips();
+          keepCaretBeforeSentinel();
           caretRef.current = currentCaret();
         }}
         onMouseUp={() => {
@@ -321,6 +352,7 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
             }
           }
           keepCaretOutOfChips();
+          keepCaretBeforeSentinel();
           if (e.key === "Enter") {
             e.preventDefault();
             if (multiline) {

@@ -184,6 +184,13 @@ const FEEDBACK_TYPE_CHIPS: Record<
 };
 
 /**
+ * Every layer the window renders — the desktop window AND the phone sheet
+ * both carry the surface marker — plus the phone sheet's dimming overlay, so
+ * a capture shows the page, not the feedback form over it.
+ */
+const FEEDBACK_CAPTURE_HIDE = `[data-surface-layer="${FEEDBACK_SURFACE_NAME}"], [data-vaul-overlay], [vaul-overlay]`;
+
+/**
  * The address bar as the page's own URL — minus `panels=`, the window
  * manager's record of which windows are open (this one included).
  */
@@ -294,6 +301,10 @@ export function FeedbackWindow({
         // button, the first toolbar) never sits in; it grows upward.
         position="bottom-right"
         mobileSizeToContent
+        // The phone sheet is dismissed by its handle or Cancel — no third ✕.
+        mobileHideClose
+        // The draft is kept, so Escape closing the window loses nothing.
+        closeOnEscape
         urlSyncKey="feedback"
         urlSyncId="default"
         className="feedback-window-panel"
@@ -531,7 +542,7 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
   const openImageAnnotation = useOpenImageAnnotationWindow();
 
   const { captureTab, captureScreen, isCapturing } = useScreenCapture({
-    hideSelectors: [".feedback-window-panel"],
+    hideSelectors: [FEEDBACK_CAPTURE_HIDE],
   });
 
   const addFiles = useCallback((files: FileList | File[] | null) => {
@@ -547,13 +558,13 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
   const handleTabCapture = useCallback(async () => {
     try {
       const { file } = await captureTab({
-        ignoreSelector: ".feedback-window-panel",
+        ignoreSelector: FEEDBACK_CAPTURE_HIDE,
       });
       addFiles([file]);
     } catch (err) {
       const name = err instanceof Error ? err.name : "";
       if (name !== "NotAllowedError" && name !== "AbortError")
-        toast.error("Tab capture failed — try Screen Capture instead");
+        toast.error("Couldn't capture this tab — try Screen instead.");
     }
   }, [captureTab, addFiles]);
 
@@ -856,6 +867,15 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
         feedback_type: feedbackType,
         route: where.address,
         content: description,
+        attachments: attachments.map((a) =>
+          a.status === "ready"
+            ? { name: a.filename ?? "file", type: "file", state: "attached", file_id: a.fileId }
+            : {
+                name: a.filename,
+                type: a.file.type || "file",
+                state: a.status === "pending" ? "uploading" : "on this device",
+              },
+        ),
         attachment_count: attachments.length,
         submitted,
         submitted_item_id: submittedItem?.id,
@@ -869,7 +889,7 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
       feedbackType,
       where.address,
       description,
-      attachments.length,
+      attachments,
       submitted,
       submittedItem,
       error,
@@ -1424,7 +1444,8 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             e.target.value = "";
           }}
         />
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* One row of four on desktop, two even rows on a phone. */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 [&>button]:min-w-0">
           <Button
             type="button"
             variant="outline"
@@ -1443,7 +1464,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             disabled={isSubmitting}
           >
             <Clipboard />
-            Paste Image
+            Paste
           </Button>
           <Button
             type="button"
@@ -1451,10 +1472,10 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             size="sm"
             onClick={handleTabCapture}
             disabled={isSubmitting || isCapturing}
-            title="Capture this tab's content instantly (no picker)"
+            title="Capture this tab — the page behind this window"
           >
             <Camera />
-            Tab Capture
+            This tab
           </Button>
           {canCaptureScreen ? (
             <Button
@@ -1463,17 +1484,19 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               size="sm"
               onClick={handleScreenCapture}
               disabled={isSubmitting || isCapturing}
-              title="Select any window or screen to capture (browser picker)"
+              title="Capture another window or screen (your browser asks which)"
             >
               <Monitor />
-              Screen Capture
+              Screen
             </Button>
           ) : null}
         </div>
 
         {attachments.some((a) => a.status === "ready" || a.previewUrl) && (
           <p className="text-xs text-muted-foreground">
-            Click an image to draw, circle, or write on it.
+            <span className="pointer-coarse:hidden">Click</span>
+            <span className="hidden pointer-coarse:inline">Tap</span> an image
+            to draw, circle, or write on it.
           </p>
         )}
         {attachments.length > 0 && (

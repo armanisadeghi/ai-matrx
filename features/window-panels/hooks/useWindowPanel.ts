@@ -166,9 +166,11 @@ export function resolvePosition(
     case "bottom-right":
       return { x: Math.max(0, vw - w - pad), y: Math.max(0, vh - h - pad) };
     case "center":
+      // Centred, but never under the shell header (a tall window centred on
+      // a short screen used to open at y=20, its title bar behind the header).
       return {
         x: Math.max(0, (vw - w) / 2),
-        y: Math.max(0, (vh - h) / 4),
+        y: Math.max(top, (vh - h) / 4),
       };
     default: {
       const cascade = nextCascadeStep();

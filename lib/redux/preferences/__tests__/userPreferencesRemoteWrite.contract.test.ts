@@ -7,7 +7,7 @@ describe("user preferences remote-write ownership", () => {
     "utf8",
   );
   const start = source.indexOf("write: async ({ identity, signal, body, base })");
-  const writeBoundary = source.slice(start, source.indexOf("\n    },", start));
+  const writeBoundary = source.slice(start, source.indexOf("\n    },\n  },", start));
   const patchSource = fs.readFileSync(
     path.join(process.cwd(), "lib/redux/preferences/preferencePatch.ts"),
     "utf8",
@@ -26,7 +26,7 @@ describe("user preferences remote-write ownership", () => {
   test("never writes the whole cached record — only the changed keys, merged under CAS", () => {
     expect(writeBoundary).not.toContain(".update({ preferences: body })");
     expect(patchSource).toContain("mergeJsonColumn<PreferencesRow>(");
-    expect(patchSource).toContain('.eq("version", expectedVersion)');
+    expect(writeBoundary).toContain('.eq("version", expectedVersion)');
   });
 
   test("propagates PostgREST failures and a missing row instead of silently accepting them", () => {

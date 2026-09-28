@@ -19,7 +19,7 @@
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Save, ShieldAlert, X, Zap } from "lucide-react";
+import { Loader2, Save, ShieldAlert, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,13 @@ export function AnnotateModeShell({
   const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const markerAreaRef = useRef<unknown>(null);
+  // The editor's close listener is attached once; read the latest props.
+  const onCancelRef = useRef(onCancel);
+  const presentationRef = useRef(presentation);
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+    presentationRef.current = presentation;
+  });
   const [saving, setSaving] = useState(false);
   const [aiBusy, setAiBusy] = useState<null | "redact" | "faces">(null);
 
@@ -98,11 +105,17 @@ export function AnnotateModeShell({
     ma.targetRoot = containerRef.current;
     ma.settings.displayMode = "inline";
     ma.uiStyleSettings.zIndex = "30";
+    let rendered = false;
     ma.addEventListener("render", (event: RenderEvent) => {
+      rendered = true; // ✓ — the editor closes itself next; that is a save
       void persist(event.dataUrl);
     });
     ma.addEventListener("close", () => {
       markerAreaRef.current = null;
+      // The editor's own ✕ is THE way out: in a modal/window it closes the
+      // host too (it used to leave a bare image with no editor, and a second
+      // "Cancel" beside ✓/✕ — page-pass 2026-09-27).
+      if (!rendered && presentationRef.current === "modal") onCancelRef.current?.();
     });
     ma.show();
     markerAreaRef.current = ma;
@@ -254,18 +267,6 @@ export function AnnotateModeShell({
 
           <div className="flex-1" />
 
-          {presentation === "modal" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={onCancel}
-              disabled={saving}
-            >
-              <X className="h-3.5 w-3.5 mr-1.5" />
-              Cancel
-            </Button>
-          )}
         </div>
 
         <div ref={containerRef} className="flex-1 min-h-0 relative bg-muted/30">

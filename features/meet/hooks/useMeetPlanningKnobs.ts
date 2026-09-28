@@ -80,6 +80,7 @@ export function useMeetPlanningKnobs(
   const [state, setState] = useState<MeetPlanningKnobs>(PLANNING_DEFAULTS);
   const [nonce, setNonce] = useState(0);
   const writeGeneration = useRef(0);
+  const pendingWrites = useRef(0);
 
   useEffect(() => {
     if (userId === null) return undefined;
@@ -94,7 +95,12 @@ export function useMeetPlanningKnobs(
       });
     void Promise.all(KEYS.map(read)).then(
       ([show, start, end, days, step, count, horizon]) => {
-        if (!live || readGeneration !== writeGeneration.current) return;
+        if (
+          !live ||
+          pendingWrites.current > 0 ||
+          readGeneration !== writeGeneration.current
+        )
+          return;
         const failure = [show, start, end, days, step, count, horizon].find(
           (result) => result.error,
         )?.error;
@@ -140,18 +146,25 @@ export function useMeetPlanningKnobs(
         throw new Error("Choose an organization to save this setting.");
       }
       writeGeneration.current += 1;
+      pendingWrites.current += 1;
       setState((s) => ({ ...s, showExternalEvents: show, failure: null }));
-      const result = await setKnobOverride({
-        feature: "meet",
-        key: "show_external_calendar_events",
-        scopeKind: "user",
-        scopeId: userId,
-        organizationId: resolvedOrganizationId,
-        value: show,
-      });
-      if (!result.ok) {
+      try {
+        const result = await setKnobOverride({
+          feature: "meet",
+          key: "show_external_calendar_events",
+          scopeKind: "user",
+          scopeId: userId,
+          organizationId: resolvedOrganizationId,
+          value: show,
+        });
+        if (!result.ok) throw new Error(knobRefusalSentence(result));
+      } finally {
+        pendingWrites.current -= 1;
+        // Any read begun while the save was in flight is stale even if the
+        // organization rerendered after the save began. Start a fresh read
+        // once the authoritative write has settled.
+        writeGeneration.current += 1;
         setNonce((n) => n + 1);
-        throw new Error(knobRefusalSentence(result));
       }
     },
   };

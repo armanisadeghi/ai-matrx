@@ -182,3 +182,35 @@ export function chipContaining(root: HTMLElement, node: Node | null): HTMLElemen
   }
   return null;
 }
+
+/** The trailing filler <br> drawn by `renderInto`, when there is one. */
+function sentinelOf(root: HTMLElement): HTMLElement | null {
+  const last = root.lastChild;
+  return last instanceof HTMLElement && last.hasAttribute(SENTINEL_ATTR) ? last : null;
+}
+
+/**
+ * A caret must never sit past the filler <br>: Cmd/Ctrl+End puts it there,
+ * and text typed there draws on a line that is not in the stored text
+ * (page-pass 2026-09-27). Returns the corrected point, or null when the
+ * point is already fine.
+ */
+export function clampBeforeSentinel(
+  root: HTMLElement,
+  node: Node,
+  offset: number,
+): { node: Node; offset: number } | null {
+  const sentinel = sentinelOf(root);
+  if (!sentinel) return null;
+  const index = Array.prototype.indexOf.call(root.childNodes, sentinel) as number;
+  if (node === root && offset > index) return { node: root, offset: index };
+  if (node === sentinel) return { node: root, offset: index };
+  return null;
+}
+
+/** True when something was typed after the filler <br> (it must be redrawn). */
+export function hasContentAfterSentinel(root: HTMLElement): boolean {
+  const kids = Array.from(root.childNodes);
+  const i = kids.findIndex((n) => n instanceof HTMLElement && n.hasAttribute(SENTINEL_ATTR));
+  return i >= 0 && i < kids.length - 1;
+}

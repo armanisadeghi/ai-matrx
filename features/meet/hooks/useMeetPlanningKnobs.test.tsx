@@ -1,8 +1,19 @@
 import { renderHook, settle } from "@/test-utils/renderHook";
+import * as React from "react";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { useMeetPlanningKnobs } from "./useMeetPlanningKnobs";
 
 const rpc = jest.fn();
 const setKnobOverride = jest.fn();
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema: jest.fn(() => ({ rpc })) },
@@ -85,4 +96,114 @@ describe("useMeetPlanningKnobs", () => {
     );
     await hook.unmount();
   });
+
+  it("keeps an optimistic save when the settings read started before that save finishes", async () => {
+    const reads = Array.from({ length: 7 }, () =>
+      deferred<{ data: null; error: null }>(),
+    );
+    let nextRead = 0;
+    rpc.mockImplementation(() => {
+      const read = reads[nextRead++];
+      if (!read) throw new Error("Unexpected extra planning read.");
+      return read.promise;
+    });
+    setKnobOverride.mockResolvedValue({ ok: true });
+
+    const hook = await renderHook(() =>
+      useMeetPlanningKnobs("org-recycling", "member-73"),
+    );
+    await hook.act(async () => {
+      await Promise.resolve();
+    });
+    expect(rpc).toHaveBeenCalledTimes(7);
+
+    // The post-save refresh is not part of the old, already-started read.
+    rpc.mockResolvedValue({ data: false, error: null });
+    await hook.act(() => hook.current.setShowExternalEvents(false));
+    expect(hook.current.showExternalEvents).toBe(false);
+
+    await hook.act(async () => {
+      reads.forEach((read) => read.resolve({ data: null, error: null }));
+      await Promise.all(reads.map((read) => read.promise));
+    });
+
+    expect(hook.current).toMatchObject({
+      showExternalEvents: false,
+      failure: null,
+    });
+    await hook.unmount();
+  });
+
+  it("keeps an optimistic save while the selected organization starts a read before that save settles", async () => {
+    const write = deferred<{ ok: true }>();
+    setKnobOverride.mockReturnValue(write.promise);
+    rpc.mockResolvedValue({ data: null, error: null });
+
+    let latest!: ReturnType<typeof useMeetPlanningKnobs>;
+    let selectOrganization!: (id: string) => void;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    let root!: Root;
+    function Probe() {
+      const [organizationId, setOrganizationId] = React.useState<string | null>(
+        null,
+      );
+      latest = useMeetPlanningKnobs(organizationId, "member-73");
+      selectOrganization = setOrganizationId;
+      return null;
+    }
+
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<Probe />);
+    });
+    await waitForPlanning(() => latest.loaded);
+
+    let saving!: Promise<void>;
+    await act(async () => {
+      saving = latest.setShowExternalEvents(false, "org-recycling");
+      await Promise.resolve();
+    });
+    expect(latest.showExternalEvents).toBe(false);
+
+    const staleReads = Array.from({ length: 7 }, () =>
+      deferred<{ data: boolean; error: null }>(),
+    );
+    let nextRead = 0;
+    rpc.mockImplementation(() => {
+      const read = staleReads[nextRead++];
+      if (!read) throw new Error("Unexpected extra planning read.");
+      return read.promise;
+    });
+    await act(async () => {
+      selectOrganization("org-recycling");
+    });
+    expect(rpc).toHaveBeenCalledTimes(14);
+
+    await act(async () => {
+      staleReads.forEach((read) => read.resolve({ data: true, error: null }));
+      await Promise.all(staleReads.map((read) => read.promise));
+    });
+    expect(latest.showExternalEvents).toBe(false);
+
+    rpc.mockResolvedValue({ data: false, error: null });
+    await act(async () => {
+      write.resolve({ ok: true });
+      await saving;
+    });
+    await waitForPlanning(() => latest.loaded && !latest.showExternalEvents);
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
 });
+
+async function waitForPlanning(predicate: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (predicate()) return;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  }
+  throw new Error("Timed out waiting for planning settings.");
+}

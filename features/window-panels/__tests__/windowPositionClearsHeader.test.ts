@@ -30,3 +30,9 @@ describe("window open position vs the shell header", () => {
     expect(resolvePosition("top-right", 480, 420).y).toBe(44 + 12);
   });
 });
+
+it("a centred window taller than the gap never opens under the header", () => {
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+  document.documentElement.style.setProperty("--shell-header-h", "44px");
+  expect(resolvePosition("center", 920, 720).y).toBeGreaterThanOrEqual(44);
+});

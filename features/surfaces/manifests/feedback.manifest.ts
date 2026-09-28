@@ -81,6 +81,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "feedback_form",
   },
   {
+    name: "attachments",
+    label: "Attachments",
+    description:
+      "The attachments on the report, in order: [{ name, type, state }] — `type` is the MIME type (image/png, video/mp4, application/pdf…) or \"file\" for one an agent attached by id; `state` is \"on this device\" (uploads at Submit), \"uploading\" or \"attached\" (a stored file, with its `file_id`). Empty array when there are none. The images' pixels are not included.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 200,
+    sortOrder: 318,
+    group: "feedback_form",
+  },
+  {
     name: "attachment_count",
     label: "Attachment count",
     description:
@@ -285,6 +296,7 @@ export function createFeedbackScope(values: {
   feedback_type: (typeof FEEDBACK_TYPES)[number];
   route: string;
   content: string;
+  attachments: Array<{ name: string; type: string; state: string; file_id?: string }>;
   attachment_count: number;
   submitted: boolean;
   submitted_item_id?: string;

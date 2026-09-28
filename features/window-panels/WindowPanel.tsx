@@ -247,6 +247,15 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
   /** Phone drawer presentation: size the sheet to the content (max 85dvh). */
   mobileSizeToContent?: boolean;
   /**
+   * Escape closes this window when it is the TOPMOST window and nothing above
+   * it (a menu, popover, dialog, the workspace picker) is open to take the
+   * key. Opt in for windows whose close is safe (their draft is kept, or
+   * there is nothing to lose). Desktop only — a phone sheet has its own.
+   */
+  closeOnEscape?: boolean;
+  /** Phone drawer presentation: no title-row ✕ (the handle and the window's own Cancel dismiss it). */
+  mobileHideClose?: boolean;
+  /**
    * Keep the full body mounted offscreen while the window is minimized.
    * Opt in for live/stateful surfaces whose hooks, drafts, streams, or local
    * component state must survive minimize/restore. The default remains false
@@ -412,6 +421,8 @@ export function WindowPanel({
   mobilePresentationOverride,
   surfaceLayer,
   mobileSizeToContent,
+  closeOnEscape = false,
+  mobileHideClose = false,
   minWidth,
   minHeight,
   urlSyncKey,
@@ -761,6 +772,34 @@ export function WindowPanel({
     persistence,
     registryEntry?.instanceMode,
   ]);
+
+  // Escape → close, only for the topmost window with nothing layered above.
+  useEffect(() => {
+    if (!closeOnEscape || isMobile) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      // A menu, popover, select, dialog or the workspace picker owns Escape.
+      if (
+        document.querySelector(
+          '[data-radix-popper-content-wrapper], [role="menu"], [role="listbox"], [role="dialog"][data-state="open"], [role="alertdialog"], [data-organization-gate]',
+        )
+      )
+        return;
+      const mine = document.querySelector<HTMLElement>(
+        `[data-window-panel][data-window-id="${CSS.escape(id)}"]`,
+      );
+      if (!mine) return;
+      const z = (el: Element) => Number(getComputedStyle(el).zIndex) || 0;
+      const top = Array.from(
+        document.querySelectorAll("[data-window-panel][data-window-id]"),
+      ).reduce<Element | null>((best, el) => (!best || z(el) > z(best) ? el : best), null);
+      if (top !== mine) return;
+      e.preventDefault();
+      handleClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [closeOnEscape, isMobile, id, handleClose]);
 
   useEffect(() => {
     if (!restoredPersistence || restoredChromeAppliedRef.current) return;
@@ -1408,6 +1447,7 @@ export function WindowPanel({
           bodyClassName={bodyClassName}
           surfaceLayer={surfaceLayer}
           sizeToContent={mobileSizeToContent}
+          hideClose={mobileHideClose}
         >
           <WindowSelectionSurface>{children}</WindowSelectionSurface>
         </MobileDrawerSurface>
