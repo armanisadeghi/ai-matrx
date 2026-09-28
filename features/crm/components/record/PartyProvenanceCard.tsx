@@ -279,7 +279,7 @@ export function PartyProvenanceCard({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 gap-1.5 text-xs"
+            className="h-7 gap-1 px-2 text-xs"
             disabled={promoting}
             onClick={() => void promote()}
           >

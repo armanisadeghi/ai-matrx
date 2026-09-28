@@ -50,12 +50,15 @@ export function SectionCard({
     >
       <header
         className={cn(
-          "flex min-h-8 flex-wrap items-center gap-x-1.5 px-2.5 py-1 sm:flex-nowrap sm:py-0",
+          "flex min-h-8 items-center gap-x-1.5 px-2.5 py-1 sm:flex-nowrap sm:py-0",
+          // A compact action stays on the title row at every width (the
+          // title truncates first); a wide action may wrap below on a phone.
+          compactAction || empty ? "flex-nowrap" : "flex-wrap",
           !empty && "border-b border-border",
         )}
       >
         <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <h3 className="min-w-0 text-xs font-semibold uppercase tracking-wider text-foreground">
+        <h3 className="min-w-0 truncate text-xs font-semibold uppercase tracking-wider text-foreground">
           {title}
         </h3>
         {count !== undefined && (
