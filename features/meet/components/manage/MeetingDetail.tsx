@@ -75,6 +75,7 @@ import { meetingOrigin } from "@/features/meet/components/invite/MeetingInviteBu
 import { MeetingGuests } from "@/features/meet/components/manage/MeetingGuests";
 import { MeetingRecordWorkspace } from "@/features/meet/components/record/MeetingRecordWorkspace";
 import { RsvpControl } from "@/features/meet/components/manage/RsvpControl";
+import { useMeetingInviteesLive } from "@/features/meet/hooks/useMeetingInviteesLive";
 import { MoveOccurrenceDialog } from "@/features/meet/components/manage/MoveOccurrenceDialog";
 import { useMeetingActionHost } from "@/features/meet/components/manage/useMeetingActionHost";
 import type { OccurrenceRef } from "@/features/meet/components/manage/MeetingFormDialog";
@@ -147,6 +148,8 @@ export function MeetingDetail({
   const [viewerZone] = useState(browserTimeZone);
   const reload = () => setNonce((n) => n + 1);
   const { run, dialogs } = useMeetingActionHost({ onChanged: reload });
+  // An invitee's RSVP lands here live, from any lane (link, app, pre-join).
+  useMeetingInviteesLive(meetingId, reload);
   const repository = actions.repository;
   const isMobile = useIsMobile();
 
