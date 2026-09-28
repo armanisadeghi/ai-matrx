@@ -11,7 +11,7 @@ import { createClient } from "@/utils/supabase/server";
  * Security:
  * - Code is single-use
  * - Expires after 5 minutes
- * - Deleted after use
+ * - A request must atomically claim the live, unused code before it can mint a session
  */
 export async function POST(request: NextRequest) {
   try {
@@ -26,15 +26,15 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Look up code
+    // Read only a live code so a soft-deleted credential can never be exchanged.
     const { data: authCode, error: lookupError } = await supabase
       .schema('extend').from('extension_auth_codes')
       .select('*')
       .eq('code', code)
-      .eq('used', false)
-      .single();
+      .is('deleted_at', null)
+      .maybeSingle();
 
-    if (lookupError || !authCode) {
+    if (lookupError || !authCode || authCode.used) {
       return NextResponse.json(
         { error: 'Invalid or expired code' },
         { status: 401 }
@@ -44,31 +44,37 @@ export async function POST(request: NextRequest) {
     // Check expiration
     const expiresAt = new Date(authCode.expires_at);
     if (expiresAt < new Date()) {
-      // Delete expired code
-      await supabase
-        .schema('extend').from('extension_auth_codes')
-        .delete()
-        .eq('code', code);
-
       return NextResponse.json(
         { error: 'Code has expired' },
         { status: 401 }
       );
     }
 
-    // Mark code as used (prevents reuse)
-    const { error: updateError } = await supabase
+    // This is the one-time credential claim. Reading `used=false` above is not
+    // sufficient: two exchanges can both read it. Only the request whose
+    // conditional update returns a row may proceed to mint a session.
+    const { data: claimedCode, error: claimError } = await supabase
       .schema('extend').from('extension_auth_codes')
       .update({ used: true })
-      .eq('code', code);
+      .eq('code', code)
+      .eq('used', false)
+      .is('deleted_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .select('user_id, expires_at')
+      .maybeSingle();
 
-    if (updateError) {
-      console.error('Error marking code as used:', updateError);
+    if (claimError || !claimedCode) {
+      // Fail closed: a replay, concurrent winner, deletion, expiry, or write
+      // failure never reaches the privileged session-minting branch.
+      return NextResponse.json(
+        { error: 'Invalid or expired code' },
+        { status: 401 }
+      );
     }
 
     // Get user data
     const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(
-      authCode.user_id
+      claimedCode.user_id
     );
 
     if (userError || !user) {
@@ -125,4 +131,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

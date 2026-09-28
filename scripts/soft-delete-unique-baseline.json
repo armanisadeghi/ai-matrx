@@ -349,6 +349,11 @@
       "index": "canvas.canvas_item_state:canvas_item_state_canvas_viewer_key",
       "reason": "(canvas_id, viewer_id) is one durable per-viewer artifact-state identity. canvasItemStateService reads only live rows and its matching upsert writes deleted_at null, deliberately reviving the same row after archive instead of allowing a second history row for one viewer.",
       "ruled": "CI-FIX terminal identity correction, 2026-09-28 — canvasItemStateService reader and revive-on-save writer inspected"
+    },
+    {
+      "index": "extend.extension_auth_codes:extension_auth_codes_code_key",
+      "reason": "code is a generated 128-bit, short-lived extension credential rather than a reusable human name. The full key protects the same credential while its row is retained; it does not claim lifetime non-replay after a physical deletion.",
+      "ruled": "CI-FIX extension exchange correction, 2026-09-28 — generate-code and fail-closed atomic exchange paths inspected"
     }
   ]
 }
