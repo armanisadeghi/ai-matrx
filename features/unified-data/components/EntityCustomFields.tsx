@@ -73,6 +73,9 @@ export function EntityCustomFields({
   // but out of the page's agent offer.
   const dormant = useSurfaceDormant();
   const liveRef = useRef(!dormant);
+  // Registration is consumed during the same render transition; an effect is
+  // one paint late and briefly offers a dormant field door as live.
+  liveRef.current = !dormant;
   useEffect(() => {
     liveRef.current = !dormant;
   });

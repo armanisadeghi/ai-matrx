@@ -516,7 +516,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
         ...(item.disabledReason ? { disabled: true, description: item.disabledReason } : {}),
       })),
     },
-    tabSection(false),
+    ...(standalone ? [] : [tabSection(false)]),
   ];
   function tabSection(primary: boolean): ContextMenuExtraSection {
     return {
@@ -547,7 +547,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
     ...tabExtraSections
       .filter((section) => section.id !== "note-tab")
       .map((section) => (section.id === "note-actions" ? { ...section, label: undefined } : section)),
-    tabSection(true),
+    ...(standalone ? [] : [tabSection(true)]),
   ];
 
   // ONE MENU FOR THE NOTE (R26, ALC-15 round 5). The tab's ⋯ and a right-click
