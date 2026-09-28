@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 534 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 548 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "f00e2d7ec503";
+export const KIND_REGISTRY_FINGERPRINT = "de361286b52d";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -944,6 +944,21 @@ export interface AutopsyOpportunityAssessment {
 }
 
 /**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface BannedStructure {
+  id: string;
+  why?: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  pattern: string;
+  severity?: "block" | "warn";
+  threshold?: string | null;
+}
+
+/**
  * * Shared by 2 kinds (flashcard_set, study_pack_set).
  */
 export interface BasicCard {
@@ -1021,6 +1036,19 @@ export interface BulkItem {
 }
 
 /**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface Cadence {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  sentence_length?: SentenceLengthStats;
+  paragraph_length?: ParagraphStats;
+  rhythm_signature?: "short-burst" | "flowing" | "mixed" | "listy";
+}
+
+/**
  * * From kind `page_keyword_analysis_v1`.
  */
 export interface CannibalizationRisk {
@@ -1048,6 +1076,19 @@ export interface CanonRule {
   action_kind?: string;
   next_action?: string;
   precondition?: string;
+}
+
+/**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface CapitalizationQuirks {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  lowercase_i?: boolean;
+  all_caps_for_emphasis?: "never" | "occasional" | "habitual";
+  sentence_case_headers?: boolean;
 }
 
 /**
@@ -1100,6 +1141,18 @@ export interface ClaimEvidence_ListingDraft {
    */
   __kind?: string;
   source: string;
+}
+
+/**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface CloserSet {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  observed?: string[];
+  banned_from_use?: string[];
 }
 
 /**
@@ -1451,6 +1504,33 @@ export interface CoreFinding {
   importance?: "low" | "medium" | "high";
   finding_type?: "fact" | "claim" | "statistic" | "expert_opinion" | "definition" | "trend" | "example" | "counterpoint";
   supporting_text?: string;
+}
+
+/**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface CorpusTriage {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  warnings?: string[];
+  confidence?: "insufficient" | "low" | "medium" | "high";
+  total_words?: number;
+  sample_count?: number;
+  /**
+   * Share of samples showing two or more named AI tells.
+   */
+  ai_tell_share?: number;
+  /**
+   * True when the samples split into two registers.
+   */
+  register_split?: boolean;
+  /**
+   * Source ids of the samples flagged.
+   */
+  ai_tell_samples?: string[];
+  per_sample_involved?: SampleInvolved[];
 }
 
 /**
@@ -2031,6 +2111,22 @@ export interface ExtractedProduct {
 }
 
 /**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface Extraction {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  triage?: CorpusTriage | null;
+  warnings?: string[];
+  confidence?: "insufficient" | "low" | "medium" | "high";
+  rules_version?: string;
+  baseline_version?: string;
+  extractor_version?: string;
+}
+
+/**
  * One label/value fact (entity cards). HTML converted to text + links.
  *  *
  *  * Shared by 2 kinds (entity_card, serp_placement).
@@ -2401,6 +2497,26 @@ export interface IdentifierReading {
 }
 
 /**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface Idioms {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Candidates for the person to confirm.
+   */
+  signature_words?: string[];
+  /**
+   * Candidates for the person to confirm.
+   */
+  signature_phrases?: string[];
+  hedges_you_never_use?: string[];
+  hedges_you_actually_use?: string[];
+}
+
+/**
  * One visual idea from ``ai.image.concept_generate``.
  *  *
  *  * From kind `image_concepts_result`.
@@ -2728,7 +2844,7 @@ export interface ItemSpecific {
 }
 
 /**
- * * Shared by 70 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 71 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
  */
 export type JsonValue = unknown;
 
@@ -2832,6 +2948,45 @@ export interface LessonScriptSection {
    * Roughly how long this section runs when spoken, in seconds.
    */
   duration_seconds?: number;
+}
+
+/**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface Lexical {
+  /**
+   * Moving-average type-token ratio over a 100-token window.
+   */
+  mattr?: number;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Delta distance above which a draft has drifted.
+   */
+  delta_band?: number;
+  /**
+   * MATTR at windows 25, 50 and 100, so a short draft is compared on a window it can fill.
+   */
+  mattr_by_window?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: number | string | undefined;
+  };
+  baseline_version?: string;
+  /**
+   * Burrows's Delta z-scores of the baseline function words.
+   */
+  function_word_zvector?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: number | string | undefined;
+  };
 }
 
 /**
@@ -3437,6 +3592,43 @@ export interface MathSolutionStep {
 }
 
 /**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface Mechanics {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  contractions?: "yes" | "no" | "mixed";
+  oxford_comma?: "yes" | "no" | "inconsistent" | "unknown";
+  smart_quotes?: "yes" | "no" | "mixed";
+  em_dash_usage?: "never" | "rare" | "habitual";
+  ellipsis_usage?: "never" | "rare" | "habitual";
+  /**
+   * Contracted / (contracted + expanded) contractible pairs.
+   */
+  contraction_rate?: number;
+  /**
+   * never | rare | habitual per mark, by fixed cut-offs (< 0.5 per 1k never, < 3 rare).
+   */
+  punctuation_classes?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: "never" | "rare" | "habitual" | string | undefined;
+  };
+  em_dash_per_1k_words?: number;
+  capitalization_quirks?: CapitalizationQuirks;
+  ellipsis_per_1k_words?: number;
+  semicolon_per_1k_words?: number;
+  parenthesis_per_1k_words?: number;
+  question_rate_per_1k_words?: number;
+  exclamation_rate_per_1k_words?: number;
+  parenthetical_aside_frequency?: "low" | "medium" | "high";
+}
+
+/**
  * * From kind `media_chapters`.
  */
 export interface MediaChapter {
@@ -3739,6 +3931,28 @@ export interface OfficePortionOut {
 }
 
 /**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface OpenerSet {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  observed?: string[];
+  banned_from_use?: string[];
+  /**
+   * Share of sentences by the part of speech of their first token (spaCy).
+   */
+  pos_distribution?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: number | string | undefined;
+  };
+}
+
+/**
  * * From kind `competitor_opportunity_autopsy_v1`.
  */
 export interface OpportunityAssessment {
@@ -3841,6 +4055,21 @@ export interface PageRef {
 }
 
 /**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface ParagraphStats {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Mean sentences per paragraph (blank-line separated).
+   */
+  mean_sentences?: number;
+  one_sentence_paragraph_frequency?: number;
+}
+
+/**
  * Bbox of a detected table on the page (PDF coordinates).
  *  *
  *  * From kind `pdf_table_extraction`.
@@ -3880,6 +4109,23 @@ export interface PerUnitVsLot {
   per_lot_price: Money;
   per_unit_price: Money;
   recommendation: string;
+}
+
+/**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface PerspectiveAnchors {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  third_person_rate?: number;
+  second_person_rate?: number;
+  first_person_plural_rate?: number;
+  /**
+   * Per 1,000 words.
+   */
+  first_person_singular_rate?: number;
 }
 
 /**
@@ -4144,6 +4390,72 @@ export interface PositiveFlag {
   __kind?: string;
   flag_type: string;
   description: string;
+}
+
+/**
+ * * From kind `pr_play_menu`.
+ */
+export interface PrDiagnosis {
+  goal: string;
+  buyer?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "pr_diagnosis";
+  audience: string;
+  confidence?: "stated" | "inferred";
+  nearest_moment?: string;
+}
+
+/**
+ * * From kind `pr_play_menu`.
+ */
+export interface PrPegCheck {
+  text: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "pr_peg_check";
+  passes_new: boolean;
+  passes_timely: boolean;
+  passes_others_care: boolean;
+}
+
+/**
+ * * From kind `pr_play_menu`.
+ */
+export interface PrPlay {
+  trap: string;
+  title: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "pr_play";
+  action?: PrPlayAction | null;
+  effort: "one_or_two_moves" | "program";
+  first_move: string;
+  why_this_founder: string;
+}
+
+/**
+ * What the play's button starts: a specialist, a pipeline, or a screen.
+ *  *
+ *  * From kind `pr_play_menu`.
+ */
+export interface PrPlayAction {
+  type: "run_member" | "run_workflow" | "open_surface";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "pr_play_action";
+  inputs?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: JsonValue | string | undefined;
+  };
+  target: string;
 }
 
 /**
@@ -4747,6 +5059,25 @@ export interface RecipeStep {
 }
 
 /**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface RegisterAxis {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  per_sample?: SampleInvolved[];
+  /**
+   * One band on the involved axis.
+   */
+  involved_band?: number;
+  /**
+   * (contraction + first_person + private_verb) - (noun_ratio + nominalization), all as shares.
+   */
+  involved_score?: number;
+}
+
+/**
  * * From kind `product_research`.
  */
 export interface RejectedCandidate {
@@ -5001,6 +5332,99 @@ export interface RowRecord {
    * Stable id of the user-table row.
    */
   row_id: string;
+}
+
+/**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface SampleIndexEntry {
+  /**
+   * The Source (processed document) id the text was read from.
+   */
+  id: string;
+  date?: string | null;
+  /**
+   * sha256 of the sample text; the text itself is never stored.
+   */
+  hash?: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  source?: string;
+  audience?: string | null;
+  word_count?: number;
+}
+
+/**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface SampleInvolved {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  source_id: string;
+  involved_score: number;
+}
+
+/**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface SentenceInitial {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  uses_imagine_if?: boolean;
+  /**
+   * Which of however / furthermore / moreover / additionally the samples really open with.
+   */
+  transitions_used?: string[];
+  conjunction_start_rate?: number;
+  participial_start_rate?: number;
+  conjunction_starts_allowed?: boolean;
+  uses_in_conclusion_in_summary?: boolean;
+  uses_however_furthermore_moreover?: boolean;
+}
+
+/**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface SentenceLengthStats {
+  /**
+   * 10th percentile, linear interpolation.
+   */
+  p10?: number;
+  /**
+   * 90th percentile, linear interpolation.
+   */
+  p90?: number;
+  /**
+   * Mean words per sentence.
+   */
+  mean?: number;
+  /**
+   * Population standard deviation of sentence length.
+   */
+  stdev?: number;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  median?: number;
+  /**
+   * Burstiness: stdev / mean. AI prose clusters low.
+   */
+  length_cv?: number;
+  /**
+   * Share of sentences of 35 or more words.
+   */
+  long_sentence_frequency?: number;
+  /**
+   * Share of sentences of one to three words.
+   */
+  one_word_sentence_frequency?: number;
 }
 
 /**
@@ -6629,6 +7053,18 @@ export interface TimelineStep {
 }
 
 /**
+ * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
+ */
+export interface TopicSignatures {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  recurring_themes?: string[];
+  perspective_anchors?: PerspectiveAnchors;
+}
+
+/**
  * * From kind `video_transcript_research`.
  */
 export interface TranscriptSegment {
@@ -6889,6 +7325,43 @@ export interface VideoPromptVariation {
    * One sentence explaining the creative angle this version resolves.
    */
   interpretation?: string;
+}
+
+/**
+ * * From kind `voice_measure_result`.
+ */
+export interface VoiceCheckStats {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  draft_mean: number;
+  /**
+   * 0 = on the fingerprint, 1 = fully off it (mean of capped drifts).
+   */
+  drift_score: number;
+  fingerprint_mean: number;
+}
+
+/**
+ * * From kind `voice_measure_result`.
+ */
+export interface VoiceViolation {
+  /**
+   * [start, end] character offsets into the draft.
+   */
+  span: number[];
+  /**
+   * The exact matched text (empty for whole-draft statistics).
+   */
+  match: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  rule_id: string;
+  fix_hint: string;
+  severity: "block" | "warn" | "info";
 }
 
 /**
@@ -8583,6 +9056,78 @@ export interface CookingRecipe {
 }
 
 /**
+ * Kind `crisis_holding` (registry v2).
+ */
+export interface CrisisHolding {
+  qa: ({
+    line: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    posture: "answer" | "deflect_to_statement" | "decline_and_name_why" | "refer_to_counsel";
+    category: "facts" | "scope" | "responsibility" | "remediation" | "people" | "timeline" | "legal" | "business";
+    question: string;
+    rationale: string;
+  })[];
+  gate: {
+    fired: boolean;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    triggers: ({
+    field: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    trigger: string;
+  })[];
+  };
+  decay: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    issued_at: string;
+    valid_until: string;
+    refresh_triggers: string[];
+  };
+  short: {
+    text: string;
+    words: number;
+  } | null;
+  __kind: "crisis_holding";
+  banner: string | null;
+  medium: {
+    text: string;
+    words: number;
+  } | null;
+  cluster: "victim" | "accidental" | "preventable" | "open" | null;
+  cautious: {
+    text: string;
+    words: number;
+    deltas: string[];
+  } | null;
+  refusals: string[];
+  strategy: {
+    bolster: boolean;
+    primary: "deny" | "diminish" | "rebuild" | null;
+  } | null;
+  do_not_say: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    phrase: string;
+    reason: string;
+    rewrite: string | null;
+  })[];
+  stop_block: string | null;
+}
+
+/**
  * Kind `criteria_gate_result` (registry v5).
  */
 export interface CriteriaGateResult {
@@ -9111,6 +9656,71 @@ export interface DomainFoldReport {
 }
 
 /**
+ * Kind `draft_critique` (registry v2).
+ */
+export interface DraftCritique {
+  /**
+   * 1-10 by the scale.
+   */
+  score: number;
+  __kind: "draft_critique";
+  /**
+   * Sum of the criterion scores.
+   */
+  points: number;
+  verdict: "publishable" | "workshopable" | "start_over";
+  criteria: ({
+    /**
+     * Criterion number 1-13 (criterion 8 omitted for a press release).
+     */
+    id: number;
+    note: string;
+    /**
+     * 0, 1 or 2.
+     */
+    score: number;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  })[];
+  /**
+   * Exactly three.
+   */
+  offenses: ({
+    why: string;
+    /**
+     * Verbatim substring of the draft.
+     */
+    quote: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  })[];
+  line_notes: ({
+    why: string;
+    quote: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  })[];
+  /**
+   * Exactly three.
+   */
+  next_moves: string[];
+  /**
+   * A paste-ready opening.
+   */
+  lede_rewrite: string;
+  /**
+   * On a re-review: what improved since the prior review.
+   */
+  improved_since: string[];
+}
+
+/**
  * Kind `electronics_intake_analysis` (registry v3).
  */
 export interface ElectronicsIntakeAnalysis {
@@ -9265,6 +9875,39 @@ export interface EvidenceSource {
   summary: string;
   sourceUrl: string;
   sourceTitle: string;
+}
+
+/**
+ * Kind `fact_check_report` (registry v2).
+ */
+export interface FactCheckReport {
+  __kind: "fact_check_report";
+  claims: ({
+    n: number;
+    text: string;
+    type: string;
+    notes: string;
+    stale: boolean;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    status: "verified" | "disputed" | "unverifiable" | "missing_source";
+    claimant: string;
+    citations: ({
+    url: string;
+    tier: "primary" | "secondary" | "tertiary";
+    title: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    published_at: string | null;
+  })[];
+  })[];
+  summary: string;
+  verdict: "safe" | "risky" | "blocked_by_claims";
+  warning: string;
 }
 
 /**
@@ -10129,6 +10772,43 @@ export interface HashResult {
 }
 
 /**
+ * Kind `headline_set` (registry v2).
+ */
+export interface HeadlineSet {
+  __kind: "headline_set";
+  groups: ({
+    pick: {
+    why: string;
+    text: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  };
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    format: "news" | "press_release" | "subject_line" | "feature";
+    candidates: ({
+    move: "consequence" | "picture" | "number_hero" | "two_beats" | "reader_story" | "name_unnamed" | "open_question" | "voice" | "sing" | "sized_claim";
+    text: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    charge: string;
+    char_count: number;
+  })[];
+  })[];
+  next_step: string;
+  /**
+   * Each fact a candidate relies on.
+   */
+  materials_used: string[];
+}
+
+/**
  * Canonical HTTP response payload emitted by http.* nodes.
  *
  * Downstream routing branches on ``status`` (e.g. ``inputs['status'] < 300``
@@ -10649,6 +11329,102 @@ export interface Items {
    */
   __kind?: "items";
   archetype?: "items";
+}
+
+/**
+ * Kind `journalist_fit` (registry v2).
+ */
+export interface JournalistFit {
+  axes: {
+    format: "held" | "partial" | "missing";
+    timing: "held" | "missing";
+    relevance: "held" | "missing";
+  } | null;
+  form: "investigative" | "news" | "feature" | "opinion" | "column" | "review_roundup" | null;
+  /**
+   * The short readable answer in the authors' shape.
+   */
+  note: string;
+  /**
+   * Short lowercase beat labels the retrieved work supports.
+   */
+  beats: string[];
+  edits: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    change: string;
+    target: string;
+    anchor_url: string;
+  })[];
+  trail: ({
+    url: string;
+    note: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    source: string;
+  })[];
+  __kind: "journalist_fit";
+  /**
+   * Recurring lowercase subject phrases across the work.
+   */
+  topics: string[];
+  anchors: ({
+    url: string;
+    title: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    /**
+     * One sentence tying this article to the pitch.
+     */
+    relation: string;
+    published_at: string;
+  })[];
+  /**
+   * Null when no pitch was supplied.
+   */
+  verdict: "fit" | "soft_fit" | "no_fit" | "unknown" | null;
+  beat_read: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    one_offs: string[];
+    standing_beat: string | null;
+    angle_preference: string | null;
+  };
+  freshness: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    warning: string | null;
+    days_ago: number | null;
+    latest_article_at: string | null;
+  };
+  /**
+   * Inside the verdict's band. Null when no pitch.
+   */
+  confidence: number | null;
+  remediation: string | null;
+  /**
+   * One or two plain sentences a non-technical person reads before pitching.
+   */
+  beat_summary: string;
+  /**
+   * How this person tends to approach a story.
+   */
+  typical_angle: string;
+  unknown_reason: "missing_current_time" | "stale_data" | "unresolved" | "slop_in_pitch" | "uncertainty_above_threshold" | null;
+  /**
+   * Share of the last ~10 bylines on the pitch's topic.
+   */
+  topic_hit_share: number | null;
 }
 
 /**
@@ -13917,6 +14693,23 @@ export interface PostalAddress {
 }
 
 /**
+ * The Director's menu: a main play plus backups, each a button. Data for the buttons; the reader never sees
+ * these field names.
+ *  *
+ *  * Kind `pr_play_menu` (registry v3).
+ */
+export interface PrPlayMenu {
+  peg?: PrPegCheck | null;
+  plays?: PrPlay[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "pr_play_menu";
+  diagnosis?: PrDiagnosis | null;
+  next_move?: string;
+}
+
+/**
  * Kind `practice_prompt` (registry v2).
  */
 export interface PracticePrompt {
@@ -14004,6 +14797,120 @@ export interface PresentationSlide {
 }
 
 /**
+ * One live article rendered as a press clip: PDF, preview and page rasters.
+ *  *
+ *  * Kind `press_clip_render` (registry v2).
+ */
+export interface PressClipRender {
+  /**
+   * Every fallback, override miss and late-overlay removal, said out loud.
+   */
+  notes?: string[];
+  /**
+   * The scope actually applied; a requested section with no matching heading falls back to 'whole'.
+   */
+  scope: "whole" | "section";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "press_clip_render";
+  /**
+   * Read from the page; null when absent.
+   */
+  byline?: string | null;
+  /**
+   * Read from the page; null when absent.
+   */
+  headline?: string | null;
+  /**
+   * The logo image stamped at the top; null for an inline SVG or a wordmark.
+   */
+  logo_url?: string | null;
+  /**
+   * The URL the browser ended on.
+   */
+  source_url: string;
+  /**
+   * Where the stamped logo came from, in ladder order. 'text_wordmark' means no real logo was found anywhere and the clip is NOT shippable.
+   */
+  logo_source: "explicit" | "article_masthead" | "home_masthead" | "og_logo_or_favicon" | "text_wordmark";
+  /**
+   * The publication's name as the page states it.
+   */
+  outlet_name?: string | null;
+  /**
+   * The A4 clip PDF, in the organization's file store.
+   */
+  pdf_file_id: string;
+  /**
+   * Read from the page as written (ISO or visible text); null when absent.
+   */
+  published_at?: string | null;
+  /**
+   * A full-page PNG screenshot of the clipped page.
+   */
+  preview_file_id: string;
+  /**
+   * The article container the surgery kept (the caller's root, or the one picked structurally).
+   */
+  root_selector_used: string;
+  /**
+   * Whether the client's name appears in the article text (plain, case-insensitive search).
+   */
+  client_found_in_text: boolean;
+  /**
+   * Every PDF page rasterized to PNG, in page order — every page borders a page break and the last page is always included. Review THESE, not the preview: trailing bands and content cut at a break exist only in the PDF.
+   */
+  page_raster_file_ids?: string[];
+  /**
+   * Every empty placeholder box swept from the article, as 'tag.class [W×H]'.
+   */
+  removed_placeholders?: string[];
+  /**
+   * Requests aborted because they went to an ad/recirculation/comment network.
+   */
+  blocked_request_count?: number;
+}
+
+/**
+ * Kind `press_clip_review` (registry v2).
+ */
+export interface PressClipReview {
+  /**
+   * The verified selector string to remove.
+   */
+  drop: string;
+  junk: ({
+    page: number | null;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    selector: string;
+    description: string;
+    match_count: number;
+    /**
+     * Must be false for any selector returned.
+     */
+    contains_body: boolean;
+  })[];
+  /**
+   * Selectors a drop would catch that are editorial.
+   */
+  keep: string;
+  note: string;
+  /**
+   * A root selector for the real article container, when isolation picked the wrong one.
+   */
+  root: string | null;
+  __kind: "press_clip_review";
+  verdict: "clean" | "has_junk" | "no_logo";
+  logo_url: string | null;
+  ask_person: string[];
+  client_present: boolean;
+}
+
+/**
  * Output of ``seo.press.source_requests.ingest`` — mirrors ``SourceRequestIngestResult``.
  *
  * Every pairing's fate is in ``outcomes``, INCLUDING the ones that got no row:
@@ -14029,6 +14936,85 @@ export interface PressSourceRequestIngestResult {
   sites_considered: number;
   truncated_requests?: number;
   evaluations_deferred?: number;
+}
+
+/**
+ * Kind `press_source_request_response_v1` (registry v2).
+ */
+export interface PressSourceRequestResponseV1 {
+  __kind: "press_source_request_response_v1";
+  /**
+   * Genuine fit, 0–100. Never inflated by outlet prestige.
+   */
+  match_score: number;
+  match_reason: string;
+  deadline_risk: "none" | "tight" | "expired" | "unknown";
+  draft_response: string | null;
+  /**
+   * True only when the verdict is respond.
+   */
+  should_respond: boolean;
+  needs_from_expert: ({
+    why: string;
+    item: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  })[];
+  related_angle_key: string | null;
+  suggested_subject: string | null;
+  source_request_verdict: {
+    cap: {
+    cap: number;
+    used: number;
+    state: "under" | "warn" | "at_cap" | "over";
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  };
+    why: string;
+    draft: {
+    body: string;
+    subject: string;
+    word_count: number;
+  } | null;
+    __kind: "source_request_verdict";
+    missing: string[];
+    verdict: "respond" | "kill" | "ask_for_proof";
+    freshness: {
+    state: "fresh" | "under_24h" | "tight" | "late_in_queue" | "expired";
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    hours_left: number | null;
+  };
+    provenance: ({
+    ref: string | null;
+    claim: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    source: "profile_proof" | "journalist_byline" | "user_must_confirm";
+  })[];
+    slop_check: {
+    hits: string[];
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    passed: boolean;
+  };
+    better_move: string | null;
+    not_your_fight: string | null;
+    /**
+     * The exact query words that drove the verdict, quoted.
+     */
+    driving_requirement: string;
+  };
 }
 
 /**
@@ -15706,6 +16692,82 @@ export interface RunResult {
   duration_ms?: number | null;
   output_kind?: string | null;
   workflow_id: string;
+}
+
+/**
+ * Kind `same_outlet_ranking` (registry v2).
+ */
+export interface SameOutletRanking {
+  held: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    party_id: string;
+    strongest_signal: string;
+    unlock_condition: string;
+  })[];
+  /**
+   * The readable ranking in the authors' order.
+   */
+  note: string;
+  trail: ({
+    url: string;
+    note: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    source: string;
+  })[];
+  __kind: "same_outlet_ranking";
+  outcome: "pick" | "no_pick";
+  first_pick: {
+    edits: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    change: string;
+    blocking: boolean;
+    anchor_url: string;
+  })[];
+    anchor: {
+    tie: string;
+    url: string;
+    title: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    published_at: string;
+  };
+    status: "staff" | "contributor" | "freelancer" | "unverified";
+    party_id: string;
+    close_call: boolean;
+    deciding_signal: string;
+  } | null;
+  /**
+   * If this goes nowhere: the follow-up timing, the unlock and the stop rule.
+   */
+  sequencing: string;
+  unverified: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    party_id: string;
+    resolve_by: string;
+  })[];
+  do_not_pitch: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    reason: string;
+    party_id: string;
+  })[];
+  no_pick_reason: "missing_current_time" | "uncertainty_above_threshold" | "no_fit_at_outlet" | "pitch_not_ready" | "single_candidate" | "routing_address" | "open_exclusive" | "colleague_already_pitched" | null;
 }
 
 /**
@@ -17769,6 +18831,62 @@ export interface SourceRef {
 }
 
 /**
+ * Kind `source_request_verdict` (registry v2).
+ */
+export interface SourceRequestVerdict {
+  cap?: {
+    cap?: number;
+    used?: number;
+    state?: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  };
+  why?: string;
+  draft?: {
+    body?: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    subject?: string;
+    word_count?: number;
+  };
+  __kind: "source_request_verdict";
+  missing?: unknown[];
+  verdict?: string;
+  freshness?: {
+    state?: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    hours_left?: number;
+  };
+  provenance?: ({
+    ref?: string | null;
+    claim?: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    source?: string;
+  })[];
+  slop_check?: {
+    hits?: unknown[];
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    passed?: boolean;
+  };
+  better_move?: string | number | boolean | Record<string, unknown> | unknown[] | null;
+  not_your_fight?: string | number | boolean | Record<string, unknown> | unknown[] | null;
+  driving_requirement?: string;
+}
+
+/**
  * An ordered script of spoken turns — the text-to-speech authoring part.
  *  *
  *  * Kind `speech_script` (registry v2).
@@ -19041,6 +20159,130 @@ export interface VisualQcResult {
   verdict: string;
   severity: number;
   viewport: string;
+}
+
+/**
+ * A measured writing voice: cadence, mechanics, lexicon, openers, register, idioms.
+ *  *
+ *  * Kind `voice_fingerprint` (registry v2).
+ */
+export interface VoiceFingerprint {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "voice_fingerprint";
+  idioms?: Idioms;
+  intent?: string[];
+  cadence?: Cadence;
+  closers?: CloserSet;
+  lexical?: Lexical;
+  openers?: OpenerSet;
+  mechanics?: Mechanics;
+  created_at?: string | null;
+  extraction?: Extraction;
+  /**
+   * Human-readable profile handle.
+   */
+  profile_id: string;
+  sample_count?: number;
+  profile_scope?: "person" | "brand";
+  register_axis?: RegisterAxis;
+  samples_index?: SampleIndexEntry[];
+  /**
+   * last_extracted_at + 90 days.
+   */
+  refresh_due_at?: string | null;
+  /**
+   * voice.yaml's `register` (renamed: `register` shadows a pydantic model attribute).
+   */
+  register_label?: "formal" | "professional" | "casual-professional" | "casual" | "irreverent";
+  schema_version?: number;
+  sentence_initial?: SentenceInitial;
+  topic_signatures?: TopicSignatures;
+  banned_structures?: BannedStructure[];
+  last_extracted_at?: string | null;
+  sample_word_count?: number;
+  banned_words_global?: string[];
+  sample_age_p50_days?: number | null;
+  sample_age_oldest_days?: number | null;
+  /**
+   * Globally banned words found in the real samples, flagged for review.
+   */
+  global_words_in_samples?: string[];
+  banned_words_user_specific?: string[];
+  /**
+   * Globally banned words the person confirmed as genuinely theirs; the check lets them through.
+   */
+  banned_words_global_allowed?: string[];
+}
+
+/**
+ * One result of ``brand_voice_measure``: an extraction or a draft check.
+ *  *
+ *  * Kind `voice_measure_result` (registry v2).
+ */
+export interface VoiceMeasureResult {
+  stats?: VoiceCheckStats | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "voice_measure_result";
+  action: "extract" | "check";
+  triage?: CorpusTriage | null;
+  /**
+   * The extracted fingerprint.
+   */
+  profile?: VoiceFingerprint | null;
+  /**
+   * Plain-English summary for the confirm step.
+   */
+  summary?: string | null;
+  verdict?: "pass" | "fail" | null;
+  /**
+   * Share of the draft's sentences with no violation.
+   */
+  pass_rate?: number | null;
+  /**
+   * True when any block violation means redraft.
+   */
+  regenerate?: boolean | null;
+  violations?: VoiceViolation[] | null;
+  /**
+   * profile_id@YYYY-MM-DD of the fingerprint used.
+   */
+  fingerprint?: string | null;
+  /**
+   * The saved voice_fingerprint row id.
+   */
+  fingerprint_id?: string | null;
+}
+
+/**
+ * Kind `voice_rewrite` (registry v3).
+ */
+export interface VoiceRewrite {
+  /**
+   * The full rewritten draft.
+   */
+  text: string;
+  __kind: "voice_rewrite";
+  changes: ({
+    after: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    before: string;
+    rule_id: string;
+  })[];
+  unfixable: ({
+    why: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    rule_id: string;
+  })[];
 }
 
 /**
@@ -22670,6 +23912,7 @@ export type GeneratedKindSlug =
   | "content_plan_site_list"
   | "content_plan_tree"
   | "cooking_recipe"
+  | "crisis_holding"
   | "criteria_gate_result"
   | "criterion_coverage"
   | "crm_contact_save_result"
@@ -22690,12 +23933,14 @@ export type GeneratedKindSlug =
   | "dispatch_result"
   | "document_quad_detection"
   | "domain_fold_report"
+  | "draft_critique"
   | "electronics_intake_analysis"
   | "enrichment_verification"
   | "entity_card"
   | "entity_mention"
   | "episode_title_options"
   | "evidence_source"
+  | "fact_check_report"
   | "faq_item"
   | "field_lookup_result"
   | "field_problem"
@@ -22732,6 +23977,7 @@ export type GeneratedKindSlug =
   | "gsc_site_intake_bundle"
   | "gsc_site_intake_proposal"
   | "hash_result"
+  | "headline_set"
   | "http_response"
   | "human_answer"
   | "human_text_answer"
@@ -22756,6 +24002,7 @@ export type GeneratedKindSlug =
   | "item_presentation"
   | "item_vision_extraction"
   | "items"
+  | "journalist_fit"
   | "json"
   | "json_path_result"
   | "keyword_classification_batch_v1"
@@ -22866,10 +24113,14 @@ export type GeneratedKindSlug =
   | "podcast_episode"
   | "podcast_video_compose_result"
   | "postal_address"
+  | "pr_play_menu"
   | "practice_prompt"
   | "presentation_deck"
   | "presentation_slide"
+  | "press_clip_render"
+  | "press_clip_review"
   | "press_source_request_ingest_result"
+  | "press_source_request_response_v1"
   | "press_story_angle_generation_result"
   | "press_story_angle_ruling_result"
   | "pricing_proposal"
@@ -22925,6 +24176,7 @@ export type GeneratedKindSlug =
   | "reviewer_result_card"
   | "rule_governed_variant_set"
   | "run_result"
+  | "same_outlet_ranking"
   | "saved_row"
   | "schema_audit_result"
   | "schema_fix_result"
@@ -22998,6 +24250,7 @@ export type GeneratedKindSlug =
   | "sorted_list_result"
   | "source_authority_rankings"
   | "source_ref"
+  | "source_request_verdict"
   | "speech_script"
   | "split_result"
   | "spoken_practice_session"
@@ -23053,6 +24306,9 @@ export type GeneratedKindSlug =
   | "video_result"
   | "video_transcript_research"
   | "visual_qc_result"
+  | "voice_fingerprint"
+  | "voice_measure_result"
+  | "voice_rewrite"
   | "web_a11y_lab_basics_v1"
   | "web_anchor_text_descriptiveness_v1"
   | "web_asset_delivery_v1"
@@ -23207,6 +24463,7 @@ export interface KindPayloadBySlug {
   "content_plan_site_list": ContentPlanSiteList;
   "content_plan_tree": ContentPlanTree;
   "cooking_recipe": CookingRecipe;
+  "crisis_holding": CrisisHolding;
   "criteria_gate_result": CriteriaGateResult;
   "criterion_coverage": CriterionCoverage;
   "crm_contact_save_result": CrmContactSaveResult;
@@ -23227,12 +24484,14 @@ export interface KindPayloadBySlug {
   "dispatch_result": DispatchResult;
   "document_quad_detection": DocumentQuadDetection;
   "domain_fold_report": DomainFoldReport;
+  "draft_critique": DraftCritique;
   "electronics_intake_analysis": ElectronicsIntakeAnalysis;
   "enrichment_verification": EnrichmentVerification;
   "entity_card": EntityCard;
   "entity_mention": EntityMention;
   "episode_title_options": EpisodeTitleOptions;
   "evidence_source": EvidenceSource;
+  "fact_check_report": FactCheckReport;
   "faq_item": FaqItem;
   "field_lookup_result": FieldLookupResult;
   "field_problem": FieldProblem;
@@ -23269,6 +24528,7 @@ export interface KindPayloadBySlug {
   "gsc_site_intake_bundle": GscSiteIntakeBundle;
   "gsc_site_intake_proposal": GscSiteIntakeProposal;
   "hash_result": HashResult;
+  "headline_set": HeadlineSet;
   "http_response": HttpResponse;
   "human_answer": HumanAnswer;
   "human_text_answer": HumanTextAnswer;
@@ -23293,6 +24553,7 @@ export interface KindPayloadBySlug {
   "item_presentation": ItemPresentation;
   "item_vision_extraction": ItemVisionExtraction;
   "items": Items;
+  "journalist_fit": JournalistFit;
   "json": Json;
   "json_path_result": JsonPathResult;
   "keyword_classification_batch_v1": KeywordClassificationBatchV1;
@@ -23403,10 +24664,14 @@ export interface KindPayloadBySlug {
   "podcast_episode": PodcastEpisode;
   "podcast_video_compose_result": PodcastVideoComposeResult;
   "postal_address": PostalAddress;
+  "pr_play_menu": PrPlayMenu;
   "practice_prompt": PracticePrompt;
   "presentation_deck": PresentationDeck;
   "presentation_slide": PresentationSlide;
+  "press_clip_render": PressClipRender;
+  "press_clip_review": PressClipReview;
   "press_source_request_ingest_result": PressSourceRequestIngestResult;
+  "press_source_request_response_v1": PressSourceRequestResponseV1;
   "press_story_angle_generation_result": PressStoryAngleGenerationResult;
   "press_story_angle_ruling_result": PressStoryAngleRulingResult;
   "pricing_proposal": PricingProposal;
@@ -23462,6 +24727,7 @@ export interface KindPayloadBySlug {
   "reviewer_result_card": ReviewerResultCard;
   "rule_governed_variant_set": RuleGovernedVariantSet;
   "run_result": RunResult;
+  "same_outlet_ranking": SameOutletRanking;
   "saved_row": SavedRow;
   "schema_audit_result": SchemaAuditResult;
   "schema_fix_result": SchemaFixResult;
@@ -23535,6 +24801,7 @@ export interface KindPayloadBySlug {
   "sorted_list_result": SortedListResult;
   "source_authority_rankings": SourceAuthorityRankings;
   "source_ref": SourceRef;
+  "source_request_verdict": SourceRequestVerdict;
   "speech_script": SpeechScript;
   "split_result": SplitResult;
   "spoken_practice_session": SpokenPracticeSession;
@@ -23590,6 +24857,9 @@ export interface KindPayloadBySlug {
   "video_result": VideoResult;
   "video_transcript_research": VideoTranscriptResearch;
   "visual_qc_result": VisualQcResult;
+  "voice_fingerprint": VoiceFingerprint;
+  "voice_measure_result": VoiceMeasureResult;
+  "voice_rewrite": VoiceRewrite;
   "web_a11y_lab_basics_v1": WebA11yLabBasicsV1;
   "web_anchor_text_descriptiveness_v1": WebAnchorTextDescriptivenessV1;
   "web_asset_delivery_v1": WebAssetDeliveryV1;
@@ -23748,6 +25018,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "content_plan_site_list",
   "content_plan_tree",
   "cooking_recipe",
+  "crisis_holding",
   "criteria_gate_result",
   "criterion_coverage",
   "crm_contact_save_result",
@@ -23768,12 +25039,14 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "dispatch_result",
   "document_quad_detection",
   "domain_fold_report",
+  "draft_critique",
   "electronics_intake_analysis",
   "enrichment_verification",
   "entity_card",
   "entity_mention",
   "episode_title_options",
   "evidence_source",
+  "fact_check_report",
   "faq_item",
   "field_lookup_result",
   "field_problem",
@@ -23810,6 +25083,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "gsc_site_intake_bundle",
   "gsc_site_intake_proposal",
   "hash_result",
+  "headline_set",
   "http_response",
   "human_answer",
   "human_text_answer",
@@ -23834,6 +25108,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "item_presentation",
   "item_vision_extraction",
   "items",
+  "journalist_fit",
   "json",
   "json_path_result",
   "keyword_classification_batch_v1",
@@ -23944,10 +25219,14 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "podcast_episode",
   "podcast_video_compose_result",
   "postal_address",
+  "pr_play_menu",
   "practice_prompt",
   "presentation_deck",
   "presentation_slide",
+  "press_clip_render",
+  "press_clip_review",
   "press_source_request_ingest_result",
+  "press_source_request_response_v1",
   "press_story_angle_generation_result",
   "press_story_angle_ruling_result",
   "pricing_proposal",
@@ -24003,6 +25282,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "reviewer_result_card",
   "rule_governed_variant_set",
   "run_result",
+  "same_outlet_ranking",
   "saved_row",
   "schema_audit_result",
   "schema_fix_result",
@@ -24076,6 +25356,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "sorted_list_result",
   "source_authority_rankings",
   "source_ref",
+  "source_request_verdict",
   "speech_script",
   "split_result",
   "spoken_practice_session",
@@ -24131,6 +25412,9 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "video_result",
   "video_transcript_research",
   "visual_qc_result",
+  "voice_fingerprint",
+  "voice_measure_result",
+  "voice_rewrite",
   "web_a11y_lab_basics_v1",
   "web_anchor_text_descriptiveness_v1",
   "web_asset_delivery_v1",
