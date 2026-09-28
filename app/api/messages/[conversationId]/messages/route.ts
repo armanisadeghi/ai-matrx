@@ -62,6 +62,7 @@ export async function GET(
     const { data: participation, error: participationError } = await supabase
       .schema("communication").from("dm_conversation_participants")
       .select("id")
+      .is("deleted_at", null)
       .eq("conversation_id", conversationId)
       .eq("user_id", userId)
       .single();
@@ -177,6 +178,7 @@ export async function POST(
     const { data: participation, error: participationError } = await supabase
       .schema("communication").from("dm_conversation_participants")
       .select("id")
+      .is("deleted_at", null)
       .eq("conversation_id", conversationId)
       .eq("user_id", userId)
       .single();

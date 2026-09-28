@@ -362,10 +362,11 @@ export async function POST(request: NextRequest) {
       .insert(participantRecords);
 
     if (participantsError) {
-      // Rollback: delete the conversation
+      // Rollback: archive the half-made conversation (delete means archive;
+      // no client hard delete on a soft-deletable table).
       await supabase
         .schema("communication").from("dm_conversations")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", newConversation.id);
       console.error(
         "[DM Conversations API] Failed to add participants:",

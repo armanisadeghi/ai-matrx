@@ -67,6 +67,7 @@ export async function GET(
       .schema("communication")
       .from("dm_conversation_participants")
       .select("*")
+      .is("deleted_at", null)
       .eq("conversation_id", conversationId)
       .eq("user_id", userId)
       .single();
@@ -83,6 +84,7 @@ export async function GET(
       .schema("communication")
       .from("dm_conversations")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", conversationId)
       .single();
 
@@ -98,6 +100,7 @@ export async function GET(
       .schema("communication")
       .from("dm_conversation_participants")
       .select("*")
+      .is("deleted_at", null)
       .eq("conversation_id", conversationId);
 
     const participantsWithUser = await Promise.all(
@@ -197,6 +200,7 @@ export async function PUT(
       .schema("communication")
       .from("dm_conversation_participants")
       .select("role")
+      .is("deleted_at", null)
       .eq("conversation_id", conversationId)
       .eq("user_id", userId)
       .single();
@@ -233,6 +237,7 @@ export async function PUT(
         .schema("communication")
         .from("dm_conversations")
         .select("type, created_by")
+        .is("deleted_at", null)
         .eq("id", conversationId)
         .single();
 
@@ -318,6 +323,7 @@ export async function DELETE(
       .schema("communication")
       .from("dm_conversations")
       .select("type, created_by")
+      .is("deleted_at", null)
       .eq("id", conversationId)
       .single();
 
@@ -328,17 +334,26 @@ export async function DELETE(
       );
     }
 
-    // For group chats where user is owner, delete the entire conversation
+    // For group chats where user is owner, the entire conversation moves to
+    // Trash (delete means archive); its messages and participants follow via
+    // the soft-delete cascade and come back if it is restored.
     // component-created-by-ok: communication.dm_conversations is an entity — its created_by is the group's creator
     if (conversation.type === "group" && conversation.created_by === userId) {
-      await supabase
+      const { error: archiveError } = await supabase
         .schema("communication")
         .from("dm_conversations")
-        .delete()
-        .eq("id", conversationId);
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", conversationId)
+        .is("deleted_at", null);
+      if (archiveError) {
+        return NextResponse.json(
+          { success: false, msg: "Could not move the conversation to Trash" },
+          { status: 500 },
+        );
+      }
       return NextResponse.json({
         success: true,
-        msg: "Conversation deleted successfully",
+        msg: "Conversation moved to Trash",
       });
     }
 
