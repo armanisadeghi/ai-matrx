@@ -61,10 +61,16 @@ describe("study-guide collection", () => {
 
   it("updates only loaded guides and retains the list version for compare-and-swap", () => {
     const current = [{ id: "guide-1", title: "Cell biology", version: 4 }];
-    expect(parseUpdateStudyGuidesValue([{ id: "guide-1", title: "Cell biology basics", content: "# Cells" }], current)).toEqual([
-      { id: "guide-1", title: "Cell biology basics", version: 4, content: "# Cells", changed: ["title", "content"] },
+    expect(parseUpdateStudyGuidesValue([{ id: "guide-1", expected_version: 4, title: "Cell biology basics", content: "# Cells" }], current)).toEqual([
+      { id: "guide-1", title: "Cell biology basics", expectedVersion: 4, content: "# Cells", changed: ["title", "content"] },
     ]);
-    expect(() => parseUpdateStudyGuidesValue([{ id: "missing", title: "Nope" }, { id: "guide-1", title: "" }], current)).toThrow(/2 problems/);
+    expect(() => parseUpdateStudyGuidesValue([{ id: "missing", expected_version: 4, title: "Nope" }, { id: "guide-1", expected_version: 4, title: "" }], current)).toThrow(/2 problems/);
+  });
+
+  it("refuses a previously approved update when its available-guides version became stale", () => {
+    const approvedPayload = [{ id: "guide-1", expected_version: 4, title: "Cell biology basics" }];
+    expect(() => parseUpdateStudyGuidesValue(approvedPayload, [{ id: "guide-1", title: "Cell biology", version: 5 }]))
+      .toThrow(/expected_version 4 does not match the loaded version 5/);
   });
 });
 

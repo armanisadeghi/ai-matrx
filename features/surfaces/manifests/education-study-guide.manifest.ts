@@ -45,8 +45,8 @@
  *    in the flashcard editor, not on this page. Linking a deck happens in the
  *    "Manage linked flashcards" picker, which loads the deck list only when it
  *    opens, so there is no deck list here for an agent to name ids from.
- *  - the guide's title: this page has no rename in read mode (the Notes editor
- *    it opens in edit mode does).
+ *  - the guide's title: the Notes editor exposes its canonical label editor in
+ *    edit mode; there is no separate reader-mode rename target.
  *
  * Edit mode: pressing Edit mounts the canonical Notes editor, whose own surface
  * (`matrx-user/notes`) is the deeper provider and takes over while it is open;
@@ -97,7 +97,7 @@ const surfaceSpecific: SurfaceValue[] = [
   { name: "guide_content", label: "Guide content", description: "The guide's full markdown body, exactly as saved — the read twin of the guide_content write target (anchored edits resolve against this text). Same text as study_guide.content.", valueType: "string", alwaysAvailable: false, typicalCharCount: 8000, autoContext: false, group: "guide", sortOrder: 140 },
   { name: "reader_mode", label: "Reader mode", description: '"read" while the guide is shown in the reader; "edit" while the person has the Notes editor open on it (this page\'s write targets refuse then).', valueType: "string", alwaysAvailable: true, typicalCharCount: 4, group: "guide", sortOrder: 150 },
   { name: "load_error", label: "Load error", description: "Why the guide, the guide list, or the last save failed; absent on a normal load. A failed read is not an empty guide.", valueType: "string", alwaysAvailable: false, typicalCharCount: 160, group: "guide", sortOrder: 160 },
-  { name: "available_guides", label: "My study guides", description: "The person's study guides in the picker, newest first, as { id, title, version }. Empty when they have none; absent while loading or on error. version protects list updates from overwriting a later save.", valueType: "array", alwaysAvailable: false, typicalCharCount: 1600, group: "navigation", sortOrder: 200 },
+  { name: "available_guides", label: "My study guides", description: "The person's study guides in the picker, newest first, as { id, title, version }. Empty when they have none; absent while loading or on error. Use each entry's version as expected_version in update_study_guides; it protects a later save from being overwritten.", valueType: "array", alwaysAvailable: false, typicalCharCount: 1600, group: "navigation", sortOrder: 200 },
   { name: "outline", label: "Outline", description: "Headings of the guide in reading order, as { index, level, text }.", valueType: "array", alwaysAvailable: false, typicalCharCount: 2000, group: "navigation", sortOrder: 210 },
   { name: "active_details_tab", label: "Details tab", description: '"notes" for Notes & comments, "terms" for Key Terms, or "resources" for linked flashcards and related study material.', valueType: "string", alwaysAvailable: true, typicalCharCount: 10, group: "navigation", sortOrder: 220 },
   {
@@ -171,7 +171,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "update_study_guides",
     label: "Update study guides",
-    description: "Updates 1-10 loaded guides. Value is a JSON ARRAY of { id: string, title?: string, content?: string }. Each id must come from available_guides; the guide is fetched again and saved only when its emitted version still matches, so a later save is refused rather than overwritten.",
+    description: "Updates 1-10 loaded guides. Value is a JSON ARRAY of { id: string, expected_version: number, title?: string, content?: string }. expected_version is required and must exactly equal that id's version in available_guides when the update is prepared. Each id must come from available_guides; if the list changes before apply, the write refuses instead of overwriting the later save.",
     valueType: "array",
     updatesValue: "available_guides",
     mode: "entity",
@@ -264,7 +264,7 @@ You are on one study guide at /education/study-guides/[id]. study_guide is the g
 
 Every change goes through these targets; each asks the person once and returns what it did, with ids:
 - create_study_guides — add one or more Notes-backed study guides to the Education library.
-- update_study_guides — change a loaded guide's title and/or full markdown body with version protection.
+- update_study_guides — change a loaded guide's title and/or full markdown body, supplying the matching available_guides version as expected_version.
 - guide_content — rewrite or fix the guide's text (send the whole body, or { command: "str_replace", old_str, new_str } for one part).
 - delete_study_guides — move one or more loaded guides from available_guides to Trash. They can be restored there.
 - create_personal_notes / update_personal_notes / delete_personal_notes — private highlights (on a quoted passage) and notes. Use these when the person says "highlight", "note to self", "mark this".

@@ -43,7 +43,7 @@ import { parseNoteOutline, type NoteOutlineItem } from "@/features/notes/utils/n
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { NotesView } from "@/features/notes/components/NotesView";
 import { deleteNote, saveNote } from "@/features/notes/redux/thunks";
-import { setNoteEditorMode } from "@/features/notes/redux/slice";
+import { setNoteEditorMode, updateNoteLabel } from "@/features/notes/redux/slice";
 import { useNewNoteOrganization } from "@/features/notes/hooks/useNewNoteOrganization";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -317,6 +317,8 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
   const [outlineJump, setOutlineJump] = useState<{ index: number; nonce: number } | null>(null);
   const [mobilePanel, setMobilePanel] = useState<"guides" | "details" | null>(null);
   const [editingGuide, setEditingGuide] = useState(startInEdit);
+  const [titleDraft, setTitleDraft] = useState("");
+  const titleGuideIdRef = useRef<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [creatingGuide, setCreatingGuide] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Note | null>(null);
@@ -335,6 +337,13 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
     void loadStudyGuide(initialGuideId).then((loaded) => { if (!stale) setGuide(loaded); }).catch((cause: unknown) => { if (!stale) { setGuide(null); setError(cause); } }).finally(() => { if (!stale) setLoading(false); });
     return () => { stale = true; };
   }, [initialGuideId, guideTick, userId]);
+
+  useEffect(() => {
+    if (guide && (!editingGuide || titleGuideIdRef.current !== guide.id)) {
+      titleGuideIdRef.current = guide.id;
+      setTitleDraft(guide.label);
+    }
+  }, [guide, editingGuide]);
 
   useEffect(() => {
     let stale = false;
@@ -357,6 +366,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
       setEditError(null);
       retryGuide();
       retryDetails();
+      router.replace(`/education/study-guides/${guide.id}`);
     } catch (cause) {
       setEditError(cause instanceof Error ? cause.message : "Could not save the guide. Your draft is still available in the editor.");
       setEditingGuide(true);
@@ -474,7 +484,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
             if (editingRef.current) refuseSurfaceWrite("The person has a guide open in the editor. Ask them to press \"Back to reading\" first; nothing was changed.");
             const current = await loadStudyGuide(plan.id);
             if (!current) throw new Error(`"${plan.title}" is no longer available to update.`);
-            if (current.version !== plan.version)
+            if (current.version !== plan.expectedVersion)
               throw new Error(`"${current.label}" changed after this agent run. Reload the study-guide list and try again.`);
             const saved = await updateStudyGuide(current, {
               ...(plan.changed.includes("title") ? { title: plan.title } : {}),
@@ -591,7 +601,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
   );
 
   const canDeleteGuide = Boolean(guide && guides.some((item) => item.id === guide.id));
-  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><Button size="sm" variant="outline" className="absolute right-3 top-2 z-20 bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} onDelete={() => setPendingDelete(guide)} canDelete={canDeleteGuide} deleting={deletingGuide} jumpRequest={outlineJump} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
+  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><div className="absolute left-3 right-3 top-2 z-20 flex items-center gap-2"><Input aria-label="Study guide title" value={titleDraft} onChange={(event) => { const title = event.target.value; setTitleDraft(title); if (title.trim()) dispatch(updateNoteLabel({ id: guide.id, label: title })); }} onBlur={() => { const title = titleDraft.trim(); if (title) { setTitleDraft(title); dispatch(updateNoteLabel({ id: guide.id, label: title })); } else setTitleDraft(guide.label); }} placeholder="Study guide title" className="h-8 max-w-md bg-background" /><Button size="sm" variant="outline" className="ml-auto bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button></div>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); setTitleDraft(guide.label); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} onDelete={() => setPendingDelete(guide)} canDelete={canDeleteGuide} deleting={deletingGuide} jumpRequest={outlineJump} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
 
   const reader = loading || error || !guide ? <div className="scroll-page-end-space h-full min-h-0 overflow-y-auto">{readerState}</div> : readerState;
 

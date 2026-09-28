@@ -167,7 +167,8 @@ export interface UpdateStudyGuidePlan {
   id: string;
   /** The effective title after this write, used for messages and name stability. */
   title: string;
-  version: number;
+  /** Version the agent saw in available_guides and the person approved. */
+  expectedVersion: number;
   content?: string;
   changed: string[];
 }
@@ -183,10 +184,15 @@ export function parseUpdateStudyGuidesValue(
     list,
     (entry, i): UpdateStudyGuidePlan => {
       const where = `${target}[${i}]`;
-      const record = asObject(where, entry, ["id", "title", "content"]);
+      const record = asObject(where, entry, ["id", "expected_version", "title", "content"]);
       const id = idOf(where, record);
       const guide = current.find((item) => item.id === id);
       if (!guide) throw new ListLevelProblem(`${where}.id "${id}" is not one of this person's loaded study guides.`);
+      const expectedVersion = record.expected_version;
+      if (typeof expectedVersion !== "number" || !Number.isInteger(expectedVersion) || expectedVersion < 1)
+        throw new Error(`${where}.expected_version must be a positive integer from available_guides.`);
+      if (expectedVersion !== guide.version)
+        throw new ListLevelProblem(`${where}.expected_version ${expectedVersion} does not match the loaded version ${guide.version} for "${guide.title}". Reload available_guides and prepare the update again.`);
       const rawTitle = optionalText(where, "title", record.title);
       const title = rawTitle === undefined ? undefined : rawTitle.trim();
       if (title !== undefined && !title) throw new Error(`${where}.title cannot be empty.`);
@@ -197,7 +203,7 @@ export function parseUpdateStudyGuidesValue(
         ...(content !== undefined ? ["content"] : []),
       ];
       if (changed.length === 0) throw new Error(`${where} changes nothing on "${guide.title}".`);
-      return { ...guide, ...(title !== undefined ? { title } : {}), ...(content !== undefined ? { content } : {}), changed };
+      return { id: guide.id, title: title ?? guide.title, expectedVersion, ...(content !== undefined ? { content } : {}), changed };
     },
     { listChecks: (items) => [repeatsProblem(target, items.map((item) => rawId(item.raw)), "id", "Merge the changes into one entry.")] },
   );
