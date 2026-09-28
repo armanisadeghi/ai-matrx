@@ -175,7 +175,7 @@ export function PublicAccessTab({
       await navigator.clipboard.writeText(publicUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast({ title: "Public link copied" });
+      toast({ title: "Web address copied" });
     } catch {
       toast({ title: "Couldn't copy", variant: "destructive" });
     }
@@ -606,7 +606,7 @@ export function PublicAccessTab({
                       size="icon"
                       className="h-8 w-8 flex-shrink-0"
                       onClick={copyPublicUrl}
-                      title="Copy public link"
+                      title="Copy web address"
                     >
                       {copied ? (
                         <Check className="w-4 h-4 text-green-500" />
