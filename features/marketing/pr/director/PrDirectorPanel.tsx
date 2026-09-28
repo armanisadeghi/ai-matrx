@@ -103,33 +103,29 @@ export function PrDirectorPanel({ brandId, brandName, organizationId, className 
     );
   }, [conversationId, brandId, dispatch]);
 
-  // THE EDGE, once the first turn has finished (the conversation row exists then; before it, assoc_add
-  // is a guaranteed refusal). Retried briefly; a refusal is said, never swallowed.
+  // THE EDGE, once a turn has finished and the conversation has messages (the row exists then; before
+  // it, assoc_add is a guaranteed refusal). Retried briefly; a refusal is said, never swallowed. Keyed on
+  // the message count rather than a watched run, so a page that reloaded mid-run still binds.
   const executing = useAppSelector((state) => (conversationId ? selectIsExecuting(conversationId)(state) : false));
-  const sawRun = useRef(false);
+  const messageCount = useAppSelector((state) => (conversationId ? selectMessageCount(conversationId)(state) : 0));
   const [bind, setBind] = useState<BindState>("idle");
+  const boundFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!conversationId) return;
-    if (executing) {
-      sawRun.current = true;
-      return;
-    }
-    if (!sawRun.current || bind !== "idle") return;
+    if (!conversationId || executing || messageCount < 2) return;
+    const key = `${conversationId}:${brandId}`;
+    if (boundFor.current === key) return;
+    boundFor.current = key;
     setBind("binding");
-    let cancelled = false;
     void (async () => {
       let last: string | null = null;
       for (let attempt = 0; attempt < 4; attempt++) {
         last = await bindConversationToBrand({ conversationId, brandId, organizationId });
-        if (last === null || cancelled) break;
+        if (last === null) break;
         await new Promise((r) => setTimeout(r, 1500));
       }
-      if (!cancelled) setBind(last === null ? "bound" : { refused: last });
+      if (boundFor.current === key) setBind(last === null ? "bound" : { refused: last });
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [conversationId, executing, bind, brandId, organizationId]);
+  }, [conversationId, executing, messageCount, brandId, organizationId]);
 
   const start = useCallback(
     (text: string, send: boolean) => {
@@ -142,7 +138,6 @@ export function PrDirectorPanel({ brandId, brandName, organizationId, className 
 
   // The starting points sit ABOVE the composer (never as `landingContent`, which replaces the composer
   // with nothing) and fall away once the conversation has its first message.
-  const messageCount = useAppSelector((state) => (conversationId ? selectMessageCount(conversationId)(state) : 0));
   const landing = messageCount > 0 ? null : (
     <div className="flex flex-col gap-3 px-1 py-3">
       <div className="flex items-center gap-2">
