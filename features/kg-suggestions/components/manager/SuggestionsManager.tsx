@@ -283,7 +283,7 @@ export function SuggestionsManager() {
     mainArea = (
       <div className="p-6 text-center text-sm text-destructive">
         Couldn&apos;t load suggestions: {error}
-        <ErrorAlchemyMenu />
+        <ErrorAlchemyMenu error={error} operation="Load your suggestions" />
       </div>
     );
   } else if (rows.length === 0) {
