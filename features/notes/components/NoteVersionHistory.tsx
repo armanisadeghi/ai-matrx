@@ -138,7 +138,6 @@ export function NoteVersionHistory({
       open={open}
       onOpenChange={onOpenChange}
       title="Version History"
-      description="Compare versions or restore a snapshot"
       expandButtonLabel="Version History"
       position="right"
       defaultSize={defaultPct}
