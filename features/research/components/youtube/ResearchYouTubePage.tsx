@@ -29,6 +29,7 @@ import {
 } from "@/features/marketing/discovery/youtube/service";
 import type { YouTubeVideoLibraryRecord } from "@/features/marketing/discovery/youtube/types";
 import { useTopicId } from "../../context/ResearchContext";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 export default function ResearchYouTubePage() {
   const dispatch = useAppDispatch();
@@ -210,7 +211,7 @@ export default function ResearchYouTubePage() {
               Topic library
               {videos.length > 0 && (
                 <span className="ml-2 rounded-full bg-background/70 px-2 py-0.5 text-[10px]">
-                  {videos.length}
+                  <UntrustedCount value={videos.length} trustworthy={libraryError == null || videos.length > 0} label="Videos" />
                 </span>
               )}
             </Button>

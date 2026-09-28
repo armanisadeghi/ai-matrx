@@ -32,6 +32,8 @@ import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { selectBuiltinAgents } from '@/features/agents/redux/agent-definition/selectors';
 import { fetchAgentsListFull } from '@/features/agents/redux/agent-definition/thunks';
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 const SYSTEM_AGENT_TAB = ['system'] as const;
 
@@ -79,8 +81,8 @@ export function AgentWiringDashboard() {
             }
             setLoadError(null);
         } catch (err) {
+            // Said once, in the list (ReadFailure / StaleDataNotice) — no toast too.
             setLoadError(err ?? true);
-            toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -223,7 +225,8 @@ export function AgentWiringDashboard() {
                                                                     : '',
                                                         )}
                                                     >
-                                                        {templatesUsing.length}/{templates.length} templates
+                                                        <UntrustedCount value={templatesUsing.length} trustworthy={loadError == null} label="Templates using this agent" />/
+                                                        <UntrustedCount value={templates.length} trustworthy={loadError == null} label="Templates" /> templates
                                                     </Badge>
                                                 </div>
                                             </div>
@@ -242,6 +245,10 @@ export function AgentWiringDashboard() {
                 {/* Per-Template Wiring */}
                 <div className="space-y-3">
                     <h3 className="text-sm font-semibold">Per-Template Agent Configuration</h3>
+                    {loadError != null && templates.length > 0 && (
+                        <StaleDataNotice hasData what="the research templates" onRetry={() => void loadData()} retrying={loading} />
+                    )}
+
                     {templates.map(template => {
                         const status = getOverallStatus(template);
                         const isExpanded = expandedTemplates.has(template.id);

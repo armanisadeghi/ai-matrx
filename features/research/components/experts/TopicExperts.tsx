@@ -40,6 +40,9 @@ import type {
   ExpertCandidateTier,
   ExpertExtraction,
 } from "../../types";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const TIER_STYLE: Record<ExpertCandidateTier, string> = {
   strong:
@@ -157,6 +160,8 @@ export default function TopicExperts() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [includeWeak, setIncludeWeak] = useState(false);
   const [rosterLoading, setRosterLoading] = useState(true);
+  // The roster read's failure, said in the roster — never "Nobody promoted yet".
+  const [rosterError, setRosterError] = useState<unknown>(null);
 
   // Resolves in a callback rather than synchronously in the effect body — the
   // roster is external state we subscribe to, not state we derive.
@@ -165,9 +170,10 @@ export default function TopicExperts() {
       fetchTopicExperts(topicId)
         .then((rows) => {
           setRoster(rows);
+          setRosterError(null);
         })
         .catch((e: unknown) => {
-          toast.error(extractErrorMessage(e));
+          setRosterError(e);
         })
         .finally(() => {
           setRosterLoading(false);
@@ -252,12 +258,17 @@ export default function TopicExperts() {
               Experts from this research
             </h2>
             <span className="text-xs tabular-nums text-muted-foreground">
-              {roster.length}
+              <UntrustedCount value={roster.length} trustworthy={rosterError == null || roster.length > 0} label="Experts" />
             </span>
           </header>
+          {rosterError != null && roster.length > 0 && (
+            <StaleDataNotice hasData what="the experts" onRetry={() => void loadRoster()} className="m-2" />
+          )}
           <div className="p-2">
             {rosterLoading ? (
               <Skeleton className="h-10 w-full rounded" />
+            ) : rosterError != null && roster.length === 0 ? (
+              <ReadFailure error={rosterError} what="the experts from this research" onRetry={() => void loadRoster()} className="m-0" />
             ) : roster.length === 0 ? (
               <p className="py-2 text-center text-xs text-muted-foreground">
                 Nobody promoted yet. Scan below to see who this research names.
@@ -303,6 +314,7 @@ export default function TopicExperts() {
             </h2>
             {extraction && (
               <span className="text-xs text-muted-foreground">
+                {/* read-gate-exempt: candidates from the scan the person just ran; extraction is set only when that scan returned */}
                 {extraction.candidates.length} found across{" "}
                 {extraction.sources_with_signals} analyzed page
                 {extraction.sources_with_signals === 1 ? "" : "s"}

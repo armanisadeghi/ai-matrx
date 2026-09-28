@@ -1862,6 +1862,7 @@ export default function SourceList() {
         open={createTagTarget !== null}
         onOpenChange={(o) => !creatingTag && !o && setCreateTagTarget(null)}
         title="New tag dimension"
+        // read-gate-exempt: how many sources the person has selected (selection state), not a count from a read
         description={
           createTagTarget === "__bulk__"
             ? `Create a tag and assign the ${selected.size} selected source(s) to it.`

@@ -123,6 +123,7 @@ function TopicAbout({ topicId }: { topicId: string }) {
       .then((topic) => {
         if (!cancelled) setDescription(topic?.description?.trim() || null);
       })
+      // read-gate-exempt: the page body reads the same topic and shows its load failure; this footer only omits its About text
       .catch((error: unknown) => {
         // The page body resolves access and load failures; the footer just
         // stays absent rather than showing a stale or wrong brief.

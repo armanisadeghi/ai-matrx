@@ -289,6 +289,7 @@ export function TopicSettingsForm({
                 <SelectValue placeholder="No project" />
               </SelectTrigger>
               <SelectContent className="max-h-[320px]">
+                {/* read-gate-exempt: the selectable "No project" option that unassigns the project, not an empty state */}
                 <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
                 {selectedProjectMissing && selectedProjectId && (
                   <SelectItem value={selectedProjectId}>

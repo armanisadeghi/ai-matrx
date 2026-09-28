@@ -344,6 +344,7 @@ export function CrossCuttingTagsPanel({
                   : "Select all"}
               </button>
               <span className="text-[10px] text-muted-foreground tabular-nums">
+                {/* read-gate-exempt: selection count over tag suggestions this panel generated or the topic prop carried; no read happens here */}
                 {selectedCount} of {pending.length} selected
               </span>
             </div>

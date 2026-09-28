@@ -44,6 +44,7 @@ import type {
 } from "../../types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 // ============================================================================
 // Capture-ladder metadata
@@ -357,7 +358,10 @@ export default function TasksView() {
               onCheckedChange={(v) => setScope(v ? "all" : "topic")}
               aria-label="Show tasks across all topics"
             />
-            <span>All topics ({allTopicsTotal})</span>
+            <span>
+              All topics (
+              <UntrustedCount value={allTopicsTotal} trustworthy={error == null || queue != null} label="Tasks across all topics" />)
+            </span>
           </label>
           <Button
             variant="outline"

@@ -1371,6 +1371,7 @@ function SlidesOutputCard({
               {viewing.title}
             </span>
             <span className="text-[10px] text-muted-foreground tabular-nums">
+              {/* read-gate-exempt: slide count of the deck asset the person opened or this run produced; viewing is only set to a delivered asset */}
               {deck.slides?.length ?? 0} slides
             </span>
             <button
