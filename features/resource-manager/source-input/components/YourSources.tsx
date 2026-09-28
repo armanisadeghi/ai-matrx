@@ -33,6 +33,7 @@ import {
   type SourceListRow,
 } from "@/features/sources/sourceRows";
 import { cn } from "@/utils/cn";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type StageFilter = "any" | "searchable" | "reading" | "not_searchable";
 
@@ -149,8 +150,9 @@ export function YourSources({
           <Loader2 className="h-4 w-4 animate-spin" /> Finding your sources…
         </div>
       ) : list.error ? (
-        <p role="alert" className="py-4 text-sm text-destructive">
+        <p role="alert" className="flex items-center gap-2 py-4 text-sm text-destructive">
           {list.error}
+          <ErrorAlchemyMenu error={list.error} operation="List your Sources" />
         </p>
       ) : rows.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">

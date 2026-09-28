@@ -29,6 +29,7 @@ import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/
 import type { Resource } from "@/features/agents/resources/types";
 import { openSourceReview } from "@/features/resource-manager/source-input/review/openSourceReview";
 import { cn } from "@/utils/cn";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { visibleSourceKinds, type SourceKindDef } from "../sourceKinds";
 import { useSourceSet } from "../useSourceSet";
 import { useSourceIntake } from "../useSourceIntake";
@@ -227,12 +228,18 @@ export function SourceInput({
         <p role="alert" className="flex items-start gap-2 text-xs text-destructive">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{set.manifestError}</span>
+          <ErrorAlchemyMenu error={set.manifestError} operation="Measure the Sources" />
           <Button type="button" variant="ghost" size="sm" className="h-7" onClick={() => void set.manifest()}>
             Try again
           </Button>
         </p>
       ) : null}
-      {thresholdError ? <p className="text-xs text-warning">{thresholdError}</p> : null}
+      {thresholdError ? (
+        <p className="flex items-start gap-2 text-xs text-warning">
+          <span>{thresholdError}</span>
+          <ErrorAlchemyMenu error={thresholdError} operation="Read the review size setting" />
+        </p>
+      ) : null}
 
       {set.topic.trim() || count > 0 ? (
         <ul className="space-y-2" aria-label="Picked sources">
