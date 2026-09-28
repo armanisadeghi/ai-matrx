@@ -120,6 +120,37 @@ export function checksumsOf(bytes) {
   return raw === trimmed ? [raw] : [raw, trimmed];
 }
 
+/**
+ * `apply-migration.ts` gives `-- retired: <reason>` a very narrow meaning: the
+ * historical migration is now unsafe to replay.  That marker is metadata, not
+ * executable SQL, but it must never become a general "comments do not count"
+ * escape hatch for an already-ledgered file.
+ *
+ * This returns true only when deleting ONE well-formed retirement-header line
+ * recreates the exact raw/aidream-rstrip checksum production recorded.  The
+ * byte slices are retained verbatim, so an SQL edit, another metadata edit, or
+ * an arbitrary comment cannot ride along with the annotation.
+ */
+const RETIRED_MARKER = /^\s*--\s*retired\s*:\s*(.+?)\s*$/i;
+function isRetirementAnnotationOnly(bytes, ledgeredChecksum) {
+  let start = 0;
+  for (let lineNumber = 0; lineNumber < 25 && start <= bytes.length; lineNumber += 1) {
+    const newline = bytes.indexOf(0x0a, start);
+    const end = newline === -1 ? bytes.length : newline;
+    const lineEnd = end > start && bytes[end - 1] === 0x0d ? end - 1 : end;
+    const line = bytes.subarray(start, lineEnd).toString("utf8");
+    const marker = line.match(RETIRED_MARKER);
+    if (marker && (marker[1] ?? "").trim()) {
+      const after = newline === -1 ? end : newline + 1;
+      const withoutMarker = Buffer.concat([bytes.subarray(0, start), bytes.subarray(after)]);
+      if (checksumsOf(withoutMarker).includes(ledgeredChecksum)) return true;
+    }
+    if (newline === -1) break;
+    start = newline + 1;
+  }
+  return false;
+}
+
 export function isGuardedPath(relPath) {
   const p = relPath.replace(/\\/g, "/");
   return p.endsWith(".sql") && GUARDED_DIRS.some((d) => p.startsWith(d));
@@ -233,6 +264,10 @@ export function judge(candidates, snapshot, message) {
     const forms = checksumsOf(bytes);
     const got = forms[0];
     if (forms.includes(row.checksum)) continue;
+    // A retired marker is the migration runner's existing, executable safety
+    // primitive.  It is accepted here only when it is literally the sole
+    // addition to the bytes production recorded (see helper above).
+    if (isRetirementAnnotationOnly(bytes, row.checksum)) continue;
     const old = GRANDFATHERED[rel];
     if (old && old.ledgered === row.checksum && forms.includes(old.tree)) continue;
     if (forms.some((f) => messageAllows(message, rel, f))) continue;

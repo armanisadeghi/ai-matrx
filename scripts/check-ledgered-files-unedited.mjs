@@ -159,6 +159,7 @@ function selfTest() {
   const REL = "migrations/campaign/ledgerlock_selftest_a_ledgered_file_is_frozen.sql";
   const APPLIED = "-- a file production ran\ncreate function public.x() returns int as $$ select 1 $$ language sql;\n";
   const EDITED = APPLIED.replace("create function", "create or replace function");
+  const RETIRED = `-- retired: superseded by a later migration; never replay this historical body\n${APPLIED}`;
   const NEW_REL = "migrations/campaign/ledgerlock_selftest_a_new_file_is_free.sql";
 
   const snapshot = emptySnapshot();
@@ -202,6 +203,30 @@ function selfTest() {
     "GREEN-3 runner trailer passes",
     false,
     judge([{ relPath: REL, bytes: Buffer.from(EDITED) }], snapshot, `amend\n\n${trailerLine(REL, sha256(EDITED))}\n`),
+  );
+  // GREEN-3b / RED-3b–3e — `-- retired:` is an applier-supported replay stop,
+  // not a comment exemption.  It passes only as one new, well-formed header
+  // line over the production bytes; SQL, arbitrary comments, and malformed
+  // marker text remain frozen-history edits.
+  check(
+    "GREEN-3b a sole well-formed retired annotation passes",
+    false,
+    judge([{ relPath: REL, bytes: Buffer.from(RETIRED) }], snapshot, null),
+  );
+  check(
+    "RED-3b changed SQL plus retired annotation is refused",
+    true,
+    judge([{ relPath: REL, bytes: Buffer.from(RETIRED.replace("select 1", "select 2")) }], snapshot, null),
+  );
+  check(
+    "RED-3c arbitrary comment plus retired annotation is refused",
+    true,
+    judge([{ relPath: REL, bytes: Buffer.from(`${RETIRED}-- unrelated comment\n`) }], snapshot, null),
+  );
+  check(
+    "RED-3d malformed retired annotation is refused",
+    true,
+    judge([{ relPath: REL, bytes: Buffer.from(`-- retired:\n${APPLIED}`) }], snapshot, null),
   );
   // GREEN-4 — a file OUTSIDE the guarded dirs is never this guard's business.
   check(
