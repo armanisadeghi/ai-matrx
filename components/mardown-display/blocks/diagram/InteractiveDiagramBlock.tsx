@@ -739,6 +739,27 @@ function buildReactFlowEdges(diagram: DiagramData): Edge[] {
   const hideArrows = diagram.renderHints?.hideArrows;
   const showLabels = diagram.renderHints?.showEdgeLabels !== false;
 
+  // Stored diagram JSON (often LLM-generated) is not guaranteed to carry
+  // unique edge ids — the same "e1".."eN" sequence has shown up twice inside
+  // one diagram. React Flow keys its internal edge lookup by id, so a
+  // collision doesn't just trip React's duplicate-key warning: it silently
+  // drops every earlier edge that shares the id, leaving fewer connections on
+  // screen than the data actually holds. Disambiguate here, at the one place
+  // that produces the array React Flow renders, so every edge the data
+  // describes stays on the canvas regardless of how clean the source id was.
+  const seenEdgeIds = new Map<string, number>();
+  const uniqueEdgeId = (rawId: string): string => {
+    const priorCount = seenEdgeIds.get(rawId) ?? 0;
+    seenEdgeIds.set(rawId, priorCount + 1);
+    if (priorCount === 0) return rawId;
+    const deduped = `${rawId}__dup${priorCount}`;
+    console.warn(
+      `Diagram edge id "${rawId}" is duplicated in this diagram's data; ` +
+        `rendering it as "${deduped}" so both edges stay visible.`,
+    );
+    return deduped;
+  };
+
   return diagram.edges
     .filter((edge) => {
       if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
@@ -789,7 +810,7 @@ function buildReactFlowEdges(diagram: DiagramData): Edge[] {
       };
 
       return {
-        id: edge.id,
+        id: uniqueEdgeId(edge.id),
         source: edge.source,
         target: edge.target,
         sourceHandle: "output",
