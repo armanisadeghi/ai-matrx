@@ -37,11 +37,11 @@ export function DeleteTranscriptDialog({
         setIsDeleting(true);
         try {
             await deleteTranscript(transcript.id);
-            toast.success('Transcript and audio file deleted');
+            toast.success('Transcript moved to Trash');
             onClose();
         } catch (error: any) {
             console.error('Error deleting transcript:', error);
-            toast.error(error.message || 'Failed to delete transcript');
+            toast.error(error.message || 'Failed to move transcript to Trash');
         } finally {
             setIsDeleting(false);
         }
@@ -59,20 +59,16 @@ export function DeleteTranscriptDialog({
                         <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                             <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
                         </div>
-                        <AlertDialogTitle>Delete Transcript</AlertDialogTitle>
+                        <AlertDialogTitle>Move Transcript to Trash</AlertDialogTitle>
                     </div>
                     <AlertDialogDescription className="space-y-2 pt-2">
                         <p>
-                            Are you sure you want to delete <span className="font-semibold text-foreground">"{transcript.title}"</span>?
+                            Move <span className="font-semibold text-foreground">"{transcript.title}"</span> to Trash?
                         </p>
-                        {hasAudioFile && (
-                            <p className="flex items-start gap-1.5 font-medium text-orange-600 dark:text-orange-400">
-                                <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                                <span>This will permanently delete both the transcript and the audio file from storage.</span>
-                            </p>
-                        )}
                         <p className="text-xs text-muted-foreground">
-                            This action cannot be undone.
+                            {hasAudioFile
+                                ? 'The transcript and its recording go to Trash together. You can restore both from Trash.'
+                                : 'You can restore it from Trash.'}
                         </p>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -86,10 +82,10 @@ export function DeleteTranscriptDialog({
                         {isDeleting ? (
                             <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Deleting...
+                                Moving...
                             </>
                         ) : (
-                            'Delete Permanently'
+                            'Move to Trash'
                         )}
                     </AlertDialogAction>
                 </AlertDialogFooter>

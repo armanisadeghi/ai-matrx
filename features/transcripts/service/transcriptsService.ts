@@ -275,32 +275,13 @@ export async function updateTranscript(
 }
 
 /**
- * Delete a transcript and its associated audio file from storage
+ * Move a transcript to Trash (soft delete — stamps deleted_at).
+ *
+ * Delete means archive: the audio/video files stay exactly where they are, so
+ * restoring the transcript from Trash brings it back WITH its media. Removing
+ * the bytes here would make every restore a transcript with dead audio.
  */
 export async function deleteTranscript(id: string): Promise<void> {
-  // First, fetch the transcript to get the audio file path
-  const { data: transcript, error: fetchError } = await supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .select("audio_file_path, video_file_path")
-    .eq("id", id)
-    .single();
-
-  if (fetchError) {
-    console.error("Error fetching transcript for deletion:", fetchError);
-    throw fetchError;
-  }
-
-  // Delete the audio/video files via the universal handler.
-  // `audio_file_path` / `video_file_path` now hold cld_files UUIDs.
-  const { deleteAudioFromStorage } = await import("./audioStorageService");
-  if (transcript?.audio_file_path) {
-    await deleteAudioFromStorage(transcript.audio_file_path);
-  }
-  if (transcript?.video_file_path) {
-    await deleteAudioFromStorage(transcript.video_file_path);
-  }
-
   // Soft delete the transcript record
   const { error } = await tryWriteOne(
     supabase
@@ -314,26 +295,6 @@ export async function deleteTranscript(id: string): Promise<void> {
 
   if (error) {
     console.error("Error deleting transcript:", error);
-    throw error;
-  }
-}
-
-/**
- * Permanently delete a transcript
- */
-export async function permanentlyDeleteTranscript(id: string): Promise<void> {
-  const { error } = await tryWriteOne(
-    supabase
-      .schema("transcripts")
-      .from("transcripts")
-      .delete()
-      .eq("id", id)
-      .select("id"),
-    { action: "delete", noun: "transcript" },
-  );
-
-  if (error) {
-    console.error("Error permanently deleting transcript:", error);
     throw error;
   }
 }
