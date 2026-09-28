@@ -152,9 +152,21 @@ export function ResultPreview({
                 stickyHeader
                 viewTabs={false}
                 pageSize={0}
-                hidePagination
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
+                coverage={
+                  truncated
+                    ? {
+                        // `rows` is the result held by this preview. It is not a
+                        // claim about how many rows the SQL source could return.
+                        // The grid can search only the first `maxTableRows` rows.
+                        loaded: displayRows.length,
+                        total: rows.length,
+                        answeredBy: "client",
+                        noun: "result row",
+                      }
+                    : undefined
+                }
                 toolbar={{
                   title: "Query results",
                   search: true,
@@ -163,12 +175,6 @@ export function ResultPreview({
                 className="min-h-0 flex-1"
                 emptyState={{ title: emptyMessage }}
               />
-              {truncated && (
-                <div className="shrink-0 border-t border-border bg-muted/40 px-2 py-1 text-[10px] text-muted-foreground">
-                  Showing {maxTableRows} of {rows.length} rows. Switch to JSON
-                  to see all.
-                </div>
-              )}
             </div>
           )}
         </TabsContent>

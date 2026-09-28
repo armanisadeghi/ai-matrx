@@ -43,7 +43,7 @@ describe("ResultPreview", () => {
     host.remove();
   });
 
-  it("uses the canonical table for a capped table view while retaining the full result count", () => {
+  it("uses the canonical table coverage for a capped table view", () => {
     const rows = Array.from({ length: 101 }, (_, index) => ({
       id: index + 1,
       metadata: { rank: index + 1 },
@@ -59,8 +59,13 @@ describe("ResultPreview", () => {
     expect(tableProps.data[0]).toEqual({ row: rows[0], index: 0 });
     expect(tableProps.data.at(-1)).toEqual({ row: rows[99], index: 99 });
     expect(tableProps.pageSize).toBe(0);
-    expect(tableProps.hidePagination).toBe(true);
-    expect(tableProps.coverage).toBeUndefined();
+    expect(tableProps.hidePagination).toBeUndefined();
+    expect(tableProps.coverage).toEqual({
+      loaded: 100,
+      total: 101,
+      answeredBy: "client",
+      noun: "result row",
+    });
     expect(tableProps.viewTabs).toBe(false);
     expect(tableProps.detail).toEqual({ enabled: false });
     expect(tableProps.window).toEqual({ enabled: false });
@@ -95,7 +100,7 @@ describe("ResultPreview", () => {
       props: { children: { props: { children: "NULL" } } },
     });
     expect(host.textContent).toContain("Table (101)");
-    expect(host.textContent).toContain("Showing 100 of 101 rows. Switch to JSON");
+    expect(host.textContent).not.toContain("Switch to JSON");
   });
 
   it("keeps the synthetic index distinct from arbitrary SQL aliases", () => {
