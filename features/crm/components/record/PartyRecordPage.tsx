@@ -502,6 +502,22 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                 </DropdownMenu>
               </>
             )
+          ) : initialHeading ? (
+            // BEFORE THE RECORD LOADS (server HTML included): the phone row's
+            // primary — "Log an activity", the one the phone set keeps in the
+            // row — is drawn from the server-read heading, so the title never
+            // re-truncates when the record lands. Desktop draws nothing here
+            // (its actions arrive with the record, right of a title that
+            // already has its room).
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden"
+              onClick={jumpToActivity}
+            >
+              <History className="mr-1 h-3.5 w-3.5" />
+              Log an activity
+            </Button>
           ) : undefined
         }
       />

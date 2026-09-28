@@ -1596,6 +1596,8 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
   .page-header-ghost [data-route-header-right] > [data-route-header-action]:not([data-route-header-phone-primary]),
   .page-header-ghost [data-route-header-right] > [data-route-header-overflow],
   .page-header-ghost [data-route-header-center],
+  .page-header-ghost [data-header-actions-slot],
+  [data-page-header-settling] [data-header-actions-slot],
   [data-page-header-settling] [data-route-header-right] > [data-route-header-action]:not([data-route-header-phone-primary]),
   [data-page-header-settling] [data-route-header-right] > [data-route-header-overflow],
   [data-page-header-settling] [data-route-header-center] {

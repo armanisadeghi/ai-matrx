@@ -55,7 +55,14 @@ export function HeaderActionsSlot({
       host,
     );
   }
-  return <div className={className ?? "flex shrink-0 items-center"}>{children}</div>;
+  // `data-header-actions-slot`: on a phone these go to the ⋮ sheet once the
+  // client knows it is a phone; the server cannot, so the pre-hydration
+  // header hides them by CSS from the first paint (styles/shell.css).
+  return (
+    <div data-header-actions-slot className={className ?? "flex shrink-0 items-center"}>
+      {children}
+    </div>
+  );
 }
 
 export default HeaderActionsSlot;

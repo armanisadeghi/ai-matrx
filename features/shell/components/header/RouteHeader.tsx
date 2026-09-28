@@ -54,7 +54,15 @@
 
 "use client";
 
-import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -95,6 +103,8 @@ interface RouteHeaderProps {
   /** Yield to any page-specific header mounted deeper in the route tree. */
   fallback?: boolean;
 }
+
+const noopSubscribe = () => () => {};
 
 /** Breathing room an in-flow center keeps from the title and the actions. */
 export const CENTER_INFLOW_GUTTER = 16;
@@ -284,6 +294,8 @@ export default function RouteHeader({
           if (!key) return;
           const slot =
             el.dataset.routeHeaderCompact != null ? `${key}#icon-only` : key;
+          // A breakpoint twin (server HTML only) is not the row's real action.
+          if (el.dataset.routeHeaderTwin != null) return;
           widthsRef.current.set(slot, el.offsetWidth);
         });
 
@@ -399,6 +411,11 @@ export default function RouteHeader({
   const overflowActions = toSheet ? [] : actions.slice(0, fold);
   const rowActions = toSheet ? (phonePrimary ? [phonePrimary] : []) : actions.slice(fold);
   const rowPrimary = toSheet ? phonePrimary : primary;
+  const serverOrHydrating = useSyncExternalStore(
+    noopSubscribe,
+    () => false,
+    () => true,
+  );
   // On a phone the kept primary is compact up front — the title keeps the row.
   const compactRow = toSheet
     ? phonePrimary != null && iconOnlyLabel(phonePrimary.node) != null
@@ -539,6 +556,37 @@ export default function RouteHeader({
           ) : null}
           {rowActions.map((a) => {
             const iconOnly = compactRow && a === rowPrimary;
+            // SERVER HTML: whether this is a phone is unknown, and on a phone a
+            // labelled primary is icon-only. Draw both, chosen by the phone
+            // breakpoint in CSS, so the first paint already matches the
+            // hydrated row at every width (no JS measurement, no re-truncation).
+            if (
+              serverOrHydrating &&
+              a === phonePrimaryCandidate &&
+              !iconOnly &&
+              iconOnlyLabel(a.node) != null
+            ) {
+              return (
+                <Fragment key={a.key}>
+                  <div
+                    data-route-header-action={a.key}
+                    data-route-header-twin=""
+                    className="flex shrink-0 items-center max-md:hidden"
+                  >
+                    {a.node}
+                  </div>
+                  <div
+                    data-route-header-action={a.key}
+                    data-route-header-phone-primary=""
+                    data-route-header-compact=""
+                    data-route-header-twin=""
+                    className="flex shrink-0 items-center md:hidden"
+                  >
+                    {toIconOnly(a.node)}
+                  </div>
+                </Fragment>
+              );
+            }
             return (
               <div
                 key={a.key}
