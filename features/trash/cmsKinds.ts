@@ -8,10 +8,10 @@
  */
 
 export const CMS_TRASH_KINDS = {
-  cms_site: { label: "Site", table: "client_sites", door: "cms_restore_site", arg: "p_site_id" },
-  cms_page: { label: "Site page", table: "client_pages", door: "cms_restore_page", arg: "p_page_id" },
+  cms_site: { label: "CMS site", table: "client_sites", door: "cms_restore_site", arg: "p_site_id" },
+  cms_page: { label: "CMS page", table: "client_pages", door: "cms_restore_page", arg: "p_page_id" },
   cms_component: {
-    label: "Site component",
+    label: "CMS component",
     table: "client_components",
     door: "cms_restore_component",
     arg: "p_component_id",

@@ -123,6 +123,8 @@ export interface UseSourceSetResult {
   /** Change the pointer's choices (form, parts, cap, delivery). */
   updateRef: (id: string, options: SourceRefOptions) => void;
   setWaitForClean: (id: string, wait: boolean) => void;
+  /** How many Sources are picked RIGHT NOW (read from the store, never a stale render). */
+  liveCount: () => number;
   /** True when this pointer is already picked (the "Your sources" list ticks it). */
   hasRef: (resourceType: string, resourceId: string) => boolean;
   /** The frozen v1 payload, built from the ready Sources. */
@@ -158,6 +160,8 @@ export function useSourceSet(
   const [measuring, setMeasuring] = useState(false);
   const [manifestError, setManifestError] = useState<string | null>(null);
   const hydrated = useRef(false);
+  /** The newest measurement wins: an older answer never overwrites a newer one. */
+  const measurement = useRef<AbortController | null>(null);
 
   const sources = Object.values(resources)
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -345,6 +349,11 @@ export function useSourceSet(
     persist({ topic });
   };
 
+  const liveCount = () =>
+    Object.values(store.getState().instanceResources.byConversationId[key] ?? {}).filter(
+      (r) => r.blockType === "source_ref",
+    ).length;
+
   const hasRef = (resourceType: string, resourceId: string) =>
     sources.some(
       (s) =>
@@ -397,11 +406,16 @@ export function useSourceSet(
       setManifestError(null);
       return null;
     }
+    measurement.current?.abort();
+    const controller = new AbortController();
+    measurement.current = controller;
     setMeasuring(true);
     try {
       const result = await fetchSourceManifest(createSourceSet(refs), {
         organizationId: options.organizationId,
+        signal: controller.signal,
       });
+      if (measurement.current !== controller) return null;
       const live = store.getState().instanceResources.byConversationId[key] ?? {};
       for (const resource of Object.values(live)) {
         const card = toCard(resource);
@@ -416,12 +430,14 @@ export function useSourceSet(
       setManifestError(null);
       return result;
     } catch (err) {
+      // A superseded measurement was cancelled on purpose — not a failure.
+      if (measurement.current !== controller) return null;
       setManifestError(
         `Sizes and parts could not be read: ${sourceRefusalSentence(err)} Your picks are kept — try again.`,
       );
       return null;
     } finally {
-      setMeasuring(false);
+      if (measurement.current === controller) setMeasuring(false);
     }
   };
 
@@ -458,6 +474,7 @@ export function useSourceSet(
     remove,
     updateRef,
     setWaitForClean,
+    liveCount,
     hasRef,
     toSourceSet,
     applySourceSet,

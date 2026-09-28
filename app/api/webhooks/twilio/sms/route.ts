@@ -162,6 +162,14 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("Error processing inbound SMS webhook:", err);
 
+    // Twilio NEVER retries an inbound-message webhook that answered 500. The
+    // released receipt is the only trace, and aidream's SMS dispatcher sweep
+    // re-drives it: it replays the stored form, signed, back to THIS route
+    // (claimInboundSmsReceipt's lease-expired reclaim counts the attempt), and
+    // after the last attempt closes it, files ops.system_error and asks the
+    // person to resend (aidream/workers/sms_webhook_redrive.py, 2026-09-28).
+    // So: keep releasing (never mark processed on failure) and keep the
+    // receipt's raw_payload exactly what parseInboundSmsPayload produced.
     if (claimedReceiptId) {
       await releaseInboundSmsReceipt(
         claimedReceiptId,

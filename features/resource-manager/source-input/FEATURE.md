@@ -73,9 +73,14 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 - An uploaded file is not yet filed against `attachTo` (the file's Source row may not exist at upload time).
 - `pnpm sync-types` is refused at the time of writing by an unrelated drop in the aidream checkout (ai-visibility `PanelTrend`), so `/sources/manifest|resolve` are typed from the shared package, not the generated file.
 - "Wait for the clean version" is recorded on the draft; the host that runs the request must honour it (USI-5 onward).
+- Pasted text and transcripts land without `clean_content` (the clean stage is skipped for them), so `/sources/manifest` reports them "processing" forever while the stage table says "cleaned". Server-side (source resolution) — the card shows both honestly until it is fixed.
+- A new Source still landing when the page reloads is lost mid-flight (the card says "Add it again"; the Source itself usually landed and appears in Your sources).
+- Parts are per form: changing the form clears the picked parts and says so.
 
 ---
 
 ## Change log
+
+- 2026-09-27 — Verified on the shared preview as admin@admin.com (desktop 1440, phone 375): paste → landed + kept; web page → landed; stored 240-page PDF → measured (359k), 3 of 73 parts picked, form switched to raw, review auto-opened above 100k; note picked; remove; reload keeps picks; max 3 enforced. YouTube reached the transcript route, which failed server-side (shown on the card).
 
 - 2026-09-27 — Created (lane USI-3): `SourceInput`, `YourSources`, `SourceCard`, `sourceKinds.ts`, `useSourceSet`, `useSourceIntake`, `sourceSetApi.ts`, the dev demo; `instanceResources` gains block type `source_ref` + `setResourceSource`; knob `sources.review_threshold_chars` registered.

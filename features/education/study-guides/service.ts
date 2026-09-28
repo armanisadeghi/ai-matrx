@@ -2,6 +2,7 @@ import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { listEducationNotes } from "@/features/education/notes/education-notes";
+import { EDUCATION_NOTE_CREATE_FIELDS } from "@/features/education/notes/education-notes";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import type { Note, NoteListItem } from "@/features/notes/types";
 
@@ -21,6 +22,31 @@ export interface StudyTerm {
 export const loadStudyGuideIndex = (): Promise<NoteListItem[]> => listEducationNotes({ owner: "mine" });
 
 export const loadStudyGuide = (noteId: string): Promise<Note | null> => NotesAPI.getById(noteId, { failureMode: "throw" });
+
+/** The canonical Notes write path, kept separate from reader navigation. */
+export async function createStudyGuide(input: { title: string; content: string; organizationId: string }): Promise<Note> {
+  return NotesAPI.create({
+    label: input.title,
+    content: input.content || `# ${input.title}\n\n`,
+    ...EDUCATION_NOTE_CREATE_FIELDS,
+    organization_id: input.organizationId,
+  });
+}
+
+/** Version- and organization-guarded canonical Notes update for a listed guide. */
+export async function updateStudyGuide(
+  current: Pick<Note, "id" | "version" | "organization_id">,
+  updates: { title?: string; content?: string },
+): Promise<Note> {
+  return NotesAPI.update(
+    current.id,
+    {
+      ...(updates.title !== undefined ? { label: updates.title } : {}),
+      ...(updates.content !== undefined ? { content: updates.content } : {}),
+    },
+    { expectedVersion: current.version, expectedOrganizationId: current.organization_id },
+  );
+}
 
 /** The same canonical membership edges used by Flashcard Studio. */
 export async function loadStudyTerms(noteId: string): Promise<StudyTerm[]> {

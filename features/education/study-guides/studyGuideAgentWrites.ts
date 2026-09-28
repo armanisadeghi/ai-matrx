@@ -157,22 +157,67 @@ export interface DeleteStudyGuidePlan {
   title: string;
 }
 
-/** A detail-page agent may archive only the guide that is open in this reader. */
+export interface CurrentStudyGuide {
+  id: string;
+  title: string;
+  version: number;
+}
+
+export interface UpdateStudyGuidePlan extends CurrentStudyGuide {
+  title?: string;
+  content?: string;
+  changed: string[];
+}
+
+export function parseUpdateStudyGuidesValue(
+  value: unknown,
+  current: readonly CurrentStudyGuide[],
+): UpdateStudyGuidePlan[] {
+  const target = "update_study_guides";
+  const list = readCollectionList(target, "study guides", value, 10);
+  return collectProblems(
+    target,
+    list,
+    (entry, i): UpdateStudyGuidePlan => {
+      const where = `${target}[${i}]`;
+      const record = asObject(where, entry, ["id", "title", "content"]);
+      const id = idOf(where, record);
+      const guide = current.find((item) => item.id === id);
+      if (!guide) throw new ListLevelProblem(`${where}.id "${id}" is not one of this person's loaded study guides.`);
+      const rawTitle = optionalText(where, "title", record.title);
+      const title = rawTitle === undefined ? undefined : rawTitle.trim();
+      if (title !== undefined && !title) throw new Error(`${where}.title cannot be empty.`);
+      if (title !== undefined && /\r|\n/.test(title)) throw new Error(`${where}.title must be a single line.`);
+      const content = optionalText(where, "content", record.content);
+      const changed = [
+        ...(title !== undefined && title !== guide.title ? ["title"] : []),
+        ...(content !== undefined ? ["content"] : []),
+      ];
+      if (changed.length === 0) throw new Error(`${where} changes nothing on "${guide.title}".`);
+      return { ...guide, ...(title !== undefined ? { title } : {}), ...(content !== undefined ? { content } : {}), changed };
+    },
+    { listChecks: (items) => [repeatsProblem(target, items.map((item) => rawId(item.raw)), "id", "Merge the changes into one entry.")] },
+  );
+}
+
+/** Archive only guides the loaded library identified for this agent run. */
 export function parseDeleteStudyGuidesValue(
   value: unknown,
-  current: { id: string; title: string },
+  current: readonly Pick<CurrentStudyGuide, "id" | "title">[],
 ): DeleteStudyGuidePlan[] {
   const target = "delete_study_guides";
-  const list = readCollectionList(target, "study guides", value, 1);
+  const list = readCollectionList(target, "study guides", value, 10);
   return collectProblems(
     target,
     list,
     (entry, i): DeleteStudyGuidePlan => {
       const id = idOf(`${target}[${i}]`, entry);
-      if (id !== current.id)
-        throw new ListLevelProblem(`${target}[${i}] "${id}" is not the guide open in this reader (${current.id}).`);
-      return { id, title: current.title };
+      const guide = current.find((item) => item.id === id);
+      if (!guide)
+        throw new ListLevelProblem(`${target}[${i}] "${id}" is not one of this person's loaded study guides.`);
+      return { id, title: guide.title };
     },
+    { listChecks: (items) => [repeatsProblem(target, items.map((item) => rawId(item.raw)), "id")] },
   );
 }
 

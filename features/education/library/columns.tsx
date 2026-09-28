@@ -61,7 +61,7 @@ export const EDUCATION_LIBRARY_COLUMNS: EntityColumnSpec<EducationLibraryRow>[] 
         header: "Type",
         filter: "select",
         cell: (row) => (
-          <Badge variant="outline" className="py-0 text-[10px]">
+          <Badge variant="outline" className="py-0 text-xs">
             {EDUCATION_LIBRARY_KIND_LABELS[row.kind as EducationLibraryKind] ??
               row.kind}
           </Badge>
@@ -157,7 +157,7 @@ export const EDUCATION_LIBRARY_COLUMNS: EntityColumnSpec<EducationLibraryRow>[] 
           return (
             <Badge
               variant="outline"
-              className="border-amber-500/40 py-0 text-[10px] font-semibold text-amber-700 tabular-nums dark:text-amber-400"
+              className="border-amber-500/40 py-0 text-xs font-semibold text-amber-700 tabular-nums dark:text-amber-400"
             >
               {dueCount}
             </Badge>
@@ -285,7 +285,7 @@ export const EDUCATION_LIBRARY_COLUMNS: EntityColumnSpec<EducationLibraryRow>[] 
         header: "Visibility",
         filter: "select",
         cell: (row) => (
-          <Badge variant="outline" className="py-0 text-[10px] capitalize">
+          <Badge variant="outline" className="py-0 text-xs capitalize">
             {row.visibility}
           </Badge>
         ),

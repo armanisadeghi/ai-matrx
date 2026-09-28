@@ -43,6 +43,9 @@ import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import { factsPollDelayMs } from "@/features/sources/sourceRows";
 import { sourceHref } from "@/features/sources/api/sourcesApi";
 import { cn } from "@/utils/cn";
+import { toast } from "@/lib/toast";
+import { asClause } from "@/lib/text/asClause";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { sourceKindDef } from "../sourceKinds";
 import type { SourceCardModel } from "../types";
 import type { UseSourceSetResult } from "../useSourceSet";
@@ -101,6 +104,14 @@ export function SourceCard({
   const isFile = ref?.resource_type === "file";
   const partsCount = ref?.include_segments?.length ?? 0;
   const segments = entry?.segments ?? [];
+  // Parts belong to one form (clean text is split differently from the raw
+  // pages), so a form change starts the parts over — and says so.
+  const changeForm = (representation: string | undefined) => {
+    const hadParts = (ref?.include_segments?.length ?? 0) > 0;
+    set.updateRef(card.id, { representation, include_segments: undefined });
+    if (hadParts)
+      toast.info("The parts you picked were cleared — this form is split differently. Choose parts again if you need them.");
+  };
   const formLabel =
     entry?.forms.find((f) => f.form === (ref?.representation ?? entry.default_form))?.label ??
     (ref?.representation === "raw"
@@ -167,6 +178,7 @@ export function SourceCard({
         <p role="alert" className="flex items-start gap-2 border-t border-border px-3 py-2 text-xs text-destructive">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{card.error ?? "This could not be added. Remove it and try again."}</span>
+          <ErrorAlchemyMenu error={card.error ?? "This could not be added."} operation={`Add ${card.draft.label}`} className="ml-auto" />
         </p>
       ) : null}
 
@@ -232,14 +244,14 @@ export function SourceCard({
               }
               primaryRepresentation={ref.representation as DocumentRepresentation | undefined}
               onPrimaryRepresentationChange={(representation) =>
-                set.updateRef(card.id, { representation })
+                changeForm(representation)
               }
             />
           ) : (
             <FormChooser
               entry={entry}
               value={ref.representation ?? entry.default_form}
-              onChange={(representation) => set.updateRef(card.id, { representation })}
+              onChange={(representation) => changeForm(representation)}
             />
           )}
         </div>
@@ -333,30 +345,53 @@ function PartsChooser({
   onChange: (ids: string[]) => void;
 }) {
   const [query, setQuery] = useState("");
+  // "pick" = the person chose to build the list from nothing. Until they tick
+  // one, the whole Source still goes in (and the sentence says so).
+  const [picking, setPicking] = useState(false);
   const pickedSet = new Set(picked);
   const shown = query.trim()
     ? segments.filter((s) => s.label.toLowerCase().includes(query.trim().toLowerCase()))
     : segments;
-  const all = picked.length === 0;
+  const all = picked.length === 0 && !picking;
   const toggle = (id: string) => {
     // "No parts picked" means the whole Source; the first untick starts from all.
     const base = all ? new Set(segments.map((s) => s.id)) : new Set(pickedSet);
     if (base.has(id)) base.delete(id);
     else base.add(id);
     const next = segments.filter((s) => base.has(s.id)).map((s) => s.id);
+    if (next.length === segments.length) setPicking(false);
     onChange(next.length === segments.length ? [] : next);
   };
   return (
     <div className="space-y-2 border-t border-border px-3 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-xs text-muted-foreground">
-          {all ? "The whole Source goes in. Untick the parts you don't want." : `${picked.length} of ${segments.length} parts go in.`}
+          {all
+            ? "The whole Source goes in. Untick the parts you don't want, or pick them one by one."
+            : picked.length === 0
+              ? "Tick the parts you want. Until you do, the whole Source goes in."
+              : `${picked.length} of ${segments.length} parts go in.`}
         </p>
-        {!all ? (
-          <Button type="button" variant="ghost" size="sm" className="ml-auto h-9" onClick={() => onChange([])}>
-            Use all of it
-          </Button>
-        ) : null}
+        <div className="ml-auto flex gap-1">
+          {all ? (
+            <Button type="button" variant="ghost" size="sm" className="h-9" onClick={() => setPicking(true)}>
+              Pick one by one
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9"
+              onClick={() => {
+                setPicking(false);
+                onChange([]);
+              }}
+            >
+              Use all of it
+            </Button>
+          )}
+        </div>
       </div>
       {segments.length >= PARTS_SEARCH_FROM ? (
         <Input
@@ -405,7 +440,8 @@ function ProcessingLine({
 }) {
   const pdId = card.draft.processedDocumentId ?? null;
   const stages = useStagesStatus(entry.state === "processing" ? pdId : null);
-  const started = useRef(Date.now());
+  // When this line first saw the Source still reading (set in an effect — render stays pure).
+  const started = useRef<number | null>(null);
   const cleanDone = stages.status?.stages.find((s) => s.stage === "clean_text")?.state === "done";
   const jobDone = job?.status === "succeeded";
   const remeasures = useRef(0);
@@ -427,6 +463,7 @@ function ProcessingLine({
       return () => clearTimeout(t);
     }
     if (!pdId) return undefined;
+    started.current ??= Date.now();
     const delay = factsPollDelayMs(true, Date.now() - started.current);
     if (delay === null) return undefined;
     const t = setTimeout(stages.reload, delay);
@@ -448,8 +485,8 @@ function ProcessingLine({
         <p className="flex items-start gap-2 text-xs text-warning">
           <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
-            {entry.state_detail ?? "Still being cleaned — the raw text is used until the clean version is ready."}
-            {progress ? <span className="text-muted-foreground"> Done so far: {progress}.</span> : null}
+            {asClause(entry.state_detail ?? "Still being cleaned — the raw text is used until the clean version is ready")}.
+            {progress ? <span className="text-muted-foreground"> Done so far: {asClause(progress)}.</span> : null}
           </span>
         </p>
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-foreground sm:min-h-0">
@@ -463,6 +500,7 @@ function ProcessingLine({
     <p role="alert" className="flex items-start gap-2 border-t border-border px-3 py-2 text-xs text-destructive">
       <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span>{entry.state_detail ?? "This Source cannot be read. Remove it, or add it again."}</span>
+      <ErrorAlchemyMenu error={entry.state_detail ?? "This Source cannot be read."} operation="Read a Source" className="ml-auto" />
     </p>
   );
 }

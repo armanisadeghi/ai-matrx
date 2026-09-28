@@ -13,12 +13,9 @@
  *   detail  /education/mind-maps/[id]       MindMapDetail  — one stored map
  *           /education/mind-maps/[id]/edit  MindMapDetail  — same component
  *
- * `[id]/edit` is NOT a node editor despite the route name — it renders the same
- * `MindMapDetail` component as `[id]`, differing only in that the route calls
- * `requireAccess(..., "edit")` on the server so a view-only sharee is redirected
- * to the read-only URL. There is no editable graph anywhere in this feature: a
- * stored map's content is the agent's `ir_envelope`, and "changing" one means
- * regenerating it. `view` is therefore `"detail"` on both routes.
+ * `[id]/edit` is a structured graph editor behind the server edit gate. It
+ * preserves the stored envelope's metadata and keeps source/trust evidence
+ * intact while people change the authored title, nodes, and edges.
  *
  * Curated groups (band 0-899):
  *
@@ -28,7 +25,8 @@
  *   record        The detail view: the loaded row and its diagram
  *   trust         The detail view: how grounded the stored map is
  *
- * Emitters: `MindMapHome.tsx`, `MindMapNew.tsx`, `MindMapDetail.tsx` — each
+ * Emitters: `MindMapHome.tsx`, `MindMapNew.tsx`, `MindMapDetail.tsx`, and
+ * `MindMapEditor.tsx` — each
  * mounts its own `SurfaceRuntimeProvider` with a synchronous `getScope` over
  * live render state (the Surface Context window polls `getScope` every 400ms,
  * so it must never fetch).
@@ -466,47 +464,31 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 /**
- * Write half of the 360 loop — what an agent may WRITE into the mind-map
- * GENERATOR (`/education/mind-maps/new` only).
+ * What an agent may write through the same canonical study-media persistence
+ * path as the learner: saved manually-authored maps and generated maps.
  *
- * TWO targets, both `mode: "draft"` + `applyPolicy: "ask"`. They stage into
- * `MindMapNew`'s own React state through the SAME setters the learner's typing
- * uses, so the value appears in the form, is reversible, and reaches an agent
- * run and the DB only when the LEARNER presses "Generate mind map" — which is
- * where the COPPA gate, the entitlement guard and the canonical
- * `studyMediaService.create` path run. Nothing here spends quota or writes a
- * row. Both handlers also refuse outright while `is_generating` is true.
- *
- * WHY TWO AND NOT ONE, and why not four:
- *   • `generation_source` is ONE object because source_kind genuinely GATES the
- *     other two fields — a deck_id means nothing in topic mode and a topic
- *     means nothing in deck mode, so they are a combination the handler has to
- *     validate together, not three independent settings. Splitting them would
- *     let an agent apply a half-valid state one confirm at a time.
- *   • `generation_focus` is separate because it is genuinely independent: it is
- *     its own always-visible input, it applies in both source modes, and
- *     "actually, centre it on the alliance system instead" is a real request
- *     that should not require restating where the material comes from.
- *
- * Deliberately NOT writable:
- *   • Generating itself. It spends a real agent run and a metered entitlement;
- *     the learner presses the button. Same reasoning as education-planner's
- *     "Generate plan" and education-assessment's "Generate".
- *   • Regenerate / delete / share on the detail view. Regenerate spends a run,
- *     delete is destructive, and share is a permissions decision.
- *   • Everything in the `trust` group, plus node_count / node_labels /
- *     linked_card_count. That is DERIVED EVIDENCE produced by the generation —
- *     an agent writing a confidence score would forge the exact measurement the
- *     trust layer exists to produce.
- *   • Anything on the detail view at all: `MindMapDetail` owns no editor state.
- *     Despite the `/[id]/edit` route name it renders a VIEW (diagram + trust +
- *     owner controls); a stored map's content is the agent's `ir_envelope` and
- *     there is no node/graph editor in this feature to stage a draft into. The
- *     detail and list mounts therefore register NO handlers, so
- *     `listAgentWritableTargets()` offers nothing on those routes. That is a
- *     decision, not an oversight.
+ * The three entity targets write saved maps through `studyMediaService`; they
+ * are available on the library and an open map. The two draft targets below
+ * only stage a generation request in `MindMapNew`; the learner still chooses
+ * whether to spend a generation run. Trust is derived evidence: an edit can
+ * downgrade it to inferred, but cannot author a confidence or a citation.
  */
 const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "create_mind_maps", label: "Create mind maps",
+    description: 'Creates and saves 1-25 manually authored mind maps. Value is an ARRAY of { title: string, nodes: [{ id: string, label: string, description?: string, details?: string }], edges: [{ id: string, source: string, target: string, label?: string }] }. Every edge endpoint must name a node in the same map. No AI generation occurs. The saved map is visibly manually authored: it has no generated source or trust citation. The person approves before creation.',
+    valueType: "array", updatesValue: "mind_maps", mode: "entity", applyPolicy: "ask", group: "library", sortOrder: 100,
+  },
+  {
+    name: "update_mind_maps", label: "Update mind maps",
+    description: 'Changes saved mind maps. Value is an ARRAY of { id: string, title?: string, nodes?: [{ id, label, description?, details? }], edges?: [{ id, source, target, label? }] }. The id comes from mind_maps or mind_map_id. Only supplied fields change. Supplying nodes or edges replaces that complete collection; retain every node or connection you want to keep. Existing envelope metadata, source identity, and trust evidence stay intact, while edits no longer claim the generated diagram itself was unchanged. The person approves before saving.',
+    valueType: "array", updatesValue: "mind_maps", mode: "entity", applyPolicy: "ask", group: "record", sortOrder: 110,
+  },
+  {
+    name: "delete_mind_maps", label: "Delete mind maps",
+    description: 'Soft-deletes saved mind maps so they disappear from the library and their content is no longer available through this page. Value is an ARRAY of ids or { id } objects from mind_maps or mind_map_id. This is destructive and the person approves every request. Use only when explicitly asked to delete.',
+    valueType: "array", updatesValue: "mind_maps", mode: "entity", applyPolicy: "ask", group: "library", sortOrder: 120,
+  },
   {
     name: "generation_source",
     label: "Draft source",
@@ -552,7 +534,7 @@ In "list" the learner is browsing their library: mind_maps is the whole set, rec
 
 In "create" they are composing a generation, and this is where you can help most. source_kind says whether the map will be built from a flashcard DECK (grounded — nodes get linked back to the exact card they summarize, and the result is cited) or from a free-text TOPIC (ungrounded, and honestly labelled "inferred"). \`topic\` and \`focus\` are the authored fields: turn "map the causes of WWI, but centre it on the alliance system" into topic + focus and stage them with generation_source and generation_focus. If you set deck_id it must be an id from available_decks — never invent one. Filling the form generates nothing; the learner presses "Generate mind map" themselves, because that spends a real agent run against their metered quota.
 
-In "detail" one stored map is open. Despite the /[id]/edit route existing, there is no node editor — that route renders the same read view, gated so a view-only sharee cannot land on it. A stored map's content is the generated diagram; "changing" one means regenerating it, which is the learner's button to press.
+In "list" you can use create_mind_maps, update_mind_maps, and delete_mind_maps for approved saved-map changes. In "detail" one stored map is open. Someone with edit access can change its title, concepts, and connections; source and trust evidence remain visible as history from the generation, and an edit must not claim that generated verification still describes untouched content.
 
 Everything in the Grounding group — confidence, citations, what the map was grounded in — plus node/edge/linked-card counts is MEASURED EVIDENCE from the generation that produced the map. Reason from it and explain it; you cannot write it, and you should not talk as though it can be adjusted.
 </surface_intro>`,
