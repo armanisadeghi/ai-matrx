@@ -96,6 +96,20 @@ export function buildReviewAttempts(
     });
 }
 
+/**
+ * `fc_review_batch`'s `remaining_cards` (declared `string_list`): the fronts of
+ * the cards the learner has NOT reached this session, in deck order — so the
+ * reviewer can say what is still ahead. Always a plain `string[]`.
+ */
+export function buildRemainingCardFronts(
+  cards: Pick<CardWithDetails, "id" | "front">[],
+  resultsByCard: Record<string, ReviewResult | undefined>,
+): string[] {
+  return cards
+    .filter((c) => resultsByCard[c.id] === undefined)
+    .map((c) => c.front);
+}
+
 /** `fc_review_batch`'s `aggregate` shape. */
 export interface ReviewAggregate {
   total: number;

@@ -105,6 +105,7 @@ import { BatchReviewBlock } from "@/features/education/study/components/BatchRev
 import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import {
   buildRecentSessionContext,
+  buildRemainingCardFronts,
   buildReviewAggregate,
   buildReviewAttempts,
 } from "@/features/education/tutor/lanes/learnerContext";
@@ -516,9 +517,7 @@ export function StudyDeck(props: StudyDeckProps) {
         aggregate,
         // What the learner never reached (a stopped-early session) — the
         // reviewer can say what is still ahead.
-        remainingCards: cards
-          .filter((c) => resultsByCard[c.id] === undefined)
-          .map((c) => c.front),
+        remainingCards: buildRemainingCardFronts(cards, resultsByCard),
         onConversationCreated: live.bind,
         onUnusable: (sentence) => {
           toast.warning(`Couldn't write your session review — ${sentence}`, {

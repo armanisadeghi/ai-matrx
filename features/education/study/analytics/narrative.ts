@@ -51,11 +51,20 @@ function optStr(r: Record<string, unknown>, key: string): string | null {
   return typeof v === "string" && v.trim() ? v.trim() : null;
 }
 
+/**
+ * A count the narrator declares `integer` (`education.analytics_narrate`): a
+ * whole, non-negative number — never a string, a float, or NaN (a string or a
+ * float is refused the moment a consumption map is bound).
+ */
+function wholeCount(n: number): number {
+  return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
+}
+
 /** Build the narrator agent's variables from computed analytics. */
 export function narrativeVariables(
   a: StudyAnalytics,
   itemLabel = "cards",
-): Record<string, string> {
+): Record<string, string | number> {
   const topicBreakdown = a.weakTopics.slice(0, 8).map((t) => ({
     topic: t.topic,
     mastery_pct: t.masteryPct,
@@ -65,14 +74,14 @@ export function narrativeVariables(
   return {
     item_label: itemLabel,
     accuracy_pct: a.overall.accuracyPct == null ? "none" : String(a.overall.accuracyPct),
-    mastered_count: String(a.overall.mastered),
-    learning_count: String(a.overall.learning),
-    struggling_count: String(a.overall.struggling),
-    due_count: String(a.overall.dueNow),
+    mastered_count: wholeCount(a.overall.mastered),
+    learning_count: wholeCount(a.overall.learning),
+    struggling_count: wholeCount(a.overall.struggling),
+    due_count: wholeCount(a.overall.dueNow),
     accuracy_trend: a.trend ? JSON.stringify(a.trend) : "insufficient",
     topic_breakdown: JSON.stringify(topicBreakdown),
-    total_minutes: String(a.totalMinutes),
-    current_streak: String(a.currentStreak),
+    total_minutes: wholeCount(a.totalMinutes),
+    current_streak: wholeCount(a.currentStreak),
   };
 }
 

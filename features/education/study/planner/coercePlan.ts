@@ -8,7 +8,7 @@
 
 import type { PlanBlockDraft, PlanBlockKind, PlanDayDraft, PlanDraft, PlanInput } from "./types";
 import type { PlanSummary } from "./buildPlan";
-import { STUDY_MANDATES } from "./mandates";
+import { STUDY_MANDATES, restDaysToNames } from "./mandates";
 
 const BLOCK_KINDS: PlanBlockKind[] = [
   "review",
@@ -19,6 +19,30 @@ const BLOCK_KINDS: PlanBlockKind[] = [
   "rest",
   "custom",
 ];
+
+/**
+ * The Study Planner agent's variables (`education.plan_generate`). Each value
+ * carries its declared kind: `daily_minutes` is `integer`, so it goes out as a
+ * whole number — a string is refused the moment a consumption map is bound.
+ */
+export function buildPlannerVariables(
+  input: PlanInput,
+  summary: PlanSummary,
+): Record<string, string | number> {
+  if (!Number.isFinite(input.dailyMinutes)) {
+    throw new Error(
+      `Daily study minutes must be a number; received ${String(input.dailyMinutes)}.`,
+    );
+  }
+  return {
+    goal_title: input.title,
+    start_date: input.startDate,
+    exam_date: input.examDate,
+    daily_minutes: Math.round(input.dailyMinutes),
+    rest_days: restDaysToNames(input.restDays),
+    study_snapshot: buildStudySnapshot(summary, input.itemType ?? "fc_card"),
+  };
+}
 
 /** Format the plan summary as the multi-line text the planner agent parses. */
 export function buildStudySnapshot(
