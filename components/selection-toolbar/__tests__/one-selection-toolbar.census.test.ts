@@ -16,13 +16,14 @@
  *      AnnotationToolbar, HighlightToolbar) declared outside the canonical files;
  *   4. a new document-level `selectionchange` listener outside the root and
  *      the context menu's selection tracking;
- *   5. BY BEHAVIOUR, whatever it is named: a file that reads the selection
- *      (`getSelection()` / a field's `selectionStart`), listens for the gesture
- *      that ends one (mouseup / pointerup / keyup / touchend / select /
- *      selectionchange), measures it (`getBoundingClientRect`) and renders
- *      something positioned (`createPortal`, `position: fixed|absolute`, a
- *      `fixed` class) — the mouseup-and-getSelection floating bar, the app's
- *      commonest second-popup shape (verify round 1, finding 2).
+ *   5. BY BEHAVIOUR, whatever it is named, across a FEATURE (a file plus the local modules
+ *      it imports, one level — a hook and the component that draws its bar are one popup): it
+ *      reads the document selection (`getSelection()`), listens for the gesture that ends one
+ *      (mouseup / pointerup / keyup / touchend / select / selectionchange, as a listener or an
+ *      inline `onMouseUp`…), measures the selection's RANGE (`getRangeAt`/`createRange` with
+ *      `getBoundingClientRect`/`getClientRects`) and draws something at that place (a portal,
+ *      fixed/absolute style or class, a Radix Popover/anchor, floating-ui, a virtual reference).
+ *      Five realistic shapes are planted below; the pre-2026-09-28 census caught 1 of them.
  *
  * Selection-driven behaviours that are NOT popups, and so are not toolbars
  * (they render nothing positioned — rule 5 does not match them — and the
@@ -79,14 +80,28 @@ const RULES: { id: string; pattern: RegExp; allowCanonical: boolean; alsoNeeds?:
   },
 ];
 
-/** Rule 5: selection-driven floating UI, by behaviour (all four in one file). */
+/**
+ * Rule 5: selection-driven floating UI, by behaviour. A FEATURE is a file plus the local
+ * modules it imports directly (one level): a `useQuoteSelection` hook that reads and measures
+ * the selection and the component that renders its bar are one popup (verify round 2 prep).
+ */
 const BEHAVIOUR = {
-  // Reading it — clearing it (`getSelection()?.removeAllRanges()`, a canvas tile entering edit) is not.
-  readsSelection: /getSelection\(\)(?!\??\.removeAllRanges\(\))|\.selectionStart\b/,
-  endsGesture: /addEventListener\(\s*["'](mouseup|pointerup|selectionchange|keyup|touchend|select)["']|on(MouseUp|PointerUp|KeyUp|TouchEnd|Select)=/,
-  measures: /getBoundingClientRect/,
-  positions: /createPortal\(|position:\s*["']?(fixed|absolute)|["' `]fixed["' `]/,
+  // Reading the DOCUMENT selection — clearing it (`getSelection()?.removeAllRanges()`, a canvas
+  // tile entering edit) is not, and a field's own caret (`selectionStart`) draws nothing at a place.
+  readsSelection: /getSelection\(\)(?!\??\.removeAllRanges\(\))/,
+  // The gesture that ends a selection. (`onSelect=` is not one: it is every Radix menu item.)
+  endsGesture:
+    /addEventListener\(\s*["'](mouseup|pointerup|selectionchange|keyup|touchend|select)["']|on(MouseUp|PointerUp|KeyUp|TouchEnd)\s*=/,
+  // Where the SELECTION sits: range geometry — a Range from the selection (`getRangeAt`,
+  // `createRange`) measured with `getBoundingClientRect` / `getClientRects`.
+  measures: /(getRangeAt\(|createRange\()[\s\S]*(getBoundingClientRect|getClientRects)|(getBoundingClientRect|getClientRects)[\s\S]*(getRangeAt\(|createRange\()/,
+  // Something drawn at that place: a portal, fixed/absolute placement (style or class), or a
+  // floating-UI / Radix anchor (Popover, Floating, useFloating, a virtual reference).
+  positions:
+    /createPortal\(|position:\s*["']?(fixed|absolute)|["'` ](fixed|absolute)["'` ]|<Popover(Anchor|Content)?\b|\bFloating[A-Z]\w*|\buseFloating\b|@floating-ui\/|virtualRef|virtualElement|setPositionReference/,
 };
+
+type Behaviour = keyof typeof BEHAVIOUR;
 
 export interface Finding {
   file: string;
@@ -94,23 +109,65 @@ export interface Finding {
   line: number;
 }
 
+const SOURCE_EXT = [".tsx", ".ts", ".jsx", ".js"];
+
+/** The repo-relative file a local import resolves to (`@/x`, `./x`, `../x`), or null. */
+function resolveLocal(from: string, spec: string, known: ReadonlySet<string>): string | null {
+  let base: string;
+  if (spec.startsWith("@/")) base = spec.slice(2);
+  else if (spec.startsWith("./") || spec.startsWith("../")) base = join(dirname(from), spec);
+  else return null;
+  base = base.replace(/\\/g, "/");
+  const candidates = [base, ...SOURCE_EXT.map((e) => base + e), ...SOURCE_EXT.map((e) => `${base}/index${e}`)];
+  return candidates.find((c) => known.has(c)) ?? null;
+}
+
+const IMPORT_SPEC = /(?:import|export)\s[^"';]*?from\s*["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
+
 /** Scan `files` (repo-relative paths under `root`). */
 export function censusSelectionToolbars(root: string, files: readonly string[]): Finding[] {
   const findings: Finding[] = [];
-  for (const file of files) {
-    if (!/\.(tsx?|jsx?)$/.test(file)) continue;
-    if (file.startsWith("components/selection-toolbar/__tests__/")) continue;
-    if (ALLOW[file]) continue;
-    let text: string;
-    try {
-      text = readFileSync(join(root, file), "utf8");
-    } catch {
-      continue;
+  const sources = files.filter((f) => /\.(tsx?|jsx?)$/.test(f) && !f.startsWith("components/selection-toolbar/__tests__/"));
+  const known = new Set(sources);
+  const textCache = new Map<string, string | null>();
+  const textOf = (file: string) => {
+    if (!textCache.has(file)) {
+      try {
+        textCache.set(file, readFileSync(join(root, file), "utf8"));
+      } catch {
+        textCache.set(file, null);
+      }
     }
+    return textCache.get(file) ?? null;
+  };
+  const signalsOf = (file: string): Set<Behaviour> => {
+    const text = textOf(file) ?? "";
+    return new Set((Object.keys(BEHAVIOUR) as Behaviour[]).filter((k) => BEHAVIOUR[k].test(text)));
+  };
+
+  for (const file of sources) {
+    if (ALLOW[file]) continue;
+    const text = textOf(file);
+    if (text === null) continue;
     const lines = text.split("\n");
-    if (!CANONICAL.has(file) && Object.values(BEHAVIOUR).every((re) => re.test(text))) {
-      const at = lines.findIndex((l) => BEHAVIOUR.readsSelection.test(l));
-      findings.push({ file, rule: "selection-driven-floating-ui", line: at + 1 });
+
+    if (!CANONICAL.has(file)) {
+      // The feature: this file + the local modules it imports directly (canonical and allowed
+      // modules contribute nothing — importing the one toolbar is how a host SHOULD do it).
+      const own = signalsOf(file);
+      const union = new Set(own);
+      for (const m of text.matchAll(IMPORT_SPEC)) {
+        const dep = resolveLocal(file, m[1] ?? m[2], known);
+        if (!dep || CANONICAL.has(dep) || ALLOW[dep] || dep.startsWith("components/selection-toolbar/")) continue;
+        for (const sig of signalsOf(dep)) union.add(sig);
+      }
+      // The file itself must take part in the gesture or the drawing — a module that merely
+      // imports a finished popup is reported where the popup lives, not at every importer.
+      const takesPart = own.has("positions") || own.has("endsGesture") || own.has("readsSelection");
+      if (takesPart && (Object.keys(BEHAVIOUR) as Behaviour[]).every((k) => union.has(k))) {
+        const at = lines.findIndex((l) => BEHAVIOUR.readsSelection.test(l) || BEHAVIOUR.endsGesture.test(l));
+        findings.push({ file, rule: "selection-driven-floating-ui", line: at + 1 });
+      }
     }
     for (const rule of RULES) {
       if (rule.allowCanonical && CANONICAL.has(file)) continue;
@@ -147,46 +204,9 @@ describe("one selection toolbar", () => {
   });
 
   it("the census goes red on a planted second toolbar (scratch copy, never the real tree)", () => {
-    const scratch = mkdtempSync(join(tmpdir(), "selection-census-"));
-    const plant = (file: string, body: string) => {
-      mkdirSync(dirname(join(scratch, file)), { recursive: true });
-      writeFileSync(join(scratch, file), body);
-    };
-    plant("features/notes/NoteSelectionPopover.tsx", "export function NoteSelectionPopover() { return null; }\n");
-    plant("features/chat/AnswerBubble.tsx", 'import { BubbleMenu } from "@tiptap/react/menus";\n');
-    plant(
-      "features/docs/Listen.tsx",
-      'document.addEventListener("selectionchange", () => {});\nexport const Bar = () => <div className="absolute">Quote</div>;\n',
-    );
-    // Not a toolbar: a caret guard that draws nothing (the MergeFieldInput shape).
-    plant(
-      "features/docs/CaretGuard.tsx",
-      'document.addEventListener("selectionchange", () => { const s = window.getSelection(); s?.removeAllRanges(); });\n',
-    );
-    plant("features/docs/Layout.tsx", 'import { SelectionToolbar } from "@ai-matrx/alchemy/react/selection";\n');
-    // The verifier's plant: a mouseup + getSelection bar portaled to the body, named innocently.
-    plant(
-      "features/chat/AnswerQuoteBar.tsx",
-      [
-        'import { createPortal } from "react-dom";',
-        "export function AnswerQuoteBar() {",
-        '  document.addEventListener("mouseup", () => {',
-        "    const r = window.getSelection()?.getRangeAt(0).getBoundingClientRect();",
-        "    void r;",
-        "  });",
-        '  return createPortal(<div className="fixed z-50">Quote · Highlight</div>, document.body);',
-        "}",
-      ].join("\n"),
-    );
-    const findings = censusSelectionToolbars(scratch, [
-      "features/notes/NoteSelectionPopover.tsx",
-      "features/chat/AnswerBubble.tsx",
-      "features/docs/Listen.tsx",
-      "features/docs/CaretGuard.tsx",
-      "features/docs/Layout.tsx",
-      "features/chat/AnswerQuoteBar.tsx",
-    ]);
-    expect(findings.map((f) => f.rule).sort()).toEqual([
+    const { scratch, files } = plantSecondToolbars();
+    const findings = censusSelectionToolbars(scratch, files);
+    expect([...new Set(findings.map((f) => f.rule))].sort()).toEqual([
       "package-selection-layout",
       "selection-driven-floating-ui",
       "selection-popup-component",
@@ -194,4 +214,132 @@ describe("one selection toolbar", () => {
       "tiptap-bubble-menu",
     ]);
   });
+
+  it("rule 5 catches every realistic selection-popup shape, and nothing that draws nothing", () => {
+    const { scratch, files } = plantSecondToolbars();
+    const byBehaviour = censusSelectionToolbars(scratch, files)
+      .filter((f) => f.rule === "selection-driven-floating-ui")
+      .map((f) => f.file)
+      .sort();
+    expect(byBehaviour).toEqual([...BEHAVIOUR_PLANTS].sort());
+  });
 });
+
+/**
+ * The five realistic second-popup shapes (verify round 1 finding 2 + the round-2 prep), each a
+ * file the census must name, plus two that are NOT popups and must stay unnamed.
+ */
+export const BEHAVIOUR_PLANTS = [
+  "features/chat/AnswerQuoteBar.tsx", // mouseup + getSelection, portaled fixed bar
+  "features/chat/QuoteBar.tsx", // the component half of a hook + component split
+  "features/notes/PassagePopover.tsx", // a Radix Popover anchored to the selection rect, no portal, no fixed
+  "features/docs/LineMarks.tsx", // getClientRects + an absolute class
+  "features/chat/InlineAskBar.tsx", // an inline onMouseUp bar with an absolute class
+] as const;
+
+export function plantSecondToolbars(): { scratch: string; files: string[] } {
+  const scratch = mkdtempSync(join(tmpdir(), "selection-census-"));
+  const files: string[] = [];
+  const plant = (file: string, body: string | string[]) => {
+    mkdirSync(dirname(join(scratch, file)), { recursive: true });
+    writeFileSync(join(scratch, file), Array.isArray(body) ? body.join("\n") : body);
+    files.push(file);
+  };
+  // Rules 1–4 (names, the Tiptap import, the package layout, a selectionchange listener that floats UI).
+  plant("features/notes/NoteSelectionPopover.tsx", "export function NoteSelectionPopover() { return null; }\n");
+  plant("features/chat/AnswerBubble.tsx", 'import { BubbleMenu } from "@tiptap/react/menus";\n');
+  plant("features/docs/Listen.tsx", [
+    'document.addEventListener("selectionchange", () => {});',
+    'export const Bar = () => <div className="absolute">Quote</div>;',
+  ]);
+  plant("features/docs/Layout.tsx", 'import { SelectionToolbar } from "@ai-matrx/alchemy/react/selection";\n');
+  // Rule 5, shape 1: the verifier's mouseup + getSelection bar portaled to the body, named innocently.
+  plant("features/chat/AnswerQuoteBar.tsx", [
+    'import { createPortal } from "react-dom";',
+    "export function AnswerQuoteBar() {",
+    '  document.addEventListener("mouseup", () => {',
+    "    const r = window.getSelection()?.getRangeAt(0).getBoundingClientRect();",
+    "    void r;",
+    "  });",
+    '  return createPortal(<div className="fixed z-50">Quote · Highlight</div>, document.body);',
+    "}",
+  ]);
+  // Shape 2: a hook reads and measures; the component that uses it draws. One feature.
+  plant("features/chat/useQuoteSelection.ts", [
+    'import { useEffect } from "react";',
+    "export function useQuoteSelection(set: (r: DOMRect | null) => void) {",
+    "  useEffect(() => {",
+    "    const up = () => set(window.getSelection()?.getRangeAt(0).getBoundingClientRect() ?? null);",
+    '    document.addEventListener("mouseup", up);',
+    '    return () => document.removeEventListener("mouseup", up);',
+    "  }, [set]);",
+    "}",
+  ]);
+  plant("features/chat/QuoteBar.tsx", [
+    'import { useState } from "react";',
+    'import { useQuoteSelection } from "./useQuoteSelection";',
+    "export function QuoteBar() {",
+    "  const [r, set] = useState<DOMRect | null>(null);",
+    "  useQuoteSelection(set);",
+    '  return r ? <div className="absolute z-50" style={{ top: r.top }}>Quote</div> : null;',
+    "}",
+  ]);
+  // Shape 3: a Radix Popover anchored to the selection rect through a virtual reference.
+  plant("features/notes/PassagePopover.tsx", [
+    'import { useState } from "react";',
+    'import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";',
+    "export function PassagePopover() {",
+    "  const [anchor, setAnchor] = useState<{ getBoundingClientRect: () => DOMRect } | null>(null);",
+    "  const onMouseUp = () => {",
+    "    const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect();",
+    "    if (rect) setAnchor({ getBoundingClientRect: () => rect });",
+    "  };",
+    "  return (",
+    "    <div onMouseUp={onMouseUp}>",
+    "      <Popover open={!!anchor}>",
+    "        <PopoverAnchor virtualRef={{ current: anchor }} />",
+    "        <PopoverContent>Explain this</PopoverContent>",
+    "      </Popover>",
+    "    </div>",
+    "  );",
+    "}",
+  ]);
+  // Shape 4: per-line rects of the selection, marks drawn with an absolute class.
+  plant("features/docs/LineMarks.tsx", [
+    "export function LineMarks() {",
+    '  document.addEventListener("pointerup", () => {',
+    "    const rects = window.getSelection()?.getRangeAt(0).getClientRects();",
+    "    void rects;",
+    "  });",
+    '  return <span className="absolute bg-yellow-200" />;',
+    "}",
+  ]);
+  // Shape 5: an inline onMouseUp handler and an absolute bar in the same component.
+  plant("features/chat/InlineAskBar.tsx", [
+    'import { useState } from "react";',
+    "export function InlineAskBar({ children }: { children: React.ReactNode }) {",
+    "  const [box, setBox] = useState<DOMRect | null>(null);",
+    "  return (",
+    "    <article",
+    "      onMouseUp={() => {",
+    "        const sel = window.getSelection();",
+    "        setBox(sel && sel.rangeCount ? sel.getRangeAt(0).getBoundingClientRect() : null);",
+    "      }}",
+    "    >",
+    "      {children}",
+    '      {box && <div className="absolute rounded bg-card" style={{ left: box.left, top: box.top }}>Ask AI</div>}',
+    "    </article>",
+    "  );",
+    "}",
+  ]);
+  // NOT popups: a caret guard (MergeFieldInput's shape) and a toolbar HOST importing the one toolbar.
+  plant(
+    "features/docs/CaretGuard.tsx",
+    'document.addEventListener("selectionchange", () => { const s = window.getSelection(); s?.removeAllRanges(); });\n',
+  );
+  plant("features/docs/ReaderHost.tsx", [
+    'import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";',
+    'export const ReaderHost = () => <div className="absolute" onMouseUp={() => void useSelectionZone} />;',
+  ]);
+  return { scratch, files };
+}
