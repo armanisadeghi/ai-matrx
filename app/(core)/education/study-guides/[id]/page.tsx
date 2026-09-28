@@ -5,7 +5,7 @@ import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 
 export const metadata: Metadata = toolMetadata("study-guides");
 
-export default async function StudyGuidePage({ params }: { params: Promise<{ id: string }> }) {
-  const [{ id }, defaultLayout] = await Promise.all([params, readLayoutCookie("panels:study-guide-reader")]);
-  return <StudyGuideReader initialGuideId={id} defaultLayout={defaultLayout} />;
+export default async function StudyGuidePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string }> }) {
+  const [{ id }, query, defaultLayout] = await Promise.all([params, searchParams, readLayoutCookie("panels:study-guide-reader")]);
+  return <StudyGuideReader initialGuideId={id} startInEdit={query.edit === "1"} defaultLayout={defaultLayout} />;
 }

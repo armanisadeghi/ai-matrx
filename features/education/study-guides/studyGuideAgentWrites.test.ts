@@ -6,6 +6,7 @@ import {
   parseDeletePersonalNotesValue,
   parseDeleteStudyGuidesValue,
   parseCreateStudyGuidesValue,
+  parseUpdateStudyGuidesValue,
   parseGuideContentValue,
   parseUpdateGuideCommentsValue,
   parseUpdatePersonalNotesValue,
@@ -52,10 +53,18 @@ describe("study-guide collection", () => {
 
   it("refuses invalid creates and an archive target other than the open guide", () => {
     expect(() => parseCreateStudyGuidesValue([{ title: "" }, { title: "Two\nlines" }, { title: "Cell biology", extra: true }])).toThrow(/3 problems/);
-    expect(() => parseDeleteStudyGuidesValue(["another-guide"], { id: "guide-1", title: "Cell biology" })).toThrow(/not the guide open/);
-    expect(parseDeleteStudyGuidesValue([{ id: "guide-1" }], { id: "guide-1", title: "Cell biology" })).toEqual([
+    expect(() => parseDeleteStudyGuidesValue(["another-guide"], [{ id: "guide-1", title: "Cell biology" }])).toThrow(/not one of this person's loaded/);
+    expect(parseDeleteStudyGuidesValue([{ id: "guide-1" }], [{ id: "guide-1", title: "Cell biology" }])).toEqual([
       { id: "guide-1", title: "Cell biology" },
     ]);
+  });
+
+  it("updates only loaded guides and retains the list version for compare-and-swap", () => {
+    const current = [{ id: "guide-1", title: "Cell biology", version: 4 }];
+    expect(parseUpdateStudyGuidesValue([{ id: "guide-1", title: "Cell biology basics", content: "# Cells" }], current)).toEqual([
+      { id: "guide-1", title: "Cell biology basics", version: 4, content: "# Cells", changed: ["title", "content"] },
+    ]);
+    expect(() => parseUpdateStudyGuidesValue([{ id: "missing", title: "Nope" }, { id: "guide-1", title: "" }], current)).toThrow(/2 problems/);
   });
 });
 

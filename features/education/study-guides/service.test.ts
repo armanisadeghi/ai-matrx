@@ -2,6 +2,7 @@ const mockReadAllRows = jest.fn();
 const requireUserId = jest.fn(() => "learner-1");
 const notesCreate = jest.fn();
 const notesGetById = jest.fn();
+const notesUpdate = jest.fn();
 const hydrateNoteContextLinks = jest.fn(async (rows) => rows);
 const associationAdd = jest.fn();
 const associationListForEntity = jest.fn();
@@ -11,7 +12,7 @@ const schema = jest.fn();
 jest.mock("@ai-matrx/data/db", () => ({ readAllRows: mockReadAllRows }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId }));
 jest.mock("@/features/notes/service/notesApi", () => ({
-  NotesAPI: { create: notesCreate, getById: notesGetById },
+  NotesAPI: { create: notesCreate, getById: notesGetById, update: notesUpdate },
 }));
 jest.mock("@/features/notes/service/noteContextAssociations", () => ({
   hydrateNoteContextLinks,
@@ -26,7 +27,9 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
 jest.mock("@/utils/supabase/client", () => ({ supabase: { schema } }));
 
 import {
+  createStudyGuide,
   loadStudyGuideIndex,
+  updateStudyGuide,
 } from "./service";
 import { STUDY_NOTES_FOLDER } from "@/features/education/notes/study-notes-folder";
 import type { Note } from "@/features/notes/types";
@@ -58,6 +61,7 @@ function annotationNote(overrides: Partial<Note> = {}): Note {
     metadata: {},
     position: null,
     project_id: null,
+    shown_to: null,
     sync_version: 1,
     tags: [],
     task_id: null,
@@ -91,6 +95,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   requireUserId.mockReturnValue("learner-1");
   notesCreate.mockResolvedValue(annotationNote());
+  notesUpdate.mockResolvedValue(annotationNote());
   notesGetById.mockResolvedValue(null);
   associationAdd.mockResolvedValue({ ok: true });
   associationListForEntity.mockResolvedValue({ ok: true, data: { edges: [] } });
@@ -110,5 +115,24 @@ describe("study guide library", () => {
 
     expect(recorded.calls).toContainEqual({ method: "eq", args: ["created_by", "learner-1"] });
     expect(recorded.calls).toContainEqual({ method: "eq", args: ["folder_name", STUDY_NOTES_FOLDER] });
+  });
+});
+
+describe("study-guide writes", () => {
+  it("creates through the Education folder marker and updates with a Notes compare-and-swap", async () => {
+    await createStudyGuide({ title: "Cell biology", content: "", organizationId: "org-1" });
+    expect(notesCreate).toHaveBeenCalledWith(expect.objectContaining({
+      label: "Cell biology",
+      content: "# Cell biology\n\n",
+      folder_name: STUDY_NOTES_FOLDER,
+      organization_id: "org-1",
+    }));
+
+    await updateStudyGuide(annotationNote({ id: "guide-1", version: 4, organization_id: "org-1" }), { title: "Cells" });
+    expect(notesUpdate).toHaveBeenCalledWith(
+      "guide-1",
+      { label: "Cells" },
+      { expectedVersion: 4, expectedOrganizationId: "org-1" },
+    );
   });
 });

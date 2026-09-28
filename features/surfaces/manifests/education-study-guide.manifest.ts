@@ -97,7 +97,7 @@ const surfaceSpecific: SurfaceValue[] = [
   { name: "guide_content", label: "Guide content", description: "The guide's full markdown body, exactly as saved — the read twin of the guide_content write target (anchored edits resolve against this text). Same text as study_guide.content.", valueType: "string", alwaysAvailable: false, typicalCharCount: 8000, autoContext: false, group: "guide", sortOrder: 140 },
   { name: "reader_mode", label: "Reader mode", description: '"read" while the guide is shown in the reader; "edit" while the person has the Notes editor open on it (this page\'s write targets refuse then).', valueType: "string", alwaysAvailable: true, typicalCharCount: 4, group: "guide", sortOrder: 150 },
   { name: "load_error", label: "Load error", description: "Why the guide, the guide list, or the last save failed; absent on a normal load. A failed read is not an empty guide.", valueType: "string", alwaysAvailable: false, typicalCharCount: 160, group: "guide", sortOrder: 160 },
-  { name: "available_guides", label: "My study guides", description: "The person's study guides in the picker, newest first, as { id, title }. Empty when they have none; absent while loading or on error.", valueType: "array", alwaysAvailable: false, typicalCharCount: 1600, group: "navigation", sortOrder: 200 },
+  { name: "available_guides", label: "My study guides", description: "The person's study guides in the picker, newest first, as { id, title, version }. Empty when they have none; absent while loading or on error. version protects list updates from overwriting a later save.", valueType: "array", alwaysAvailable: false, typicalCharCount: 1600, group: "navigation", sortOrder: 200 },
   { name: "outline", label: "Outline", description: "Headings of the guide in reading order, as { index, level, text }.", valueType: "array", alwaysAvailable: false, typicalCharCount: 2000, group: "navigation", sortOrder: 210 },
   { name: "active_details_tab", label: "Details tab", description: '"notes" for Notes & comments, "terms" for Key Terms, or "resources" for linked flashcards and related study material.', valueType: "string", alwaysAvailable: true, typicalCharCount: 10, group: "navigation", sortOrder: 220 },
   {
@@ -160,13 +160,24 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "delete_study_guides",
     label: "Move this study guide to Trash",
-    description: 'Moves the open study guide to Trash. Value is a JSON ARRAY containing exactly this guide\'s id (or { id }). What is lost: the guide leaves this library and its reader; it can be restored from Trash. The guide\'s associated annotations and comments are not changed by this action.',
+    description: 'Moves 1-10 loaded study guides to Trash. Value is a JSON ARRAY of ids from available_guides, or { id } objects. What is lost: each guide leaves this library and its reader; it can be restored from Trash. The guides\' associated annotations and comments are not changed by this action.',
     valueType: "array",
     updatesValue: "available_guides",
     mode: "entity",
     applyPolicy: "ask",
     group: "guide",
     sortOrder: 200,
+  },
+  {
+    name: "update_study_guides",
+    label: "Update study guides",
+    description: "Updates 1-10 loaded guides. Value is a JSON ARRAY of { id: string, title?: string, content?: string }. Each id must come from available_guides; the guide is fetched again and saved only when its emitted version still matches, so a later save is refused rather than overwritten.",
+    valueType: "array",
+    updatesValue: "available_guides",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "guide",
+    sortOrder: 210,
   },
   {
     name: "create_personal_notes",
@@ -253,6 +264,7 @@ You are on one study guide at /education/study-guides/[id]. study_guide is the g
 
 Every change goes through these targets; each asks the person once and returns what it did, with ids:
 - create_study_guides — add one or more Notes-backed study guides to the Education library.
+- update_study_guides — change a loaded guide's title and/or full markdown body with version protection.
 - guide_content — rewrite or fix the guide's text (send the whole body, or { command: "str_replace", old_str, new_str } for one part).
 - delete_study_guides — move this open guide to Trash. It can be restored there.
 - create_personal_notes / update_personal_notes / delete_personal_notes — private highlights (on a quoted passage) and notes. Use these when the person says "highlight", "note to self", "mark this".
@@ -317,7 +329,7 @@ export function createEducationStudyGuideScope(values: {
   guide_title?: string;
   guide_content?: string;
   load_error?: string;
-  available_guides?: { id: string; title: string }[];
+  available_guides?: { id: string; title: string; version: number }[];
   outline?: { index: number; level: number; text: string }[];
   personal_annotations?: PersonalAnnotationScope[];
   guide_comments?: GuideCommentScope[];

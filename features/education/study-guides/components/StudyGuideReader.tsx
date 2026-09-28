@@ -42,10 +42,8 @@ import type { Note, NoteListItem } from "@/features/notes/types";
 import { parseNoteOutline, type NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { NotesView } from "@/features/notes/components/NotesView";
-import { NotesAPI } from "@/features/notes/service/notesApi";
 import { deleteNote, saveNote } from "@/features/notes/redux/thunks";
 import { setNoteEditorMode } from "@/features/notes/redux/slice";
-import { EDUCATION_NOTE_CREATE_FIELDS } from "@/features/education/notes/education-notes";
 import { useNewNoteOrganization } from "@/features/notes/hooks/useNewNoteOrganization";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -54,7 +52,7 @@ import { createEducationStudyGuideScope, EDUCATION_STUDY_GUIDE_SURFACE_NAME } fr
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import { StudyGuideAgentBridge, type StudyGuideAnnotationSnapshot } from "./StudyGuideAgentBridge";
-import { parseCreateStudyGuidesValue, parseDeleteStudyGuidesValue, parseGuideContentValue } from "../studyGuideAgentWrites";
+import { parseCreateStudyGuidesValue, parseDeleteStudyGuidesValue, parseGuideContentValue, parseUpdateStudyGuidesValue } from "../studyGuideAgentWrites";
 import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
@@ -68,6 +66,8 @@ import {
   loadStudyGuide,
   loadStudyGuideIndex,
   loadStudyTerms,
+  createStudyGuide,
+  updateStudyGuide,
   type StudyTerm,
 } from "../service";
 import {
@@ -86,6 +86,7 @@ type InspectorTab = "notes" | "terms" | "resources";
 
 interface StudyGuideReaderProps {
   initialGuideId?: string;
+  startInEdit?: boolean;
   defaultLayout?: Layout;
 }
 
@@ -229,7 +230,7 @@ function useStudyPassageActions(guide: Note): { actions: Action[]; tutor: React.
   return { actions, tutor };
 }
 
-function ReaderContent({ guide, onEdit, onDelete, deleting, jumpRequest }: { guide: Note; onEdit: () => void; onDelete: () => void; deleting: boolean; jumpRequest: { index: number; nonce: number } | null }) {
+function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpRequest }: { guide: Note; onEdit: () => void; onDelete: () => void; canDelete: boolean; deleting: boolean; jumpRequest: { index: number; nonce: number } | null }) {
   const readerRef = useRef<HTMLDivElement>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [findFocusRequest, setFindFocusRequest] = useState(0);
@@ -256,7 +257,7 @@ function ReaderContent({ guide, onEdit, onDelete, deleting, jumpRequest }: { gui
     <div className="absolute right-3 top-2 z-20 flex gap-1">
       <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Search this guide" title="Search this guide" onClick={openFind}><Search className="h-4 w-4" aria-hidden /></Button>
       <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Edit study guide" title="Edit study guide" onClick={onEdit}><Pencil className="h-4 w-4" aria-hidden /></Button>
-      <Button size="icon" variant="outline" className="h-8 w-8 bg-background text-destructive hover:text-destructive" aria-label="Delete study guide" title="Delete study guide" onClick={onDelete} disabled={deleting}><Trash2 className="h-4 w-4" aria-hidden /></Button>
+      {canDelete && <Button size="icon" variant="outline" className="h-8 w-8 bg-background text-destructive hover:text-destructive" aria-label="Delete study guide" title="Delete study guide" onClick={onDelete} disabled={deleting}><Trash2 className="h-4 w-4" aria-hidden /></Button>}
     </div>
     {findOpen && <div className="absolute right-3 top-11 z-30 w-[min(96%,520px)]"><RenderedFindBar rootRef={readerRef} onClose={() => setFindOpen(false)} label="Find in this guide" focusRequest={findFocusRequest} /></div>}
     <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto">
@@ -294,7 +295,7 @@ function guideSource(guide: Note, onSaved: () => void): AnnotationSource {
   };
 }
 
-function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideReaderProps) {
+function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLayout }: StudyGuideReaderProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const resolveNewNoteOrganization = useNewNoteOrganization();
@@ -315,7 +316,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
   const [tab, setTab] = useState<InspectorTab>("notes");
   const [outlineJump, setOutlineJump] = useState<{ index: number; nonce: number } | null>(null);
   const [mobilePanel, setMobilePanel] = useState<"guides" | "details" | null>(null);
-  const [editingGuide, setEditingGuide] = useState(false);
+  const [editingGuide, setEditingGuide] = useState(startInEdit);
   const [editError, setEditError] = useState<string | null>(null);
   const [creatingGuide, setCreatingGuide] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Note | null>(null);
@@ -362,23 +363,17 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
     }
   };
 
-  const createGuide = async (plan: { title: string; content: string }) => {
+  const persistGuide = async (plan: { title: string; content: string }) => {
     const organizationId = await resolveNewNoteOrganization();
-    const note = await NotesAPI.create({
-      label: plan.title,
-      content: plan.content || `# ${plan.title}\n\n`,
-      ...EDUCATION_NOTE_CREATE_FIELDS,
-      organization_id: organizationId,
-    });
-    router.push(`/education/study-guides/${note.id}`);
-    return note;
+    return createStudyGuide({ ...plan, organizationId });
   };
 
   const createManualGuide = async () => {
     if (creatingGuide) return;
     setCreatingGuide(true);
     try {
-      await createGuide({ title: "Untitled study guide", content: "" });
+      const note = await persistGuide({ title: "Untitled study guide", content: "" });
+      router.push(`/education/study-guides/${note.id}?edit=1`);
     } catch (cause) {
       if (!isOrganizationSelectionCancelled(cause)) setEditError(cause instanceof Error ? cause.message : "Could not create the study guide.");
     } finally {
@@ -405,9 +400,11 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
   const surfaceName = initialGuideId ? EDUCATION_STUDY_GUIDE_SURFACE_NAME : "matrx-user/education-study-guides";
   const annotationsRef = useRef<StudyGuideAnnotationSnapshot>({});
   const guideRef = useRef(guide);
+  const guidesRef = useRef(guides);
   const editingRef = useRef(editingGuide);
   useEffect(() => {
     guideRef.current = guide;
+    guidesRef.current = guides;
     editingRef.current = editingGuide;
   });
 
@@ -442,7 +439,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
         ...(notes.comments ? { guide_comments: notes.comments } : {}),
         context: { guideId: guide.id, organizationId: guide.organization_id, mode: editingGuide ? "edit" : "read" },
       } : {}),
-      ...(!guidesLoading && !guidesError ? { available_guides: guides.map((item) => ({ id: item.id, title: item.label })) } : {}),
+      ...(!guidesLoading && !guidesError ? { available_guides: guides.map((item) => ({ id: item.id, title: item.label, version: item.version })) } : {}),
       ...(termsReady ? { key_terms: terms.map((item) => ({ id: item.id, term: item.term, definition: item.definition })) } : {}),
       ...(missing || guidesError || error || editError ? { load_error: missing || guidesError || editError || (error instanceof Error ? error.message : "Could not load the guide.") } : {}),
       ...(detailsFailure ? { details_error: detailsFailure } : {}),
@@ -459,17 +456,36 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
         create: {
           parse: parseCreateStudyGuidesValue,
           run: async (plan) => {
-            const note = await createGuide(plan);
+            const note = await persistGuide(plan);
             return { id: note.id, name: note.label };
           },
           nameOf: (plan) => plan.title,
           refusalFor: (cause) => isOrganizationSelectionCancelled(cause) ? "The person closed the workspace picker, so no study guide was created." : undefined,
         },
+        update: {
+          parse: (value) => parseUpdateStudyGuidesValue(
+            value,
+            guidesRef.current.map((item) => ({ id: item.id, title: item.label, version: item.version })),
+          ),
+          run: async (plan) => {
+            const current = await loadStudyGuide(plan.id);
+            if (!current) throw new Error(`"${plan.title}" is no longer available to update.`);
+            if (current.version !== plan.version)
+              throw new Error(`"${current.label}" changed after this agent run. Reload the study-guide list and try again.`);
+            const saved = await updateStudyGuide(current, { title: plan.title, content: plan.content });
+            setIndexTick((tick) => tick + 1);
+            if (guideRef.current?.id === saved.id) setGuide(saved);
+            return { id: saved.id, name: saved.label };
+          },
+          nameOf: (plan) => plan.title,
+          changedOf: (plan) => plan.changed,
+        },
         delete: {
           parse: (value) => {
-            const current = guideRef.current;
-            if (!current) refuseSurfaceWrite("The guide has not loaded, so there is nothing to move to Trash yet.");
-            return parseDeleteStudyGuidesValue(value, { id: current.id, title: current.label || "Untitled guide" });
+            return parseDeleteStudyGuidesValue(
+              value,
+              guidesRef.current.map((item) => ({ id: item.id, title: item.label })),
+            );
           },
           run: async (plan) => {
             await dispatch(deleteNote(plan.id)).unwrap();
@@ -519,7 +535,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
       outline: parseNoteOutline(guide.content ?? "").map((heading, index) => ({ index, level: heading.level, text: heading.text })),
       context: { guideId: guide.id, organizationId: guide.organization_id, mode: editingGuide ? "edit" : "read" },
     } : {}),
-    ...(!guidesLoading && !guidesError ? { available_guides: guides.map((item) => ({ id: item.id, title: item.label })) } : {}),
+    ...(!guidesLoading && !guidesError ? { available_guides: guides.map((item) => ({ id: item.id, title: item.label, version: item.version })) } : {}),
     ...(guide && !detailsLoading.terms && !detailsError.terms ? { key_terms: terms.map((item) => ({ id: item.id, term: item.term, definition: item.definition })) } : {}),
     ...(guidesError || error || editError ? { load_error: guidesError || editError || (error instanceof Error ? error.message : "Could not load the guide.") } : {}),
     ...(detailsError.notes || detailsError.terms ? { details_error: detailsError.notes || detailsError.terms || "" } : {}),
@@ -548,7 +564,8 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
     </NonEditableContextMenu>
   );
 
-  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><Button size="sm" variant="outline" className="absolute right-3 top-2 z-20 bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} onDelete={() => setPendingDelete(guide)} deleting={deletingGuide} jumpRequest={outlineJump} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
+  const canDeleteGuide = Boolean(guide && guides.some((item) => item.id === guide.id));
+  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><Button size="sm" variant="outline" className="absolute right-3 top-2 z-20 bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} onDelete={() => setPendingDelete(guide)} canDelete={canDeleteGuide} deleting={deletingGuide} jumpRequest={outlineJump} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
 
   const reader = loading || error || !guide ? <div className="scroll-page-end-space h-full min-h-0 overflow-y-auto">{readerState}</div> : readerState;
 
@@ -581,5 +598,5 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
 
 export function StudyGuideReader(props: StudyGuideReaderProps) {
   const userId = useAppSelector(selectUserId);
-  return <StudyGuideReaderInner key={`${userId}:${props.initialGuideId ?? "library"}`} {...props} />;
+  return <StudyGuideReaderInner key={`${userId}:${props.initialGuideId ?? "library"}:${props.startInEdit ? "edit" : "read"}`} {...props} />;
 }
