@@ -128,11 +128,10 @@ function InlineField({
     "min-h-11 w-full rounded border border-primary/40 bg-background px-1.5 py-0.5 text-base text-foreground outline-none focus:border-primary sm:min-h-0 sm:text-sm";
 
   return (
-    <div className="flex min-h-11 items-start gap-2 py-0.5 sm:min-h-0">
-      {/* Phone rows are 44px tall with a centred value — centre the label
-          too, or it floats above its value. Desktop keeps top alignment so a
-          multiline Bio reads from its first line. */}
-      <span className="w-24 shrink-0 self-center text-right text-xs text-muted-foreground sm:self-start sm:pt-0.5">
+    // PHONE: the label sits ABOVE its value (no 96px label column eating a
+    // 375px row); DESKTOP: the dense two-column label | value row.
+    <div className="flex flex-col gap-0.5 py-1 sm:flex-row sm:items-start sm:gap-2 sm:py-0.5">
+      <span className="text-xs text-muted-foreground sm:w-24 sm:shrink-0 sm:pt-0.5 sm:text-right">
         {spec.label}
       </span>
       {editing ? (
@@ -178,7 +177,7 @@ function InlineField({
           type="button"
           onClick={start}
           className={cn(
-            "group/field flex min-h-11 min-w-0 flex-1 items-center gap-1 sm:items-start rounded px-1.5 py-0.5 text-left text-sm hover:bg-accent/50 sm:min-h-0",
+            "group/field flex min-h-11 min-w-0 flex-1 items-center gap-1 rounded px-0 py-0 text-left text-sm hover:bg-accent/50 sm:min-h-0 sm:items-start sm:px-1.5 sm:py-0.5",
             value ? "text-foreground" : "text-muted-foreground/60",
             saving && "opacity-60",
           )}
@@ -438,8 +437,8 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
           />
         ))}
         {emptyFields.length > 0 && (
-          <div className="flex min-h-11 items-center gap-2 py-0.5 sm:min-h-0">
-            <span className="w-24 shrink-0" />
+          <div className="flex items-center gap-2 py-0.5">
+            <span className="hidden sm:block sm:w-24 sm:shrink-0" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -467,8 +466,8 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
 
         {/* Classification — the CRM stance on this record. */}
         <div className="mt-1.5 space-y-1.5 border-t border-border pt-2">
-          <div className="flex items-center gap-2">
-            <span className="w-24 shrink-0 text-right text-xs text-muted-foreground">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+            <span className="text-xs text-muted-foreground sm:w-24 sm:shrink-0 sm:text-right">
               Stage
             </span>
             <div className="min-w-0 flex-1">
@@ -484,8 +483,8 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-24 shrink-0 text-right text-xs text-muted-foreground">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+            <span className="text-xs text-muted-foreground sm:w-24 sm:shrink-0 sm:text-right">
               Rating
             </span>
             <div className="min-w-0 flex-1">
@@ -499,8 +498,8 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
               />
             </div>
           </div>
-          <div className="flex items-start gap-2">
-            <span className="w-24 shrink-0 pt-1.5 text-right text-xs text-muted-foreground">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+            <span className="text-xs text-muted-foreground sm:w-24 sm:shrink-0 sm:text-right">
               Roles
             </span>
             <div className="min-w-0 flex-1">
