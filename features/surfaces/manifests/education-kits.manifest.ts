@@ -51,6 +51,13 @@ const groups: SurfaceValueGroup[] = [
     description:
       "The detail view: the kit, its study aids in study-path order, and each aid's real practice evidence.",
   },
+  {
+    key: "new_kit",
+    label: "New kit",
+    sortOrder: 400,
+    description:
+      "The new view: the manual kit creator — its chosen source file, draft title, and the saved study aids that can join the kit.",
+  },
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
@@ -150,7 +157,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kit_source_type",
     label: "Material type",
     description:
-      'The kind of record the material is ("file" for every uploaded kit). Present in the detail view.',
+      'The kind of record the material is: "file" for an uploaded file, otherwise the source record type such as "note" or "processed_document" (the page address carries it as ?from=). Present in the detail view.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 6,
@@ -228,6 +235,41 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 150,
     sortOrder: 380,
     group: "open_kit",
+  },
+
+  // ── New kit (manual creator) ───────────────────────────────────────────
+  {
+    name: "kit_source_file_id",
+    label: "Source file",
+    description:
+      "The id of the source file chosen for the new kit; create_kits and add_kit_members must send it as source_file_id. Absent until a file is chosen and outside the new view.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    sortOrder: 400,
+    group: "new_kit",
+  },
+  {
+    name: "kit_draft_title",
+    label: "Draft kit title",
+    description:
+      "The title typed into the kit creator; empty string when nothing. Present in the new view.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 40,
+    sortOrder: 410,
+    group: "new_kit",
+  },
+  {
+    name: "kit_member_candidates",
+    label: "Study aids that can join",
+    description:
+      'The saved study aids visible in the creator (the current page of the list plus any already selected), as { id, title, kind, subtype }. Every artifact_ref sent to create_kits or add_kit_members must match one by both kind and id. Present in the new view.',
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 1500,
+    sortOrder: 420,
+    group: "new_kit",
   },
 ];
 

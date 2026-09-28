@@ -141,6 +141,17 @@ same anchor and whatever is made lands in THIS kit.
 
 ## Change log
 
+- **2026-09-28 — creator values declared; stale "no surface" note corrected.** The one
+  `matrx-user/education-kits` surface (list / detail / new views, prefix-routed at
+  `/education/kits`) already covers both kit pages; no second manifest was added. Fixed: the
+  manual creator emitted `kit_source_file_id`, `kit_draft_title` and `kit_member_candidates`
+  (and `create_kits`/`add_kit_members` pointed `updatesValue` at the last) without declaring
+  them — new `new_kit` group declares all three, and `kit_source_type` now says kits also come
+  from notes and processed documents. DB mirror synced (`--check` PASS), `check:surface-drift`
+  clean for this surface, and `surface:probe` on the local preview passed on `/education/kits`,
+  `/education/kits/new` and two real kits (`?from=processed_document`, `?from=note`) with 0
+  undeclared keys; the detail view supplied `study_aids`, `kit_totals`, `next_challenge`.
+
 - **wave 4b adversarial proof, 2026-09-28** — Agent surface proven live on production with a real
   agent run against a real kit ("Photosynthesis in Plant Cells", `sourceId`
   `b9dd08a8-c8a6-445d-9848-69205e04adf8`): asked "What study materials came out of this kit, and
@@ -159,7 +170,7 @@ same anchor and whatever is made lands in THIS kit.
   their practice evidence, totals and the next challenge. The path ordering and the
   next-challenge pick moved into `kitSurfaceScope.ts` so the page and the scope share one
   copy (tested, including the self-recursion that briefly broke the scope during authoring).
-- **page-pass 2026-09-28** — type list (`/education/kits`) + single-record (`/education/kits/[sourceId]`), posture sharp after Linear. Both pages page-passed clean on the working core rules (real title via `EducationToolHeader`, no dead controls, phone touch targets ≥44px per the 2026-09-14 entry below, no console errors, live-verified desktop + phone). **Left open: no agent surface at all.** Neither `features/surfaces/manifests/` nor `route-to-surface.ts`'s prefix table or its `surfaceFromPathname` exact-match branch has an entry for `/education/kits` or `/education/kits/[sourceId]` — both silently fall through to the generic `matrx-user/education` hub surface, so an agent opened on a kit page cannot see the kit's own artifacts, stats or study path; it sees the education hub's vocabulary instead. This is the same shape as the already-documented `/education/classes/[id]` gap (`route-to-surface.ts` line ~782: "a different page with no surface of its own yet"). Not attempted in this pass: a compliant manifest needs a scope module, a DB mirror sync (`sync-surface-manifests-direct.ts`) and release admission proof — the 2026-09-17 incident in `features/surfaces/FEATURE.md` is exactly what happens when that sequence is rushed. Flagged for a dedicated build task.
+- **page-pass 2026-09-28** — type list (`/education/kits`) + single-record (`/education/kits/[sourceId]`), posture sharp after Linear. Both pages page-passed clean on the working core rules (real title via `EducationToolHeader`, no dead controls, phone touch targets ≥44px per the 2026-09-14 entry below, no console errors, live-verified desktop + phone). **Superseded 2026-09-28 (see the entry above): this "no agent surface" finding was stale — `3ceac79e6e` shipped `matrx-user/education-kits` 48 minutes after this note was written.** Original finding, kept for history: no agent surface at all. Neither `features/surfaces/manifests/` nor `route-to-surface.ts`'s prefix table or its `surfaceFromPathname` exact-match branch has an entry for `/education/kits` or `/education/kits/[sourceId]` — both silently fall through to the generic `matrx-user/education` hub surface, so an agent opened on a kit page cannot see the kit's own artifacts, stats or study path; it sees the education hub's vocabulary instead. This is the same shape as the already-documented `/education/classes/[id]` gap (`route-to-surface.ts` line ~782: "a different page with no surface of its own yet"). Not attempted in this pass: a compliant manifest needs a scope module, a DB mirror sync (`sync-surface-manifests-direct.ts`) and release admission proof — the 2026-09-17 incident in `features/surfaces/FEATURE.md` is exactly what happens when that sequence is rushed. Flagged for a dedicated build task.
 - **2026-09-14** — **Kit phone actions meet the 44px touch floor.** The kit overview's
   shortcuts, full-kit door, and missing-format chips, plus the hub's Material and Make more
   from it doors, are at least 44px on phones while their compact desktop sizing remains intact.
