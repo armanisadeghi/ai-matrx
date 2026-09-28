@@ -368,6 +368,22 @@ try {
     // ── 8 · a type change and its Undo (on the moved table) ────────────────────────────────────
     await open(T.orders);
     d = await columnSettings("Operatory");
+    if (/Number/.test(await d.getByRole("combobox").nth(0).innerText())) {
+      // A stopped earlier run left it a Number: changing it back is the other half of the promise.
+      await d.getByRole("combobox").nth(0).click();
+      await sleep(500);
+      await page.getByRole("option", { name: "Text", exact: true }).first().click();
+      await sleep(600);
+      await d.getByRole("button", { name: "Save", exact: true }).click();
+      await sleep(1200);
+      await page.getByRole("button", { name: "Change type", exact: true }).click().catch(() => {});
+      await sleep(5000);
+      await open(T.orders);
+      const back = (await rowTexts()).slice(0, 3);
+      step("Operatory changed back to Text first", { rows: back });
+      if (!back.some((r) => /Op \d/.test(r))) friction(`changed back to Text, the set-aside values did not come back: ${back.join(" | ")}`);
+      d = await columnSettings("Operatory");
+    }
     await d.getByRole("combobox").nth(0).click();
     await sleep(500);
     await page.getByRole("option", { name: "Number", exact: true }).first().click();
@@ -382,6 +398,8 @@ try {
     await shot("o09-type-change-notice");
     if (offered.v) await undo.first().click();
     await sleep(6000);
+    // The preview's walk cap may park the host meanwhile; the table is read again as it is now.
+    if (page.url().includes("__dev-walk")) await open(T.orders);
     const afterUndo = (await rowTexts()).slice(0, 3);
     step("Operatory to Number, then Undo", { confirm: confirmText, undo_offered: !!offered.v, whileNumber, afterUndo });
     if (!afterUndo.some((t) => t.includes("Op 3"))) friction("Undo did not bring Op 3 back");
@@ -638,6 +656,17 @@ try {
       if (Object.values(removed).some((v) => v !== true)) friction(`a column this run added did not go: ${JSON.stringify(removed)}`);
     }
   }
+  if (PHASE === "menu-dom") {
+    await open(T.supplies, "?view=sheet");
+    await page.locator("tbody tr").first().locator("td").nth(1).click({ button: "right" });
+    await sleep(900);
+    await page.locator("[role=menu] [role^=menuitem]").filter({ hasText: /^Row · / }).first().hover();
+    await sleep(1200);
+    const html = await page.evaluate(() => { const m = [...document.querySelectorAll("[role=menu]")]; return m[m.length - 1]?.outerHTML.replace(/class="[^"]*"/g, "").slice(0, 3000); });
+    step("submenu dom", { html });
+    await page.keyboard.press("Escape");
+  }
+
   if (PHASE === "tidy") {
     // Columns earlier walks added and left on the test table, removed the way a person removes them.
     await open(T.supplies, "?view=sheet");

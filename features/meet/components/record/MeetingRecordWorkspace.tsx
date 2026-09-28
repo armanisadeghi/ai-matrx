@@ -58,6 +58,7 @@ import {
   type SeekRequest,
 } from "@/features/meet/components/record/RecordingSeekPlayer";
 import { TranscriptPanel } from "@/features/meet/components/record/TranscriptPanel";
+import { ShareWithAudienceButton } from "@/features/sharing/audience/ShareWithAudience";
 
 type Side = "transcript" | "chat" | "people";
 
@@ -96,6 +97,7 @@ export function MeetingRecordWorkspace({
       focusLineId={params.get("t")}
       focusNoteId={params.get("note")}
       openRecap={params.get("recap") === "1"}
+      openShare={params.get("share") === "1"}
       userId={host.identity.userId}
     />
   );
@@ -107,6 +109,7 @@ function Workspace({
   focusLineId,
   focusNoteId,
   openRecap,
+  openShare,
   userId,
 }: {
   meeting: MeetingRecord;
@@ -114,6 +117,7 @@ function Workspace({
   focusLineId: string | null;
   focusNoteId: string | null;
   openRecap: boolean;
+  openShare: boolean;
   userId: string | null;
 }) {
   const record = useMeetingRecord(meeting);
@@ -204,6 +208,14 @@ function Workspace({
             ? ` · ${attended} ${attended === 1 ? "person" : "people"}`
             : ""}
         </p>
+        {canManage ? (
+          <ShareWithAudienceButton
+            kind="meeting"
+            sourceId={meeting.id}
+            label="Share with everyone in the meeting"
+            autoOpen={openShare}
+          />
+        ) : null}
         {canManage ? (
           <Button
             size="sm"

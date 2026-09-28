@@ -13,7 +13,7 @@ import type { MenuModel, MenuNode } from "../model/menu-model";
 const noop = () => undefined;
 const item = (id: string, label: string): MenuNode => ({ kind: "item", id, label, onSelect: noop }) as MenuNode;
 
-it("gives each group of a submenu's rows its own section", async () => {
+it("marks the row after a submenu's separator as starting a group", async () => {
   const model: MenuModel = {
     header: null,
     roles: {} as MenuModel["roles"],
@@ -41,8 +41,32 @@ it("gives each group of a submenu's rows its own section", async () => {
   const row = contextMenuActionsFromModel(model, "m1").find((a) => a.id === "cm:grid-row");
   const owned = createClickTarget({ host: { contextMenu: { kind: "context-menu", instanceId: "m1" } } });
   const rows = (await row?.expand?.(owned, new AbortController().signal)) ?? [];
-  const groups = rows.map((a) => a.section?.id);
   expect(rows.map((a) => a.id)).toEqual(["cm:grid-row-duplicate", "cm:grid-row-highlight", "cm:grid-row-delete"]);
-  expect(groups[0]).toBe(groups[1]);
-  expect(groups[2]).not.toBe(groups[1]);
+  expect(rows.map((a) => Boolean((a as { startsGroup?: boolean }).startsGroup))).toEqual([false, false, true]);
+});
+
+it("marks the row after a separator in a section as starting a group", () => {
+  const model: MenuModel = {
+    header: null,
+    roles: {} as MenuModel["roles"],
+    sections: [
+      {
+        id: "extra:grid-row",
+        group: "extra",
+        label: "Row · Pinch gauges (set of 3)",
+        nodes: [
+          item("grid-row-duplicate", "Duplicate row"),
+          item("grid-row-highlight", "Highlight row"),
+          { kind: "separator", id: "grid-row-sep-delete" },
+          item("grid-row-delete", "Delete row…"),
+        ],
+      } as MenuModel["sections"][number],
+    ],
+  };
+  const actions = contextMenuActionsFromModel(model, "m1").filter((a) => a.id.startsWith("cm:grid-row-"));
+  expect(actions.map((a) => [a.id, Boolean((a as { startsGroup?: boolean }).startsGroup)])).toEqual([
+    ["cm:grid-row-duplicate", false],
+    ["cm:grid-row-highlight", false],
+    ["cm:grid-row-delete", true],
+  ]);
 });

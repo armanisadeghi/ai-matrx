@@ -131,6 +131,11 @@ function icon(node: { icon?: unknown }): string | undefined {
   return node.icon ? registerAlchemyIcon(node.icon) : undefined;
 }
 
+/** The row starts a new group: the menu draws a divider above it (alchemy `Action.startsGroup`). */
+function startGroup(a: Action): void {
+  Object.assign(a, { startsGroup: true });
+}
+
 /** One v3 node → one package action (submenus expand to their rows). */
 function toAction(node: MenuNode, place: Placement, instanceId: string, opts: ProviderOptions = {}): Action | null {
   if (node.kind === "separator" || node.kind === "label") return null;
@@ -175,23 +180,23 @@ function toAction(node: MenuNode, place: Placement, instanceId: string, opts: Pr
         // THE SUBMENU KEEPS ITS GROUPS (DATA-V2-BASICS-2): each run of rows between the source's
         // separators is one section, and the menu draws a divider where the section changes
         // (alchemy withGroupDividers) — "Delete row…" in its own group, never beside Highlight.
-        let group = 0;
-        const grouped: { child: MenuNode; group: number }[] = [];
+        const rows: Action[] = [];
+        let startsNext = false;
         for (const child of current.children) {
           if (child.kind === "separator") {
-            if (grouped.length > 0) group += 1;
+            startsNext = rows.length > 0;
             continue;
           }
-          grouped.push({ child, group });
-        }
-        return grouped
           // An empty category (or a row that cannot run) is ABSENT (R1) —
           // never a "No items in …" panel, never a dead row.
-          .filter(({ child }) => !unusable(child))
-          .map(({ child, group: g }, index) =>
-            toAction(child, { ...place, section: { id: `${node.id}:group-${g}`, label: "" }, order: index }, instanceId, opts),
-          )
-          .filter((a): a is Action => a !== null);
+          if (unusable(child)) continue;
+          const a = toAction(child, { ...place, section: undefined, order: rows.length }, instanceId, opts);
+          if (!a) continue;
+          if (startsNext) startGroup(a);
+          startsNext = false;
+          rows.push(a);
+        }
+        return rows;
       },
       run: () => undefined,
     };
@@ -284,7 +289,14 @@ export function contextMenuActionsFromModel(model: MenuModel, instanceId: string
           : section.primary
             ? { id: `cm-${section.id}`, label: section.label ?? "", primary: true }
             : undefined;
+    // A separator in the source starts a new group: the next row carries `startsGroup` and the
+    // menu draws the divider (alchemy buildMenuModel) — "Delete row…" in its own group (DATA-V2-BASICS-2).
+    let groupStarts = false;
     section.nodes.forEach((node, i) => {
+      if (node.kind === "separator") {
+        groupStarts = true;
+        return;
+      }
       const category =
         section.group === "clipboard" ? (NON_VERB_CLIPBOARD[node.id] ?? "clipboard") : CATEGORY_OF[section.group];
       // Undo / Redo are universal verbs: they ride the strip, not the History fold.
@@ -299,7 +311,11 @@ export function contextMenuActionsFromModel(model: MenuModel, instanceId: string
         instanceId,
         opts,
       );
-      if (a) out.push(a);
+      if (a) {
+        if (groupStarts) startGroup(a);
+        groupStarts = false;
+        out.push(a);
+      }
     });
   });
   return out;

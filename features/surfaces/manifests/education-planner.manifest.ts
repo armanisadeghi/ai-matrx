@@ -164,7 +164,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "plan_agenda",
     label: "Plan agenda",
     description:
-      "The plan day by day: [{ date, target_minutes, is_rest_day, rationale, blocks: [{ label, target_kind, estimated_minutes, estimated_items, method, status, rationale }] }]. Absent whenever active_plan is absent. Read-only evidence — block status is the learner's own record of what they studied.",
+      "The plan day by day: [{ id, date, target_minutes, is_rest_day, rationale, blocks: [{ id, day_id, day_date, label, target_kind, estimated_minutes, estimated_items, method, status, rationale }] }]. Absent whenever active_plan is absent. Day and block ids identify authored schedule details. Status is the learner's own record of what they studied and remains read-only.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 4000,
@@ -237,9 +237,58 @@ const surfaceSpecific: SurfaceValue[] = [
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
+    name: "update_study_plans",
+    label: "Edit plan title",
+    description:
+      "Edits the active plan title, saved immediately. Value is a JSON ARRAY of { id: string (required, from active_plan.id), title: string (required, non-empty) }. Dates, workload, ownership, progress, and mastery are refused.",
+    valueType: "array",
+    updatesValue: "active_plan",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "study_plan",
+    sortOrder: 300,
+  },
+  {
+    name: "create_study_plan_blocks",
+    label: "Add study blocks",
+    description:
+      "Adds schedule blocks to the active plan, saved immediately. Value is a JSON ARRAY of { day_id: string (required), day_date: string (required YYYY-MM-DD matching that day), label: string (required), estimated_minutes: number (required 1-480), method?: string | null, rationale?: string | null }. Each block is pending; status, progress, mastery, ownership, and target references cannot be set.",
+    valueType: "array",
+    updatesValue: "plan_agenda",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "study_plan",
+    sortOrder: 310,
+  },
+  {
+    name: "update_study_plan_blocks",
+    label: "Edit study blocks",
+    description:
+      "Edits authored schedule details on active-plan blocks, saved immediately. Value is a JSON ARRAY of { id: string (required from plan_agenda), label?: string, estimated_minutes?: number (1-480), method?: string | null, rationale?: string | null }. Include at least one changed field. Status and derived progress or mastery values are refused.",
+    valueType: "array",
+    updatesValue: "plan_agenda",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "study_plan",
+    sortOrder: 320,
+  },
+  {
+    name: "delete_study_plan_blocks",
+    label: "Remove study blocks",
+    description:
+      "Soft-removes active-plan schedule blocks, saved immediately. Value is a JSON ARRAY of { id: string } using ids from plan_agenda. The block disappears from this schedule while its recoverable record remains. This does not alter mastery. Prefer editing a block when it still belongs in the plan.",
+    valueType: "array",
+    updatesValue: "plan_agenda",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "study_plan",
+    sortOrder: 330,
+  },
+  {
     name: "delete_goal",
     label: "Remove study goal",
-    description: 'Soft-deletes a goal using the same operation as the goal list. Value is { goal_id: string }, using an id from study_goals. The goal leaves the active list; its record is retained. Only the person who created the goal can remove it.',
+    description:
+      "Soft-deletes a goal using the same operation as the goal list. Value is { goal_id: string }, using an id from study_goals. The goal leaves the active list; its record is retained. Only the person who created the goal can remove it.",
     valueType: "object",
     updatesValue: "study_goals",
     mode: "entity",
@@ -263,7 +312,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "update_goal",
     label: "Goal details",
     description:
-      'Edits an EXISTING study goal, saved immediately. Value is an OBJECT: { goal_id: string (required — the `id` of the entry in study_goals; it decides WHICH goal changes), title?: string (plain text), target_date?: string | null (YYYY-MM-DD, or null to clear the date), topic?: string | null (the flashcard topic tag; pass an empty string to clear it) }. Only the fields you include are changed — omit a field to leave it alone. At least one of title / target_date / topic is required alongside goal_id.',
+      "Edits an EXISTING study goal, saved immediately. Value is an OBJECT: { goal_id: string (required — the `id` of the entry in study_goals; it decides WHICH goal changes), title?: string (plain text), target_date?: string | null (YYYY-MM-DD, or null to clear the date), topic?: string | null (the flashcard topic tag; pass an empty string to clear it) }. Only the fields you include are changed — omit a field to leave it alone. At least one of title / target_date / topic is required alongside goal_id.",
     valueType: "object",
     updatesValue: "study_goals",
     mode: "entity",
@@ -339,6 +388,9 @@ export interface PlannerGoalScopeEntry {
 }
 
 export interface PlannerAgendaBlock {
+  id: string;
+  day_id: string | null;
+  day_date: string;
   label: string;
   target_kind: string;
   estimated_minutes: number;
@@ -349,6 +401,7 @@ export interface PlannerAgendaBlock {
 }
 
 export interface PlannerAgendaDay {
+  id: string;
   date: string;
   target_minutes: number;
   is_rest_day: boolean;

@@ -17,6 +17,7 @@
 --      automations, outside shares — answers, for EACH organization, exactly what the store's own
 --      list doors answer, each row naming that organization; named nobody, every organization's;
 --   G. an organization the caller cannot reach is refused by it, naming it;
+--   I. custom.data_home_items costs about one Table-visibility walk, like the tables door (warm);
 --   H. custom.data_home_changed_by answers who changed it for every organization in one call,
 --      exactly as custom.hub_changed_by does per organization, and refuses an unreachable one.
 --
@@ -199,6 +200,27 @@ begin
   end;
   raise notice 'H passed: who changed it answers for % organizations in one call, exactly as hub_changed_by does, and refuses an unreachable one',
     (select count(*) from _asks);
+end $$;
+
+-- I. THE ITEMS DOOR WALKS ONCE (chair, 2026-09-28): everything beside the tables costs about one
+-- Table-visibility walk, like the tables door itself — never one walk per kind per organization.
+-- Warm (each door asked once first), best of three, measured on the server's clock.
+do $$
+declare
+  t0 timestamptz; v_t numeric := 1e9; v_i numeric := 1e9; n int;
+begin
+  perform count(*) from custom.data_home_tables();
+  perform count(*) from custom.data_home_items();
+  for n in 1..3 loop
+    t0 := clock_timestamp(); perform count(*) from custom.data_home_tables();
+    v_t := least(v_t, extract(epoch from clock_timestamp() - t0) * 1000);
+    t0 := clock_timestamp(); perform count(*) from custom.data_home_items();
+    v_i := least(v_i, extract(epoch from clock_timestamp() - t0) * 1000);
+  end loop;
+  if v_i > greatest(1.5 * v_t, v_t + 150) then
+    raise exception 'I FAILED: data_home_items took % ms against data_home_tables'' % ms — it walks more than once', round(v_i), round(v_t);
+  end if;
+  raise notice 'I passed: data_home_items % ms, data_home_tables % ms (warm, best of three)', round(v_i), round(v_t);
 end $$;
 
 rollback;
