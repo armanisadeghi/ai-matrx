@@ -57,10 +57,18 @@ describe("global fixed alerts preserve reachable page actions", () => {
     expect(toast).toContain("bottom-[var(--shell-fixed-alert-clearance,0px)]");
   });
 
-  it("anchors the unpositioned dock above canonical table pagination", () => {
+  it("anchors the unpositioned dock above canonical table summary totals", () => {
     expect(SHELL_CSS).toContain(':root:has(.shell-main [data-matrx-table-footer])');
     expect(SHELL_CSS).toContain('--admin-attention-anchor-bottom: calc(');
     expect(SHELL_CSS).toContain('var(--matrx-table-control-size, 2rem)');
+    expect(SHELL_CSS).toContain('@supports (bottom: anchor-size(--matrx-table-summary-totals height))');
+    expect(SHELL_CSS).toContain('tfoot:has([data-matrx-table-summary-totals])');
+    expect(SHELL_CSS).toContain('anchor-name: --matrx-table-summary-totals');
+    expect(SHELL_CSS).toContain(':root:has(.shell-main [data-matrx-table-summary-totals])');
+    expect(SHELL_CSS).not.toContain(':root:has(.shell-main tfoot:has(');
+    expect(SHELL_CSS).toContain(
+      'anchor-size(--matrx-table-summary-totals height)',
+    );
     expect(BANNER_TSX).toContain('bottom: "var(--admin-attention-anchor-bottom, 1rem)"');
   });
 });

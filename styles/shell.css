@@ -1758,6 +1758,22 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
   );
 }
 
+/* Keep the default dock above both pagination and the complete totals band.
+   Use the totals' intrinsic height: its sticky visual position differs from
+   the layout position reported by anchor(), so edge anchoring is unsuitable. */
+@supports (bottom: anchor-size(--matrx-table-summary-totals height)) {
+  .shell-main tfoot:has([data-matrx-table-summary-totals]) {
+    anchor-name: --matrx-table-summary-totals;
+  }
+
+  :root:has(.shell-main [data-matrx-table-summary-totals]) {
+    --admin-attention-anchor-bottom: calc(
+      1rem + var(--matrx-table-control-size, 2rem) + 1rem +
+      anchor-size(--matrx-table-summary-totals height) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+
 :root[data-admin-attention="expanded"] {
   --shell-fixed-alert-clearance: max(14rem, 36dvh, env(safe-area-inset-bottom, 0px));
 }
