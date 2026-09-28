@@ -556,6 +556,7 @@ export async function splitItem(
       .from("product_capture_file")
       .update({ item_id: newItem.id })
       .eq("item_id", original.id)
+      .is("deleted_at", null)
       .in("file_id", group.fileIds);
     if (moveErr) throw moveErr;
 

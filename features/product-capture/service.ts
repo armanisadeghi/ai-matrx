@@ -208,6 +208,7 @@ export async function listAllFiles(
       files()
         .select(FILE_COLUMNS, { count: "exact" })
         .eq("organization_id", organizationId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: true })
         .order("id", { ascending: true })
         .range(from, to),
@@ -370,12 +371,15 @@ export async function linkFile(args: {
       "[product-capture] video metadata cannot be attached to a non-video link.",
     );
   }
+  // (item_id, file_id) is unique across Trash too, so re-linking a file whose
+  // link was moved to Trash revives that row instead of colliding with it.
   const { data, error } = await files()
-    .insert({
+    .upsert({
       item_id: args.itemId,
       organization_id: args.organizationId,
       file_id: args.fileId,
       kind: args.kind,
+      deleted_at: null,
       ...(args.video
         ? {
             metadata: {
@@ -386,7 +390,7 @@ export async function linkFile(args: {
             },
           }
         : {}),
-    })
+    }, { onConflict: "item_id,file_id" })
     .select(FILE_COLUMNS)
     .single();
   if (error) throw error;
@@ -398,6 +402,7 @@ export async function listItemFiles(itemId: string): Promise<CaptureFile[]> {
   const { data, error } = await files()
     .select(FILE_COLUMNS)
     .eq("item_id", itemId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return ((data ?? []) as FileRow[]).map(toCaptureFile);
@@ -408,7 +413,8 @@ export async function listItemFiles(itemId: string): Promise<CaptureFile[]> {
 export async function countFileLinks(fileId: string): Promise<number> {
   const { count, error } = await files()
     .select("id", { count: "exact", head: true })
-    .eq("file_id", fileId);
+    .eq("file_id", fileId)
+    .is("deleted_at", null);
   if (error) throw error;
   return count ?? 0;
 }
@@ -437,6 +443,7 @@ export async function listFilesForItems(
   const { data, error } = await files()
     .select(FILE_COLUMNS)
     .in("item_id", itemIds)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) throw error;
   for (const row of (data ?? []) as FileRow[]) {
@@ -448,8 +455,12 @@ export async function listFilesForItems(
 }
 
 /** Unlink a file row (the retake/delete path — cloud-file removal is the
- *  caller's concern, best-effort). */
+ *  caller's concern, best-effort). Delete means archive (Arman, 2026-09-27):
+ *  the link moves to Trash with the file and comes back with it. */
 export async function unlinkFile(linkId: string): Promise<void> {
-  const { error } = await files().delete().eq("id", linkId);
+  const { error } = await files()
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", linkId)
+    .is("deleted_at", null);
   if (error) throw error;
 }

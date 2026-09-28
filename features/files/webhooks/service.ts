@@ -41,6 +41,7 @@ export async function listWebhooks(): Promise<Webhook[]> {
   const { data, error } = await filesDb(supabase)
     .from("webhooks")
     .select(WEBHOOK_LIST_COLUMNS)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .returns<Webhook[]>();
   if (error) throw new Error(`Failed to load webhooks: ${error.message}`);
@@ -124,10 +125,20 @@ export async function rotateWebhookSecret(id: string): Promise<string> {
   return data;
 }
 
+/**
+ * Move a webhook to Trash. Delete means archive (Arman, 2026-09-27): the row
+ * stays restorable, and `is_active = false` stops delivery at once
+ * (`files.webhook_dispatch` only sends to active webhooks).
+ */
 export async function deleteWebhook(id: string): Promise<void> {
   const supabase = createClient();
   const { error } = await tryWriteOne(
-    filesDb(supabase).from("webhooks").delete().eq("id", id).select("id"),
+    filesDb(supabase)
+      .from("webhooks")
+      .update({ deleted_at: new Date().toISOString(), is_active: false })
+      .eq("id", id)
+      .is("deleted_at", null)
+      .select("id"),
     { action: "delete", noun: "webhook" },
   );
   if (error) throw new Error(`Failed to delete webhook: ${error.message}`);

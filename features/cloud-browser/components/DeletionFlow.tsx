@@ -34,6 +34,7 @@ export function DeletionFlow({
   const onDelete = async () => {
     const ok = await confirm({
       title: `Delete "${profileName}"?`,
+      // destroy-label-ok: the profile record stays (status deletion_pending, restorable); only the external browser state is erased by the retention policy after the window
       description: `This signs out of every account this browser holds and removes its saved state. You have ${CHECKPOINT_RETENTION_DAYS} days to change your mind before it is erased for good.`,
       variant: "destructive",
       confirmLabel: "Delete browser",

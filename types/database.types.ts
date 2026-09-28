@@ -32840,6 +32840,7 @@ export type Database = {
           consecutive_failures: number
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           description: string | null
           event_types: string[] | null
           id: string
@@ -32858,6 +32859,7 @@ export type Database = {
           consecutive_failures?: number
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string | null
           event_types?: string[] | null
           id?: string
@@ -32876,6 +32878,7 @@ export type Database = {
           consecutive_failures?: number
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string | null
           event_types?: string[] | null
           id?: string
@@ -33035,6 +33038,7 @@ export type Database = {
           consecutive_failures: number
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           description: string | null
           event_types: string[] | null
           id: string
@@ -115464,6 +115468,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           file_id: string
           id: string
           item_id: string
@@ -115478,6 +115483,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           file_id: string
           id?: string
           item_id: string
@@ -115492,6 +115498,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           file_id?: string
           id?: string
           item_id?: string
