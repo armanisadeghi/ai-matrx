@@ -39,6 +39,14 @@ export interface MeetPlanningKnobs {
   readonly horizonDays: number;
 }
 
+export interface MeetPlanningKnobsResult extends MeetPlanningKnobs {
+  readonly retry: () => void;
+  setShowExternalEvents: (
+    show: boolean,
+    targetOrganizationId?: string,
+  ) => Promise<void>;
+}
+
 export const PLANNING_DEFAULTS: MeetPlanningKnobs = {
   loaded: false,
   failure: null,
@@ -68,9 +76,7 @@ function positive(value: unknown, fallback: number): number {
 export function useMeetPlanningKnobs(
   organizationId: string | null,
   userId: string | null,
-): MeetPlanningKnobs & {
-  setShowExternalEvents: (show: boolean) => Promise<void>;
-} {
+): MeetPlanningKnobsResult {
   const [state, setState] = useState<MeetPlanningKnobs>(PLANNING_DEFAULTS);
   const [nonce, setNonce] = useState(0);
 
@@ -126,8 +132,9 @@ export function useMeetPlanningKnobs(
      * The person's own answer (user rung, inside the active organization). The
      * screen changes at once; a refusal is thrown as the door's own sentence.
      */
-    async setShowExternalEvents(show: boolean) {
-      if (organizationId === null || userId === null) {
+    async setShowExternalEvents(show: boolean, targetOrganizationId?: string) {
+      const resolvedOrganizationId = targetOrganizationId ?? organizationId;
+      if (resolvedOrganizationId === null || userId === null) {
         throw new Error("Choose an organization to save this setting.");
       }
       setState((s) => ({ ...s, showExternalEvents: show }));
@@ -136,7 +143,7 @@ export function useMeetPlanningKnobs(
         key: "show_external_calendar_events",
         scopeKind: "user",
         scopeId: userId,
-        organizationId,
+        organizationId: resolvedOrganizationId,
         value: show,
       });
       if (!result.ok) {

@@ -2,9 +2,15 @@ import { renderHook, settle } from "@/test-utils/renderHook";
 import { useMeetPlanningKnobs } from "./useMeetPlanningKnobs";
 
 const rpc = jest.fn();
+const setKnobOverride = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema: jest.fn(() => ({ rpc })) },
+}));
+
+jest.mock("@/lib/scoped-config/service", () => ({
+  knobRefusalSentence: () => "The setting could not be saved.",
+  setKnobOverride: (...args: unknown[]) => setKnobOverride(...args),
 }));
 
 describe("useMeetPlanningKnobs", () => {
@@ -32,6 +38,28 @@ describe("useMeetPlanningKnobs", () => {
       failure: "Planning settings are unavailable.",
       showExternalEvents: false,
     });
+    await hook.unmount();
+  });
+
+  it("saves through the organization chosen after the hook first rendered without one", async () => {
+    rpc.mockResolvedValue({ data: null, error: null });
+    setKnobOverride.mockResolvedValue({ ok: true });
+
+    const hook = await renderHook(() =>
+      useMeetPlanningKnobs(null, "member-73"),
+    );
+    await settle(hook, (value) => value.loaded, "planning defaults");
+
+    await hook.act(() =>
+      hook.current.setShowExternalEvents(false, "org-recycling"),
+    );
+    expect(setKnobOverride).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: "org-recycling",
+        scopeId: "member-73",
+        value: false,
+      }),
+    );
     await hook.unmount();
   });
 });

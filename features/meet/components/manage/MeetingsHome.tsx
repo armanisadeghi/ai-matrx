@@ -220,8 +220,9 @@ export function MeetingsHome() {
   };
   const toggleExternal = async (show: boolean) => {
     try {
-      if (!actions.organizationId) await ensureOrganizationContext();
-      await planning.setShowExternalEvents(show);
+      const targetOrganizationId =
+        actions.organizationId ?? (await ensureOrganizationContext());
+      await planning.setShowExternalEvents(show, targetOrganizationId);
     } catch (thrown) {
       toast.error(errorSentence(thrown));
     }
