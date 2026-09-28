@@ -85,7 +85,7 @@ export function displayMasteryPct(
 // One canonical bucketing of an item's mastery into named tiers, so every
 // surface (P5 dashboards, the flashcards editor + set detail, the game) speaks
 // the SAME language for "how well do I know this". Derived from the live decayed
-// mastery %, the FSRS struggle flag, and whether the item has ever been studied.
+// mastery % and whether the item has ever been studied.
 
 /** New → never studied; then struggling → learning → familiar → mastered. */
 export type MasteryTier =
@@ -121,8 +121,7 @@ export const MASTERY_TIER_LABEL: Record<MasteryTier, string> = {
 
 /**
  * Classify an item's mastery into a named tier. `null`/never-studied →
- * `new`; a struggling item (FSRS `struggle_flag`, or live mastery < 40%) →
- * `struggling`; then `learning` (< 70%), `familiar` (< 90%), `mastered` (≥ 90%).
+ * `new`; then by live recall alone — `struggling` (< 40%), then `learning` (< 70%), `familiar` (< 90%), `mastered` (≥ 90%).
  * Thresholds match the planner's weak-area cutoff (`collectSummary`) so "weak"
  * means the same thing everywhere.
  */
@@ -147,8 +146,13 @@ export function masteryTier(
   }
   const pct = displayMasteryPct(mastery, now);
   const p = pct ?? 0;
+  // The tier is the RECALL NUMBER'S band, nothing else (page-pass 2026-09-28,
+  // /education/flashcards/[setId]): the FSRS struggle flag used to force
+  // "Struggling" onto a card at 81% recall, so the badge contradicted the
+  // number beside it. The flag still drives the planner and the study queue;
+  // the label a person reads always agrees with the % it shows.
   let tier: MasteryTier;
-  if (mastery.struggle_flag || p < 0.4) tier = "struggling";
+  if (p < 0.4) tier = "struggling";
   else if (p < 0.7) tier = "learning";
   else if (p < 0.9) tier = "familiar";
   else tier = "mastered";

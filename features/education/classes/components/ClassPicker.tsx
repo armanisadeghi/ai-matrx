@@ -63,7 +63,9 @@ export function ClassPicker({
       <div className={className}>
         <Link
           href="/education/classes"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          // 44px on touch (page-pass 2026-09-28: it measured 16px tall on a
+          // phone); desktop stays one compact line.
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground pointer-coarse:min-h-11"
         >
           <GraduationCap className="h-3.5 w-3.5" />
           Add a class to organize this

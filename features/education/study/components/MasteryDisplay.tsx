@@ -52,16 +52,11 @@ export function MasteryTierPill({
 }) {
   const { tier, label, pct } = masteryTier(mastery);
   // The % is the chance you recall this card right now (it fades between
-  // reviews). "Struggling" can sit beside a high % when the card was missed
-  // recently — the title says so (page-pass 2026-09-27: "Struggling 86%" read
-  // as a contradiction with no explanation).
-  const missedRecently = tier === "struggling" && pct != null && pct >= 0.4;
+  // reviews); the tier is that number's band, so label and % always agree.
   const explanation =
     pct == null
       ? "Not studied yet"
-      : `${Math.round(pct * 100)}% chance you recall it now${
-          missedRecently ? " — marked struggling because you missed it recently" : ""
-        }`;
+      : `${Math.round(pct * 100)}% chance you recall it now`;
   return (
     <span
       title={`${label}: ${explanation}`}

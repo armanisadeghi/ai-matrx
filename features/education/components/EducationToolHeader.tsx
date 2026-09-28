@@ -137,7 +137,10 @@ export function EducationToolHeader({
             variant="transparent"
             ariaLabel="Back to Education"
           />
-          <span className="min-w-0 truncate text-sm font-medium text-foreground">
+          <span
+            className="min-w-0 truncate text-sm font-medium text-foreground"
+            title={title}
+          >
             {title}
           </span>
         </div>

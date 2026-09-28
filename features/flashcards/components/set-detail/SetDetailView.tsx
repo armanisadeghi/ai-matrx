@@ -835,15 +835,13 @@ export function SetDetailView({
           <>
             {/* Header */}
             <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-3">
+              {/* ONE TITLE (page-pass 2026-09-28): the deck's name is the
+                  shell header's title. A second copy here as a body <h1>
+                  scrolled under the glass header and drew as two overlapping
+                  lines on a phone in dark mode. */}
               <div className="flex min-w-0 items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Layers className="h-6 w-6" />
-                </div>
                 <div className="min-w-0">
-                  <h1 className="text-[clamp(1.25rem,5.5vw,1.75rem)] font-semibold leading-tight tracking-tight text-foreground">
-                    {data.set.name}
-                  </h1>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <BookOpen className="h-3.5 w-3.5" />
                       {data.cards.length}{" "}
@@ -870,7 +868,8 @@ export function SetDetailView({
                     </p>
                   ) : null}
                   {canEdit && (
-                    <div className="mt-2">
+                    // Who can see it + its class: one row, not two stacked.
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                       <SetVisibilityControl
                         setId={setId}
                         visibility={data.set.visibility}
@@ -882,10 +881,6 @@ export function SetDetailView({
                           )
                         }
                       />
-                    </div>
-                  )}
-                  {canEdit && (
-                    <div className="mt-2">
                       <ClassPicker entityType="fc_set" entityId={setId} />
                     </div>
                   )}

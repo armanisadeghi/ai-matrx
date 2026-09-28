@@ -342,9 +342,12 @@ export function buildFlashcardSetListConfig(input: {
 }): EntityListConfig<FlashcardSetListRow> {
   return {
     surfaceKey: "education-flashcard-sets",
-    // Where the list OPENS is the per-type knob
-    // platform.entity_types.default_list_scope (fc_set → "mine" since
-    // 2026-09-27), never a literal here.
+    // Where the list OPENS is the registry (platform.list_scope_registry),
+    // never a literal here. Since access-ladder T-11 (2026-09-27) that view
+    // derives from the "Shown to by default" knob access.shown_to_default/
+    // fc_set: Only me → Mine, anything else → My Orgs. fc_set's knob is
+    // "everyone", so the list opens on My Orgs by design, not from a
+    // remembered preference (page-pass 2026-09-28 checked).
     registryToken: "fc_set",
     entityLabel: { singular: "deck", plural: "decks" },
     sourceFeature: "education-flashcards",
