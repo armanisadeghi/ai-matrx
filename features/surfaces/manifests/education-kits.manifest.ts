@@ -232,6 +232,7 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 const writeTargets: SurfaceWriteTarget[] = [
+  { name: "create_kits", label: "Create study kits", description: "Available only in the manual kit creator after a source file and visible study aids load. Value is an ARRAY of { title: string, source_file_id: string, artifact_ids: string[] }; every id must come from kit_member_candidates and source_file_id must equal kit_source_file_id. Creates source associations only.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 90 },
   {
     name: "update_kits", label: "Rename study kits",
     description: "Renames existing kits. Value is an ARRAY of { source_type: string, source_id: string, expected_membership_fingerprint: string, title: string }. Identity and fingerprint must be current. Stale membership is refused before any edge changes. The person approves before saving.",
@@ -300,7 +301,7 @@ export interface KitStudyAidEntry {
  * keys its view has.
  */
 export function createEducationKitsScope(values: {
-  view: "list" | "detail";
+  view: "list" | "detail" | "new";
   selection?: string;
   context?: Record<string, unknown>;
   kits_loaded?: boolean;
@@ -313,6 +314,9 @@ export function createEducationKitsScope(values: {
   kit_source_type?: string;
   kit_title?: string;
   kit_membership_fingerprint?: string;
+  kit_draft_title?: string;
+  kit_source_file_id?: string;
+  kit_member_candidates?: { id: string; title: string; kind: string; subtype: string | null }[];
   kit_created_at?: string;
   study_aids?: KitStudyAidEntry[];
   kit_totals?: {
