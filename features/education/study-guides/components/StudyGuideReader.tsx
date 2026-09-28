@@ -463,11 +463,15 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
           refusalFor: (cause) => isOrganizationSelectionCancelled(cause) ? "The person closed the workspace picker, so no study guide was created." : undefined,
         },
         update: {
-          parse: (value) => parseUpdateStudyGuidesValue(
-            value,
-            guidesRef.current.map((item) => ({ id: item.id, title: item.label, version: item.version })),
-          ),
+          parse: (value) => {
+            if (editingRef.current) refuseSurfaceWrite("The person has a guide open in the editor. Ask them to press \"Back to reading\" first; nothing was changed.");
+            return parseUpdateStudyGuidesValue(
+              value,
+              guidesRef.current.map((item) => ({ id: item.id, title: item.label, version: item.version })),
+            );
+          },
           run: async (plan) => {
+            if (editingRef.current) refuseSurfaceWrite("The person has a guide open in the editor. Ask them to press \"Back to reading\" first; nothing was changed.");
             const current = await loadStudyGuide(plan.id);
             if (!current) throw new Error(`"${plan.title}" is no longer available to update.`);
             if (current.version !== plan.version)
@@ -482,14 +486,15 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
         },
         delete: {
           parse: (value) => {
+            if (editingRef.current) refuseSurfaceWrite("The person has a guide open in the editor. Ask them to press \"Back to reading\" first; nothing was changed.");
             return parseDeleteStudyGuidesValue(
               value,
               guidesRef.current.map((item) => ({ id: item.id, title: item.label })),
             );
           },
           run: async (plan) => {
+            if (editingRef.current) refuseSurfaceWrite("The person has a guide open in the editor. Ask them to press \"Back to reading\" first; nothing was changed.");
             await dispatch(deleteNote(plan.id)).unwrap();
-            router.replace("/education/study-guides");
             return { id: plan.id, name: plan.title };
           },
           nameOf: (plan) => plan.title,
@@ -497,8 +502,26 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
       },
       refuseSurfaceWrite,
     );
-    return initialGuideId ? {
+    const collectionDelete = guideTargets.delete_study_guides;
+    const guardedGuideTargets: SurfaceWriteHandlers = {
       ...guideTargets,
+      delete_study_guides: {
+        ...collectionDelete,
+        apply: async (value) => {
+          if (editingRef.current) refuseSurfaceWrite("The person has a guide open in the editor. Ask them to press \"Back to reading\" first; nothing was changed.");
+          const plans = parseDeleteStudyGuidesValue(
+            value,
+            guidesRef.current.map((item) => ({ id: item.id, title: item.label })),
+          );
+          const outcome = await collectionDelete.apply(value);
+          if (guideRef.current && plans.some((plan) => plan.id === guideRef.current?.id)) router.replace("/education/study-guides");
+          else retryIndex();
+          return outcome;
+        },
+      },
+    };
+    return initialGuideId ? {
+      ...guardedGuideTargets,
     guide_content: {
       validate: (value) => {
         const current = guideRef.current;
@@ -521,7 +544,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
         };
       },
     },
-    } : guideTargets;
+    } : guardedGuideTargets;
   };
 
   const getListScope = () => createEducationStudyGuidesScope({

@@ -266,7 +266,7 @@ Every change goes through these targets; each asks the person once and returns w
 - create_study_guides — add one or more Notes-backed study guides to the Education library.
 - update_study_guides — change a loaded guide's title and/or full markdown body with version protection.
 - guide_content — rewrite or fix the guide's text (send the whole body, or { command: "str_replace", old_str, new_str } for one part).
-- delete_study_guides — move this open guide to Trash. It can be restored there.
+- delete_study_guides — move one or more loaded guides from available_guides to Trash. They can be restored there.
 - create_personal_notes / update_personal_notes / delete_personal_notes — private highlights (on a quoted passage) and notes. Use these when the person says "highlight", "note to self", "mark this".
 - create_guide_comments / update_guide_comments / delete_guide_comments — shared comments, replies and suggested rewrites; resolve a thread with update_guide_comments (resolved: true) rather than deleting it.
 A quote must be copied exactly from study_guide.content and appear there once. Never use generic note, document or comment tools for this guide: they skip the page's anchoring and privacy rules.
