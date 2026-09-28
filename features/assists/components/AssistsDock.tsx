@@ -168,7 +168,8 @@ export default function AssistsDock() {
   // (page-pass 2026-09-27: it sat on the flashcards list's pager arrow).
   const style = {
     right: `${offset.right}px`,
-    bottom: `calc(${offset.bottom}px + var(--page-bottom-dock-h, 0px))`,
+    // + the auto-dock lift: off any control it would otherwise cover (../assistClearance.ts).
+    bottom: `calc(${offset.bottom}px + var(--page-bottom-dock-h, 0px) + var(--assist-dock-lift, 0px))`,
   };
 
   // The mobile launcher follows the established inbox/chat-launcher pattern:
@@ -181,7 +182,7 @@ export default function AssistsDock() {
     // publishes its height as --page-bottom-dock-h; the launcher sits above it
     // instead of covering the dock's last button.
     bottom:
-      "calc(max(0.75rem, env(safe-area-inset-bottom, 0px)) + var(--page-bottom-dock-h, 0px))",
+      "calc(max(0.75rem, env(safe-area-inset-bottom, 0px)) + var(--page-bottom-dock-h, 0px) + var(--assist-dock-lift, 0px))",
     transform: "translateY(var(--keyboard-inset-height, 0px))",
   };
 
@@ -191,7 +192,7 @@ export default function AssistsDock() {
       <>
         <div
           data-assists-dock=""
-          className="fixed right-3 z-40 md:hidden"
+          className="fixed right-3 z-40 md:hidden transition-opacity data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30"
           style={mobileLauncherStyle}
         >
           <button
@@ -211,7 +212,7 @@ export default function AssistsDock() {
             <BellOff className="h-4 w-4" />
           </button>
         </div>
-        <div data-assists-dock="" className="fixed z-40 hidden pb-safe md:block" style={style}>
+        <div data-assists-dock="" className="fixed z-40 hidden pb-safe md:block transition-opacity data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30" style={style}>
           <button
             type="button"
             onPointerDown={onPointerDown}
@@ -248,7 +249,7 @@ export default function AssistsDock() {
           onClick={() => setOpen(true)}
           aria-label={`Open ${visible.length} assist${visible.length === 1 ? "" : "s"}`}
           data-assists-dock=""
-          className="fixed right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-glass text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[background-color,transform] hover:bg-glass-hover md:hidden"
+          className="fixed right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-glass text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[background-color,transform] hover:bg-glass-hover md:hidden data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30"
           style={mobileLauncherStyle}
         >
           <Lightbulb className="h-5 w-5 text-primary" />
@@ -361,7 +362,7 @@ export default function AssistsDock() {
       <div
         data-assists-dock=""
         className={cn(
-          "pointer-events-auto group flex items-center gap-0.5 rounded-full border border-primary/30 bg-card pl-1 pr-1 shadow-md",
+          "pointer-events-auto group flex items-center gap-0.5 rounded-full border border-primary/30 bg-card pl-1 pr-1 shadow-md transition-opacity data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30",
           dragging && "ring-1 ring-primary/40",
         )}
       >
