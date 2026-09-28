@@ -87,44 +87,39 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
   const prepare = useEffectEvent(async (key: string) => {
     if (!plan || preparing.current === key) return;
     preparing.current = key;
-    setFailure(null);
-    try {
-      switch (plan.step) {
-        case "create-from-seed": {
-          const label = noteLabelFromText(plan.seed);
-          const organizationId = await resolveOrganization();
-          const note = await NotesAPI.create({
-            label,
-            content: plan.seed,
-            folder_name: NEW_NOTE_FOLDER,
-            tags: [],
-            organization_id: organizationId,
-          });
-          onSource(noteSource(source, note.id), label);
-          break;
-        }
-        case "start-draft": {
-          const id = crypto.randomUUID();
-          await startDraft(id);
-          onSource(noteDraftSource(source, id));
-          break;
-        }
-        case "draft": {
-          // Still in this session's store: nothing to do.
-          if (store.getState().notes?.notes?.[plan.noteId]) break;
-          // A reload: saved meanwhile → open it; never saved → start it again.
-          const saved = await NotesAPI.getById(plan.noteId, { failureMode: "throw" });
-          if (saved) onSource(noteSource(source, plan.noteId));
-          else await startDraft(plan.noteId);
-          break;
-        }
-        case "open":
-          break;
+    switch (plan.step) {
+      case "create-from-seed": {
+        const label = noteLabelFromText(plan.seed);
+        const organizationId = await resolveOrganization();
+        const note = await NotesAPI.create({
+          label,
+          content: plan.seed,
+          folder_name: NEW_NOTE_FOLDER,
+          tags: [],
+          organization_id: organizationId,
+        });
+        onSource(noteSource(source, note.id), label);
+        break;
       }
-      preparing.current = null;
-    } catch (err) {
-      report(err);
+      case "start-draft": {
+        const id = crypto.randomUUID();
+        await startDraft(id);
+        onSource(noteDraftSource(source, id));
+        break;
+      }
+      case "draft": {
+        // Still in this session's store: nothing to do.
+        if (store.getState().notes?.notes?.[plan.noteId]) break;
+        // A reload: saved meanwhile → open it; never saved → start it again.
+        const saved = await NotesAPI.getById(plan.noteId, { failureMode: "throw" });
+        if (saved) onSource(noteSource(source, plan.noteId));
+        else await startDraft(plan.noteId);
+        break;
+      }
+      case "open":
+        break;
     }
+    preparing.current = null;
   });
 
   const planKey = plan
@@ -135,7 +130,8 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
         : `${plan.step}:${plan.noteId}`
     : "none";
   useEffect(() => {
-    void prepare(`${planKey}#${attempt}`);
+    // Failures land in the callback (never a synchronous state write).
+    prepare(`${planKey}#${attempt}`).catch(report);
   }, [planKey, attempt]);
 
   // The draft got its first words (it has a row now): the tile refers to a
@@ -162,7 +158,10 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
           message={failure.reason}
           operation="Start a note on the board"
           actions={
-            <Button size="sm" variant="outline" onClick={() => setAttempt((n) => n + 1)}>
+            <Button size="sm" variant="outline" onClick={() => {
+                setFailure(null);
+                setAttempt((n) => n + 1);
+              }}>
               <RotateCcw className="mr-1.5 size-3.5" />
               Try again
             </Button>
