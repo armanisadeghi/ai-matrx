@@ -293,6 +293,10 @@ surface). Say which parts you judged as authored content.
 - **Numbers are plausible.** Sanity-check every computed figure against the
   rows behind it (a study time of 57 days, a count that disagrees with its
   list, a 0 shown beside content that exists are defects).
+  A count or total built from a plain list read stops silently at 1000 rows —
+  read it with `readAllRows` or count on the server (an admin "in DB" count read
+  1 where the database held 31). Colour carries meaning only when it varies:
+  a green badge on nearly every row is noise.
 - **Any change that loosens a gate is reviewed before it ships** — dropping an
   organization requirement, a new grant or door, a row-security or auth
   exemption: dispatch an independent reviewer (standard lane) to trace every
