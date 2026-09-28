@@ -244,6 +244,8 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
   }, [node.id]);
 
   const groups = useMemo(() => groupMentions(mentions), [mentions]);
+  // Names are best-effort, but their failure is said above the groups.
+  const [namesError, setNamesError] = useState<unknown>(null);
 
   // Resolve the source documents' names (note label, etc.) for the group headers.
   useEffect(() => {
@@ -256,10 +258,14 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
       groups.map((g) => ({ kind: g.sourceKind, id: g.sourceId })),
     )
       .then((names) => {
-        if (!cancelled) setSourceNames(names);
+        if (!cancelled) {
+          setSourceNames(names);
+          setNamesError(null);
+        }
       })
-      .catch(() => {
-        /* names are best-effort; the kind label is the fallback */
+      .catch((e: unknown) => {
+        // The kind label stays the fallback — and the fallback is said.
+        if (!cancelled) setNamesError(e);
       });
     return () => {
       cancelled = true;
@@ -338,7 +344,14 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
               populate as your content is ingested.
             </div>
           ) : (
-            groups.map((group) => {
+            <>
+            {namesError != null && (
+              <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                Source names couldn&apos;t be read — showing each source&apos;s kind.
+                <ErrorAlchemyMenu error={namesError} size="xs" operation="Read the source names" />
+              </p>
+            )}
+            {groups.map((group) => {
               const href = evidenceHref(group, group.occurrences[0]);
               return (
                 <div
@@ -423,7 +436,8 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
                   </div>
                 </div>
               );
-            })
+            })}
+            </>
           )}
           {status === "ready" && total > mentions.length ? (
             <div className="pt-1 text-center text-[11px] text-muted-foreground">

@@ -767,6 +767,7 @@ export function SmartCodeEditor({
             ? "Draft open in the Agent panel"
             : pickedAgent
               ? pickedAgent.name
+              // read-gate-exempt: agents is the caller's job list (a prop), not a read; mandate read failures are shown per job in the picker
               : "No agent job available"}
         </span>
         <Button

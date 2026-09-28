@@ -46,6 +46,7 @@ import {
   type TemplateSaveMode,
   type TemplateUpdateMethod,
 } from "./template-save";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface QuickMessageTemplateSaveCoreProps {
   initialContent: string;
@@ -66,6 +67,9 @@ export function QuickMessageTemplateSaveCore({
   const openDiff = useOpenDiffViewerWindow();
   const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // The template list read's failure is said in the picker, not "No templates found".
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState<TemplateSaveMode>("create");
   const [updateMethod, setUpdateMethod] =
@@ -89,11 +93,14 @@ export function QuickMessageTemplateSaveCore({
     let active = true;
     fetchMessageTemplates({ order_by: "updated_at", order_direction: "desc" })
       .then((rows) => {
-        if (active) setTemplates(rows);
+        if (active) {
+          setTemplates(rows);
+          setLoadError(null);
+        }
       })
       .catch((error: unknown) => {
         console.error("QuickMessageTemplateSave: load failed", error);
-        if (active) toast.error("Failed to load message templates");
+        if (active) setLoadError(error);
       })
       .finally(() => {
         if (active) setIsLoading(false);
@@ -101,7 +108,7 @@ export function QuickMessageTemplateSaveCore({
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadAttempt]);
 
   const selectExisting = (id: string) => {
     setSelectedId(id);
@@ -309,6 +316,10 @@ export function QuickMessageTemplateSaveCore({
                         {template.role ?? "unassigned"}
                       </SelectItem>
                     ))
+                  ) : loadError != null ? (
+                    <SelectItem value="__none" disabled>
+                      Templates unavailable
+                    </SelectItem>
                   ) : (
                     <SelectItem value="__none" disabled>
                       No templates found
@@ -316,6 +327,17 @@ export function QuickMessageTemplateSaveCore({
                   )}
                 </SelectContent>
               </Select>
+              {loadError != null && (
+                <ReadFailure
+                  error={loadError}
+                  what="your message templates"
+                  onRetry={() => {
+                    setIsLoading(true);
+                    setLoadAttempt((n) => n + 1);
+                  }}
+                  className="m-0 mt-1"
+                />
+              )}
             </div>
           ) : null}
 

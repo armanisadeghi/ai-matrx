@@ -204,7 +204,7 @@ export function OrgShareReviewCard({
       <div className="flex items-center gap-2 mb-1">
         <ShieldCheck className="h-5 w-5 text-muted-foreground" />
         <h2 className="text-lg font-semibold">Member contributions</h2>
-        {grants.length > 0 && (
+        {loadError == null && grants.length > 0 && (
           <Badge variant="secondary" className="text-xs">
             {pendingCount} shared
           </Badge>
