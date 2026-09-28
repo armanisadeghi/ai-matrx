@@ -32,6 +32,7 @@ export function ManualKitCreator() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [recoveryReady, setRecoveryReady] = useState(false);
   const draftKey = "manual-study-kit-draft";
 
   useEffect(() => {
@@ -47,17 +48,19 @@ export function ManualKitCreator() {
         if (Array.isArray(draft.selected)) setSelected(draft.selected);
         toast.info("Your unsaved kit was restored.");
       } catch { sessionStorage.removeItem(draftKey); }
+      finally { if (active) setRecoveryReady(true); }
     });
     return () => { active = false; };
   }, []);
   useEffect(() => {
+    if (!recoveryReady) return;
     const dirty = Boolean(title || sourceId || selected.length);
     if (!dirty) { sessionStorage.removeItem(draftKey); return; }
-    sessionStorage.setItem(draftKey, JSON.stringify({ title, sourceId, sourceName, selected }));
+    sessionStorage.setItem(draftKey, JSON.stringify({ title, sourceId, sourceName, selected: selected.map((row) => ({ kind: row.kind, id: row.id })) }));
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [sourceId, sourceName, selected, title]);
+  }, [recoveryReady, sourceId, sourceName, selected, title]);
 
   useEffect(() => {
     let active = true;

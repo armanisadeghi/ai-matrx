@@ -34,6 +34,7 @@ import {
 import { studyMediaService } from "@/features/education/media/service";
 import { educationLibraryHref, type EducationLibraryRow } from "@/features/education/library/types";
 import { targetKindForSubtype } from "@/features/education/library/artifactVisuals";
+import { getFileMetadata } from "@/features/files/api/files";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import type { TargetKind } from "@/features/education/convert/types";
 import type { AssociationTargetType } from "@/features/scopes/types";
@@ -533,8 +534,19 @@ export async function createManualKit(input: {
   const sourceTitle = writableTitle(input.title);
   if (!input.sourceId) throw new Error("Choose the saved file for this kit.");
   if (!input.artifacts.length) throw new Error("Choose at least one saved study aid.");
+  await getFileMetadata(input.sourceId);
+  const existing = await readKit("file", input.sourceId);
+  if (existing) throw new Error(`This file already has a study kit. Open ${kitHref("file", input.sourceId)} to add or manage its aids.`);
+  const wanted = new Set(input.artifacts.map((artifact) => `${artifact.kind}:${artifact.id}`));
+  const fresh: EducationLibraryRow[] = [];
+  for (let page = 1; wanted.size; page += 1) {
+    const result = await fetchEducationLibraryPage({ ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "mine" }, page }, { sort: "updated", direction: "desc", favoritesFirst: false, pageSize: KIT_SCAN_PAGE });
+    for (const row of result.rows) if (wanted.delete(`${row.kind}:${row.id}`)) fresh.push(row);
+    if (result.rows.length < KIT_SCAN_PAGE || page * KIT_SCAN_PAGE >= result.total) break;
+  }
+  if (wanted.size) throw new Error("One or more selected study aids are no longer available in your library. Reload and choose again.");
   let completed = 0;
-  for (const artifact of input.artifacts) {
+  for (const artifact of fresh) {
     const targetKind = targetKindForSubtype(artifact.subtype);
     if (!targetKind) throw new Error(`"${artifact.title}" is not a study aid that can join a kit.`);
     const result = await associationsService.add({
