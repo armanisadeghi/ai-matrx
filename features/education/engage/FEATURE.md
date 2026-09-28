@@ -231,6 +231,19 @@ enforces it in code, not copy:
 
 ## Change Log
 
+- **2026-09-27** — page-pass `/education/game` + `/education/game/solo`: type list page (home) +
+  AI workspace (solo round). Fixed a phone-width text-wrap bug in `StreakCard.tsx` — the "N
+  freezes" badge wrapped mid-word ("freez"/"es") because the pill had no `whitespace-nowrap`/
+  `shrink-0`. Verified `/education/game/solo`'s org gate (`StudyOrganizationGate what="This game"`)
+  live end to end: with no organization chosen it shows the honest `OrganizationRequiredNotice`
+  in place (never the blocking workspace prompt), and after picking "admin's Workspace" through the
+  in-page picker the real game engine loads a live due-review question from the person's own data.
+  Both routes mapped in `route-to-surface.ts` (`matrx-user/education-game`); `EngageHome` carries
+  its own `SurfaceRuntimeProvider`. `/education/game/solo` itself has no child surface of its own
+  (it inherits the parent's) — flagged as an open question, not fixed: its live round state (current
+  question, score, streak) is data the parent surface cannot see; a child surface may be warranted
+  per page-pass core-1 ("a sub-view with data of its own gets a child surface") but that is a
+  product-surface decision, not mine to make unilaterally in this pass.
 - **2026-08-18** — Landed IC-14: server-graded answer recording,
   attempt-ledger-derived score/mastery/badges, attempt/result direct-write
   revocation, idempotent per-session results, private

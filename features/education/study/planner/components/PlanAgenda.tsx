@@ -220,10 +220,10 @@ function BlockRow({
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <span
             className={cn(
-              "truncate text-sm font-medium text-foreground",
+              "min-w-0 flex-1 truncate text-sm font-medium text-foreground",
               done && "line-through",
             )}
           >

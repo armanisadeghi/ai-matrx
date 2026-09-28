@@ -188,6 +188,19 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-09-27** — page-pass `/education/tutor` + `/education/tutor/[conversationId]`: type list
+  page (home) + AI workspace (conversation). Both already list-first, both already surface-wired
+  (`matrx-user/education-tutor`, `SurfaceRuntimeProvider` + `getScope`/`getWriteHandlers` on the
+  client, mapped in `route-to-surface.ts`). No blocking layers, no dead controls, no browser
+  dialogs found. "New tutor session" is a real `<Link>` (not a button + `router.push`) — correct
+  per doctrine. Verified live: `pnpm page:look` desktop+phone, light+dark on both routes (0 console
+  errors, 0 failed requests on either); read a real admin@admin.com conversation
+  (`5105d9d2-3033-48a0-817f-39bfec385fde`) end to end, transcript renders through the stream
+  pipeline, composer present, Copy/pin/share row present per message. Left open: some older
+  conversations in the history list carry a stale auto-generated title
+  ("Auto: Education AI Tutor (Structured Trust)") from an August fallback-naming path — pre-existing
+  test data, not reproducible from current tutor code; the naming mechanism (if still live) is a
+  server-side/aidream concern, not this feature's code.
 - **2026-09-26** — **`AskTutorButton` no longer opens a focus-trapping `Sheet`.** The "Ask my
   tutor" side panel (dropped onto flashcard study, quiz results, etc.) hosted the full tutor
   conversation composer inside a design-system `Sheet` — the exact blocking-drawer pattern fixed

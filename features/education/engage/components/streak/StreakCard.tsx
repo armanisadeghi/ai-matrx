@@ -52,8 +52,8 @@ export function StreakCard() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 text-sm">
-          <Snowflake className="h-4 w-4 text-sky-500" />
+        <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-muted px-2.5 py-1.5 text-sm">
+          <Snowflake className="h-4 w-4 shrink-0 text-sky-500" />
           <span className="font-medium text-foreground">{freezes}</span>
           <span className="text-muted-foreground">freezes</span>
         </div>

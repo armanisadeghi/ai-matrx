@@ -90,6 +90,14 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- `2026-09-27` — page-pass `/education/planner`: type single-record/AI workspace hybrid, posture
+  sharp after Linear. Header "Re-plan" duplicated the stale-plan banner's own "Re-plan now" (two
+  doors for one action) — the header button now hides while that banner is up
+  (`StudyPlanView.tsx`). A plan-block title truncated to 3-4 characters on phone ("Spa…") because
+  the label span lacked `min-w-0`/`flex-1` inside its flex row — fixed in `PlanAgenda.tsx`.
+  Verified live: `pnpm page:look --route /education/planner` desktop+phone, light+dark, 0 console
+  errors, 0 failed requests. Agent surface (`matrx-user/education-planner`) already wired via
+  `SurfaceRuntimeProvider`; route mapped in `route-to-surface.ts`.
 - `2026-09-27` — page-pass 2026-09-27 (honesty round, /education/progress): a saved AI reading kept no step types (`coerceNarrative` read only `target_kind`; the saved report says `targetKind`) — reads both, guarded by `storedNarrative.test.ts`; narrator fingerprint v2 moves only on new answers, and the reading is read from the newest session that holds one, so an empty review session no longer buys a new ~120s run; `needsWork` in `computeAnalytics.ts` is the one weak rule for the counts, the topic list and the weak drill; empty sessions are not counted and setless sessions are named; the reading renders as the section itself (one heading); one copy menu per section.
 - `2026-09-27` — page-pass 2026-09-27 (excellent round, /education/progress): charts cross-mode like the headline numbers; "Highest-leverage fixes" and "By topic" merged into ONE `TopicMasteryList` ("Flashcard topics": sort, search, collapse, phone restack, 0% = None); `StudyOrganizationGate` — the weak-area drill and due review wait for an organization inline instead of raising the blocking workspace prompt (the other 10 session-opening study modes still do: census in the page-pass report); topic rows open "Practice: <topic>"; new cross-mode `/education/sessions` for Streak/Time studied; accuracy chart linear with empty weeks marked, weekly axis in minutes; agent bundle carries every topic, the weekly series and per-subject gain.
 - `2026-09-27` — page-pass 2026-09-27 (live proof round): every recharts chart in the app was an empty card on phones — the ≤768px `* { max-width: 100% }` default clamped `.recharts-wrapper` inside recharts 3's 0×0 measuring div; lifted in `app/globals.css`. `/education/flashcards/weak-areas?topic=` now drills one topic (every studied card in it, struggling first), and the progress dashboard's topic rows open it; Copy / Copy-for-AI pairs on every dashboard section; insights card folds the organization picker behind one button and shows a skeleton while the organization resolves.

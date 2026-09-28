@@ -367,20 +367,25 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1.5"
-              disabled={generating}
-              onClick={handleReplan}
-            >
-              {generating ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
-              Re-plan
-            </Button>
+            {/* The stale-plan banner below already offers "Re-plan now" for this
+                same action — showing this one too would be two doors for one
+                job, so it hides while that banner is up. */}
+            {!(!absence && stale) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                disabled={generating}
+                onClick={handleReplan}
+              >
+                {generating ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                Re-plan
+              </Button>
+            )}
             <Button
               size="sm"
               variant="ghost"
