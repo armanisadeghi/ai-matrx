@@ -85666,6 +85666,22 @@ export type Database = {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: Json
       }
+      secure_delivery_sent: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: {
+          code_channel: string
+          created_at: string
+          expires_at: string
+          field_keys: string[]
+          id: string
+          link_channel: string
+          recipient_email: string
+          recipient_name: string
+          recipient_phone: string
+          status: string
+          viewed_at: string
+        }[]
+      }
       secure_delivery_verify_and_consume: {
         Args: { p_code: string; p_ip?: unknown; p_secret: string }
         Returns: Json

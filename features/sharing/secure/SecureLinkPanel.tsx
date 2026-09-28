@@ -10,8 +10,8 @@
 //
 // WHAT THIS PANEL NEVER HOLDS: a protected value or the link. It asks the server which protected
 // fields this person may include, sends names and addresses, and draws the receipt the server
-// writes. The list below reads `platform.secure_delivery` under row security (the payload column
-// is client-excluded in the database).
+// writes. The list below comes from the door `platform.secure_delivery_sent` — the sender's own
+// rows only; the delivery table itself is closed to signed-in clients (aidream 1350g).
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Mail, MessageSquare, ShieldCheck } from "lucide-react";
