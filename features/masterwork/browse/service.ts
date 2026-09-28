@@ -142,9 +142,13 @@ function applyScope<Q extends RulebookFilterable>(
 ): Q | null {
   if (scope.kind === "public") return q.eq("visibility", "public");
   // MY TEAM: what I and the people I share a team with made, per organization.
+  // It is My Orgs narrowed to teammates, so a teammate's row shows only where
+  // its "Shown to" lets it (access ladder T-11) — same rule as My Orgs.
   if (scope.kind === "team") {
     const filter = teamReachOrFilter(teamReach, userId);
-    return filter === null ? null : q.or(filter);
+    if (filter === null) return null;
+    const orgIds = [...new Set(teamReach.map((p) => p.organizationId))];
+    return q.or(filter).or(shownToBlendedFilter(shownTo, orgIds, userId)) as Q;
   }
   if (scope.kind === "shared") {
     if (sharedIds.length === 0) return null;
@@ -310,7 +314,9 @@ export async function fetchRulebookPage(
     query.scope.kind === "team"
       ? fetchMyTeamReach(query.scope.organizationId)
       : Promise.resolve([]),
-    query.scope.kind === "orgs" ? fetchShownToContext("rulebook") : Promise.resolve({}),
+    query.scope.kind === "orgs" || query.scope.kind === "team"
+      ? fetchShownToContext("rulebook")
+      : Promise.resolve({}),
   ]);
   let q = applyScope(
     basePage(),
