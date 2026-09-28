@@ -408,10 +408,13 @@ export function useDataStoreDetail(storeId: string | null) {
     try {
       const supabase = createClient();
       await writeOne(
+        // Delete means archive: the store moves to Trash (restorable); its
+        // memberships follow through the platform.soft_delete_edge cascade.
         ragDb(supabase)
           .from("data_stores")
-          .delete()
+          .update({ deleted_at: new Date().toISOString() })
           .eq("id", storeId)
+          .is("deleted_at", null)
           .select("id"),
         { action: "delete", noun: "data store" },
       );

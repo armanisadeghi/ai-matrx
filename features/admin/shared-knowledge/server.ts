@@ -29,6 +29,8 @@ export async function loadSharedKnowledgeDirectory(): Promise<SharedKnowledgeDir
         "id, name, short_code, description, kind, organization_id, created_by, is_active, discoverable, created_at",
       )
       .eq("kind", "library")
+      // A store in Trash is not a live library (delete means archive).
+      .is("deleted_at", null)
       .order("name", { ascending: true }),
     // deleted_at IS NULL: removing a member is a soft delete (db-rules §8/§8a),
     // so an unfiltered count would keep tombstones and only ever grow.

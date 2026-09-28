@@ -906,9 +906,9 @@ function StoreDetailPanel({
                   className="text-destructive"
                   onClick={async () => {
                     const ok = await confirm({
-                      title: "Delete data store",
-                      description: `Permanently delete data store "${s.name}"? Members will be removed but the underlying documents are not affected.`,
-                      confirmLabel: "Delete",
+                      title: "Move data store to Trash",
+                      description: `Move data store "${s.name}" to Trash? It can be restored from Trash. The underlying documents are not affected.`,
+                      confirmLabel: "Move to Trash",
                       variant: "destructive",
                     });
                     if (!ok) return;
@@ -917,7 +917,7 @@ function StoreDetailPanel({
                   }}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Delete
+                  Move to Trash
                 </Button>
               </>
             )}
