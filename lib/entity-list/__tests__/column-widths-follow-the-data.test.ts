@@ -67,6 +67,14 @@ describe("uniform columns hide by default", () => {
     expect(uniformColumnIds(specs, rows, ["name"])).toEqual([]);
   });
 
+  it("an all-EMPTY column hides at any row count; 'identical' still needs 3 rows (/connected-sources, 2 rows)", () => {
+    const two = [
+      { id: "1", name: "A", topic: null, folders: [], visibility: "Organization" },
+      { id: "2", name: "B", topic: "", folders: [], visibility: "Organization" },
+    ] as Row[];
+    expect(uniformColumnIds(specs, two, ["name"])).toEqual(["topic"]);
+  });
+
   it("a column the person shows stays shown", () => {
     const eff = effectiveHiddenColumns([], ["visibility"], []);
     expect(eff).toEqual(["visibility"]);

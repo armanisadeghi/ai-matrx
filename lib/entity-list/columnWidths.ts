@@ -121,7 +121,11 @@ export function uniformColumnIds<T>(
   rows: readonly T[],
   keep: readonly (string | null | undefined)[] = [],
 ): string[] {
-  if (rows.length < MIN_ROWS_TO_JUDGE) return [];
+  // An all-EMPTY column is empty at any row count (/connected-sources with 2
+  // rows showed a column of dashes); "the same value on every row" needs
+  // MIN_ROWS_TO_JUDGE rows before it means anything.
+  if (rows.length === 0) return [];
+  const judgeIdentical = rows.length >= MIN_ROWS_TO_JUDGE;
   const out: string[] = [];
   for (const spec of columns) {
     if (spec.locked || keep.includes(spec.id)) continue;
@@ -134,7 +138,7 @@ export function uniformColumnIds<T>(
       seen.add(isEmptyCellValue(v) ? "\u0000empty" : JSON.stringify(v));
       if (seen.size > 1) break;
     }
-    if (seen.size <= 1) out.push(spec.id);
+    if (seen.size === 1 && (judgeIdentical || seen.has("\u0000empty"))) out.push(spec.id);
   }
   return out;
 }
