@@ -33,7 +33,7 @@ function note(overrides: Partial<Note> = {}): Note {
     organization_id: ORG_ID,
     position: 0,
     project_id: null,
-    sync_version: 0,
+    sync_version: 0, search_engine_indexed: null, shown_to: null,
     tags: [],
     task_id: null,
     updated_at: "2026-09-12T00:00:00.000Z",
@@ -97,11 +97,10 @@ describe("prepared Notes rich-document sources", () => {
 
   it("keeps the complete acknowledged snapshot apart from dirty fields and field history", () => {
     const record = createBlankNoteRecord(note());
-    const dirty = notesReducer({
-      notes: { [NOTE_ID]: record }, fetchedNoteIds: new Set(), contentLoadStatus: {}, listStatus: "idle", listError: null,
-      conflictResolutionReceipts: {}, currentConflictReviewKeys: {}, retainedConflictReviews: {}, instances: {}, realtimeConnected: false, realtimeStatus: "idle", realtimeFailedAttempts: 0, noteEditors: {}, noteScopeAssignments: [], noteScopesLoaded: false,
-      activeNoteId: null, openTabs: [], _savingNoteIds: [],
-    }, setNoteField({ id: NOTE_ID, field: "content", value: "later dirty text" }));
+    // Start from the slice's own initial state so a new slice field never
+    // leaves this hand-built state behind the reducer's real shape.
+    const initial = notesReducer(undefined, { type: "@@test/init" });
+    const dirty = notesReducer({ ...initial, notes: { [NOTE_ID]: record } }, setNoteField({ id: NOTE_ID, field: "content", value: "later dirty text" }));
     expect(dirty.notes[NOTE_ID]._fieldHistory.content).toBe("acknowledged body");
     expect(dirty.notes[NOTE_ID]._acknowledgedPhysicalSnapshot?.content).toBe("acknowledged body");
     expect(dirty.notes[NOTE_ID]._acknowledgedPhysicalSnapshot).not.toBe(dirty.notes[NOTE_ID]);

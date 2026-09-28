@@ -95,7 +95,7 @@ function noteRow(id: string, label: string) {
     organization_id: ORG,
     position: 0,
     project_id: null,
-    sync_version: 1,
+    sync_version: 1, search_engine_indexed: null, shown_to: null,
     tags: [],
     task_id: null,
     updated_at: STAMP,

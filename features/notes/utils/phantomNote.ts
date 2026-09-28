@@ -36,7 +36,7 @@ export function createPhantomNote(folderName: string = "Draft"): Note {
     position: 0,
     metadata: {},
     custom_fields: {},
-    sync_version: 0,
+    sync_version: 0, search_engine_indexed: null, shown_to: null,
     version: 1,
     created_by: null,
     updated_by: null,

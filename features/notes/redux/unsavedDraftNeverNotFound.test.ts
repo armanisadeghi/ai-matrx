@@ -84,7 +84,7 @@ function savedStaffRota(): Note {
     organization_id: ORG,
     position: 0,
     project_id: null,
-    sync_version: 0,
+    sync_version: 0, search_engine_indexed: null, shown_to: null,
     tags: [],
     task_id: null,
     updated_at: "2026-09-20T15:00:00.000Z",

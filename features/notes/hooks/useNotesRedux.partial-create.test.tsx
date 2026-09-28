@@ -60,7 +60,7 @@ function note(overrides: Partial<Note> = {}): Note {
     organization_id: "org-1",
     position: 0,
     project_id: "project-1",
-    sync_version: 0,
+    sync_version: 0, search_engine_indexed: null, shown_to: null,
     tags: [],
     task_id: null,
     updated_at: "2026-09-12T00:00:00.000Z",
