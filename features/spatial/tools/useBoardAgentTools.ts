@@ -18,13 +18,22 @@
  */
 
 import { toast } from "@/lib/toast";
-import { useSurfaceClientTools } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  useSurfaceClientTools,
+  type SurfaceToolCall,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { BoardConnection, BoardFrame, BoardTileBase, BoardView } from "../board/useBoard";
 import { screenToWorld, visibleWorldRect, rectsIntersect, type Rect } from "../engine/camera";
 import { align, arrange, distribute, enclosingFrame, type AlignEdge, type ArrangeLayout, type DistributeAxis } from "../engine/arrange";
 import type { SpatialStore } from "../engine/spatial-store";
 import { boundBoardContext, type RawBoardTile } from "./board-snapshot";
 import type { BoardTileKindInput } from "./board-tools";
+import {
+  actOnItem,
+  ITEM_MOUNT_TIMEOUT_MS,
+  openItemSurface,
+  type ItemSurfaceIndex,
+} from "./item-surfaces";
 
 export interface AddTileInput {
   kind: BoardTileKindInput;
@@ -100,6 +109,12 @@ export interface BoardToolHost<T extends BoardTileBase & { title: string }> {
   /** "note", "markdown", a kind label… a status word, and the agent surface
    * the tile's feature publishes while the tile is live, for board_read. */
   describe: (tile: T) => { kind: string; status?: string | null; surface?: string | null };
+  /**
+   * Each tile's own surface capture (`item-surfaces.ts`), live or dormant —
+   * what `board_open_item` / `board_item_act` and the `board_items` value read.
+   * Absent on a board whose tiles carry no feature surface.
+   */
+  itemSurfaces?: ItemSurfaceIndex;
 }
 
 const DEFAULT_SIZE: Record<BoardTileKindInput, { w: number; h: number }> = {
@@ -385,6 +400,73 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     return { ok: true, id: tile.id };
   };
 
+  /** Two frames: a selection or an unpark has rendered and its effects ran. */
+  const settle = () =>
+    new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+  /**
+   * The tile's surface capture, after making it the person's live tile (and
+   * bringing it back onto the board if it was parked or removed — only a
+   * rendered tile mounts its surface).
+   */
+  const reachItem = async (id: unknown, show: boolean) => {
+    const tile = find(id);
+    if (!tile) return missing(id);
+    const surface = host.describe(tile).surface ?? null;
+    if (!surface) {
+      return fail(
+        `"${tile.title}" is board-only content with no feature behind it, so it has no surface to open. board_update_tile changes it.`,
+      );
+    }
+    if (!host.itemSurfaces) return fail("This board cannot open its items for you yet.");
+    const now = board.read();
+    const hidden = [...now.parked, ...(now.removed ?? [])].some((t) => t.id === tile.id);
+    if (hidden) board.unparkTile(tile.id);
+    if (show && store) {
+      if (hidden) await settle();
+      store.select(tile.id);
+      store.fitItem(tile.id);
+    }
+    const capture = await host.itemSurfaces.wait(tile.id, ITEM_MOUNT_TIMEOUT_MS);
+    if (!capture) {
+      return fail(`"${tile.title}" did not mount its ${surface} surface. Nothing was read or changed; try again in a moment.`);
+    }
+    return { tile, surface, capture };
+  };
+
+  const openItem = async (input: unknown) => {
+    const reached = await reachItem(record(input).id, true);
+    if (isFailure(reached)) return reached;
+    await settle();
+    const opened = await openItemSurface(reached.capture);
+    if (!opened.ok) return opened;
+    return {
+      id: reached.tile.id,
+      title: reached.tile.title,
+      kind: host.describe(reached.tile).kind,
+      live: true,
+      ...opened,
+      next: "Act on it with board_item_act: {id, target, value} for a write target, or {id, tool, input} for a tool.",
+    };
+  };
+
+  const itemAct = async (input: unknown, call?: SurfaceToolCall) => {
+    const a = record(input);
+    const reached = await reachItem(a.id, false);
+    if (isFailure(reached)) return reached;
+    const result = await actOnItem(
+      reached.capture,
+      {
+        target: str(a.target),
+        value: a.value,
+        tool: str(a.tool),
+        input: a.input,
+      },
+      call,
+    );
+    return { id: reached.tile.id, title: reached.tile.title, ...result };
+  };
+
   const park = (input: unknown) => {
     const a = record(input);
     const tile = find(a.id);
@@ -411,6 +493,8 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     board_group: group,
     board_connect: connectTool,
     board_focus: focusTool,
+    board_open_item: openItem,
+    board_item_act: itemAct,
     board_park: park,
     board_undo: undo,
   });

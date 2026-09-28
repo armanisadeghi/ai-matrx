@@ -40,10 +40,8 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   captureError: jest.fn(),
 }));
 
-import {
-  dispatchSurfaceWrite,
-  surfaceWriteFailureSentence,
-} from "../dispatch-surface-write.thunk";
+import { dispatchSurfaceWrite } from "../dispatch-surface-write.thunk";
+import { surfaceWriteFailureSentence } from "@/features/surfaces/runtime/surface-write-tool-output";
 import {
   registerSurfaceRuntime,
   type SurfaceWriteHandlers,

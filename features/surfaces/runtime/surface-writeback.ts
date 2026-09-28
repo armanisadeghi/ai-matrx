@@ -82,8 +82,9 @@ import type {
   WritePolicyMap,
 } from "../types";
 import {
-  getRegisteredWriteHandlers,
+  getGlobalSurfaceRegistry,
   getSurfaceRuntimeStack,
+  type SurfaceRegistry,
   type SurfaceRuntimeValue,
   type SurfaceWriteApply,
   type SurfaceWriteHandler,
@@ -99,13 +100,16 @@ export type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
  * (`useSurfaceWriteHandlers`). Registered handlers win — the component that
  * registered one owns the state that target writes.
  */
-function resolveHandlers(runtime: {
-  surfaceName: string;
-  getWriteHandlers?: () => SurfaceWriteHandlers;
-}): SurfaceWriteHandlers {
+function resolveHandlers(
+  runtime: {
+    surfaceName: string;
+    getWriteHandlers?: () => SurfaceWriteHandlers;
+  },
+  registry: SurfaceRegistry,
+): SurfaceWriteHandlers {
   return {
     ...(runtime.getWriteHandlers?.() ?? {}),
-    ...getRegisteredWriteHandlers(runtime.surfaceName),
+    ...registry.writeHandlers(runtime.surfaceName),
   };
 }
 
@@ -483,6 +487,15 @@ export interface ApplySurfaceWriteOptions {
    */
   surfaceName?: string;
   /**
+   * The registry the write resolves in. Omitted = the ONE global registry
+   * (what is live on screen). A CAPTURE (`createSurfaceCapture`) — one board
+   * tile's copy of a surface, dormant or not — is written through the same
+   * seam with the same order, policy and approval card; the platform
+   * targets (window forms, custom fields, feedback) belong to the screen, not
+   * to a capture, and are not offered there.
+   */
+  source?: SurfaceRegistry;
+  /**
    * Suppress the success toast (callers that show their own confirmation).
    * Failures always toast — loud recovery is not optional.
    */
@@ -632,6 +645,7 @@ async function agentWriteAllowed(
   value: unknown,
   requestApproval: ApplySurfaceWriteOptions["requestApproval"],
   runtime: SurfaceRuntimeValue,
+  registry: SurfaceRegistry = getGlobalSurfaceRegistry(),
 ): Promise<SurfaceWriteResult | true> {
   const policy = resolveApplyPolicy(target, surfaceName);
   if (policy === "auto") return true;
@@ -700,7 +714,7 @@ async function agentWriteAllowed(
     if (compareText) {
       try {
         if (
-          !getSurfaceRuntimeStack().includes(runtime) ||
+          !registry.stack().includes(runtime) ||
           (await readCurrentText()) !== currentValue
         ) {
           const message = `"${target.label}" changed while you were reviewing it. Nothing was applied. Request the change again to review an updated comparison.`;
@@ -927,19 +941,21 @@ export async function applySurfaceWrite(
   rawValue: unknown,
   opts?: ApplySurfaceWriteOptions,
 ): Promise<SurfaceWriteResult> {
-  if (targetName === WINDOW_FORM_TARGET_NAME) {
+  const registry = opts?.source ?? getGlobalSurfaceRegistry();
+  const onScreen = registry.kind === "global";
+  if (onScreen && targetName === WINDOW_FORM_TARGET_NAME) {
     return applyWindowFormWrite(rawValue, opts);
   }
-  if (targetName === SURFACE_FEEDBACK_TARGET_NAME) {
+  if (onScreen && targetName === SURFACE_FEEDBACK_TARGET_NAME) {
     return applySurfaceFeedbackWrite(rawValue, opts);
   }
-  if (targetName === CUSTOM_FIELDS_TARGET_NAME) {
+  if (onScreen && targetName === CUSTOM_FIELDS_TARGET_NAME) {
     return applyCustomFieldsTargetWrite(rawValue, opts, "add");
   }
-  if (targetName === CUSTOM_FIELDS_SET_TARGET_NAME) {
+  if (onScreen && targetName === CUSTOM_FIELDS_SET_TARGET_NAME) {
     return applyCustomFieldsTargetWrite(rawValue, opts, "set");
   }
-  const stack = getSurfaceRuntimeStack().filter(
+  const stack = registry.stack().filter(
     (entry) => !opts?.surfaceName || entry.surfaceName === opts.surfaceName,
   );
 
@@ -960,7 +976,7 @@ export async function applySurfaceWrite(
     const target = findDeclaredTarget(runtime.surfaceName, targetName);
     if (!target) continue;
 
-    const handlers = resolveHandlers(runtime);
+    const handlers = resolveHandlers(runtime, registry);
     const handler = splitHandler(handlers[targetName]);
     if (!handler) {
       // Declared but not wired — a real defect on the page, not the caller.
@@ -1043,6 +1059,7 @@ export async function applySurfaceWrite(
         value,
         opts?.requestApproval,
         runtime,
+        registry,
       );
       if (verdict !== true) return verdict;
     }
@@ -1328,7 +1345,9 @@ export const SURFACE_WRITE_TOOL_NAME = "apply_surface_write";
  * between injection and call is still enforced — this list is the offer, not
  * the gate.
  */
-export function listAgentWritableTargets(): ReadonlyArray<{
+export function listAgentWritableTargets(
+  source?: SurfaceRegistry,
+): ReadonlyArray<{
   surfaceName: string;
   target: SurfaceWriteTarget;
   policy: Exclude<SurfaceWritePolicy, "manual">;
@@ -1338,7 +1357,7 @@ export function listAgentWritableTargets(): ReadonlyArray<{
     target: SurfaceWriteTarget;
     policy: Exclude<SurfaceWritePolicy, "manual">;
   }> = [];
-  for (const live of listLiveWriteTargets()) {
+  for (const live of listLiveWriteTargets(source)) {
     const policy = resolveApplyPolicy(live.target, live.surfaceName);
     if (policy === "manual") continue;
     if (!live.hasHandler) {
@@ -1412,21 +1431,24 @@ export function __resetUnwiredTargetReports(): void {
  * surface first — for authoring surfaces / debug chrome (the Surface Context
  * window can show "what could an agent write here right now").
  */
-export function listLiveWriteTargets(): ReadonlyArray<{
+export function listLiveWriteTargets(
+  source?: SurfaceRegistry,
+): ReadonlyArray<{
   surfaceName: string;
   target: SurfaceWriteTarget;
   hasHandler: boolean;
 }> {
+  const registry = source ?? getGlobalSurfaceRegistry();
   const out: Array<{
     surfaceName: string;
     target: SurfaceWriteTarget;
     hasHandler: boolean;
   }> = [];
   const seen = new Set<string>();
-  for (const runtime of getSurfaceRuntimeStack()) {
+  for (const runtime of registry.stack()) {
     const manifest = getManifest(runtime.surfaceName);
     if (!manifest?.writeTargets) continue;
-    const handlers = resolveHandlers(runtime);
+    const handlers = resolveHandlers(runtime, registry);
     for (const target of manifest.writeTargets) {
       const key = `${runtime.surfaceName}:${target.name}`;
       if (seen.has(key)) continue;
@@ -1438,6 +1460,8 @@ export function listLiveWriteTargets(): ReadonlyArray<{
       });
     }
   }
+  // The platform targets below belong to the SCREEN, never to a capture.
+  if (registry.kind !== "global") return out;
   // The platform target for unregistered windows: offered only while one
   // with fields is open, attributed to the primary surface.
   if (hasWindowForms()) {

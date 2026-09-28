@@ -131,15 +131,34 @@ hardware with a production build before tuning further.
 ## Agent tools — the board is a surface
 
 Every host wraps its board in **`components/SpatialBoardSurface.tsx`**: it mounts the
-`matrx-user/spatial-board` surface runtime (values `board_title`, `board_tiles`, `selected_tile`)
+`matrx-user/spatial-board` surface runtime (values `board_title`, `board_items`, `selected_tile`)
 and registers the board's client tools, so ANY agent running while a board is on screen (the chat
 beside it, a shortcut, a mandate) receives them automatically (`listLiveSurfaceClientTools` →
 tool injection; no per-agent arming, no aidream change).
 
+**THE BRIDGE — every item in two requests** (`tools/item-surfaces.ts`). Only the LIVE tile
+(selected, worked in or focused) registers its feature surface globally (`SurfaceActivity`; the
+one-live-registration law). Every tile ALSO registers into its own **capture**
+(`<SurfaceActivity capture>`, `createSurfaceCapture` — features/surfaces FEATURE.md), live or
+dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfaces`).
+- **Request one — `board_items`**, on every turn: each item's id, title, kind, surface, `live`, and
+  for a dormant item its **basics** (`surfaceBrief`: the manifest's `briefValues`, projected small),
+  bounded (`BOARD_ITEMS_MAX`, `BOARD_ITEMS_BRIEF_BUDGET_CHARS`, stated in `limits`). The live item
+  carries none: its full surface already reaches the agent as a surface-chain level.
+- **Request two, same turn — `board_open_item(id)`**: the item's declared values (with descriptions,
+  capped) and controls — write-target lines from `describeAgentWritableTargets` (the injected
+  `apply_surface_write` wording) and client tools with schemas — and it selects the item (a parked
+  one comes back). **`board_item_act(id, target+value | tool+input)`** runs through the canonical
+  `applySurfaceWrite` / `executeSurfaceClientTool` with `source: capture` and the call's
+  `agentWrite` (`SurfaceToolCall`): same type check, anchored patch, value contract, `validate`,
+  apply policy (ask → this call's approval card) and `surfaceWriteToolOutput` envelope as on the page.
+- A host without `itemSurfaces` (meeting, War Room, workflow boards) lists identity only.
+
 | Piece | File |
 |---|---|
-| Tool declarations: `board_read`, `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_focus`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/spatial-board.manifest.ts`) |
+| Tool declarations: `board_read`, `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_focus`, `board_open_item`, `board_item_act`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/spatial-board.manifest.ts`) |
 | Handlers — host-agnostic, drive `useBoard` + the store; errors come back as `{ok:false, error}` with a remedy; remove toasts an Undo; adding never moves the camera | `tools/useBoardAgentTools.ts` |
+| The bridge: per-tile capture index, `board_items` overview, open / act on any item | `tools/item-surfaces.ts` |
 | Pure layout math | `engine/arrange.ts` |
 
 A host supplies a `BoardToolHost`: `board` (a `BoardToolTarget` — the NARROW interface the
@@ -206,6 +225,11 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-09-28 — The bridge: every tile registers its surface into a per-tile capture (live or dormant);
+  `board_items` replaces `board_tiles` (every item + a dormant item's basics); `board_open_item` /
+  `board_item_act` read and act on ANY item in the same turn through the canonical writeback and
+  client-tool runtimes (approval flow included). `board_focus` no longer says "act next turn".
 
 - 2026-09-28 — Note tile is the real notes core (`NoteWorkspace`) instead of a plain-text `NoteEditorCore`;
   `tiles/NoteTileBody.tsx` deleted (label body moved to `tiles/TextTileBody.tsx`); "Note" starts a note
