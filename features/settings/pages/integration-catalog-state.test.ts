@@ -99,6 +99,7 @@ describe("catalogActionPresentation", () => {
       {
         ...githubEntry,
         slug: "supabase",
+        connectionReady: false,
         connectionId: "saved-supabase-connection",
         connectionStatus: "refresh_failed",
       },
