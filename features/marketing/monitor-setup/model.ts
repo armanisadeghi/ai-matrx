@@ -58,7 +58,8 @@ export interface DraftBrief {
   surface: string;
 }
 
-export type SchedulePreset = "twice_daily" | "daily" | "hourly" | "none";
+/** A schedule choice id from the `news.setup.schedule_presets` knob ("" until the knob loads). */
+export type SchedulePreset = string;
 
 export interface MonitorDraft {
   name: string;
@@ -102,22 +103,35 @@ export function basisChip(basis: Basis): string {
   }
 }
 
-export const SCHEDULE_PRESETS: Array<{
-  id: SchedulePreset;
+export interface ScheduleOption {
+  id: string;
   label: string;
+  /** How many runs a month the choice makes — the cost estimate's multiplier. */
   runsPerMonth: number;
-  recommended?: boolean;
-}> = [
-  { id: "twice_daily", label: "7am and 2pm", runsPerMonth: 60, recommended: true },
-  { id: "daily", label: "Every morning at 7am", runsPerMonth: 30 },
-  { id: "hourly", label: "Every hour", runsPerMonth: 720 },
-  { id: "none", label: "No schedule", runsPerMonth: 0 },
-];
+  recommended: boolean;
+}
 
-/** Coverage-only monitors default to one morning run; anything with the
- *  opportunity lens defaults to the recommended twice-daily (brief §5.1 8). */
-export function defaultSchedule(opportunity: boolean): SchedulePreset {
-  return opportunity ? "twice_daily" : "daily";
+/** The `news.setup.schedule_presets` knob, read into options. Malformed
+ *  entries are skipped, never guessed. */
+export function scheduleOptions(raw: unknown): ScheduleOption[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    const e = asRecord(entry);
+    const id = typeof e.id === "string" ? e.id : "";
+    const label = typeof e.label === "string" ? e.label : "";
+    const runs = Number(e.runs_per_month);
+    if (!id || !label || !Number.isFinite(runs)) return [];
+    return [{ id, label, runsPerMonth: runs, recommended: e.recommended === true }];
+  });
+}
+
+/** The `news.setup.schedule_default` knob: coverage-only monitors and monitors
+ *  with the opportunity lens each start on their own choice (brief §5.1 8). */
+export function defaultSchedule(
+  opportunity: boolean,
+  defaults: Record<string, string> | undefined,
+): SchedulePreset {
+  return (opportunity ? defaults?.opportunity : defaults?.coverage_only) ?? "";
 }
 
 /** 32-bit FNV-1a over the UTF-8 bytes of `text`. */
@@ -360,7 +374,7 @@ export function draftFromTracker(
     exclusions: tracker.exclude_terms,
     brief: emptyBrief(),
     briefSourceId: tracker.brief_source_id,
-    schedule: defaultSchedule(opportunity),
+    schedule: "",
     timezone,
   };
 }
@@ -392,7 +406,7 @@ export function newDraft(input: {
     exclusions: [],
     brief: emptyBrief(),
     briefSourceId: null,
-    schedule: defaultSchedule(true),
+    schedule: "",
     timezone: input.timezone,
   };
 }

@@ -21,7 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ExternalLink, Link2, Trophy } from "lucide-react";
+import { ExternalLink, Link2, Settings2, Trophy } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -61,6 +61,7 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { cn } from "@/lib/utils";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** `?mention=` — the exact row an assist chip is talking about. */
@@ -167,7 +168,7 @@ function MentionDetail({ row }: { row: CoverageMentionRow }) {
 }
 
 export function CoverageTab({ siteId }: { siteId: string }) {
-  const { site } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -603,6 +604,19 @@ export function CoverageTab({ siteId }: { siteId: string }) {
           </>
         ) : null}
         <div className="ml-auto flex items-center gap-1.5">
+          {/* The ONE tracker editor (both lenses) — the same one the brand's
+              Monitoring page opens. */}
+          <Button asChild size="sm" variant="outline" className="h-7">
+            <Link
+              href={marketingRoutes.brandMonitorSetup(brandId, {
+                trackerId: activeTracker?.id,
+                siteId,
+              })}
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              {activeTracker ? "Edit monitor" : "Set up monitoring"}
+            </Link>
+          </Button>
           <CopyButtons
             size="icon"
             label={`Coverage (${site.domain})`}

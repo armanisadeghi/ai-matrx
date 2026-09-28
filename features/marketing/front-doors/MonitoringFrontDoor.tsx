@@ -23,7 +23,7 @@
  */
 
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { Link2Off, MessagesSquare, Newspaper, ShieldAlert } from "lucide-react";
+import { Link2Off, MessagesSquare, Newspaper, Radar, ShieldAlert } from "lucide-react";
 
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { getComingSoon } from "@/lib/coming-soon/registry";
@@ -55,6 +55,17 @@ export function MonitoringFrontDoor({
   const promise = getComingSoon(ALERTS_PROMISE_ID);
 
   const doors: MarketingDoor[] = [];
+  if (brandId) {
+    // The ONE tracker editor for both lenses; a brand without a website can
+    // still watch the news it can join.
+    doors.push({
+      label: "News monitor",
+      href: marketingRoutes.brandMonitorSetup(brandId, { siteId: siteState.site?.id }),
+      description:
+        "Set up what to watch: who writes about this brand, and the news it can join — started from what we already know, each suggestion with its source.",
+      Icon: Radar,
+    });
+  }
   if (siteState.site) {
     const site = siteState.site;
     // Cross-branch doors compose through the ONE mapping so they land on the

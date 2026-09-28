@@ -78,7 +78,7 @@ import {
   newDraft,
   parseBriefMarkdown,
   scheduleMinute,
-  SCHEDULE_PRESETS,
+  scheduleOptions,
   toDeclareBody,
   USER_BASIS,
   type Basis,
@@ -86,8 +86,6 @@ import {
   type MonitorDraft,
 } from "./model";
 
-/** X location trends are offered for the United States (Yahoo WOEID). */
-const X_TRENDS_WOEIDS = [23424977];
 const SCHEDULE_PROMISE_ID = "marketing.monitoring.schedule";
 const DELIVERY_PROMISE_ID = "marketing.monitoring.alerts";
 const NO_PROOF_SENTENCE =
@@ -339,7 +337,13 @@ export function MonitorSetupEditor() {
     (descriptionFact ? factText(descriptionFact) : "") ||
     "";
   const minute = trackerId ? scheduleMinute(trackerId) : null;
-  const preset = SCHEDULE_PRESETS.find((p) => p.id === draft.schedule) ?? SCHEDULE_PRESETS[0];
+  const presets = scheduleOptions(setup?.schedule_presets);
+  const scheduleId = draft.schedule || defaultSchedule(draft.opportunity, setup?.schedule_default);
+  const preset = presets.find((p) => p.id === scheduleId);
+  const xLocations = (setup?.x_trends_locations ?? []).flatMap((loc) => {
+    const woeid = Number(loc.woeid);
+    return Number.isFinite(woeid) ? [{ woeid, label: String(loc.label ?? woeid) }] : [];
+  });
   const cost = setup?.cost;
   const schedulePromise = getComingSoon(SCHEDULE_PROMISE_ID);
   const deliveryPromise = getComingSoon(DELIVERY_PROMISE_ID);
@@ -347,7 +351,7 @@ export function MonitorSetupEditor() {
 
   const setLens = (lens: "coverage" | "opportunity", on: boolean) => {
     const next = { ...draft, [lens]: on };
-    if (!scheduleTouched) next.schedule = defaultSchedule(next.opportunity);
+    if (!scheduleTouched) next.schedule = defaultSchedule(next.opportunity, setup?.schedule_default);
     setDraft(next);
   };
 
@@ -394,7 +398,7 @@ export function MonitorSetupEditor() {
             declaredRef:
               (tracker.data?.declared_ref as Record<string, unknown> | undefined) ??
               (draft.coverage ? {} : { surface: "tracker_editor" }),
-            xTrendsWoeids: X_TRENDS_WOEIDS,
+            xTrendsWoeids: xLocations.map((loc) => loc.woeid),
           },
         ),
       );
@@ -792,10 +796,10 @@ export function MonitorSetupEditor() {
                 </ul>
                 <Warning text={countWarning("feeds", draft.feeds.length, counts.feeds)} />
               </div>
-              {setup?.x_key_on_file ? (
+              {setup?.x_key_on_file && xLocations.length ? (
                 <label className="flex items-center gap-2 text-sm">
                   <Switch checked={draft.xTrends} onCheckedChange={(v) => update({ xTrends: v })} />
-                  Also watch what is trending on X in the United States
+                  Also watch what is trending on X in {xLocations.map((loc) => loc.label).join(", ")}
                 </label>
               ) : null}
             </>
@@ -935,19 +939,19 @@ export function MonitorSetupEditor() {
 
         <Section step={draft.coverage && draft.opportunity ? 8 : draft.opportunity ? 7 : 6} title="How often">
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="How often">
-            {SCHEDULE_PRESETS.map((p) => (
+            {presets.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 role="radio"
-                aria-checked={draft.schedule === p.id}
+                aria-checked={scheduleId === p.id}
                 onClick={() => {
                   setScheduleTouched(true);
                   update({ schedule: p.id });
                 }}
                 className={cn(
                   "rounded-md border px-3 py-1.5 text-sm",
-                  draft.schedule === p.id
+                  scheduleId === p.id
                     ? "border-primary bg-primary/10 text-foreground"
                     : "border-border text-muted-foreground hover:bg-muted/40",
                 )}
@@ -971,7 +975,7 @@ export function MonitorSetupEditor() {
                 ))}
               </SelectContent>
             </Select>
-            {draft.schedule !== "none" ? (
+            {preset && preset.runsPerMonth > 0 ? (
               <span className="text-muted-foreground">
                 {minute !== null
                   ? `Runs at ${String(minute).padStart(2, "0")} minutes past the hour, so it never collides with every other monitor on the hour.`
@@ -981,7 +985,7 @@ export function MonitorSetupEditor() {
           </div>
           <p className="text-xs text-muted-foreground" data-surface-value="setup_cost_estimate">
             {cost?.average_run_usd != null
-              ? `A run has cost about ${formatCostDisplay(cost.average_run_usd)} (${cost.runs_measured} runs in the last 30 days), so this schedule is about ${formatCostDisplay(cost.average_run_usd * preset.runsPerMonth)} a month.`
+              ? `A run has cost about ${formatCostDisplay(cost.average_run_usd)} (${cost.runs_measured} runs in the last 30 days), so this schedule is about ${formatCostDisplay(cost.average_run_usd * (preset?.runsPerMonth ?? 0))} a month.`
               : "No runs yet in this organization, so there is no cost per run to estimate — the first run measures it."}{" "}
             {cost
               ? `Your organization has spent ${formatCostDisplay(cost.month_to_date_usd)} of its ${formatCostDisplay(cost.monthly_ceiling_usd)} monthly news ceiling.`

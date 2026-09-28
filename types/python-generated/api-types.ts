@@ -117199,6 +117199,27 @@ export interface components {
             }[];
             /** X Key On File */
             x_key_on_file: boolean;
+            /**
+             * X Trends Locations
+             * @description ``news.setup.x_trends_locations`` — where X trends are watched when the person turns them on.
+             */
+            x_trends_locations?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Schedule Presets
+             * @description ``news.setup.schedule_presets`` — the choices, their hours and runs a month (the cost multiplier).
+             */
+            schedule_presets?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Schedule Default
+             * @description ``news.setup.schedule_default`` — ``{opportunity, coverage_only}`` → preset id.
+             */
+            schedule_default?: {
+                [key: string]: string;
+            };
             cost: components["schemas"]["SetupCost"];
         };
         /**
