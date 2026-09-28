@@ -379,15 +379,15 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
               onClick={() => router.back()}
               ariaLabel="Back"
             />
-            {party && (
+            {headingName && (
               <span className="ml-1 flex min-w-0 items-center gap-1.5">
-                {isPerson ? (
+                {headingIsPerson ? (
                   <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 ) : (
                   <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 )}
                 <span className="min-w-0 truncate text-sm font-medium text-foreground">
-                  {party.display_name}
+                  {headingName}
                 </span>
               </span>
             )}
