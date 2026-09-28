@@ -4684,6 +4684,7 @@ export type Database = {
       refresh: { Args: never; Returns: string }
       refresh_log_recount: { Args: never; Returns: undefined }
       refresh_static: { Args: never; Returns: string }
+      refresh_tick: { Args: never; Returns: string }
       relation_usage: {
         Args: { p_name: string; p_schema: string }
         Returns: {
@@ -6444,6 +6445,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           credential_item_id: string
+          deleted_at: string | null
           id: string
           metadata: Json
           normalized_origin: string | null
@@ -6461,6 +6463,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           credential_item_id: string
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           normalized_origin?: string | null
@@ -6478,6 +6481,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           credential_item_id?: string
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           normalized_origin?: string | null
@@ -28005,6 +28009,7 @@ export type Database = {
           consent_method: string | null
           created_at: string
           created_by: string
+          deleted_at: string | null
           guardian_user_id: string
           id: string
           metadata: Json
@@ -28025,6 +28030,7 @@ export type Database = {
           consent_method?: string | null
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           guardian_user_id: string
           id?: string
           metadata?: Json
@@ -28045,6 +28051,7 @@ export type Database = {
           consent_method?: string | null
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           guardian_user_id?: string
           id?: string
           metadata?: Json
@@ -31919,6 +31926,7 @@ export type Database = {
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
+          version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
@@ -31936,6 +31944,7 @@ export type Database = {
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
@@ -31953,6 +31962,7 @@ export type Database = {
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
@@ -56632,6 +56642,7 @@ export type Database = {
           created_at: string
           detail: Json
           id: string
+          metadata: Json
           organization_id: string
           target_user_id: string | null
         }
@@ -56641,6 +56652,7 @@ export type Database = {
           created_at?: string
           detail?: Json
           id?: string
+          metadata?: Json
           organization_id: string
           target_user_id?: string | null
         }
@@ -56650,6 +56662,7 @@ export type Database = {
           created_at?: string
           detail?: Json
           id?: string
+          metadata?: Json
           organization_id?: string
           target_user_id?: string | null
         }
@@ -57637,6 +57650,14 @@ export type Database = {
             }
             Returns: string[]
           }
+      admin_policy_findings: {
+        Args: { p_tbl: unknown }
+        Returns: {
+          check_name: string
+          detail: string
+          status: string
+        }[]
+      }
       api_key_create: {
         Args: {
           p_expires_at?: string
@@ -73888,7 +73909,11 @@ export type Database = {
         Returns: undefined
       }
       _search_engine_indexed_default: {
-        Args: { p_organization_id: string; p_resource_type: string }
+        Args: {
+          p_creator: string
+          p_organization_id: string
+          p_resource_type: string
+        }
         Returns: boolean
       }
       _search_engine_indexed_table: {
@@ -76215,7 +76240,6 @@ export type Database = {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: Json
       }
-      share_redact: { Args: { p_value: Json }; Returns: Json }
       share_tool_is_withheld: {
         Args: { p_tool_name: string }
         Returns: boolean
@@ -90237,6 +90261,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           doc_version: string | null
           effective_from: string | null
           effective_to: string | null
@@ -90260,6 +90285,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           doc_version?: string | null
           effective_from?: string | null
           effective_to?: string | null
@@ -90283,6 +90309,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           doc_version?: string | null
           effective_from?: string | null
           effective_to?: string | null
