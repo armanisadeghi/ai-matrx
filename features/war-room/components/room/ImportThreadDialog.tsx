@@ -13,6 +13,7 @@
 // no clones, no copies (`attachExistingThreadToRoom`).
 
 import { useEffect, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   ArrowRight,
   FolderInput,
@@ -58,6 +59,9 @@ export function ImportThreadDialog({
   const dispatch = useAppDispatch();
   const sessions = useAppSelector(selectSessionsList);
   const [rows, setRows] = useState<ImportRow[] | null>(null);
+  // A failed read is said in the list — never "No other threads found".
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [picked, setPicked] = useState<ImportRow | null>(null);
   const [busy, setBusy] = useState<"move" | "add" | null>(null);
 
@@ -65,6 +69,7 @@ export function ImportThreadDialog({
   const handleOpenChange = (o: boolean) => {
     if (!o) {
       setRows(null);
+      setLoadError(null);
       setPicked(null);
       setBusy(null);
     }
@@ -83,6 +88,7 @@ export function ImportThreadDialog({
           threads.map((t) => t.id),
         );
         if (cancelled) return;
+        setLoadError(null);
         setRows(
           threads
             .map((thread) => ({
@@ -93,13 +99,16 @@ export function ImportThreadDialog({
         );
       } catch (err) {
         console.error("[ImportThreadDialog] failed to list threads", err);
-        if (!cancelled) setRows([]);
+        if (!cancelled) {
+          setRows([]);
+          setLoadError(err ?? new Error("Listing your threads failed"));
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, roomId, sessions.length, dispatch]);
+  }, [open, roomId, sessions.length, dispatch, loadAttempt]);
 
   const roomTitle = (id: string) =>
     sessions.find((s) => s.id === id)?.title?.trim() || "Untitled room";
@@ -121,7 +130,13 @@ export function ImportThreadDialog({
     <CommandDialog open={open} onOpenChange={handleOpenChange}>
       <CommandInput placeholder="Search your threads…" />
       <CommandList>
-        {rows === null ? (
+        {loadError ? (
+          <ReadFailure
+            error={loadError}
+            what="your threads"
+            onRetry={() => setLoadAttempt((n) => n + 1)}
+          />
+        ) : rows === null ? (
           <div className="grid place-items-center py-6">
             <Loader2 className="size-4 animate-spin text-muted-foreground" />
           </div>

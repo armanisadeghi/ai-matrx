@@ -312,6 +312,7 @@ export function AddEveryoneInOrg({
           ) : (
             <>
               <Users className="w-4 h-4 mr-2" />
+              {/* read-gate-exempt: counts the people the person ticked (the member list's failure is said by loadError), not a read */}
               Share with {chosen.length}{" "}
               {chosen.length === 1 ? "person" : "people"}
             </>

@@ -586,6 +586,7 @@ export function ShareLinkPanel({
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">Views</dt>
                   <dd className="text-right">
+                    {/* read-gate-exempt: the chosen link's own usage fields (from a list read that succeeded; its failure is shareError), not a list count */}
                     {shareTarget.maxUses === null
                       ? `${shareTarget.useCount} used · no limit`
                       : `${shareTarget.useCount} of ${shareTarget.maxUses} used`}

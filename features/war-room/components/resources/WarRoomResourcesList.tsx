@@ -255,7 +255,7 @@ export function WarRoomResourcesList({
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Link2 className="h-3.5 w-3.5" />
           Resources
-          {visibleRows.length > 0 && (
+          {adapter.status !== "error" && visibleRows.length > 0 && (
             <span className="rounded bg-muted px-1 text-[10px] font-medium text-muted-foreground">
               {visibleRows.length}
             </span>
