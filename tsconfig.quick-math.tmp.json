@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "incremental": false },
+  "include": [
+    "global.d.ts",
+    "cartesia.d.ts",
+    "types/typecheck-env.d.ts",
+    "features/math/admin-service.ts",
+    "features/math/mathProblemAgentWrites.ts",
+    "features/math/mathProblemAgentWrites.test.ts",
+    "features/math/components/MathProblemAdmin.tsx",
+    "features/surfaces/manifests/education-quick-math-authoring.manifest.ts",
+    "app/(core)/education/subjects/quick-math/page.tsx",
+    "app/(core)/education/subjects/quick-math/admin/page.tsx"
+  ]
+}
