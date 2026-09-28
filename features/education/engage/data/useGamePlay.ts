@@ -37,6 +37,13 @@ import {
 
 export type PlayStatus = "loading" | "ready" | "playing" | "finished" | "error";
 
+/** One missed question, kept for the round's live "what did I just get wrong" state. */
+export interface GameMiss {
+  prompt: string;
+  chosenText: string;
+  correctText: string;
+}
+
 export interface UseGamePlayArgs {
   sourceKind: "set" | "due";
   sourceSetId?: string | null;
@@ -95,6 +102,12 @@ export interface UseGamePlayResult {
   shieldArmed: boolean;
   /** Last answer feedback for the current question, or null before answering. */
   lastAnswer: { correct: boolean; chosenIndex: number } | null;
+  /**
+   * Every question missed so far this round, oldest first — persists across
+   * the 700ms reveal → advance transition (unlike `lastAnswer`, which clears).
+   * Surfaces "what did I just get wrong" to an agent reading the live round.
+   */
+  misses: GameMiss[];
   start: (atMs?: number) => void;
   answer: (choiceIndex: number) => void;
   buyPowerUp: (key: PowerUpKey) => void;
@@ -134,6 +147,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     correct: boolean;
     chosenIndex: number;
   } | null>(null);
+  const [misses, setMisses] = useState<GameMiss[]>([]);
   // The session is written on the FIRST ANSWER, never on load — opening a
   // game and leaving writes nothing (see useLazyStudySession).
   const lazySession = useLazyStudySession("useGamePlay");
@@ -330,6 +344,16 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     });
 
     setLastAnswer({ correct, chosenIndex: choiceIndex });
+    if (!correct) {
+      setMisses((m) => [
+        ...m,
+        {
+          prompt: q.prompt,
+          chosenText: q.choices[choiceIndex] ?? "",
+          correctText: q.choices[q.correctIndex] ?? "",
+        },
+      ]);
+    }
     setAnsweredCount((n) => n + 1);
     setScore((s) => s + delta.points);
     setCurrency((c) => c + delta.currency);
@@ -519,6 +543,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     doublePointsArmed,
     shieldArmed,
     lastAnswer,
+    misses,
     start,
     answer,
     buyPowerUp,
