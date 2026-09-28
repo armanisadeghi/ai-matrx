@@ -4836,6 +4836,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meet/meetings/{meeting_id}/brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meeting Brief
+         * @description Meet wave 4 — PREPARE: stream the host's pre-meeting brief, then keep it on the
+         *     meeting (`metadata.prep_brief`). The host, a co-host or an editor only. Refuses
+         *     BEFORE the stream opens — 403 when AI is off, 503 naming the Mandate admin when
+         *     nobody is assigned to `meet.pre_meeting_brief`.
+         */
+        post: operations["meeting_brief_v1_meet_meetings__meeting_id__brief_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/agenda-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agenda Draft
+         * @description Meet wave 4 — DRAFT AGENDA: stream a proposed agenda from the form's title,
+         *     guests and (when editing) the series' history. Nothing is stored; the host keeps,
+         *     edits or discards it. Refuses before streaming: 400 with no organization, 403 for
+         *     a non-member or a meeting the caller cannot edit, 503 naming the Mandate admin
+         *     when nobody is assigned to `meet.agenda_draft`.
+         */
+        post: operations["agenda_draft_v1_meet_agenda_draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/meet/moderate": {
         parameters: {
             query?: never;
@@ -5614,6 +5661,69 @@ export interface paths {
          * @description Share with ONE recipient by exact email. Other recipients untouched.
          */
         post: operations["add_grant_vault_items__item_id__grants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/organization-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Organization Grant
+         * @description Share a personal item into ONE organization's vault (access ladder
+         *     decision 14). It then lives in both vaults; change or revoke it through the
+         *     ordinary per-grant PATCH/DELETE.
+         */
+        post: operations["add_organization_grant_vault_items__item_id__organization_grants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/organizations/{organization_id}/member-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Member Access
+         * @description Every member's access to this organization's vault. Owners/admins only.
+         */
+        get: operations["list_member_access_vault_organizations__organization_id__member_access_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/organizations/{organization_id}/members/{member_user_id}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Member Access
+         * @description Set one member's organization vault access: none, use, editor, or
+         *     null to follow the organization default. Owners/admins only; audited.
+         */
+        put: operations["set_member_access_vault_organizations__organization_id__members__member_user_id__access_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -43798,6 +43908,11 @@ export interface components {
             connections: components["schemas"]["aidream__api__routers__connected_sources__ConnectionSummary"][];
             /** Unavailable Reason */
             unavailable_reason: string | null;
+            /**
+             * Needs Organization
+             * @default false
+             */
+            needs_organization?: boolean;
         };
         /** AddAssetRequest */
         AddAssetRequest: {
@@ -44339,6 +44454,58 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.affinity.co";
+        };
+        /**
+         * AgendaDraftRequest
+         * @description `POST /v1/meet/agenda-draft` — what the form holds right now (nothing is stored).
+         */
+        AgendaDraftRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /**
+             * Meeting Id
+             * @description The meeting being edited — its series history is offered.
+             */
+            meeting_id?: string | null;
+            /** Title */
+            title: string;
+            /** Agenda */
+            agenda?: string | null;
+            /** Scheduled For */
+            scheduled_for?: string | null;
+            /** Time Zone */
+            time_zone?: string | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
+            /** Recurrence Rule */
+            recurrence_rule?: string | null;
+            /** Guests */
+            guests?: components["schemas"]["PrepGuest"][];
         };
         /** AgentAppInputPart */
         AgentAppInputPart: {
@@ -66949,7 +67116,12 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
         };
-        /** DeclareTrackerBody */
+        /**
+         * DeclareTrackerBody
+         * @description A monitor declaration. What is required depends on ``lenses`` (NEWS-ENGINE-SPEC §5.1):
+         *     coverage needs a site, a brand key and brand terms; opportunity needs a brand (the site's,
+         *     or ``brand_id`` for a site-less monitor) and at least one topic, search term or feed.
+         */
         DeclareTrackerBody: {
             /**
              * Organization Id
@@ -66982,13 +67154,17 @@ export interface components {
              */
             initiation?: ("auto" | "user") | null;
             /** Site Id */
-            site_id: string;
+            site_id?: string | null;
+            /** Brand Id */
+            brand_id?: string | null;
             /** Name */
             name: string;
+            /** Lenses */
+            lenses?: ("coverage" | "opportunity")[];
             /** Brand Key */
-            brand_key: string;
+            brand_key?: string | null;
             /** Brand Terms */
-            brand_terms: string[];
+            brand_terms?: string[];
             /** Exclude Terms */
             exclude_terms?: string[];
             /** Competitors */
@@ -67033,6 +67209,22 @@ export interface components {
             declared_ref?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            /** Topics */
+            topics?: string[];
+            /** Search Terms */
+            search_terms?: string[];
+            /** Standing */
+            standing?: string[];
+            /** Feed Ids */
+            feed_ids?: string[];
+            /** Feed Urls */
+            feed_urls?: string[];
+            /** Sources */
+            sources?: string[] | null;
+            /** X Trends Woeids */
+            x_trends_woeids?: number[];
+            /** Brief Source Id */
+            brief_source_id?: string | null;
         };
         /** DedupResponse */
         DedupResponse: {
@@ -89916,7 +90108,7 @@ export interface components {
             holder_name?: string | null;
             /**
              * Accepts User Input
-             * @default false
+             * @default true
              */
             accepts_user_input?: boolean;
             /**
@@ -103737,6 +103929,20 @@ export interface components {
             /** Deprecated Versions */
             deprecated_versions: string[];
         };
+        /** PrepGuest */
+        PrepGuest: {
+            /** User Id */
+            user_id?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * Cohost
+             * @default false
+             */
+            cohost?: boolean;
+        };
         /**
          * PresencePoint
          * @description One bucket of the trend. Rates are None when nothing was measured.
@@ -106461,7 +106667,7 @@ export interface components {
              * Origin Client
              * @enum {string}
              */
-            origin_client: "agent" | "backfill" | "cloud_browser" | "crawl" | "extension" | "local" | "research" | "transcription" | "upload" | "web" | "youtube";
+            origin_client: "agent" | "backfill" | "cloud_browser" | "crawl" | "extension" | "local" | "monitor" | "research" | "transcription" | "upload" | "web" | "youtube";
             /**
              * Capture Method
              * @enum {string}
@@ -127290,15 +127496,51 @@ export interface components {
             /** Id */
             id: string;
             /** Site Id */
-            site_id: string;
+            site_id?: string | null;
+            /** Brand Id */
+            brand_id?: string | null;
+            /** Parent Organization Id */
+            parent_organization_id?: string | null;
             /** Name */
             name: string;
+            /** Lenses */
+            lenses?: string[];
             /** Brand Key */
-            brand_key: string;
+            brand_key?: string | null;
             /** Brand Terms */
             brand_terms: string[];
             /** Competitors */
             competitors: components["schemas"]["CompetitorInput"][];
+            /** Topics */
+            topics?: string[];
+            /** Search Terms */
+            search_terms?: string[];
+            /** Standing */
+            standing?: string[];
+            /** Feed Ids */
+            feed_ids?: string[];
+            /** Feed Urls */
+            feed_urls?: string[];
+            /** Sources */
+            sources?: string[] | null;
+            /** X Trends Woeids */
+            x_trends_woeids?: number[];
+            /** Brief Source Id */
+            brief_source_id?: string | null;
+            /** Alert Recipient User Ids */
+            alert_recipient_user_ids?: string[];
+            /** Slack Credential Item Id */
+            slack_credential_item_id?: string | null;
+            /** Auto Run Paused At */
+            auto_run_paused_at?: string | null;
+            /** Auto Run Paused Reason */
+            auto_run_paused_reason?: string | null;
+            /** Last Run Summary */
+            last_run_summary?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Workflow Trigger Id */
+            workflow_trigger_id?: string | null;
             /** Is Active */
             is_active: boolean;
             /** Cadence Minutes */
@@ -131449,12 +131691,16 @@ export interface components {
             /** Id */
             id: string;
             /** User Id */
-            user_id: string;
+            user_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
             /**
              * Email
              * @default
              */
             email?: string;
+            /** Organization Name */
+            organization_name?: string | null;
             /**
              * Can Use
              * @default true
@@ -131820,6 +132066,88 @@ export interface components {
             /** Items */
             items: components["schemas"]["VaultLoginCsvPreviewItem"][];
         };
+        /** VaultMemberAccessListResponse */
+        VaultMemberAccessListResponse: {
+            /** Organization Id */
+            organization_id: string;
+            /**
+             * Default Access
+             * @enum {string}
+             */
+            default_access: "editor" | "none" | "use";
+            /** Members */
+            members: components["schemas"]["VaultMemberAccessOut"][];
+        };
+        /** VaultMemberAccessOut */
+        VaultMemberAccessOut: {
+            /** User Id */
+            user_id: string;
+            /**
+             * Email
+             * @default
+             */
+            email?: string;
+            /** Role */
+            role: string;
+            /** Vault Access */
+            vault_access?: ("editor" | "none" | "use") | null;
+            /**
+             * Effective Access
+             * @enum {string}
+             */
+            effective_access: "admin" | "editor" | "none" | "use";
+        };
+        /** VaultMemberAccessSetRequest */
+        VaultMemberAccessSetRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /** Access */
+            access?: ("editor" | "none" | "use") | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultMemberAccessSetResponse */
+        VaultMemberAccessSetResponse: {
+            /** Organization Id */
+            organization_id: string;
+            /** User Id */
+            user_id: string;
+            /** Vault Access */
+            vault_access?: ("editor" | "none" | "use") | null;
+            /**
+             * Effective Access
+             * @enum {string}
+             */
+            effective_access: "admin" | "editor" | "none" | "use";
+        };
         /**
          * VaultNativePasskeyEnableRequest
          * @description Bind the explicit reenablement request to one recorded deletion.
@@ -131875,6 +132203,47 @@ export interface components {
             enabled: true;
             /** Already Enabled */
             already_enabled: boolean;
+        };
+        /**
+         * VaultOrganizationGrantAddRequest
+         * @description Share a personal item into ONE organization's vault. ``can_manage``
+         *     False = use (sign in without seeing values); True = editor.
+         */
+        VaultOrganizationGrantAddRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /**
+             * Can Manage
+             * @default false
+             */
+            can_manage?: boolean;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * VaultPasswordHistoryEntry
@@ -147034,6 +147403,70 @@ export interface operations {
             };
         };
     };
+    meeting_brief_v1_meet_meetings__meeting_id__brief_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meeting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agenda_draft_v1_meet_agenda_draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgendaDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     meeting_moderate_v1_meet_moderate_post: {
         parameters: {
             query?: never;
@@ -148674,6 +149107,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultGrantOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_organization_grant_vault_items__item_id__organization_grants_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultOrganizationGrantAddRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultGrantOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_member_access_vault_organizations__organization_id__member_access_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultMemberAccessListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_member_access_vault_organizations__organization_id__members__member_user_id__access_put: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                organization_id: string;
+                member_user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultMemberAccessSetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultMemberAccessSetResponse"];
                 };
             };
             /** @description Validation Error */

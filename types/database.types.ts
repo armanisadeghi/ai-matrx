@@ -508,6 +508,7 @@ export type Database = {
           rag_awareness_fragment: string | null
           rag_awareness_mode: string
           rag_awareness_refreshed_at: string | null
+          search_engine_indexed: boolean | null
           settings: Json
           skill_config: Json
           source_agent_id: string | null
@@ -558,6 +559,7 @@ export type Database = {
           rag_awareness_fragment?: string | null
           rag_awareness_mode?: string
           rag_awareness_refreshed_at?: string | null
+          search_engine_indexed?: boolean | null
           settings?: Json
           skill_config?: Json
           source_agent_id?: string | null
@@ -608,6 +610,7 @@ export type Database = {
           rag_awareness_fragment?: string | null
           rag_awareness_mode?: string
           rag_awareness_refreshed_at?: string | null
+          search_engine_indexed?: boolean | null
           settings?: Json
           skill_config?: Json
           source_agent_id?: string | null
@@ -1122,6 +1125,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           role: Database["public"]["Enums"]["message_role"] | null
+          search_engine_indexed: boolean | null
           tags: string[] | null
           updated_at: string
           updated_by: string | null
@@ -1139,6 +1143,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           role?: Database["public"]["Enums"]["message_role"] | null
+          search_engine_indexed?: boolean | null
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
@@ -1156,6 +1161,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           role?: Database["public"]["Enums"]["message_role"] | null
+          search_engine_indexed?: boolean | null
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
@@ -2053,6 +2059,7 @@ export type Database = {
           rag_awareness_fragment: string | null
           rag_awareness_mode: string
           rag_awareness_refreshed_at: string | null
+          search_engine_indexed: boolean | null
           settings: Json
           skill_config: Json
           source_agent_id: string | null
@@ -3553,6 +3560,7 @@ export type Database = {
           rate_limit_authenticated: number | null
           rate_limit_per_ip: number | null
           rate_limit_window_hours: number | null
+          search_engine_indexed: boolean | null
           search_tsv: unknown
           shared_context_policies: Json | null
           shell_config: Json
@@ -3608,6 +3616,7 @@ export type Database = {
           rate_limit_authenticated?: number | null
           rate_limit_per_ip?: number | null
           rate_limit_window_hours?: number | null
+          search_engine_indexed?: boolean | null
           search_tsv?: unknown
           shared_context_policies?: Json | null
           shell_config?: Json
@@ -3663,6 +3672,7 @@ export type Database = {
           rate_limit_authenticated?: number | null
           rate_limit_per_ip?: number | null
           rate_limit_window_hours?: number | null
+          search_engine_indexed?: boolean | null
           search_tsv?: unknown
           shared_context_policies?: Json | null
           shell_config?: Json
@@ -5894,6 +5904,10 @@ export type Database = {
       }
       plan_status: { Args: { p_org: string }; Returns: Json }
       public_plans: { Args: never; Returns: Json }
+      repair_prelaunch_complimentary_grant: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       resolve_capability:
         | { Args: { p_capability: string; p_user: string }; Returns: Json }
         | {
@@ -8121,6 +8135,7 @@ export type Database = {
           play_count: number | null
           published_at: string | null
           require_attribution: boolean | null
+          search_engine_indexed: boolean | null
           search_vector: unknown
           share_count: number | null
           tags: string[] | null
@@ -8165,6 +8180,7 @@ export type Database = {
           play_count?: number | null
           published_at?: string | null
           require_attribution?: boolean | null
+          search_engine_indexed?: boolean | null
           search_vector?: unknown
           share_count?: number | null
           tags?: string[] | null
@@ -8209,6 +8225,7 @@ export type Database = {
           play_count?: number | null
           published_at?: string | null
           require_attribution?: boolean | null
+          search_engine_indexed?: boolean | null
           search_vector?: unknown
           share_count?: number | null
           tags?: string[] | null
@@ -16611,6 +16628,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -16645,6 +16664,8 @@ export type Database = {
           locked?: boolean
           metadata?: Json
           organization_id: string
+          outcome?: Json | null
+          outcome_state?: string | null
           recording_policy?: string
           recurrence_rule?: string | null
           room_name: string
@@ -16679,6 +16700,8 @@ export type Database = {
           locked?: boolean
           metadata?: Json
           organization_id?: string
+          outcome?: Json | null
+          outcome_state?: string | null
           recording_policy?: string
           recurrence_rule?: string | null
           room_name?: string
@@ -18447,6 +18470,10 @@ export type Database = {
         Returns: string
       }
       calendar_event_is_trusted_server: { Args: never; Returns: boolean }
+      calendar_free_busy: {
+        Args: { p_from: string; p_to: string; p_user_ids: string[] }
+        Returns: Json
+      }
       channel_readiness_say: { Args: { p_channel: string }; Returns: Json }
       claim_notifications_for_render: {
         Args: {
@@ -19113,6 +19140,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -19156,6 +19185,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -19242,6 +19273,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -19307,6 +19340,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -19351,6 +19386,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -19596,6 +19633,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -19650,6 +19689,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -19740,6 +19781,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -19861,6 +19904,8 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
           recording_policy: string
           recurrence_rule: string | null
           room_name: string
@@ -27368,6 +27413,7 @@ export type Database = {
           metadata: Json
           name: string
           organization_id: string
+          search_engine_indexed: boolean | null
           topic: string | null
           updated_at: string
           updated_by: string | null
@@ -27387,6 +27433,7 @@ export type Database = {
           metadata?: Json
           name: string
           organization_id: string
+          search_engine_indexed?: boolean | null
           topic?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -27406,6 +27453,7 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
+          search_engine_indexed?: boolean | null
           topic?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -27854,6 +27902,7 @@ export type Database = {
           organization_id: string
           published_at: string | null
           related: Json
+          search_engine_indexed: boolean | null
           sections: Json
           slug: string
           subject: string | null
@@ -27877,6 +27926,7 @@ export type Database = {
           organization_id: string
           published_at?: string | null
           related?: Json
+          search_engine_indexed?: boolean | null
           sections?: Json
           slug: string
           subject?: string | null
@@ -27900,6 +27950,7 @@ export type Database = {
           organization_id?: string
           published_at?: string | null
           related?: Json
+          search_engine_indexed?: boolean | null
           sections?: Json
           slug?: string
           subject?: string | null
@@ -29067,6 +29118,7 @@ export type Database = {
           id: string
           my_attempts: number
           my_best_score: number
+          my_can_edit: boolean
           my_last_result_id: string
           organization_id: string
           question_count: number
@@ -31340,6 +31392,8 @@ export type Database = {
           origin_device_id: string | null
           parent_file_id: string | null
           parent_folder_id: string | null
+          parent_record_id: string | null
+          parent_record_type: string | null
           provider_session_id: string | null
           size_bytes: number | null
           storage_uri: string
@@ -31373,6 +31427,8 @@ export type Database = {
           origin_device_id?: string | null
           parent_file_id?: string | null
           parent_folder_id?: string | null
+          parent_record_id?: string | null
+          parent_record_type?: string | null
           provider_session_id?: string | null
           size_bytes?: number | null
           storage_uri: string
@@ -31406,6 +31462,8 @@ export type Database = {
           origin_device_id?: string | null
           parent_file_id?: string | null
           parent_folder_id?: string | null
+          parent_record_id?: string | null
+          parent_record_type?: string | null
           provider_session_id?: string | null
           size_bytes?: number | null
           storage_uri?: string
@@ -32363,6 +32421,10 @@ export type Database = {
       }
     }
     Functions: {
+      _adopt_chat_attachment_ids: {
+        Args: { p_conversation_id: string; p_file_ids: string[] }
+        Returns: number
+      }
       assert_safe_file_name: {
         Args: { p_max_segment?: number; p_raw: string }
         Returns: string
@@ -56076,6 +56138,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           user_id: string
+          vault_access: string | null
           version: number
         }
         Insert: {
@@ -56093,6 +56156,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           user_id: string
+          vault_access?: string | null
           version?: number
         }
         Update: {
@@ -56110,6 +56174,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           user_id?: string
+          vault_access?: string | null
           version?: number
         }
         Relationships: [
@@ -57748,6 +57813,13 @@ export type Database = {
       my_orgs: { Args: never; Returns: string[] }
       my_orgs_all: { Args: never; Returns: string[] }
       my_team_ids: { Args: { p_organization_id: string }; Returns: string[] }
+      my_team_reach: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          organization_id: string
+          user_id: string
+        }[]
+      }
       my_teammate_user_ids: {
         Args: { p_organization_id: string }
         Returns: string[]
@@ -73626,6 +73698,10 @@ export type Database = {
           status: string
         }[]
       }
+      _published_to_web_sql: {
+        Args: { p_has_is_published: boolean; p_has_status: boolean }
+        Returns: string
+      }
       _record_arman_class_approval: {
         Args: {
           p_approved_on: string
@@ -73642,6 +73718,20 @@ export type Database = {
       _report_undeclared_confirmation_write: {
         Args: { p_org: string; p_relid: unknown; p_user: string }
         Returns: undefined
+      }
+      _search_engine_indexed_default: {
+        Args: { p_organization_id: string; p_resource_type: string }
+        Returns: boolean
+      }
+      _search_engine_indexed_table: {
+        Args: { p_resource_type: string }
+        Returns: {
+          has_is_published: boolean
+          has_slug: boolean
+          has_status: boolean
+          s: string
+          tb: string
+        }[]
       }
       _search_item_drop: {
         Args: { p_id: string; p_token: string }
@@ -73995,6 +74085,7 @@ export type Database = {
       cf_re_url: { Args: never; Returns: string }
       cf_utf8_byte_length: { Args: { p_text: string }; Returns: number }
       cf_ws_class: { Args: never; Returns: string }
+      child_parent_columns: { Args: { p_token: string }; Returns: string[] }
       claim_oauth_handoff_hash: {
         Args: {
           p_callback_origin: string
@@ -75721,6 +75812,22 @@ export type Database = {
       }
       schema_is_client_exposed: { Args: { p_schema: string }; Returns: boolean }
       schema_is_doors_only: { Args: { p_schema: string }; Returns: boolean }
+      search_engine_indexed: {
+        Args: { p_key: string; p_resource_type: string }
+        Returns: boolean
+      }
+      search_engine_indexed_records: {
+        Args: { p_limit?: number; p_resource_type: string }
+        Returns: {
+          id: string
+          slug: string
+          updated_at: string
+        }[]
+      }
+      search_engine_indexed_state: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: Json
+      }
       search_item_backfill: {
         Args: { p_after?: string; p_limit?: number; p_token: string }
         Returns: Record<string, unknown>
@@ -75879,6 +75986,14 @@ export type Database = {
         }
         Returns: Json
       }
+      set_search_engine_indexed: {
+        Args: {
+          p_indexed: boolean
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
       set_table_confidential_arman_explicitly_approved: {
         Args: {
           p_approved_on: string
@@ -75906,6 +76021,10 @@ export type Database = {
       settle_deferred_checks: {
         Args: { p_immediate: boolean; p_rel: unknown }
         Returns: number
+      }
+      share_link_children: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: Json
       }
       sign_in_freeze_grab_ms: { Args: never; Returns: number }
       soft_delete_orphan_census: {
@@ -76308,6 +76427,7 @@ export type Database = {
           metadata: Json
           og_image_url: string | null
           organization_id: string
+          search_engine_indexed: boolean | null
           show_id: string | null
           slug: string | null
           status: string
@@ -76330,6 +76450,7 @@ export type Database = {
           metadata?: Json
           og_image_url?: string | null
           organization_id: string
+          search_engine_indexed?: boolean | null
           show_id?: string | null
           slug?: string | null
           status?: string
@@ -76352,6 +76473,7 @@ export type Database = {
           metadata?: Json
           og_image_url?: string | null
           organization_id?: string
+          search_engine_indexed?: boolean | null
           show_id?: string | null
           slug?: string | null
           status?: string
@@ -76398,6 +76520,7 @@ export type Database = {
           og_image_url: string | null
           organization_id: string
           script: string | null
+          search_engine_indexed: boolean | null
           show_id: string | null
           slug: string
           speakers: Json | null
@@ -76428,6 +76551,7 @@ export type Database = {
           og_image_url?: string | null
           organization_id: string
           script?: string | null
+          search_engine_indexed?: boolean | null
           show_id?: string | null
           slug: string
           speakers?: Json | null
@@ -76458,6 +76582,7 @@ export type Database = {
           og_image_url?: string | null
           organization_id?: string
           script?: string | null
+          search_engine_indexed?: boolean | null
           show_id?: string | null
           slug?: string
           speakers?: Json | null
@@ -76566,6 +76691,7 @@ export type Database = {
           og_image_url: string | null
           organization_id: string
           rss_settings: Json | null
+          search_engine_indexed: boolean | null
           slug: string
           thumbnail_url: string | null
           title: string
@@ -76588,6 +76714,7 @@ export type Database = {
           og_image_url?: string | null
           organization_id: string
           rss_settings?: Json | null
+          search_engine_indexed?: boolean | null
           slug: string
           thumbnail_url?: string | null
           title: string
@@ -76610,6 +76737,7 @@ export type Database = {
           og_image_url?: string | null
           organization_id?: string
           rss_settings?: Json | null
+          search_engine_indexed?: boolean | null
           slug?: string
           thumbnail_url?: string | null
           title?: string
@@ -85595,6 +85723,23 @@ export type Database = {
           proposed_count: number
           ratified_count: number
           slug: string
+        }[]
+      }
+      my_teammates: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          organization_id: string
+          user_id: string
+        }[]
+      }
+      my_teams: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          member_count: number
+          organization_id: string
+          organization_name: string
+          team_id: string
+          team_name: string
         }[]
       }
       orchestra_list: {
@@ -109515,6 +109660,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           auto_rag_enabled?: boolean
@@ -109529,6 +109675,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           auto_rag_enabled?: boolean
@@ -109543,6 +109690,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -109587,8 +109735,9 @@ export type Database = {
           credential_item_id: string | null
           granted_by: string | null
           id: string
+          organization_id: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           user_secret_id: string | null
         }
         Insert: {
@@ -109598,8 +109747,9 @@ export type Database = {
           credential_item_id?: string | null
           granted_by?: string | null
           id?: string
+          organization_id?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           user_secret_id?: string | null
         }
         Update: {
@@ -109609,8 +109759,9 @@ export type Database = {
           credential_item_id?: string | null
           granted_by?: string | null
           id?: string
+          organization_id?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           user_secret_id?: string | null
         }
         Relationships: [
@@ -109880,7 +110031,33 @@ export type Database = {
         }[]
       }
       heal_user_preferences_drift: { Args: never; Returns: number }
+      my_organization_vault_access: {
+        Args: { p_organization_id: string }
+        Returns: string
+      }
       normalize_preferences_jsonb: { Args: { p: Json }; Returns: Json }
+      organization_vault_access: {
+        Args: { p_organization_id: string; p_user_id: string }
+        Returns: string
+      }
+      organization_vault_members: {
+        Args: { p_organization_id: string }
+        Returns: {
+          effective_access: string
+          role: string
+          user_id: string
+          vault_access: string
+        }[]
+      }
+      set_organization_vault_access: {
+        Args: {
+          p_access: string
+          p_actor_id: string
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       user_preferences_drift_report: {
         Args: never
         Returns: {
@@ -114210,6 +114387,7 @@ export type Database = {
           organization_id: string
           position: number | null
           project_id: string | null
+          search_engine_indexed: boolean | null
           sync_version: number
           tags: string[] | null
           task_id: string | null
@@ -114236,6 +114414,7 @@ export type Database = {
           organization_id: string
           position?: number | null
           project_id?: string | null
+          search_engine_indexed?: boolean | null
           sync_version?: number
           tags?: string[] | null
           task_id?: string | null
@@ -114262,6 +114441,7 @@ export type Database = {
           organization_id?: string
           position?: number | null
           project_id?: string | null
+          search_engine_indexed?: boolean | null
           sync_version?: number
           tags?: string[] | null
           task_id?: string | null

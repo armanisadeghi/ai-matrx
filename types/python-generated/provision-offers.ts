@@ -129,6 +129,43 @@ export interface ChecksCleanupBakeoffOffer {
   packet: string;
 }
 
+/** Offered shape of provision `checks.finding_disposition` (kind `checks.finding_disposition.offer`). */
+export interface ChecksFindingDispositionOffer {
+  __kind?: "checks.finding_disposition.offer";
+  repo: string;
+  check_id: string;
+  check_label: string;
+  check_command: string;
+  item_key: string;
+  location: string;
+  finding_title: string;
+  fix_hint: string;
+  accept_command: string;
+  code_excerpt: string;
+  prior_accepts: string;
+}
+
+/** Offered shape of provision `checks.finding_disposition_review` (kind `checks.finding_disposition_review.offer`). */
+export interface ChecksFindingDispositionReviewOffer {
+  __kind?: "checks.finding_disposition_review.offer";
+  repo: string;
+  check_id: string;
+  check_label: string;
+  check_command: string;
+  item_key: string;
+  location: string;
+  finding_title: string;
+  fix_hint: string;
+  code_excerpt: string;
+  prior_accepts: string;
+  worker_verdict: string;
+  worker_diagnosis: string;
+  worker_patch: string;
+  worker_reason: string;
+  worker_blockers: string;
+  recheck_result: string;
+}
+
 /** Offered shape of provision `code_editor.session` (kind `code_editor.session.offer`). */
 export interface CodeEditorSessionOffer {
   __kind?: "code_editor.session.offer";
@@ -2116,6 +2153,19 @@ export interface MediaCatalogItemVettingOffer {
   sibling_titles?: string[];
 }
 
+/** Offered shape of provision `meet.meeting_prep` (kind `meet.meeting_prep.offer`). */
+export interface MeetMeetingPrepOffer {
+  __kind?: "meet.meeting_prep.offer";
+  meeting_title: string;
+  meeting_when: string;
+  meeting_agenda: string;
+  host_name: string;
+  guests: string;
+  crm_context: string;
+  previous_meeting: string;
+  open_action_items: string;
+}
+
 /** Offered shape of provision `meet.meeting_record` (kind `meet.meeting_record.offer`). */
 export interface MeetMeetingRecordOffer {
   __kind?: "meet.meeting_record.offer";
@@ -2291,6 +2341,132 @@ export interface NerSweepValueMiningOffer {
   __kind?: "ner.sweep_value_mining.offer";
   context_item: unknown;
   scopes: unknown;
+}
+
+/** Offered shape of provision `news.angles` (kind `news.angles.offer`). */
+export interface NewsAnglesOffer {
+  __kind?: "news.angles.offer";
+  story: unknown;
+  mode: string;
+  client_context: {
+  brief?: unknown | null;
+  facts?: unknown | null;
+  __kind?: "news_client_context";
+  topics?: string[] | null;
+  company?: unknown | null;
+  brand_id: string;
+  standing?: string[] | null;
+  exclusions?: string[] | null;
+  tracker_id?: string | null;
+  competitors?: string[] | null;
+  search_terms?: string[] | null;
+  proof_on_file?: boolean | null;
+  organization_id?: string | null;
+  run_generated_at: string;
+};
+  run_generated_at: string;
+}
+
+/** Offered shape of provision `news.coarse_relevance` (kind `news.coarse_relevance.offer`). */
+export interface NewsCoarseRelevanceOffer {
+  __kind?: "news.coarse_relevance.offer";
+  signal: unknown;
+  client_context: {
+  brief?: unknown | null;
+  facts?: unknown | null;
+  __kind?: "news_client_context";
+  topics?: string[] | null;
+  company?: unknown | null;
+  brand_id: string;
+  standing?: string[] | null;
+  exclusions?: string[] | null;
+  tracker_id?: string | null;
+  competitors?: string[] | null;
+  search_terms?: string[] | null;
+  proof_on_file?: boolean | null;
+  organization_id?: string | null;
+  run_generated_at: string;
+};
+  run_generated_at: string;
+}
+
+/** Offered shape of provision `news.report` (kind `news.report.offer`). */
+export interface NewsReportOffer {
+  __kind?: "news.report.offer";
+  run_summary: unknown;
+  targeted: unknown;
+  coarse: unknown;
+  withheld: unknown;
+  triage?: {
+  __kind?: "news_triage";
+  summary?: unknown;
+  triaged?: unknown[];
+};
+  angles?: unknown;
+  verdicts?: unknown;
+  client_context: {
+  brief?: unknown | null;
+  facts?: unknown | null;
+  __kind?: "news_client_context";
+  topics?: string[] | null;
+  company?: unknown | null;
+  brand_id: string;
+  standing?: string[] | null;
+  exclusions?: string[] | null;
+  tracker_id?: string | null;
+  competitors?: string[] | null;
+  search_terms?: string[] | null;
+  proof_on_file?: boolean | null;
+  organization_id?: string | null;
+  run_generated_at: string;
+};
+  run_generated_at: string;
+}
+
+/** Offered shape of provision `news.story_origin` (kind `news.story_origin.offer`). */
+export interface NewsStoryOriginOffer {
+  __kind?: "news.story_origin.offer";
+  signal: unknown;
+  client_context: {
+  brief?: unknown | null;
+  facts?: unknown | null;
+  __kind?: "news_client_context";
+  topics?: string[] | null;
+  company?: unknown | null;
+  brand_id: string;
+  standing?: string[] | null;
+  exclusions?: string[] | null;
+  tracker_id?: string | null;
+  competitors?: string[] | null;
+  search_terms?: string[] | null;
+  proof_on_file?: boolean | null;
+  organization_id?: string | null;
+  run_generated_at: string;
+};
+  run_generated_at: string;
+}
+
+/** Offered shape of provision `news.triage` (kind `news.triage.offer`). */
+export interface NewsTriageOffer {
+  __kind?: "news.triage.offer";
+  signals: unknown;
+  client_context: {
+  brief?: unknown | null;
+  facts?: unknown | null;
+  __kind?: "news_client_context";
+  topics?: string[] | null;
+  company?: unknown | null;
+  brand_id: string;
+  standing?: string[] | null;
+  exclusions?: string[] | null;
+  tracker_id?: string | null;
+  competitors?: string[] | null;
+  search_terms?: string[] | null;
+  proof_on_file?: boolean | null;
+  organization_id?: string | null;
+  run_generated_at: string;
+};
+  run_generated_at: string;
 }
 
 /** Offered shape of provision `observability.tool_trace_pattern_window` (kind `observability.tool_trace_pattern_window.offer`). */
@@ -3239,6 +3415,30 @@ export interface SeoPageMapperOffer {
   summary_max_words: string;
 }
 
+/** Offered shape of provision `seo.press_newsworthiness_check` (kind `seo.press_newsworthiness_check.offer`). */
+export interface SeoPressNewsworthinessCheckOffer {
+  __kind?: "seo.press_newsworthiness_check.offer";
+  story: unknown;
+  mode: string;
+  client_context: {
+  brief?: unknown | null;
+  facts?: unknown | null;
+  __kind?: "news_client_context";
+  topics?: string[] | null;
+  company?: unknown | null;
+  brand_id: string;
+  standing?: string[] | null;
+  exclusions?: string[] | null;
+  tracker_id?: string | null;
+  competitors?: string[] | null;
+  search_terms?: string[] | null;
+  proof_on_file?: boolean | null;
+  organization_id?: string | null;
+  run_generated_at: string;
+};
+  run_generated_at: string;
+}
+
 /** Offered shape of provision `seo.press_source_request` (kind `seo.press_source_request.offer`). */
 export interface SeoPressSourceRequestOffer {
   __kind?: "seo.press_source_request.offer";
@@ -3594,6 +3794,8 @@ export interface ProvisionOffers {
   "audio.speech": AudioSpeechOffer;
   "chat.mandated_start": ChatMandatedStartOffer;
   "checks.cleanup_bakeoff": ChecksCleanupBakeoffOffer;
+  "checks.finding_disposition": ChecksFindingDispositionOffer;
+  "checks.finding_disposition_review": ChecksFindingDispositionReviewOffer;
   "code_editor.session": CodeEditorSessionOffer;
   "commerce_intake.asset_capture": CommerceIntakeAssetCaptureOffer;
   "commerce_intake.batch_capture": CommerceIntakeBatchCaptureOffer;
@@ -3752,6 +3954,7 @@ export interface ProvisionOffers {
   "masterworks.vanilla_arm": MasterworksVanillaArmOffer;
   "media.youtube_transcription": MediaYoutubeTranscriptionOffer;
   "media_catalog.item_vetting": MediaCatalogItemVettingOffer;
+  "meet.meeting_prep": MeetMeetingPrepOffer;
   "meet.meeting_record": MeetMeetingRecordOffer;
   "meet.transcription": MeetTranscriptionOffer;
   "memory.observer": MemoryObserverOffer;
@@ -3769,6 +3972,11 @@ export interface ProvisionOffers {
   "ner.sweep_scope_discovery": NerSweepScopeDiscoveryOffer;
   "ner.sweep_scope_references": NerSweepScopeReferencesOffer;
   "ner.sweep_value_mining": NerSweepValueMiningOffer;
+  "news.angles": NewsAnglesOffer;
+  "news.coarse_relevance": NewsCoarseRelevanceOffer;
+  "news.report": NewsReportOffer;
+  "news.story_origin": NewsStoryOriginOffer;
+  "news.triage": NewsTriageOffer;
   "observability.tool_trace_pattern_window": ObservabilityToolTracePatternWindowOffer;
   "observability.tool_trace_triage_window": ObservabilityToolTraceTriageWindowOffer;
   "orchestras.member_roster": OrchestrasMemberRosterOffer;
@@ -3849,6 +4057,7 @@ export interface ProvisionOffers {
   "seo.page_intent_proposer": SeoPageIntentProposerOffer;
   "seo.page_keyword_mapping": SeoPageKeywordMappingOffer;
   "seo.page_mapper": SeoPageMapperOffer;
+  "seo.press_newsworthiness_check": SeoPressNewsworthinessCheckOffer;
   "seo.press_source_request": SeoPressSourceRequestOffer;
   "seo.press_story_analysis": SeoPressStoryAnalysisOffer;
   "seo.reputation_intelligence": SeoReputationIntelligenceOffer;
@@ -3894,6 +4103,8 @@ export const PROVISION_OFFER_KINDS = {
   "audio.speech": "audio.speech.offer",
   "chat.mandated_start": "chat.mandated_start.offer",
   "checks.cleanup_bakeoff": "checks.cleanup_bakeoff.offer",
+  "checks.finding_disposition": "checks.finding_disposition.offer",
+  "checks.finding_disposition_review": "checks.finding_disposition_review.offer",
   "code_editor.session": "code_editor.session.offer",
   "commerce_intake.asset_capture": "commerce_intake.asset_capture.offer",
   "commerce_intake.batch_capture": "commerce_intake.batch_capture.offer",
@@ -4052,6 +4263,7 @@ export const PROVISION_OFFER_KINDS = {
   "masterworks.vanilla_arm": "masterworks.vanilla_arm.offer",
   "media.youtube_transcription": "media.youtube_transcription.offer",
   "media_catalog.item_vetting": "media_catalog.item_vetting.offer",
+  "meet.meeting_prep": "meet.meeting_prep.offer",
   "meet.meeting_record": "meet.meeting_record.offer",
   "meet.transcription": "meet.transcription.offer",
   "memory.observer": "memory.observer.offer",
@@ -4069,6 +4281,11 @@ export const PROVISION_OFFER_KINDS = {
   "ner.sweep_scope_discovery": "ner.sweep_scope_discovery.offer",
   "ner.sweep_scope_references": "ner.sweep_scope_references.offer",
   "ner.sweep_value_mining": "ner.sweep_value_mining.offer",
+  "news.angles": "news.angles.offer",
+  "news.coarse_relevance": "news.coarse_relevance.offer",
+  "news.report": "news.report.offer",
+  "news.story_origin": "news.story_origin.offer",
+  "news.triage": "news.triage.offer",
   "observability.tool_trace_pattern_window": "observability.tool_trace_pattern_window.offer",
   "observability.tool_trace_triage_window": "observability.tool_trace_triage_window.offer",
   "orchestras.member_roster": "orchestras.member_roster.offer",
@@ -4149,6 +4366,7 @@ export const PROVISION_OFFER_KINDS = {
   "seo.page_intent_proposer": "seo.page_intent_proposer.offer",
   "seo.page_keyword_mapping": "seo.page_keyword_mapping.offer",
   "seo.page_mapper": "seo.page_mapper.offer",
+  "seo.press_newsworthiness_check": "seo.press_newsworthiness_check.offer",
   "seo.press_source_request": "seo.press_source_request.offer",
   "seo.press_story_analysis": "seo.press_story_analysis.offer",
   "seo.reputation_intelligence": "seo.reputation_intelligence.offer",

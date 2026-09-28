@@ -11232,6 +11232,87 @@
         }
       }
     },
+    "/v1/meet/meetings/{meeting_id}/brief": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Brief",
+        "description": "Meet wave 4 — PREPARE: stream the host's pre-meeting brief, then keep it on the\nmeeting (`metadata.prep_brief`). The host, a co-host or an editor only. Refuses\nBEFORE the stream opens — 403 when AI is off, 503 naming the Mandate admin when\nnobody is assigned to `meet.pre_meeting_brief`.",
+        "operationId": "meeting_brief_v1_meet_meetings__meeting_id__brief_post",
+        "parameters": [
+          {
+            "name": "meeting_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Meeting Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/agenda-draft": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Agenda Draft",
+        "description": "Meet wave 4 — DRAFT AGENDA: stream a proposed agenda from the form's title,\nguests and (when editing) the series' history. Nothing is stored; the host keeps,\nedits or discards it. Refuses before streaming: 400 with no organization, 403 for\na non-member or a meeting the caller cannot edit, 503 naming the Mandate admin\nwhen nobody is assigned to `meet.agenda_draft`.",
+        "operationId": "agenda_draft_v1_meet_agenda_draft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgendaDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/meet/moderate": {
       "post": {
         "tags": [
@@ -13804,6 +13885,191 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VaultGrantOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/organization-grants": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Add Organization Grant",
+        "description": "Share a personal item into ONE organization's vault (access ladder\ndecision 14). It then lives in both vaults; change or revoke it through the\nordinary per-grant PATCH/DELETE.",
+        "operationId": "add_organization_grant_vault_items__item_id__organization_grants_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultOrganizationGrantAddRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultGrantOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/organizations/{organization_id}/member-access": {
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "List Member Access",
+        "description": "Every member's access to this organization's vault. Owners/admins only.",
+        "operationId": "list_member_access_vault_organizations__organization_id__member_access_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultMemberAccessListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/organizations/{organization_id}/members/{member_user_id}/access": {
+      "put": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Set Member Access",
+        "description": "Set one member's organization vault access: none, use, editor, or\nnull to follow the organization default. Owners/admins only; audited.",
+        "operationId": "set_member_access_vault_organizations__organization_id__members__member_user_id__access_put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "member_user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Member User Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultMemberAccessSetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultMemberAccessSetResponse"
                 }
               }
             }
@@ -99894,6 +100160,11 @@
               }
             ],
             "title": "Unavailable Reason"
+          },
+          "needs_organization": {
+            "type": "boolean",
+            "title": "Needs Organization",
+            "default": false
           }
         },
         "type": "object",
@@ -101194,6 +101465,175 @@
         ],
         "title": "AffinityServiceStatus",
         "description": "Safe aggregate status projection for Affinity's fixed status page."
+      },
+      "AgendaDraftRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "meeting_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meeting Id",
+            "description": "The meeting being edited — its series history is offered."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "agenda": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agenda"
+          },
+          "scheduled_for": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled For"
+          },
+          "time_zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
+          },
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1440.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Minutes"
+          },
+          "recurrence_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurrence Rule"
+          },
+          "guests": {
+            "items": {
+              "$ref": "#/components/schemas/PrepGuest"
+            },
+            "type": "array",
+            "maxItems": 60,
+            "title": "Guests"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "AgendaDraftRequest",
+        "description": "`POST /v1/meet/agenda-draft` — what the form holds right now (nothing is stored)."
       },
       "AgentAppInputPart": {
         "properties": {
@@ -154215,15 +154655,51 @@
             "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "site_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Site Id"
+          },
+          "brand_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Id"
           },
           "name": {
             "type": "string",
             "title": "Name"
           },
+          "lenses": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "coverage",
+                "opportunity"
+              ]
+            },
+            "type": "array",
+            "title": "Lenses"
+          },
           "brand_key": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Brand Key"
           },
           "brand_terms": {
@@ -154312,16 +154788,81 @@
             },
             "type": "object",
             "title": "Declared Ref"
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics"
+          },
+          "search_terms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Search Terms"
+          },
+          "standing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Standing"
+          },
+          "feed_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Feed Ids"
+          },
+          "feed_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Feed Urls"
+          },
+          "sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sources"
+          },
+          "x_trends_woeids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "X Trends Woeids"
+          },
+          "brief_source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brief Source Id"
           }
         },
         "type": "object",
         "required": [
-          "site_id",
-          "name",
-          "brand_key",
-          "brand_terms"
+          "name"
         ],
-        "title": "DeclareTrackerBody"
+        "title": "DeclareTrackerBody",
+        "description": "A monitor declaration. What is required depends on ``lenses`` (NEWS-ENGINE-SPEC §5.1):\ncoverage needs a site, a brand key and brand terms; opportunity needs a brand (the site's,\nor ``brand_id`` for a site-less monitor) and at least one topic, search term or feed."
       },
       "DedupResponse": {
         "properties": {
@@ -206049,7 +206590,7 @@
           "accepts_user_input": {
             "type": "boolean",
             "title": "Accepts User Input",
-            "default": false
+            "default": true
           },
           "inputs": {
             "items": {
@@ -235413,6 +235954,50 @@
         ],
         "title": "PreferredVersions"
       },
+      "PrepGuest": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "cohost": {
+            "type": "boolean",
+            "title": "Cohost",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "PrepGuest"
+      },
       "PresencePoint": {
         "properties": {
           "bucket": {
@@ -241683,6 +242268,7 @@
               "crawl",
               "extension",
               "local",
+              "monitor",
               "research",
               "transcription",
               "upload",
@@ -289505,15 +290091,58 @@
             "title": "Id"
           },
           "site_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Site Id"
+          },
+          "brand_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Id"
+          },
+          "parent_organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Organization Id"
           },
           "name": {
             "type": "string",
             "title": "Name"
           },
+          "lenses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lenses"
+          },
           "brand_key": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Brand Key"
           },
           "brand_terms": {
@@ -289529,6 +290158,139 @@
             },
             "type": "array",
             "title": "Competitors"
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics"
+          },
+          "search_terms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Search Terms"
+          },
+          "standing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Standing"
+          },
+          "feed_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Feed Ids"
+          },
+          "feed_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Feed Urls"
+          },
+          "sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sources"
+          },
+          "x_trends_woeids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "X Trends Woeids"
+          },
+          "brief_source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brief Source Id"
+          },
+          "alert_recipient_user_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alert Recipient User Ids"
+          },
+          "slack_credential_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slack Credential Item Id"
+          },
+          "auto_run_paused_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Run Paused At"
+          },
+          "auto_run_paused_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Run Paused Reason"
+          },
+          "last_run_summary": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run Summary"
+          },
+          "workflow_trigger_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Trigger Id"
           },
           "is_active": {
             "type": "boolean",
@@ -289594,9 +290356,7 @@
         "type": "object",
         "required": [
           "id",
-          "site_id",
           "name",
-          "brand_key",
           "brand_terms",
           "competitors",
           "is_active",
@@ -299033,13 +299793,42 @@
             "title": "Id"
           },
           "user_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
           },
           "email": {
             "type": "string",
             "title": "Email",
             "default": ""
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
           },
           "can_use": {
             "type": "boolean",
@@ -299071,7 +299860,6 @@
         "type": "object",
         "required": [
           "id",
-          "user_id",
           "created_at"
         ],
         "title": "VaultGrantOut",
@@ -300069,6 +300857,231 @@
         ],
         "title": "VaultLoginCsvPreviewResponse"
       },
+      "VaultMemberAccessListResponse": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "default_access": {
+            "type": "string",
+            "enum": [
+              "editor",
+              "none",
+              "use"
+            ],
+            "title": "Default Access"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/VaultMemberAccessOut"
+            },
+            "type": "array",
+            "title": "Members"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "default_access",
+          "members"
+        ],
+        "title": "VaultMemberAccessListResponse"
+      },
+      "VaultMemberAccessOut": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "default": ""
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "vault_access": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "editor",
+                  "none",
+                  "use"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vault Access"
+          },
+          "effective_access": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "editor",
+              "none",
+              "use"
+            ],
+            "title": "Effective Access"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "role",
+          "effective_access"
+        ],
+        "title": "VaultMemberAccessOut"
+      },
+      "VaultMemberAccessSetRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "access": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "editor",
+                  "none",
+                  "use"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "VaultMemberAccessSetRequest"
+      },
+      "VaultMemberAccessSetResponse": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "vault_access": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "editor",
+                  "none",
+                  "use"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vault Access"
+          },
+          "effective_access": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "editor",
+              "none",
+              "use"
+            ],
+            "title": "Effective Access"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "user_id",
+          "effective_access"
+        ],
+        "title": "VaultMemberAccessSetResponse"
+      },
       "VaultNativePasskeyEnableRequest": {
         "properties": {
           "organization_id": {
@@ -300186,6 +301199,90 @@
           "already_enabled"
         ],
         "title": "VaultNativePasskeyEnableResponse"
+      },
+      "VaultOrganizationGrantAddRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "can_manage": {
+            "type": "boolean",
+            "title": "Can Manage",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "organization_id"
+        ],
+        "title": "VaultOrganizationGrantAddRequest",
+        "description": "Share a personal item into ONE organization's vault. ``can_manage``\nFalse = use (sign in without seeing values); True = editor."
       },
       "VaultPasswordHistoryEntry": {
         "properties": {
