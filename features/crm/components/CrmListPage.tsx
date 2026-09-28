@@ -57,8 +57,6 @@ import {
   deleteParties,
   deleteParty,
   fetchPendingCandidateCount,
-  purgeParties,
-  purgeParty,
   restoreParties,
   restoreParty,
   setPartiesDoNotContact,
@@ -686,21 +684,22 @@ export function CrmListPage({
             title: `Delete ${selectedIds.length} record${selectedIds.length === 1 ? "" : "s"}?`,
             description:
               "They move to trash and can be restored. Contact history is kept.",
-            confirmLabel: "Delete",
+            confirmLabel: "Move to Trash",
             variant: "destructive",
           });
           if (!ok) return;
-          await runBulk("Deleted", (ids) => deleteParties(ids));
+          await runBulk("Moved to Trash", (ids) => deleteParties(ids));
         }}
       >
         <Trash2 className="h-3.5 w-3.5" />
-        Delete
+        Move to Trash
       </Button>
     </div>
   );
 
   // The trash's own bulk bar (D226): a trash filled with one click must empty
-  // with one click — restore or permanently delete the whole selection.
+  // with one click — restore the whole selection. Delete means archive: there
+  // is no erase control.
   const trashBulkActions = () => (
     <div className="flex flex-wrap items-center gap-1.5">
       <Button
@@ -715,26 +714,6 @@ export function CrmListPage({
       >
         <RotateCcw className="h-3.5 w-3.5" />
         Restore
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
-        disabled={bulkBusy}
-        onClick={async () => {
-          const ok = await confirm({
-            title: `Permanently delete ${selectedIds.length} record${selectedIds.length === 1 ? "" : "s"}?`,
-            description:
-              "This erases the records, their history, notes and pins. It cannot be undone.",
-            confirmLabel: "Delete permanently",
-            variant: "destructive",
-          });
-          if (!ok) return;
-          await runBulk("Permanently deleted", (ids) => purgeParties(ids));
-        }}
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-        Delete permanently
       </Button>
     </div>
   );
@@ -776,37 +755,6 @@ export function CrmListPage({
               },
             ],
           },
-          {
-            id: "danger",
-            items: [
-              {
-                id: "purge",
-                label: "Delete permanently",
-                tone: "destructive",
-                onSelect: async () => {
-                  const ok = await confirm({
-                    title: `Permanently delete ${row.display_name}?`,
-                    description:
-                      "This erases the record, its history, notes and pins. It cannot be undone.",
-                    confirmLabel: "Delete permanently",
-                    variant: "destructive",
-                  });
-                  if (!ok) return;
-                  try {
-                    await purgeParty(row.id);
-                    dismissRecordToasts({ type: "party", id: row.id });
-                    list.removeRow(row.id);
-                    list.refresh();
-                    toast.success(`${row.display_name} permanently deleted`);
-                  } catch (e) {
-                    toast.error(
-                      e instanceof Error ? e.message : "Delete failed",
-                    );
-                  }
-                },
-              },
-            ],
-          },
         ],
       });
     }
@@ -841,14 +789,14 @@ export function CrmListPage({
           items: [
             {
               id: "delete",
-              label: "Delete",
+              label: "Move to Trash",
               tone: "destructive",
               onSelect: async () => {
                 const ok = await confirm({
-                  title: `Delete ${row.display_name}?`,
+                  title: `Move ${row.display_name} to Trash?`,
                   description:
-                    "The record moves to trash. Contact history is kept.",
-                  confirmLabel: "Delete",
+                    "The record moves to trash and can be restored. Contact history is kept.",
+                  confirmLabel: "Move to Trash",
                   variant: "destructive",
                 });
                 if (!ok) return;
@@ -856,7 +804,7 @@ export function CrmListPage({
                   await deleteParty(row.id);
                   dismissRecordToasts({ type: "party", id: row.id });
                   list.removeRow(row.id);
-                  toast.success(`${row.display_name} deleted`);
+                  toast.success(`${row.display_name} moved to Trash`);
                 } catch (e) {
                   toast.error(e instanceof Error ? e.message : "Delete failed");
                 }
@@ -1296,7 +1244,7 @@ export function CrmListPage({
                   selectedIds,
                   onSelectedIdsChange: setSelectedIds,
                   noun: "record",
-                  // The trash gets its own verbs (D226): restore + purge in bulk.
+                  // The trash gets its own verb (D226): restore in bulk.
                   actions: inTrash ? trashBulkActions : bulkActions,
                 }}
                 rowActions={(row) => (
@@ -1342,7 +1290,7 @@ export function CrmListPage({
                           icon: <Trash2 className="h-5 w-5" />,
                           title: "Trash is empty",
                           description:
-                            "Deleted records land here and can be restored or permanently deleted.",
+                            "Deleted records land here and can be restored.",
                         }
                       : {
                           icon: <Plus className="h-5 w-5" />,

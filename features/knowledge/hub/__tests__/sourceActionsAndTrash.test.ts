@@ -1,5 +1,5 @@
 /**
- * H6a: the hub's Source doors — Trash restore / purge (same RPCs the retired
+ * H6a: the hub's Source doors — Trash restore (same RPCs the retired
  * Trash sheet used), bulk Process now / trash, and the agent write handlers
  * re-registered on the hub surface.
  */
@@ -17,8 +17,8 @@ jest.mock("@/utils/supabase/ragDb", () => ({ ragDb: () => ({ rpc: (...a: unknown
 jest.mock("@/utils/supabase/writeOne", () => ({ writeOne: (...a: unknown[]) => writeOne(...a) }));
 
 import { processSourceRow, runSourceBulk, trashSource, type ActionableSource } from "@/features/sources/sourceActions";
-import { purgeTrashGroup, restoreTrashRow, type TrashDoors } from "@/features/rag/components/library/libraryTrash";
-import { groupTrashRows, type TrashRow } from "@/features/rag/components/library/trashGroups";
+import { restoreTrashRow, type TrashDoors } from "@/features/rag/components/library/libraryTrash";
+import type { TrashRow } from "@/features/rag/components/library/trashGroups";
 import { buildHubWriteHandlers } from "@/features/knowledge/hub/hubAgentSurface";
 
 const row = (p: Partial<ActionableSource> = {}): ActionableSource => ({
@@ -76,22 +76,6 @@ describe("Trash restore / purge", () => {
   });
   it("a refused restore says so", async () => {
     await expect(restoreTrashRow(trashRow({}), doors("fn_restore_library_document"))).rejects.toThrow(/couldn't restore/);
-  });
-  it("purges every version, edits before recaptures before the first capture", async () => {
-    const rows = [
-      trashRow({ id: "cap", derivation_kind: "initial_extract" }),
-      trashRow({ id: "edit", derivation_kind: "manual_curation" }),
-      trashRow({ id: "re", derivation_kind: "recapture" }),
-    ];
-    const [group] = groupTrashRows(rows);
-    const d = doors();
-    await purgeTrashGroup(group, rows, d);
-    expect(d.calls.map((c) => (c[1] as { p_id: string }).p_id)).toEqual(["edit", "re", "cap"]);
-    expect(d.calls.every((c) => c[0] === "fn_purge_library_document")).toBe(true);
-  });
-  it("never purges a file family per document", async () => {
-    const rows = [trashRow({ deleted_via: "file_cascade" })];
-    await expect(purgeTrashGroup(groupTrashRows(rows)[0], rows, doors())).rejects.toThrow(/together with the file/);
   });
 });
 

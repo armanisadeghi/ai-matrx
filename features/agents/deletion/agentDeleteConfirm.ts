@@ -20,10 +20,9 @@
  * Guard: `features/agents/deletion/__tests__/agent-delete-confirm.test.ts`
  * fails if any file that dispatches `deleteAgent` carries permanence wording.
  *
- * NOT covered here: `purgeAgentVersions` (→ `agx_purge_versions`) really does
- * destroy old VERSION rows, but it deletes versions, never an agent, and as of
- * 2026-09-11 it has zero UI callers. If it ever gets one, it needs its own
- * honest copy — it must not borrow this one.
+ * There is no client door that destroys agent versions: `purgeAgentVersions`
+ * was removed and client EXECUTE on `agx_purge_versions` revoked (delete
+ * means archive, 2026-09-27).
  */
 
 /** The confirm-dialog options shape this builder fills in for `confirm()`. */

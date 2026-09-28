@@ -266,8 +266,9 @@ value metadata mirror the manifests.
   (`features/scopes/components/CategoryTagPicker.tsx`) — never a direct
   `platform.categories` read (`cat_list` only, inside those primitives).
 - **Trash:** the list's Trash view flips the `deleted_at` predicate with the
-  scope predicates intact; restore = `restoreParty`, erasure =
-  `purgeParty` → `crm_party_purge` behind a destructive confirm.
+  scope predicates intact; restore = `restoreParty`. There is no client erasure door (delete means
+  archive, 2026-09-27): `crm_party_purge` stays for retention / GDPR erasure
+  but client EXECUTE is revoked.
 - `party` + `crm_outreach_list` are registered in `ENTITY_OVERLAY`
   (`features/scopes/registry/entityRegistry.ts`) and `ASSOCIATION_TARGET_TYPES`
   (`features/scopes/types.ts`); notes use `commentsService`
@@ -1577,8 +1578,8 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
   live with a match round. D222/D223: `/crm` enrollment records provenance
   (`SavedViewBar.onActiveViewChange`) and binds each member's best contact
   point. D224: `blockPartyContact` audits the flag half. D225: assists dock
-  is `pointer-events-none` at the container. D226: trash bulk Restore /
-  Delete permanently (`restoreParties`/`purgeParties`) + scope-chip refresh,
+  is `pointer-events-none` at the container. D226: trash bulk Restore
+  (`restoreParties`; the purge control was removed 2026-09-27) + scope-chip refresh,
   browser-proven. D227: deals page resolves the ACTIVE org and the create
   dialog searches all reachable orgs (deal follows the picked party's org),
   browser-proven. D228: provenance token links only when it is a real URL.

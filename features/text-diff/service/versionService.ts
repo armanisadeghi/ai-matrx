@@ -99,20 +99,6 @@ export async function restoreVersion(
 }
 
 /**
- * Delete a specific version
- */
-export async function deleteVersion(versionId: string): Promise<void> {
-  const { error } = await supabase.rpc("delete_note_version", {
-    p_id: versionId,
-  });
-
-  if (error) {
-    console.error("Error deleting version:", error);
-    throw error;
-  }
-}
-
-/**
  * Get latest version number for a note
  */
 export async function getLatestVersionNumber(noteId: string): Promise<number> {

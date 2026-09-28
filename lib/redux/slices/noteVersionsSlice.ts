@@ -73,22 +73,6 @@ export const restoreNoteVersion = createAsyncThunk(
   },
 );
 
-/**
- * Delete a specific version
- */
-export const deleteNoteVersion = createAsyncThunk(
-  "noteVersions/deleteNoteVersion",
-  async ({ noteId, versionId }: { noteId: string; versionId: string }) => {
-    const { error } = await supabase.rpc("delete_note_version", {
-      p_id: versionId,
-    });
-
-    if (error) throw error;
-
-    return { noteId, versionId };
-  },
-);
-
 // ============================================================================
 // Slice
 // ============================================================================
@@ -151,33 +135,6 @@ const noteVersionsSlice = createSlice({
         state.loading[noteId] = false;
         state.error[noteId] =
           action.error.message || "Failed to restore version";
-      });
-
-    // Delete version
-    builder
-      .addCase(deleteNoteVersion.pending, (state, action) => {
-        const noteId = action.meta.arg.noteId;
-        state.loading[noteId] = true;
-        state.error[noteId] = null;
-      })
-      .addCase(deleteNoteVersion.fulfilled, (state, action) => {
-        const { noteId, versionId } = action.payload;
-
-        // Remove the deleted version from state
-        if (state.versions[noteId]) {
-          state.versions[noteId] = state.versions[noteId].filter(
-            (v) => v.id !== versionId,
-          );
-        }
-
-        state.loading[noteId] = false;
-        state.error[noteId] = null;
-      })
-      .addCase(deleteNoteVersion.rejected, (state, action) => {
-        const noteId = action.meta.arg.noteId;
-        state.loading[noteId] = false;
-        state.error[noteId] =
-          action.error.message || "Failed to delete version";
       });
   },
 });

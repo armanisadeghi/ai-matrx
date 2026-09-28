@@ -4,25 +4,23 @@
  * The Source trash as a list — the Knowledge hub's Trash view (KNOWLEDGE-HUB
  * §8 H6a; it replaced the Sources page's Trash sheet). One item per Source
  * (`groupTrashRows`); Restore and Purge go through the same doors the sheet
- * used (`libraryTrash.ts`). Purge asks first and is the only hard delete.
+ * used (`libraryTrash.ts`). Delete means archive: the trash only restores —
+ * there is no erase control (retention is a data-lifecycle policy).
  */
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCallback, useEffect, useState } from "react";
-import { ArchiveRestore, FileText, Loader2, RotateCw, Trash2 } from "lucide-react";
+import { ArchiveRestore, FileText, Loader2, RotateCw } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { restoreFileDirect } from "@/features/files/api/direct";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
-import { groupTrashRows, piecesWords, type TrashGroup, type TrashRow } from "@/features/rag/components/library/trashGroups";
+import { groupTrashRows, piecesWords, type TrashRow } from "@/features/rag/components/library/trashGroups";
 import {
   listTrash,
-  purgeConfirmCopy,
-  purgeTrashGroup,
   restoreTrashRow,
   type TrashDoors,
 } from "@/features/rag/components/library/libraryTrash";
@@ -77,22 +75,6 @@ export function LibraryTrashList({
     }
   };
 
-  const purge = async (group: TrashGroup) => {
-    const copy = purgeConfirmCopy(group);
-    const ok = await confirm({ ...copy, variant: "destructive", confirmLabel: "Delete forever" });
-    if (!ok) return;
-    setBusyId(group.head.id);
-    try {
-      toast.success(await purgeTrashGroup(group, rows ?? [], doors));
-      await after();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Purge failed.");
-      await load();
-    } finally {
-      setBusyId(null);
-    }
-  };
-
   const words = (filterText ?? "").trim().toLowerCase();
   const groups = groupTrashRows(rows ?? []).filter(
     (g) => !words || `${g.head.name ?? ""} ${g.head.file_name ?? ""}`.toLowerCase().includes(words),
@@ -101,7 +83,7 @@ export function LibraryTrashList({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2" data-testid="hub-trash">
       <p className="px-2 text-xs text-muted-foreground">
-        Sources you moved to the trash stay restorable until you delete them forever. Documents trashed with their file
+        Sources you moved to the trash stay restorable. Documents trashed with their file
         come back together with the file.
       </p>
       {error ? (
@@ -157,17 +139,6 @@ export function LibraryTrashList({
                   {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
                   {family ? "Restore file" : "Restore"}
                 </Button>
-                {family ? null : (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
-                    disabled={busy}
-                    onClick={() => void purge(group)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> Delete forever
-                  </Button>
-                )}
               </li>
             );
           })}

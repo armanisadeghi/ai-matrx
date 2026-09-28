@@ -71,7 +71,7 @@ export const {
 
 Also: `agentDefinitionSlice`, default reducer export, `export type { LoadedFields }`.
 
-**Thunks** (from the module header in `thunks.ts`): read — `fetchAgentsList`, `fetchAgentsListFull`, `fetchSharedAgents`, `fetchSharedAgentsForChat`, `fetchAgentAccessLevel`, `fetchAgentExecutionMinimal`, `fetchAgentExecutionFull`, `fetchFullAgent`, `fetchAgentVersionHistory`, `fetchAgentVersionSnapshot`, `checkAgentDrift`, `checkAgentReferences`; write — `saveAgentField`, `saveAgent`, `createAgent`, `deleteAgent`, `purgeAgentVersions`; RPC-style — `duplicateAgent`, `promoteAgentVersion`, `acceptAgentVersion`, `updateAgentFromSource`; chat bootstrap — `initializeChatAgents` plus helpers `isChatListFresh`, `isChatListStale`.
+**Thunks** (from the module header in `thunks.ts`): read — `fetchAgentsList`, `fetchAgentsListFull`, `fetchSharedAgents`, `fetchSharedAgentsForChat`, `fetchAgentAccessLevel`, `fetchAgentExecutionMinimal`, `fetchAgentExecutionFull`, `fetchFullAgent`, `fetchAgentVersionHistory`, `fetchAgentVersionSnapshot`, `checkAgentDrift`, `checkAgentReferences`; write — `saveAgentField`, `saveAgent`, `createAgent`, `deleteAgent`; RPC-style — `duplicateAgent`, `promoteAgentVersion`, `acceptAgentVersion`, `updateAgentFromSource`; chat bootstrap — `initializeChatAgents` plus helpers `isChatListFresh`, `isChatListStale`.
 
 **Interfaces/types exported from thunks** include e.g. `AgentVersionHistoryItem`, `AgentVersionSnapshot`, `SharedAgentItem`, `AgentAccessLevel`, etc.
 

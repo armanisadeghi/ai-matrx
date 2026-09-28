@@ -634,7 +634,7 @@ export async function fetchPartyExpertTopics(
   return ids.map((id) => ({ id, name: byId.get(id) ?? null }));
 }
 
-/** Soft-delete (trash). Real erasure is `crm_party_purge` — a separate act. */
+/** Soft-delete (trash). Restorable; there is no client erasure door. */
 export async function deleteParty(id: string): Promise<void> {
   const { error } = await tryWriteOne(
     supabase
@@ -662,15 +662,6 @@ export async function restoreParty(id: string): Promise<void> {
   if (error) throw pgError(error);
 }
 
-/**
- * TRUE erasure via `public.crm_party_purge` — admin-gated in the RPC; also
- * clears `history.row_versions`, comments and user_entity_state. Irreversible.
- */
-export async function purgeParty(id: string): Promise<void> {
-  const { error } = await supabase.rpc("crm_party_purge", { p_party: id });
-  if (error) throw pgError(error);
-}
-
 // ── Bulk list actions (the work-queue verbs) ────────────────────────────────
 //
 // One statement per action over an explicit id list — never a predicate-driven
@@ -692,25 +683,6 @@ export async function restoreParties(ids: string[]): Promise<void> {
       .update({ deleted_at: null })
       .in("id", batch);
     if (error) throw pgError(error);
-  }
-}
-
-/**
- * Permanently erase many records (D226). The purge RPC is deliberately
- * one-record (admin-gated, touches history/comments/state), so bulk is a loop
- * — a per-row failure stops the run with the count that DID land.
- */
-export async function purgeParties(ids: string[]): Promise<void> {
-  let done = 0;
-  for (const id of ids) {
-    try {
-      await purgeParty(id);
-      done += 1;
-    } catch (e) {
-      throw new Error(
-        `${e instanceof Error ? e.message : String(e)} (${done} of ${ids.length} deleted before the failure)`,
-      );
-    }
   }
 }
 

@@ -28,7 +28,6 @@
  *   saveAgent                    — save all dirty fields for an agent
  *   createAgent                  — insert new agent
  *   deleteAgent                  — delete agent
- *   purgeAgentVersions           — delete old versions, keep N most recent
  *
  * RPC action thunks:
  *   duplicateAgent               — calls agx_duplicate_agent(), loads copy into state
@@ -1680,42 +1679,6 @@ export const fetchAgentAccessLevel = createAsyncThunk<
   );
 
   return row;
-});
-
-// ---------------------------------------------------------------------------
-// Version management
-// ---------------------------------------------------------------------------
-
-export interface PurgeVersionsResult {
-  success: boolean;
-  error?: string;
-  deleted_count?: number;
-  kept_count?: number;
-}
-// agx_purge_versions returns Json directly — no DB row schema to check.
-
-/**
- * Deletes old versions for an agent, keeping the N most recent.
- * The RPC always preserves: version 1, the current live version,
- * and any version pinned by a shortcut or app.
- *
- * keepCount defaults to 10 if not provided (matches the RPC default).
- */
-export const purgeAgentVersions = createAsyncThunk<
-  PurgeVersionsResult,
-  { agentId: string; keepCount?: number },
-  ThunkApi
->("agentDefinition/purgeVersions", async ({ agentId, keepCount }) => {
-  const params: { p_agent_id: string; p_keep_count?: number } = {
-    p_agent_id: agentId,
-  };
-  if (keepCount !== undefined) params.p_keep_count = keepCount;
-
-  const { data, error } = await supabase.rpc("agx_purge_versions", params);
-
-  if (error) throw pgErrorToError(error);
-
-  return data as unknown as PurgeVersionsResult;
 });
 
 // ---------------------------------------------------------------------------
