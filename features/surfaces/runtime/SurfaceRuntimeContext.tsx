@@ -483,6 +483,15 @@ export function SurfaceActivity({
   );
 }
 
+/**
+ * True inside a dormant `SurfaceActivity` subtree. For registries OUTSIDE this
+ * module (custom-field doors…): a registration made here must not reach the
+ * whole page while its copy is dormant.
+ */
+export function useSurfaceDormant(): boolean {
+  return useContext(SurfaceDormantContext);
+}
+
 /** Where registrations in this subtree go: the global registry unless dormant, and the enclosing capture. */
 function useRegistrationTargets(): {
   live: SurfaceRegistry | null;

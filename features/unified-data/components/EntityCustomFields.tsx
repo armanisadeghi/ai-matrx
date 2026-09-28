@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 // features/unified-data/components/EntityCustomFields.tsx
 //
 // THE ONE LINE A STANDARD ENTITY PAGE ADDS (SCR-12 / REC-40 / REC-34).
@@ -41,7 +42,11 @@ import {
   customFieldsScopeValue,
   registerCustomFieldsDoor,
 } from "@/features/surfaces/runtime/custom-field-targets";
-import { useSurfaceRuntime, useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  useSurfaceDormant,
+  useSurfaceRuntime,
+  useSurfaceScopeContribution,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 
 export interface EntityCustomFieldsProps {
@@ -64,6 +69,13 @@ export function EntityCustomFields({
   className,
 }: EntityCustomFieldsProps) {
   const userId = useAppSelector(selectUserId);
+  // A dormant copy (a board tile that is not live) keeps its door registered
+  // but out of the page's agent offer.
+  const dormant = useSurfaceDormant();
+  const liveRef = useRef(!dormant);
+  useEffect(() => {
+    liveRef.current = !dormant;
+  });
   // WHAT THE AGENT SEES: the fields and this record's values, contributed as the
   // `custom_fields` value of the surface this page is on — when that surface
   // declares it (`pickBaseline("custom_fields")`); a surface that does not keeps
@@ -99,7 +111,7 @@ export function EntityCustomFields({
         recordId={recordId}
         title={title}
         className={className}
-        agentDoor={registerCustomFieldsDoor}
+        agentDoor={(door) => registerCustomFieldsDoor({ ...door, isLive: () => liveRef.current })}
       />
     </RecordsMount>
   );
