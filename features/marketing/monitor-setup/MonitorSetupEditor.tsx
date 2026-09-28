@@ -20,7 +20,7 @@ import { ExternalLink, Loader2, Play, Plus, Save, Wand2, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
