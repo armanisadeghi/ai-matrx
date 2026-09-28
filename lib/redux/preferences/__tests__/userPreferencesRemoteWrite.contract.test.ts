@@ -6,20 +6,32 @@ describe("user preferences remote-write ownership", () => {
     path.join(process.cwd(), "lib/redux/preferences/userPreferencesSlice.ts"),
     "utf8",
   );
-  const writeBoundary = source.slice(
-    source.indexOf("write: async ({ identity, signal, body })"),
-    source.indexOf("void signal", source.indexOf("write: async ({ identity, signal, body })")),
+  const start = source.indexOf("write: async ({ identity, signal, body, base })");
+  const writeBoundary = source.slice(start, source.indexOf("\n    },", start));
+  const patchSource = fs.readFileSync(
+    path.join(process.cwd(), "lib/redux/preferences/preferencePatch.ts"),
+    "utf8",
   );
 
   test("updates the user-global singleton in place and never chooses an organization for it", () => {
-    expect(writeBoundary).toContain(".update({ preferences: body })");
+    expect(start).toBeGreaterThan(-1);
+    expect(writeBoundary).toContain("savePreferencePatch(");
     expect(writeBoundary).not.toContain("organization_id");
     expect(writeBoundary).not.toContain("ensureOrgId(");
     expect(writeBoundary).not.toContain(".upsert(");
+    expect(patchSource).not.toContain(".upsert(");
+    expect(patchSource).not.toContain("organization_id");
+  });
+
+  test("never writes the whole cached record — only the changed keys, merged under CAS", () => {
+    expect(writeBoundary).not.toContain(".update({ preferences: body })");
+    expect(patchSource).toContain("mergeJsonColumn<PreferencesRow>(");
+    expect(patchSource).toContain('.eq("version", expectedVersion)');
   });
 
   test("propagates PostgREST failures and a missing row instead of silently accepting them", () => {
-    expect(writeBoundary).toContain("if (error) throw error");
-    expect(writeBoundary).toContain("written.length === 0");
+    expect(patchSource).toContain('case "not_found":');
+    expect(patchSource).toContain('case "error":');
+    expect(patchSource).toContain('case "conflict":');
   });
 });

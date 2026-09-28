@@ -194,6 +194,32 @@ export interface PolicyConfig<TState = unknown> {
          * total over partial state — read fields with `?.`.
          */
         cacheSatisfies?: (state: TState) => boolean;
+        /**
+         * Stale-while-revalidate at boot (2026-09-27). A cache hit still paints
+         * instantly, and the engine ALSO fires `remote.fetch` right away (as a
+         * `stale-refresh`, so a loaded slice stays loaded) instead of trusting
+         * the cache until `staleAfter`. Declare it on any slice another device,
+         * tab, or agent can change: a browser that was closed for a day must
+         * not show — or build a save on — yesterday's record for a minute.
+         */
+        revalidateOnBoot?: boolean;
+        /**
+         * Refresh when the tab comes back (visible / focused), at most once per
+         * `REVALIDATE_ON_FOCUS_MIN_GAP_MS`, on top of the `staleAfter` timer —
+         * so a tab left open while the record changed elsewhere shows the new
+         * values the moment the person returns to it. Needs `staleAfter`.
+         */
+        revalidateOnFocus?: boolean;
+        /**
+         * The body the SERVER holds as of the load that just landed (called
+         * after every REHYDRATE / load outcome). The write scheduler diffs each
+         * body it flushes against this base, and hands both to `remote.write`
+         * as `ctx.base`, so a write can send ONLY what this tab changed. Absent
+         * = the post-load body itself. A slice that replays held edits on top of
+         * the loaded record returns the record WITHOUT them here, or the replayed
+         * edits would look unchanged and never be saved.
+         */
+        baseline?: (state: TState) => unknown;
     };
 
     /**
@@ -325,6 +351,14 @@ export interface WriteContext<TState = unknown> {
     identity: IdentityKey;
     signal: AbortSignal;
     body: TState;
+    /**
+     * The last body this tab knows the server holds: the record as of the last
+     * load, advanced to each body this tab successfully wrote. `body` minus
+     * `base` is exactly what this tab changed — a writer that sends only that
+     * never overwrites a key another tab, device or agent changed meanwhile.
+     * Undefined only when no load outcome has been seen yet.
+     */
+    base?: TState;
 }
 
 /**

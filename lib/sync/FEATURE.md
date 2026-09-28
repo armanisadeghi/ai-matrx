@@ -31,6 +31,23 @@ hydration errors.
 
 ## Change log
 
+- 2026-09-27 — **A warm-cache write sends only what this tab changed.** The
+  write scheduler keeps a per-slice BASE — the record as of the last load
+  (REHYDRATE / `empty`; a slice may supply it via `remote.baseline`), advanced
+  to each body it successfully writes — and hands it to `remote.write` as
+  `ctx.base`. `userPreferences` diffs body against base at `module.field` and
+  merges only those keys into the live row via `mergeJsonColumn` (CAS on the
+  new `users.user_preferences.version` column, bumped by `trg_touch_row`).
+  Before this the policy wrote its WHOLE cached record, so a stale tab put
+  back every key changed elsewhere (live, 2026-09-27: an agent's
+  default-organization write reverted 15s later). Two freshness rules came
+  with it: `remote.revalidateOnBoot` (a cache hit still paints, and the fetch
+  fires at once as a `stale-refresh`) and `remote.revalidateOnFocus` (refresh
+  when the tab comes back, at most every 5s). A background refresh never lands
+  over unsaved edits: it is skipped while a write is pending and its answer is
+  dropped if an edit arrived mid-flight (`isRemoteWritePending`). Guard:
+  `lib/redux/preferences/__tests__/preference-writes-never-clobber.test.ts`
+  (red on the old whole-record write, green now).
 - 2026-09-26 (later) — Two policy hooks close the "failed load overwrites
   the saved record" hole. `persistWhen(state)` is checked by the debounced
   write scheduler's flush (`engine/remoteWrite.ts` `flushOne`) — the ONE path

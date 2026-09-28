@@ -31,6 +31,7 @@ import { logger } from "../logger";
 import { writeSlice } from "../persistence/idb";
 import { localStorageAdapter } from "../persistence/local-storage";
 import { getPreset } from "../policies/presets";
+import { isRemoteWritePending } from "./remoteWrite";
 
 export interface InvokeRemoteFetchOptions {
     policy: Policy<any>;
@@ -49,6 +50,15 @@ export async function invokeRemoteFetch(opts: InvokeRemoteFetchOptions): Promise
     const { policy, store, getIdentity, reason, externalSignal } = opts;
     const fetchFn = policy.config.remote?.fetch;
     if (!fetchFn) return;
+
+    const sliceName = policy.config.sliceName;
+    // A background refresh never lands over unsaved edits: it would repaint
+    // them with the server's older values. The write lands first; the next
+    // refresh (timer or focus) reads the record with it.
+    if (reason === "stale-refresh" && isRemoteWritePending(sliceName)) {
+        logger.debug("fallback.deferred.pendingWrite", { sliceName });
+        return;
+    }
 
     const startIdentity = getIdentity();
     const controller = new AbortController();
@@ -69,7 +79,6 @@ export async function invokeRemoteFetch(opts: InvokeRemoteFetchOptions): Promise
         meta: { reason, identity: startIdentity.key },
     });
 
-    const sliceName = policy.config.sliceName;
     store.dispatch(buildRemoteFetchStatusAction(sliceName, "started", reason));
 
     const started = typeof performance !== "undefined" ? performance.now() : 0;
@@ -85,6 +94,12 @@ export async function invokeRemoteFetch(opts: InvokeRemoteFetchOptions): Promise
         }
         if (controller.signal.aborted) {
             logger.debug("fallback.aborted", { sliceName: policy.config.sliceName });
+            return;
+        }
+
+        // Edited while the read was in flight: this answer predates the edit.
+        if (reason === "stale-refresh" && isRemoteWritePending(sliceName)) {
+            logger.debug("fallback.dropped.pendingWrite", { sliceName });
             return;
         }
 
@@ -226,16 +241,44 @@ export interface StaleRefreshRegistration {
     cancelAll(): void;
 }
 
+/** A focus refresh fires at most this often per slice. */
+export const REVALIDATE_ON_FOCUS_MIN_GAP_MS = 5_000;
+
+export interface StaleRefreshSchedulerOptions {
+    /** Test-only: subscribe to "the tab came back". Production uses visibilitychange + focus. */
+    attachFocus?: (onFocus: () => void) => () => void;
+    /** Test-only clock. */
+    now?: () => number;
+}
+
 export function createStaleRefreshScheduler(
     policies: readonly Policy<any>[],
     store: Store,
     getIdentity: () => IdentityKey,
+    options: StaleRefreshSchedulerOptions = {},
 ): StaleRefreshRegistration {
+    const now = options.now ?? (() => Date.now());
     const timers = new Map<string, ReturnType<typeof setTimeout>>();
+    const lastRefreshAt = new Map<string, number>();
     const eligible = policies.filter(
         (p) => typeof p.config.staleAfter === "number" && !!p.config.remote?.fetch,
     );
     const bySlice = new Map(eligible.map((p) => [p.config.sliceName, p] as const));
+
+    function refresh(sliceName: string): void {
+        const policy = bySlice.get(sliceName);
+        if (!policy) return;
+        const existing = timers.get(sliceName);
+        if (existing) clearTimeout(existing);
+        timers.delete(sliceName);
+        lastRefreshAt.set(sliceName, now());
+        void invokeRemoteFetch({
+            policy,
+            store,
+            getIdentity,
+            reason: "stale-refresh",
+        }).finally(() => arm(sliceName));
+    }
 
     function arm(sliceName: string): void {
         const policy = bySlice.get(sliceName);
@@ -244,20 +287,42 @@ export function createStaleRefreshScheduler(
         if (typeof after !== "number") return;
         const existing = timers.get(sliceName);
         if (existing) clearTimeout(existing);
-        const handle = setTimeout(() => {
-            timers.delete(sliceName);
-            void invokeRemoteFetch({
-                policy,
-                store,
-                getIdentity,
-                reason: "stale-refresh",
-            }).finally(() => arm(sliceName));
-        }, after);
+        const handle = setTimeout(() => refresh(sliceName), after);
         timers.set(sliceName, handle);
     }
 
     // Arm initial timers.
     for (const p of eligible) arm(p.config.sliceName);
+
+    // --- Revalidate on focus (policy opt-in) ---
+    const onFocusSlices = eligible
+        .filter((p) => p.config.remote?.revalidateOnFocus === true)
+        .map((p) => p.config.sliceName);
+    function onFocus(): void {
+        const t = now();
+        for (const sliceName of onFocusSlices) {
+            const last = lastRefreshAt.get(sliceName) ?? 0;
+            if (t - last < REVALIDATE_ON_FOCUS_MIN_GAP_MS) continue;
+            logger.debug("fallback.focus.revalidate", { sliceName });
+            refresh(sliceName);
+        }
+    }
+    let detachFocus: (() => void) | null = null;
+    if (onFocusSlices.length > 0) {
+        if (options.attachFocus) {
+            detachFocus = options.attachFocus(onFocus);
+        } else if (typeof window !== "undefined" && typeof document !== "undefined") {
+            const onVisibility = () => {
+                if (document.visibilityState === "visible") onFocus();
+            };
+            document.addEventListener("visibilitychange", onVisibility);
+            window.addEventListener("focus", onFocus);
+            detachFocus = () => {
+                document.removeEventListener("visibilitychange", onVisibility);
+                window.removeEventListener("focus", onFocus);
+            };
+        }
+    }
 
     return {
         resetFor(sliceName) {
@@ -266,6 +331,8 @@ export function createStaleRefreshScheduler(
         cancelAll() {
             for (const h of timers.values()) clearTimeout(h);
             timers.clear();
+            detachFocus?.();
+            detachFocus = null;
         },
     };
 }

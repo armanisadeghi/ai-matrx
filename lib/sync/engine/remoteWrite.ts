@@ -43,6 +43,15 @@ export interface RemoteWriteScheduler {
     flushAll(): Promise<void>;
     /** Cancel in-flight + pending on identity swap — the new identity starts clean. */
     onIdentitySwap(): void;
+    /**
+     * Record the body the server holds as of a load outcome. A background
+     * refresh never lands while a write is pending (`isRemoteWritePending`),
+     * and edits held before the first load are rescheduled on top of it
+     * (`persistAfterLoad`), so the base only moves under settled state.
+     */
+    setBase(sliceName: string, body: unknown): void;
+    /** True while a write for the slice is scheduled or in flight. */
+    hasPending(sliceName: string): boolean;
     /** Tear down listeners. */
     dispose(): void;
 }
@@ -59,6 +68,22 @@ export interface CreateRemoteWriteSchedulerOptions {
 
 const DEFAULT_DEBOUNCE_MS = 150;
 
+/**
+ * Every live scheduler, so the refresh path can ask "does this slice hold
+ * unsaved edits?" without a reference to the middleware's closure. A refresh
+ * that lands over unsaved edits would repaint them with the server's older
+ * values (and move the write's base under it), so the refresh waits.
+ */
+const liveSchedulers = new Set<RemoteWriteScheduler>();
+
+/** True when any live scheduler holds a pending or in-flight write for the slice. */
+export function isRemoteWritePending(sliceName: string): boolean {
+    for (const scheduler of liveSchedulers) {
+        if (scheduler.hasPending(sliceName)) return true;
+    }
+    return false;
+}
+
 export function createRemoteWriteScheduler(
     opts: CreateRemoteWriteSchedulerOptions,
 ): RemoteWriteScheduler {
@@ -73,6 +98,8 @@ export function createRemoteWriteScheduler(
             .map((p) => [p.config.sliceName, p] as const),
     );
     const pending = new Map<string, PendingWrite>();
+    /** The body the server holds, per slice — see `WriteContext.base`. */
+    const baseBySlice = new Map<string, unknown>();
 
     async function flushOne(sliceName: string): Promise<void> {
         const record = pending.get(sliceName);
@@ -162,6 +189,7 @@ export function createRemoteWriteScheduler(
             identity,
             signal: controller.signal,
             body: sliceState,
+            base: baseBySlice.get(sliceName),
         };
 
         try {
@@ -170,6 +198,10 @@ export function createRemoteWriteScheduler(
                 meta: { identity: identity.key, bytes: approximateBytes(sliceState) },
             });
             await writeFn(ctx as WriteContext<never>);
+            // The server now holds this body's changes: the next write diffs
+            // from here. (A failed or aborted write keeps the old base, so its
+            // changes are sent again with the next one.)
+            if (!controller.signal.aborted) baseBySlice.set(sliceName, sliceState);
         } catch (err) {
             logger.warn("remote.write.error", {
                 sliceName,
@@ -261,19 +293,32 @@ export function createRemoteWriteScheduler(
         detachPageHide = () => window.removeEventListener("pagehide", handler);
     }
 
-    return {
+    const scheduler: RemoteWriteScheduler = {
         schedule,
         flushAll,
-        onIdentitySwap,
+        onIdentitySwap() {
+            onIdentitySwap();
+            baseBySlice.clear();
+        },
+        setBase(sliceName, body) {
+            baseBySlice.set(sliceName, body);
+        },
+        hasPending(sliceName) {
+            return pending.has(sliceName);
+        },
         dispose() {
             for (const record of pending.values()) {
                 record.inFlightController?.abort();
                 if (record.timerHandle) clearTimeout(record.timerHandle);
             }
             pending.clear();
+            baseBySlice.clear();
+            liveSchedulers.delete(scheduler);
             detachPageHide?.();
         },
     };
+    liveSchedulers.add(scheduler);
+    return scheduler;
 }
 
 function approximateBytes(body: unknown): number {

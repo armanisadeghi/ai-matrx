@@ -351,22 +351,25 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
           // place a warm-cache slice reaches storage, and it honours
           // `policy.persistWhen` (a slice whose saved record has not
           // loaded is HELD there, never written).
-          if (!remoteWriteScheduler) {
-            remoteWriteScheduler = createRemoteWriteScheduler({
-              policies: ctx.policies,
-              store: {
-                getState: api.getState,
-                dispatch: api.dispatch,
-              } as Parameters<typeof createRemoteWriteScheduler>[0]["store"],
-              getIdentity: ctx.getIdentity,
-              ...(ctx.defaultDebounceMs !== undefined
-                ? { defaultDebounceMs: ctx.defaultDebounceMs }
-                : {}),
-            });
-          }
-          remoteWriteScheduler.schedule(policy.config.sliceName, body);
+          ensureRemoteWriteScheduler().schedule(policy.config.sliceName, body);
         }
       };
+      function ensureRemoteWriteScheduler(): RemoteWriteScheduler {
+        if (!remoteWriteScheduler) {
+          remoteWriteScheduler = createRemoteWriteScheduler({
+            policies: ctx.policies,
+            store: {
+              getState: api.getState,
+              dispatch: api.dispatch,
+            } as Parameters<typeof createRemoteWriteScheduler>[0]["store"],
+            getIdentity: ctx.getIdentity,
+            ...(ctx.defaultDebounceMs !== undefined
+              ? { defaultDebounceMs: ctx.defaultDebounceMs }
+              : {}),
+          });
+        }
+        return remoteWriteScheduler;
+      }
       if (!isRehydrateAction(a) && !isRemoteFetchStatusAction(a)) {
         for (const policy of ctx.policies) {
           const caps = getPreset(policy.config.preset);
@@ -408,6 +411,37 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
             policy.config.sliceName,
           );
           if (sliceState === undefined) continue;
+          // The server's record as of this load is the base every later
+          // write diffs against, so a write sends only what THIS tab changed
+          // (`WriteContext.base`).
+          if (
+            caps.writeStrategy === "debounced" &&
+            policy.config.remote?.write &&
+            policy.config.sliceName === loadedSlice &&
+            // Only an outcome that CHANGED what the slice knows of the server:
+            // a record landed, or the server said there is none. `started` /
+            // `failed` leave the base where it was.
+            (isRehydrateAction(a) ||
+              (isRemoteFetchStatusAction(a) && a.payload.phase === "empty"))
+          ) {
+            let base: unknown;
+            const baseline = policy.config.remote.baseline;
+            try {
+              base =
+                typeof baseline === "function"
+                  ? baseline(sliceState)
+                  : undefined;
+            } catch (err) {
+              logger.error("persist.baseline.threw", {
+                sliceName: policy.config.sliceName,
+                meta: { error: extractErrorMessage(err) },
+              });
+            }
+            ensureRemoteWriteScheduler().setBase(
+              policy.config.sliceName,
+              base ?? serializeBody(policy, sliceState),
+            );
+          }
           let unsaved = false;
           const afterLoad = policy.config.persistAfterLoad;
           if (
