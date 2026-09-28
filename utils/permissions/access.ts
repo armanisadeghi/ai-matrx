@@ -18,6 +18,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import {
   resolveResourceAccess,
   NO_ACCESS,
@@ -59,9 +61,20 @@ export function useAccess(
   const [loading, setLoading] = useState<boolean>(() =>
     Boolean(resourceType && resourceId),
   );
+  // A persisted Redux identity can briefly precede Supabase's restored
+  // browser session: firing get_resource_access before the browser client's
+  // session settles sends the request as `anon`, and the non-strict resolver
+  // above turns that failure into NO_ACCESS — `exists: false`, not "unknown"
+  // — so a resource the caller genuinely owns briefly reads as "does not
+  // exist" on first load (a real defect: it starved a mind-map's diagram of
+  // its edit affordances and reads as "not found" everywhere this hook gates
+  // an AccessGate). `authReady` (unlike an auth*ed*-only gate) also settles
+  // true for a confirmed signed-out visitor, so a real public/anon resolution
+  // is never blocked — only the race window is.
+  const authReady = useAppSelector(selectAuthReady);
 
   useEffect(() => {
-    if (!resourceType || !resourceId) return;
+    if (!resourceType || !resourceId || !authReady) return;
     let active = true;
     getResourceAccess(resourceType, resourceId).then((result) => {
       if (!active) return;
@@ -71,7 +84,7 @@ export function useAccess(
     return () => {
       active = false;
     };
-  }, [resourceType, resourceId]);
+  }, [resourceType, resourceId, authReady]);
 
   const refresh = async () => {
     if (!resourceType || !resourceId) return;
