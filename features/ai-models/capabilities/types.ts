@@ -213,12 +213,33 @@ export function modelsForSelectionPurpose<
   });
 }
 
-/** Chat and agent launchers may select turn/single models only. */
+/**
+ * An agent's or a chat turn's instructions are TEXT. A non-live model whose
+ * declared input has no text (speech-to-text: Whisper, Scribe) cannot take them,
+ * whatever its interaction says (2026-09-27: Whisper sat in the chat set). A live
+ * (realtime) session is configured rather than instructed per turn, so it is exempt.
+ * Mirrors aidream `agent_service/resources.py::_is_agent_assignable`.
+ */
+export function acceptsTextInstructions(
+  capabilities: Pick<ModelCapabilities, "interaction"> & {
+    input?: readonly string[];
+  },
+): boolean {
+  if (capabilities.interaction === "realtime") return true;
+  const input = capabilities.input ?? [];
+  return input.length === 0 || input.includes("text");
+}
+
+/** Chat and agent launchers may select turn/single models that take text only. */
 export function isConversationalModelCapability(
-  capabilities: Pick<ModelCapabilities, "interaction">,
+  capabilities: Pick<ModelCapabilities, "interaction"> & {
+    input?: readonly string[];
+  },
 ): boolean {
   return (
-    capabilities.interaction === "turn" || capabilities.interaction === "single"
+    (capabilities.interaction === "turn" ||
+      capabilities.interaction === "single") &&
+    acceptsTextInstructions(capabilities)
   );
 }
 

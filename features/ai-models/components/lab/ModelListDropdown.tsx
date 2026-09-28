@@ -97,7 +97,9 @@ import {
   type FeatureBucket,
 } from "@/features/ai-models/capabilities/feature-map";
 import {
+  acceptsTextInstructions,
   isDecisionModelCapability,
+  isManagedAgentModelCapability,
   type ModelSelectionPurpose,
 } from "@/features/ai-models/capabilities/types";
 import {
@@ -1656,6 +1658,16 @@ export function ModelListDropdown({
       const isDecision = isDecisionModelCapability(m);
       if (effectiveSelectionPurpose === "chat" && isDecision) return false;
       if (effectiveSelectionPurpose === "decision" && !isDecision) return false;
+      // Speech-to-text models take no text, so no chat or agent can instruct them;
+      // a provider-managed agent (Deep Research) is an agent's model, never a chat
+      // model (2026-09-27). Catalog editing still sees every row.
+      if (effectiveSelectionPurpose !== "admin" && !acceptsTextInstructions(m))
+        return false;
+      if (
+        effectiveSelectionPurpose === "chat" &&
+        isManagedAgentModelCapability(m)
+      )
+        return false;
       if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
       // Search matches name, maker, branded Service names — and, in the
       // admin variant, real vendor / api / provider_model_id too.

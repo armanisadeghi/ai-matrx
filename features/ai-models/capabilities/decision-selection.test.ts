@@ -47,3 +47,15 @@ it("prevents fallback and replacement routes from crossing the decision boundary
   expect(hasCompatibleDecisionInteraction(decision, decision)).toBe(true);
   expect(hasCompatibleDecisionInteraction(chat, hiddenChat)).toBe(true);
 });
+
+it("never offers a speech-to-text model as a chat or agent model", () => {
+  // 2026-09-27: Whisper sat in the chat set; an agent's instructions are text, and
+  // an audio-only model cannot take them. A live (realtime) session is exempt.
+  const stt = { id: "whisper", interaction: "single" as const, input: ["audio"] };
+  const sttTurn = { id: "scribe", interaction: "turn" as const, input: ["audio"] };
+  const withText = { id: "chat", interaction: "turn" as const, input: ["text"] };
+  expect(modelsForSelectionPurpose([stt, sttTurn, withText])).toEqual([withText]);
+  expect(modelsForSelectionPurpose([stt, sttTurn, withText], "agent")).toEqual([
+    withText,
+  ]);
+});
