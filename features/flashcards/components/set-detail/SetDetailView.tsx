@@ -785,7 +785,7 @@ export function SetDetailView({ setId }: { setId: string }) {
   return (
     <div className="h-full w-full overflow-y-auto bg-textured">
       <EducationToolHeader title={data?.set.name ?? "Flashcard set"} />
-      <div className="mx-auto max-w-6xl px-3 pb-safe pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-6 sm:pb-8 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
+      <div className="matrx-touch-targets mx-auto max-w-6xl px-3 pb-safe pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-6 sm:pb-8 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
         {loading ? (
           <>
             <Skeleton className="h-10 w-64 rounded-lg" />
