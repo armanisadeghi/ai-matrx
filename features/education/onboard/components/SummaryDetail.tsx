@@ -37,7 +37,7 @@ import { useStudyMediaAuthReady } from "@/features/education/media/authLoad";
 import { SummaryEditor } from "./SummaryEditor";
 import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
-import { parseSummaryIds, parseUpdateSummaries } from "../summaryWrites";
+import { parseCreateSummaries, parseSummaryIds, parseUpdateSummaries } from "../summaryWrites";
 
 interface SummaryEnvelope {
   __kind?: string;
@@ -161,6 +161,14 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
 
   const getWriteHandlers = () => collectionWriteHandlers({
     plural: "summaries", singular: "summary",
+    create: {
+      parse: parseCreateSummaries,
+      run: async (summary) => {
+        const result = await studyMediaService.create({ mediaKind: "summary", title: summary.title, irEnvelope: summary, status: "ready" });
+        if (result.error || !result.data) throw new Error(result.error ?? "Could not create summary.");
+        return { id: result.data.id, name: result.data.title };
+      }, nameOf: (summary) => summary.title,
+    },
     update: canEdit ? { parse: (value) => parseUpdateSummaries(value, [row]), run: async (plan) => {
       const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.summary.title, ir_envelope: plan.irEnvelope, trust: plan.trust });
       if (result.error || !result.data) throw new Error(result.error ?? "Could not update summary.");

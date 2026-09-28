@@ -35,8 +35,11 @@ import { createEducationSummariesScope } from "@/features/surfaces/manifests/edu
 import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import { parseCreateSummaries, parseSummaryIds, parseUpdateSummaries } from "../summaryWrites";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 export function SummaryHome() {
+  const userId = useAppSelector(selectUserId);
   const read = useRead(
     async () => {
       const res = await studyMediaService.listByKind("summary");
@@ -98,8 +101,8 @@ export function SummaryHome() {
       }, nameOf: (plan) => plan.summary.title, changedOf: (plan) => plan.changed,
     },
     delete: {
-      parse: (value) => parseSummaryIds(value, "delete_summaries", rows).map((id) => {
-        const row = rows.find((candidate) => candidate.id === id);
+      parse: (value) => parseSummaryIds(value, "delete_summaries", rows.filter((row) => row.created_by === userId)).map((id) => {
+        const row = rows.find((candidate) => candidate.id === id && candidate.created_by === userId);
         if (!row) throw new Error(`Summary ${id} is no longer available.`);
         return row;
       }),

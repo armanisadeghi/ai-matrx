@@ -26,7 +26,7 @@ function draftFrom(media?: StudyMediaRow): SummaryDraft {
   if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) {
     return { title: media?.title ?? "", summary_markdown: "", key_points: ["", "", ""] };
   }
-  const value: Record<string, unknown> = envelope;
+  const value = envelope as unknown as Record<string, unknown>;
   return {
     title: media?.title ?? "",
     summary_markdown: typeof value.summary_markdown === "string" ? value.summary_markdown : typeof value.markdown === "string" ? value.markdown : "",

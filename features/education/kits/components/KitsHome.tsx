@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
-import { listKits, kitHref, type StudyKit } from "../kitService";
+import { deleteKit, listKits, kitHref, renameKit, type StudyKit } from "../kitService";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -27,6 +27,9 @@ import {
   EducationCollectionSearch,
   filterEducationCollection,
 } from "@/features/education/components/EducationCollectionSearch";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { parseKitDeletes, parseKitUpdates } from "../kitWrites";
 
 function KitRow({ kit }: { kit: StudyKit }) {
   return (
@@ -72,6 +75,7 @@ export function KitsHome() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const reload = async () => { setReloadTick((tick) => tick + 1); };
   const [search, setSearch] = useState("");
   const filteredKits = filterEducationCollection(kits, search, (kit) => [
     kit.title,
@@ -136,11 +140,25 @@ export function KitsHome() {
           }
         : {}),
     });
+  const getWriteHandlers = () => collectionWriteHandlers({
+    plural: "kits", singular: "kit",
+    update: {
+      parse: (value) => parseKitUpdates(value, kits),
+      run: async (plan) => { await renameKit(plan.kit, plan.title); await reload(); return { id: plan.kit.sourceId, name: plan.title }; },
+      nameOf: (plan) => plan.title, changedOf: () => ["title"],
+    },
+    delete: {
+      parse: (value) => parseKitDeletes(value, kits),
+      run: async (kit) => { await deleteKit(kit); await reload(); return { id: kit.sourceId, name: kit.title }; },
+      nameOf: (kit) => kit.title,
+    },
+  }, refuseSurfaceWrite);
 
   return (
     <SurfaceRuntimeProvider
       surfaceName={EDUCATION_KITS_SURFACE_NAME}
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
       <EducationToolHeader title="Study Kits" />
       <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">

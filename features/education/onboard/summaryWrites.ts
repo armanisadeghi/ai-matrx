@@ -121,7 +121,7 @@ export function parseUpdateSummaries(value: unknown, available: readonly StudyMe
       return {
         id,
         version: current.version,
-        summary: trust ? { ...summary, trust } : summary,
+        summary,
         irEnvelope: { ...previous, ...summary, ...(trust ? { trust } : {}) },
         trust,
         changed: changed.filter((key) => key !== "expected_revision"),

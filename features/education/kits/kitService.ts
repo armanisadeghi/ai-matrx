@@ -446,7 +446,7 @@ export async function renameKit(kit: StudyKit, title: string): Promise<void> {
         sourceTitle,
       },
     });
-    if (!result.ok) throw new Error(result.error ?? "Could not rename this study kit.");
+    if (!result.ok) throw new Error("Could not rename this study kit.");
   }
 }
 
@@ -462,7 +462,7 @@ export async function removeKitMember(
     targetId: kit.sourceId,
     role: "source",
   });
-  if (!result.ok) throw new Error(result.error ?? "Could not remove this study aid from the kit.");
+  if (!result.ok) throw new Error("Could not remove this study aid from the kit.");
 }
 
 /**

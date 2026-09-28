@@ -303,6 +303,7 @@ export function KitHub({
         parse: (value) => parseKitDeletes(value, [kit]),
         run: async (plan) => {
           await deleteKit(plan);
+          router.push("/education/kits");
           return { id: plan.sourceId, name: plan.title };
         },
         nameOf: (plan) => plan.title,
