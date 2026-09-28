@@ -95,6 +95,18 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 - `2026-09-27` — page-pass 2026-09-27 (live proof round): every recharts chart in the app was an empty card on phones — the ≤768px `* { max-width: 100% }` default clamped `.recharts-wrapper` inside recharts 3's 0×0 measuring div; lifted in `app/globals.css`. `/education/flashcards/weak-areas?topic=` now drills one topic (every studied card in it, struggling first), and the progress dashboard's topic rows open it; Copy / Copy-for-AI pairs on every dashboard section; insights card folds the organization picker behind one button and shows a skeleton while the organization resolves.
 - `2026-09-27` — page-pass 2026-09-27: type dashboard, posture ui-sharp after Duolingo/Anki stats + Linear insights, fixed: "time studied" summed abandoned sessions' reaper-set wall-clock (57d 6h shown for ~2h real study) — one `study/utils/sessionStudyTime.ts` now answers it for the dashboard total, the weekly chart and the session scorecard; the auto narrator no longer fires (and fails, and toasts) with no organization selected — the card shows the canonical OrganizationRequiredNotice and narrates once one is picked; max-w-3xl column → full-width two-column grid; chart y-axis labels unclipped; topic keys (Anki `A::B`, slugs) shown as names (`study/utils/topicLabel.ts`); Due now / Streak / Time studied tiles open their records; redundant Back dropped; `progress_overview` XML context bundle + right-click menu + narrator agent role on `matrx-user/education-progress`.
 - `2026-09-27` — **The Study Hub home (`/education/overview`) has its own surface, `matrx-user/education-overview`.** It had published the public hub surface, which declares none of what the dashboard shows. Now it emits the plan, streak, goals, due/weak by mode, next actions, library counts per tool, recent items and kits (`home/overviewSurfaceScope.ts`), each omitted while its snapshot lane is loading or failed. Read-only: every action on the page is a link.
+- `2026-09-27` — page-pass `/education/overview`: type AI workspace/dashboard hybrid, posture
+  sharp after Notion/Linear home feeds. On a phone at 375px, seven controls in `StudyTodayBlock` /
+  `DueByModeBlock` / `MandateDoorLink` were real anchors 16-32px tall ("Study agents", "Progress",
+  "Open plan", "All progress", the four "Start" buttons) — none had `data-tap-target`, so the
+  page's `.matrx-touch-targets` floor (which only grows `button`/`[role=button]`/
+  `a[data-tap-target]`) never reached them. The page root also never carried
+  `.matrx-touch-targets` at all. Fixed both: added the class to `EducationHome.tsx`'s `<main>`,
+  and `data-tap-target` to the five affected links plus the door in `MandateDoorLink.tsx`'s inline
+  variant (used elsewhere too, so this reaches every inline mandate-door link, not just this page).
+  Verified live with `page:look --route /education/overview --views phone-light` against the local
+  preview: small targets went from 7 to 0, 0 console errors, 0 failed requests both before and
+  after.
 - `2026-09-19` — **`/education/notes/new` stops claiming it is creating a note
   when the organization read FAILED (R37, the fourth state).** The page's only
   other content is a spinner reading "Creating your note…", and the boolean pair

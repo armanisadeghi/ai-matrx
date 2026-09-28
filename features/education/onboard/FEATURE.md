@@ -292,6 +292,18 @@ with the stated vision.
 
 ## Change log
 
+- **2026-09-27** — page-pass `/education/start`: type single-record-ish AI workspace form,
+  posture sharp after Linear/Notion form density. Fixed on a phone at 375px: the input-source tabs
+  ("My files" / "Upload" / "Paste" / "Link") wrapped mid-word ("Uplo\nad") because the button label
+  had no `whitespace-nowrap` at the size the four `flex-1` tabs were squeezed to — now
+  `whitespace-nowrap` + `text-xs`/`sm:text-sm` so all four fit on one line; the "Auto" card-count
+  input (`KitDepthPicker.tsx`) showed only "Au" because the number spinner arrows ate half of its
+  96px box — spinners hidden (`appearance:textfield` + `-webkit-*-spin-button:appearance-none`) and
+  the field raised to `h-11` (44px, was `h-9`) so it also clears the phone touch-target floor; the
+  page root now carries `matrx-touch-targets` so every button on the page (depth cards, format
+  chips) gets the 44px floor automatically. Verified live via `page:look --route /education/start
+  --views phone-light` against the local preview: 0 small targets, tab labels one line, no console
+  errors.
 - **2026-09-27** — `/education/start` has its own surface, `matrx-user/education-start`: the kit request, output options, and the live build (`startSurfaceScope.ts`). One `ask` draft target, `kit_request_draft`, fills the form (pasted text, link, an owned file by id, outputs, depth, count, focus) through the form's own setters and never builds; validation in `startAgentWrites.ts` (unit-tested).
 - **2026-09-26** — **Study what you already have.** New **My files** input on `/education/start`:
   the canonical file picker → `useIngest` `stored` branch → the kit anchors on the existing file
