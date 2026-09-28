@@ -20,6 +20,7 @@
 // instead of watching a progress bar start at zero and guessing.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -88,9 +89,20 @@ export function ExportDropZone({ className }: { className?: string }) {
   const [dragging, setDragging] = useState(false);
   const [stage, setStage] = useState<Stage>({ phase: "idle" });
   const [pendingResumes, setPendingResumes] = useState<ResumableUpload[]>([]);
+  // Reading this device's interrupted uploads can fail; that is said, never an
+  // absent banner that reads as "nothing was interrupted".
+  const [resumesFailed, setResumesFailed] = useState(false);
 
   const refreshResumes = useCallback(() => {
-    void listResumableUploads().then(setPendingResumes);
+    void listResumableUploads()
+      .then((rows) => {
+        setPendingResumes(rows);
+        setResumesFailed(false);
+      })
+      .catch((error: unknown) => {
+        console.error("[exports] listing interrupted uploads failed", error);
+        setResumesFailed(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -234,6 +246,7 @@ export function ExportDropZone({ className }: { className?: string }) {
             />
             {/* Real bytes, both numbers — never a percentage on its own. */}
             <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+              {/* read-gate-exempt: live byte progress of the upload in flight, not a read */}
               {formatFileSize(stage.loaded)} of {formatFileSize(stage.total)}
               {stage.resumable
                 ? " · resumable — if this is interrupted, drop the same file again and it continues"
@@ -255,7 +268,14 @@ export function ExportDropZone({ className }: { className?: string }) {
         )}
       </div>
 
-      {pendingResumes.length > 0 && stage.phase === "idle" && (
+      {resumesFailed && stage.phase === "idle" ? (
+        <p className="text-xs text-muted-foreground">
+          Couldn&apos;t check this device for interrupted uploads — dropping
+          the same file again still resumes it if it can.
+          <ErrorAlchemyMenu operation="List interrupted uploads on this device" />
+        </p>
+      ) : null}
+      {!resumesFailed && pendingResumes.length > 0 && stage.phase === "idle" && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2.5 text-sm">
           <p className="font-medium">
             {pendingResumes.length === 1

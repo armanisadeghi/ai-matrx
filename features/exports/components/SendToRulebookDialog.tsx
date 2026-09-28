@@ -240,7 +240,7 @@ export function SendToRulebookDialog({
                 </div>
               )}
 
-              {rulebooks && visible.length === 0 && (
+              {!loadError && rulebooks && visible.length === 0 && (
                 <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center">
                   <p className="text-sm font-medium">
                     {rulebooks.length === 0

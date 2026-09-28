@@ -39,6 +39,7 @@ export function VoiceDiagnosticsDisplay({
 }: VoiceDiagnosticsDisplayProps) {
   const [diagnostics, setDiagnostics] = useState<DiagnosticResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
 
   // Run diagnostics on mount if autoRun is true
@@ -54,8 +55,10 @@ export function VoiceDiagnosticsDisplay({
     try {
       const result = await runMicrophoneDiagnostics();
       setDiagnostics(result);
+      setDiagnosticsError(null);
     } catch (err) {
       console.error('Diagnostics failed:', err);
+      setDiagnosticsError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsRunning(false);
     }
@@ -89,12 +92,18 @@ export function VoiceDiagnosticsDisplay({
     );
   }
 
-  if (!diagnostics) {
+  if (diagnosticsError || !diagnostics) {
     return (
-      <div className="flex flex-col items-center justify-center py-8">
+      <div className="flex flex-col items-center justify-center gap-3 py-8">
+        {diagnosticsError ? (
+          <p className="max-w-sm text-center text-sm text-muted-foreground">
+            The microphone diagnostics couldn&apos;t run: {diagnosticsError}
+            <ErrorAlchemyMenu error={diagnosticsError} />
+          </p>
+        ) : null}
         <Button onClick={runDiagnostics} disabled={isRunning}>
           <RefreshCw className={cn('h-4 w-4 mr-2', isRunning && 'animate-spin')} />
-          Run Diagnostics
+          {diagnosticsError ? 'Try again' : 'Run Diagnostics'}
         </Button>
       </div>
     );

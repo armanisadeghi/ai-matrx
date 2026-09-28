@@ -8,6 +8,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback } from "react";
+import { toast } from "@/lib/toast";
 import { audioSafetyStore, SafetyRecord } from "../services/audioSafetyStore";
 import { discardChunkJournal } from "../services/audioChunkJournal";
 import { getSharedDirtyRecordingMarker } from "@ai-matrx/browser-audio/core";
@@ -86,6 +87,7 @@ export function AudioRecoveryProvider({
       });
     } catch (err) {
       console.error("[AudioRecoveryProvider] Failed to delete entry:", err);
+      toast.error("Couldn't discard that recovered recording — it is still saved on this device.");
     }
   }, []);
 
@@ -102,6 +104,7 @@ export function AudioRecoveryProvider({
         "[AudioRecoveryProvider] Failed to clear all entries:",
         err,
       );
+      toast.error("Couldn't discard every recovered recording — some may still be saved on this device.");
     }
   }, [recoveredItems]);
 
