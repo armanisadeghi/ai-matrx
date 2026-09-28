@@ -1516,12 +1516,34 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           /* ── Grouped mode: collapsible sections (folder + default + hierarchy).
              Default mode's recents now live in the "Recent" section above. ── */
           <>
-            {groupKeys.map((groupKey) => {
+            {groupKeys.map((groupKey, _i, allKeys) => {
               const groupNotes = groupedNotes.get(groupKey) ?? [];
               const isExpanded = expandedFolders.has(groupKey);
               const label = getGroupLabel(groupKey);
               const orgSuffix = folderOrgSuffix(groupKey);
               const count = groupNotes.length;
+              // SAME NAME, SAME BADGE (legacy duplicate folders): the initials
+              // alone read "Draft · AW" twice. When the name AND the badge
+              // collide, the badge shows the organization's full name if the
+              // organizations differ, else a "1 of 2" ordinal — and the tooltip
+              // says plainly that two folders share the name (page-pass
+              // 2026-09-28). The duplicates themselves are legacy data.
+              const badge = orgSuffix ? orgInitials(orgSuffix) : null;
+              const twins = allKeys.filter(
+                (k) =>
+                  getGroupLabel(k) === label &&
+                  (folderOrgSuffix(k) ? orgInitials(folderOrgSuffix(k)!) : null) === badge,
+              );
+              const twinOrgs = new Set(twins.map((k) => folderOrgSuffix(k)));
+              const collides = badge !== null && twins.length > 1;
+              const badgeText = !collides
+                ? badge
+                : twinOrgs.size === twins.length
+                  ? orgSuffix
+                  : `${badge} · ${twins.indexOf(groupKey) + 1} of ${twins.length}`;
+              const twinTitle = collides
+                ? `${label} — in ${orgSuffix}. ${twins.length} folders share this name; this one holds ${count} note${count === 1 ? "" : "s"}.`
+                : null;
 
               // Folder + Default modes both render folder icons/colors and DnD
               const isFolderMode =
@@ -1565,7 +1587,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                     )}
                     <span
                       className="flex min-w-0 flex-1 items-center gap-1"
-                      title={orgSuffix ? `${label} — in ${orgSuffix}` : undefined}
+                      title={twinTitle ?? (orgSuffix ? `${label} — in ${orgSuffix}` : undefined)}
                     >
                       <span className="min-w-[3.5rem] truncate">{label}</span>
                       {orgSuffix && (
@@ -1577,9 +1599,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                         // as its initials (full name in the row's tooltip).
                         <span
                           aria-label={`in ${orgSuffix}`}
-                          className="shrink-0 rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground"
+                          className="max-w-[9rem] shrink-0 truncate rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground"
                         >
-                          {orgInitials(orgSuffix)}
+                          {badgeText}
                         </span>
                       )}
                     </span>
