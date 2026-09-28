@@ -8,7 +8,10 @@ let mockPhase = "connected";
 
 jest.mock("@ai-matrx/meet/react", () => ({
   MeetingRoom: ({ headerControls }: { headerControls?: React.ReactNode }) => (
-    <div data-testid="package-room">{headerControls}</div>
+    <div data-testid="package-room">
+      {headerControls}
+      <div className="mx-meet__controls" />
+    </div>
   ),
   useMeetSnapshot: () => ({ phase: mockPhase, meeting: null }),
 }));
@@ -103,5 +106,35 @@ describe("MeetingLayout", () => {
     consoleError.mockRestore();
     act(() => root.unmount());
     container.remove();
+  });
+});
+
+
+describe("the Room | Board switch on a phone", () => {
+  it("floats above the package's control bar, never on top of Leave", () => {
+    // At 390px the bar wraps to two rows ending in Leave (133px tall, measured
+    // live 2026-09-27); pinned bottom-right, the switch covered Leave.
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      const height = this.classList.contains("mx-meet__controls") ? 133 : 0;
+      return { top: 0, bottom: height, left: 0, right: 390, width: 390, height, x: 0, y: 0, toJSON() {} } as DOMRect;
+    };
+    const RO = (globalThis as { ResizeObserver?: unknown }).ResizeObserver;
+    (globalThis as { ResizeObserver?: unknown }).ResizeObserver = class {
+      observe() {}
+      disconnect() {}
+    };
+    mockPhase = "connected";
+    window.localStorage.clear();
+    try {
+      const view = renderLayout();
+      const group = view.container.querySelector('[role="radiogroup"]') as HTMLElement;
+      expect(group.style.getPropertyValue("--meet-switch-bottom")).toBe("141px");
+      expect(group.className).toContain("bottom-[var(--meet-switch-bottom,1rem)]");
+      view.unmount();
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = rect;
+      (globalThis as { ResizeObserver?: unknown }).ResizeObserver = RO;
+    }
   });
 });

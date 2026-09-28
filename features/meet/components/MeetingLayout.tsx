@@ -18,7 +18,7 @@
 // The choice is per viewer, kept in this browser (a convenience, not shared
 // state); blocked storage just means the default — the package's room.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   MeetingRoom,
   useMeetSnapshot,
@@ -55,6 +55,34 @@ function useMeetingLayoutPreference(): [MeetingLayoutChoice, (next: MeetingLayou
   return [layout, update];
 }
 
+/**
+ * How far above the bottom the Room | Board switch must float on a phone: the
+ * package's control bar wraps to two centred rows there and its LAST button is
+ * Leave, so "the free right end" does not exist — pinned to bottom-right the
+ * switch sat on top of Leave (verified at 390px, 2026-09-27). Measured, because
+ * the bar is one row for a guest and two for a host.
+ */
+export function phoneSwitchOffset(controlBarHeight: number | null): number | null {
+  return controlBarHeight === null ? null : Math.ceil(controlBarHeight) + 8;
+}
+
+function useControlBarHeight(active: boolean) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [height, setHeight] = useState<number | null>(null);
+  useEffect(() => {
+    if (!active) return undefined;
+    const root = ref.current;
+    const bar = root?.querySelector<HTMLElement>(".mx-meet__controls") ?? null;
+    if (bar === null || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () => setHeight(bar.getBoundingClientRect().height);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [active]);
+  return [ref, height] as const;
+}
+
 export function MeetingLayout({
   roomName,
   meetingId,
@@ -82,6 +110,9 @@ export function MeetingLayout({
   const inRoom = phase === "connected" || phase === "reconnecting";
   const ended = (snapshot?.meeting ?? meeting).endedAt !== null;
 
+  const [roomRef, barHeight] = useControlBarHeight(inRoom && layout !== "board");
+  const phoneOffset = phoneSwitchOffset(barHeight);
+
   if (inRoom && layout === "board") {
     return (
       <MeetingBoard
@@ -93,7 +124,7 @@ export function MeetingLayout({
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div ref={roomRef} className="relative h-full w-full">
       <MeetingRoom
         roomName={roomName}
         meetingId={meetingId}
@@ -110,9 +141,14 @@ export function MeetingLayout({
         <LayoutSwitch
           value="room"
           onChange={setLayout}
-          // In the free end of the control bar: right on phones (the bar wraps to
-          // two centred rows), left on desktop.
-          className="absolute bottom-4 right-3 z-10 md:left-4 md:right-auto"
+          // Desktop: the free left end of the one-row control bar. Phone: just
+          // ABOVE the (wrapped) bar, right-aligned — never over Leave.
+          className="absolute bottom-[var(--meet-switch-bottom,1rem)] right-3 z-10 md:bottom-4 md:left-4 md:right-auto"
+          style={
+            phoneOffset === null
+              ? undefined
+              : ({ "--meet-switch-bottom": `${phoneOffset}px` } as CSSProperties)
+          }
         />
       )}
     </div>

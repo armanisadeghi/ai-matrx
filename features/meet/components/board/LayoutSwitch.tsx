@@ -2,6 +2,7 @@
 
 import { LayoutDashboard, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { CSSProperties } from "react";
 
 export type MeetingLayoutChoice = "room" | "board";
 
@@ -10,10 +11,12 @@ export function LayoutSwitch({
   value,
   onChange,
   className,
+  style,
 }: {
   value: MeetingLayoutChoice;
   onChange: (next: MeetingLayoutChoice) => void;
   className?: string;
+  style?: CSSProperties;
 }) {
   const options: { id: MeetingLayoutChoice; label: string; hint: string; Icon: typeof LayoutGrid }[] = [
     { id: "room", label: "Room", hint: "Everyone's video on the stage", Icon: LayoutGrid },
@@ -23,6 +26,7 @@ export function LayoutSwitch({
     <div
       role="radiogroup"
       aria-label="Meeting layout"
+      style={style}
       className={cn(
         "flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-card/95 p-0.5 shadow-md backdrop-blur",
         className,
