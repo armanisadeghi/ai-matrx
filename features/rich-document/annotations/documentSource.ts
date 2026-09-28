@@ -18,13 +18,22 @@ export interface LoadedDocument {
   organizationId: string;
   createdBy: string | null;
   typeSlug: string;
+  /**
+   * The document sits in its owner's Trash. `document_get` still answers its
+   * owner (Google Drive behaviour, rcstore_n), but it omits `deleted_at` — so
+   * without this a studio opened a trashed document from its link as if it
+   * were live, and let it be edited. Callers refuse it through AccessGate.
+   */
+  inTrash: boolean;
 }
 
 export async function loadDocument(id: string): Promise<LoadedDocument | null> {
-  const { data, error } = await supabase
-    .schema("content")
-    .rpc("document_get", { p_document_id: id, p_include_body: true });
+  const [{ data, error }, trash] = await Promise.all([
+    supabase.schema("content").rpc("document_get", { p_document_id: id, p_include_body: true }),
+    supabase.schema("content").from("document").select("deleted_at").eq("id", id).maybeSingle(),
+  ]);
   if (error) throw new Error(`We couldn't open this document: ${error.message}`);
+  if (trash.error) throw new Error(`We couldn't check whether this document is in Trash: ${trash.error.message}`);
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) return null;
   return {
@@ -36,6 +45,7 @@ export async function loadDocument(id: string): Promise<LoadedDocument | null> {
     organizationId: row.organization_id,
     createdBy: row.created_by ?? null,
     typeSlug: row.type_slug,
+    inTrash: trash.data?.deleted_at != null,
   };
 }
 

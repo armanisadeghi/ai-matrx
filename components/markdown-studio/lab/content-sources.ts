@@ -340,7 +340,10 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
     },
     load: async (id) => {
       const doc = await loadDocument(id);
-      if (!doc) throw absent("document", "document", id, "content.document");
+      // A trashed document answers its owner, so say so the way a trashed
+      // note does: AccessGate resolves "This document is in Trash" + Restore,
+      // and nothing opens for editing until it is restored.
+      if (!doc || doc.inTrash) throw absent("document", "document", id, "content.document");
       return {
         kind: "document",
         id,
