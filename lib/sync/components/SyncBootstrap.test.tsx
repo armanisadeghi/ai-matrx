@@ -105,6 +105,30 @@ describe("SyncBootstrap", () => {
     expect(boot).toHaveBeenCalledTimes(1);
   });
 
+  it("waits while a streamed boundary's reveal is queued ($~), not only while it streams ($?)", async () => {
+    // React 19's inline $RC marks a boundary "$~" once its HTML has arrived but
+    // its reveal waits for an animation frame. It is NOT hydrated yet: booting
+    // then hands it persisted state (the active org → "Context: ASW" instead of
+    // the server's "Set context") and React reports an attribute mismatch.
+    const queuedReveal = document.createComment("$~");
+    container.appendChild(queuedReveal);
+
+    await act(async () => {
+      root = hydrateRoot(container, <Subject />);
+    });
+    await act(async () => {
+      idleCallback?.({ didTimeout: false, timeRemaining: () => 10 });
+    });
+    expect(boot).not.toHaveBeenCalled();
+
+    queuedReveal.data = "$"; // React's $RV: revealed, hydrating on its retry
+    queuedReveal.remove();
+    await act(async () => {
+      idleCallback?.({ didTimeout: false, timeRemaining: () => 10 });
+    });
+    expect(boot).toHaveBeenCalledTimes(1);
+  });
+
   it("boots at the defer cap when the safe boundary never arrives (D345)", async () => {
     // A boundary that stays pending (or a load/idle that never comes) used to
     // leave persisted state unread for as long as the page stayed slow.

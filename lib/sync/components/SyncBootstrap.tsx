@@ -24,11 +24,21 @@ export const BOOT_DEFER_CAP_MS = 5_000;
 /** `requestIdleCallback` deadline so a busy main thread cannot starve boot. */
 const IDLE_TIMEOUT_MS = 1_000;
 
+/**
+ * Suspense-boundary markers whose content React has not hydrated yet:
+ *   "$?" — still streaming (fallback showing);
+ *   "$~" — HTML arrived, reveal queued for an animation frame by React 19's
+ *          inline $RC/$RV. Booting here handed that boundary persisted state
+ *          (the composer's context chip hydrated as "Context: <org>" over the
+ *          server's "Set context") — a hydration attribute mismatch.
+ */
+const UNHYDRATED_BOUNDARY_MARKERS = new Set(["$?", "$~"]);
+
 function hasPendingReactBoundary(root: Node): boolean {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
   let node = walker.nextNode();
   while (node) {
-    if (node.nodeValue === "$?") return true;
+    if (node.nodeValue !== null && UNHYDRATED_BOUNDARY_MARKERS.has(node.nodeValue)) return true;
     node = walker.nextNode();
   }
   return false;

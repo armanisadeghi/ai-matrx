@@ -476,7 +476,10 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
             if (!current) throw new Error(`"${plan.title}" is no longer available to update.`);
             if (current.version !== plan.version)
               throw new Error(`"${current.label}" changed after this agent run. Reload the study-guide list and try again.`);
-            const saved = await updateStudyGuide(current, { title: plan.title, content: plan.content });
+            const saved = await updateStudyGuide(current, {
+              ...(plan.changed.includes("title") ? { title: plan.title } : {}),
+              ...(plan.content !== undefined ? { content: plan.content } : {}),
+            });
             setIndexTick((tick) => tick + 1);
             if (guideRef.current?.id === saved.id) setGuide(saved);
             return { id: saved.id, name: saved.label };

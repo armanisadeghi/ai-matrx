@@ -61,6 +61,7 @@ function annotationNote(overrides: Partial<Note> = {}): Note {
     metadata: {},
     position: null,
     project_id: null,
+    search_engine_indexed: null,
     shown_to: null,
     sync_version: 1,
     tags: [],
