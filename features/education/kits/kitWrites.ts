@@ -15,7 +15,6 @@ function record(value: unknown, at: string): Record<string, unknown> {
 function text(value: unknown, at: string): string {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${at} needs text.`);
   const trimmed = value.trim();
-  if (trimmed.length > 200) throw new Error(`${at} must be 200 characters or fewer.`);
   return trimmed;
 }
 

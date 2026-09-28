@@ -35,6 +35,7 @@ export interface GeneratedArtifact {
   sourceTitle: string | null;
   /** When the artifact was linked — the kit's own chronology. */
   createdAt: string;
+  membershipRole?: "source" | "member";
 }
 
 function metaString(meta: Json | undefined, key: string): string | null {
@@ -78,6 +79,7 @@ export async function listGeneratedFrom(
         detail: metaString(e.metadata, "detail"),
         sourceTitle: metaString(e.metadata, "sourceTitle"),
         createdAt: e.createdAt,
+        membershipRole: "source",
       };
     });
 }

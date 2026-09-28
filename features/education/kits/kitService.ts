@@ -271,7 +271,7 @@ export async function readKit(
   const rows = await listGeneratedFrom(sourceType, sourceId, {
     failureMode: "throw",
   });
-  const artifacts = await refreshMediaMembers(kitMembers(rows));
+  const artifacts = await refreshMediaMembers(kitMembers([...rows, ...await manualMembers(sourceType, sourceId)]));
   if (artifacts.length === 0) return null;
   return {
     sourceType,
@@ -286,6 +286,16 @@ function metaString(meta: Json | undefined, key: string): string | null {
   if (!meta || typeof meta !== "object" || Array.isArray(meta)) return null;
   const v = (meta as Record<string, unknown>)[key];
   return typeof v === "string" && v.trim() ? v : null;
+}
+
+function metaBoolean(meta: Json | undefined, key: string): boolean {
+  return !!meta && typeof meta === "object" && !Array.isArray(meta) && (meta as Record<string, unknown>)[key] === true;
+}
+
+async function manualMembers(sourceType: string, sourceId: string): Promise<GeneratedArtifact[]> {
+  const result = await associationsService.listForEntity(sourceType, sourceId);
+  if (!result.ok) throw new Error("Could not read manual kit members.");
+  return result.data.edges.filter((edge) => edge.direction === "incoming" && edge.role === "member" && metaBoolean(edge.metadata, "educationKit")).map((edge) => ({ edgeId: edge.id, targetKind: metaString(edge.metadata, "targetKind") as TargetKind | null, artifactType: edge.otherType, artifactId: edge.otherId, title: edge.label ?? "Study artifact", href: metaString(edge.metadata, "href") ?? "/education", detail: metaString(edge.metadata, "detail"), sourceTitle: metaString(edge.metadata, "kitTitle"), createdAt: edge.createdAt, membershipRole: "member" as const }));
 }
 
 /**
@@ -437,7 +447,6 @@ export function kitAddHref(
 function writableTitle(value: string): string {
   const title = value.trim();
   if (!title) throw new Error("A study kit needs a title.");
-  if (title.length > 200) throw new Error("A study kit title must be 200 characters or fewer.");
   return title;
 }
 
@@ -464,13 +473,13 @@ export async function renameKit(kit: StudyKit, title: string, expectedFingerprin
       sourceId: artifact.artifactId,
       targetType: kit.sourceType as AssociationTargetType,
       targetId: kit.sourceId,
-      role: "source",
+      role: artifact.membershipRole ?? "source",
       label: artifact.title,
       metadata: {
         targetKind: artifact.targetKind,
         href: artifact.href,
         detail: artifact.detail,
-        sourceTitle,
+        ...(artifact.membershipRole === "member" ? { educationKit: true, kitTitle: sourceTitle } : { sourceTitle }),
       },
     });
     if (!result.ok) throw new Error(`Renamed ${completed} of ${current.artifacts.length} study aids. The remaining aids were not changed; reload the kit and try again.`);
@@ -481,14 +490,14 @@ export async function renameKit(kit: StudyKit, title: string, expectedFingerprin
 /** Detach one aid from this kit. Its saved artifact remains available elsewhere. */
 export async function removeKitMember(
   kit: StudyKit,
-  artifact: Pick<GeneratedArtifact, "artifactType" | "artifactId">,
+  artifact: Pick<GeneratedArtifact, "artifactType" | "artifactId" | "membershipRole">,
 ): Promise<void> {
   const result = await associationsService.remove({
     sourceType: artifact.artifactType,
     sourceId: artifact.artifactId,
     targetType: kit.sourceType,
     targetId: kit.sourceId,
-    role: "source",
+    role: artifact.membershipRole ?? "source",
   });
   if (!result.ok) throw new Error("Could not remove this study aid from the kit.");
 }
@@ -530,7 +539,9 @@ export async function createManualKit(input: {
       targetId: input.sourceId,
       role: "source",
       label: artifact.title,
-      metadata: { targetKind, href: educationLibraryHref(artifact), detail: artifact.description ?? null, sourceTitle },
+      // Manual grouping is membership, never generated-from provenance.
+      metadata: { educationKit: true, targetKind, href: educationLibraryHref(artifact), detail: artifact.description ?? null, kitTitle: sourceTitle },
+      role: "member",
     });
     if (!result.ok) throw new Error(`Added ${completed} of ${input.artifacts.length} study aids. The remaining aids were not added; try again from the kit page.`);
     completed += 1;
