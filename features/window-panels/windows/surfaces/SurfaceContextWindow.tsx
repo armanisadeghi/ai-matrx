@@ -50,7 +50,10 @@ function hasValue(value: unknown): boolean {
  * purpose to say "loaded, and there is nothing" — which must never read as
  * "not supplied" (an omitted key, i.e. `undefined`). A nullable value such as
  * "no default organization chosen" is `null` by contract (page-pass rule: not
- * loaded → omit the key). They still do not count toward "supplied".
+ * loaded → omit the key). They COUNT as supplied (the page answered — with
+ * nothing), and the footer names how many of the supplied values are empty:
+ * "53/63 supplied (32 empty)". Counting them as missing read "21/63 supplied"
+ * on a CRM record where 53 were supplied (page-pass 2026-09-28).
  */
 function isPresentEmpty(value: unknown): boolean {
   return value !== undefined && !hasValue(value);
@@ -193,8 +196,13 @@ export default function SurfaceContextWindow({
   const effectiveSelectedKey = selected?.key ?? null;
   const selectedRaw = selected ? live.scope[selected.key] : undefined;
   const selectedDisplay = displayValue(selectedRaw);
-  const supplied = declared.filter((value) =>
-    hasValue(live.scope[value.name]),
+  // Supplied = the key is present (`undefined` is the only "not supplied");
+  // an honestly-empty value is supplied and counted separately.
+  const supplied = declared.filter(
+    (value) => live.scope[value.name] !== undefined,
+  ).length;
+  const suppliedEmpty = declared.filter((value) =>
+    isPresentEmpty(live.scope[value.name]),
   ).length;
   // "Missing" means ABSENT: a loaded-and-empty value ([] / "" / 0) is a real,
   // supplied answer (the surface contract), never a missing one.
@@ -348,6 +356,7 @@ export default function SurfaceContextWindow({
                 status: live.status,
                 declared: declared.length,
                 supplied,
+                suppliedEmpty,
                 writeTargets: liveWriteTargets.length,
                 unwiredWriteTargets: unwiredTargets.length,
                 availableHere: availableHere.available.length,
@@ -520,6 +529,7 @@ export default function SurfaceContextWindow({
           <span>
             <b className="text-foreground">{supplied}</b>/{declared.length}{" "}
             supplied
+            {suppliedEmpty > 0 ? ` (${suppliedEmpty} empty)` : ""}
           </span>
           {missingRequired > 0 ? (
             <span
