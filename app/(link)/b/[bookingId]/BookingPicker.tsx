@@ -23,6 +23,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { coerceTypedAnswer, fieldKindFor, type Field, type FieldKind } from "@ai-matrx/records";
+import { FieldControl, RecordsUiProvider } from "@ai-matrx/records-ui";
 
 import type { BookingSlot, PublicBooking } from "@/features/booking/service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -54,7 +55,8 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
   const [refused, setRefused] = useState<string | null>(null);
   // THE ANSWERS SURVIVE A LOST RACE. Somebody who typed their name and lost the
   // slot by a second should not have to type it again.
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  // A typed answer is a string; a picked one (a choice, a tick) is the control's own value.
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [decoy, setDecoy] = useState("");
   const [missing, setMissing] = useState<string[]>([]);
   // A REFUSAL BELONGS BESIDE ITS QUESTION. Until 2026-09-21 an answer of the
@@ -145,7 +147,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
   async function confirm() {
     if (stage.kind !== "details") return;
     const needed = questions
-      .filter((q) => q.required && !(answers[q.field] ?? "").trim())
+      .filter((q) => q.required && isBlank(answers[q.field]))
       .map((q) => q.field);
     if (needed.length > 0) {
       setMissing(needed);
@@ -163,7 +165,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
     const refusedShape: Record<string, string> = {};
     for (const [key, typedIn] of Object.entries(answers)) {
       const field = fieldFor.get(key);
-      if (!field) {
+      if (!field || typeof typedIn !== "string") {
         coerced[key] = typedIn;
         continue;
       }
@@ -275,9 +277,24 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
                 {label}
                 {q.required ? <span aria-hidden="true"> *</span> : null}
               </span>
+              {kind !== null && PICKED_KINDS.has(kind) ? (
+                // A CHOICE IS PICKED, NEVER TYPED (lane HANDOVER, 2026-09-28): the Visit type was a
+                // free-text box on this page. The public form's own control draws it from the
+                // choices the booking door hands the question.
+                <RecordsUiProvider value={{}}>
+                  <FieldControl
+                    field={fieldFor.get(q.field) as Field}
+                    value={answers[q.field] ?? null}
+                    onChange={(next) => {
+                      setAnswers((a) => ({ ...a, [q.field]: next }));
+                      setMissing((m) => m.filter((k) => k !== q.field));
+                    }}
+                  />
+                </RecordsUiProvider>
+              ) : (
               <input
                 className={`h-11 rounded border bg-background px-3 text-base ${wrong ? "border-destructive" : "border-input"}`}
-                value={answers[q.field] ?? ""}
+                value={typeof answers[q.field] === "string" ? (answers[q.field] as string) : ""}
                 required={Boolean(q.required)}
                 aria-invalid={wrong || undefined}
                 {...keyboardFor(kind)}
@@ -294,6 +311,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
                   });
                 }}
               />
+              )}
               {shapeRefusal ? (
                 <span className="text-xs text-destructive">{shapeRefusal} <ErrorAlchemyMenu error={shapeRefusal} /></span>
               ) : q.help ? (
@@ -476,4 +494,14 @@ function keyboardFor(kind: FieldKind | null): { inputMode?: "numeric" | "decimal
   if (kind === "phone") return { inputMode: "tel" };
   if (kind === "email") return { inputMode: "email" };
   return {};
+}
+
+/** The kinds a visitor picks from rather than types. */
+const PICKED_KINDS: ReadonlySet<FieldKind> = new Set(["select", "multi_select", "checkbox"]);
+
+function isBlank(value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  if (typeof value === "string") return value.trim() === "";
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
 }
