@@ -19,7 +19,7 @@
 // Cancel can ask "this occurrence or the whole series".
 
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -154,7 +154,10 @@ export function MeetingDetail({
   const router = useRouter();
   const actions = useMeetingActions();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  // The first read's failure, kept whole: the access gate asks the platform
+  // which of the four it is (no access, in Trash, missing, signed out) instead
+  // of printing the package's raw "not found (PGRST116)".
+  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
   const [nonce, setNonce] = useState(0);
   const [moving, setMoving] = useState<OccurrenceRef | null>(null);
   const [, startTransition] = useTransition();
@@ -210,7 +213,7 @@ export function MeetingDetail({
         setFailure(null);
       })
       .catch((thrown: unknown) => {
-        if (live) setFailure(errorSentence(thrown));
+        if (live) setFailure({ error: thrown });
       });
     return () => {
       live = false;
@@ -226,24 +229,14 @@ export function MeetingDetail({
       <>
         <EntityModeHeader backHref="/meetings" entityLabel="Meeting" />
         <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
-          <div
-            role="alert"
-            className="mx-auto mt-10 max-w-md rounded-md border border-border p-4 text-sm"
-          >
-            <p className="font-medium">This meeting could not be opened.</p>
-            <p className="mt-1 text-muted-foreground">
-              {failure}
-              <ErrorAlchemyMenu error={failure} size="xs" />
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3"
-              onClick={reload}
-            >
-              Try again
-            </Button>
-          </div>
+          <AccessGate
+            token="meet_meeting"
+            id={meetingId}
+            error={failure.error}
+            onRetry={reload}
+            fallbackHref="/meetings"
+            fallbackLabel="All meetings"
+          />
         </div>
       </>
     );
