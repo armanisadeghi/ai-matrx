@@ -3564,3 +3564,42 @@ body:has(.shell-root[data-pathname^="/administration"]) {
     animation-timeline: scroll(self block);
   }
 }
+
+/* "MORE BELOW" — every sidebar scroll area fades out at its bottom edge while
+   more content sits below, and the fade disappears at the end (page-pass
+   shared defects, 2026-09-27: a list clipped flush at the account block read
+   as covered by it). Scroll-driven: the timeline is active only when the area
+   actually overflows, so a list that fits never fades. Browsers without
+   scroll-driven animations simply show no fade. */
+@property --shell-scroll-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes shell-scroll-fade-end {
+  0%,
+  96% {
+    --shell-scroll-fade: 2rem;
+  }
+  100% {
+    --shell-scroll-fade: 0px;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  .shell-sidebar-nav,
+  .settings-route-menu {
+    --shell-scroll-fade: 0px;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 calc(100% - var(--shell-scroll-fade)),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      #000 calc(100% - var(--shell-scroll-fade)),
+      transparent
+    );
+    animation: shell-scroll-fade-end linear both;
+    animation-timeline: scroll(self block);
+  }
+}
