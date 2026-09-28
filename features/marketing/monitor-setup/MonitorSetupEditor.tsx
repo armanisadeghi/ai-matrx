@@ -16,7 +16,15 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, Loader2, Play, Plus, Save, Wand2, X } from "lucide-react";
+import {
+  ExternalLink,
+  Loader2,
+  Play,
+  Plus,
+  Save,
+  Wand2,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,7 +43,11 @@ import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { useBrand, useBrandSites, useBusinessFacts } from "@/features/marketing/data/hooks";
+import {
+  useBrand,
+  useBrandSites,
+  useBusinessFacts,
+} from "@/features/marketing/data/hooks";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
@@ -101,8 +113,9 @@ function browserTimezone(): string {
 }
 
 function allTimezones(current: string): string[] {
-  const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] })
-    .supportedValuesOf;
+  const supported = (
+    Intl as unknown as { supportedValuesOf?: (key: string) => string[] }
+  ).supportedValuesOf;
   const zones = supported ? supported("timeZone") : [];
   return zones.includes(current) ? zones : [current, ...zones];
 }
@@ -133,7 +146,9 @@ function Section({
         <span className="mr-2 text-muted-foreground">{step}.</span>
         {title}
       </h2>
-      {lede ? <p className="mt-0.5 text-xs text-muted-foreground">{lede}</p> : null}
+      {lede ? (
+        <p className="mt-0.5 text-xs text-muted-foreground">{lede}</p>
+      ) : null}
       <div className="mt-3 flex flex-col gap-3">{children}</div>
     </section>
   );
@@ -144,9 +159,19 @@ function Warning({ text }: { text: string | null }) {
   return <p className="text-xs text-warning">{text}</p>;
 }
 
-function BasisChip({ basis, refs }: { basis: Basis; refs: Map<string, ProposalRef> }) {
+function BasisChip({
+  basis,
+  refs,
+}: {
+  basis: Basis;
+  refs: Map<string, ProposalRef>;
+}) {
   const source = refs.get(basis.ref);
-  const title = source ? source.label : basis.kind === "user" ? "You typed this" : basis.ref;
+  const title = source
+    ? source.label
+    : basis.kind === "user"
+      ? "You typed this"
+      : basis.ref;
   const chip = (
     <span
       title={title}
@@ -236,7 +261,13 @@ function ItemList({
           }}
           className="h-8 text-sm"
         />
-        <Button variant="outline" size="sm" className="h-8" onClick={add} disabled={!adding.trim()}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          onClick={add}
+          disabled={!adding.trim()}
+        >
           <Plus className="h-3.5 w-3.5" /> Add
         </Button>
       </div>
@@ -278,7 +309,10 @@ export function MonitorSetupEditor() {
   const [run, setRun] = useState<MonitorRunStarted | null>(null);
   const [schedule, setSchedule] = useState<ScheduleView | null>(null);
   const [runKey, setRunKey] = useState(0);
-  const [newSpokesperson, setNewSpokesperson] = useState({ name: "", title: "" });
+  const [newSpokesperson, setNewSpokesperson] = useState({
+    name: "",
+    title: "",
+  });
   const [newProof, setNewProof] = useState({ summary: "", url: "" });
   const [factError, setFactError] = useState<string | null>(null);
   const runMentions = useRunMentions(trackerId, runKey);
@@ -305,11 +339,21 @@ export function MonitorSetupEditor() {
         if (view.preset && view.preset !== "custom") {
           setScheduleTouched(true);
           setDraft((current) =>
-            current ? { ...current, schedule: view.preset ?? "", timezone: view.timezone ?? current.timezone } : current,
+            current
+              ? {
+                  ...current,
+                  schedule: view.preset ?? "",
+                  timezone: view.timezone ?? current.timezone,
+                }
+              : current,
           );
         }
       })
-      .catch((error: unknown) => live && toast.error(error instanceof Error ? error.message : String(error)));
+      .catch(
+        (error: unknown) =>
+          live &&
+          toast.error(error instanceof Error ? error.message : String(error)),
+      );
     return () => {
       live = false;
     };
@@ -329,14 +373,31 @@ export function MonitorSetupEditor() {
     if (trackerParam && tracker.isPending) return;
     const tz = browserTimezone();
     if (tracker.data) {
-      const fallback = newDraft({ brandName: brandRow.name, aliases, siteId: null, timezone: tz });
+      const fallback = newDraft({
+        brandName: brandRow.name,
+        aliases,
+        siteId: null,
+        timezone: tz,
+      });
       setDraft(draftFromTracker(tracker.data, fallback.keywords, tz));
       return;
     }
     const siteId =
       siteRows.find((s) => s.id === siteParam)?.id ?? siteRows[0]?.id ?? null;
-    setDraft(newDraft({ brandName: brandRow.name, aliases, siteId, timezone: tz }));
-  }, [draft, brandRow, sites.isPending, siteRows, siteParam, trackerParam, tracker.isPending, tracker.data, aliases]);
+    setDraft(
+      newDraft({ brandName: brandRow.name, aliases, siteId, timezone: tz }),
+    );
+  }, [
+    draft,
+    brandRow,
+    sites.isPending,
+    siteRows,
+    siteParam,
+    trackerParam,
+    tracker.isPending,
+    tracker.data,
+    aliases,
+  ]);
 
   // A saved brief is read back into its four sections once.
   const briefLoaded = useRef(false);
@@ -346,27 +407,44 @@ export function MonitorSetupEditor() {
     setDraft({ ...draft, brief: parseBriefMarkdown(brief.data.content ?? "") });
   }, [brief.data, draft]);
 
-  if (brand.isError) return <QueryError error={brand.error} onRetry={() => void brand.refetch()} />;
-  if (tracker.isError) return <QueryError error={tracker.error} onRetry={() => void tracker.refetch()} />;
-  if (!draft || !brandRow) return <LoadingSurface label="Loading the monitor…" />;
+  if (brand.isError)
+    return (
+      <QueryError error={brand.error} onRetry={() => void brand.refetch()} />
+    );
+  if (tracker.isError)
+    return (
+      <QueryError
+        error={tracker.error}
+        onRetry={() => void tracker.refetch()}
+      />
+    );
+  if (!draft || !brandRow)
+    return <LoadingSurface label="Loading the monitor…" />;
 
-  const update = (patch: Partial<MonitorDraft>) => setDraft({ ...draft, ...patch });
+  const update = (patch: Partial<MonitorDraft>) =>
+    setDraft({ ...draft, ...patch });
   const refs = new Map((proposal?.refs ?? []).map((r) => [r.ref, r]));
   const counts = (setup?.counts ?? {}) as Record<string, [number, number]>;
   const catalog = (setup?.feed_catalog ?? []) as Array<Record<string, unknown>>;
   const spokespeople = (facts.data ?? []).filter(isSpokesperson);
   const proofs = (facts.data ?? []).filter(isProof);
-  const descriptionFact = (facts.data ?? []).find((f) => f.kind === "description");
+  const descriptionFact = (facts.data ?? []).find(
+    (f) => f.kind === "description",
+  );
   const description =
     brandRow.description ||
     (descriptionFact ? factText(descriptionFact) : "") ||
     "";
   const presets = scheduleOptions(setup?.schedule_presets);
-  const scheduleId = draft.schedule || defaultSchedule(draft.opportunity, setup?.schedule_default);
+  const scheduleId =
+    draft.schedule ||
+    defaultSchedule(draft.opportunity, setup?.schedule_default);
   const preset = presets.find((p) => p.id === scheduleId);
   const xLocations = (setup?.x_trends_locations ?? []).flatMap((loc) => {
     const woeid = Number(loc.woeid);
-    return Number.isFinite(woeid) ? [{ woeid, label: String(loc.label ?? woeid) }] : [];
+    return Number.isFinite(woeid)
+      ? [{ woeid, label: String(loc.label ?? woeid) }]
+      : [];
   });
   const cost = setup?.cost;
   const deliveryPromise = getComingSoon(DELIVERY_PROMISE_ID);
@@ -374,16 +452,28 @@ export function MonitorSetupEditor() {
 
   const setLens = (lens: "coverage" | "opportunity", on: boolean) => {
     const next = { ...draft, [lens]: on };
-    if (!scheduleTouched) next.schedule = defaultSchedule(next.opportunity, setup?.schedule_default);
+    if (!scheduleTouched)
+      next.schedule = defaultSchedule(
+        next.opportunity,
+        setup?.schedule_default,
+      );
     setDraft(next);
   };
 
   const propose = async () => {
     setProposing("Starting…");
     try {
-      const result = await proposeMonitorSetup(dispatch, brandCtx.id, brandCtx.organizationId, trackerId, setProposing);
+      const result = await proposeMonitorSetup(
+        dispatch,
+        brandCtx.id,
+        brandCtx.organizationId,
+        trackerId,
+        setProposing,
+      );
       setProposal(result);
-      setDraft((current) => (current ? applyProposal(current, result.proposal) : current));
+      setDraft((current) =>
+        current ? applyProposal(current, result.proposal) : current,
+      );
       const dropped = result.proposal.dropped_without_basis?.length ?? 0;
       toast.success(
         dropped
@@ -391,7 +481,11 @@ export function MonitorSetupEditor() {
           : "Suggestions added — each shows where it came from.",
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "The proposal could not be made.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "The proposal could not be made.",
+      );
     } finally {
       setProposing(null);
     }
@@ -410,7 +504,9 @@ export function MonitorSetupEditor() {
           content: markdown,
         });
       }
-      const brandKey = brandRow.slug || brandRow.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const brandKey =
+        brandRow.slug ||
+        brandRow.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
       const saved = await saveMonitor(
         dispatch,
         toDeclareBody(
@@ -419,7 +515,8 @@ export function MonitorSetupEditor() {
             brandId: brandCtx.id,
             brandKey,
             declaredRef:
-              (tracker.data?.declared_ref as Record<string, unknown> | undefined) ??
+              (tracker.data?.declared_ref as
+                Record<string, unknown> | undefined) ??
               (draft.coverage ? {} : { surface: "tracker_editor" }),
             xTrendsWoeids: xLocations.map((loc) => loc.woeid),
           },
@@ -451,12 +548,20 @@ export function MonitorSetupEditor() {
         toast.success("Monitor saved.");
         return;
       }
-      const result = await runMonitorNow(dispatch, saved.id, brandRow.organization_id);
+      const result = await runMonitorNow(
+        dispatch,
+        saved.id,
+        brandRow.organization_id,
+      );
       setRun(result);
       setRunKey((k) => k + 1);
       void invalidate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "The monitor could not be saved.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "The monitor could not be saved.",
+      );
     } finally {
       setSaving(null);
     }
@@ -495,613 +600,880 @@ export function MonitorSetupEditor() {
 
   const topicWords = beatsOutsideWordRange(draft.topics, counts.topic_words);
   const savedMonitor = tracker.data;
-  const runSummary = (savedMonitor?.last_run_summary ?? null) as Record<string, unknown> | null;
+  const runSummary = (savedMonitor?.last_run_summary ?? null) as Record<
+    string,
+    unknown
+  > | null;
   const runHeadline =
-    runSummary && typeof runSummary.headline === "string" ? runSummary.headline : null;
+    runSummary && typeof runSummary.headline === "string"
+      ? runSummary.headline
+      : null;
 
   return (
-    <div ref={scrollRef} className="h-full overflow-y-auto bg-textured">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-3 pb-24 pt-[calc(var(--shell-header-h)+0.75rem)]">
-        <header className="flex flex-wrap items-start justify-between gap-2 px-0.5">
-          <div className="min-w-0">
-            <h1 className="text-sm font-semibold text-foreground">
-              {trackerId ? `Edit ${draft.name}` : "Set up news monitoring"}
-            </h1>
-            <p className="max-w-2xl text-xs text-muted-foreground">
-              Watch who writes about {brandRow.name} and the news you can join. Start from
-              what we already know — every suggestion shows where it came from.
-            </p>
-          </div>
-          <Button size="sm" onClick={() => void propose()} disabled={Boolean(proposing)}>
-            {proposing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-            {proposing ? "Suggesting…" : "Suggest from what we know"}
-          </Button>
-        </header>
-
-        {proposing ? (
-          <p className="rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
-            {proposing}
-          </p>
-        ) : null}
-
-        {proposal ? (
-          <div className="rounded-md border border-border bg-card px-3 py-2 text-xs" data-surface-value="setup_proposal_summary">
-            <p className="text-foreground">
-              Read {proposal.inputs.facts ?? 0} confirmed facts, {proposal.inputs.site_pages ?? 0} pages of your
-              site and {proposal.inputs.recent_coverage ?? 0} recent stories naming you.
-            </p>
-            {proposal.proposal.missing?.length ? (
-              <div className="mt-1">
-                <p className="font-medium text-foreground">What we could not find:</p>
-                <ul className="ml-4 list-disc text-muted-foreground">
-                  {proposal.proposal.missing.map((m) => (
-                    <li key={m}>{m}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-            {proposal.proposal.dropped_without_basis?.length ? (
-              <div className="mt-1">
-                <p className="font-medium text-warning">
-                  Removed because they did not trace to your materials:
-                </p>
-                <ul className="ml-4 list-disc text-muted-foreground">
-                  {proposal.proposal.dropped_without_basis.map((d) => (
-                    <li key={d}>{d}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        {setupError ? (
-          <QueryError error={setupError} onRetry={() => setSetupAttempt((n) => n + 1)} />
-        ) : null}
-
-        <Section step={1} title="What to watch">
-          <label className="flex items-start gap-2 text-sm">
-            <Checkbox
-              checked={draft.coverage}
-              onCheckedChange={(v) => setLens("coverage", v === true)}
-              aria-label="Coverage: who writes about us"
-            />
-            <span>
-              <span className="font-medium">Coverage: who writes about us</span>
-              <span className="block text-xs text-muted-foreground">Articles that name your company or the competitors you list.</span>
-            </span>
-          </label>
-          <label className="flex items-start gap-2 text-sm">
-            <Checkbox
-              checked={draft.opportunity}
-              onCheckedChange={(v) => setLens("opportunity", v === true)}
-              aria-label="Opportunities: news we can join"
-            />
-            <span>
-              <span className="font-medium">Opportunities: news we can join</span>
-              <span className="block text-xs text-muted-foreground">Stories in your beats where you have something real to add.</span>
-            </span>
-          </label>
-          {draft.coverage ? (
-            siteRows.length ? (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Website:</span>
-                <Select value={draft.siteId ?? undefined} onValueChange={(v) => update({ siteId: v })}>
-                  <SelectTrigger className="h-8 w-72 text-sm">
-                    <SelectValue placeholder="Choose the website" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {siteRows.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.domain}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <p className="text-xs text-warning">
-                Coverage watches for articles about a website&apos;s brand, and this brand has no website yet.{" "}
-                <Link className="text-primary" href={marketingRoutes.brandWebsites(brandSeg)}>
-                  Add a website
-                </Link>{" "}
-                or keep only opportunities.
+    // The actions sit OUTSIDE the scroll area: the shell pads scroll areas at
+    // their end (inline padding-bottom), which drags a sticky footer up into
+    // the middle of the page.
+    <div className="flex h-full flex-col bg-textured">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-3 pt-[calc(var(--shell-header-h)+0.75rem)]">
+          <header className="flex flex-wrap items-start justify-between gap-2 px-0.5">
+            <div className="min-w-0">
+              <h1 className="text-sm font-semibold text-foreground">
+                {trackerId ? `Edit ${draft.name}` : "Set up news monitoring"}
+              </h1>
+              <p className="max-w-2xl text-xs text-muted-foreground">
+                Watch who writes about {brandRow.name} and the news you can
+                join. Start from what we already know — every suggestion shows
+                where it came from.
               </p>
-            )
+            </div>
+            <Button
+              size="sm"
+              onClick={() => void propose()}
+              disabled={Boolean(proposing)}
+            >
+              {proposing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Wand2 className="h-3.5 w-3.5" />
+              )}
+              {proposing ? "Suggesting…" : "Suggest from what we know"}
+            </Button>
+          </header>
+
+          {proposing ? (
+            <p className="rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+              {proposing}
+            </p>
           ) : null}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Name</span>
-            <Input value={draft.name} aria-label="Monitor name" onChange={(e) => update({ name: e.target.value })} className="h-8 max-w-md text-sm" />
-          </div>
-        </Section>
 
-        <Section step={2} title="Your company" lede="From the brand. Nothing here is typed twice.">
-          <dl className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 text-sm">
-            <dt className="text-muted-foreground">Name</dt>
-            <dd className="text-foreground">{brandRow.name}</dd>
-            <dt className="text-muted-foreground">Website</dt>
-            <dd className="text-foreground">{brandRow.website_url || "Not on the brand"}</dd>
-            <dt className="text-muted-foreground">Description</dt>
-            <dd className="text-foreground">{description || "Not on the brand"}</dd>
-          </dl>
-          <Link href={marketingRoutes.brandIdentity(brandSeg)} className="text-xs font-medium text-primary">
-            Edit in brand
-          </Link>
-        </Section>
+          {proposal ? (
+            <div
+              className="rounded-md border border-border bg-card px-3 py-2 text-xs"
+              data-surface-value="setup_proposal_summary"
+            >
+              <p className="text-foreground">
+                Read {proposal.inputs.facts ?? 0} confirmed facts,{" "}
+                {proposal.inputs.site_pages ?? 0} pages of your site and{" "}
+                {proposal.inputs.recent_coverage ?? 0} recent stories naming
+                you.
+              </p>
+              {proposal.proposal.missing?.length ? (
+                <div className="mt-1">
+                  <p className="font-medium text-foreground">
+                    What we could not find:
+                  </p>
+                  <ul className="ml-4 list-disc text-muted-foreground">
+                    {proposal.proposal.missing.map((m) => (
+                      <li key={m}>{m}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {proposal.proposal.dropped_without_basis?.length ? (
+                <div className="mt-1">
+                  <p className="font-medium text-warning">
+                    Removed because they did not trace to your materials:
+                  </p>
+                  <ul className="ml-4 list-disc text-muted-foreground">
+                    {proposal.proposal.dropped_without_basis.map((d) => (
+                      <li key={d}>{d}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
-        {draft.coverage ? (
+          {setupError ? (
+            <QueryError
+              error={setupError}
+              onRetry={() => setSetupAttempt((n) => n + 1)}
+            />
+          ) : null}
+
+          <Section step={1} title="What to watch">
+            <label className="flex items-start gap-2 text-sm">
+              <Checkbox
+                checked={draft.coverage}
+                onCheckedChange={(v) => setLens("coverage", v === true)}
+                aria-label="Coverage: who writes about us"
+              />
+              <span>
+                <span className="font-medium">
+                  Coverage: who writes about us
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Articles that name your company or the competitors you list.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <Checkbox
+                checked={draft.opportunity}
+                onCheckedChange={(v) => setLens("opportunity", v === true)}
+                aria-label="Opportunities: news we can join"
+              />
+              <span>
+                <span className="font-medium">
+                  Opportunities: news we can join
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Stories in your beats where you have something real to add.
+                </span>
+              </span>
+            </label>
+            {draft.coverage ? (
+              siteRows.length ? (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">Website:</span>
+                  <Select
+                    value={draft.siteId ?? undefined}
+                    onValueChange={(v) => update({ siteId: v })}
+                  >
+                    <SelectTrigger className="h-8 w-72 text-sm">
+                      <SelectValue placeholder="Choose the website" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {siteRows.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.domain}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <p className="text-xs text-warning">
+                  Coverage watches for articles about a website&apos;s brand,
+                  and this brand has no website yet.{" "}
+                  <Link
+                    className="text-primary"
+                    href={marketingRoutes.brandWebsites(brandSeg)}
+                  >
+                    Add a website
+                  </Link>{" "}
+                  or keep only opportunities.
+                </p>
+              )
+            ) : null}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Name</span>
+              <Input
+                value={draft.name}
+                aria-label="Monitor name"
+                onChange={(e) => update({ name: e.target.value })}
+                className="h-8 max-w-md text-sm"
+              />
+            </div>
+          </Section>
+
           <Section
-            step={3}
-            title="Coverage keywords"
-            lede="The names we search for. Each says which company it means, so a same-name company is not counted as you."
+            step={2}
+            title="Your company"
+            lede="From the brand. Nothing here is typed twice."
           >
-            {draft.keywords.map((k, index) => (
-              <div key={`kw-${index}`} className="rounded border border-border p-2" data-keyword={k.keyword}>
-                <div className="flex items-center gap-2">
+            <dl className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 text-sm">
+              <dt className="text-muted-foreground">Name</dt>
+              <dd className="text-foreground">{brandRow.name}</dd>
+              <dt className="text-muted-foreground">Website</dt>
+              <dd className="text-foreground">
+                {brandRow.website_url || "Not on the brand"}
+              </dd>
+              <dt className="text-muted-foreground">Description</dt>
+              <dd className="text-foreground">
+                {description || "Not on the brand"}
+              </dd>
+            </dl>
+            <Link
+              href={marketingRoutes.brandIdentity(brandSeg)}
+              className="text-xs font-medium text-primary"
+            >
+              Edit in brand
+            </Link>
+          </Section>
+
+          {draft.coverage ? (
+            <Section
+              step={3}
+              title="Coverage keywords"
+              lede="The names we search for. Each says which company it means, so a same-name company is not counted as you."
+            >
+              {draft.keywords.map((k, index) => (
+                <div
+                  key={`kw-${index}`}
+                  className="rounded border border-border p-2"
+                  data-keyword={k.keyword}
+                >
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={k.keyword}
+                      aria-label={`Keyword ${index + 1}`}
+                      onChange={(e) => {
+                        const next = [...draft.keywords];
+                        next[index] = {
+                          ...k,
+                          keyword: e.target.value,
+                          basis: USER_BASIS,
+                        };
+                        update({ keywords: next });
+                      }}
+                      className="h-8 text-sm font-medium"
+                    />
+                    <BasisChip basis={k.basis} refs={refs} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      aria-label={`Remove ${k.keyword}`}
+                      onClick={() =>
+                        update({
+                          keywords: draft.keywords.filter(
+                            (_, i) => i !== index,
+                          ),
+                        })
+                      }
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                   <Input
-                    value={k.keyword}
-                    aria-label={`Keyword ${index + 1}`}
+                    value={k.means}
+                    placeholder="Means: which company this is, e.g. the California e-waste recycler"
+                    aria-label={`What ${k.keyword} means`}
                     onChange={(e) => {
                       const next = [...draft.keywords];
-                      next[index] = { ...k, keyword: e.target.value, basis: USER_BASIS };
+                      next[index] = { ...k, means: e.target.value };
                       update({ keywords: next });
                     }}
-                    className="h-8 text-sm font-medium"
+                    className="mt-1 h-8 text-sm"
                   />
-                  <BasisChip basis={k.basis} refs={refs} />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
-                    aria-label={`Remove ${k.keyword}`}
-                    onClick={() => update({ keywords: draft.keywords.filter((_, i) => i !== index) })}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-                <Input
-                  value={k.means}
-                  placeholder="Means: which company this is, e.g. the California e-waste recycler"
-                  aria-label={`What ${k.keyword} means`}
-                  onChange={(e) => {
-                    const next = [...draft.keywords];
-                    next[index] = { ...k, means: e.target.value };
-                    update({ keywords: next });
-                  }}
-                  className="mt-1 h-8 text-sm"
-                />
-                {!k.means.trim() ? (
-                  <p className="mt-0.5 text-xs text-warning">Wrong-company matches will get through.</p>
-                ) : null}
-                <Input
-                  value={k.excludeHints.join(", ")}
-                  placeholder="Ignore words, comma separated (optional)"
-                  aria-label={`Ignore words for ${k.keyword}`}
-                  onChange={(e) => {
-                    const next = [...draft.keywords];
-                    next[index] = { ...k, excludeHints: splitWords(e.target.value) };
-                    update({ keywords: next });
-                  }}
-                  className="mt-1 h-8 text-sm"
-                />
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 self-start"
-              onClick={() =>
-                update({
-                  keywords: [...draft.keywords, { keyword: "", means: "", excludeHints: [], basis: USER_BASIS }],
-                })
-              }
-            >
-              <Plus className="h-3.5 w-3.5" /> Add a keyword
-            </Button>
-          </Section>
-        ) : null}
-
-        <Section
-          step={draft.coverage ? 4 : 3}
-          title="What to watch in the news"
-          lede="Durable subjects, the companies you are compared with, and the exact phrases to search. Each shows where it came from."
-        >
-          <div data-list="Competitors">
-            <p className="text-xs font-medium text-foreground">
-              Competitors <span className="text-muted-foreground">({draft.competitors.length})</span>
-            </p>
-            {draft.competitors.map((c, index) => (
-              <div key={`c-${index}`} className="mt-1 rounded border border-border p-2">
-                <div className="flex items-center gap-2">
+                  {!k.means.trim() ? (
+                    <p className="mt-0.5 text-xs text-warning">
+                      Wrong-company matches will get through.
+                    </p>
+                  ) : null}
                   <Input
-                    value={c.name}
-                    aria-label={`Competitor ${index + 1}`}
+                    value={k.excludeHints.join(", ")}
+                    placeholder="Ignore words, comma separated (optional)"
+                    aria-label={`Ignore words for ${k.keyword}`}
                     onChange={(e) => {
-                      const next = [...draft.competitors];
-                      next[index] = { ...c, name: e.target.value, basis: USER_BASIS };
-                      update({ competitors: next });
+                      const next = [...draft.keywords];
+                      next[index] = {
+                        ...k,
+                        excludeHints: splitWords(e.target.value),
+                      };
+                      update({ keywords: next });
                     }}
-                    className="h-8 text-sm"
+                    className="mt-1 h-8 text-sm"
                   />
-                  <BasisChip basis={c.basis} refs={refs} />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
-                    aria-label={`Remove ${c.name}`}
-                    onClick={() => update({ competitors: draft.competitors.filter((_, i) => i !== index) })}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
-                {draft.coverage ? (
-                  <>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 self-start"
+                onClick={() =>
+                  update({
+                    keywords: [
+                      ...draft.keywords,
+                      {
+                        keyword: "",
+                        means: "",
+                        excludeHints: [],
+                        basis: USER_BASIS,
+                      },
+                    ],
+                  })
+                }
+              >
+                <Plus className="h-3.5 w-3.5" /> Add a keyword
+              </Button>
+            </Section>
+          ) : null}
+
+          <Section
+            step={draft.coverage ? 4 : 3}
+            title="What to watch in the news"
+            lede="Durable subjects, the companies you are compared with, and the exact phrases to search. Each shows where it came from."
+          >
+            <div data-list="Competitors">
+              <p className="text-xs font-medium text-foreground">
+                Competitors{" "}
+                <span className="text-muted-foreground">
+                  ({draft.competitors.length})
+                </span>
+              </p>
+              {draft.competitors.map((c, index) => (
+                <div
+                  key={`c-${index}`}
+                  className="mt-1 rounded border border-border p-2"
+                >
+                  <div className="flex items-center gap-2">
                     <Input
-                      value={c.means}
-                      placeholder="Means: which company this is"
-                      aria-label={`What ${c.name} means`}
+                      value={c.name}
+                      aria-label={`Competitor ${index + 1}`}
                       onChange={(e) => {
                         const next = [...draft.competitors];
-                        next[index] = { ...c, means: e.target.value };
+                        next[index] = {
+                          ...c,
+                          name: e.target.value,
+                          basis: USER_BASIS,
+                        };
                         update({ competitors: next });
                       }}
-                      className="mt-1 h-8 text-sm"
+                      className="h-8 text-sm"
                     />
-                    {!c.means.trim() ? (
-                      <p className="mt-0.5 text-xs text-warning">Wrong-company matches will get through.</p>
-                    ) : null}
-                  </>
+                    <BasisChip basis={c.basis} refs={refs} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      aria-label={`Remove ${c.name}`}
+                      onClick={() =>
+                        update({
+                          competitors: draft.competitors.filter(
+                            (_, i) => i !== index,
+                          ),
+                        })
+                      }
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  {draft.coverage ? (
+                    <>
+                      <Input
+                        value={c.means}
+                        placeholder="Means: which company this is"
+                        aria-label={`What ${c.name} means`}
+                        onChange={(e) => {
+                          const next = [...draft.competitors];
+                          next[index] = { ...c, means: e.target.value };
+                          update({ competitors: next });
+                        }}
+                        className="mt-1 h-8 text-sm"
+                      />
+                      {!c.means.trim() ? (
+                        <p className="mt-0.5 text-xs text-warning">
+                          Wrong-company matches will get through.
+                        </p>
+                      ) : null}
+                    </>
+                  ) : null}
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-1 h-8"
+                onClick={() =>
+                  update({
+                    competitors: [
+                      ...draft.competitors,
+                      {
+                        name: "",
+                        means: "",
+                        excludeHints: [],
+                        basis: USER_BASIS,
+                      },
+                    ],
+                  })
+                }
+              >
+                <Plus className="h-3.5 w-3.5" /> Add a competitor
+              </Button>
+              <Warning
+                text={countWarning(
+                  "competitors",
+                  draft.competitors.length,
+                  counts.competitors,
+                )}
+              />
+            </div>
+
+            {draft.opportunity ? (
+              <>
+                <ItemList
+                  label="Beats"
+                  items={draft.topics}
+                  onChange={(topics) => update({ topics })}
+                  refs={refs}
+                  placeholder="A subject you live in, 2–3 words"
+                  warning={
+                    countWarning("beats", draft.topics.length, counts.topics) ??
+                    (topicWords.length
+                      ? `Longer than ${counts.topic_words?.[1] ?? 3} words: ${topicWords.join(", ")}. Shorter beats catch subjects, not headlines.`
+                      : null)
+                  }
+                />
+                <ItemList
+                  label="Search terms"
+                  items={draft.searchTerms}
+                  onChange={(searchTerms) => update({ searchTerms })}
+                  refs={refs}
+                  placeholder="An exact phrase to search"
+                  warning={countWarning(
+                    "search terms",
+                    draft.searchTerms.length,
+                    counts.search_terms,
+                  )}
+                />
+                <ItemList
+                  label="Where you can speak with authority"
+                  items={draft.standing}
+                  onChange={(standing) => update({ standing })}
+                  refs={refs}
+                  placeholder="Specific expertise, customers, data or experience"
+                  warning={countWarning(
+                    "standing areas",
+                    draft.standing.length,
+                    counts.standing,
+                  )}
+                />
+                <div data-list="Feeds">
+                  <p className="text-xs font-medium text-foreground">
+                    Feeds{" "}
+                    <span className="text-muted-foreground">
+                      ({draft.feeds.length})
+                    </span>
+                  </p>
+                  <ul className="mt-1 grid gap-1 sm:grid-cols-2">
+                    {catalog.map((feed) => {
+                      const id = String(feed.id);
+                      const picked = draft.feeds.find((f) => f.feedId === id);
+                      return (
+                        <li key={id}>
+                          <label className="flex items-start gap-2 rounded border border-border p-2 text-sm">
+                            <Checkbox
+                              checked={Boolean(picked)}
+                              onCheckedChange={(v) =>
+                                update({
+                                  feeds:
+                                    v === true
+                                      ? [
+                                          ...draft.feeds,
+                                          {
+                                            feedId: id,
+                                            why: "",
+                                            proposed: false,
+                                          },
+                                        ]
+                                      : draft.feeds.filter(
+                                          (f) => f.feedId !== id,
+                                        ),
+                                })
+                              }
+                              aria-label={String(feed.name ?? id)}
+                            />
+                            <span className="min-w-0">
+                              <span className="font-medium">
+                                {String(feed.name ?? id)}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                {picked?.why || String(feed.use_when ?? "")}
+                              </span>
+                              {picked?.proposed ? (
+                                <span className="text-[10px] text-primary">
+                                  suggested for you
+                                </span>
+                              ) : null}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <Warning
+                    text={countWarning(
+                      "feeds",
+                      draft.feeds.length,
+                      counts.feeds,
+                    )}
+                  />
+                </div>
+                {setup?.x_key_on_file && xLocations.length ? (
+                  <label className="flex items-center gap-2 text-sm">
+                    <Switch
+                      checked={draft.xTrends}
+                      onCheckedChange={(v) => update({ xTrends: v })}
+                    />
+                    Also watch what is trending on X in{" "}
+                    {xLocations.map((loc) => loc.label).join(", ")}
+                  </label>
                 ) : null}
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-1 h-8"
-              onClick={() =>
-                update({
-                  competitors: [...draft.competitors, { name: "", means: "", excludeHints: [], basis: USER_BASIS }],
-                })
-              }
-            >
-              <Plus className="h-3.5 w-3.5" /> Add a competitor
-            </Button>
-            <Warning text={countWarning("competitors", draft.competitors.length, counts.competitors)} />
-          </div>
+              </>
+            ) : null}
+
+            <div>
+              <p className="text-xs font-medium text-foreground">
+                Never show stories about
+              </p>
+              <Input
+                value={draft.exclusions.join(", ")}
+                placeholder="Words to exclude, comma separated (optional)"
+                onChange={(e) =>
+                  update({ exclusions: splitWords(e.target.value) })
+                }
+                className="mt-1 h-8 text-sm"
+              />
+            </div>
+          </Section>
 
           {draft.opportunity ? (
-            <>
-              <ItemList
-                label="Beats"
-                items={draft.topics}
-                onChange={(topics) => update({ topics })}
-                refs={refs}
-                placeholder="A subject you live in, 2–3 words"
-                warning={
-                  countWarning("beats", draft.topics.length, counts.topics) ??
-                  (topicWords.length
-                    ? `Longer than ${counts.topic_words?.[1] ?? 3} words: ${topicWords.join(", ")}. Shorter beats catch subjects, not headlines.`
-                    : null)
-                }
-              />
-              <ItemList
-                label="Search terms"
-                items={draft.searchTerms}
-                onChange={(searchTerms) => update({ searchTerms })}
-                refs={refs}
-                placeholder="An exact phrase to search"
-                warning={countWarning("search terms", draft.searchTerms.length, counts.search_terms)}
-              />
-              <ItemList
-                label="Where you can speak with authority"
-                items={draft.standing}
-                onChange={(standing) => update({ standing })}
-                refs={refs}
-                placeholder="Specific expertise, customers, data or experience"
-                warning={countWarning("standing areas", draft.standing.length, counts.standing)}
-              />
-              <div data-list="Feeds">
+            <Section
+              step={draft.coverage ? 5 : 4}
+              title="Who speaks, and what you can show"
+              lede="Reporters need a person to quote and proof to point at."
+            >
+              <div>
                 <p className="text-xs font-medium text-foreground">
-                  Feeds <span className="text-muted-foreground">({draft.feeds.length})</span>
+                  Spokespeople
                 </p>
-                <ul className="mt-1 grid gap-1 sm:grid-cols-2">
-                  {catalog.map((feed) => {
-                    const id = String(feed.id);
-                    const picked = draft.feeds.find((f) => f.feedId === id);
-                    return (
-                      <li key={id}>
-                        <label className="flex items-start gap-2 rounded border border-border p-2 text-sm">
-                          <Checkbox
-                            checked={Boolean(picked)}
-                            onCheckedChange={(v) =>
-                              update({
-                                feeds:
-                                  v === true
-                                    ? [...draft.feeds, { feedId: id, why: "", proposed: false }]
-                                    : draft.feeds.filter((f) => f.feedId !== id),
-                              })
-                            }
-                            aria-label={String(feed.name ?? id)}
-                          />
-                          <span className="min-w-0">
-                            <span className="font-medium">{String(feed.name ?? id)}</span>
-                            <span className="block text-xs text-muted-foreground">
-                              {picked?.why || String(feed.use_when ?? "")}
-                            </span>
-                            {picked?.proposed ? (
-                              <span className="text-[10px] text-primary">suggested for you</span>
-                            ) : null}
-                          </span>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <Warning text={countWarning("feeds", draft.feeds.length, counts.feeds)} />
-              </div>
-              {setup?.x_key_on_file && xLocations.length ? (
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch checked={draft.xTrends} onCheckedChange={(v) => update({ xTrends: v })} />
-                  Also watch what is trending on X in {xLocations.map((loc) => loc.label).join(", ")}
-                </label>
-              ) : null}
-            </>
-          ) : null}
-
-          <div>
-            <p className="text-xs font-medium text-foreground">Never show stories about</p>
-            <Input
-              value={draft.exclusions.join(", ")}
-              placeholder="Words to exclude, comma separated (optional)"
-              onChange={(e) => update({ exclusions: splitWords(e.target.value) })}
-              className="mt-1 h-8 text-sm"
-            />
-          </div>
-        </Section>
-
-        {draft.opportunity ? (
-          <Section
-            step={draft.coverage ? 5 : 4}
-            title="Who speaks, and what you can show"
-            lede="Reporters need a person to quote and proof to point at."
-          >
-            <div>
-              <p className="text-xs font-medium text-foreground">Spokespeople</p>
-              {spokespeople.length ? (
-                <ul className="ml-4 list-disc text-sm">
-                  {spokespeople.map((f) => (
-                    <li key={f.id}>{factText(f)}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">None on file.</p>
-              )}
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <Input
-                  value={newSpokesperson.name}
-                  placeholder="Name"
-                  onChange={(e) => setNewSpokesperson({ ...newSpokesperson, name: e.target.value })}
-                  className="h-8 w-48 text-sm"
-                />
-                <Input
-                  value={newSpokesperson.title}
-                  placeholder="Title (optional)"
-                  onChange={(e) => setNewSpokesperson({ ...newSpokesperson, title: e.target.value })}
-                  className="h-8 w-48 text-sm"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8"
-                  disabled={!newSpokesperson.name.trim()}
-                  onClick={() => void addFact("spokesperson")}
-                >
-                  <Plus className="h-3.5 w-3.5" /> Add spokesperson
-                </Button>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-foreground">Proof</p>
-              {proofs.length ? (
-                <ul className="ml-4 list-disc text-sm">
-                  {proofs.map((f) => (
-                    <li key={f.id}>{factText(f)}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">None on file.</p>
-              )}
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <Input
-                  value={newProof.summary}
-                  placeholder="A result, study or number you can show"
-                  onChange={(e) => setNewProof({ ...newProof, summary: e.target.value })}
-                  className="h-8 w-80 text-sm"
-                />
-                <Input
-                  value={newProof.url}
-                  placeholder="Link (optional)"
-                  onChange={(e) => setNewProof({ ...newProof, url: e.target.value })}
-                  className="h-8 w-56 text-sm"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8"
-                  disabled={!newProof.summary.trim()}
-                  onClick={() => void addFact("proof")}
-                >
-                  <Plus className="h-3.5 w-3.5" /> Add proof
-                </Button>
-              </div>
-            </div>
-            {factError ? <p className="text-xs text-destructive">{factError}</p> : null}
-            {!spokespeople.length || !proofs.length ? (
-              <p className="text-xs text-warning">
-                You can skip this. {NO_PROOF_SENTENCE}
-              </p>
-            ) : null}
-          </Section>
-        ) : null}
-
-        {draft.opportunity ? (
-          <Section
-            step={draft.coverage ? 6 : 5}
-            title="Your brief"
-            lede="This is yours to edit; feedback on runs will suggest changes here. Leave a section empty and it carries no rule."
-          >
-            {(
-              [
-                ["audience", "Audience", "Who you want to reach"],
-                ["pitch", "We pitch", "The stories you want to be part of"],
-                ["never", "We never pitch", "Stories you never want to join"],
-                ["surface", "How to surface", "How you want stories brought to you"],
-              ] as const
-            ).map(([key, label, placeholder]) => (
-              <div key={key}>
-                <p className="text-xs font-medium text-foreground">{label}</p>
-                <Textarea
-                  value={draft.brief[key]}
-                  placeholder={placeholder}
-                  onChange={(e) => update({ brief: { ...draft.brief, [key]: e.target.value } })}
-                  className="mt-1 min-h-16 text-sm"
-                />
-              </div>
-            ))}
-          </Section>
-        ) : null}
-
-        <Section step={draft.coverage && draft.opportunity ? 7 : draft.opportunity ? 6 : 5} title="Who hears about it">
-          <p className="text-sm text-foreground">
-            You — the person who saves this monitor — are told, on your own notification preferences.
-          </p>
-          {deliveryPromise ? (
-            <MarketingFrontDoorPromise label={deliveryPromise.label} promise={deliveryPromise.promise} />
-          ) : null}
-        </Section>
-
-        <Section step={draft.coverage && draft.opportunity ? 8 : draft.opportunity ? 7 : 6} title="How often">
-          {setup && !presets.length ? (
-            <p className="text-xs text-warning">
-              No schedule choices are set up for this organization yet (the monitor setup schedule setting is empty).
-            </p>
-          ) : null}
-          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="How often">
-            {presets.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                role="radio"
-                aria-checked={scheduleId === p.id}
-                onClick={() => {
-                  setScheduleTouched(true);
-                  update({ schedule: p.id });
-                }}
-                className={cn(
-                  "rounded-md border px-3 py-1.5 text-sm",
-                  scheduleId === p.id
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : "border-border text-muted-foreground hover:bg-muted/40",
+                {spokespeople.length ? (
+                  <ul className="ml-4 list-disc text-sm">
+                    {spokespeople.map((f) => (
+                      <li key={f.id}>{factText(f)}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-muted-foreground">None on file.</p>
                 )}
-              >
-                {p.label}
-                {p.recommended ? <span className="ml-1 text-[10px] text-primary">recommended</span> : null}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Time zone</span>
-            <Select value={draft.timezone} onValueChange={(v) => update({ timezone: v })}>
-              <SelectTrigger className="h-8 w-64 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {allTimezones(draft.timezone).map((zone) => (
-                  <SelectItem key={zone} value={zone}>
-                    {zone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {preset && preset.runsPerMonth > 0 ? (
-              <span className="text-muted-foreground">
-                {schedule?.has_schedule && schedule.is_active && schedule.jitter_minute != null
-                  ? `Saved: runs at ${String(schedule.jitter_minute).padStart(2, "0")} past the hour${schedule.next_run_at ? `, next ${new Date(schedule.next_run_at).toLocaleString()}` : ""} — never on the hour, so it does not collide with every other monitor.`
-                  : "The exact minute is fixed for this monitor when you save — never on the hour."}
-              </span>
-            ) : null}
-          </div>
-          <p className="text-xs text-muted-foreground" data-surface-value="setup_cost_estimate">
-            {cost?.average_run_usd != null
-              ? `A run has cost about ${formatCostDisplay(cost.average_run_usd)} (${cost.runs_measured} runs in the last 30 days)${preset ? `, so this schedule is about ${formatCostDisplay(cost.average_run_usd * preset.runsPerMonth)} a month` : ""}.`
-              : "No runs yet in this organization, so there is no cost per run to estimate — the first run measures it."}{" "}
-            {cost
-              ? `Your organization has spent ${formatCostDisplay(cost.month_to_date_usd)} of its ${formatCostDisplay(cost.monthly_ceiling_usd)} monthly news ceiling.`
-              : null}
-          </p>
-          {schedule?.message ? <p className="text-xs text-muted-foreground">{schedule.message}</p> : null}
-        </Section>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <Input
+                    value={newSpokesperson.name}
+                    placeholder="Name"
+                    onChange={(e) =>
+                      setNewSpokesperson({
+                        ...newSpokesperson,
+                        name: e.target.value,
+                      })
+                    }
+                    className="h-8 w-48 text-sm"
+                  />
+                  <Input
+                    value={newSpokesperson.title}
+                    placeholder="Title (optional)"
+                    onChange={(e) =>
+                      setNewSpokesperson({
+                        ...newSpokesperson,
+                        title: e.target.value,
+                      })
+                    }
+                    className="h-8 w-48 text-sm"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    disabled={!newSpokesperson.name.trim()}
+                    onClick={() => void addFact("spokesperson")}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add spokesperson
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-foreground">Proof</p>
+                {proofs.length ? (
+                  <ul className="ml-4 list-disc text-sm">
+                    {proofs.map((f) => (
+                      <li key={f.id}>{factText(f)}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-muted-foreground">None on file.</p>
+                )}
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <Input
+                    value={newProof.summary}
+                    placeholder="A result, study or number you can show"
+                    onChange={(e) =>
+                      setNewProof({ ...newProof, summary: e.target.value })
+                    }
+                    className="h-8 w-80 text-sm"
+                  />
+                  <Input
+                    value={newProof.url}
+                    placeholder="Link (optional)"
+                    onChange={(e) =>
+                      setNewProof({ ...newProof, url: e.target.value })
+                    }
+                    className="h-8 w-56 text-sm"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    disabled={!newProof.summary.trim()}
+                    onClick={() => void addFact("proof")}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add proof
+                  </Button>
+                </div>
+              </div>
+              {factError ? (
+                <p className="text-xs text-destructive">{factError}</p>
+              ) : null}
+              {!spokespeople.length || !proofs.length ? (
+                <p className="text-xs text-warning">
+                  You can skip this. {NO_PROOF_SENTENCE}
+                </p>
+              ) : null}
+            </Section>
+          ) : null}
 
-        {run ? (
-          <section className="rounded-md border border-border bg-card p-3" data-surface-value="monitor_run_view">
-            <h2 className="text-sm font-semibold text-foreground">The run</h2>
-            {savedMonitor?.last_run_status === "failed" && savedMonitor.last_error ? (
-              <p className="mt-1 text-sm text-destructive">{savedMonitor.last_error}</p>
-            ) : (
-              <p className="mt-1 text-sm text-foreground">
-                {runHeadline ??
-                  (savedMonitor?.last_run_at
-                    ? `Finished ${new Date(savedMonitor.last_run_at).toLocaleString()}.`
-                    : "The run finished.")}
-              </p>
-            )}
-            {run.runId ? (
-              <Link href={`/workflows/runs/${run.runId}`} className="mt-1 inline-block text-xs font-medium text-primary">
-                Open the run, step by step
-              </Link>
+          {draft.opportunity ? (
+            <Section
+              step={draft.coverage ? 6 : 5}
+              title="Your brief"
+              lede="This is yours to edit; feedback on runs will suggest changes here. Leave a section empty and it carries no rule."
+            >
+              {(
+                [
+                  ["audience", "Audience", "Who you want to reach"],
+                  ["pitch", "We pitch", "The stories you want to be part of"],
+                  ["never", "We never pitch", "Stories you never want to join"],
+                  [
+                    "surface",
+                    "How to surface",
+                    "How you want stories brought to you",
+                  ],
+                ] as const
+              ).map(([key, label, placeholder]) => (
+                <div key={key}>
+                  <p className="text-xs font-medium text-foreground">{label}</p>
+                  <Textarea
+                    value={draft.brief[key]}
+                    placeholder={placeholder}
+                    onChange={(e) =>
+                      update({
+                        brief: { ...draft.brief, [key]: e.target.value },
+                      })
+                    }
+                    className="mt-1 min-h-16 text-sm"
+                  />
+                </div>
+              ))}
+            </Section>
+          ) : null}
+
+          <Section
+            step={
+              draft.coverage && draft.opportunity
+                ? 7
+                : draft.opportunity
+                  ? 6
+                  : 5
+            }
+            title="Who hears about it"
+          >
+            <p className="text-sm text-foreground">
+              You — the person who saves this monitor — are told, on your own
+              notification preferences.
+            </p>
+            {deliveryPromise ? (
+              <MarketingFrontDoorPromise
+                label={deliveryPromise.label}
+                promise={deliveryPromise.promise}
+              />
             ) : null}
-            <p className="mt-2 text-xs font-medium text-foreground">A few real things it looked at</p>
-            {runMentions.isPending ? (
-              <p className="text-xs text-muted-foreground">Loading…</p>
-            ) : runMentions.data?.length ? (
-              <ul className="mt-1 flex flex-col gap-1">
-                {runMentions.data.map((m) => (
-                  <li key={m.id} className="text-xs">
-                    <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-primary">
-                      {m.title || m.url}
-                    </a>{" "}
-                    <span className="text-muted-foreground">
-                      {m.domain}
-                      {m.verdict ? ` · ${m.verdict.replace(/_/g, " ")}` : ""}
-                      {m.is_competitor ? " · about a competitor" : ""}
+          </Section>
+
+          <Section
+            step={
+              draft.coverage && draft.opportunity
+                ? 8
+                : draft.opportunity
+                  ? 7
+                  : 6
+            }
+            title="How often"
+          >
+            {setup && !presets.length ? (
+              <p className="text-xs text-warning">
+                No schedule choices are set up for this organization yet (the
+                monitor setup schedule setting is empty).
+              </p>
+            ) : null}
+            <div
+              className="flex flex-wrap gap-2"
+              role="radiogroup"
+              aria-label="How often"
+            >
+              {presets.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={scheduleId === p.id}
+                  onClick={() => {
+                    setScheduleTouched(true);
+                    update({ schedule: p.id });
+                  }}
+                  className={cn(
+                    "rounded-md border px-3 py-1.5 text-sm",
+                    scheduleId === p.id
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border text-muted-foreground hover:bg-muted/40",
+                  )}
+                >
+                  {p.label}
+                  {p.recommended ? (
+                    <span className="ml-1 text-[10px] text-primary">
+                      recommended
                     </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Nothing matched yet. Coverage reads new articles as they appear; change anything above and run again.
-              </p>
-            )}
-            {draft.siteId ? (
-              <Link
-                href={marketingRoutes.site(brandCtx.id, draft.siteId, "/backlinks?view=coverage")}
-                className="mt-2 inline-block text-xs font-medium text-primary"
+                  ) : null}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Time zone</span>
+              <Select
+                value={draft.timezone}
+                onValueChange={(v) => update({ timezone: v })}
               >
-                Open coverage
-              </Link>
+                <SelectTrigger className="h-8 w-64 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {allTimezones(draft.timezone).map((zone) => (
+                    <SelectItem key={zone} value={zone}>
+                      {zone}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {preset && preset.runsPerMonth > 0 ? (
+                <span className="text-muted-foreground">
+                  {schedule?.has_schedule &&
+                  schedule.is_active &&
+                  schedule.jitter_minute != null
+                    ? `Saved: runs at ${String(schedule.jitter_minute).padStart(2, "0")} past the hour${schedule.next_run_at ? `, next ${new Date(schedule.next_run_at).toLocaleString()}` : ""} — never on the hour, so it does not collide with every other monitor.`
+                    : "The exact minute is fixed for this monitor when you save — never on the hour."}
+                </span>
+              ) : null}
+            </div>
+            <p
+              className="text-xs text-muted-foreground"
+              data-surface-value="setup_cost_estimate"
+            >
+              {cost?.average_run_usd != null
+                ? `A run has cost about ${formatCostDisplay(cost.average_run_usd)} (${cost.runs_measured} runs in the last 30 days)${preset ? `, so this schedule is about ${formatCostDisplay(cost.average_run_usd * preset.runsPerMonth)} a month` : ""}.`
+                : "No runs yet in this organization, so there is no cost per run to estimate — the first run measures it."}{" "}
+              {cost
+                ? `Your organization has spent ${formatCostDisplay(cost.month_to_date_usd)} of its ${formatCostDisplay(cost.monthly_ceiling_usd)} monthly news ceiling.`
+                : null}
+            </p>
+            {schedule?.message ? (
+              <p className="text-xs text-muted-foreground">
+                {schedule.message}
+              </p>
             ) : null}
-            <p className="mt-2 text-xs text-muted-foreground">Change anything? Edit above and press Run now again.</p>
-          </section>
-        ) : null}
+          </Section>
 
-        <div className="sticky bottom-0 z-10 flex items-center justify-end gap-2 rounded-md border border-border bg-card/95 p-2 backdrop-blur">
-          <Button variant="outline" size="sm" onClick={() => void save(false)} disabled={Boolean(saving)}>
-            {saving === "save" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+          {run ? (
+            <section
+              className="rounded-md border border-border bg-card p-3"
+              data-surface-value="monitor_run_view"
+            >
+              <h2 className="text-sm font-semibold text-foreground">The run</h2>
+              {savedMonitor?.last_run_status === "failed" &&
+              savedMonitor.last_error ? (
+                <p className="mt-1 text-sm text-destructive">
+                  {savedMonitor.last_error}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-foreground">
+                  {runHeadline ??
+                    (savedMonitor?.last_run_at
+                      ? `Finished ${new Date(savedMonitor.last_run_at).toLocaleString()}.`
+                      : "The run finished.")}
+                </p>
+              )}
+              {run.runId ? (
+                <Link
+                  href={`/workflows/runs/${run.runId}`}
+                  className="mt-1 inline-block text-xs font-medium text-primary"
+                >
+                  Open the run, step by step
+                </Link>
+              ) : null}
+              <p className="mt-2 text-xs font-medium text-foreground">
+                A few real things it looked at
+              </p>
+              {runMentions.isPending ? (
+                <p className="text-xs text-muted-foreground">Loading…</p>
+              ) : runMentions.data?.length ? (
+                <ul className="mt-1 flex flex-col gap-1">
+                  {runMentions.data.map((m) => (
+                    <li key={m.id} className="text-xs">
+                      <a
+                        href={m.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary"
+                      >
+                        {m.title || m.url}
+                      </a>{" "}
+                      <span className="text-muted-foreground">
+                        {m.domain}
+                        {m.verdict ? ` · ${m.verdict.replace(/_/g, " ")}` : ""}
+                        {m.is_competitor ? " · about a competitor" : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Nothing matched yet. Coverage reads new articles as they
+                  appear; change anything above and run again.
+                </p>
+              )}
+              {draft.siteId ? (
+                <Link
+                  href={marketingRoutes.site(
+                    brandCtx.id,
+                    draft.siteId,
+                    "/backlinks?view=coverage",
+                  )}
+                  className="mt-2 inline-block text-xs font-medium text-primary"
+                >
+                  Open coverage
+                </Link>
+              ) : null}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Change anything? Edit above and press Run now again.
+              </p>
+            </section>
+          ) : null}
+        </div>
+      </div>
+      <div className="shrink-0 border-t border-border bg-card pb-safe">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-end gap-2 p-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void save(false)}
+            disabled={Boolean(saving)}
+          >
+            {saving === "save" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
             Save
           </Button>
-          <Button size="sm" onClick={() => void save(true)} disabled={Boolean(saving)}>
-            {saving === "run" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+          <Button
+            size="sm"
+            onClick={() => void save(true)}
+            disabled={Boolean(saving)}
+          >
+            {saving === "run" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
             {saving === "run" ? "Running…" : "Save and run now"}
           </Button>
         </div>
