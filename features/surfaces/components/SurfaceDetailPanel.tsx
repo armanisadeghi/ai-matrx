@@ -35,6 +35,7 @@ import {
   SurfaceReadinessBadge,
   READINESS_META,
 } from "@/features/surfaces/components/SurfaceReadinessBadge";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { SurfaceValuesTable } from "@/features/surfaces/components/SurfaceValuesTable";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type { SurfaceValue } from "@/features/surfaces/types";
@@ -177,40 +178,30 @@ export function SurfaceDetailPanel({
     <div className="flex flex-col h-full min-h-0 bg-card">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            {surface.label ? (
-              <span className="min-w-0 flex items-baseline gap-1.5">
-                <span className="text-sm font-medium truncate">
-                  {surface.label}
-                </span>
-                <code className="font-mono text-[10px] text-muted-foreground truncate">
-                  {surface.name}
-                </code>
-              </span>
-            ) : (
-              <span className="font-mono text-sm truncate">{surface.name}</span>
-            )}
-            <SurfaceReadinessBadge row={surface} />
-            <Badge variant="outline" className="text-[10px]">
-              {surface.client_name}
-            </Badge>
-            <Badge variant="outline" className="text-[10px]">
-              {tier.label}
-            </Badge>
-            {surface.executor_name && (
-              <Badge variant="outline" className="text-[10px]">
-                executor:{" "}
-                <code className="ml-1 font-mono">{surface.executor_name}</code>
-              </Badge>
-            )}
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm font-medium">
+              {surface.label?.trim() || getSurfaceDisplayLabel(surface.name)}
+            </span>
+            <SurfaceReadinessBadge row={surface} className="shrink-0" />
+          </div>
+          <div className="truncate font-mono text-xs text-muted-foreground">
+            {surface.name}
+          </div>
+          <div className="truncate text-xs text-muted-foreground">
+            {surface.client_name}
+            {surface.executor_name &&
+              surface.executor_name !== surface.client_name && (
+                <> · runs in {surface.executor_name}</>
+              )}
+            {" "}· {tier.label}
             {surface.parent_surface_name && (
-              <Badge variant="outline" className="text-[10px]">
-                parent:{" "}
-                <code className="ml-1 font-mono">
-                  {surface.parent_surface_name}
-                </code>
-              </Badge>
+              <>
+                {" "}· under{" "}
+                <span title={surface.parent_surface_name}>
+                  {getSurfaceDisplayLabel(surface.parent_surface_name)}
+                </span>
+              </>
             )}
           </div>
         </div>
@@ -236,22 +227,22 @@ export function SurfaceDetailPanel({
             Overview
           </TabsTrigger>
           <TabsTrigger value="values" className="text-xs">
-            Surface Values
+            Values
             {manifestValues && (
-              <Badge variant="outline" className="ml-1.5 text-[10px]">
+              <Badge variant="outline" className="ml-1.5 text-xs">
                 {manifestValues.length}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="agents" className="text-xs">
             Agents
-            <Badge variant="outline" className="ml-1.5 text-[10px]">
+            <Badge variant="outline" className="ml-1.5 text-xs">
               {surface.agentCount}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="tools" className="text-xs">
             Tools
-            <Badge variant="outline" className="ml-1.5 text-[10px]">
+            <Badge variant="outline" className="ml-1.5 text-xs">
               {surface.toolCount}
             </Badge>
           </TabsTrigger>
@@ -323,27 +314,17 @@ export function SurfaceDetailPanel({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Tier
-              </Label>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-[10px]">
-                  {tier.label}
-                </Badge>
-                <span className="text-[11px] text-muted-foreground">
-                  {tier.description}
-                </span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Sort order
-              </Label>
-              <p className="text-xs font-mono tabular-nums">
-                {surface.sort_order}
-              </p>
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Tier
+            </Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="whitespace-nowrap text-xs">
+                {tier.label}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {tier.description} · position {surface.sort_order}
+              </span>
             </div>
           </div>
 
@@ -353,7 +334,7 @@ export function SurfaceDetailPanel({
             </Label>
             <div className="flex items-center gap-2 flex-wrap">
               <SurfaceReadinessBadge row={surface} />
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {READINESS_META[readinessBucketOf(surface)].description}
               </span>
             </div>
@@ -363,15 +344,15 @@ export function SurfaceDetailPanel({
               </p>
             )}
             {surface.overlay_id && (
-              <p className="text-[11px] text-muted-foreground">
-                Overlay:{" "}
+              <p className="text-xs text-muted-foreground">
+                Window or dialog:{" "}
                 <code className="bg-muted px-1 py-0.5 rounded font-mono">
                   {surface.overlay_id}
                 </code>
               </p>
             )}
-            <p className="text-[11px] text-muted-foreground">
-              Readiness is code-owned — edit the manifest&apos;s{" "}
+            <p className="text-xs text-muted-foreground">
+              Readiness is set in code — change the manifest&apos;s{" "}
               <code className="bg-muted px-1 py-0.5 rounded font-mono">
                 readiness
               </code>{" "}
@@ -489,20 +470,20 @@ export function SurfaceDetailPanel({
                         wrap
                         openInNewTab
                         className="min-w-0 flex-1"
-                        nameClassName="font-mono text-[11px]"
+                        nameClassName="font-mono text-xs"
                       />
                     ) : (
-                      <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+                      <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                         {/* read-gate-exempt: per-row label for a loaded binding whose agent_id is null, not a list's empty view */}
                         No agent assigned
                       </span>
                     )}
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-xs">
                       {scopeLabel}
                     </Badge>
                     <Badge
                       variant={mappingCount > 0 ? "default" : "outline"}
-                      className="text-[10px] tabular-nums"
+                      className="text-xs tabular-nums"
                     >
                       {mappingCount} mapping{mappingCount === 1 ? "" : "s"}
                     </Badge>
@@ -518,7 +499,7 @@ export function SurfaceDetailPanel({
           value="tools"
           className="flex-1 min-h-0 overflow-auto px-3 py-2"
         >
-          <div className="text-[11px] text-muted-foreground mb-2 leading-relaxed">
+          <div className="text-xs text-muted-foreground mb-2 leading-relaxed">
             Tools force-included on this surface via{" "}
             <code className="font-mono bg-muted px-1 py-0.5 rounded">
               tool.surface_defaults.always_include_tools
@@ -558,20 +539,20 @@ export function SurfaceDetailPanel({
                         showIcon={false}
                         className="text-[12px] text-foreground"
                       />
-                      <span className="font-mono text-[10px] text-muted-foreground truncate">
+                      <span className="font-mono text-xs text-muted-foreground truncate">
                         {b.tool_category ?? "Uncategorized"}
                       </span>
                     </div>
                     {b.tool_is_active === false && (
                       <Badge
                         variant="outline"
-                        className="text-[10px] text-muted-foreground"
+                        className="text-xs text-muted-foreground"
                       >
                         inactive
                       </Badge>
                     )}
                     {argDefaultsPresent && (
-                      <Badge variant="default" className="text-[10px]">
+                      <Badge variant="default" className="text-xs">
                         arg defaults
                       </Badge>
                     )}
