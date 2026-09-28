@@ -916,6 +916,7 @@ export function SetDetailView({
                   (ROUTING.md); Enhance is the agentic-expansion placeholder. */}
               <div className="hidden flex-wrap items-center gap-2 md:flex">
                 <Button
+                  size="sm"
                   onClick={() =>
                     navigate("study", `${EDU_BASE}/${setId}/study`)
                   }
@@ -931,6 +932,7 @@ export function SetDetailView({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
+                  size="sm"
                       disabled={isPending || data.cards.length === 0}
                       className="-ml-2 rounded-l-none px-2"
                       aria-label="Other study modes"
@@ -949,7 +951,7 @@ export function SetDetailView({
                         <m.icon className="mr-2 h-4 w-4 text-muted-foreground" />
                         <div className="flex flex-col">
                           <span>{m.label}</span>
-                          <span className="text-[11px] text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             {m.description}
                           </span>
                         </div>
@@ -963,12 +965,26 @@ export function SetDetailView({
                         <m.icon className="mr-2 h-4 w-4 text-muted-foreground" />
                         <div className="flex flex-col">
                           <span>{m.label}</span>
-                          <span className="text-[11px] text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             {m.description}
                           </span>
                         </div>
                       </DropdownMenuItem>
                     ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() =>
+                        navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
+                      }
+                    >
+                      <History className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <div className="flex flex-col">
+                        <span>History</span>
+                        <span className="text-xs text-muted-foreground">
+                          Past study sessions and results
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <FlashcardStudyWindowDevTrigger
@@ -977,6 +993,7 @@ export function SetDetailView({
                   disabled={data.cards.length === 0}
                 />
                 <Button
+                  size="sm"
                   variant="outline"
                   onClick={() =>
                     navigate("fastfire", `/education/fastfire?set=${setId}`)
@@ -989,6 +1006,7 @@ export function SetDetailView({
                 </Button>
                 {canEdit && (
                   <Button
+                  size="sm"
                     variant="outline"
                     onClick={() =>
                       navigate("edit", `${EDU_BASE}/${setId}/edit`)
@@ -1024,23 +1042,13 @@ export function SetDetailView({
                     the PHONE's sheet only — on 2026-09-27 it was applied to
                     every width and desktop lost History, Export, Print,
                     offline, Enrich, Illustrate and Convert behind one button. */}
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
-                  }
-                  disabled={isPending}
-                  className={cn(pendingAction === "sessions" && "opacity-70")}
-                >
-                  <History className="mr-1.5 h-4 w-4" />
-                  History
-                </Button>
                 {/* Export, Print and Download for offline are one menu
                     (page-pass 2026-09-27): every one still one click away on
                     desktop, in one button instead of three. */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
+                  size="sm"
                       variant="outline"
                       disabled={data.cards.length === 0}
                     >
@@ -1080,6 +1088,7 @@ export function SetDetailView({
                 {canEdit && (
                   <div className="flex flex-col items-start gap-0.5">
                     <Button
+                  size="sm"
                       variant="outline"
                       onClick={() => void runBulkEnrich()}
                       disabled={
@@ -1094,7 +1103,7 @@ export function SetDetailView({
                       ) : (
                         <Lightbulb className="mr-1.5 h-4 w-4" />
                       )}
-                      {bulkEnrichActionLabel(enrichPlan)}
+                      {bulkEnrichActionLabel(enrichPlan).replace(" all cards", "")}
                     </Button>
                     {/* Limit shown BEFORE the action (TRUST mandate). */}
                     <EntitlementMeter capability="education.card_enrichment" />
@@ -1103,6 +1112,7 @@ export function SetDetailView({
                 {canEdit && (
                   <div className="flex flex-col items-start gap-0.5">
                     <Button
+                  size="sm"
                       variant="outline"
                       disabled={
                         data.cards.length === 0 ||
@@ -1126,6 +1136,7 @@ export function SetDetailView({
                   </div>
                 )}
                 <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => setConvertOpen(true)}
                   disabled={data.cards.length === 0}
@@ -1138,7 +1149,8 @@ export function SetDetailView({
                 {data.cards.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline">
+                      <Button
+                  size="sm" variant="outline">
                         <Volume2 className="mr-1.5 h-4 w-4" />
                         Audio
                         <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
@@ -1185,7 +1197,7 @@ export function SetDetailView({
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1 sm:[&>*:first-child]:flex-none">
                 <EducationCollectionSearch
                   value={cardSearch}
                   onValueChange={setCardSearch}
