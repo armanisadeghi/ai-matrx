@@ -2,6 +2,7 @@
 
 // features/crm/components/record/AddressesCard.tsx — postal addresses.
 
+import { cn } from "@/lib/utils";
 import { PlusTapButton, TrashTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
@@ -158,7 +159,13 @@ export function AddressesCard({
         // An inline form on the card's own surface — no box inside the box.
         // Labelled fields in a grid: Type + Street, then City / State / ZIP /
         // Country, then the action on its own row edge.
-        <div className="mb-2 grid grid-cols-6 gap-x-2 gap-y-1.5 border-b border-border pb-2">
+        <div
+          className={cn(
+            "grid grid-cols-6 gap-x-2 gap-y-1.5",
+            // The rule separates the form from a list — none when the list is empty.
+            addresses.length > 0 && "mb-2 border-b border-border pb-2",
+          )}
+        >
           <label className="col-span-2 grid gap-0.5 text-xs text-muted-foreground">
             Type
             <Select

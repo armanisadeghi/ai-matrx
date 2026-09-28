@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { CURRENCY_CODES } from "@/features/agents/components/inputs/input-components/CurrencyVariableInput";
 import { searchPartiesByName } from "../../service";
 import type { PartyRef } from "../../types";
 import { createDeal } from "../../deals/service";
@@ -196,9 +197,11 @@ export function DealCreateDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New deal</DialogTitle>
-          <DialogDescription className="text-xs">
-            A deal tracks money through a pipeline. Move it between stages on
-            the board; winning it records the outcome automatically.
+          {/* The title stands alone; the one-line explanation stays for
+              screen readers only. */}
+          <DialogDescription className="sr-only">
+            A deal tracks money through a pipeline; winning it records the
+            outcome automatically.
           </DialogDescription>
         </DialogHeader>
 
@@ -276,15 +279,19 @@ export function DealCreateDialog({
               <Label htmlFor="deal-currency" className="text-xs">
                 Currency
               </Label>
-              <Input
-                id="deal-currency"
-                value={currency}
-                onChange={(e) =>
-                  setCurrency(e.target.value.toUpperCase().slice(0, 3))
-                }
-                placeholder="USD"
-                className="h-9 text-sm uppercase"
-              />
+              {/* A fixed set is a picker, never a free-text box. */}
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger id="deal-currency" className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCY_CODES.map((code) => (
+                    <SelectItem key={code} value={code} className="text-sm">
+                      {code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

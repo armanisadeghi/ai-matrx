@@ -357,7 +357,12 @@ export function ContactPointsCard({
       }
     >
       {adding && (
-        <div className="mb-2 flex flex-wrap items-center gap-1.5 border-b border-border pb-2">
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-1.5",
+            points.length > 0 && "mb-2 border-b border-border pb-2",
+          )}
+        >
           <Select
             value={channel}
             onValueChange={(v) => setChannel(v as ContactChannel)}
