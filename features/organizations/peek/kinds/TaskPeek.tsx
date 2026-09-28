@@ -15,6 +15,7 @@ import { peekHref } from "../peekHref";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface TaskRow {
   title: string | null;
@@ -25,18 +26,21 @@ interface TaskRow {
 export default function TaskPeek({ id, open, onClose }: PeekProps) {
   const [row, setRow] = React.useState<TaskRow | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<unknown>(null);
+  const [attempt, setAttempt] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await workspaceDb(supabase)
+      const { data, error } = await workspaceDb(supabase)
         .from("tasks")
         .select("title, description, created_at")
         .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {
+        setLoadError(error ?? null);
         setRow((data as TaskRow) ?? null);
         setLoading(false);
       }
@@ -44,7 +48,7 @@ export default function TaskPeek({ id, open, onClose }: PeekProps) {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   const description = (row?.description ?? "").trim();
 
@@ -57,7 +61,9 @@ export default function TaskPeek({ id, open, onClose }: PeekProps) {
       href={peekHref("task", id)}
       loading={loading}
     >
-      {row ? (
+      {loadError ? (
+        <ReadFailure error={loadError} what="this task" onRetry={() => setAttempt((n) => n + 1)} />
+      ) : row ? (
         <>
           <PeekField label="Description">
             {description ? (

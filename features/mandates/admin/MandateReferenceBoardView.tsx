@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * THE MANDATE REFERENCE FLEET BOARD — `/administration/mandates/references`.
+ * THE MANDATE REFERENCE FLEET BOARD — `/administration/intelligence/mandates/references`.
  *
  * Cross-repo system-of-record:
  * /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md §4.6.

@@ -21,8 +21,13 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { BrainCircuit } from "lucide-react";
-import { ADMIN_MANDATES_HOME } from "@/features/mandates/admin-routes";
+import { useRouter } from "next/navigation";
+import { BrainCircuit, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  ADMIN_MANDATES_HOME,
+  adminMandateRecordHref,
+} from "@/features/mandates/admin-routes";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityBulkAction } from "@/lib/entity-list/selection";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -35,10 +40,23 @@ import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { onMandateCacheInvalidated } from "@/features/mandates/service";
 import {
   batchEligibilityOf,
+  groupImpactByMandate,
+  isSafeGreen,
   rungIdentityOf,
   type ImpactVerdict,
 } from "@/features/mandates/admin/impact";
 import { useImpactAdvance } from "@/features/mandates/admin/impact-advance";
+import { AdvanceResultsCard, ImpactLegend } from "@/features/mandates/admin/impact-cells";
+import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  AGENT_MANDATES_WRITE_TARGETS,
+  MANDATES_SURFACE_NAME,
+  createMandatesScope,
+} from "@/features/surfaces/manifests/mandates.manifest";
 import {
   advanceWorkflowPins,
   workflowAdvanceEligibility,
@@ -57,6 +75,7 @@ import {
 import { invalidateMandateAdminList, retryMandateAdminFailures } from "./store";
 import { EntitySourceFailures } from "@/lib/entity-list/components/EntitySourceFailures";
 import { createMandateAdminService } from "./service";
+import { healthSummaryOf, toMandateSummary } from "./surface-scope";
 import type { MandateAdminRow } from "./types";
 
 /** What each secondary read feeds, in the words of the columns it fills. */
@@ -78,7 +97,9 @@ export function MandateAdminListPage({
   lane?: MandateAdminLane;
 } = {}) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const userId = useAppSelector(selectUserId);
+  const systemAgentCount = useAppSelector(selectBuiltinAgents).length;
   const accessToken = useAppSelector(selectAccessToken);
   const authReady = useAppSelector(selectAuthReady);
   const organizationId = useServerOrganizationId();
@@ -109,6 +130,16 @@ export function MandateAdminListPage({
     onWritten: () => invalidateMandateAdminList(true),
   });
   const openImpactBatchWindow = useOpenImpactBatchWindow();
+
+  // "Advance all safe": every system mandate whose OWN default rung is behind
+  // its holder's newest saved version and graded safe to move — the whole
+  // standing report, not just the page on screen.
+  const safeDefaults: ImpactVerdict[] = [];
+  for (const grouped of groupImpactByMandate(listState.reports.impact?.verdicts ?? []).values()) {
+    if (grouped.defaultVerdict && isSafeGreen(grouped.defaultVerdict)) {
+      safeDefaults.push(grouped.defaultVerdict);
+    }
+  }
 
   // ── Batch work over the selection — the old console's "Review as batch"
   // and "Advance selected", carried over by import. ────────────────────────
@@ -210,8 +241,58 @@ export function MandateAdminListPage({
   // only the server reports ride the organization header, and each of those
   // that cannot run says so in the notice below — the rows never wait for it.
   const ready = authReady && Boolean(accessToken);
-  const service = createMandateAdminService(dispatch, lane);
+  const baseService = createMandateAdminService(dispatch, lane);
   const support = lane === "support";
+
+  // THE AGENT SURFACE (`matrx-admin/mandates`): the page on screen, read at
+  // Run time. The last answered page is kept in a ref the service writes, so
+  // the surface scope and `select_mandate` see what the admin sees.
+  const pageRef = useRef<{ rows: MandateAdminRow[]; total: number }>({ rows: [], total: 0 });
+  const service: typeof baseService = {
+    ...baseService,
+    fetchPage: async (query, sort) => {
+      const page = await baseService.fetchPage(query, sort);
+      pageRef.current = { rows: page.rows, total: page.total };
+      return page;
+    },
+  };
+  const getSurfaceScope = () => {
+    const { rows, total } = pageRef.current;
+    const summaries = rows.map(toMandateSummary);
+    return createMandatesScope({
+      mandate_count: total,
+      mandates_summary: summaries,
+      health_summary: healthSummaryOf(rows),
+      unhealthy_mandates: summaries.filter((summary) => summary.health !== "ok"),
+      system_agent_count: systemAgentCount,
+      selection: window.getSelection()?.toString() || undefined,
+    });
+  };
+  const getWriteHandlers = (): SurfaceWriteHandlers => ({
+    [AGENT_MANDATES_WRITE_TARGETS.selectMandate]: (value: unknown) => {
+      if (typeof value !== "string" || value.trim() === "") {
+        throw new Error(
+          "select_mandate takes a non-empty string — a mandate's `id` (UUID) or its `mandate_key`, both of which are in `mandates_summary`.",
+        );
+      }
+      const key = value.trim();
+      const rows = pageRef.current.rows;
+      const match = rows.find((row) => row.id === key) ?? rows.find((row) => row.mandateKey === key);
+      if (!match) {
+        const known = rows.map((row) => row.mandateKey).join(", ");
+        throw new Error(
+          `No mandate on this page matches "${key}". Pass a mandate id (UUID) or mandate_key from \`mandates_summary\`.` +
+            (known ? ` Mandate keys on this page: ${known}.` : ""),
+        );
+      }
+      router.push(adminMandateRecordHref(match.mandateKey));
+    },
+    [AGENT_MANDATES_WRITE_TARGETS.exemplarDraft]: () => {
+      throw new Error(
+        "The mandate list has no test-case composer. Test cases are composed on the mandate's own page, on its Test tab — open the mandate with select_mandate and tell the admin to compose the test case there.",
+      );
+    },
+  });
 
   if (!ready) {
     return (
@@ -224,7 +305,7 @@ export function MandateAdminListPage({
     );
   }
 
-  return (
+  const list = (
     <MandateAdminListActionsContext.Provider
       value={{
         advancing: writes.busy !== null,
@@ -255,18 +336,68 @@ export function MandateAdminListPage({
         scopeTabs={support}
         clearsShellHeader={false}
         notice={
-          <EntitySourceFailures
-            operation={support ? "Load the mandate support lookup's columns" : "Load the admin mandate list's columns"}
-            failures={Object.entries(listState.failures).map(([source, message]) => ({
-              label: SOURCE_LABEL[source] ?? source,
-              error: message,
-            }))}
-            onRetry={retryMandateAdminFailures}
-          />
+          <>
+            <EntitySourceFailures
+              operation={support ? "Load the mandate support lookup's columns" : "Load the admin mandate list's columns"}
+              failures={Object.entries(listState.failures).map(([source, message]) => ({
+                label: SOURCE_LABEL[source] ?? source,
+                error: message,
+              }))}
+              onRetry={retryMandateAdminFailures}
+            />
+            {/* What an advance moved, with its revert door (renders nothing
+                until something was advanced from this page). */}
+            {support ? null : (
+              <AdvanceResultsCard
+                batches={writes.batches}
+                verdictsOf={writes.verdictsOf}
+                busy={writes.busy}
+                onRevert={(batch, rowId) => void writes.revert(batch, rowId)}
+                onDismiss={writes.clear}
+              />
+            )}
+          </>
         }
-        headerActions={support ? <MandateSupportLookupLabel /> : <MandateAdminPagesNav />}
+        headerActions={
+          support ? (
+            <MandateSupportLookupLabel />
+          ) : (
+            <>
+              {safeDefaults.length > 0 ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1"
+                  disabled={writes.busy !== null}
+                  title="Move every mandate whose own pin is behind its holder's newest version and graded safe"
+                  onClick={() => void writes.advance(safeDefaults, "Mandate list: all safe")}
+                >
+                  {writes.busy === "advance" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  Advance all safe ({safeDefaults.length})
+                </Button>
+              ) : null}
+              <ImpactLegend />
+              <MandateAdminPagesNav />
+            </>
+          )
+        }
       />
     </MandateAdminListActionsContext.Provider>
+  );
+
+  // The support lookup is a read-only look into a tenant: no agent surface.
+  if (support) return list;
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={MANDATES_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      getWriteHandlers={getWriteHandlers}
+      isEditable={false}
+    >
+      {list}
+    </SurfaceRuntimeProvider>
   );
 }
 

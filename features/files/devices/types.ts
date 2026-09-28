@@ -27,7 +27,7 @@ export interface DeviceRow {
 
 export interface SyncMappingRow {
   id: string;
-  user_id: string;
+  created_by: string;
   device_id: string;
   /** NULL = the user-visible root of this mapping's organization (D5). */
   folder_id: string | null;

@@ -33,12 +33,21 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { visibleSourceKinds, type SourceKindDef } from "../sourceKinds";
 import { useSourceSet } from "../useSourceSet";
 import { useSourceIntake } from "../useSourceIntake";
+import { RELOADED_RESUMING } from "../interrupted";
 import type { SourceInputProps, SourceKindId } from "../types";
 import { SourceCard, formatChars } from "./SourceCard";
 import { YourSources } from "./YourSources";
 
 const REVIEW_KNOB = { feature: "sources", key: "review_threshold_chars" } as const;
 const MEASURE_DEBOUNCE_MS = 400;
+
+/**
+ * Cards already handed back to the door after a reload, and uploaded files
+ * whose Source was already kept — module scope, so two inputs on one surface
+ * (or a re-mount) never land the same thing twice.
+ */
+const resumedCards = new Set<string>();
+const keptFileSources = new Set<string>();
 
 export function SourceInput({
   surfaceKey,
@@ -61,6 +70,42 @@ export function SourceInput({
   const [threshold, setThreshold] = useState<number | null>(null);
   const [thresholdError, setThresholdError] = useState<string | null>(null);
   const autoOpened = useRef(false);
+
+  // ── Never lose input: land again what a reload cut off ─────────────────────
+  const resumeKey = set.sources
+    .filter((s) => s.status === "error" && s.error === RELOADED_RESUMING)
+    .map((s) => s.id)
+    .join(",");
+  const resumeInterrupted = useEffectEvent(() => {
+    for (const card of set.sources) {
+      if (card.status !== "error" || card.error !== RELOADED_RESUMING) continue;
+      if (resumedCards.has(card.id)) continue;
+      resumedCards.add(card.id);
+      intake.resume(card);
+    }
+  });
+  useEffect(() => {
+    if (resumeKey) resumeInterrupted();
+  }, [resumeKey]);
+
+  // ── An uploaded file's Source exists once reading makes it: keep + file it
+  const landedKey = runner.jobs
+    .filter((j) => j.processedDocumentId && j.cldFileId)
+    .map((j) => `${j.cldFileId}:${j.processedDocumentId}`)
+    .join(",");
+  const keepLandedFiles = useEffectEvent(() => {
+    for (const card of set.sources) {
+      const fileId = card.draft.fileId;
+      if (!fileId || card.draft.processedDocumentId || card.draft.ref?.resource_type !== "file") continue;
+      const job = runner.jobs.find((j) => j.cldFileId === fileId && j.processedDocumentId);
+      if (!job?.processedDocumentId || keptFileSources.has(`${card.id}:${fileId}`)) continue;
+      keptFileSources.add(`${card.id}:${fileId}`);
+      void intake.fileLanded(card, job.processedDocumentId);
+    }
+  });
+  useEffect(() => {
+    if (landedKey) keepLandedFiles();
+  }, [landedKey]);
 
   const count = set.sources.length;
   const atMax = max !== undefined && count >= max;
@@ -163,8 +208,13 @@ export function SourceInput({
     <section className={cn("space-y-3", className)} aria-label={title}>
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <span className="text-xs text-muted-foreground">
-          {count === 0
+        <span className="text-xs text-muted-foreground" aria-live="polite">
+          {set.restoring ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Bringing back what you picked…
+            </span>
+          ) : count === 0
             ? required
               ? tiles.some((t) => t.id === "topic")
                 ? "Add at least one source, or pick Just a topic."
@@ -256,7 +306,11 @@ export function SourceInput({
         </p>
       ) : null}
 
-      {set.topic.trim() || count > 0 ? (
+      {set.restoring ? (
+        <div className="space-y-2" aria-hidden>
+          <div className="h-16 animate-pulse rounded-xl border border-border bg-muted/40" />
+        </div>
+      ) : set.topic.trim() || count > 0 ? (
         <ul className="space-y-2" aria-label="Picked sources">
           {set.topic.trim() ? (
             <li className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
@@ -287,6 +341,9 @@ export function SourceInput({
                   : null
               }
               onProcessingSettled={() => void set.manifest()}
+              // A retry is a card already in the list — it never counts against `max`.
+              onTryAgain={() => void intake.resume(card)}
+              onChooseFileAgain={(file) => void intake.retryFile(card, file)}
             />
           ))}
         </ul>

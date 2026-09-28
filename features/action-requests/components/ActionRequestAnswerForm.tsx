@@ -33,6 +33,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
 import type {
   ActionRequestRefusal,
+  ApproveSpendRender,
   CaptureField,
   ActionRequestRender,
   ConfirmDetailsRender,
@@ -174,10 +175,13 @@ export function ActionRequestAnswerForm({
     </div>
   ) : null;
 
-  const head =
+  // `title` is the server's, except where a form's own live value is IN it:
+  // "Approve up to $X?" must name the amount the person has typed, not the one
+  // that was suggested, or the heading lies the moment they edit it.
+  const head = (title: string) =>
     !card || render.subtitle ? (
       <header className="flex flex-col gap-2">
-        {card ? null : <h1 className="text-xl font-medium">{render.title}</h1>}
+        {card ? null : <h1 className="text-xl font-medium">{title}</h1>}
         {render.subtitle ? (
           <p className="text-sm text-muted-foreground">{render.subtitle}</p>
         ) : null}
@@ -188,9 +192,9 @@ export function ActionRequestAnswerForm({
     <p className="text-xs text-muted-foreground">{render.footnote}</p>
   ) : null;
 
-  const shell = (body: React.ReactNode) => (
+  const shell = (body: React.ReactNode, title: string = render.title) => (
     <section className={cn("flex flex-col", card ? "gap-4 p-4" : "gap-5 py-10")}>
-      {head}
+      {head(title)}
       {problem}
       {body}
       {foot}
@@ -223,6 +227,9 @@ export function ActionRequestAnswerForm({
           ))}
         </div>,
       );
+
+    case "approve_spend":
+      return <ApproveSpend render={render} frame={shell} {...common} />;
 
     case "choose_one":
       return shell(
@@ -613,6 +620,191 @@ function OneTimeCode({ render, busy, idPrefix, autoFocus, onSubmit }: FormProps<
       </Button>
     </div>
   );
+}
+
+/**
+ * APPROVE SPEND — a number, not a yes/no (OPENSEO-TOOLS-SPEC §6.2).
+ *
+ * The person sees, in this order: the server's consequence sentence (real
+ * money, and the cap), what the money buys and its estimate, the
+ * organization's remaining limit when one applies, then ONE editable amount
+ * prefilled with the suggestion, and Approve / Don't spend.
+ *
+ * Nothing here decides whether they MAY approve — `money` always needs a
+ * signed-in session and the page never draws this form without one
+ * (`can_complete` is the server's). Nothing here blocks an amount either:
+ * below the estimate or above the limit are both allowed and both SAID, in a
+ * line under the box, before the click (validation offers, never blocks). The
+ * only refusal is an amount that is not an amount.
+ */
+function ApproveSpend({
+  render,
+  busy,
+  idPrefix,
+  autoFocus,
+  onSubmit,
+  frame,
+}: FormProps<ApproveSpendRender> & {
+  frame: (body: React.ReactNode, title?: string) => React.ReactNode;
+}) {
+  // THE SUGGESTION NEVER STARTS BELOW THE ESTIMATE. The server rounds its
+  // suggestion to cents, so a $0.004 estimate would arrive as "$0.00" — an
+  // amount that buys nothing. Round the estimate UP to the cent instead.
+  const suggested = Math.max(render.amount_usd, centsUp(render.estimate_usd));
+  const [text, setText] = useState(() => suggested.toFixed(2));
+  const [problem, setProblem] = useState<string | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+
+  const amount = parseAmount(text);
+  const cap = render.guardrail_cap_usd ?? null;
+  const yes = render.choices.find((choice) => choice.value === "yes");
+  const no = render.choices.find((choice) => choice.value === "no");
+
+  // What the typed amount means, said BEFORE the click — never a block.
+  const advisories: string[] = [];
+  if (amount !== null && amount > 0) {
+    if (amount < render.estimate_usd) {
+      advisories.push(
+        `That is below the estimate of ${money(render.estimate_usd)}, so your agent will probably have to ask you again before it can run this.`,
+      );
+    }
+    if (cap !== null && amount > cap) {
+      advisories.push(
+        `That is above your organization's remaining limit, so the approval will be capped at ${money(cap)}.`,
+      );
+    }
+  }
+
+  const approve = () => {
+    if (amount === null || amount <= 0) {
+      setProblem(`Enter an amount above $0.00 (up to ${money(MAX_APPROVAL_USD)}), or choose "${no?.label ?? "Don't spend"}".`);
+      input.current?.focus();
+      return;
+    }
+    setProblem(null);
+    void onSubmit({ result: { approved: true, approved_amount_usd: amount } });
+  };
+
+  const title =
+    amount !== null && amount > 0 && amount !== render.amount_usd
+      ? `Approve up to ${money(amount)}?`
+      : render.title;
+
+  return frame(
+    <div className="flex flex-col gap-4">
+      {/* THE CONSEQUENCE FIRST — the server's own sentence. */}
+      {render.consequence_note ? (
+        <p className="rounded-md border border-border bg-card p-3 text-sm">
+          {render.consequence_note}
+        </p>
+      ) : null}
+
+      <dl className="flex flex-col gap-3 rounded-md border border-border bg-card p-3 text-sm">
+        {render.what_it_buys ? (
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs text-muted-foreground">What it buys</dt>
+            <dd>{render.what_it_buys}</dd>
+          </div>
+        ) : null}
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-xs text-muted-foreground">Estimated cost</dt>
+          <dd className="font-medium tabular-nums">{money(render.estimate_usd)}</dd>
+        </div>
+        {cap !== null ? (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-xs text-muted-foreground">Your organization&apos;s remaining limit</dt>
+            <dd className="font-medium tabular-nums">{money(cap)}</dd>
+          </div>
+        ) : null}
+      </dl>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium" htmlFor={`${idPrefix}-amount`}>
+          Amount you approve
+        </label>
+        <div className="relative">
+          <span className="pointer-events-none absolute inset-y-0 left-0 flex w-8 items-center justify-center text-muted-foreground">
+            $
+          </span>
+          <Input
+            ref={input}
+            id={`${idPrefix}-amount`}
+            className="pl-8 text-base tabular-nums"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            autoFocus={autoFocus}
+            readOnly={!render.amount_editable}
+            aria-invalid={problem ? true : undefined}
+            aria-describedby={`${idPrefix}-amount-help`}
+            value={text}
+            onChange={(event) => {
+              setText(event.target.value);
+              setProblem(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !busy) approve();
+            }}
+          />
+        </div>
+        <div id={`${idPrefix}-amount-help`} className="flex flex-col gap-1">
+          {problem ? <p className="text-sm text-destructive">{problem}</p> : null}
+          {advisories.map((line) => (
+            <p key={line} className="text-sm text-muted-foreground">
+              {line}
+            </p>
+          ))}
+          {!problem && advisories.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Your agent can spend up to this amount on this job, and no more.
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <Button className="w-full" disabled={busy} onClick={approve}>
+          {yes?.label ?? "Approve this amount"}
+        </Button>
+        <Button
+          variant="ghost"
+          className="w-full"
+          disabled={busy}
+          onClick={() => void onSubmit({ result: { approved: false } })}
+        >
+          {no?.label ?? "Don't spend"}
+        </Button>
+      </div>
+    </div>,
+    title,
+  );
+}
+
+/** aidream's own ceiling on one approval (`ApproveSpendResult.approved_amount_usd`). */
+const MAX_APPROVAL_USD = 100_000;
+
+/** A typed dollar amount, or null when it is not one. Up to two decimals; "$",
+ *  spaces and thousands commas are forgiven. */
+function parseAmount(text: string): number | null {
+  const cleaned = text.replace(/[\s$,]/g, "");
+  if (!/^\d+(\.\d{0,2})?$|^\.\d{1,2}$/.test(cleaned)) return null;
+  const value = Number(cleaned);
+  return Number.isFinite(value) && value <= MAX_APPROVAL_USD ? value : null;
+}
+
+function centsUp(usd: number): number {
+  return Math.ceil(Math.round(usd * 1_000_000) / 10_000) / 100;
+}
+
+/** Dollars, to the cent — and, under a dollar, to as many as four places, so a
+ *  $0.018 estimate reads as itself and a $0.0035 run never reads as "$0.00". */
+function money(usd: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: usd > 0 && usd < 1 ? 4 : 2,
+  }).format(usd);
 }
 
 function timeFormat(timezone: string | null | undefined): Intl.DateTimeFormat {

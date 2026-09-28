@@ -1,5 +1,6 @@
 "use client";
 
+import { ADMIN_MANDATES_HOME } from "@/features/mandates/admin-routes";
 import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 
@@ -79,8 +80,7 @@ export function MandateLineageLine({
         error: readState === "error" ? "The mandate lineage could not be read." : null,
       }) }, "lineage");
 
-  const base =
-    host === "admin-route" ? "/administration/mandates" : "/mandates";
+  const base = host === "admin-route" ? ADMIN_MANDATES_HOME : "/mandates";
   const unavailable = (
     <StatusToken
       status="unknown"

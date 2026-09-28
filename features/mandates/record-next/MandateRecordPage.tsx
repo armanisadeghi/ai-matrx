@@ -2,9 +2,8 @@
 
 // features/mandates/record-next/MandateRecordPage.tsx
 //
-// THE NEW MANDATE RECORD PAGE — /administration/mandates/record-preview/<key>.
-// Built beside /administration/mandates/<key> (AdminMandateWorkspacePage, left
-// untouched) per common-docs/systems/intelligence/mandates/UI-REGISTER.md.
+// THE MANDATE RECORD PAGE — /administration/intelligence/mandates/<key> (and
+// the member seats) per common-docs/systems/intelligence/mandates/UI-REGISTER.md.
 //
 // Shape: the agents-style record header (EntityModeHeader — back | name |
 // actions), the name shown ONCE, the existing tabs with short labels (./record-tabs.ts), and the selected tab in the URL

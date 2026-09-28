@@ -49,6 +49,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
   const [findOpen, setFindOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<{ kind: MemoryItemKind; index: number } | null>(null);
   const [itemDraft, setItemDraft] = useState<MemoryAidPayload | null>(null);
+  const [itemBaseVersion, setItemBaseVersion] = useState<number | null>(null);
   const [itemError, setItemError] = useState<string | null>(null);
   const [itemSaving, setItemSaving] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -73,7 +74,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
       }, nameOf: (aid) => aid.title,
     },
     update: {
-      parse: (value) => parseUpdateMemoryAids(value, canEdit && media ? [media] : []),
+      parse: (value) => { if (editingItem) throw new Error("Finish or cancel the open item edit before applying agent changes."); return parseUpdateMemoryAids(value, canEdit && media ? [media] : []); },
       run: async (plan) => {
         const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.aid.title, ir_envelope: plan.aid });
         if (result.error || !result.data) throw new Error(result.error ?? "Could not update memory aid.");
@@ -82,10 +83,10 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
       }, nameOf: (plan) => plan.aid.title, changedOf: (plan) => plan.changed,
     },
     delete: {
-      parse: (value) => parseMemoryIds(value, "delete_memory_aids", isOwner && media ? [media] : []).map(() => {
+      parse: (value) => { if (editingItem) throw new Error("Finish or cancel the open item edit before deleting this set."); return parseMemoryIds(value, "delete_memory_aids", isOwner && media ? [media] : []).map(() => {
         if (!media) throw new Error("The memory aid is no longer available.");
         return media;
-      }),
+      }); },
       run: async (row) => {
         const result = await studyMediaService.softDelete(row.id);
         if (result.error) throw new Error(result.error);
@@ -96,14 +97,16 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
   }, refuseSurfaceWrite),
     change_memory_item: {
       validate: (value: unknown) => {
+        if (editingItem) throw new Error("Finish or cancel the open item edit before applying agent changes.");
         const current = media ? coerceMemoryAid(media.ir_envelope) : null;
         if (!canEdit || !current) throw new Error("Open a memory aid you can edit before changing one item.");
-        parseMemoryItemChange(value, current);
+        parseMemoryItemChange(value, current, media?.version);
       },
       apply: async (value: unknown) => {
+        if (editingItem) throw new Error("Finish or cancel the open item edit before applying agent changes.");
         const current = media ? coerceMemoryAid(media.ir_envelope) : null;
         if (!canEdit || !media || !current) throw new Error("The editable memory aid is no longer available.");
-        const change = parseMemoryItemChange(value, current);
+        const change = parseMemoryItemChange(value, current, media?.version);
         const result = await studyMediaService.updateVersioned(media.id, media.version, { title: change.aid.title, ir_envelope: change.aid });
         if (result.error || !result.data) throw new Error(result.error ?? "Could not change memory item.");
         setMedia(result.data);
@@ -120,6 +123,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
     return createEducationMemoryScope({
       view: "detail",
       aid_id: mediaId,
+      aid_version: media?.version,
       aid_loaded: !loading && !!media,
       aid_is_owner: isOwner,
       ...(media
@@ -171,8 +175,35 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
     };
   }, [mediaId, reloadKey, authReady]);
 
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+    if (!active) return;
+    const stored = sessionStorage.getItem(`memory-item-draft:${mediaId}`);
+    if (!stored) return;
+    try {
+      const draft = JSON.parse(stored);
+      if (draft.editingItem && draft.itemDraft && typeof draft.itemBaseVersion === "number") {
+        setEditingItem(draft.editingItem);
+        setItemDraft(coerceMemoryAidPartial(draft.itemDraft));
+        setItemBaseVersion(draft.itemBaseVersion);
+        toast.info("Your unsaved memory item was restored.");
+      }
+    } catch { sessionStorage.removeItem(`memory-item-draft:${mediaId}`); }
+    });
+    return () => { active = false; };
+  }, [mediaId]);
+
+  useEffect(() => {
+    if (!editingItem || !itemDraft) return;
+    sessionStorage.setItem(`memory-item-draft:${mediaId}`, JSON.stringify({ editingItem, itemDraft, itemBaseVersion }));
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [mediaId, editingItem, itemDraft, itemBaseVersion]);
+
   async function handleDelete() {
-    if (!media) return;
+    if (!media || !(await leaveItem())) return;
     const ok = await confirm({
       title: "Delete this entire memory aid set?",
       description:
@@ -190,7 +221,20 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
     router.push("/education/memory");
   }
 
-  function beginItem(kind: MemoryItemKind, index: number, adding = false) {
+  async function leaveItem() {
+    if (itemSaving) return false;
+    if (!editingItem) return true;
+    const discard = await confirm({ title: "Discard this item edit?", description: "Your unsaved item changes will be discarded.", confirmLabel: "Discard changes", variant: "destructive" });
+    if (discard) sessionStorage.removeItem(`memory-item-draft:${mediaId}`);
+    return discard;
+  }
+
+  async function navigate(href: string) {
+    if (await leaveItem()) router.push(href);
+  }
+
+  async function beginItem(kind: MemoryItemKind, index: number, adding = false) {
+    if (!(await leaveItem())) return;
     if (!media) return;
     const base = coerceMemoryAidPartial(media.ir_envelope);
     const next = !adding ? base : kind === "mnemonic"
@@ -200,20 +244,22 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
         : { ...base, memory_palace: { ...base.memory_palace, applicable: true,
             loci: [...base.memory_palace.loci, { __kind: "locus" as const, place: "", item: "", image: "" }] } };
     setItemDraft(next);
+    setItemBaseVersion(media.version);
     setEditingItem({ kind, index });
     setItemError(null);
   }
 
   async function saveItem() {
-    if (!media || !itemDraft) return;
+    if (!media || !itemDraft || itemBaseVersion === null) return;
     let clean: MemoryAidPayload;
     try { clean = parseMemoryAid(itemDraft, "memory aid", true); }
     catch (error) { setItemError(error instanceof Error ? error.message : "Check this item."); return; }
     setItemSaving(true);
-    const result = await studyMediaService.updateVersioned(media.id, media.version, { title: clean.title, ir_envelope: clean });
+    const result = await studyMediaService.updateVersioned(media.id, itemBaseVersion, { title: clean.title, ir_envelope: clean });
     setItemSaving(false);
     if (result.error || !result.data) { setItemError(result.error ?? "Could not save this item."); return; }
     setMedia(result.data);
+    sessionStorage.removeItem(`memory-item-draft:${mediaId}`);
     setEditingItem(null);
     setItemDraft(null);
     setItemError(null);
@@ -221,7 +267,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
   }
 
   async function deleteItem(kind: MemoryItemKind, index: number) {
-    if (!media) return;
+    if (!media || !(await leaveItem())) return;
     const noun = kind === "locus" ? "palace stop" : kind;
     const ok = await confirm({ title: `Delete this ${noun}?`,
       description: "Only this item will be removed. The memory aid set will remain.",
@@ -232,6 +278,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
     const result = await studyMediaService.updateVersioned(media.id, media.version, { title: clean.title, ir_envelope: clean });
     if (result.error || !result.data) { toast.error(result.error ?? `Could not delete ${noun}.`); return; }
     setMedia(result.data);
+    sessionStorage.removeItem(`memory-item-draft:${mediaId}`);
     setEditingItem(null);
     setItemDraft(null);
     toast.success(`${noun[0].toUpperCase()}${noun.slice(1)} deleted`);
@@ -281,7 +328,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
           variant="ghost"
           size="icon"
           className="shrink-0"
-          onClick={() => router.push("/education/memory")}
+          onClick={() => void navigate("/education/memory")}
           aria-label="Back"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -297,7 +344,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
         <div className={findOpen ? "flex w-full min-w-0 justify-end sm:w-auto" : "flex shrink-0 items-center gap-1"}>
           <ContentFindControl rootRef={contentRef} label="Find in memory aids" inline onOpenChange={setFindOpen} />
           {!findOpen && canEdit && <>
-            <Button variant="outline" size="sm" onClick={() => router.push(`/education/memory/${media.id}/edit`)}>
+            <Button variant="outline" size="sm" onClick={() => void navigate(`/education/memory/${media.id}/edit`)}>
               <Pencil className="mr-1 h-4 w-4" /> Edit all
             </Button>
             {isOwner && <>
@@ -311,7 +358,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
             <DropdownMenu>
               <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="More memory aid actions"><Ellipsis className="h-4 w-4" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => router.push(media.source_kind === "topic" ? "/education/memory/new?source=topic" : `/education/memory/new?source=deck&deck=${media.source_id ?? ""}`)}>
+                <DropdownMenuItem onSelect={() => void navigate(media.source_kind === "topic" ? "/education/memory/new?source=topic" : `/education/memory/new?source=deck&deck=${media.source_id ?? ""}`)}>
                   <RefreshCw className="mr-2 h-4 w-4" /> Regenerate set
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => void handleDelete()}>
@@ -331,13 +378,13 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
         <MemoryAidBlock serverData={editingItem && itemDraft ? itemDraft : media.ir_envelope} controls={canEdit ? {
           onAdd: (kind) => {
             const current = coerceMemoryAidPartial(media.ir_envelope);
-            beginItem(kind, kind === "mnemonic" ? current.mnemonics.length : kind === "analogy" ? current.analogies.length : current.memory_palace.loci.length, true);
+            void beginItem(kind, kind === "mnemonic" ? current.mnemonics.length : kind === "analogy" ? current.analogies.length : current.memory_palace.loci.length, true);
           },
-          onEdit: (kind, index) => beginItem(kind, index),
+          onEdit: (kind, index) => void beginItem(kind, index),
           onDelete: (kind, index) => void deleteItem(kind, index),
           ...(editingItem && itemDraft ? { editor: { ...editingItem,
             content: <MemoryItemEditor aid={itemDraft} kind={editingItem.kind} index={editingItem.index}
-              onChange={setItemDraft} onSave={() => void saveItem()} onCancel={() => { setEditingItem(null); setItemDraft(null); setItemError(null); }}
+              onChange={setItemDraft} onSave={() => void saveItem()} onCancel={() => { sessionStorage.removeItem(`memory-item-draft:${mediaId}`); setEditingItem(null); setItemDraft(null); setItemError(null); }}
               saving={itemSaving} error={itemError} /> } } : {}),
         } : undefined} />
       </div>

@@ -4,6 +4,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import { isConversationRequestEmpty } from "@/features/agent-comparison/shared/battleRequestEmpty";
 import type { SettingsColumn, SettingsLockedSetup } from "../types";
 
 const EMPTY_COLUMNS: SettingsColumn[] = [];
@@ -88,11 +89,15 @@ export const selectCollapsedSettingsColumnCount = createSelector(
  * handler runs a stricter preflight on click so the user always gets a
  * specific "what's missing" toast instead of a silently-disabled button.
  */
-export const selectCanSubmitSettings = createSelector(
-  [selectLockedSetup, selectSettingsColumns],
-  (locked, cols) => {
-    if (!locked.agentId) return false;
-    if (cols.length === 0) return false;
-    return true;
-  },
-);
+// Not memoized via createSelector: isConversationRequestEmpty reads across
+// several other slices (user-input, resources, variable-values), so it needs
+// full state, not a derived slice — see battleRequestEmpty.ts.
+export const selectCanSubmitSettings = (state: RootState): boolean => {
+  const locked = selectLockedSetup(state);
+  const cols = selectSettingsColumns(state);
+  if (!locked.agentId) return false;
+  if (cols.length === 0) return false;
+  const inputConversationId = selectSettingsInputConversationId(state);
+  if (isConversationRequestEmpty(state, inputConversationId)) return false;
+  return true;
+};

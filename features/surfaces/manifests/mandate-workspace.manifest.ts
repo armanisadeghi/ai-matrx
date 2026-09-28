@@ -1,7 +1,7 @@
 /**
  * Surface manifest — ONE mandate's admin workspace (`matrx-admin/mandate-workspace`).
  *
- * ADMIN SURFACE. Drives `/administration/mandates/[mandateKey]` — the page
+ * ADMIN SURFACE. Drives `/administration/intelligence/mandates/[mandateKey]` — the page
  * that shows ONE job in the mandate's own order, INPUT → GOAL → OUTPUT, plus
  * the system rung's holder and the admin's platform tools. Backed by
  * `features/mandates/admin/AdminMandateWorkspacePage.tsx` (mounts the
@@ -188,9 +188,9 @@ export const mandateWorkspaceManifest: SurfaceManifest = {
   readinessNote:
     "Provider mounted on the admin route; identity + goal + goal-draft values live; the one write target (goal draft) is wired and user-verified. Inputs/holder/health are not yet emitted as values.",
   label: "Mandate Workspace",
-  urlPattern: "/administration/mandates/:mandateKey",
+  urlPattern: "/administration/intelligence/mandates/:mandateKey",
   intro: `<surface_intro>
-This is an ADMIN surface: ONE mandate's workspace at /administration/mandates/<key>.
+This is an ADMIN surface: ONE mandate's workspace at /administration/intelligence/mandates/<key>.
 
 A mandate is a named platform JOB (mandate.definition) — the thing a caller asks for by key — done by whichever Holder the platform assigns. This page shows that one job in its own order: INPUT (what it is told), GOAL (what done-well means), OUTPUT (the __kind it must produce), then who holds it and the admin's tools.
 

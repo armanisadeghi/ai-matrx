@@ -7,7 +7,7 @@
 // 🚨 THE DEFECT THIS CLOSES (2026-09-09). The mandate LIST already screams: a
 // "Holder missing" tile, a red strip naming every such Mandate, a per-row badge
 // and a one-click narrowing. Open one of those Mandates and the scream stopped
-// — `/administration/mandates/shortcut.full_prompt_optimizer` landed on the
+// — the admin page of `shortcut.full_prompt_optimizer` landed on the
 // Definition tab, whose only trace of the fact was the grey line "Declared by:
 // Holder name unavailable" and an amber box titled with an INPUT problem. The
 // truth (the door's full rung walk) was real and correct, but it sat on another

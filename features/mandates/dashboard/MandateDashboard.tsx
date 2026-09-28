@@ -65,12 +65,12 @@ import {
 } from "./list-link";
 import {
   ADMIN_MANDATES_HEALTH,
-  CLASSIC_ADMIN_MANDATES,
+  ADMIN_MANDATES_REFERENCES,
 } from "@/features/mandates/admin-routes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-/** Scan freshness lives on the owner's References page (repos + patrol). */
-const REFERENCES_PATH = CLASSIC_ADMIN_MANDATES.references;
+/** Scan freshness lives on the References page (repos + patrol). */
+const REFERENCES_PATH = ADMIN_MANDATES_REFERENCES;
 const FEATURE_ROWS_COLLAPSED = 12;
 
 type Slot<T> = { data: T | null; error: string | null; loading: boolean };

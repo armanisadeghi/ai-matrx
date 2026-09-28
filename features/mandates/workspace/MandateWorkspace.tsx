@@ -1,4 +1,5 @@
 "use client";
+import { ADMIN_MANDATES_HOME } from "@/features/mandates/admin-routes";
 import { DEFAULT_HOLDER_RUNG } from "@/features/bindings/default-holder-rung";
 import { ContractMismatchList } from "@/features/mandates/components/ContractMismatchNotice";
 import { unmetContractChecks } from "@/features/mandates/contract-check";
@@ -8,8 +9,9 @@ import { storedMandateKey } from "@/features/mandates/mandate-key";
 //
 // THE mandate workspace — the ONE core component every host wraps:
 //   · the dedicated route  app/(core)/mandates/[mandateKey]
-//   · the admin route      app/(admin)/administration/mandates/[mandateKey]
 //   · the window panel     features/window-panels/windows/mandates/MandateWindow
+// (The admin record page, /administration/intelligence/mandates/[mandateKey],
+// renders `MandateRecordBody`, features/mandates/record-next/.)
 // Identical functionality by construction (Arman's rule 3, 2026-08-26);
 // divergence only where a HOST genuinely differs — the window's multi-mandate
 // scope list, and the admin shell's header offset. There is no second mandate
@@ -130,7 +132,7 @@ export type WorkspacePrincipal =
  *  | `/mandates/[key]` (core route)                  | `person`       |
  *  | the window panel (`MandateWindow`, Yours pane)  | `person`       |
  *  | `/organizations/[id]/settings/mandates/[key]`   | `organization` |
- *  | `/administration/mandates/[key]` (admin route)  | `system`       |
+ *  | `host="admin-route"` (no route mounts it today) | `system`       |
  *
  * `system` is the admin panel, and Arman's rule for it is absolute: *"it should
  * never show ANYTHING related to a user or an org … the ONLY thing it should
@@ -478,9 +480,7 @@ function OneMandateWorkspace({
         <AccessGate
           token="mandate"
           id={mandateKeyOrId.trim()}
-          fallbackHref={
-            host === "admin-route" ? "/administration/mandates" : "/mandates"
-          }
+          fallbackHref={host === "admin-route" ? ADMIN_MANDATES_HOME : "/mandates"}
           fallbackLabel="All mandates"
         />
       );
@@ -504,11 +504,7 @@ function OneMandateWorkspace({
         ) : (
           <Button variant="outline" size="sm" asChild>
             <Link
-              href={
-                host === "admin-route"
-                  ? "/administration/mandates"
-                  : "/mandates"
-              }
+              href={host === "admin-route" ? ADMIN_MANDATES_HOME : "/mandates"}
             >
               <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
               All mandates

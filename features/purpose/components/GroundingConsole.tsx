@@ -31,6 +31,8 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
@@ -133,6 +135,8 @@ export function GroundingConsole() {
   const [rollups, setRollups] = useState<Rollup[]>([]);
   const [missing, setMissing] = useState<MissingUnit[]>([]);
   const [orphans, setOrphans] = useState<OrphanedPurpose[]>([]);
+  const [orphansError, setOrphansError] = useState<unknown>(null);
+  const [missingError, setMissingError] = useState<unknown>(null);
   const [openKind, setOpenKind] = useState<PurposeUnitType | null>(null);
   const [peek, setPeek] = useState<{ kind: string; id: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -164,8 +168,11 @@ export function GroundingConsole() {
       }
       setRollups([...byKind.values()].sort((a, b) => a.unitType.localeCompare(b.unitType)));
     }
-    if (isScopesRpcErr(orph)) toast.error(`Orphans: ${orph.error.message}`);
-    else setOrphans(orph.data);
+    if (isScopesRpcErr(orph)) setOrphansError(orph.error);
+    else {
+      setOrphansError(null);
+      setOrphans(orph.data);
+    }
     setLoading(false);
   }, []);
 
@@ -180,8 +187,13 @@ export function GroundingConsole() {
     }
     setOpenKind(kind);
     const res = await purposeService.unitsWithoutPurpose(kind);
-    if (isScopesRpcErr(res)) toast.error(res.error.message);
-    else setMissing(res.data);
+    if (isScopesRpcErr(res)) {
+      setMissing([]);
+      setMissingError(res.error);
+    } else {
+      setMissingError(null);
+      setMissing(res.data);
+    }
   }, [openKind]);
 
   return (
@@ -245,7 +257,18 @@ export function GroundingConsole() {
                 showing up to 200
               </span>
             </div>
-            {missing.length === 0 ? (
+            {missingError ? (
+              <ReadFailure
+                error={missingError}
+                what="the units without a purpose"
+                onRetry={() => {
+                  setOpenKind(null);
+                  void openMissing(openKind);
+                }}
+                className="m-3"
+                size="compact"
+              />
+            ) : missing.length === 0 ? (
               <p className="px-3 py-3 text-sm text-muted-foreground">Nothing to show.</p>
             ) : (
               <NonEditableContextMenu
@@ -306,10 +329,19 @@ export function GroundingConsole() {
             <Unplug className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Jobs nothing does anymore</span>
             <span className="text-xs text-muted-foreground">
-              {orphans.length} purpose{orphans.length === 1 ? "" : "s"} with nothing attached
+              <UntrustedCount value={orphans.length} trustworthy={!orphansError} label="Purposes with nothing attached" />{" "}
+              purpose{orphans.length === 1 ? "" : "s"} with nothing attached
             </span>
           </div>
-          {orphans.length === 0 ? (
+          {orphansError && orphans.length === 0 ? (
+            <ReadFailure
+              error={orphansError}
+              what="the purposes with nothing attached"
+              onRetry={() => void load()}
+              className="m-3"
+              size="compact"
+            />
+          ) : orphans.length === 0 ? (
             <p className="px-3 py-3 text-sm text-muted-foreground">
               Every purpose on record is served by something.
             </p>

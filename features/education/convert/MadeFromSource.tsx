@@ -29,7 +29,7 @@ import { kitHref } from "@/features/education/kits/kitService";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   listGeneratedFrom,
-  readArtifactOrigin,
+  readArtifactOrigins,
   type ArtifactOrigin,
   type GeneratedArtifact,
 } from "./lineage";
@@ -44,15 +44,17 @@ export function MadeFromSource({
   entityId: string;
   className?: string;
 }) {
-  const [origin, setOrigin] = useState<ArtifactOrigin | null>(null);
+  const [origins, setOrigins] = useState<ArtifactOrigin[]>([]);
   const [siblings, setSiblings] = useState<GeneratedArtifact[]>([]);
 
   useEffect(() => {
     let active = true;
     void (async () => {
-      const found = await readArtifactOrigin(entityType, entityId);
+      // Every Source it was made from (a deck from a PDF and a note has two).
+      const allOrigins = await readArtifactOrigins(entityType, entityId);
       if (!active) return;
-      setOrigin(found);
+      setOrigins(allOrigins);
+      const found = allOrigins[0];
       if (!found) return;
       const all = await listGeneratedFrom(found.entityType, found.entityId);
       if (!active) return;
@@ -74,12 +76,9 @@ export function MadeFromSource({
   // No lineage edge means this artifact genuinely has no recorded origin
   // (hand-made, or made before lineage was recorded). Say nothing rather than
   // claim a source we cannot open.
+  const origin = origins[0];
   if (!origin) return null;
-
-  const OriginIcon = tryGetEntityInfo(origin.entityType)?.Icon ?? FileText;
-  const originLabel = origin.href
-    ? "Open the material this was made from"
-    : "The material this was made from";
+  const many = origins.length > 1;
 
   return (
     <div
@@ -88,7 +87,7 @@ export function MadeFromSource({
         className,
       )}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <CornerUpLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <span className="shrink-0 text-xs font-medium text-muted-foreground">
           Made from your material
@@ -105,22 +104,33 @@ export function MadeFromSource({
           <Package className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">Open the kit</span>
         </Link>
-        {origin.href ? (
-          <Link
-            href={origin.href}
-            title={originLabel}
-            data-tap-target
-            className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted"
-          >
-            <OriginIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate">Open the source</span>
-          </Link>
-        ) : (
-          <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-            <OriginIcon className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{originLabel}</span>
-          </span>
-        )}
+        {origins.map((o) => {
+          const OriginIcon = tryGetEntityInfo(o.entityType)?.Icon ?? FileText;
+          const name = many ? o.title || "Source" : "Open the source";
+          const label = o.href
+            ? `Open ${o.title ? `"${o.title}"` : "the material this was made from"}`
+            : `${o.title ?? "The material this was made from"}`;
+          return o.href ? (
+            <Link
+              key={o.edgeId}
+              href={o.href}
+              title={label}
+              data-tap-target
+              className="inline-flex min-w-0 max-w-[16rem] items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted"
+            >
+              <OriginIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate">{name}</span>
+            </Link>
+          ) : (
+            <span
+              key={o.edgeId}
+              className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
+            >
+              <OriginIcon className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{label}</span>
+            </span>
+          );
+        })}
       </div>
 
       {siblings.length > 0 && (

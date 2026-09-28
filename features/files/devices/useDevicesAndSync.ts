@@ -118,7 +118,7 @@ export function useDevicesAndSync(): DevicesAndSync {
           event: "*",
           schema: "files",
           table: "sync_mappings",
-          filter: `user_id=eq.${userId}`,
+          filter: `created_by=eq.${userId}`,
           rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
           fingerprint: (row) =>
             JSON.stringify([

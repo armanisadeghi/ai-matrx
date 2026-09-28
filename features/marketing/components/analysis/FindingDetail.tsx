@@ -74,7 +74,7 @@ import {
   webCopy,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
-import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
+import { humanizeItemKey } from "@/features/marketing/lib/finding-remedy-render";
 
 /** Immutable result evidence → the shape the surface declares. */
 function projectResult(
@@ -337,6 +337,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
     itemKey: finding.item_key,
     itemLabel: data.item?.label ?? null,
     itemDescription: data.item?.description ?? null,
+    remedy: data.item?.remedy ?? null,
     category: finding.category,
     subcategory: finding.subcategory,
     severity: finding.severity,

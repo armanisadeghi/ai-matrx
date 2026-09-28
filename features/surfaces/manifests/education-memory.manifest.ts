@@ -214,6 +214,9 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "memory_aid",
   },
   {
+    name: "aid_version", label: "Aid version", description: "Revision of the saved aid. Send as expected_version for change_memory_item; stale requests are refused.", valueType: "number", alwaysAvailable: false, typicalCharCount: 6, sortOrder: 315, group: "memory_aid",
+  },
+  {
     name: "aid_title",
     label: "Aid set title",
     description:
@@ -370,7 +373,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "change_memory_item", label: "Change one memory item",
-    description: 'On an open memory aid with edit access, add, update, or delete ONE mnemonic, analogy, or memory-palace stop. Value is an OBJECT { action: "add" | "update" | "delete", kind: "mnemonic" | "analogy" | "locus", position?: number, item?: object, theme?: string }. Positions are 1-based in the currently visible mnemonics, analogies, or memory_palace.loci array. Add without a position appends; update/delete require a position. Add/update supply item fields matching create_memory_aids; update changes only the supplied fields. For the first palace stop include theme. This saves only that child while retaining the other children, title, source, and citations. The person approves before saving. To delete the entire set use delete_memory_aids instead.',
+    description: 'On an open memory aid with edit access, add, update, or delete ONE mnemonic, analogy, or memory-palace stop. Value is an OBJECT { action: "add" | "update" | "delete", kind: "mnemonic" | "analogy" | "locus", expected_version: number, position?: number, item?: object, theme?: string }. expected_version must equal aid_version from the same snapshot as the items; if it changed, read the items again before resubmitting. Finish or cancel unsaved human edits first. Positions are 1-based in the currently visible mnemonics, analogies, or memory_palace.loci array. Add without a position appends; update/delete require a position. Add/update supply item fields matching create_memory_aids; update changes only the supplied fields. For the first palace stop include theme. This saves only that child while retaining the other children, title, source, and citations. The person approves before saving. To delete the entire set use delete_memory_aids instead.',
     valueType: "object", updatesValue: "aid_content", mode: "entity", applyPolicy: "ask", group: "memory_aid", sortOrder: 125,
   },
   {
@@ -473,6 +476,7 @@ export function createEducationMemoryScope(values: {
   // detail
   aid_loaded?: boolean;
   aid_id?: string;
+  aid_version?: number;
   aid_title?: string;
   aid_is_owner?: boolean;
   aid_strategy_note?: string;

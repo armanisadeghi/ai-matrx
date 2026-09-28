@@ -25,10 +25,10 @@ afterAll(() => {
 it("leaves the origin instead of asking the router for a foreign route", async () => {
   const { pushAppHref } = await load("slim");
   const router = { push: jest.fn(), replace: jest.fn() };
-  pushAppHref(router, "/administration/mandates");
+  pushAppHref(router, "/administration/intelligence/mandates");
   expect(router.push).not.toHaveBeenCalled();
   expect(assign).toHaveBeenCalledWith(
-    "https://manage.aimatrx.com/administration/mandates",
+    "https://manage.aimatrx.com/administration/intelligence/mandates",
   );
 });
 
@@ -45,9 +45,9 @@ it("replace leaves the origin the same way", async () => {
 it("stays on the router — options and all — for a route this build serves", async () => {
   const { pushAppHref, replaceAppHref } = await load("admin");
   const router = { push: jest.fn(), replace: jest.fn() };
-  pushAppHref(router, "/administration/mandates");
+  pushAppHref(router, "/administration/intelligence/mandates");
   replaceAppHref(router, "/administration/users", { scroll: false });
-  expect(router.push).toHaveBeenCalledWith("/administration/mandates", undefined);
+  expect(router.push).toHaveBeenCalledWith("/administration/intelligence/mandates", undefined);
   expect(router.replace).toHaveBeenCalledWith("/administration/users", {
     scroll: false,
   });

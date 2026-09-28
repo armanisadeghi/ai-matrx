@@ -13,6 +13,7 @@ import { supabase } from "@/utils/supabase/client";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface TranscriptRow {
   title: string | null;
@@ -23,12 +24,14 @@ interface TranscriptRow {
 export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
   const [row, setRow] = React.useState<TranscriptRow | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<unknown>(null);
+  const [attempt, setAttempt] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .schema("transcripts")
         .from("transcripts")
         .select("title, description, created_at")
@@ -36,6 +39,7 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {
+        setLoadError(error ?? null);
         setRow((data as TranscriptRow) ?? null);
         setLoading(false);
       }
@@ -43,7 +47,7 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   return (
     <PeekDialog
@@ -54,7 +58,9 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
       href={peekHref("transcript", id)}
       loading={loading}
     >
-      {row ? (
+      {loadError ? (
+        <ReadFailure error={loadError} what="this transcript" onRetry={() => setAttempt((n) => n + 1)} />
+      ) : row ? (
         <>
           <PeekField label="Description">
             {row.description ? (

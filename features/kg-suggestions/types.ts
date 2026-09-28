@@ -6,7 +6,7 @@
 // `/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/handoffs/scope_suggestions_direct_supabase.md`.
 //
 // There are now TWO ledgers (migration kg_013), each RLS-scoped to
-// `auth.uid() = user_id`:
+// `auth.uid() = created_by`:
 //
 //   - `scope_association_suggestions` (Stage A) — "this document belongs to
 //     scope X". Produced by the orienter agent, the pure matchers, and the

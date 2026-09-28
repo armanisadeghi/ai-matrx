@@ -9,7 +9,7 @@
 //
 // 🚨 BROWSE + THEIR OWN OVERRIDE, nothing more (Arman, 2026-08-29). Declaring
 // a mandate is a platform decision, not a user one, so creation moved to
-// /administration/mandates/new and this page has no New button.
+// /administration/intelligence/mandates/new and this page has no New button.
 //
 // 🚨 OWNERSHIP TABS (one-resolution, 2026-09-07). A mandate's home is its
 // ORGANIZATION (D-R3), so the tabs are the organizations the caller belongs to

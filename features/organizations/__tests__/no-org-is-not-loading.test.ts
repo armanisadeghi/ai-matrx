@@ -11,8 +11,8 @@
  *
  * This exact defect was found and fixed, one instance at a time, in
  * `useMandateInputSurface` ("Reading what this job offers…" for 20 s, V3 F4),
- * in two more readers V3 caught, and in `MandatesConsole` (an independent
- * production walk, 2026-08-31). The fourth time it was fixed as a class
+ * in two more readers V3 caught, and in the original admin mandates console
+ * (an independent production walk, 2026-08-31). The fourth time it was fixed as a class
  * (2026-09-11): every busy-gated reader now also reads
  * `selectOrgBootstrapResolved` and, once resolved with no organization, stops
  * loading and prints the settled fact with its remedy.
@@ -23,7 +23,7 @@
  *  2. No file under `features/` re-grows the shape: a busy-initialised state
  *     plus a bare organization early return, with no bootstrap read and no
  *     architectural gate. A new offender fails here with its path, and the
- *     fix is to copy `MandatesConsole.tsx`, or to add it to LEFT_ALONE with
+ *     fix is to copy `MandateReferenceBoardView.tsx`, or to add it to LEFT_ALONE with
  *     the reason it cannot stick.
  *
  * WHAT IS DELIBERATELY EXEMPT (and why — each is a fact checked 2026-09-11)
@@ -44,7 +44,6 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 
 /** The files fixed as a class on 2026-09-11, plus the four earlier instances. */
 const FIXED_CENSUS = [
-  "features/mandates/admin/MandatesConsole.tsx",
   "features/mandates/admin/MandateReferenceBoardView.tsx",
   "features/commerce-intake/components/IntakeAnswerQueue.tsx",
   "features/product-capture/components/pipeline/AnswerQueue.tsx",

@@ -6,7 +6,7 @@
 // (FIX-R14, 2026-09-08).
 //
 // The defect, found by an independent walker on production v0.4.1736: while
-// they were typing on `/administration/mandates/new` the route became an
+// they were typing on the admin New mandate page the route became an
 // EXISTING mandate's page, and everything they had typed was gone — the name,
 // the described inputs, the goal. That is a data-loss defect whatever moved
 // the route, because the creation page held the only copy.

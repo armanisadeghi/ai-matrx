@@ -62,7 +62,7 @@ export interface UseSourceResolvers {
 }
 
 // DB-managed mandates (declared in aidream client mandates; rebind from
-// /administration/mandates). Passed as `mandateKey` so resolution —
+// /administration/intelligence/mandates). Passed as `mandateKey` so resolution —
 // binding `config_overrides` included — happens inside the canonical launcher.
 const WEB_EXTRACTOR_MANDATE_KEY = MANDATE_KEYS.podcast_client__web_content_extractor;
 const YOUTUBE_RESEARCH_MANDATE_KEY = MANDATE_KEYS.podcast_client__youtube_research;

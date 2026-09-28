@@ -15,7 +15,7 @@
  *  * `fetchMandateReferences(dispatch, key)` — the Source & Usage tab's
  *    **Defined in** / **Used by** rows.
  *  * `fetchMandateReferenceBoard(dispatch)` — the admin fleet board at
- *    `/administration/mandates/references`.
+ *    `/administration/intelligence/mandates/references`.
  *
  * Nothing in this module re-derives a verdict. The flag, its sentence and its
  * remedy are the SERVER's words; a screen that invented its own would be a

@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * One-click remedies shared by the console's Health column and the mandate
- * workbench drawer. Every complaint the console can raise ships with its fix
+ * One-click remedies shared by the admin mandate list's Health column and the
+ * mandate's own page. Every complaint the list can raise ships with its fix
  * (THE DOOR LAW — common-docs/policies/no-dead-ends.md): rebind to an existing
  * system twin, create a twin and rebind in one click, or open the Linked Agent
  * Sync window for the advanced path.
  */
 
+import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -314,9 +315,7 @@ export function PromoteToSystemMandateButton({
                 `Promoted to the system mandate "${copy.mandateKey}". It carries no bindings yet.`,
               );
               onPromoted?.();
-              router.push(
-                `/administration/mandates/${encodeURIComponent(copy.mandateKey)}`,
-              );
+              router.push(adminMandateRecordHref(copy.mandateKey));
             } catch (error: unknown) {
               // THE DOOR'S OWN WORDS, verbatim — including the hint, which
               // names the agent promotion door when the holder law fires.

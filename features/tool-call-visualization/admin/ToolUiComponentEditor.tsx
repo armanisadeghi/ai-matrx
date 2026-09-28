@@ -47,6 +47,7 @@ import {
   getDefaultImportsForToolRenderer,
 } from "@/features/dynamic-react/toolRendererScope";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -185,6 +186,10 @@ export function ToolUiComponentEditor({
   const [existingComponent, setExistingComponent] =
     useState<ToolUiComponentRow | null>(null);
   const [markAsV2ConfirmOpen, setMarkAsV2ConfirmOpen] = useState(false);
+  // A failed read of the existing component must not look like "no component
+  // yet" — saving a blank form would then create a duplicate over it.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -213,10 +218,17 @@ export function ToolUiComponentEditor({
     if (!toolName) return;
 
     setIsLoading(true);
+    setLoadError(null);
     fetch(
       `/api/admin/tool-ui-components?tool_name=${encodeURIComponent(toolName)}`,
     )
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error || `The server answered ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
         if (data.components && data.components.length > 0) {
           const comp = data.components[0] as ToolUiComponentRow;
@@ -243,11 +255,11 @@ export function ToolUiComponentEditor({
           });
         }
       })
-      .catch(() => {
-        // No existing component — that's fine
+      .catch((err) => {
+        setLoadError(err);
       })
       .finally(() => setIsLoading(false));
-  }, [toolName]);
+  }, [toolName, reloadKey]);
 
   const handleSave = async () => {
     if (
@@ -388,6 +400,16 @@ export function ToolUiComponentEditor({
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="this tool's UI component"
+        onRetry={() => setReloadKey((k) => k + 1)}
+      />
     );
   }
 

@@ -12,15 +12,17 @@
  * Draft persistence is EXPLICIT: every change writes the draft list through
  * the generic `wizardDraft` primitive (IDB + localStorage, cross-tab), so a
  * refresh keeps the picks. A Source that was still being added when the page
- * reloaded comes back as an error with its remedy — never silently dropped,
- * never shown as if it finished.
+ * reloaded keeps what the person handed over (`SourceDraft.input`) and is
+ * picked up again by the input (`interrupted.ts`); a file cut off mid-upload
+ * says so and keeps its name — never silently dropped, never shown as if it
+ * finished.
  *
  * It speaks the frozen v1 wire contract only: `toSourceSet()` builds the
  * `SourceSet`, `manifest()` asks `POST /sources/manifest`, `resolve()` asks
  * `POST /sources/resolve`.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   createSourceRef,
   createSourceSet,
@@ -50,10 +52,11 @@ import { generateResourceId } from "@/features/agents/redux/execution-system/uti
 import type { ManagedResource } from "@/features/agents/types/instance.types";
 import { fetchSourceManifest, resolveSourceSet } from "./sourceSetApi";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
+import { useSyncHydrated } from "@/lib/sync/useSyncHydrated";
+import { reloadedCard } from "./interrupted";
 import type { SourceCardModel, SourceDraft } from "./types";
 
-export const RELOADED_WHILE_ADDING =
-  "This was still being added when the page reloaded, so it did not finish. Add it again.";
+export { RELOADED_WHILE_ADDING } from "./interrupted";
 
 /** The instanceResources key for one surface's Source input. */
 export function sourceSurfaceKey(surfaceKey: string): string {
@@ -73,6 +76,11 @@ interface PersistedSourceInput {
 }
 
 const EMPTY_RESOURCES: Record<string, ManagedResource> = {};
+
+/** The device store does not exist on the server: there, the draft is never "known empty". */
+const noSubscribe = () => () => {};
+const onClientSnapshot = () => true;
+const onServerSnapshot = () => false;
 
 function isDraft(value: unknown): value is SourceDraft {
   return (
@@ -142,6 +150,16 @@ export interface UseSourceSetResult {
   manifestError: string | null;
   /** Every Source finished landing (nothing pending) and none failed. */
   settled: boolean;
+  /**
+   * The saved draft has not been read back yet (the device store loads a
+   * moment after the page). While true, "nothing picked" is not known — show
+   * a loading state, never an empty one. (Added by USI-3b.)
+   */
+  restoring: boolean;
+  /** Put a failed or interrupted card back to "adding" to land it again. (USI-3b) */
+  restart: (id: string) => void;
+  /** Change what a card that is still landing says or keeps (label, input, fileId, notes). (USI-3b) */
+  updateDraft: (id: string, patch: Partial<Omit<SourceDraft, "ref">>) => void;
 }
 
 export function useSourceSet(
@@ -156,6 +174,8 @@ export function useSourceSet(
       state.instanceResources.byConversationId[key] ?? EMPTY_RESOURCES,
   );
   const persistedEntry = useAppSelector(selectWizardDraft(key));
+  const syncHydrated = useSyncHydrated();
+  const onClient = useSyncExternalStore(noSubscribe, onClientSnapshot, onServerSnapshot);
   const persisted = readPersisted(persistedEntry?.data);
   const [measuring, setMeasuring] = useState(false);
   const [manifestError, setManifestError] = useState<string | null>(null);
@@ -194,13 +214,15 @@ export function useSourceSet(
           resourceId: card.id,
         }),
       );
-      const interrupted = card.status === "pending" || card.status === "resolving";
+      // Cut off mid-landing: an error the input resolves (it re-lands the
+      // kept input, or asks for the file again) — never a spinner forever.
+      const reloaded = reloadedCard(card.draft, card.status);
       dispatch(
         setResourceStatus({
           conversationId: key,
           resourceId: card.id,
-          status: interrupted ? "error" : card.status,
-          errorMessage: interrupted ? RELOADED_WHILE_ADDING : (card.error ?? undefined),
+          status: reloaded ? "error" : card.status,
+          errorMessage: reloaded ? reloaded.sentence : (card.error ?? undefined),
         }),
       );
     }
@@ -293,7 +315,8 @@ export function useSourceSet(
       setResourceSource({
         conversationId: key,
         resourceId: id,
-        source: { ...draft, ...patch, ref: withDefaultForm(patch.ref) },
+        // Landed: the kept input has done its job and leaves the draft.
+        source: { ...draft, ...patch, input: undefined, ref: withDefaultForm(patch.ref) },
       }),
     );
     dispatch(setResourceStatus({ conversationId: key, resourceId: id, status: "ready" }));
@@ -309,6 +332,21 @@ export function useSourceSet(
         status: "error",
         errorMessage: sentence,
       }),
+    );
+    persist();
+  };
+
+  const restart = (id: string) => {
+    if (!readDraft(id)) return;
+    dispatch(setResourceStatus({ conversationId: key, resourceId: id, status: "resolving" }));
+    persist();
+  };
+
+  const updateDraft: UseSourceSetResult["updateDraft"] = (id, patch) => {
+    const draft = readDraft(id);
+    if (!draft) return;
+    dispatch(
+      setResourceSource({ conversationId: key, resourceId: id, source: { ...draft, ...patch } }),
     );
     persist();
   };
@@ -484,5 +522,13 @@ export function useSourceSet(
     measuring,
     manifestError,
     settled: sources.every((s) => s.status === "ready"),
+    // Not read back yet, or read back but the restore has not landed in the
+    // store (one render between the two) — both would draw a false "empty".
+    restoring:
+      !onClient ||
+      !syncHydrated ||
+      (persisted.sources.length > 0 && Object.keys(resources).length === 0),
+    restart,
+    updateDraft,
   };
 }

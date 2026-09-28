@@ -19,7 +19,7 @@ import { useMandateAlchemyTabCapture } from "./MandateAlchemy";
 // 🚨 `authoring` — WHERE, not who (Arman, 2026-08-29). A mandate's goal and
 // its declared inputs are SYSTEM definitions: one edit changes the job for
 // every user on the platform. So they are editable ONLY on the admin route
-// (/administration/mandates/[key]); everywhere else — the user route,
+// (/administration/intelligence/mandates/[key]); everywhere else — the user route,
 // the window panel — the same sections render READ-ONLY. The server agrees:
 // PATCH /mandates/{key}/goal and /draft-inputs are `require_super_admin`
 // (aidream 304fe1848), so an ungated pencil here would just be a 403 waiting

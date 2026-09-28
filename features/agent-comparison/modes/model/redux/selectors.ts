@@ -4,6 +4,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import { isConversationRequestEmpty } from "@/features/agent-comparison/shared/battleRequestEmpty";
 import type { ModelColumn, ModelLockedSetup } from "../types";
 
 const EMPTY_COLUMNS: ModelColumn[] = [];
@@ -82,11 +83,15 @@ export const selectCollapsedModelColumnCount = createSelector(
   (cols) => cols.filter((c) => c.collapsed).length,
 );
 
-export const selectCanSubmitModel = createSelector(
-  [selectLockedSetup, selectModelColumns],
-  (locked, cols) => {
-    if (!locked.agentId) return false;
-    if (cols.length === 0) return false;
-    return true;
-  },
-);
+// Not memoized via createSelector: isConversationRequestEmpty reads across
+// several other slices (user-input, resources, variable-values), so it needs
+// full state, not a derived slice — see battleRequestEmpty.ts.
+export const selectCanSubmitModel = (state: RootState): boolean => {
+  const locked = selectLockedSetup(state);
+  const cols = selectModelColumns(state);
+  if (!locked.agentId) return false;
+  if (cols.length === 0) return false;
+  const inputConversationId = selectModelInputConversationId(state);
+  if (isConversationRequestEmpty(state, inputConversationId)) return false;
+  return true;
+};

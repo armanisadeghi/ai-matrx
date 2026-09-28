@@ -758,7 +758,7 @@ export const EDGES: LoopEdge[] = [
       ai: {
         state: "partial",
         note: "Individual finding detail can launch the purpose-built fixer; the background grouped sweep is deterministic and spends no tokens. No agent yet proposes across the whole register unprompted.",
-        ref: "features/marketing/lib/finding-remedies.ts",
+        ref: "features/marketing/lib/finding-remedy-render.ts",
       },
     },
   },

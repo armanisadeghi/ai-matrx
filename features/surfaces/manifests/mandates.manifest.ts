@@ -1,12 +1,12 @@
 /**
  * Surface manifest — Mandates admin (`matrx-admin/mandates`).
  *
- * ADMIN SURFACE. Drives `/administration/mandates` — the console over
- * every DB-managed mandate (`agent.mandate` / `agent.mandate_binding`):
- * current pin (vs latest), health, enable/disable, rebind, per-principal
- * overrides, and the exemplar test bench. Backed by
- * `features/mandates/admin/MandatesConsole.tsx`; cross-repo
- * system-of-record: common-docs/systems/intelligence/mandates/STATE.md.
+ * ADMIN SURFACE. Drives `/administration/intelligence/mandates` — the admin
+ * list over every system mandate: current pin (vs latest), health,
+ * enable/disable, grades and the advance. Backed by
+ * `features/mandates/admin-list/MandateAdminListPage.tsx`; one mandate's own
+ * page (binding, test bench) is the `matrx-admin/mandate-workspace` surface.
+ * Cross-repo system-of-record: common-docs/systems/intelligence/mandates/STATE.md.
  *
  * What an agent bound here may safely do: read the mandate list, the health
  * roll-up, and the selected mandate's pin state, then help the admin reason
@@ -15,8 +15,8 @@
  * rebind, enable/disable, or test run has happened — those are the admin's
  * own actions.
  *
- * Emitter: `MandatesConsole` mounts `<SurfaceRuntimeProvider>` and builds
- * the scope at Run time via `createMandatesScope`.
+ * Emitter: `MandateAdminListPage` mounts `<SurfaceRuntimeProvider>` and builds
+ * the scope at Run time via `createMandatesScope` from the page on screen.
  *
  * ── THE JUDGMENT BAR ON THIS SURFACE (read before adding a target) ──────
  * Almost everything this console shows is OBSERVED OPERATIONAL EVIDENCE, and
@@ -234,7 +234,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 /**
  * Names of the write targets below, exported so both handler seams
- * (`MandatesConsole`'s base layer and `MandateTestBench`'s live
+ * (`MandateAdminListPage`'s layer and `MandateTestBench`'s live
  * implementation) can never drift from the manifest by re-typing a string.
  */
 export const AGENT_MANDATES_WRITE_TARGETS = {
@@ -268,30 +268,22 @@ export const AGENT_MANDATES_WRITE_TARGETS = {
  * test case. Validate-then-apply inside one handler cannot.
  *
  * `select_mandate` is `mode: "ui"` — navigation, the `content-plan` `select_node`
- * precedent — but `applyPolicy: "ask"` rather than `"auto"`, which is a
- * deliberate departure. On this page the workbench REMOUNTS per mandate
- * (`key={row.id}` on `MandateEditor`, `MandateTestBench` and the workspace),
- * so moving the selection DISCARDS whatever the admin has typed into the
- * rebind editor, the override editor, or the exemplar composer. A silent
- * selection change that throws away unsaved typing is not the cheap,
- * reversible view move `"auto"` is for. The handler additionally refuses
- * outright while an exemplar draft is staged and unsaved.
+ * precedent — but `applyPolicy: "ask"` rather than `"auto"`: it leaves the
+ * list for the mandate's own page, which is not the cheap, in-place view move
+ * `"auto"` is for.
  *
- * ORDERING, and it matters: `mandate_exemplar_draft` is only wired while a mandate
- * workbench is open, because that is when the composer exists. The two
- * targets therefore cannot be staged in the same breath from a cold page —
- * the seam resolves handlers up front, so an exemplar sent alongside the very
- * first `select_mandate` resolves against the console's base layer and is
- * refused with a message saying exactly that. Select first, then compose.
+ * `mandate_exemplar_draft` is refused on the list with a sentence saying why:
+ * the composer lives on the mandate's own page (its Test tab), where
+ * `MandateTestBench` registers the live handler.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
     name: AGENT_MANDATES_WRITE_TARGETS.selectMandate,
     label: "Selected mandate",
     description:
-      "Opens a mandate in the side-panel workbench — the same as the admin clicking its row. Nothing is saved and no mandate is changed; this only moves the view, and it is what puts the pin editor, the test bench and the overrides panel on screen. " +
-      "Value: a STRING, either the mandate's `id` (UUID) or its `mandate_key` — both are in `mandates_summary`, so take one from there rather than inventing it. An id or key that no loaded mandate matches is an error, not a no-op. " +
-      "Opening a different mandate REMOUNTS the workbench and discards anything the admin has typed into the rebind editor, the override editor or the exemplar composer, which is why this asks. It is refused outright while an unsaved exemplar draft is staged (`mandate_exemplar_draft.label`/`variables`/`user_input`) — save or clear that first.",
+      "Opens a mandate's own page — the same as the admin clicking its row. Nothing is saved and no mandate is changed; this only moves the view, and it is what puts the binding, the test bench and the overrides on screen. " +
+      "Value: a STRING, either the mandate's `id` (UUID) or its `mandate_key` — both are in `mandates_summary`, so take one from there rather than inventing it. An id or key that matches no mandate on the page is an error, not a no-op. " +
+      "It leaves the list, which is why this asks.",
     valueType: "string",
     updatesValue: "selected_mandate_id",
     mode: "ui",
@@ -308,7 +300,7 @@ const writeTargets: SurfaceWriteTarget[] = [
       "`label` — what this test case is called, a short non-empty string that says what it exercises (e.g. \"Long transcript, no speaker names\"). " +
       "`variables` — an OBJECT (send real JSON, not a string; it is serialized into the textarea for you). Its keys are the mandate's declared inputs: fill every entry of `selected_mandate_contract.required_variables`, and send `{}` only for a mandate whose contract declares none. Keys outside the contract are allowed but are not supplied by the mandate at run time. " +
       "`user_input` — the end-user message this exemplar replays, or an empty string for mandates driven purely by variables. " +
-      "Refused unless a mandate workbench is open (read `selected_mandate_id`; use `select_mandate` first, in an earlier turn).",
+      "Always refused on the mandate list: the composer lives on the mandate's own page (Test tab). Use `select_mandate` to open it.",
     valueType: "object",
     updatesValue: "mandate_exemplar_draft",
     mode: "draft",
@@ -323,23 +315,22 @@ export const mandatesManifest: SurfaceManifest = {
   client: "matrx-admin",
   executionMode: "python-stream",
   description:
-    "Agent Slots console — DB-managed system-agent pins, health, overrides, and the exemplar test bench.",
+    "Admin mandate list — system mandates with their pins, health, grades and the advance.",
   readiness: "partial",
   readinessNote:
-    "Console emitter is live (list, health roll-up, selected mandate + pin + contract + overrides), and the bench's exemplars + exemplar draft are published up through bench-draft.ts. Candidate-run state (comparison columns, batch results, verdict notes) still lives in MandateTestBench local state and is not lifted into the scope.",
+    "List emitter is live (the page on screen, the query's total, the health roll-up, select_mandate). The selected-mandate and exemplar values are never present here: one mandate's page is its own surface.",
   label: "Mandates Admin",
-  urlPattern: "/administration/mandates",
+  urlPattern: "/administration/intelligence/mandates",
   intro: `<surface_intro>
-This is an ADMIN surface: the Mandates console at /administration/mandates.
+This is an ADMIN surface: the admin Mandates list at /administration/intelligence/mandates.
 
-A mandate is a named platform position (agent.mandate) whose work is done by a pinned SYSTEM agent — e.g. "the conversation labeler". The console shows every mandate with its current pin (a specific agent version, or floating "latest"), a worst-first Health verdict (including live code↔agent and code↔contract drift), per-principal bindings (agent.mandate_binding), and an exemplar test bench for comparing candidate agents against stored real inputs.
+A mandate is a named platform position (agent.mandate) whose work is done by a pinned SYSTEM agent — e.g. "the conversation labeler". The list shows every system mandate with its current pin (a specific agent version, or floating "latest"), a worst-first Health verdict (including live code↔agent and code↔contract drift), per-principal bindings (agent.mandate_binding), and an exemplar test bench for comparing candidate agents against stored real inputs.
 
 Two laws govern this page: (1) THE SYSTEM-AGENT LAW — a mandate default may only reference a system (builtin) agent; "not a system agent" health is always a defect to fix. (2) Latest is not always better — pins exist so a mandate's behavior only changes deliberately; "version drift" means a newer version exists, not that rebinding is required.
 
 What you may safely do: read the mandate list, health roll-up, and the selected mandate's pin state and overrides, then help the admin reason about drift, law violations, or draft mandate labels/descriptions. You never rebind, enable, disable, or run a test yourself — those are the admin's own actions.
 
-You can also WRITE here, through apply_surface_write, but only into two places. \`select_mandate\` opens a mandate in the side-panel workbench (its id or mandate_key, from mandates_summary) — exactly as clicking the row would. \`mandate_exemplar_draft\` stages a test-bench EXEMPLAR into that open mandate's "+ Exemplar" composer: a stored real input the bench replays against the current binding and every candidate agent, which is the evidence a rebind is safe. Read \`selected_mandate_contract\` first — its required_variables are the keys the exemplar's \`variables\` object must fill — and \`selected_mandate_exemplars\` to match the existing cases rather than duplicate one. Both targets only STAGE or MOVE: the admin still presses "Save exemplar", and separately "Run all", which is the button that actually spends model budget.
-Order matters: the exemplar composer only exists once a mandate workbench is open, so select the mandate in one turn and compose in the next — an exemplar sent alongside the very first select_mandate is refused.
+You can also WRITE here, through apply_surface_write, into one place: \`select_mandate\` opens a mandate's own page (its id or mandate_key, from mandates_summary) — exactly as clicking the row would. Test-bench exemplars are composed on that page's Test tab, never from this list; \`mandate_exemplar_draft\` is refused here.
 Nothing else here is writable, and the reasons are worth knowing: health and the roll-ups are MEASURED, not authored, so writing them would fabricate the state of the system; rebinding and per-principal overrides are agent identity by UUID over live production capacity, with no agent catalog on this surface to pick from; enable/disable and Run spend real capacity and budget. The way you move those numbers is by helping the admin decide, then letting them press the button.
 </surface_intro>`,
   groups,

@@ -80,7 +80,7 @@ const SOURCE_FEATURE = "masterwork" as const;
 /**
  * Which agent conducts the interview is DB-managed via the `masterwork.scout`
  * Mandate (declared in aidream `mandates/client_mandates.py`, rebindable from
- * /administration/mandates). No hardcoded agent id, no silent fallback —
+ * /administration/intelligence/mandates). No hardcoded agent id, no silent fallback —
  * if the Mandate can't resolve, the panel says so and refuses.
  */
 const SCOUT_MANDATE_KEY = MANDATE_KEYS.masterwork__scout;

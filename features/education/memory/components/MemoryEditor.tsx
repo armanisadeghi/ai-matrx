@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -12,6 +12,7 @@ import { EducationToolHeader } from "@/features/education/components/EducationTo
 import { coerceMemoryAidPartial, MNEMONIC_TECHNIQUES, type MemoryAidPayload } from "@/features/content-ir/kinds/memory-aid";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
+import { parseMemoryItemChange } from "../memoryItemWrites";
 import { parseMemoryAid } from "../memoryWrites";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMemoryScope } from "@/features/surfaces/manifests/education-memory.manifest";
@@ -30,16 +31,43 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
   const router = useRouter();
   const [currentMedia, setCurrentMedia] = useState(media);
   const [aid, setAid] = useState<MemoryAidPayload>(() => media ? coerceMemoryAidPartial(media.ir_envelope) : blank());
+  const [baseVersion, setBaseVersion] = useState(media?.version);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const update = (patch: Partial<MemoryAidPayload>) => setAid((current) => ({ ...current, ...patch }));
+  const dirty = JSON.stringify(aid) !== JSON.stringify(currentMedia ? coerceMemoryAidPartial(currentMedia.ir_envelope) : blank());
+  const draftKey = `memory-all-draft:${media?.id ?? "new"}`;
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+    if (!active) return;
+    const stored = sessionStorage.getItem(draftKey);
+    if (!stored) return;
+    try { const draft = JSON.parse(stored); setAid(coerceMemoryAidPartial(draft.aid)); setBaseVersion(draft.baseVersion); toast.info("Your unsaved memory aid was restored."); }
+    catch { sessionStorage.removeItem(draftKey); }
+    });
+    return () => { active = false; };
+  }, [draftKey]);
+  useEffect(() => {
+    if (!dirty) return;
+    sessionStorage.setItem(draftKey, JSON.stringify({ aid, baseVersion }));
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [draftKey, dirty, aid, baseVersion]);
+  const assertNoDraft = () => { if (dirty || saving) throw new Error("Save or cancel your unsaved edits before applying agent changes."); };
+  const update = (patch: Partial<MemoryAidPayload>) => {
+    const next = { ...aid, ...patch };
+    const saved = currentMedia ? coerceMemoryAidPartial(currentMedia.ir_envelope) : blank();
+    if (JSON.stringify(next) === JSON.stringify(saved)) sessionStorage.removeItem(draftKey);
+    setAid(next);
+  };
   const getScope = () => createEducationMemoryScope({
-    view: currentMedia ? "detail" : "new", aid_loaded: !!currentMedia, aid_id: currentMedia?.id,
+    view: currentMedia ? "detail" : "new", aid_loaded: !!currentMedia, aid_id: currentMedia?.id, aid_version: currentMedia?.version,
     aid_title: aid.title, aid_is_owner: isOwner, aid_content: aid as unknown as Record<string, unknown>,
     mnemonics: aid.mnemonics, analogies: aid.analogies,
     memory_palace: aid.memory_palace as unknown as Record<string, unknown>,
   });
-  const getWriteHandlers = () => collectionWriteHandlers({
+  const getWriteHandlers = () => ({ ...collectionWriteHandlers({
     plural: "memory_aids", singular: "memory aid",
     create: {
       parse: parseCreateMemoryAids,
@@ -51,17 +79,17 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
       }, nameOf: (content) => content.title,
     },
     update: currentMedia ? {
-      parse: (value) => parseUpdateMemoryAids(value, [currentMedia]),
+      parse: (value) => { assertNoDraft(); return parseUpdateMemoryAids(value, [currentMedia]); },
       run: async (plan) => {
         const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.aid.title, ir_envelope: plan.aid });
         if (result.error || !result.data) throw new Error(result.error ?? "Could not update memory aid.");
         setAid(plan.aid);
-        setCurrentMedia(result.data);
+        setCurrentMedia(result.data); setBaseVersion(result.data.version);
         return { id: result.data.id, name: result.data.title };
       }, nameOf: (plan) => plan.aid.title, changedOf: (plan) => plan.changed,
     } : undefined,
     delete: currentMedia && isOwner ? {
-      parse: (value) => parseMemoryIds(value, "delete_memory_aids", [currentMedia]).map(() => currentMedia),
+      parse: (value) => { assertNoDraft(); return parseMemoryIds(value, "delete_memory_aids", [currentMedia]).map(() => currentMedia); },
       run: async (row) => {
         const result = await studyMediaService.softDelete(row.id);
         if (result.error) throw new Error(result.error);
@@ -69,7 +97,24 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
         return { id: row.id, name: row.title };
       }, nameOf: (row) => row.title,
     } : undefined,
-  }, refuseSurfaceWrite);
+  }, refuseSurfaceWrite),
+    change_memory_item: {
+      validate: (value: unknown) => {
+        assertNoDraft();
+        if (!currentMedia) throw new Error("Save the new memory aid before changing a saved item.");
+        parseMemoryItemChange(value, coerceMemoryAidPartial(currentMedia.ir_envelope), currentMedia.version);
+      },
+      apply: async (value: unknown) => {
+        assertNoDraft();
+        if (!currentMedia) throw new Error("Save the new memory aid before changing a saved item.");
+        const change = parseMemoryItemChange(value, coerceMemoryAidPartial(currentMedia.ir_envelope), currentMedia.version);
+        const result = await studyMediaService.updateVersioned(currentMedia.id, currentMedia.version, { title: change.aid.title, ir_envelope: change.aid });
+        if (result.error || !result.data) throw new Error(result.error ?? "Could not change memory item.");
+        setCurrentMedia(result.data); setBaseVersion(result.data.version); setAid(change.aid);
+        return { summary: change.summary, data: { id: result.data.id, version: result.data.version } };
+      },
+    },
+  });
 
   async function save() {
     let clean: MemoryAidPayload;
@@ -78,12 +123,13 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
     setErrorMessage(null);
     setSaving(true);
     const result = currentMedia
-      ? await studyMediaService.updateVersioned(currentMedia.id, currentMedia.version, { title: clean.title, ir_envelope: clean })
+      ? await studyMediaService.updateVersioned(currentMedia.id, baseVersion ?? currentMedia.version, { title: clean.title, ir_envelope: clean })
       : await studyMediaService.create({
           mediaKind: "memory_aid", title: clean.title, irEnvelope: clean, status: "ready",
         });
     setSaving(false);
     if (result.error || !result.data) { const message = result.error ?? "Could not save memory aid."; setErrorMessage(message); toast.error(message); return; }
+    sessionStorage.removeItem(draftKey);
     toast.success(media ? "Memory aid saved" : "Memory aid created");
     router.push(`/education/memory/${result.data.id}`);
     router.refresh();
@@ -134,7 +180,7 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
       </section>
 
       {errorMessage && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{errorMessage}<ErrorAlchemyMenu error={errorMessage} /></p>}
-      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button><Button type="button" disabled={saving} onClick={save}>{saving ? "Saving…" : media ? "Save changes" : "Create memory aid"}</Button></div>
+      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.back(); }}>Cancel</Button><Button type="button" disabled={saving} onClick={save}>{saving ? "Saving…" : media ? "Save changes" : "Create memory aid"}</Button></div>
     </main>
   </SurfaceRuntimeProvider>;
 }

@@ -14,7 +14,8 @@
  * reach its page (workspace + live URL), and every finding has an honest exit
  * ("this is intentional" → suppression, recorded with a reason).
  *
- * Unknown item keys are FIRST-CLASS here — `resolveFindingRemedy` never
+ * Remedies come from `web.analysis_item.remedy` (one copy, shared with the
+ * in-app agent). Checks without one are FIRST-CLASS here — `resolveFindingRemedy` never
  * returns null, so a check the server added yesterday renders completely.
  */
 
@@ -40,7 +41,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import {
   resolveFindingRemedy,
   type FindingRemedyContext,
-} from "@/features/marketing/lib/finding-remedies";
+} from "@/features/marketing/lib/finding-remedy-render";
 
 export interface FindingRemedyCardProps {
   context: FindingRemedyContext;
@@ -139,10 +140,10 @@ export function FindingRemedyCard({
           What&rsquo;s wrong, and what to do
         </h2>
         {resolved.isUnknownKey ? (
-          // Honest, never hidden: this check is newer than this screen. The
-          // finding still renders in full from what the database supplied.
+          // Honest, never hidden: no remedy is stored for this check
+          // (web.analysis_item.remedy is empty), so the generic one is shown.
           <Badge variant="outline" className="text-[10px]">
-            New check — shown from the analyzer&rsquo;s own report
+            No fix written for this check yet — the SEO agent will work it out
           </Badge>
         ) : null}
         {suppressed ? <Badge variant="warning">Suppressed</Badge> : null}

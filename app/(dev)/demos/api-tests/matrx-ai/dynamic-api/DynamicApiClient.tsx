@@ -430,6 +430,7 @@ export default function DynamicApiClient() {
   const [saved, setSaved] = useState<SavedRequest[]>([]);
   const [openApiEndpoints, setOpenApiEndpoints] = useState<ApiEndpoint[]>([]);
   const [openApiRaw, setOpenApiRaw] = useState<unknown>(null);
+  const [openApiError, setOpenApiError] = useState<string | null>(null);
   const [openApiLoading, setOpenApiLoading] = useState(false);
   const [endpointFilter, setEndpointFilter] = useState("");
 
@@ -553,11 +554,10 @@ export default function DynamicApiClient() {
       const endpoints = parseOpenApiSpec(spec);
       setOpenApiEndpoints(endpoints);
       setOpenApiRaw(spec);
+      setOpenApiError(null);
       toast.success(`Loaded ${endpoints.length} endpoints from spec`);
     } catch (err) {
-      toast.error("Failed to fetch OpenAPI spec", {
-        description: extractErrorMessage(err),
-      });
+      setOpenApiError(extractErrorMessage(err));
     } finally {
       setOpenApiLoading(false);
     }
@@ -1043,6 +1043,11 @@ export default function DynamicApiClient() {
                             : "Fetch Spec"}
                         </Button>
                       </div>
+                      {openApiError && openApiEndpoints.length === 0 && (
+                        <p className="text-[10px] text-destructive">
+                          Could not fetch the OpenAPI spec: {openApiError}
+                        </p>
+                      )}
                       {openApiEndpoints.length > 0 && (
                         <div className="space-y-1">
                           <div className="relative">
@@ -1056,10 +1061,17 @@ export default function DynamicApiClient() {
                               className="h-6 pl-6 text-xs"
                             />
                           </div>
-                          <p className="text-[10px] text-muted-foreground">
-                            {filteredEndpoints.length} of{" "}
-                            {openApiEndpoints.length} endpoints
-                          </p>
+                          {openApiError ? (
+                            <p className="text-[10px] text-destructive">
+                              Refresh failed ({openApiError}); showing the last
+                              spec that loaded.
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground">
+                              {filteredEndpoints.length} of{" "}
+                              {openApiEndpoints.length} endpoints
+                            </p>
+                          )}
                           <div className="space-y-0.5 max-h-[200px] overflow-y-auto">
                             {filteredEndpoints.map((ep, i) => (
                               <button
@@ -1206,9 +1218,16 @@ export default function DynamicApiClient() {
                   className="flex-1 overflow-y-auto mt-2 p-3 bg-muted rounded border min-h-0"
                 >
                   {responseHeaders.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      No response headers yet.
-                    </p>
+                    errorMessage ? (
+                      <p className="text-xs text-muted-foreground">
+                        The request failed before any headers arrived. The
+                        error is shown above.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        No response headers yet.
+                      </p>
+                    )
                   ) : (
                     <div className="space-y-1">
                       {responseHeaders.map(([k, v]) => (

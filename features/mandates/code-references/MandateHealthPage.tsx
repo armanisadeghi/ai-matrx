@@ -6,7 +6,8 @@
 // mandate is broken, one row per finding: how bad, which mandate, what is
 // wrong in plain words, where in the code, and the fix. Merges the old
 // references page's open findings with code ↔ database drift (./health.ts).
-// The old /administration/mandates/references page stays untouched beside it.
+// The References page (/administration/intelligence/mandates/references)
+// keeps the per-repository scan view.
 
 import { useState } from "react";
 import Link from "next/link";

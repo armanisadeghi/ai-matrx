@@ -82,6 +82,12 @@ export function ToolsToolbar({
       );
       return;
     }
+    if (!canSubmit) {
+      toast.error(
+        "Type the shared request first, or pick an agent whose variables fill the prompt on their own.",
+      );
+      return;
+    }
     try {
       maybeShuffleForBlind(columns, setToolsColumns);
       reportBattleSubmit(await dispatch(submitAllTools()).unwrap());

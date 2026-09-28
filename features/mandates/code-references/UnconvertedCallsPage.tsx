@@ -5,9 +5,9 @@
 // /administration/intelligence/mandates/unconverted (ADMIN_MANDATES_UNCONVERTED) — "Unconverted AI calls": every
 // place in our code that calls an AI provider directly instead of through a
 // mandate (the code scan's `bypass` references). One row per call site, with
-// the exact line one click away on GitHub. Replaces the conversion list on the
-// old /administration/mandates/references page (common-docs/systems/intelligence/mandates/
-// OPTIONS.md §2), which stays untouched beside it until the swap.
+// the exact line one click away on GitHub. The References page
+// (/administration/intelligence/mandates/references) keeps its own conversion
+// list per repository (common-docs/systems/intelligence/mandates/OPTIONS.md §2).
 
 import Link from "next/link";
 import { Copy, ExternalLink } from "lucide-react";

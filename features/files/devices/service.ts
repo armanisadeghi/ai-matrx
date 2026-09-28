@@ -31,7 +31,7 @@ import type {
 
 /** Only what this surface renders — never `select("*")`. */
 const MAPPING_COLUMNS =
-  "id, user_id, device_id, folder_id, organization_id, local_path, local_path_display, direction, desired_state, state, state_reason, state_changed_at, last_seen_at, last_synced_at, items_total, bytes_total, knobs, version, created_at, updated_at";
+  "id, created_by, device_id, folder_id, organization_id, local_path, local_path_display, direction, desired_state, state, state_reason, state_changed_at, last_seen_at, last_synced_at, items_total, bytes_total, knobs, version, created_at, updated_at";
 
 const DEVICE_COLUMNS =
   "id, instance_name, platform, os_version, app_version, last_seen, is_active, created_at";

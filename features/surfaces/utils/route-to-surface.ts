@@ -290,10 +290,6 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   // public-resource viewer — a different surface, unregistered today; give it
   // its own entry ABOVE this one when it gets a manifest.
   { prefix: "/p", surface: "matrx-public/p" },
-  {
-    prefix: "/administration/mandates",
-    surface: "matrx-admin/mandates",
-  },
   // users family: specific children BEFORE the /administration/users hub.
   {
     prefix: "/administration/users/feedback",
@@ -608,15 +604,10 @@ function resolveAgentsSurface(stripped: string): string | null {
 }
 
 /**
- * `/administration/mandates/<key>` is ONE job's workspace — a different
- * surface from the console at `/administration/mandates` (a list over the
- * fleet). A mandate key contains dots and never a slash, so the first segment
- * after the prefix is the whole address; the two sibling routes that are NOT
- * a mandate (`new`, `advanced`, `references`) stay on the console surface. Prefix matching
- * cannot express "children but not the parent", hence a resolver.
- */
-/**
- * The mandate pages outside `/administration/mandates/**` (2026-09-25).
+ * The mandate pages (2026-09-25). A mandate key contains dots and never a
+ * slash, so the first segment after the admin home is the whole address;
+ * the suite's other pages are named below. Prefix matching cannot express
+ * "children but not the parent", hence a resolver.
  *
  * THE RECORD PAGE (`features/mandates/record-next/MandateRecordPage.tsx`)
  * mounts `matrx-admin/mandate-workspace` at every seat, so every address it
@@ -625,15 +616,25 @@ function resolveAgentsSurface(stripped: string): string | null {
  *   /administration/intelligence/mandates/<key>[/overrides]   (system seat)
  *   /mandates/record-preview/<key>                            (person seat)
  *   /organizations/<org>/mandates/<key>                       (organization seat)
- * The new admin suite's other pages (list, dashboard, health, unconverted,
- * window) are the console's siblings → `matrx-admin/mandates`.
+ * The admin suite's other pages (list, dashboard, health, unconverted,
+ * window, new, advanced, references) are the list's siblings →
+ * `matrx-admin/mandates`.
  *
  * The MEMBER lists (/mandates/list-preview, /organizations/<org>/mandates) and
  * /intelligence/** deliberately resolve to NO mandate surface: both mandate
  * surfaces are admin vocabularies, and a member page must never be handed
  * admin tools. The org list stays on the organizations hub below.
  */
-const ADMIN_SUITE_PAGES = new Set(["dashboard", "health", "unconverted", "window"]);
+const ADMIN_SUITE_PAGES = new Set([
+  "dashboard",
+  "health",
+  "unconverted",
+  "window",
+  "new",
+  "advanced",
+  // The fleet reference board is a LIST over every repo, not one job's workspace.
+  "references",
+]);
 
 function resolveMandateSuiteSurface(stripped: string): string | null {
   const suite = stripped.match(/^\/administration\/intelligence\/mandates(?:\/([^/]+))?(?:\/|$)/);
@@ -648,24 +649,6 @@ function resolveMandateSuiteSurface(stripped: string): string | null {
   const org = stripped.match(/^\/organizations\/[^/]+\/mandates\/([^/]+)\/?$/);
   if (org && org[1] !== "new") return "matrx-admin/mandate-workspace";
   return null;
-}
-
-function resolveAdminMandateSurface(stripped: string): string | null {
-  const PREFIX = "/administration/mandates/";
-  if (!stripped.startsWith(PREFIX)) return null;
-  const segment = stripped.slice(PREFIX.length).split("/")[0] ?? "";
-  if (
-    !segment ||
-    segment === "new" ||
-    segment === "advanced" ||
-    // The fleet reference board is a LIST over every repo, not one job's
-    // workspace (campaign L7) — it belongs on the console surface with its
-    // siblings.
-    segment === "references"
-  ) {
-    return null;
-  }
-  return "matrx-admin/mandate-workspace";
 }
 
 function resolveCmsSurface(stripped: string): string | null {
@@ -881,9 +864,6 @@ export function surfaceFromPathname(
 
   const mandateSuite = resolveMandateSuiteSurface(stripped);
   if (mandateSuite) return mandateSuite;
-
-  const adminMandate = resolveAdminMandateSurface(stripped);
-  if (adminMandate) return adminMandate;
 
   for (const { prefix, surface } of SURFACE_ROUTE_MAPPINGS) {
     if (

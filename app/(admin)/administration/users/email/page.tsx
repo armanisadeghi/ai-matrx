@@ -64,6 +64,9 @@ export default function AdminEmailPage() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState<unknown>(null);
   const [usersAttempt, setUsersAttempt] = useState(0);
+  // The templates + config read's own failure (RC-B12 r13).
+  const [templatesError, setTemplatesError] = useState<unknown>(null);
+  const [templatesAttempt, setTemplatesAttempt] = useState(0);
   const [result, setResult] = useState<{
     success: boolean;
     msg: string;
@@ -82,15 +85,20 @@ export default function AdminEmailPage() {
   // Fetch templates and config on mount
   useEffect(() => {
     fetch("/api/admin/email")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          if (data.data) setTemplates(data.data);
-          if (data.config) setEmailConfig(data.config);
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data?.error || "Failed to load email templates");
         }
+        return data;
       })
-      .catch(console.error);
-  }, []);
+      .then((data) => {
+        setTemplatesError(null);
+        if (data.data) setTemplates(data.data);
+        if (data.config) setEmailConfig(data.config);
+      })
+      .catch((err: unknown) => setTemplatesError(err));
+  }, [templatesAttempt]);
 
   // Fetch users when "selected" mode is chosen
   useEffect(() => {
@@ -586,10 +594,19 @@ export default function AdminEmailPage() {
                     </p>
                   </button>
                 ))}
-                {templates.length === 0 && (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    Loading templates...
-                  </p>
+                {templatesError ? (
+                  <ReadFailure
+                    error={templatesError}
+                    what="email templates"
+                    onRetry={() => setTemplatesAttempt((n) => n + 1)}
+                    size="compact"
+                  />
+                ) : (
+                  templates.length === 0 && (
+                    <p className="text-sm text-muted-foreground py-4 text-center">
+                      Loading templates...
+                    </p>
+                  )
                 )}
               </div>
             </div>

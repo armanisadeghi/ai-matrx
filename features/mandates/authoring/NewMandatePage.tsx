@@ -2,7 +2,7 @@
 
 // features/mandates/authoring/NewMandatePage.tsx
 //
-// /administration/mandates/new — the full purpose-built creation page.
+// /administration/intelligence/mandates/new — the full purpose-built creation page.
 // ADMIN-SIDE since 2026-08-29 (Arman): creating a mandate declares a job for
 // the whole platform, so it lives with the rest of mandate management, and the
 // server's POST /mandates is `require_super_admin` (aidream 304fe1848). The
@@ -23,7 +23,7 @@ import { Section } from "../workspace/Section";
 import { TriadFlowMark } from "../workspace/TriadSections";
 import { DraftInputsEditor } from "./DraftInputsEditor";
 import { OutputKindPicker } from "./OutputKindPicker";
-import { adminMandateHref } from "../browse/url-compat";
+import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import { createMandate, type DraftInput } from "./service";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
@@ -249,7 +249,7 @@ export function NewMandatePage() {
       // one to start mapping, or come back when the intelligence exists"); the
       // `#bind` fragment is what scrolls it into view on arrival.
       startTransition(() => {
-        router.push(`${adminMandateHref(created.mandateKey)}#bind`);
+        router.push(`${adminMandateRecordHref(created.mandateKey)}#bind`);
       });
     } catch (error: unknown) {
       setServerError(error instanceof Error ? error.message : String(error));

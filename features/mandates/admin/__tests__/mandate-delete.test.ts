@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const service = readFileSync(join(__dirname, "../service.ts"), "utf8");
-const console_ = readFileSync(join(__dirname, "../MandatesConsole.tsx"), "utf8");
+const list = readFileSync(join(__dirname, "../../admin-list/listConfig.tsx"), "utf8");
 
 describe("softDeleteMandate", () => {
   const fn = service.slice(
@@ -46,21 +46,23 @@ describe("softDeleteMandate", () => {
   });
 });
 
-describe("the console's remove affordance", () => {
+describe("the admin list's remove affordance", () => {
+  const handler = list.slice(
+    list.indexOf("async function removeMandate"),
+    list.indexOf("export function mandateAdminRowHref"),
+  );
+
   it("exists, is destructive, and is wired to the soft delete", () => {
-    expect(console_).toContain('id: "mandate-delete"');
-    expect(console_).toContain("destructive: true");
-    expect(console_).toContain("softDeleteMandate(row.id)");
+    expect(list).toContain('id: "remove"');
+    expect(list).toContain('tone: "destructive"');
+    expect(list).toContain("onSelect: () => void removeMandate(row)");
+    expect(handler).toContain("softDeleteMandate(row.id)");
   });
 
   it("confirms with the CONSEQUENCE, not a bare 'are you sure?'", () => {
-    const handler = console_.slice(
-      console_.indexOf("const removeMandate = async"),
-      console_.indexOf("const mandateMenuSections"),
-    );
     // What is lost…
     expect(handler).toContain("stops finding it");
-    expect(handler).toContain("stops applying with it");
+    expect(handler).toContain("stop applying with it");
     // …and what survives, which is what makes it safe to offer on a list.
     expect(handler).toContain("soft removal");
     expect(handler).toContain('variant: "destructive"');
@@ -68,94 +70,64 @@ describe("the console's remove affordance", () => {
   });
 
   it("shows the service's own refusal rather than inventing a reason", () => {
-    const handler = console_.slice(
-      console_.indexOf("const removeMandate = async"),
-      console_.indexOf("const mandateMenuSections"),
-    );
     expect(handler).toContain("error instanceof Error ? error.message");
   });
 });
 
-describe("the delete is DISCOVERABLE, not only in a right-click menu", () => {
+describe("the delete is DISCOVERABLE, not only in a row menu", () => {
   /**
-   * 🚨 The first cut shipped the delete ONLY into the console's context menu,
-   * and an independent walk could not find it anywhere on the live surface —
-   * it reported the release's own "adds the missing mandate delete" claim as
-   * false. A right-click-only affordance is invisible, and "it is in the
-   * context menu" is not an answer to "a creator can never remove a job".
-   * The job's own page now carries a visible destructive control.
+   * 🚨 The first cut shipped the delete ONLY into a context menu, and an
+   * independent walk could not find it anywhere on the live surface. A
+   * menu-only affordance is invisible, so the mandate's own page carries it
+   * too: the status control in the record header, whose menu holds Archive —
+   * the same soft delete the list's Remove calls.
    */
   const page = readFileSync(
-    join(__dirname, "../AdminMandateWorkspacePage.tsx"),
+    join(__dirname, "../../record-next/MandateRecordPage.tsx"),
     "utf8",
   );
+  const control = readFileSync(
+    join(__dirname, "../../status/MandateStatusControl.tsx"),
+    "utf8",
+  );
+  const archive = control.slice(
+    control.indexOf("const archive = async"),
+    control.indexOf("return (", control.indexOf("const archive = async")),
+  );
 
-  /**
-   * WHAT CHANGED, AND WHAT DID NOT (`816ea88701`, "separate configuration
-   * concerns into tabs"). That refactor moved the control into the workspace's
-   * compact admin action strip: the label shortened from "Remove this job" to
-   * a Trash icon plus "Remove", and the row variable it reads is now
-   * `mandate` rather than `row`. Both are presentation; neither touches what
-   * this describe block exists to hold — that the delete is ON the job's own
-   * page, visibly destructive, wired to the same soft delete the row menu
-   * calls, and stating its consequence outside the dialog. Those are asserted
-   * below in the shape the page has today.
-   */
-  it("puts a visible Remove button on the mandate's own page", () => {
-    // Not hidden behind a menu, a fold, or a hover: it is rendered in the
-    // page's own admin action strip.
-    expect(page).toContain("<RemoveMandate mandate={data.mandate} />");
-    expect(page).toContain('variant="destructive"');
-    // Named for a screen reader as well as a sighted reader, on every width —
-    // the label collapses to `sr-only` on small screens.
-    expect(page).toContain('aria-label={busy ? "Removing mandate" : "Remove mandate"}');
-    expect(page).toContain('{busy ? "Removing…" : "Remove"}');
-    expect(page).toContain("softDeleteMandate(mandate.id)");
+  it("puts the status control, with Archive, in the mandate page's header", () => {
+    expect(page).toContain("<MandateStatusControl");
+    expect(page).toContain("canManage={canRemove}");
+    expect(control).toContain("onSelect={() => void archive()}");
+    expect(archive).toContain("softDeleteMandate(mandateId)");
+    expect(archive).toContain('variant: "destructive"');
   });
 
-  it("says what it does next to the button, not only inside the dialog", () => {
-    // The two facts that make a destructive control safe to press: what else
-    // stops working, and that it is reversible.
-    expect(page).toContain("Stops every rung from finding it");
-    expect(page).toContain("an admin\n        can restore it");
+  it("says what is lost and that it can be restored", () => {
+    expect(archive).toContain("disappears from every list");
+    expect(archive).toContain("Nothing is destroyed: it can be restored from Trash.");
   });
 
   it("leaves the page rather than describing a job that no longer exists", () => {
-    // Through the deployment door: a bare router.push to /administration from
-    // a build that does not compile it is an RSC fetch into a cross-origin
-    // redirect (lib/deployment/surfaces.ts).
-    expect(page).toContain('pushAppHref(router, "/administration/mandates")');
+    // Through the deployment door (lib/deployment/surfaces.ts).
+    expect(page).toContain('next === "archived" ? pushAppHref(router, listHref) : refresh()');
   });
 
   it("shows the service's own refusal rather than inventing one", () => {
-    expect(page).toContain("error instanceof Error ? error.message");
+    expect(archive).toContain("error instanceof Error ? error.message");
   });
 
   /**
    * FIX-Q9's walk, 2026-09-12: "Remove mandate" on an ORG-homed mandate looked
-   * like it did nothing — three presses, no dialog, no toast, no change. Two
-   * explanations were possible, and they call for opposite responses: the
-   * harness's known trusted-click trap, or a real home-dependent gate making
-   * the control DEAD on org-homed rows (law 4). The code says it is the
-   * former — there is no home, scope or organization predicate anywhere on the
-   * path, `onClick` is unconditional, `disabled` is only `busy`, and a write
-   * that matched nothing THROWS a sentence that gets toasted. Silence with no
-   * dialog therefore means the handler never ran at all.
-   *
-   * This guard keeps that true: the day someone adds a home/org condition to
-   * the control or its enablement, the silent-Remove reading stops being a
-   * harness artifact and becomes a real dead control — and this fails first.
+   * like it did nothing. On the admin seat, removal is gated on nothing but the
+   * seat's own manage rule; a write that matched nothing THROWS a sentence.
    */
-  it("gates Remove on nothing but in-flight state — no home, scope or org predicate", () => {
-    expect(page).toContain("onClick={() => void remove()}");
-    expect(page).toContain("disabled={busy}");
-    const control = page.slice(
-      page.indexOf("function RemoveMandate("),
-      page.indexOf("function RemoveMandate(") + 2000,
+  it("the admin seat may always remove, and a blocked write is never silent", () => {
+    const rule = readFileSync(
+      join(__dirname, "../../status/can-manage.ts"),
+      "utf8",
     );
-    expect(control).not.toMatch(/disabled=\{[^}]*(home|scope|organization|isSystem)/i);
-    expect(control).not.toMatch(/(home|scope|organization|isSystem)[^\n]*\?\s*null/i);
-    // And the refusal path exists, so a blocked write can never be silent.
+    expect(rule).toContain('if (seat.level === "system") return true;');
     expect(service).toContain(
       "This job was not removed — either it is already removed",
     );

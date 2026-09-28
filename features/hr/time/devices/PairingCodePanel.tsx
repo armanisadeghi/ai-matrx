@@ -61,6 +61,7 @@ export function PairingCodeDialogBody({
   const [busy, setBusy] = useState(false);
   const [issued, setIssued] = useState<KioskPairingCode | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -68,13 +69,19 @@ export function PairingCodeDialogBody({
       .listLocations()
       .then((rows) => {
         if (!live) return;
+        setLocationsError(null);
         setLocations(rows);
         // One location is not a choice — preselect it rather than making somebody confirm the
         // obvious before they can pair a tablet.
         if (rows.length === 1) setLocationId(rows[0].id);
       })
-      .catch(() => {
-        if (live) setLocations([]);
+      .catch((cause: unknown) => {
+        if (!live) return;
+        setLocationsError(
+          cause instanceof Error && cause.message.trim()
+            ? cause.message
+            : "We could not load this employer's work locations.",
+        );
       });
     return () => {
       live = false;
@@ -213,7 +220,13 @@ export function PairingCodeDialogBody({
         </Button>
       </div>
 
-      {locations !== null && locations.length === 0 && (
+      {locationsError && (
+        <p className="text-sm text-foreground">
+          {locationsError} <ErrorAlchemyMenu error={locationsError} />
+        </p>
+      )}
+
+      {locations !== null && locations.length === 0 && !locationsError && (
         /*
           No locations means no kiosk is possible, and the honest move is to say so and point at the
           surface that fixes it — not to render a picker with nothing in it and let the server

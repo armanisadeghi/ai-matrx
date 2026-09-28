@@ -5,7 +5,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { crossDeploymentHref } from "@/lib/deployment/surfaces";
 import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
-import { adminMandateHref } from "../browse/url-compat";
+import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 
 // features/mandates/workspace/DefinitionEditDoor.tsx
@@ -29,7 +29,7 @@ export function DefinitionEditDoor({
   const action = `Edit ${section.toLowerCase()}`;
 
   if (isSuperAdmin) {
-    const href = adminMandateHref(key);
+    const href = adminMandateRecordHref(key);
     return (
       <a
         href={crossDeploymentHref(href) ?? href}

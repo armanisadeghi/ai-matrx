@@ -941,7 +941,9 @@ export default function AgentDemoClient() {
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <p className="text-sm text-muted-foreground">
-                        {execStatus === "complete"
+                        {execStatus === "error"
+                          ? "The run failed, so there is no token usage. The error is shown above."
+                          : execStatus === "complete"
                           ? "No token usage in stream events."
                           : "Execute an agent to see token usage."}
                       </p>

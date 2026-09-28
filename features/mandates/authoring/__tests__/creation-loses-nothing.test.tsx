@@ -2,7 +2,7 @@
  * FIX-R14 — THE CREATION PAGE NEVER MOVES THE PERSON, AND NEVER LOSES A WORD.
  *
  * The defect, found by an independent walker on production v0.4.1736:
- * `/administration/mandates/new` changed route under them while they were
+ * `/administration/intelligence/mandates/new` changed route under them while they were
  * typing, into the EXISTING mandate `rincon_plumbing.dispatch_summary` — so the name
  * and the goal they were writing went into that record, and the creation they
  * meant to make never happened. Data loss, on every attempt.
@@ -84,7 +84,7 @@ const TAKEN = {
   status: "taken" as const,
   mandateKey: "rincon_plumbing.dispatch_summary",
   label: "Rincon Plumbing — Dispatch Summary",
-  href: "/administration/mandates/rincon_plumbing.dispatch_summary",
+  href: "/administration/intelligence/mandates/rincon_plumbing.dispatch_summary",
 };
 
 let container: HTMLDivElement;
@@ -153,7 +153,7 @@ describe("a key that already exists", () => {
     expect(container.textContent).toContain("That key is taken");
     expect(container.textContent).toContain("Rincon Plumbing — Dispatch Summary");
     const link = container.querySelector<HTMLAnchorElement>(
-      'a[href="/administration/mandates/rincon_plumbing.dispatch_summary"]',
+      'a[href="/administration/intelligence/mandates/rincon_plumbing.dispatch_summary"]',
     );
     // Following it is the PERSON'S choice, and it must not cost them the form.
     expect(link?.target).toBe("_blank");
@@ -216,7 +216,7 @@ describe("nothing navigates while the form is dirty", () => {
     expect(navigations).toHaveLength(1);
     // …and it is inside the branch that runs only after `createMandate`
     // resolved, using the key the SERVER said it created.
-    expect(source).toContain("adminMandateHref(created.mandateKey)");
+    expect(source).toContain("adminMandateRecordHref(created.mandateKey)");
   });
 });
 

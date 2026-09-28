@@ -21,7 +21,9 @@ import {
   ChevronUp,
   Clock,
   Loader2,
+  RotateCcw,
   Scissors,
+  Upload,
   X,
 } from "lucide-react";
 import type { SourceManifestEntry } from "@ai-matrx/agents/sources";
@@ -47,6 +49,7 @@ import { toast } from "@/lib/toast";
 import { asClause } from "@/lib/text/asClause";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { sourceKindDef } from "../sourceKinds";
+import { resumableInput } from "../interrupted";
 import type { SourceCardModel } from "../types";
 import type { UseSourceSetResult } from "../useSourceSet";
 
@@ -88,13 +91,20 @@ export function SourceCard({
   set,
   job,
   onProcessingSettled,
+  onTryAgain,
+  onChooseFileAgain,
 }: {
   card: SourceCardModel;
   set: UseSourceSetResult;
   /** The processing-runner job reading this file, when this session started one. */
   job: ProcessingJob | null;
   onProcessingSettled: () => void;
+  /** Land the kept input again (shown when the draft kept one). */
+  onTryAgain?: () => void;
+  /** The person chose the file again after its upload was cut off. */
+  onChooseFileAgain?: (file: File) => void;
 }) {
+  const fileAgainRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState<"form" | "parts" | null>(null);
   const kind = sourceKindDef(card.draft.kind);
   const Icon = kind.icon;
@@ -177,8 +187,45 @@ export function SourceCard({
       {card.status === "error" ? (
         <p role="alert" className="flex items-start gap-2 border-t border-border px-3 py-2 text-xs text-destructive">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{card.error ?? "This could not be added. Remove it and try again."}</span>
-          <ErrorAlchemyMenu error={card.error ?? "This could not be added."} operation={`Add ${card.draft.label}`} className="ml-auto" />
+          <span className="min-w-0 flex-1">{card.error ?? "This could not be added. Remove it and try again."}</span>
+          {resumableInput(card.draft) && onTryAgain ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
+              onClick={onTryAgain}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Try again
+            </Button>
+          ) : null}
+          {!resumableInput(card.draft) && !ref && isUploadKind(card.draft.kind) && onChooseFileAgain ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
+                onClick={() => fileAgainRef.current?.click()}
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Choose it again
+              </Button>
+              <input
+                ref={fileAgainRef}
+                type="file"
+                className="hidden"
+                accept={kind.accept}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) onChooseFileAgain(file);
+                }}
+              />
+            </>
+          ) : null}
+          <ErrorAlchemyMenu error={card.error ?? "This could not be added."} operation={`Add ${card.draft.label}`} />
         </p>
       ) : null}
 
@@ -266,6 +313,10 @@ export function SourceCard({
       ) : null}
     </li>
   );
+}
+
+function isUploadKind(kind: SourceCardModel["draft"]["kind"]): boolean {
+  return kind === "upload" || kind === "image" || kind === "audio";
 }
 
 function addingWords(kind: SourceCardModel["draft"]["kind"]): string {

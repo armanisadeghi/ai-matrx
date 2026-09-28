@@ -25,6 +25,11 @@ import {
   updateFamilyPromotion,
 } from "@/features/agents/components/inputs/resources/resource-family-policy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  capabilitySentence,
+  familyWords,
+  PRIMARY_FORM_CHOICES,
+} from "@/features/agents/components/inputs/resources/resource-family-words";
 
 interface ResourceFamilyPolicyEditorProps {
   fileId: string | null;
@@ -75,8 +80,8 @@ export function ResourceFamilyPolicyEditor({
   return (
     <div className={cn("space-y-2", className)}>
       <div className="space-y-1">
-        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Primary content
+        <Label className="text-xs font-semibold text-muted-foreground">
+          What the AI reads
         </Label>
         <Select
           value={primaryRepresentation ?? "auto"}
@@ -98,47 +103,49 @@ export function ResourceFamilyPolicyEditor({
         >
           <SelectTrigger
             className="h-8 text-xs"
-            aria-label="Primary document content"
+            aria-label="What the AI reads from this file"
           >
-            <SelectValue />
+            <SelectValue>
+              {PRIMARY_FORM_CHOICES.find(
+                (choice) => choice.value === (primaryRepresentation ?? "auto"),
+              )?.label ?? "Best available"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="auto">
-              Auto · Clean → Raw → original PDF
-            </SelectItem>
-            <SelectItem value="clean" disabled={!primaryAvailable("clean")}>
-              Clean text
-            </SelectItem>
-            <SelectItem value="raw" disabled={!primaryAvailable("raw")}>
-              Raw extracted text
-            </SelectItem>
-            <SelectItem value="pdf" disabled={!primaryAvailable("pdf")}>
-              Original PDF
-            </SelectItem>
+            {PRIMARY_FORM_CHOICES.map((choice) => (
+              <SelectItem
+                key={choice.value}
+                value={choice.value}
+                disabled={choice.value !== "auto" && !primaryAvailable(choice.value)}
+              >
+                <span className="block">
+                  <span className="block font-medium">{choice.label}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {choice.detail}
+                  </span>
+                </span>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        <p className="text-[11px] leading-snug text-muted-foreground">
-          Auto always prefers clean text, then raw extraction, then the original
-          PDF.
-        </p>
       </div>
 
       <div className="border-t border-border/60" />
       <div>
-        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Resource family
+        <Label className="text-xs font-semibold text-muted-foreground">
+          Also there if the AI needs it
         </Label>
         <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-          Every existing derivative is available on demand by default. Inline
-          previews and exclusions affect context only; they never generate
-          content.
+          Everything already made from this file. The AI looks these up only
+          when it needs them, and nothing new is made. Untick anything it
+          should leave alone.
         </p>
       </div>
 
       {family.loading ? (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Loading family inventory…
+          Checking what is ready for this file…
         </div>
       ) : null}
       {family.error ? (
@@ -171,9 +178,13 @@ export function ResourceFamilyPolicyEditor({
                     }
                   />
                   <span className="min-w-0">
-                    <span className="block font-medium">{item.label}</span>
+                    <span className="block font-medium">
+                      {familyWords(item.key, item.label, item.count).label}
+                    </span>
                     <span className="text-muted-foreground">
-                      {item.count} · {item.category} · {item.fetch_tool}
+                      {isPrimary
+                        ? "What the AI reads, above"
+                        : familyWords(item.key, item.label, item.count).detail}
                     </span>
                   </span>
                 </label>
@@ -195,9 +206,11 @@ export function ResourceFamilyPolicyEditor({
                   }
                 />
                 <span className="min-w-0">
-                  <span className="block font-medium">{key}</span>
+                  <span className="block font-medium">
+                    {familyWords(key, key.replace(/_/g, " "), 0).label}
+                  </span>
                   <span className="text-muted-foreground">
-                    Configured exclusion · currently unavailable
+                    Turned off earlier · not made for this file yet
                   </span>
                 </span>
               </label>
@@ -207,7 +220,8 @@ export function ResourceFamilyPolicyEditor({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <Label className="text-xs text-muted-foreground">
-                Inline previews ({promotions.length}/{MAX_RESOURCE_PROMOTIONS})
+                Put a copy right in the message ({promotions.length} of{" "}
+                {MAX_RESOURCE_PROMOTIONS})
               </Label>
               {!readonly &&
               nextPromotion &&
@@ -227,7 +241,7 @@ export function ResourceFamilyPolicyEditor({
             </div>
             {promotions.length === 0 ? (
               <p className="rounded-md border border-dashed border-border/60 px-2 py-1.5 text-[11px] text-muted-foreground">
-                Nothing is copied inline; the agent reads only what it needs.
+                Nothing is copied in. The AI looks up only what it needs.
               </p>
             ) : (
               promotions.map((promotion, index) => (
@@ -267,14 +281,19 @@ export function ResourceFamilyPolicyEditor({
                         )
                         .map((item) => (
                           <SelectItem key={item.key} value={item.key}>
-                            {item.label} ({item.count})
+                            {familyWords(item.key, item.label, item.count).label}
                           </SelectItem>
                         ))}
                       {!promotable.some(
                         (item) => item.key === promotion.representation,
                       ) ? (
                         <SelectItem value={promotion.representation}>
-                          {promotion.representation} (configured)
+                          {familyWords(
+                            promotion.representation,
+                            promotion.representation.replace(/_/g, " "),
+                            0,
+                          ).label}{" "}
+                          (chosen earlier)
                         </SelectItem>
                       ) : null}
                     </SelectContent>
@@ -284,7 +303,8 @@ export function ResourceFamilyPolicyEditor({
                     min={1}
                     max={10_000}
                     className="h-8 text-xs"
-                    aria-label={`Maximum characters for ${promotion.representation}`}
+                    aria-label={`Most characters to copy in from ${familyWords(promotion.representation, promotion.representation, 0).label}`}
+                    title="Most characters to copy in"
                     disabled={readonly}
                     value={promotion.max_chars ?? 5_000}
                     onChange={(event) =>
@@ -301,7 +321,7 @@ export function ResourceFamilyPolicyEditor({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      aria-label={`Remove ${promotion.representation} preview`}
+                      aria-label={`Stop copying in ${familyWords(promotion.representation, promotion.representation, 0).label}`}
                       onClick={() => emit(removeFamilyPromotion(policy, index))}
                     >
                       <X className="h-3.5 w-3.5" />
@@ -312,9 +332,9 @@ export function ResourceFamilyPolicyEditor({
             )}
           </div>
 
-          {family.data.capabilities.length ? (
+          {capabilitySentence(family.data.capabilities) ? (
             <p className="text-[11px] text-muted-foreground">
-              Free tools: {family.data.capabilities.join(", ")}
+              {capabilitySentence(family.data.capabilities)}
             </p>
           ) : null}
         </>

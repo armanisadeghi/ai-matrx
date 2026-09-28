@@ -19,5 +19,5 @@ export default async function AudioStudyEditPage({
   await requireAccess("study_media", id, "edit", {
     redirectTo: `/education/audio-study/${id}`,
   });
-  return <AudioStudyDetail mediaId={id} />;
+  return <AudioStudyDetail mediaId={id} edit />;
 }

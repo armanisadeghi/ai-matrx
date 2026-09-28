@@ -129,9 +129,10 @@ export const LEGACY_PIECES: LegacyPiece[] = [
   md("pkg:react-katex", "react-katex", "^react-katex(/|$)"),
   {
     ...md("pkg:marked", "marked", "^marked(/|$)"),
-    // The one editor's parse edge: `marked`'s LEXER as a byte-mapped tokenizer for the
-    // visual mode's fidelity gate (rich-content PLAN §3.6). It renders nothing.
-    allowedFiles: [...CORE_FILES, "components/rich-editor/core/markdown-parse.ts"],
+    // The one editor's lexer edge: `marked`'s LEXER as a byte-mapped tokenizer for the
+    // visual mode's fidelity gate and the table writer's read-back (rich-content
+    // PLAN §3.6). It renders nothing. Every editor file lexes through it.
+    allowedFiles: [...CORE_FILES, "components/rich-editor/core/gfm-lexer.ts"],
   },
   md("pkg:markdown-it", "markdown-it", "^markdown-it(-|/|$)"),
 

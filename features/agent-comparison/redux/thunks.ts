@@ -61,6 +61,7 @@ import {
   type BattleSubmitResult,
 } from "../shared/battlePersistence";
 import type { BattleAgentVersion, BattleColumn } from "../types";
+import { isConversationRequestEmpty } from "../shared/battleRequestEmpty";
 
 // =============================================================================
 // Page-wide constants
@@ -347,7 +348,14 @@ export const submitAllBattleColumns = createAsyncThunk<
     const state = getState();
     // Snapshot the column list up front — submissions mutate per-instance
     // slices (autoclear etc.) so we don't want re-reads partway through.
-    const targets = state.agentComparison.columns.filter((col) => col.agentId);
+    // A column with an agent but nothing typed (no message, no attachment,
+    // and an agent that needs a typed message — battleRequestEmpty.ts) has
+    // nothing for the provider to run; skip it rather than launch it empty
+    // and have it rejected server-side.
+    const targets = state.agentComparison.columns.filter(
+      (col) =>
+        col.agentId && !isConversationRequestEmpty(state, col.conversationId),
+    );
     const skipped = state.agentComparison.columns.length - targets.length;
 
     // The battle gets (or keeps) its identity BEFORE the runs start, so the

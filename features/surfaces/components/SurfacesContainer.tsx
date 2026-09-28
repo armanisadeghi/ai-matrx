@@ -101,6 +101,7 @@ import { listParentFilterOptions } from "@/features/surfaces/utils/surface-hiera
 import { surfaceCheckState } from "@/features/surfaces/utils/surface-check-ledger";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 export function SurfacesContainer() {
   const router = useRouter();
@@ -480,7 +481,7 @@ export function SurfacesContainer() {
           className="min-w-0 truncate text-xs tabular-nums text-muted-foreground"
           title={`${surfaces.length} surfaces · ${totalActive} active · ${manifestedSurfaceNames.size} with a code manifest · ${totalUnbound} with no agents or tools`}
         >
-          {surfaces.length} surfaces · {totalActive} active
+          <UntrustedCount value={surfaces.length} read={readOf({ loading, error, data: surfaces })} label="Surfaces" /> surfaces · {totalActive} active
           {!isMobile && totalUnbound > 0 && (
             <> · {totalUnbound} with no agents or tools</>
           )}

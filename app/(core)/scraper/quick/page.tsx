@@ -33,6 +33,7 @@ import { ScraperSurfaceMount } from "@/features/scraper/agent-context/ScraperSur
 // page's own Scrape buttons would reject.
 import { normalizeUrl } from "@/features/scraper/utils/scraper-floating-helpers";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export default function QuickScrapePage() {
   const searchParams = useSearchParams();
@@ -54,6 +55,9 @@ export default function QuickScrapePage() {
   const [fullResult, setFullResult] = useState<ReturnType<
     typeof ScraperDataUtils.processFullData
   > | null>(null);
+  // The full scrape succeeded but its result could not be turned into the
+  // page view — said on screen instead of "returned no page content".
+  const [fullProcessError, setFullProcessError] = useState<unknown>(null);
   const [activeTab, setActiveTab] = useState("pretty");
   const [quickContentTab, setQuickContentTab] = useState("pretty");
   const [viewMode, setViewMode] = useState<"quick" | "full">("quick");
@@ -105,6 +109,7 @@ export default function QuickScrapePage() {
     if (!normalized) return;
     setUrl(normalized);
     setViewMode("full");
+    setFullProcessError(null);
     fullScrapeApi.reset();
 
     try {
@@ -136,6 +141,7 @@ export default function QuickScrapePage() {
       }
     } catch (err) {
       console.error("Full scrape failed:", err);
+      setFullProcessError(err);
     }
   };
 
@@ -157,6 +163,7 @@ export default function QuickScrapePage() {
     reset();
     fullScrapeApi.reset();
     setFullResult(null);
+    setFullProcessError(null);
     setUrl("");
     setUrlError(null);
     setViewMode("quick");
@@ -344,14 +351,21 @@ export default function QuickScrapePage() {
         {viewMode === "full" && !fullScrapeApi.isLoading && !fullResult && (
           <div className="flex-1 overflow-auto p-4">
             <div className="max-w-3xl mx-auto">
-              {failureNotice ?? (
+              {failureNotice ??
+                (fullProcessError ? (
+                  <ErrorNotice
+                    title="Couldn't show the full scrape"
+                    error={fullProcessError}
+                    operation="Build the full scrape view"
+                  />
+                ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
                   <Search className="w-10 h-10 mb-3 opacity-40" />
                   <p className="text-sm">
                     The full scrape returned no page content.
                   </p>
                 </div>
-              )}
+                ))}
             </div>
           </div>
         )}

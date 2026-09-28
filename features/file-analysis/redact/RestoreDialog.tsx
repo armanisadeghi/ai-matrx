@@ -63,6 +63,7 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
   const [running, setRunning] = useState(false);
   const [recovering, setRecovering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [escrowError, setEscrowError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -77,9 +78,13 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
     // the org (D31). Errors are non-fatal here (local sessions still work)
     // but never silent.
     listEscrowedSessionsForFile(fileId)
-      .then(setEscrowOnly)
+      .then((list) => {
+        setEscrowOnly(list);
+        setEscrowError(null);
+      })
       .catch((e) => {
         console.error("[redact] escrow session listing failed:", e);
+        setEscrowError(e instanceof Error ? e.message : String(e));
       });
   }, [open, fileId, sessionId]);
 
@@ -196,6 +201,12 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
                   className="h-9 text-xs"
                 />
               )}
+              {escrowError ? (
+                <p className="text-[11px] text-destructive">
+                  Couldn&apos;t list sessions held in organization escrow, so
+                  some sessions may be missing: {escrowError}
+                </p>
+              ) : null}
             </div>
             <div className="space-y-1">
               <span className="text-xs font-medium">Session key (base64)</span>

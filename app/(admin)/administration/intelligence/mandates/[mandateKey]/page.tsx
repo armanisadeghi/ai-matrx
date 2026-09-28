@@ -6,7 +6,7 @@ import { MandateRecordPage } from "@/features/mandates/record-next/MandateRecord
  */
 export const metadata = {
   title: "Mandate",
-  description: "One mandate — the job, its holder, and its overrides",
+  description: "One mandate — the job, its Mandate Holder, and its overrides",
 };
 
 export default async function IntelligenceMandateRecordRoute({

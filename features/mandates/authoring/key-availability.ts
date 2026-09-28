@@ -6,7 +6,7 @@
 // NEVER AS A NAVIGATION (FIX-R14, 2026-09-08).
 //
 // An independent walker on production v0.4.1736 lost everything they had
-// typed on `/administration/mandates/new`: the route changed under them into
+// typed on the admin New mandate page: the route changed under them into
 // an EXISTING mandate's page, and their name and goal went into that record.
 // The lesson is bigger than whatever moved the route: a creation form is the
 // one screen where the person's work exists ONLY in the form, so
@@ -25,7 +25,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
-import { adminMandateHref } from "../browse/url-compat";
+import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 
 /**
  * What the page knows about the typed key. `unknown` is a first-class answer:
@@ -75,6 +75,6 @@ export async function probeMandateKey(
     status: "taken",
     mandateKey: data.mandate_key,
     label: data.label?.trim() || data.mandate_key,
-    href: adminMandateHref(data.mandate_key),
+    href: adminMandateRecordHref(data.mandate_key),
   };
 }

@@ -54,7 +54,8 @@ export type ActionRequestForm =
   | "credential"
   | "browser_takeover"
   | "one_time_code"
-  | "vault_item";
+  | "vault_item"
+  | "approve_spend";
 
 /**
  * What EVERY render spec carries. Verified against the live doors on
@@ -163,8 +164,35 @@ export interface VaultItemRender extends RenderCommon {
   submit_label: string;
 }
 
+/**
+ * "Approve up to $X?" — kind `approve_spend`, minted only by the paid tools'
+ * spend gate (aidream `services/action_requests/spend_ask.py`), never by an
+ * agent. A NUMBER, not a yes/no: the person may edit the amount before
+ * approving, and the result carries it as `approved_amount_usd`. Its
+ * consequence class is `money`, so the server answers `can_complete: false`
+ * to anyone not signed in as the subject, whatever any knob says — the page
+ * draws the sign-in reason instead of this form.
+ */
+export interface ApproveSpendRender extends RenderCommon {
+  form: "approve_spend";
+  /** The price-book estimate, full precision (can be under a cent). */
+  estimate_usd: number;
+  /** The SUGGESTED amount, already rounded to cents by the server. */
+  amount_usd: number;
+  amount_editable: boolean;
+  what_it_buys?: string | null;
+  /** The organization's effective guardrail headroom at ask time, when a
+   *  guardrail applies. An approval above it is capped, never raised. */
+  guardrail_cap_usd?: number | null;
+  covers: "provider" | "provider_and_model";
+  scope: { tool: string; action: string; site_id?: string | null };
+  consequence_note?: string | null;
+  choices: { value: "yes" | "no"; label: string; tone: "primary" | "ghost" }[];
+}
+
 export type ActionRequestRender =
   | ApproveRender
+  | ApproveSpendRender
   | ChooseOneRender
   | ConfirmDetailsRender
   | UploadFileRender

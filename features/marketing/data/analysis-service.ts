@@ -74,7 +74,7 @@ async function loadAnalysisItem(
   )
     .from("analysis_item")
     .select(
-      "id, key, label, description, category, subcategory, weight, score_contract, severity_map",
+      "id, key, label, description, category, subcategory, weight, score_contract, severity_map, remedy",
     )
     .eq("id", itemId)
     .is("deleted_at", null)
@@ -365,8 +365,8 @@ export interface ActionableFindingsRead {
  * findings for the checks that have a real one-click AI action today.
  *
  * Deliberately narrow — the producer never sweeps the whole register. The key
- * allowlist comes from `aiRemedyItemKeys()` (derived from the remedy
- * registry), so a check with only a copy-able manual instruction can never
+ * allowlist is the checks whose stored remedy (`web.analysis_item.remedy`)
+ * is a one-click AI action, so a check with only a copy-able manual instruction can never
  * reach a chip whose button would have nothing to run.
  */
 export async function listActionableOpenFindings(

@@ -15,13 +15,15 @@ export function removeMemoryItem(aid: MemoryAidPayload, kind: MemoryItemKind, in
 }
 
 /** One child operation against one saved aid; used before approval and again at apply. */
-export function parseMemoryItemChange(value: unknown, aid: MemoryAidPayload): {
+export function parseMemoryItemChange(value: unknown, aid: MemoryAidPayload, version?: number): {
   aid: MemoryAidPayload;
   summary: string;
 } {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("change_memory_item needs an object with action, kind, and item or position.");
   const input = value as Record<string, unknown>;
+  if (version !== undefined && input.expected_version !== version)
+    throw new Error("This memory aid changed. Read aid_version and the current items, then submit a new change with expected_version.");
   const { action, kind } = input;
   if (action !== "add" && action !== "update" && action !== "delete")
     throw new Error("action must be add, update, or delete.");

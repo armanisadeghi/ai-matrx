@@ -21,7 +21,7 @@ export const UNASSIGNED_SECTION_LABEL = "Unassigned threads";
 // War Room persona — an agent that knows its tier role, the read-only board
 // context it receives, and that it can list/read the user's notes, tasks,
 // projects and transcripts via the `data` tool. Admins rebind the mandate at
-// /administration/mandates; a user overrides it for themselves at
+// /administration/intelligence/mandates; a user overrides it for themselves at
 // /mandates or from the MandateAgentPicker in the tier's header.
 //
 // THE PERSISTED-ID DOCTRINE (why this migration needed care):

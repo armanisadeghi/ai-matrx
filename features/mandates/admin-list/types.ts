@@ -1,8 +1,8 @@
 // features/mandates/admin-list/types.ts
 //
-// One row of the admin mandate list preview (/administration/mandates/list-preview).
-// It is the console's health row (`MandateRow`, the ONE builder in
-// ../admin/mandate-health.ts) plus the facts the console never showed:
+// One row of the admin mandate list (/administration/intelligence/mandates).
+// It is the health row (`MandateRow`, the ONE builder in
+// ../admin/mandate-health.ts) plus the facts the original console never showed:
 // who created it, whose it is, who customized it, and where it comes from.
 // Every field is read from a real source; `null` means that source did not
 // answer, never "none".

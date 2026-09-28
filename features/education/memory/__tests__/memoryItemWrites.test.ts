@@ -12,6 +12,10 @@ const aid = parseMemoryAid({
 });
 
 describe("one memory item write", () => {
+  it("refuses a stale position-based approval after the set revision changes", () => {
+    expect(() => parseMemoryItemChange({ action: "delete", kind: "mnemonic", position: 1, expected_version: 4 }, aid, 5)).toThrow("changed");
+    expect(parseMemoryItemChange({ action: "delete", kind: "mnemonic", position: 1, expected_version: 5 }, aid, 5).aid.mnemonics[0].target).toBe("RNA");
+  });
   it("updates only the selected item and keeps the other items", () => {
     const changed = parseMemoryItemChange({ action: "update", kind: "mnemonic", position: 2, item: { device: "Revised device" } }, aid);
     expect(changed.aid.mnemonics.map((item) => item.device)).toEqual(["First device", "Revised device"]);

@@ -309,7 +309,7 @@ describe("a record toast cannot outlive its record on screen", () => {
     });
     await settle();
 
-    await navigateTo("/administration/mandates/greenline_landscaping.crew_schedule");
+    await navigateTo("/administration/intelligence/mandates/greenline_landscaping.crew_schedule");
     await act(async () => {
       await wait(0);
     });

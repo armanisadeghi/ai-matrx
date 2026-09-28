@@ -463,6 +463,9 @@ export default function AgentReviewQueueTable() {
     );
   }
 
+  // A failed load with nothing held: every count here is unknown, not zero.
+  const countsFailed = Boolean(loadError) && rows.length === 0;
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_AGENT_REVIEW_SURFACE_NAME}
@@ -479,7 +482,12 @@ export default function AgentReviewQueueTable() {
               onClick={() => setQueueView("inbox")}
             >
               Ready for you (
-              <ReviewCount count={inboxRows.length} loading={loading} />)
+              {countsFailed ? (
+                <UntrustedCount value={inboxRows.length} trustworthy={false} label="Ready for you" />
+              ) : (
+                <ReviewCount count={inboxRows.length} loading={loading} />
+              )}
+              )
             </Button>
             <Button
               size="sm"
@@ -487,7 +495,12 @@ export default function AgentReviewQueueTable() {
               onClick={() => setQueueView("all")}
             >
               All activity (
-              <ReviewCount count={rows.length} loading={loading} />)
+              {countsFailed ? (
+                <UntrustedCount value={rows.length} trustworthy={false} label="All activity" />
+              ) : (
+                <ReviewCount count={rows.length} loading={loading} />
+              )}
+              )
             </Button>
             <Button
               variant="outline"
@@ -526,7 +539,7 @@ export default function AgentReviewQueueTable() {
                 <button
                   type="button"
                   aria-pressed={isActive}
-                  aria-label={`Filter review items by ${step.label.replace(/^\d+\.\s*/, "")} (${reviewCountLabel(count, loading)})`}
+                  aria-label={`Filter review items by ${step.label.replace(/^\d+\.\s*/, "")} (${countsFailed ? "count unavailable" : reviewCountLabel(count, loading)})`}
                   onClick={() => {
                     setView("all");
                     setStatusFilter(step.statuses);
@@ -538,11 +551,15 @@ export default function AgentReviewQueueTable() {
                 >
                   <div className="text-sm font-medium">{step.label}</div>
                   <div className="mt-1 text-2xl font-semibold tabular-nums">
-                    <ReviewCount
-                      count={count}
-                      loading={loading}
-                      skeletonClassName="h-7 w-12"
-                    />
+                    {countsFailed ? (
+                      <UntrustedCount value={count} trustworthy={false} label={step.label} />
+                    ) : (
+                      <ReviewCount
+                        count={count}
+                        loading={loading}
+                        skeletonClassName="h-7 w-12"
+                      />
+                    )}
                   </div>
                 </button>
               </div>

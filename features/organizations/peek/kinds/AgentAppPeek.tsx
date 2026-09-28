@@ -16,6 +16,7 @@ import { appDb } from "@/utils/supabase/appDb";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface AgentAppRow {
   name: string | null;
@@ -26,18 +27,21 @@ interface AgentAppRow {
 export default function AgentAppPeek({ id, open, onClose }: PeekProps) {
   const [row, setRow] = React.useState<AgentAppRow | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<unknown>(null);
+  const [attempt, setAttempt] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await appDb(supabase)
+      const { data, error } = await appDb(supabase)
         .from("definition")
         .select("name, description, created_at")
         .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {
+        setLoadError(error ?? null);
         setRow((data as AgentAppRow) ?? null);
         setLoading(false);
       }
@@ -45,7 +49,7 @@ export default function AgentAppPeek({ id, open, onClose }: PeekProps) {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   return (
     <PeekDialog
@@ -56,7 +60,9 @@ export default function AgentAppPeek({ id, open, onClose }: PeekProps) {
       href={peekHref("app", id)}
       loading={loading}
     >
-      {row ? (
+      {loadError ? (
+        <ReadFailure error={loadError} what="this agent app" onRetry={() => setAttempt((n) => n + 1)} />
+      ) : row ? (
         <>
           <PeekField label="Description">
             {row.description ? (

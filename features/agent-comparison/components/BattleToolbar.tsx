@@ -28,6 +28,7 @@ import {
   selectActiveBattleSetName,
   selectBattleColumns,
   selectCollapsedBattleColumnCount,
+  selectHasRunnableBattleColumn,
   selectIsSubmittingAllBattle,
   selectSubmittableBattleColumns,
 } from "../redux/selectors";
@@ -69,6 +70,7 @@ export function BattleToolbar({
   const isSubmittingAll = useAppSelector(selectIsSubmittingAllBattle);
   const columns = useAppSelector(selectBattleColumns);
   const submittable = useAppSelector(selectSubmittableBattleColumns);
+  const hasRunnableColumn = useAppSelector(selectHasRunnableBattleColumn);
   const collapsedCount = useAppSelector(selectCollapsedBattleColumnCount);
   const maybeShuffleForBlind = useBlindShuffle();
 
@@ -96,6 +98,12 @@ export function BattleToolbar({
   const handleSubmitAll = () => {
     if (submittable.length === 0) {
       toast.info("Pick an agent in at least one column before submitting.");
+      return;
+    }
+    if (!hasRunnableColumn) {
+      toast.error(
+        "Type a message into at least one column, or pick an agent whose variables fill the prompt on their own.",
+      );
       return;
     }
     void runSubmit();
@@ -299,7 +307,7 @@ export function BattleToolbar({
         inlineCount={2}
         onSubmit={handleSubmitAll}
         submitting={isSubmittingAll}
-        canSubmit={submittable.length > 0}
+        canSubmit={submittable.length > 0 && hasRunnableColumn}
         submitTitle="Run every column that has an agent"
       />
 

@@ -303,7 +303,7 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
       source: "api-network",
       code: "network_error",
       relation: "GET /mandates/code-truth",
-      routeIncludes: "/administration/mandates",
+      routeIncludes: "/administration/intelligence/mandates",
     },
   },
   {

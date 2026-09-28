@@ -1,6 +1,5 @@
 import {
   adminMenuDomains,
-  adminMenuPathname,
   adminNavigationRegistry,
   findAdminNavigationLocation,
   getAdminNavigationArchitectureErrors,
@@ -64,19 +63,12 @@ describe("admin navigation registry", () => {
     );
   });
 
-  it("keeps every original mandate page declared and highlighting the new home", () => {
-    for (const path of [
-      "/administration/mandates",
-      "/administration/mandates/new",
-      "/administration/mandates/advanced",
-      "/administration/mandates/references",
-      "/administration/mandates/some.key",
-    ]) {
-      expect(findAdminNavigationLocation(path)?.domain.slug).toBe("mandates");
-      expect(adminMenuPathname(path)).toBe("/administration/intelligence/mandates");
-    }
+  it("highlights Intelligence → Mandates on every mandate admin page", () => {
     for (const path of [
       "/administration/intelligence/mandates/dashboard",
+      "/administration/intelligence/mandates/new",
+      "/administration/intelligence/mandates/advanced",
+      "/administration/intelligence/mandates/references",
       "/administration/intelligence/mandates/some.key",
       "/administration/intelligence/mandates/some.key/overrides",
     ]) {

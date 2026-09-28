@@ -14,6 +14,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { isConversationRequestEmpty } from "@/features/agent-comparison/shared/battleRequestEmpty";
 import {
   createInstance,
   destroyInstance,
@@ -259,10 +260,21 @@ export const submitAllRequestMod = createAsyncThunk<
         return { launched: 0, failed: 0, skipped: columns.length };
       }
 
+      // Each column sends its OWN request; an untouched column (no typed
+      // message, no attachment, and an agent that needs a typed message —
+      // see battleRequestEmpty.ts) has nothing for the provider to run and
+      // is skipped rather than launched empty and rejected server-side.
+      const runnableColumns = columns.filter(
+        (col) => !isConversationRequestEmpty(state, col.conversationId),
+      );
+      if (runnableColumns.length === 0) {
+        return { launched: 0, failed: 0, skipped: columns.length };
+      }
+
       // Each column sends its OWN request, and its composer empties the moment it
       // sends. Keep what each column is about to send, so the saved battle holds
       // the requests that actually ran — never the emptied composers.
-      for (const col of columns) {
+      for (const col of runnableColumns) {
         dispatch(
           setRequestModColumnLastRequest({
             columnId: col.columnId,
@@ -281,7 +293,7 @@ export const submitAllRequestMod = createAsyncThunk<
       }
 
       const results = await Promise.allSettled(
-        columns.map((col) =>
+        runnableColumns.map((col) =>
           dispatch(
             smartExecute({
               conversationId: col.conversationId,
@@ -293,8 +305,9 @@ export const submitAllRequestMod = createAsyncThunk<
 
       const failed = results.filter((r) => r.status === "rejected").length;
       const launched = results.length - failed;
+      const skipped = columns.length - runnableColumns.length;
 
-      return { launched, failed, skipped: 0, persistError: persisted.error };
+      return { launched, failed, skipped, persistError: persisted.error };
     } finally {
       dispatch(submitAllFinished());
     }

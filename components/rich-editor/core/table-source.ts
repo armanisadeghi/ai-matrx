@@ -15,7 +15,7 @@
 // row split and a second edit deleted the tail (verify-RC-B4 R3-1).
 // Guard: scripts/check-table-writers.ts (no table writer outside this module).
 
-import { marked, type Tokens } from "marked";
+import { lexGfmBlocks, type Tokens } from "./gfm-lexer";
 import { rowCells, splitRowSegments, unescapeCellPipes } from "@ai-matrx/content-ir/source";
 
 // THE table-row splitter and a row's cells — GFM's rule (backslash-run parity) —
@@ -67,7 +67,7 @@ export class TableWriteRefused extends Error {
 
 /** The GFM table `marked` reads at the start of `text` (blank edges trimmed), with every block token. */
 function readTable(text: string): { tokens: string[]; table: Tokens.Table | null } {
-  const tokens = marked.lexer(text, { gfm: true }).filter((token) => token.type !== "space");
+  const tokens = lexGfmBlocks(text);
   const first = tokens[0];
   return { tokens: tokens.map((token) => token.type), table: first?.type === "table" ? (first as Tokens.Table) : null };
 }

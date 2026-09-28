@@ -52,6 +52,25 @@ export interface SourceDraft {
   notes?: string[];
   /** The person asked to wait for the clean version before anything runs. */
   waitForClean?: boolean;
+  /**
+   * What the person handed over, kept ONLY while the Source is still landing
+   * (or failed) so a reload or a failure never loses it: the pasted text, the
+   * link, or an already-uploaded recording's file. Never file bytes. Cleared
+   * the moment the Source settles.
+   */
+  input?: SourceIntakeInput;
+}
+
+/** The input behind a Source that is still landing — enough to land it again. */
+export interface SourceIntakeInput {
+  /** Pasted text (paste). */
+  text?: string;
+  /** The name the person typed for pasted text. */
+  name?: string;
+  /** A web page or YouTube link (web, youtube). */
+  url?: string;
+  /** A recording that already finished uploading (audio) — transcribe from here. */
+  fileId?: string;
 }
 
 /** One card: the draft, its lifecycle, and what the server measured. */

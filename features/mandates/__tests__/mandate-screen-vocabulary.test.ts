@@ -40,7 +40,7 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 /**
  * WHAT A MANDATE SCREEN IS MADE OF. The three hosts
  * (`/mandates/[mandateKey]`, `/organizations/…/settings/mandates/[key]`,
- * `/administration/mandates/[mandateKey]`) render the mandate feature and the
+ * `/administration/intelligence/mandates/[mandateKey]`) render the mandate feature and the
  * one-binding workspace; those two trees are swept whole, so a component added
  * to either tomorrow is covered without being listed.
  */
@@ -260,7 +260,7 @@ const BARE_HOLDER = /(?<!\bmandate )\bholders?\b(?!-)/i;
 /** The mandate route trees outside `features/` whose metadata a person reads. */
 const MANDATE_ROUTE_TREES = [
   "app/(core)/mandates",
-  "app/(admin)/administration/mandates",
+  "app/(admin)/administration/intelligence/mandates",
   "app/(core)/organizations/[orgId]/mandates",
   "app/(core)/organizations/[orgId]/settings/mandates",
 ] as const;
@@ -667,7 +667,7 @@ describe("no mandate screen prints an organization id at a person", () => {
    ═══════════════════════════════════════════════════════════════════════════
 
    🚨 FOUND BY THE FIX-R9-UI WALK, on the provision surface of
-   `/administration/mandates/research_client.output_slides`: badges reading
+   `/administration/intelligence/mandates/research_client.output_slides`: badges reading
    **Guaranteed** and **Lazy**. Arman, about that same page:
 
      "invents its own vocabulary that is not part of our accepted vocabulary"
@@ -803,7 +803,7 @@ describe("no mandate screen renders the declaration's own field names", () => {
  * ── A SCREEN SAYS WHAT RESOLUTION DOES, NEVER WHAT EVERY CALL SITE DOES ──────
  *
  * 🚨 THE DEFECT (2026-09-12). `workflow.step_intelligence` sat "Holder missing"
- * on `/administration/mandates/workflow.step_intelligence` under the banner
+ * on `/administration/intelligence/mandates/workflow.step_intelligence` under the banner
  * "nothing runs when this Mandate is called" — and every workflow run
  * completed. Its seven step nodes carried the key as a bare label at the
  * executor and resolved nothing, so no Holder was consulted and nothing
@@ -898,7 +898,7 @@ describe("the red coverage state has exactly one human word", () => {
  *
  * 🚨 FIX-Q8 (2026-09-11). The same machinery, pointed at a different defect,
  * because it is the same shape: a string a mandate screen renders that no
- * reader can act on. Read verbatim off `/administration/mandates/{key}`:
+ * reader can act on. Read verbatim off `/administration/intelligence/mandates/{key}`:
  *
  *     "The job's inputs could not be read: HTTP 400"
  *

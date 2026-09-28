@@ -17,6 +17,7 @@ import { resolveResourceAttachmentTileTheme } from "@/features/agents/components
 import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
 import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
+import { primaryFormShortLabel } from "@/features/agents/components/inputs/resources/resource-family-words";
 
 export interface AttachedDocumentSettings {
   representation?: DocumentRepresentation;
@@ -39,15 +40,16 @@ function policyLabel(
   const promoted = policy?.promote?.length ?? 0;
   const excluded = policy?.exclude?.length ?? 0;
   if (!promoted && !excluded) return "All";
-  return `${promoted} inline${excluded ? ` · ${excluded} off` : ""}`;
+  if (!promoted) return `${excluded} off`;
+  return `${promoted} copied in${excluded ? ` · ${excluded} off` : ""}`;
 }
 
 function representationLabel(
   representation: DocumentRepresentation | undefined,
 ): string {
-  if (!representation) return "Auto";
+  if (!representation) return "Best";
   if (representation === "pdf") return "PDF";
-  return representation === "clean" ? "Clean" : "Raw";
+  return representation === "clean" ? "Clean" : "As read";
 }
 
 export function AttachedDocumentChip({
@@ -140,13 +142,12 @@ export function AttachedDocumentChip({
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-[16rem]">
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Complete resource family
+                Attached file
               </div>
               <div className="font-medium text-popover-foreground">{title}</div>
               <div className="mt-0.5 text-[10px] text-muted-foreground/80">
-                {representationLabel(representation)} ·{" "}
-                {policyLabel(resourcePolicy)}
-                {fileId ? " · click the right side to configure" : ""}
+                The AI reads: {primaryFormShortLabel(representation)}
+                {fileId ? " · change it on the right" : ""}
               </div>
             </TooltipContent>
           </Tooltip>
@@ -158,7 +159,7 @@ export function AttachedDocumentChip({
               onClick={stopBubble}
               onPointerDown={stopBubble}
               disabled={!fileId}
-              aria-label={`Document context: ${representationLabel(representation)}, ${policyLabel(resourcePolicy)}`}
+              aria-label={`What the AI reads from ${title}: ${primaryFormShortLabel(representation)}, ${policyLabel(resourcePolicy)}`}
               className={cn(
                 "inline-flex shrink-0 items-center gap-0.5 px-1.5",
                 "transition-colors hover:bg-muted/60 hover:text-foreground",
@@ -193,7 +194,7 @@ export function AttachedDocumentChip({
           <div className="my-2 border-t border-border" />
           {saving ? (
             <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving context…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving your choice…
             </div>
           ) : null}
           <button

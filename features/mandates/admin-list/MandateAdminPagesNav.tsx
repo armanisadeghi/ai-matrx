@@ -5,9 +5,8 @@
 // The admin mandate list's header actions: every other mandate admin page is
 // reached from HERE, never from the menu (one menu entry per thing —
 // Intelligence → Mandates). Dashboard, Health and Unconverted AI calls sit
-// inline on wide screens; everything else — including the owner's original
-// console ("Classic view"), which stays untouched until he validates the new
-// suite — lives in the More menu. New mandate is the one primary action.
+// inline on wide screens; everything else lives in the More menu, beside the
+// grade legend. New mandate is the one primary action.
 
 import Link from "next/link";
 import {
@@ -15,7 +14,6 @@ import {
   AlertTriangle,
   BarChart3,
   Code2,
-  History,
   MoreHorizontal,
   PanelTop,
   Plus,
@@ -27,16 +25,17 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   ADMIN_MANDATES_DASHBOARD,
   ADMIN_MANDATES_HEALTH,
+  ADMIN_MANDATES_NEW,
+  ADMIN_MANDATES_RAW_TABLES,
+  ADMIN_MANDATES_REFERENCES,
   ADMIN_MANDATES_UNCONVERTED,
   ADMIN_MANDATES_WINDOW,
-  CLASSIC_ADMIN_MANDATES,
 } from "@/features/mandates/admin-routes";
 
 interface PageLink {
@@ -53,9 +52,8 @@ const INLINE_PAGES: readonly PageLink[] = [
 
 const MORE_PAGES: readonly PageLink[] = [
   { href: ADMIN_MANDATES_WINDOW, label: "Mandate window", icon: PanelTop },
-  { href: CLASSIC_ADMIN_MANDATES.references, label: "References", icon: Code2 },
-  { href: CLASSIC_ADMIN_MANDATES.rawTables, label: "Raw tables", icon: Table2 },
-  { href: CLASSIC_ADMIN_MANDATES.list, label: "Classic view", icon: History },
+  { href: ADMIN_MANDATES_REFERENCES, label: "References", icon: Code2 },
+  { href: ADMIN_MANDATES_RAW_TABLES, label: "Raw tables", icon: Table2 },
 ];
 
 function MenuLink({ page }: { page: PageLink }) {
@@ -99,20 +97,13 @@ export function MandateAdminPagesNav() {
             ))}
             <DropdownMenuSeparator />
           </div>
-          {MORE_PAGES.slice(0, 1).map((page) => (
-            <MenuLink key={page.href} page={page} />
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-            Original pages
-          </DropdownMenuLabel>
-          {MORE_PAGES.slice(1).map((page) => (
+          {MORE_PAGES.map((page) => (
             <MenuLink key={page.href} page={page} />
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
       <Button asChild size="sm" className="h-8 gap-1">
-        <Link href={CLASSIC_ADMIN_MANDATES.newMandate}>
+        <Link href={ADMIN_MANDATES_NEW}>
           <Plus className="h-3.5 w-3.5" />
           New mandate
         </Link>

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1280,
+  "routeCount": 1286,
   "routes": [
     {
       "pattern": "/",
@@ -789,6 +789,11 @@
       "source": "app/(admin)/administration/intelligence/mandates/[mandateKey]/overrides/page.tsx"
     },
     {
+      "pattern": "/administration/intelligence/mandates/advanced",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/advanced/page.tsx"
+    },
+    {
       "pattern": "/administration/intelligence/mandates/dashboard",
       "status": "live",
       "source": "app/(admin)/administration/intelligence/mandates/dashboard/page.tsx"
@@ -797,6 +802,16 @@
       "pattern": "/administration/intelligence/mandates/health",
       "status": "live",
       "source": "app/(admin)/administration/intelligence/mandates/health/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates/new",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/new/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates/references",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/references/page.tsx"
     },
     {
       "pattern": "/administration/intelligence/mandates/support",
@@ -902,31 +917,6 @@
       "pattern": "/administration/launchpad",
       "status": "live",
       "source": "app/(admin)/administration/launchpad/page.tsx"
-    },
-    {
-      "pattern": "/administration/mandates",
-      "status": "live",
-      "source": "app/(admin)/administration/mandates/page.tsx"
-    },
-    {
-      "pattern": "/administration/mandates/[mandateKey]",
-      "status": "live",
-      "source": "app/(admin)/administration/mandates/[mandateKey]/page.tsx"
-    },
-    {
-      "pattern": "/administration/mandates/advanced",
-      "status": "live",
-      "source": "app/(admin)/administration/mandates/advanced/page.tsx"
-    },
-    {
-      "pattern": "/administration/mandates/new",
-      "status": "live",
-      "source": "app/(admin)/administration/mandates/new/page.tsx"
-    },
-    {
-      "pattern": "/administration/mandates/references",
-      "status": "live",
-      "source": "app/(admin)/administration/mandates/references/page.tsx"
     },
     {
       "pattern": "/administration/marketing",
@@ -1699,6 +1689,11 @@
       "source": "app/(core)/agents/orchestras/[conductorId]/page.tsx"
     },
     {
+      "pattern": "/agents/org-chart",
+      "status": "live",
+      "source": "app/(core)/agents/org-chart/page.tsx"
+    },
+    {
       "pattern": "/agents/shortcuts",
       "status": "live",
       "source": "app/(core)/agents/shortcuts/page.tsx"
@@ -1782,6 +1777,21 @@
       "pattern": "/b/manage/[ref]",
       "status": "live",
       "source": "app/(link)/b/manage/[ref]/page.tsx"
+    },
+    {
+      "pattern": "/board",
+      "status": "live",
+      "source": "app/(core)/board/page.tsx"
+    },
+    {
+      "pattern": "/board/[id]",
+      "status": "live",
+      "source": "app/(core)/board/[id]/page.tsx"
+    },
+    {
+      "pattern": "/board/all",
+      "status": "live",
+      "source": "app/(core)/board/all/page.tsx"
     },
     {
       "pattern": "/c/[handle]",
@@ -2534,6 +2544,11 @@
       "source": "app/(core)/education/memory/new/page.tsx"
     },
     {
+      "pattern": "/education/memory/new/manual",
+      "status": "live",
+      "source": "app/(core)/education/memory/new/manual/page.tsx"
+    },
+    {
       "pattern": "/education/mind-maps",
       "status": "live",
       "source": "app/(core)/education/mind-maps/page.tsx"
@@ -2712,6 +2727,16 @@
       "pattern": "/education/summaries/[id]",
       "status": "live",
       "source": "app/(core)/education/summaries/[id]/page.tsx"
+    },
+    {
+      "pattern": "/education/summaries/[id]/edit",
+      "status": "live",
+      "source": "app/(core)/education/summaries/[id]/edit/page.tsx"
+    },
+    {
+      "pattern": "/education/summaries/new",
+      "status": "live",
+      "source": "app/(core)/education/summaries/new/page.tsx"
     },
     {
       "pattern": "/education/tutor",
@@ -3914,6 +3939,11 @@
       "pattern": "/marketing/[brandId]/intelligence/monitoring",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/intelligence/monitoring/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/monitoring/setup",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/monitoring/setup/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/intelligence/reputation",

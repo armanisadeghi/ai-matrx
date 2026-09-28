@@ -675,7 +675,7 @@ const nextConfig = {
       },
       {
         source: "/administration/agents/slots",
-        destination: "/administration/mandates",
+        destination: "/administration/intelligence/mandates",
         permanent: true,
       },
       {
@@ -695,7 +695,7 @@ const nextConfig = {
       },
       {
         source: "/agents/mandates/new",
-        destination: "/administration/mandates/new",
+        destination: "/administration/intelligence/mandates/new",
         permanent: true,
       },
       {
@@ -705,12 +705,41 @@ const nextConfig = {
       },
       {
         source: "/administration/agents/mandates",
-        destination: "/administration/mandates",
+        destination: "/administration/intelligence/mandates",
         permanent: true,
       },
       {
         source: "/administration/agents/mandates/:path*",
-        destination: "/administration/mandates/:path*",
+        destination: "/administration/intelligence/mandates/:path*",
+        permanent: true,
+      },
+      // The original admin mandate pages were retired into Intelligence →
+      // Mandates (Arman approved the swap, 2026-09-27). Every old address
+      // lands on its match: the list on the list (its old search kept as
+      // `q`), `?mandate=<key>` and `/<key>` on that mandate's page (its
+      // `?tab=` kept — the ids are the same), and new / advanced / references
+      // on theirs. Next appends the original query to each destination.
+      // Guard: `pnpm check:retired-admin-mandate-links` (nothing links here).
+      {
+        source: "/administration/mandates",
+        has: [{ type: "query", key: "mandate", value: "(?<mandateKey>.+)" }],
+        destination: "/administration/intelligence/mandates/:mandateKey",
+        permanent: true,
+      },
+      {
+        source: "/administration/mandates",
+        has: [{ type: "query", key: "table.mandates.q", value: "(?<search>.+)" }],
+        destination: "/administration/intelligence/mandates?q=:search",
+        permanent: true,
+      },
+      {
+        source: "/administration/mandates",
+        destination: "/administration/intelligence/mandates",
+        permanent: true,
+      },
+      {
+        source: "/administration/mandates/:path*",
+        destination: "/administration/intelligence/mandates/:path*",
         permanent: true,
       },
       // Short alias for the phone scanner surface (canonical: /tools/scanner).

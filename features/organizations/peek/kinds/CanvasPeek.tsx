@@ -12,6 +12,7 @@ import { supabase } from "@/utils/supabase/client";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface CanvasRow {
   title: string | null;
@@ -22,18 +23,21 @@ interface CanvasRow {
 export default function CanvasPeek({ id, open, onClose }: PeekProps) {
   const [row, setRow] = React.useState<CanvasRow | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<unknown>(null);
+  const [attempt, setAttempt] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .schema("canvas").from("canvas_items")
         .select("title, description, created_at")
         .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {
+        setLoadError(error ?? null);
         setRow((data as CanvasRow) ?? null);
         setLoading(false);
       }
@@ -41,7 +45,7 @@ export default function CanvasPeek({ id, open, onClose }: PeekProps) {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   return (
     <PeekDialog
@@ -52,7 +56,9 @@ export default function CanvasPeek({ id, open, onClose }: PeekProps) {
       href={peekHref("canvas_item", id)}
       loading={loading}
     >
-      {row ? (
+      {loadError ? (
+        <ReadFailure error={loadError} what="this canvas" onRetry={() => setAttempt((n) => n + 1)} />
+      ) : row ? (
         <>
           <PeekField label="Description">
             {row.description ? (

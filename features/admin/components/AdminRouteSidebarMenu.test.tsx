@@ -119,7 +119,7 @@ describe("AdminRouteSidebarMenu", () => {
     expect(host.querySelectorAll(".shell-active-pill")).toHaveLength(1);
   });
 
-  it("shows Intelligence → Mandates once and never the original mandate pages", () => {
+  it("shows Intelligence → Mandates once and no second mandate entry", () => {
     render();
     const hrefs = Array.from(host.querySelectorAll("a[href]")).map(
       (anchor) => anchor.getAttribute("href") ?? "",
@@ -127,11 +127,17 @@ describe("AdminRouteSidebarMenu", () => {
     expect(
       hrefs.filter((href) => href === "/administration/intelligence/mandates"),
     ).toHaveLength(1);
-    expect(hrefs.filter((href) => href.startsWith("/administration/mandates"))).toEqual([]);
+    expect(
+      hrefs.filter(
+        (href) =>
+          href.startsWith("/administration/intelligence/mandates/") &&
+          href !== "/administration/intelligence/mandates/support",
+      ),
+    ).toEqual([]);
   });
 
-  it("lights Intelligence → Mandates on an original mandate page", () => {
-    pathnameMock = "/administration/mandates/new";
+  it("lights Intelligence → Mandates on a page reached from the list's header", () => {
+    pathnameMock = "/administration/intelligence/mandates/new";
     render();
     const active = host.querySelectorAll<HTMLAnchorElement>(".shell-active-pill");
     expect(active).toHaveLength(1);

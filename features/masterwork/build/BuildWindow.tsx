@@ -530,7 +530,9 @@ function BuildWindowInner({
             ? run.rejoining
               ? "Picking this Build back up — the build continued while you were away."
               : "Building. You can keep working; this keeps going without you."
-            : `Turns ${approvedCount} approved ${approvedCount === 1 ? "rule" : "rules"} into a working system.`}
+            : loadError || !rulebook
+              ? ""
+              : `Turns ${approvedCount} approved ${approvedCount === 1 ? "rule" : "rules"} into a working system.`}
       </span>
       <div className="ml-auto flex items-center gap-2">
         {result ? (

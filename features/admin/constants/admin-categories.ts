@@ -913,7 +913,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Mandates",
         description:
-          "The system mandates — create, edit, bind and update them — with their dashboard, health, unconverted AI calls and the classic console reached from inside the page.",
+          "The system mandates — create, edit, bind and update them — with their dashboard, health, unconverted AI calls, references and raw tables reached from inside the page.",
         iconName: "Plug",
         link: "/administration/intelligence/mandates",
         isNew: true,
@@ -927,14 +927,6 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Mandates (classic view)",
-        description:
-          "The original console, kept beside the new list until the owner validates it. DB-managed system-agent pins (agent.mandate / mandate_binding): rebind, enable/disable, org/user overrides, and the exemplar test bench for candidate agents.",
-        iconName: "Plug",
-        link: "/administration/mandates",
-        isNew: true,
-      },
-      {
         // The reported side of the SAME fleet — where every mandate is
         // declared and called, per repository, plus the conversion list.
         // A repository nobody finished scanning reads "unverified" here;
@@ -943,7 +935,7 @@ export const adminCategoriesData: AdminCategory[] = [
         description:
           "Per repository: the last complete scan or unverified, open findings with location and remedy, and the conversion list (work still running outside a mandate).",
         iconName: "Plug",
-        link: "/administration/mandates/references",
+        link: "/administration/intelligence/mandates/references",
         isNew: true,
       },
       {
@@ -951,7 +943,7 @@ export const adminCategoriesData: AdminCategory[] = [
         description:
           "Create a mandate definition: its goal, output kind, and input contract.",
         iconName: "Plug",
-        link: "/administration/mandates/new",
+        link: "/administration/intelligence/mandates/new",
         isNew: true,
       },
       {
@@ -959,7 +951,7 @@ export const adminCategoriesData: AdminCategory[] = [
         description:
           "Raw rows of mandate.definition / binding / provision / treatment, the shortcut compat view, and app.definition, with full CRUD.",
         iconName: "Plug",
-        link: "/administration/mandates/advanced",
+        link: "/administration/intelligence/mandates/advanced",
         isNew: true,
       },
     ],

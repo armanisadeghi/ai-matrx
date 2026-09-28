@@ -19,7 +19,6 @@ import { useEffect, useState } from "react";
 
 /** The mandate list pages whose URL (with its query) Back may return to. */
 const LIST_PATHS = new Set([
-  "/administration/mandates",
   "/administration/intelligence/mandates",
   "/mandates",
   "/mandates/list-preview",

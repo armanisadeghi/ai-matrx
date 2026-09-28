@@ -204,6 +204,7 @@ export function MyTimesheetContext({
       <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-4">
         <section className="rounded-lg border border-border bg-card p-6">
           <h1 className="text-base font-semibold">
+            {/* read-gate-exempt: "no-period" is set only in the read's .then (a successful server answer); a failed read lands in "refused" and says so */}
             {resolved.state === "no-period"
               ? "No timesheet for you yet"
               : "We cannot show you this timesheet"}

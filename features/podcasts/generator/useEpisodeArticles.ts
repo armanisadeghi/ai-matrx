@@ -38,7 +38,7 @@ import type {
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 // DB-managed mandates (declared in aidream client_slots.py; rebind from
-// /administration/mandates — never a hardcoded agent id here).
+// /administration/intelligence/mandates — never a hardcoded agent id here).
 const BLOG_WRITER_MANDATE_KEY = MANDATE_KEYS.podcast_client__blog_writer;
 const SHOW_NOTES_MANDATE_KEY = MANDATE_KEYS.podcast_client__show_notes;
 

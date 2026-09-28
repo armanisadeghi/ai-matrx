@@ -28,6 +28,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
+import { readOf } from "@/components/read-state/ReadGate";
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { AddFromLinkDialog } from "@/features/admin/applications/catalogs/components/AddFromLinkDialog";
 import { CatalogEntryEditor } from "@/features/admin/applications/catalogs/components/CatalogEntryEditor";
@@ -141,6 +142,9 @@ export function CatalogsClient({
   const [view, setView] = useState<View>(() =>
     initialView(initialKind, initialEntryId, initialRows),
   );
+  // The last refresh's failure: rows on screen are then from the server render
+  // or an earlier refresh, and the kinds table says so.
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkDialogKind, setLinkDialogKind] = useState<string | null>(null);
 
@@ -196,6 +200,7 @@ export function CatalogsClient({
       .order("sort_order")
       .order("key");
     if (error) {
+      setRefreshError(error.message);
       toast({
         title: "Failed to refresh catalog entries",
         description: error.message,
@@ -203,6 +208,7 @@ export function CatalogsClient({
       });
       return;
     }
+    setRefreshError(null);
     setRows(sortRows(data ?? []));
   };
 
@@ -521,6 +527,10 @@ export function CatalogsClient({
             columns={kindColumns}
             getRowId={(row) => row.slug}
             pageSize={25}
+            read={readOf(
+              { error: refreshError, hasData: rows.length > 0 },
+              { what: "catalog entries", onRetry: () => void refreshRows() },
+            )}
             emptyState={{
               icon: <LibraryBig className="h-5 w-5" />,
               title: "No catalog kinds",

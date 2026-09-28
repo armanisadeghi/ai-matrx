@@ -12,6 +12,7 @@
  * picker, and a one-word status. No paragraphs.
  */
 
+import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import AppLink from "@/components/navigation/AppLink";
 import {
@@ -210,7 +211,7 @@ export function AutonomyModesEditor({
                               Mandate
                             </span>
                             <AppLink
-                              href={`/administration/mandates?mandate=${encodeURIComponent(mandateKey)}`}
+                              href={adminMandateRecordHref(mandateKey)}
                               target="_blank"
                               rel="noopener noreferrer"
                               title={`Open ${mandateKey} in Mandates`}

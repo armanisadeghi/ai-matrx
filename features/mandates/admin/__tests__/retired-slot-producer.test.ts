@@ -61,7 +61,7 @@ describe("retired Mandate producer contract", () => {
     });
     expect(redirects).toContainEqual({
       source: "/administration/agents/slots",
-      destination: "/administration/mandates",
+      destination: "/administration/intelligence/mandates",
       permanent: true,
     });
   });
@@ -76,10 +76,10 @@ describe("retired Mandate producer contract", () => {
 
     for (const [source, destination] of [
       ["/agents/mandates", "/mandates"],
-      ["/agents/mandates/new", "/administration/mandates/new"],
+      ["/agents/mandates/new", "/administration/intelligence/mandates/new"],
       ["/agents/mandates/:mandateKey", "/mandates/:mandateKey"],
-      ["/administration/agents/mandates", "/administration/mandates"],
-      ["/administration/agents/mandates/:path*", "/administration/mandates/:path*"],
+      ["/administration/agents/mandates", "/administration/intelligence/mandates"],
+      ["/administration/agents/mandates/:path*", "/administration/intelligence/mandates/:path*"],
     ]) {
       expect(redirects).toContainEqual({ source, destination, permanent: true });
     }
@@ -91,5 +91,40 @@ describe("retired Mandate producer contract", () => {
     expect(index("/agents/mandates/new")).toBeLessThan(
       index("/agents/mandates/:mandateKey"),
     );
+  });
+
+  it("permanently redirects every retired /administration/mandates URL to its match", async () => {
+    const nextConfig = resolvedNextConfig();
+    const redirects: Array<{
+      source: string;
+      destination: string;
+      permanent: boolean;
+      has?: Array<{ type: string; key: string; value?: string }>;
+    }> = await nextConfig.redirects();
+    const retired = redirects.filter((r) => r.source.startsWith("/administration/mandates"));
+    expect(retired).toEqual([
+      {
+        source: "/administration/mandates",
+        has: [{ type: "query", key: "mandate", value: "(?<mandateKey>.+)" }],
+        destination: "/administration/intelligence/mandates/:mandateKey",
+        permanent: true,
+      },
+      {
+        source: "/administration/mandates",
+        has: [{ type: "query", key: "table.mandates.q", value: "(?<search>.+)" }],
+        destination: "/administration/intelligence/mandates?q=:search",
+        permanent: true,
+      },
+      {
+        source: "/administration/mandates",
+        destination: "/administration/intelligence/mandates",
+        permanent: true,
+      },
+      {
+        source: "/administration/mandates/:path*",
+        destination: "/administration/intelligence/mandates/:path*",
+        permanent: true,
+      },
+    ]);
   });
 });

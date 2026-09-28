@@ -246,7 +246,7 @@ export function dismissRecordToasts(
  * Is this record what the new route is showing?
  *
  * A record's route names it in a path SEGMENT — by id on most surfaces, by a
- * human key on the ones that route by key (`/administration/mandates/
+ * human key on the ones that route by key (`/administration/intelligence/mandates/
  * matrx.demo.intake`). So both are accepted, and only as a whole decoded
  * segment: a substring test would keep a toast alive on any URL that merely
  * contained the word, which is the false sentence this whole mechanism exists

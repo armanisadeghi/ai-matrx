@@ -567,7 +567,7 @@ export default function AdminSandboxManagementPage() {
               <CardContent className="p-4 flex items-center gap-3">
                 <Server className="w-8 h-8 text-green-500" />
                 <div>
-                  <p className="text-2xl font-semibold">{activeCount}</p>
+                  <p className="text-2xl font-semibold">{loadError ? "—" : activeCount}</p>
                   <p className="text-xs text-muted-foreground">
                     Active accessible instances
                   </p>
@@ -579,7 +579,7 @@ export default function AdminSandboxManagementPage() {
                 <Activity className="w-8 h-8 text-blue-500" />
                 <div>
                   <p className="text-2xl font-semibold">
-                    {accessibleSandboxes.length}
+                    {loadError ? "—" : accessibleSandboxes.length}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Accessible instances
@@ -591,7 +591,7 @@ export default function AdminSandboxManagementPage() {
               <CardContent className="p-4 flex items-center gap-3">
                 <Users className="w-8 h-8 text-purple-500" />
                 <div>
-                  <p className="text-2xl font-semibold">{uniqueUsers}</p>
+                  <p className="text-2xl font-semibold">{loadError ? "—" : uniqueUsers}</p>
                   <p className="text-xs text-muted-foreground">
                     Accessible users
                   </p>
@@ -602,7 +602,7 @@ export default function AdminSandboxManagementPage() {
               <CardContent className="p-4 flex items-center gap-3">
                 <AlertCircle className="w-8 h-8 text-red-500" />
                 <div>
-                  <p className="text-2xl font-semibold">{failedCount}</p>
+                  <p className="text-2xl font-semibold">{loadError ? "—" : failedCount}</p>
                   <p className="text-xs text-muted-foreground">
                     Failed accessible instances
                   </p>

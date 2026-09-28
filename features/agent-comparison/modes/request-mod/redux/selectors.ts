@@ -4,6 +4,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import { isConversationRequestEmpty } from "@/features/agent-comparison/shared/battleRequestEmpty";
 import type { RequestModColumn, RequestModLockedSetup } from "../types";
 
 const EMPTY_COLUMNS: RequestModColumn[] = [];
@@ -76,11 +77,17 @@ export const selectCollapsedRequestModColumnCount = createSelector(
   (cols) => cols.filter((c) => c.collapsed).length,
 );
 
-export const selectCanSubmitRequestMod = createSelector(
-  [selectLockedSetup, selectRequestModColumns],
-  (locked, cols) => {
-    if (!locked.agentId) return false;
-    if (cols.length === 0) return false;
-    return true;
-  },
-);
+// Not memoized via createSelector: isConversationRequestEmpty reads across
+// several other slices (user-input, resources, variable-values), so it needs
+// full state, not a derived slice — see battleRequestEmpty.ts. Each column
+// here carries its own request (per-column composer, not a shared draft), so
+// the check is "at least one column has something to send", not "every one
+// does" — a run that skips an untouched column is the correct behavior for
+// this mode (mirrors selectSubmittableBattleColumns in Open mode).
+export const selectCanSubmitRequestMod = (state: RootState): boolean => {
+  const locked = selectLockedSetup(state);
+  const cols = selectRequestModColumns(state);
+  if (!locked.agentId) return false;
+  if (cols.length === 0) return false;
+  return cols.some((c) => !isConversationRequestEmpty(state, c.conversationId));
+};

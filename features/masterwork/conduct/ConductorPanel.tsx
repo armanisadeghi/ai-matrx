@@ -90,7 +90,7 @@ const SOURCE_FEATURE = "masterwork" as const;
  * Which agent conducts a Masterwork build is DB-managed via the
  * `masterwork.conductor` Mandate (declared in aidream
  * `mandates/client_mandates.py`, rebindable at
- * /administration/mandates). No hardcoded agent id and NO SILENT
+ * /administration/intelligence/mandates). No hardcoded agent id and NO SILENT
  * FALLBACK — if the Mandate can't resolve, this refuses and says so.
  */
 const CONDUCTOR_MANDATE_KEY = MANDATE_KEYS.masterwork__conductor;

@@ -245,6 +245,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
             "/administration/intelligence/mandates/health",
             "/administration/intelligence/mandates/unconverted",
             "/administration/intelligence/mandates/window",
+            "/administration/intelligence/mandates/new",
+            "/administration/intelligence/mandates/advanced",
+            "/administration/intelligence/mandates/references",
             "/administration/intelligence/mandates/[mandateKey]",
             "/administration/intelligence/mandates/[mandateKey]/overrides",
           ]),
@@ -260,39 +263,6 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [
           destination("/administration/intelligence/mandates/support", [
             "/administration/intelligence/mandates/support/[mandateId]",
-          ]),
-        ],
-      },
-    ],
-  },
-  {
-    // The owner's ORIGINAL mandate pages, kept working untouched beside
-    // Intelligence → Mandates until he validates the new suite — no redirects
-    // until then. Not a menu row: every page here
-    // is reached from the new list's header (Classic view, References, Raw
-    // tables, New mandate).
-    name: "Mandates (original pages)",
-    slug: "mandates",
-    iconName: "Plug",
-    iconColor: "text-sky-600",
-    supersededBy: "/administration/intelligence/mandates",
-    sections: [
-      {
-        name: "Mandates",
-        iconName: "Plug",
-        destinations: [
-          // 🚨 DECLARED FIRST ON PURPOSE. `findAdminNavigationLocation` is
-          // first-match-wins, and the console below OWNS
-          // `/administration/mandates/[mandateKey]`, whose pattern is
-          // `/[^/]+` — it matches the literal segment `references` too. Next's
-          // router picks the static route correctly either way; it is the
-          // sidebar highlight that would name the wrong screen. Specific
-          // before general, exactly as the route→surface map does it.
-          destination("/administration/mandates/references"),
-          destination("/administration/mandates/new"),
-          destination("/administration/mandates/advanced"),
-          destination("/administration/mandates", [
-            "/administration/mandates/[mandateKey]",
           ]),
         ],
       },

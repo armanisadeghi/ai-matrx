@@ -1,42 +1,25 @@
 /**
- * `/administration/mandates/<key>` is ONE job's workspace — its own surface —
- * while the console, `new`, and `advanced` stay on `matrx-admin/mandates`.
- * Prefix matching cannot say "children but not the parent", so a resolver
- * does; this pins the boundary in both directions.
+ * `/administration/intelligence/mandates/<key>` is ONE job's workspace — its
+ * own surface — while the list and its sibling pages stay on
+ * `matrx-admin/mandates`. Prefix matching cannot say "children but not the
+ * parent", so a resolver does; this pins the boundary in both directions.
  */
 import { surfaceFromPathname } from "../route-to-surface";
 
 describe("admin mandate route → surface", () => {
-  it("maps a mandate key (dots, no slash) to the workspace surface", () => {
-    expect(
-      surfaceFromPathname("/administration/mandates/research_client.output_slides"),
-    ).toBe("matrx-admin/mandate-workspace");
-    expect(surfaceFromPathname("/administration/mandates/mandate.goal_writer")).toBe(
-      "matrx-admin/mandate-workspace",
-    );
-  });
-
-  it("keeps the console and its non-mandate siblings on the console surface", () => {
-    expect(surfaceFromPathname("/administration/mandates")).toBe("matrx-admin/mandates");
-    expect(surfaceFromPathname("/administration/mandates/")).toBe("matrx-admin/mandates");
-    expect(surfaceFromPathname("/administration/mandates/new")).toBe("matrx-admin/mandates");
-    expect(surfaceFromPathname("/administration/mandates/advanced")).toBe(
-      "matrx-admin/mandates",
-    );
-    // The fleet reference board (campaign L7) is a list over every repo, not
-    // one job's workspace — it must NOT read as a mandate key.
-    expect(surfaceFromPathname("/administration/mandates/references")).toBe(
-      "matrx-admin/mandates",
-    );
-  });
-
-  it("maps the new admin suite: record pages to the workspace, the rest to the console", () => {
+  it("maps the admin suite: record pages to the workspace, the rest to the list", () => {
     const home = "/administration/intelligence/mandates";
     expect(surfaceFromPathname(home)).toBe("matrx-admin/mandates");
-    for (const page of ["dashboard", "health", "unconverted", "window"]) {
+    expect(surfaceFromPathname(`${home}/`)).toBe("matrx-admin/mandates");
+    // The fleet reference board is a list over every repo, not one job's
+    // workspace — it must NOT read as a mandate key; nor may new/advanced.
+    for (const page of ["dashboard", "health", "unconverted", "window", "new", "advanced", "references"]) {
       expect(surfaceFromPathname(`${home}/${page}`)).toBe("matrx-admin/mandates");
     }
     expect(surfaceFromPathname(`${home}/research_client.output_slides`)).toBe(
+      "matrx-admin/mandate-workspace",
+    );
+    expect(surfaceFromPathname(`${home}/mandate.goal_writer`)).toBe(
       "matrx-admin/mandate-workspace",
     );
     expect(surfaceFromPathname(`${home}/research_client.output_slides/overrides`)).toBe(

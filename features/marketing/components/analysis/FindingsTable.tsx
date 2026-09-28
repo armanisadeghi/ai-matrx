@@ -60,7 +60,7 @@ import {
   keyFieldsAiVariant,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
-import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
+import { humanizeItemKey } from "@/features/marketing/lib/finding-remedy-render";
 
 function humanFindingRow(row: FindingListRow): string {
   return humanLines([

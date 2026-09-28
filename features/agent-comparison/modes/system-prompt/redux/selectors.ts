@@ -4,6 +4,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import { isConversationRequestEmpty } from "@/features/agent-comparison/shared/battleRequestEmpty";
 import type { SystemPromptColumn, SystemPromptLockedSetup } from "../types";
 
 const EMPTY_COLUMNS: SystemPromptColumn[] = [];
@@ -82,11 +83,15 @@ export const selectCollapsedSystemPromptColumnCount = createSelector(
   (cols) => cols.filter((c) => c.collapsed).length,
 );
 
-export const selectCanSubmitSystemPrompt = createSelector(
-  [selectLockedSetup, selectSystemPromptColumns],
-  (locked, cols) => {
-    if (!locked.sourceAgentId) return false;
-    if (cols.length === 0) return false;
-    return true;
-  },
-);
+// Not memoized via createSelector: isConversationRequestEmpty reads across
+// several other slices (user-input, resources, variable-values), so it needs
+// full state, not a derived slice — see battleRequestEmpty.ts.
+export const selectCanSubmitSystemPrompt = (state: RootState): boolean => {
+  const locked = selectLockedSetup(state);
+  const cols = selectSystemPromptColumns(state);
+  if (!locked.sourceAgentId) return false;
+  if (cols.length === 0) return false;
+  const inputConversationId = selectSystemPromptInputConversationId(state);
+  if (isConversationRequestEmpty(state, inputConversationId)) return false;
+  return true;
+};

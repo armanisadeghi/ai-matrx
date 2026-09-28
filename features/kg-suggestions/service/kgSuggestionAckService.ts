@@ -30,12 +30,19 @@ export async function fetchAckedSuggestionIds(
     .schema("rag").from("kg_suggestion_ack")
     .select("suggestion_id")
     .is("deleted_at", null)
-    .eq("user_id", userId);
+    .eq("created_by", userId);
   if (error) throw operationFailed("load your dismissed suggestions", error);
   return new Set((data ?? []).map((r) => r.suggestion_id));
 }
 
-/** Permanently dismiss a batch of suggestion ids (idempotent upsert). */
+/**
+ * Dismiss a batch of suggestion ids while their acknowledgement is live.
+ *
+ * `kg_suggestion_ack_created_by_suggestion_key` is deliberately partial:
+ * a deleted acknowledgement is not a current dismissal. PostgreSQL cannot infer
+ * that partial predicate from an `onConflict` column list, so insert each row and
+ * treat only the live-row uniqueness race as the idempotent success case.
+ */
 export async function ackSuggestions(
   userId: string,
   suggestionIds: string[],
@@ -44,18 +51,17 @@ export async function ackSuggestions(
   if (suggestionIds.length === 0) return;
   // A dismissal is filed in the organization the person has selected (asked
   // when none is). RLS scopes every row to auth.uid(), and the read side keys
-  // on (user_id, suggestion_id), so the dismissal holds across organizations.
+  // on (created_by, suggestion_id), so the dismissal holds across organizations.
   const organizationId = await ensureOrgId(null);
-  const rows = suggestionIds.map((suggestion_id) => ({
-    user_id: userId,
+  for (const suggestion_id of suggestionIds) {
+    const row = {
+    created_by: userId,
     suggestion_id,
     organization_id: organizationId,
-  }));
-  const { error } = await supabase
-    .schema("rag").from("kg_suggestion_ack")
-    .upsert(rows, {
-      onConflict: "user_id,suggestion_id",
-      ignoreDuplicates: true,
-    });
-  if (error) throw operationFailed("dismiss these suggestions", error);
+    };
+    const { error } = await supabase.schema("rag").from("kg_suggestion_ack").insert(row);
+    // A concurrent/repeated live dismissal is already the desired state. Do not
+    // swallow any other write failure: it may mean RLS, connectivity, or schema drift.
+    if (error && error.code !== "23505") throw operationFailed("dismiss these suggestions", error);
+  }
 }

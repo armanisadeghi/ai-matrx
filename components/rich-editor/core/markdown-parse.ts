@@ -2,12 +2,10 @@
 //
 // One stored PROSE block → the rich nodes the visual editor edits.
 //
-// THE EDITOR LAYER'S ONE MARKDOWN PARSE EDGE. `marked`'s lexer is used ONLY
-// here, and only as a tokenizer: every token carries its exact `raw` source,
+// THE EDITOR LAYER'S MARKDOWN PARSE. `marked`'s lexer (through the one edge,
+// gfm-lexer.ts) is used only as a tokenizer: every token carries its exact `raw` source,
 // which is what lets the editor prove fidelity. It never renders anything —
-// rendering stays with the one markdown core (MarkdownStream). Registered as
-// the lawful editor-layer site of `pkg:marked` in
-// scripts/rich-content-inventory/registry.ts.
+// rendering stays with the one markdown core (MarkdownStream).
 //
 // THE FIDELITY GATE. A top-level construct becomes editable rich text only
 // when markdown-serialize.ts writes it back to its exact stored bytes. If it
@@ -17,7 +15,7 @@
 // CRLF line endings or Private Use characters is locked outright.
 
 import { splitRowSegments } from "./table-source";
-import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
+import { Lexer, Tokenizer, type Token, type Tokens } from "./gfm-lexer";
 import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
 import type { JSONContent } from "@tiptap/core";

@@ -35,7 +35,7 @@ import {
   jsonExportItem,
 } from "@/components/agent-copy/export";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
-import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
+import { humanizeItemKey } from "@/features/marketing/lib/finding-remedy-render";
 
 /**
  * Render-only preview size. The rollup carries every open item; showing a

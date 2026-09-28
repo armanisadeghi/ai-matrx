@@ -23,6 +23,7 @@ export default function ScreenshotDemo() {
             const data = await captureScreen();
             setPreview(data);
         } catch (err) {
+            // read-gate-exempt: useScreenshot sets its own `error` on this failure and it renders in the Error line below the button
             console.error('Failed to capture:', err);
         }
     };

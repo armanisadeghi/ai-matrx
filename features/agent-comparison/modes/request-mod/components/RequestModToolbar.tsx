@@ -79,6 +79,12 @@ export function RequestModToolbar({
       toast.error("Add at least one request column first.");
       return;
     }
+    if (!canSubmit) {
+      toast.error(
+        "Type a request into at least one column, or pick an agent whose variables fill the prompt on their own.",
+      );
+      return;
+    }
     try {
       maybeShuffleForBlind(columns, setRequestModColumns);
       reportBattleSubmit(await dispatch(submitAllRequestMod()).unwrap());

@@ -1,10 +1,9 @@
 "use client";
 
 /**
- * /administration/mandates/overrides-preview/[mandateKey] — the simple
- * Overrides tab on its own, at the system level, beside the untouched
- * workspace. The new mandate record page will mount `MandateOverridesSimple`
- * as a tab; this route exists so it can be seen and tested before then.
+ * /administration/intelligence/mandates/[mandateKey]/overrides — the simple
+ * Overrides tab on its own, at the system level. The mandate record page also
+ * mounts `MandateOverridesSimple` as its "Overrides (simple)" tab.
  */
 
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";

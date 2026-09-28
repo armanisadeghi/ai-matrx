@@ -126,7 +126,7 @@ export const studyMediaService = {
   async updateVersioned(
     id: string,
     expectedVersion: number,
-    patch: Pick<StudyMediaPatch, "title" | "ir_envelope">,
+    patch: Pick<StudyMediaPatch, "title" | "ir_envelope" | "description" | "audio_file_id" | "episode_id" | "status" | "trust" | "source_kind" | "source_id" | "source_title" | "config" | "run_id" | "audio_format" | "duration_seconds">,
   ): Promise<MediaResult<StudyMediaRow>> {
     try {
       const result = await guardedUpdate<StudyMediaRow>({
@@ -147,9 +147,9 @@ export const studyMediaService = {
           .maybeSingle(),
       });
       if (result.status === "conflict")
-        return { data: null, error: "This memory aid changed elsewhere. Reload it before saving your edits." };
+        return { data: null, error: "This study item changed elsewhere. Reload it before saving your edits." };
       if (result.status === "not_found")
-        return { data: null, error: "This memory aid is no longer available. Return to the library." };
+        return { data: null, error: "This study item is no longer available. Return to the library." };
       return { data: withDisplayTitle(result.row, "title"), error: null };
     } catch (error) { return fail("updateVersioned", error); }
   },

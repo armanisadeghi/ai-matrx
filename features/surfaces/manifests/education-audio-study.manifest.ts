@@ -65,6 +65,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -276,6 +277,9 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "audio_record",
   },
   {
+    name: "audio_version", label: "Audio version", description: "Saved revision; send expected_version when updating audio.", valueType: "number", alwaysAvailable: false, typicalCharCount: 6, group: "audio_record", sortOrder: 305,
+  },
+  {
     name: "audio_title",
     label: "Audio study title",
     description:
@@ -437,6 +441,12 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+const writeTargets: SurfaceWriteTarget[] = [
+  { name: "create_audio_studies", label: "Add audio studies", description: 'Saves existing audio files as study recordings, without AI generation. Value is an ARRAY of 1-25 { title: string, audio_file_id: string, description?: string }. Use an accessible audio file ID from Files. No generated citation or verification claim is added.', valueType: "array", mode: "entity", applyPolicy: "ask", updatesValue: "audio_library", group: "audio_record", sortOrder: 100 },
+  { name: "update_audio_studies", label: "Edit audio studies", description: 'Saves an ARRAY of 1-25 { id: string, expected_version: number, title?: string, description?: string, audio_file_id?: string }. Use current audio_library ids/version or audio_id/audio_version. Only supplied fields change. Replacing audio clears original episode and generated trust claims; other metadata edits keep source identity. Stale revisions refuse; read again.', valueType: "array", mode: "entity", applyPolicy: "ask", updatesValue: "audio_library", group: "audio_record", sortOrder: 110 },
+  { name: "delete_audio_studies", label: "Delete audio studies", description: 'Soft-deletes an ARRAY of 1-25 IDs or { id } from audio_library/audio_id. Owner only. Removes study records from the library, retaining the underlying file. Requires explicit deletion request and approval.', valueType: "array", mode: "entity", applyPolicy: "ask", updatesValue: "audio_library", group: "audio_record", sortOrder: 120 },
+];
+
 export const educationAudioStudyManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-audio-study",
   client: "matrx-user",
@@ -454,9 +464,10 @@ On "list" you see the learner's saved audio studies (\`audio_library\`, \`audio_
 On "new" the learner is composing a generation request: \`request_source_kind\` is "deck" or "topic", \`request_format\` is overview/debate/panel, and \`generation_request\` carries the whole composer state including host count and the weak-areas toggle. Nothing has been generated yet, and generating spends a metered allowance, so help them decide what to ask for — suggest a format, a sharper topic, or which deck is worth turning into audio — and leave the Generate button to them.
 On "detail" one stored study is open. \`audio_is_ready\` tells you whether the durable player is showing or a live run is still producing (\`run_status\`). \`audio_confidence\` and \`audio_citations\` are derived grounding evidence — cite them, never claim to change them.
 "review" is a live spoken quiz session (mic capture, spoken grading) built on separate machinery; this surface currently emits nothing there, so treat any review_* value you see as stale/absent until told otherwise.
-You cannot WRITE anything here — this surface declares no write targets, and nothing on the detail view is editable (the learner's path to different audio is Regenerate, which routes back to /new).
+Use create_audio_studies, update_audio_studies, and delete_audio_studies for saved recordings. Human and agent writes share the audio save service. AI generation remains in the composer; an existing recording can be renamed or replaced in Edit.
 </surface_intro>`,
   groups,
+  writeTargets,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
@@ -470,6 +481,7 @@ export interface AudioLibraryEntry {
   format: string | null;
   source_title: string | null;
   status: string;
+  version: number;
 }
 
 /** One entry in `available_decks`. */
@@ -518,6 +530,7 @@ export function createEducationAudioStudyScope(values: {
   record_loaded?: boolean;
   audio_id?: string;
   audio_title?: string;
+  audio_version?: number;
   audio_format?: string;
   audio_status?: string;
   audio_is_ready?: boolean;

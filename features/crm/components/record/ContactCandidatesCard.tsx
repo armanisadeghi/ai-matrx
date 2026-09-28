@@ -218,7 +218,7 @@ export function ContactCandidatesCard({
       title="Suggested contacts"
       compactAction
       Icon={ContactRound}
-      count={rows?.length}
+      count={error == null ? rows?.length : undefined}
       action={
         <div className="flex items-center gap-1">
           <Button

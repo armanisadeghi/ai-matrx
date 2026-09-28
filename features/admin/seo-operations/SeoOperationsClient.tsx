@@ -16,6 +16,10 @@
  *                  evidence it was shown.
  */
 
+import {
+  ADMIN_MANDATES_HOME,
+  adminMandateRecordHref,
+} from "@/features/mandates/admin-routes";
 import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
@@ -304,7 +308,7 @@ function MandatesPanel() {
         cell: (row) => (
           <Button size="sm" variant="ghost" asChild>
             <AppLink
-              href={`/administration/mandates?mandate=${encodeURIComponent(row.mandate_key)}`}
+              href={adminMandateRecordHref(row.mandate_key)}
             >
               Open
             </AppLink>
@@ -323,16 +327,16 @@ function MandatesPanel() {
         output contract. Rebinding, test runs, and version pins live in the{" "}
         <AppLink
           className="underline underline-offset-2"
-          href="/administration/mandates"
+          href={ADMIN_MANDATES_HOME}
         >
-          full mandates console
+          admin mandates list
         </AppLink>
         .
       </p>
-      {/* `mandate` also renders on `features/mandates/admin/MandatesConsole.tsx`
-         with its own richer menu — extracting a shared builder is future
-         work (flagged separately); this pane only needs its existing "Open"
-         door on the menu, not a competing set of mandate actions. */}
+      {/* `mandate` also renders on the admin mandates list with its own
+         richer menu — extracting a shared builder is future work (flagged
+         separately); this pane only needs its existing "Open" door on the
+         menu, not a competing set of mandate actions. */}
       <NonEditableContextMenu
         sourceFeature="admin"
         contentSource={{ type: "raw" }}
@@ -362,10 +366,10 @@ function MandatesPanel() {
               {
                 kind: "link",
                 id: "seo-mandate-open",
-                label: "Open in mandates console",
+                label: "Open mandate page",
                 icon: ArrowUpRight,
                 href: clickedMandate
-                  ? `/administration/mandates?mandate=${encodeURIComponent(clickedMandate.mandate_key)}`
+                  ? adminMandateRecordHref(clickedMandate.mandate_key)
                   : "#",
                 disabled: !clickedMandate,
               },

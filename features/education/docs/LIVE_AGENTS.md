@@ -1,6 +1,6 @@
 # Education AI lanes — the mandate index
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/mandates/ — read it before touching this feature in ANY repo. Every education AI lane names a mandate key; inspect or rebind its Holder at `/mandates` or `/administration/mandates`.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/mandates/ — read it before touching this feature in ANY repo. Every education AI lane names a mandate key; inspect or rebind its Holder at `/mandates` or `/administration/intelligence/mandates`.
 
 ## Mandate keys per feature (constants in each feature's `mandates.ts`)
 

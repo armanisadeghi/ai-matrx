@@ -85,6 +85,12 @@ export function VariationsToolbar({
       toast.error("Add at least one variation before submitting.");
       return;
     }
+    if (!canSubmit) {
+      toast.error(
+        "Type the shared request first, or pick an agent whose variables fill the prompt on their own.",
+      );
+      return;
+    }
     try {
       maybeShuffleForBlind(columns, setVariationColumns);
       reportBattleSubmit(await dispatch(submitAllVariations()).unwrap());

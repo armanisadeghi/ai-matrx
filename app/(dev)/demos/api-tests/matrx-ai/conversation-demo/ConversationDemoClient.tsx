@@ -635,6 +635,7 @@ export default function ConversationDemoClient() {
                     Conversation History
                   </span>
                   {statusBadge(execStatus)}
+                  {/* read-gate-exempt: turns are built locally in this session, and a failed turn is appended as a visible "error" turn */}
                   {history.length > 0 && (
                     <Badge variant="outline" className="text-[10px] h-5 px-1.5">
                       {history.length} turns

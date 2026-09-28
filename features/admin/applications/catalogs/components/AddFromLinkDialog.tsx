@@ -374,6 +374,7 @@ export function AddFromLinkDialog({
                           className="w-24 shrink-0 truncate text-right font-mono text-[10px] text-muted-foreground"
                           title={file.sha256 ?? undefined}
                         >
+                          {/* read-gate-exempt: per-file field of a resolve that already succeeded (result is set) — the file simply carries no checksum */}
                           {file.sha256 ? file.sha256.slice(0, 12) : "no hash"}
                         </span>
                       </button>

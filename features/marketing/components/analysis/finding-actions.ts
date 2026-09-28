@@ -33,7 +33,7 @@ import {
   unacknowledgeFinding,
   unsuppressFinding,
 } from "@/features/marketing/data/finding-mutations";
-import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
+import { humanizeItemKey } from "@/features/marketing/lib/finding-remedy-render";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 /** The slice of a finding every action surface already has in hand. */

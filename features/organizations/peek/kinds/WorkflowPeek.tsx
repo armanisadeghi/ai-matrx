@@ -12,6 +12,7 @@ import { supabase } from "@/utils/supabase/client";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface WorkflowRow {
   name: string | null;
@@ -26,6 +27,8 @@ const workflowIcon = (
 export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
   const [row, setRow] = React.useState<WorkflowRow | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<unknown>(null);
+  const [attempt, setAttempt] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -34,7 +37,7 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
       // `workflow.definition` is the live model; the old `public.workflow`
       // this peek used to read is in `graveyard` and returned nothing, so the
       // dialog always said "Workflow not found."
-      const { data } = await supabase
+      const { data, error } = await supabase
         .schema("workflow")
         .from("definition")
         .select("name, description, created_at")
@@ -42,6 +45,7 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {
+        setLoadError(error ?? null);
         setRow((data as WorkflowRow) ?? null);
         setLoading(false);
       }
@@ -49,7 +53,7 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   return (
     <PeekDialog
@@ -60,7 +64,9 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
       href={peekHref("workflow", id)}
       loading={loading}
     >
-      {row ? (
+      {loadError ? (
+        <ReadFailure error={loadError} what="this workflow" onRetry={() => setAttempt((n) => n + 1)} />
+      ) : row ? (
         <>
           <PeekField label="Description">
             {row.description ? (

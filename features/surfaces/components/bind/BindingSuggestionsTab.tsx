@@ -415,6 +415,7 @@ export function BindingSuggestionsTab({
           {proposal.discarded.length > 0 && (
             <p className="flex items-start gap-1.5 text-[10px] text-amber-600 dark:text-amber-500">
               <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
+              {/* read-gate-exempt: proposal is set only after the mapping run succeeded; a failed run leaves it null and shows runFailure instead */}
               Skipped {proposal.discarded.length} suggestion
               {proposal.discarded.length === 1 ? "" : "s"} that named things
               {words.supplierNoun} or this agent does not have:{" "}

@@ -55,7 +55,7 @@ const BLAMES_THE_READER = /check your input/i;
  * 🚨 A BARE TRANSPORT CODE IS NOT AN EXPLANATION. `HTTP 400`, `400`,
  * `Status 500.` — every shape a normalizer has ever produced when the server
  * sent no readable body. This is the exact string that reached a person's
- * screen on `/administration/mandates/{key}`, twice on one page.
+ * screen on the admin mandate page, twice on one page.
  */
 const BARE_TRANSPORT_CODE =
   /^\s*(?:HTTP|HTTP\s*Error|Status(?:\s*Code)?)?\s*[:\-]?\s*\d{3}\s*[.:!]?\s*$/i;

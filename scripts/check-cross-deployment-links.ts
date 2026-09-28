@@ -258,7 +258,7 @@ function selfTest(): number {
   const defect = [
     'import Link from "next/link";',
     '<Link\n  href="/administration/launchpad"\n  data-nav-href="/administration"\n>Admin Launchpad</Link>',
-    'router.push("/administration/mandates");',
+    'router.push("/administration/intelligence/mandates");',
     // The sidebar button whose hover produced the console error, reached
     // through a constant rather than a literal.
     "<Link href={ADMIN_LAUNCHPAD_PATH} target=\"_blank\">Admin Launchpad</Link>",
@@ -266,7 +266,7 @@ function selfTest(): number {
   const fixed = [
     'import AppLink from "@/components/navigation/AppLink";',
     '<AppLink href="/administration/launchpad">Admin Launchpad</AppLink>',
-    'pushAppHref(router, "/administration/mandates");',
+    'pushAppHref(router, "/administration/intelligence/mandates");',
     "<AppLink href={ADMIN_LAUNCHPAD_PATH} target=\"_blank\">Admin Launchpad</AppLink>",
   ].join("\n");
   const known = new Map([["ADMIN_LAUNCHPAD_PATH", "/administration/launchpad"]]);

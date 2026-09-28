@@ -20,7 +20,7 @@ import { useMandateAlchemyTabCapture } from "./MandateAlchemy";
 //    level and at the organization level."
 //
 // So: four rows, in the surface's own density (`PropertyRow`), on the Definition
-// tab, on EVERY host — `/mandates/[key]`, `/administration/mandates/[key]` and
+// tab, on EVERY host — `/mandates/[key]`, `/administration/intelligence/mandates/[key]` and
 // `/organizations/[orgId]/settings/mandates/[key]` all render the one
 // `MandateWorkspace`, so admin-only was never an option and is not one here.
 //

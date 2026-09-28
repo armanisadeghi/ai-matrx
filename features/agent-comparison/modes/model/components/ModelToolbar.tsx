@@ -81,6 +81,12 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
       toast.error("Add at least one model. Use Add model to start.");
       return;
     }
+    if (!canSubmit) {
+      toast.error(
+        "Type the shared request first, or pick an agent whose variables fill the prompt on their own.",
+      );
+      return;
+    }
     // Blind test: shuffle + activate masking BEFORE firing the run.
     maybeShuffleForBlind(columns, setModelColumns);
     try {

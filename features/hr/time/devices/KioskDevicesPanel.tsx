@@ -94,7 +94,7 @@ export function KioskDevicesPanel({ source }: { source: KioskDeviceAdminSource }
         </div>
       )}
 
-      {rows !== null && rows.length === 0 && (
+      {rows !== null && rows.length === 0 && !error && (
         // An explicit sentence, never an empty grid.
         <p className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
           No tablets are set up yet. Pair one to let people clock in on a shared screen.

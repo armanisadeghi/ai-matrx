@@ -84,6 +84,12 @@ export function TuningToolbar({
       );
       return;
     }
+    if (!canSubmit) {
+      toast.error(
+        "Type the shared request first, or pick an agent whose variables fill the prompt on their own.",
+      );
+      return;
+    }
     try {
       maybeShuffleForBlind(columns, setTuningColumns);
       reportBattleSubmit(await dispatch(submitAllTuning()).unwrap());

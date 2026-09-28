@@ -82,7 +82,7 @@ export async function listGeneratedFrom(
     });
 }
 
-/** The ORIGIN an artifact was generated from (its one outgoing `source` edge). */
+/** The ORIGIN an artifact was generated from (one outgoing `source` edge). */
 export interface ArtifactOrigin {
   edgeId: string;
   /** Canonical entity token of the origin ("file", "note", "fc_set"...). */
@@ -90,32 +90,45 @@ export interface ArtifactOrigin {
   entityId: string;
   /** The origin's own route, when the entity registry knows one. */
   href: string | undefined;
+  /** The material's name as recorded on the edge, when it was. */
+  title: string | null;
 }
 
 /**
- * What this artifact was MADE FROM. The reverse of `listGeneratedFrom`, and the
- * half that was missing: every artifact page could show the things generated
- * FROM it, and none could show the student's own uploaded material it came out
- * of. A deck that cannot name its source reads as something the system invented
- * (THE DOOR LAW — common-docs/policies/no-dead-ends.md).
+ * EVERY origin an artifact was made from — one per outgoing `source` edge, in
+ * the order they were linked. A deck made from a PDF and a note has two.
+ * The reverse of `listGeneratedFrom`: every artifact page could show the things
+ * generated FROM it, and none could show the student's own material it came
+ * out of. A deck that cannot name its sources reads as something the system
+ * invented (THE DOOR LAW — common-docs/policies/no-dead-ends.md).
  */
+export async function readArtifactOrigins(
+  entityType: string,
+  entityId: string,
+): Promise<ArtifactOrigin[]> {
+  const res = await associationsService.listForEntity(entityType, entityId);
+  if (!res.ok) return [];
+  return res.data.edges
+    .filter((e) => e.direction === "outgoing" && e.role === "source")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((edge) => {
+      const token = resolveEntityToken(edge.otherType);
+      return {
+        edgeId: edge.id,
+        entityType: token,
+        entityId: edge.otherId,
+        href: peekHref(token, edge.otherId),
+        title: metaString(edge.metadata, "sourceTitle"),
+      };
+    });
+}
+
+/** The FIRST origin an artifact was made from (see `readArtifactOrigins`). */
 export async function readArtifactOrigin(
   entityType: string,
   entityId: string,
 ): Promise<ArtifactOrigin | null> {
-  const res = await associationsService.listForEntity(entityType, entityId);
-  if (!res.ok) return null;
-  const edge = res.data.edges.find(
-    (e) => e.direction === "outgoing" && e.role === "source",
-  );
-  if (!edge) return null;
-  const token = resolveEntityToken(edge.otherType);
-  return {
-    edgeId: edge.id,
-    entityType: token,
-    entityId: edge.otherId,
-    href: peekHref(token, edge.otherId),
-  };
+  return (await readArtifactOrigins(entityType, entityId))[0] ?? null;
 }
 
 /** Route fallback for an edge written before metadata carried the href. */

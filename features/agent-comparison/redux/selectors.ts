@@ -7,6 +7,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import { isConversationRequestEmpty } from "../shared/battleRequestEmpty";
 import type { BattleColumn, BlindState, MasterField } from "../types";
 
 const EMPTY_COLUMNS: BattleColumn[] = [];
@@ -73,6 +74,16 @@ export const selectSubmittableBattleColumns = createSelector(
   [selectBattleColumns],
   (columns) => columns.filter((c) => c.agentId != null),
 );
+
+// Not memoized via createSelector: isConversationRequestEmpty reads across
+// several other slices (user-input, resources, variable-values), so it needs
+// full state, not a derived slice — see battleRequestEmpty.ts. A column with
+// an agent but nothing typed has nothing for the provider to run — Submit
+// all skips it rather than launching it empty (see submitAllBattleColumns).
+export const selectHasRunnableBattleColumn = (state: RootState): boolean =>
+  selectSubmittableBattleColumns(state).some(
+    (c) => !isConversationRequestEmpty(state, c.conversationId),
+  );
 
 /** How many columns are currently collapsed — drives the toolbar badge. */
 export const selectCollapsedBattleColumnCount = createSelector(

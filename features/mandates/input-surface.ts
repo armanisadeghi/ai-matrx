@@ -4,7 +4,7 @@
  * THE MANDATE INPUT SURFACE — served by the server, never derived here.
  *
  * WHAT THIS FIXES (2026-08-31, found live by Arman). A mandate he authored at
- * `/administration/mandates/new` — five described inputs, a goal, an output
+ * the admin New mandate page — five described inputs, a goal, an output
  * kind, an agent bound and mapped — still read "user text only" everywhere,
  * and its run form offered one anonymous text box. Every reader in this repo
  * derived the input contract from the two things only CODE can declare: a
@@ -149,7 +149,7 @@ export function userTextSentence(surface: MandateInputSurface): string {
  *
  * WHAT SHIPPED BEFORE THIS: the hook set `message` to `result.error.message`
  * RAW, and its consumers each glued that into a prefix of their own. On
- * `/administration/mandates/{key}` a reader got, verbatim:
+ * the admin mandate page a reader got, verbatim:
  *
  *     "The job's inputs could not be read: HTTP 400"
  *

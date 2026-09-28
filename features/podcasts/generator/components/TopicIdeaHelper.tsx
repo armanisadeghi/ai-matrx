@@ -31,7 +31,7 @@ const bankTopicIdeas = (showId: string, value: unknown): Promise<void> =>
 /** FIRST CLIENT-SIDE MANDATE SWAP (2026-08-08): which agent generates topic
  * ideas is DB-managed via the `podcast_client.topic_ideas` mandate (declared in
  * aidream `mandates/client_mandates.py`, rebound from
- * /administration/mandates). No hardcoded agent id, no silent fallback —
+ * /administration/intelligence/mandates). No hardcoded agent id, no silent fallback —
  * if the mandate can't resolve, the affordance disables and says why. */
 const TOPIC_IDEAS_MANDATE_KEY = MANDATE_KEYS.podcast_client__topic_ideas;
 

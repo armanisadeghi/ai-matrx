@@ -146,7 +146,7 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
     <SectionCard
       title="People found on this outlet"
       Icon={MailSearch}
-      count={data ? candidates.length : undefined}
+      count={data && error == null ? candidates.length : undefined}
       action={
         <Button
           variant="ghost"

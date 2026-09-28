@@ -43,7 +43,7 @@ import {
 import { resultReasoning } from "@/features/marketing/data/analysis-service";
 import type { MarketingAnalysisResult } from "@/features/marketing/data/analysis-types";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
-import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
+import { humanizeItemKey } from "@/features/marketing/lib/finding-remedy-render";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 export function confidenceLabel(value: number | null): string {

@@ -23,7 +23,7 @@
  * `element.click()` from a script or extension, an accessibility "perform
  * default action" from a screen reader, and any driver that synthesises a
  * click without a preceding button press. Observed on
- * `/administration/mandates/<key>` (production walk, 2026-09-12): the tab bar
+ * the admin mandate page (production walk, 2026-09-12): the tab bar
  * stayed on Definition through repeated activation attempts while the
  * "Assign a Holder" banner button — an ordinary React `onClick` — moved the
  * same state instantly.

@@ -25,6 +25,7 @@ export type AnalysisItemReference = Pick<
   | "weight"
   | "score_contract"
   | "severity_map"
+  | "remedy"
 >;
 
 export interface PriorityQueueRow extends MarketingPriorityProjection {

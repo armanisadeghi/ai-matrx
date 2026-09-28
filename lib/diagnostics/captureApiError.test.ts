@@ -11,7 +11,7 @@ describe("captureApiError", () => {
   });
 
   it("keeps a missing organization preflight refusal out of persistence", () => {
-    window.history.replaceState({}, "", "/administration/mandates");
+    window.history.replaceState({}, "", "/administration/intelligence/mandates");
 
     captureApiError(
       {
@@ -220,7 +220,7 @@ describe("captureApiError", () => {
   );
 
   it("keeps a retryable Mandate code-truth outage out of persistence", () => {
-    window.history.replaceState({}, "", "/administration/mandates");
+    window.history.replaceState({}, "", "/administration/intelligence/mandates");
 
     captureApiError(
       {
@@ -240,7 +240,7 @@ describe("captureApiError", () => {
       source: "api-network",
       tier: "yellow",
       tierRuleId: "mandate-code-truth-read-transport-loss",
-      route: "/administration/mandates",
+      route: "/administration/intelligence/mandates",
       relation: "GET /mandates/code-truth",
       code: "network_error",
       message: "Failed to fetch",

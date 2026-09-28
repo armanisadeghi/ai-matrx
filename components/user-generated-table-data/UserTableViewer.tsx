@@ -876,6 +876,11 @@ const UserTableViewer = ({
         // Without it an example table would look editable to its seeding
         // account; say so rather than silently guessing either way.
         console.error("Could not resolve the system organization:", err);
+        if (!cancelled) {
+          notify.error(
+            `Couldn't check whether this is a platform example table (read-only for everyone): ${err instanceof Error ? err.message : "the read failed"}`,
+          );
+        }
       });
     return () => {
       cancelled = true;

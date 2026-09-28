@@ -23,16 +23,17 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { agentHref } from "@/features/mandates/admin/mandate-health";
+import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import type { UnifiedUsageRow } from "./unified-rows";
 
 const CONTROL_CLASS =
   "flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground " +
   "transition-colors hover:bg-accent hover:text-foreground";
 
-/** Where a mandate opens in a new tab — the admin console for admins, the personal page otherwise. */
+/** Where a mandate opens in a new tab — its admin page for admins, the personal page otherwise. */
 export function mandateHref(mandateKey: string, superAdmin: boolean): string {
   return superAdmin
-    ? `/administration/mandates/${encodeURIComponent(mandateKey)}`
+    ? adminMandateRecordHref(mandateKey)
     : `/mandates/${encodeURIComponent(mandateKey)}`;
 }
 

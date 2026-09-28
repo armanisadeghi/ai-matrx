@@ -6,7 +6,7 @@
 // (RLS-scoped tables + the `set_context_value` RPC), per the handoff:
 //   /Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/handoffs/scope_suggestions_direct_supabase.md
 //
-// Two ledgers (migration kg_013), both RLS-scoped to `auth.uid() = user_id`:
+// Two ledgers (migration kg_013), both RLS-scoped to `auth.uid() = created_by`:
 //   - scope_association_suggestions (Stage A) — doc → scope links
 //   - scope_item_value_suggestions  (Stage B) — scope slot → value fills
 //
@@ -62,7 +62,7 @@ function mapAssociationRow(r: AssociationRow): KgSuggestionRow {
   return {
     id: r.id,
     stage: "association",
-    user_id: r.user_id,
+    user_id: r.created_by as string,
     organization_id: r.organization_id,
     source_kind: r.source_kind,
     source_id: r.source_id,
@@ -91,7 +91,7 @@ function mapValueRow(r: ValueRow): KgSuggestionRow {
   return {
     id: r.id,
     stage: "value",
-    user_id: r.user_id,
+    user_id: r.created_by as string,
     organization_id: r.organization_id,
     source_kind: r.source_kind,
     source_id: r.source_id,
@@ -154,7 +154,7 @@ export async function listKgSuggestions(
       .from("scope_item_value_suggestions")
       .select("*")
       .is("deleted_at", null)
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .eq("target_context_item_id", filter.scopeItemId)
       .order("confidence", { ascending: false });
     if (status !== "all") q = q.eq("status", status);
@@ -172,12 +172,12 @@ export async function listKgSuggestions(
     .schema("rag").from("scope_association_suggestions")
     .select("*")
     .is("deleted_at", null)
-    .eq("user_id", userId);
+    .eq("created_by", userId);
   let valueQ = supabase
     .schema("rag").from("scope_item_value_suggestions")
     .select("*")
     .is("deleted_at", null)
-    .eq("user_id", userId);
+    .eq("created_by", userId);
   if (status !== "all") {
     assocQ = assocQ.eq("status", status);
     valueQ = valueQ.eq("status", status);
@@ -261,7 +261,7 @@ async function markDecided(
       .from(tableFor(row))
       .update(patch)
       .eq("id", row.id)
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .select("id"),
     { action: "save", noun: "suggestion" },
   );
@@ -315,7 +315,7 @@ export async function restoreKgSuggestion(row: KgSuggestionRow): Promise<void> {
         suppressed_until: null,
       })
       .eq("id", row.id)
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .select("id"),
     { action: "restore", noun: "suggestion" },
   );
@@ -336,7 +336,7 @@ export async function setKgSuggestionStarred(
       .from(tableFor(row))
       .update({ is_starred: starred })
       .eq("id", row.id)
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .select("id"),
     { action: "update", noun: "suggestion" },
   );
@@ -373,7 +373,7 @@ export async function markKgSuggestionsViewed(
         .from("scope_item_value_suggestions")
         .update({ viewed_at: now })
         .in("id", valueIds)
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .is("viewed_at", null),
     );
   }
@@ -384,7 +384,7 @@ export async function markKgSuggestionsViewed(
         .from("scope_association_suggestions")
         .update({ viewed_at: now })
         .in("id", assocIds)
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .is("viewed_at", null),
     );
   }
