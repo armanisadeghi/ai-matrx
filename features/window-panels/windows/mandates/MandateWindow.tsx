@@ -104,6 +104,7 @@ function MandateWindowInner({
     Record<string, MandateCodeTruth>
   >({});
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [codeTruthFailed, setCodeTruthFailed] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(
     initialMandateKey ?? null,
   );
@@ -158,9 +159,12 @@ function MandateWindowInner({
         setCodeTruthByKey(
           Object.fromEntries(report.mandates.map((m) => [m.mandate_key, m])),
         );
+        setCodeTruthFailed(false);
       })
       .catch((err: unknown) => {
         console.warn("[mandate-window] code truth unavailable", err);
+        // Degrades the health verdict, never the window — and the Admin pane says so.
+        if (!cancelled) setCodeTruthFailed(true);
       });
     return () => {
       cancelled = true;
@@ -317,7 +321,8 @@ function MandateWindowInner({
             </button>
           );
         })}
-        {visibleRows.length === 0 && (
+        {/* A failed read is said once, in the right pane — not "Loading…" here forever. */}
+        {!loadError && visibleRows.length === 0 && (
           <p className="px-2 py-3 text-[11px] text-muted-foreground">
             {data ? "No mandate matches." : "Loading…"}
           </p>
@@ -405,6 +410,14 @@ function MandateWindowInner({
               No mandate is in scope here.
             </p>
           ) : effectiveView === "admin" && canSeeAdmin ? (
+            <>
+            {codeTruthFailed ? (
+              <p className="mb-2 text-xs text-muted-foreground">
+                What the code declares for these jobs could not be read, so the
+                health verdict below is incomplete.
+                <ErrorAlchemyMenu />
+              </p>
+            ) : null}
             <MandateDetailView
               key={selected.id}
               row={selected}
@@ -418,6 +431,7 @@ function MandateWindowInner({
               }
               onSaved={load}
             />
+            </>
           ) : (
             /* THE ONE CORE (rule 3): the same MandateWorkspace the dedicated
                route renders — §1 the job, §2 fulfillment (+drift), §3 org

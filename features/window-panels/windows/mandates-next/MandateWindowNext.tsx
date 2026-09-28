@@ -404,7 +404,7 @@ function MandateWindowNextInner({
             <p className="text-xs text-muted-foreground">Mandate not found</p>
           ) : !openKey ? (
             <p className="text-xs text-muted-foreground">
-              {rows && rows.length === 0
+              {!loadFailed && rows && rows.length === 0
                 ? "No mandate is visible to you yet."
                 : "Pick a mandate from the list."}
             </p>

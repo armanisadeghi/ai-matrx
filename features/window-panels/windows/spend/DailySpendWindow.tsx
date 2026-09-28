@@ -109,7 +109,7 @@ function DailySpendWindowInner({ onClose }: DailySpendWindowProps) {
         </div>
       ) : null}
 
-      {snapshot ? (
+      {!error && snapshot ? (
         <>
           <SpendHeadline
             today={snapshot.today}

@@ -441,6 +441,8 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
     import("@/types/feedback.types").UserFeedback | null
   >(null);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
+  // The totals under "Feedback submitted" are a garnish; a failed read says so.
+  const [statsFailed, setStatsFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const submitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -825,9 +827,12 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
               inFeedbackGroup(i.status, "resolved"),
             ).length;
             setStats({ total: items.length, pending, resolved });
+            setStatsFailed(false);
+          } else {
+            setStatsFailed(true);
           }
         })
-        .catch(() => {});
+        .catch(() => setStatsFailed(true));
     } else {
       setError(result.error ?? "Failed to submit feedback");
     }
@@ -973,6 +978,7 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
     setSubmitted(false);
     setSubmittedItem(null);
     setStats(null);
+    setStatsFailed(false);
     setFeedbackType("bug");
     setDescription("");
     setAttachments((prev) => {
@@ -1009,6 +1015,7 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
     submitted,
     submittedItem,
     stats,
+    statsFailed,
     error,
     copied,
     // admin extras
@@ -1069,6 +1076,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     submitted,
     submittedItem,
     stats,
+    statsFailed,
     error,
     copied,
     adminOptionsOpen,
@@ -1180,6 +1188,13 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             <StatPill label="Resolved" value={stats.resolved} group="resolved" onNavigate={onClose} crossApp={isAdmin} />
           </div>
         )}
+        {!stats && statsFailed ? (
+          <p className="text-xs text-muted-foreground">
+            Couldn&apos;t load your feedback totals — your report was still
+            submitted.
+            <ErrorAlchemyMenu operation="Load your feedback totals" />
+          </p>
+        ) : null}
 
         {/* An engineering hand-off, so it lives in the admin lane only (the
             admin seat on a user page is an ordinary person). */}

@@ -178,7 +178,7 @@ function ResearchContextPreviewWindowInner({
     [topicId, bundle, title],
   );
 
-  const stats = report ? (
+  const stats = !error && report ? (
     <span className="text-[11px] text-muted-foreground">
       {Object.keys(variables ?? {}).length} variable
       {Object.keys(variables ?? {}).length === 1 ? "" : "s"} ·{" "}

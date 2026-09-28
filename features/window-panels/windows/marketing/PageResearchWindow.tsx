@@ -540,6 +540,7 @@ function PageResearchWindowInner({
             <span data-surface-value="attachment_status">
               Nothing is attached until you start research.
             </span>{" "}
+            {/* read-gate-exempt: status copy for the draft form (no run started), not an empty read */}
             <span data-surface-value="is_streaming">
               No research is running.
             </span>
