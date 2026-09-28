@@ -15,11 +15,10 @@
 -- a default can never be the reason a person's new row is refused.
 -- custom.field_update takes `default` as a setting (null clears it; a retype keeps it) — the edit
 -- path of the same column dialog.
--- New: custom._record_defaults_filled(uuid, uuid, jsonb) (internal; no client EXECUTE).
+-- New: custom._record_defaults_filled(uuid, uuid, jsonb) (internal; the closed schema's DDL guard keeps it off the client lane).
 -- Guard: scripts/campaign-tests/databasics2_a_column_default_fills_a_new_record.sql
 -- Inverse: migrations/inverse/databasics2_a_column_default_fills_a_new_record_down.sql
 
-set local lock_timeout = '30s';
 
 CREATE OR REPLACE FUNCTION custom._record_defaults_filled(p_organization_id uuid, p_table_id uuid, p_data jsonb)
  RETURNS jsonb
@@ -110,8 +109,8 @@ begin
 end;
 $function$;
 
-revoke all on function custom._record_defaults_filled(uuid, uuid, jsonb) from public;
-revoke all on function custom._record_defaults_filled(uuid, uuid, jsonb) from anon, authenticated;
+-- No client EXECUTE: `custom` is a closed schema, so the DDL guard takes back the default PUBLIC grant
+-- on a new function that no platform.client_callable_door row opens (measured on the clone).
 
 CREATE OR REPLACE FUNCTION custom.record_write(p_organization_id uuid, p_table_id uuid, p_data jsonb)
  RETURNS uuid

@@ -1559,10 +1559,15 @@ export async function updateTableConfig(
           `"${name}" keeps the machine name it was made with (${field.key}), because its rows, formulas and rules point at it. Rename what people read — the column's name — instead. Nothing was changed.`,
         );
       }
-      if (update.default_value !== undefined) {
-        return plainFailure("A record-store column has no default value to set. Nothing about this column was changed.");
-      }
       const patch: Record<string, unknown> = {};
+      // A COLUMN'S DEFAULT (DATA-V2-BASICS-2): what a new row that does not name this column starts
+      // with — the store fills it (`custom.record_write`). An emptied box clears it; the same value
+      // sends nothing.
+      if (update.default_value !== undefined) {
+        const next = newDefault(update.default_value);
+        const now = (field as { default?: unknown }).default ?? null;
+        if (JSON.stringify(next) !== JSON.stringify(now)) patch.default = next;
+      }
       if (typeof update.display_name === "string") patch.label = update.display_name;
       if (typeof update.field_order === "number") patch.sort = update.field_order;
       if (typeof update.is_required === "boolean") patch.required = update.is_required;
@@ -1627,6 +1632,20 @@ function specForNewColumn(dataType: string): Record<string, unknown> | null {
   }
 }
 
+/**
+ * The default a column dialog typed, as the store keeps it: words trimmed, an empty box is "no
+ * default" (null). Numbers, ticks and dates stay what they are; the store converts a default to the
+ * column's own kind when it fills a new row, and leaves out one that does not fit.
+ */
+function newDefault(value: unknown): unknown {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string") {
+    const words = value.trim();
+    return words === "" ? null : words;
+  }
+  return value;
+}
+
 export async function addColumn(
   home: RecordStoreHome,
   args: {
@@ -1639,10 +1658,8 @@ export async function addColumn(
     fieldOrder?: number;
   },
 ): Promise<{ success: boolean; columnId?: string; error?: string }> {
-  if (args.defaultValue !== undefined && args.defaultValue !== null && args.defaultValue !== "") {
-    return { success: false, error: "A record-store column has no default value. Leave it empty and fill the rows you need." };
-  }
   const spec = specForNewColumn(args.dataType);
+  const startsWith = newDefault(args.defaultValue);
   if (!spec) return { success: false, error: `The record store has no "${args.dataType}" kind of column.` };
   const made = await clientFor(home).fieldDeclare({
     table_id: args.tableId,
@@ -1655,6 +1672,8 @@ export async function addColumn(
       // out, `custom.field_declare` derives it and picks one no column has ever held.
       required: args.isRequired,
       ...(typeof args.fieldOrder === "number" ? { sort: args.fieldOrder } : {}),
+      // A new row that does not name this column starts with its default (DATA-V2-BASICS-2).
+      ...(startsWith !== null ? { default: startsWith } : {}),
       ...spec,
     } as never,
   });

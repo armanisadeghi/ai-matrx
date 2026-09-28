@@ -1,6 +1,8 @@
 -- INVERSE of migrations/campaign/databasics2_a_column_default_fills_a_new_record.sql
+-- based-on: custom.record_write(uuid, uuid, jsonb) a2599ed72dae36c05aaeed295de5da32402852ffe23c0abc37d535a339c0fa3a
+-- based-on: custom.record_write_many(uuid, uuid, jsonb[], uuid[]) b0afc3e2645c9a1bf01808d7ad68eb39fb2dee2a2e28bab58c4d79e4dd581e11
+-- based-on: custom.field_update(uuid, uuid, jsonb) 0108c910718a770b8f0508e6f2ba5c040f3bedcf9d1d5d24d148ad2f8fc521b3
 -- Puts back the two create doors exactly as they were (no default is filled) and drops the helper.
-set local lock_timeout = '30s';
 
 CREATE OR REPLACE FUNCTION custom.record_write(p_organization_id uuid, p_table_id uuid, p_data jsonb)
  RETURNS uuid
