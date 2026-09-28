@@ -1068,7 +1068,11 @@ function ServerCard({
               className="h-11 min-w-0 flex-1 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
               onClick={handleSupabaseOAuth}
               disabled={isConnecting || !supabaseProjectRef.trim()}
-              aria-label="Connect read-only project"
+              aria-label={
+                needsRecovery
+                  ? "Reconnect read-only project"
+                  : "Connect read-only project"
+              }
             >
               {isConnecting ? (
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
