@@ -42,6 +42,7 @@ import React, {
 import type { editor as MonacoEditorNs } from "monaco-editor";
 import { History, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   SurfaceRuntimeProvider,
@@ -397,6 +398,18 @@ export function SmartCodeEditor({
         setActiveMandateKey(mandateKey);
       } catch (err) {
         console.error("[SmartCodeEditor] launchMandate failed", err);
+        // Never silent: the New button looked dead when the launch threw.
+        // The launcher can reject with an Error-shaped plain object.
+        const reason =
+          err instanceof Error
+            ? err.message
+            : typeof err === "object" &&
+                err !== null &&
+                "message" in err &&
+                typeof err.message === "string"
+              ? err.message
+              : String(err);
+        toast.error(`Could not start a ${agent.name} draft: ${reason}`);
       }
     },
     [agents, code, launchMandate, widgetHandleId, store],
