@@ -172,11 +172,25 @@ function toAction(node: MenuNode, place: Placement, instanceId: string, opts: Pr
         }
         if (current.kind !== "submenu") return [];
         void t;
-        return current.children
+        // THE SUBMENU KEEPS ITS GROUPS (DATA-V2-BASICS-2): each run of rows between the source's
+        // separators is one section, and the menu draws a divider where the section changes
+        // (alchemy withGroupDividers) — "Delete row…" in its own group, never beside Highlight.
+        let group = 0;
+        const grouped: { child: MenuNode; group: number }[] = [];
+        for (const child of current.children) {
+          if (child.kind === "separator") {
+            if (grouped.length > 0) group += 1;
+            continue;
+          }
+          grouped.push({ child, group });
+        }
+        return grouped
           // An empty category (or a row that cannot run) is ABSENT (R1) —
           // never a "No items in …" panel, never a dead row.
-          .filter((child) => !unusable(child))
-          .map((child, index) => toAction(child, { ...place, section: undefined, order: index }, instanceId, opts))
+          .filter(({ child }) => !unusable(child))
+          .map(({ child, group: g }, index) =>
+            toAction(child, { ...place, section: { id: `${node.id}:group-${g}`, label: "" }, order: index }, instanceId, opts),
+          )
           .filter((a): a is Action => a !== null);
       },
       run: () => undefined,
