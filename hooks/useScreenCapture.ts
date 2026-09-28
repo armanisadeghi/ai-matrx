@@ -84,6 +84,16 @@ export async function captureTabViaCanvas(
   const dataUrl = await htmlToImage.toPng(document.body, {
     pixelRatio: window.devicePixelRatio || 1,
     filter,
+    // Exactly what the person sees: the viewport, shell header included (it
+    // is what says where they were). Proven live 2026-09-27: without the
+    // viewport box the glass header dropped out of the capture.
+    width: window.innerWidth,
+    height: window.innerHeight,
+    // The page's <img>s were loaded WITHOUT cors, and the browser reuses that
+    // cached response for html-to-image's CORS fetch — so the CDN avatar
+    // failed (two console errors, a blank avatar) although the CDN does send
+    // Access-Control-Allow-Origin. A cache-busted URL is a fresh CORS request.
+    cacheBust: true,
     ...RESILIENT_IMAGE_OPTIONS,
   });
 

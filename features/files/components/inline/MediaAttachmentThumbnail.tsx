@@ -54,13 +54,16 @@ export function MediaAttachmentThumbnail({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.85 }}
       title={isError ? errorMessage : undefined}
-      className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-muted"
+      className="group relative h-14 w-14 shrink-0 rounded-md border border-border bg-muted"
     >
       <button
         type="button"
         onClick={onOpen}
         aria-label={openLabel}
-        className="flex h-full w-full items-center justify-center"
+        // The image itself is the open target; the tile's own touch floor
+        // would only inflate it, so it is exempt (it is 56px already).
+        data-touch-exempt=""
+        className="flex h-full w-full items-center justify-center overflow-hidden rounded-md"
       >
         {mediaRef ? (
           <>
@@ -109,7 +112,12 @@ export function MediaAttachmentThumbnail({
           onRemove();
         }}
         aria-label={removeLabel}
-        className="absolute right-0 top-0 z-10 rounded-bl-md bg-black/60 p-0.5 text-white opacity-0 transition-opacity hover:bg-destructive focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
+        // A small visible X in the corner; its TOUCH area extends outward
+        // (up and right, off the image) instead of a 44px box over two thirds
+        // of the thumbnail — page-pass 2026-09-27. The page's touch floor is
+        // exempted here because the pseudo-element supplies the reach.
+        data-touch-exempt=""
+        className="absolute -right-1.5 -top-1.5 z-10 rounded-full bg-black/70 p-0.5 text-white opacity-0 transition-opacity hover:bg-destructive focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100 after:absolute after:-right-3 after:-top-3 after:h-9 after:w-9 after:content-['']"
       >
         <X className="h-3 w-3" />
       </button>
