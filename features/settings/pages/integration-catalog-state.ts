@@ -62,7 +62,14 @@ export function catalogActionPresentation(
       !hasSavedConnection &&
       (!entry.connectionReady || entry.serverStatus === "coming_soon"),
     needsRecovery,
-    canStartConnection: providerCanConnect && !connection.connected,
+    // `connection_ready` certifies a provider for a person's FIRST grant. It
+    // must never strand a saved grant whose token expired or refresh failed:
+    // the generic OAuth route can still re-authorize that exact connection,
+    // and the card already keeps its Disconnect escape hatch for the same
+    // reason. This is the recovery exception promised by this module's
+    // contract above.
+    canStartConnection:
+      !connection.connected && (needsRecovery || providerCanConnect),
   };
 }
 
