@@ -323,6 +323,9 @@ export function CodexUsageDashboard() {
   }, [preset, startDate, endDate, presence]);
 
   const activity = snapshot ? optionalActivity(snapshot.totals) : [];
+  // A snapshot exists only after a read succeeded; a failed refresh keeps it
+  // and the error banner above says the displayed report is the last good one.
+  const hasLoaded = snapshot !== null;
   const canResume = snapshot?.coverage.can_resume === true;
   const isIncomplete = snapshot?.coverage.complete !== true;
   const completedCandidates = snapshot?.coverage.completed_candidates;
@@ -551,7 +554,7 @@ export function CodexUsageDashboard() {
         </div>
       ) : null}
 
-      {snapshot ? (
+      {hasLoaded && snapshot ? (
         <>
           {isIncomplete ? (
             <section className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:text-amber-100">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { usePaginatedData } from "@ai-matrx/data/react";
 import { useTablePaginationPolicy } from "@/lib/data-table/useTablePaginationPolicy";
@@ -17,6 +17,12 @@ import {
 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { readOf } from "@/components/read-state/ReadGate";
+import { useRead } from "@/components/read-state/useRead";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import {
+  UntrustedCount,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +36,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { isEntityTypeToken } from "@ai-matrx/associations";
@@ -114,6 +119,8 @@ interface SummaryCardProps {
   icon: React.ReactNode;
   active: boolean;
   onClick: () => void;
+  /** The summary read behind `value` — a failed read shows "—", never 0. */
+  read: CountRead;
 }
 
 export function ExposureSummaryCard({
@@ -123,6 +130,7 @@ export function ExposureSummaryCard({
   icon,
   active,
   onClick,
+  read,
 }: SummaryCardProps) {
   return (
     <button
@@ -140,7 +148,7 @@ export function ExposureSummaryCard({
         {icon}
       </div>
       <div className="mt-1 text-2xl font-semibold tabular-nums">
-        {value.toLocaleString()}
+        <UntrustedCount read={read} label={label} value={value.toLocaleString()} />
       </div>
       <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
         {description}
@@ -310,7 +318,6 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
 ];
 
 export function ExposureAuditClient() {
-  const [summaries, setSummaries] = useState<ExposureAuditSummary[]>([]);
   // Right-clicked row — STATE (not a ref) so the menu resolves the row that
   // was actually clicked, not a stale capture.
   const [clickedRow, setClickedRow] = useState<ExposureAuditRow | null>(null);
@@ -344,27 +351,23 @@ export function ExposureAuditClient() {
   const query = table.queryState;
   const [refreshNonce, setRefreshNonce] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    const supabase = createClient();
-
-    async function loadSummary() {
-      const { data, error } = await supabase.rpc(
+  const summaryRead = useRead<ExposureAuditSummary[]>(
+    async () => {
+      const { data, error } = await createClient().rpc(
         "admin_exposure_audit_summary",
       );
-      if (cancelled) return;
-      if (error) {
-        toast.error(`Exposure summary failed: ${error.message}`);
-        return;
-      }
-      setSummaries(data ?? []);
-    }
-
-    void loadSummary();
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshNonce]);
+      if (error) throw new Error(`Exposure summary failed: ${error.message}`);
+      return data ?? [];
+    },
+    [refreshNonce],
+    { initialData: [] },
+  );
+  const summaries = summaryRead.data ?? [];
+  const summaryCountRead: CountRead = {
+    status: summaryRead.status,
+    error: summaryRead.error,
+    hasData: summaryRead.hasData,
+  };
 
   const policy = useTablePaginationPolicy();
   const pagination = usePaginatedData<ExposureAuditRow, number>({
@@ -473,8 +476,18 @@ export function ExposureAuditClient() {
         </AlertDescription>
       </Alert>
 
+      {summaryRead.isError ? (
+        <StaleDataNotice
+          hasData={summaryRead.hasData}
+          what="the exposure summary"
+          detail={summaryRead.error instanceof Error ? summaryRead.error.message : null}
+          onRetry={summaryRead.retry}
+          retrying={summaryRead.isLoading}
+        />
+      ) : null}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
         <ExposureSummaryCard
+          read={summaryCountRead}
           label="Public"
           value={publicCount}
           description="Broadly readable; public notes are agent-searchable."
@@ -483,6 +496,7 @@ export function ExposureAuditClient() {
           onClick={() => selectExposure("public")}
         />
         <ExposureSummaryCard
+          read={summaryCountRead}
           label="Internal"
           value={internalCount}
           description="Visible through organization membership."
@@ -491,6 +505,7 @@ export function ExposureAuditClient() {
           onClick={() => selectExposure("internal")}
         />
         <ExposureSummaryCard
+          read={summaryCountRead}
           label="Active links"
           value={linkCount}
           description="Live share links across files and notes."
@@ -499,6 +514,7 @@ export function ExposureAuditClient() {
           onClick={() => selectExposure("link")}
         />
         <ExposureSummaryCard
+          read={summaryCountRead}
           label="Active grants"
           value={sharedCount}
           description="User, organization, or public permission grants."
@@ -507,6 +523,7 @@ export function ExposureAuditClient() {
           onClick={() => selectExposure("shared")}
         />
         <ExposureSummaryCard
+          read={summaryCountRead}
           label="Contextual"
           value={contextualCount}
           description="Rows reached through attached containers."
@@ -515,6 +532,7 @@ export function ExposureAuditClient() {
           onClick={() => selectExposure("contextual")}
         />
         <ExposureSummaryCard
+          read={summaryCountRead}
           label="Personal"
           value={personalCount}
           description="Owner-only baseline unless another signal exists."

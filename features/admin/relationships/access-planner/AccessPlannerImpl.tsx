@@ -20,6 +20,11 @@ import dagre from "dagre";
 import AppLink from "@/components/navigation/AppLink";
 import { useEffect, useState } from "react";
 import {
+  UntrustedCount,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import {
   AlertCircle,
   ArrowDownToLine,
   Boxes,
@@ -306,6 +311,8 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // A failed snapshot read keeps the last good snapshot on screen; this says so.
+  const [readError, setReadError] = useState<string | null>(null);
   const selectedTable =
     snapshot.tables.find((table) => table.table_name === selectedTableName) ??
     snapshot.tables[0];
@@ -615,9 +622,14 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
     );
     setSaving(false);
     if (error) {
-      setMessage(error.message);
+      setReadError(
+        schemaName === snapshot.schema
+          ? error.message
+          : `${error.message} — still showing ${snapshot.schema}`,
+      );
       return;
     }
+    setReadError(null);
     const next = parseAccessPlannerSnapshot(data);
     setSnapshot(next);
     const nextName =
@@ -807,6 +819,14 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
     };
   }
 
+  // The snapshot came from a successful read (server or refresh); a failed
+  // refresh keeps it as the last known value, marked stale.
+  const snapshotRead: CountRead = {
+    status: readError ? "error" : "ready",
+    error: readError,
+    hasData: true,
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <header className="shrink-0 border-b border-border bg-card px-3 py-3 lg:px-4">
@@ -820,7 +840,12 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                   plannedCount === baseTables.length ? "success" : "warning"
                 }
               >
-                {plannedCount}/{baseTables.length} tables decided
+                <UntrustedCount
+                  read={snapshotRead}
+                  label="Tables decided"
+                  value={`${plannedCount}/${baseTables.length}`}
+                />{" "}
+                tables decided
               </Badge>
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -883,14 +908,26 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
             </Button>
           </div>
         </div>
+        {readError ? (
+          <StaleDataNotice
+            className="mt-3"
+            hasData
+            what="the access snapshot"
+            detail={readError}
+            onRetry={() => void refresh()}
+            retrying={saving}
+          />
+        ) : null}
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
           <Metric
+            read={snapshotRead}
             icon={AlertCircle}
             label="Blockers"
             value={problemCount}
             danger={problemCount > 0}
           />
           <Metric
+            read={snapshotRead}
             icon={CircleDot}
             label="Own access"
             value={
@@ -899,6 +936,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
             }
           />
           <Metric
+            read={snapshotRead}
             icon={GitBranch}
             label="Nested"
             value={
@@ -908,6 +946,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
             }
           />
           <Metric
+            read={snapshotRead}
             icon={Boxes}
             label="Parent-owned"
             value={
@@ -916,11 +955,13 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
             }
           />
           <Metric
+            read={snapshotRead}
             icon={Share2}
             label="Shareable"
             value={baseTables.filter((table) => table.is_shareable).length}
           />
           <Metric
+            read={snapshotRead}
             icon={Layers3}
             label="Cross-schema"
             value={
@@ -1424,11 +1465,13 @@ function Metric({
   icon: Icon,
   label,
   value,
+  read,
   danger = false,
 }: {
   icon: typeof Eye;
   label: string;
   value: number;
+  read: CountRead;
   danger?: boolean;
 }) {
   return (
@@ -1445,7 +1488,9 @@ function Metric({
         )}
       />
       <div>
-        <div className="text-sm font-semibold leading-none">{value}</div>
+        <div className="text-sm font-semibold leading-none">
+          <UntrustedCount read={read} label={label} value={value} />
+        </div>
         <div className="mt-1 text-[10px] text-muted-foreground">{label}</div>
       </div>
     </div>

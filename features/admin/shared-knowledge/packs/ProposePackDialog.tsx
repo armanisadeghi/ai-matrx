@@ -10,6 +10,7 @@
 // The agent is the `seo.starter_pack_proposer` mandate — no id in this file.
 
 import { useEffect, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,8 @@ export function ProposePackDialog({
   const [siteRows, setSiteRows] = useState<AdminSiteOption[]>([]);
   const [sites, setSites] = useState<AdminSiteOption[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<unknown>(null);
+  const [searchAttempt, setSearchAttempt] = useState(0);
   const { propose, cancel, reset, stage, error } = useProposePack();
 
   useEffect(() => {
@@ -82,9 +85,13 @@ export function ProposePackDialog({
     const t = setTimeout(() => {
       searchAdminSites(siteQuery)
         .then((rows) => {
-          if (!cancelled) setSiteRows(rows);
+          if (cancelled) return;
+          setSiteRows(rows);
+          setSearchError(null);
         })
-        .catch((e) => toast.error(extractErrorMessage(e)))
+        .catch((e) => {
+          if (!cancelled) setSearchError(e);
+        })
         .finally(() => {
           if (!cancelled) setSearching(false);
         });
@@ -93,7 +100,7 @@ export function ProposePackDialog({
       cancelled = true;
       clearTimeout(t);
     };
-  }, [open, siteQuery]);
+  }, [open, siteQuery, searchAttempt]);
 
   const busy = stage === "corpus" || stage === "running" || stage === "landing";
   const chosen = industries.find((i) => i.id === industryId) ?? null;
@@ -215,6 +222,15 @@ export function ProposePackDialog({
           <ul className="max-h-36 divide-y divide-border overflow-y-auto rounded-md border border-border">
             {searching && siteRows.length === 0 ? (
               <li className="px-2.5 py-1.5 text-xs text-muted-foreground">Searching…</li>
+            ) : searchError ? (
+              <li>
+                <ReadFailure
+                  className="m-1.5"
+                  error={searchError}
+                  what="matching sites"
+                  onRetry={() => setSearchAttempt((n) => n + 1)}
+                />
+              </li>
             ) : siteRows.filter((r) => !sites.some((s) => s.id === r.id)).length === 0 ? (
               <li className="px-2.5 py-1.5 text-xs text-muted-foreground">No more sites match.</li>
             ) : (

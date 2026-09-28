@@ -178,6 +178,7 @@ export function IngestTab({
             />
           </div>
         ) : (
+          // read-gate-exempt: `picked` is the admin's own pick/upload, not a read; a failed upload says so in its error toast
           <div className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
             No file selected yet.
           </div>

@@ -17,6 +17,7 @@
 // Audit) can reach the actual containers instead of just naming them.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { readOf } from "@/components/read-state/ReadGate";
 import { Layers, RefreshCw, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -373,6 +374,8 @@ export function ReachabilityInspectorClient({
           copy={false}
           coverage={reachabilityCoverage("reachable item", contents.length)}
           emptyState={{ title: "This container reaches nothing." }}
+          // Rows exist only after a lookup succeeded (a failed one leaves null and toasts).
+          read={readOf({ loading }, { what: "reachable contents" })}
           toolbar={{
             title: "Reachable contents",
             search: true,
@@ -390,6 +393,7 @@ export function ReachabilityInspectorClient({
           copy={false}
           coverage={reachabilityCoverage("conveying container", containers.length)}
           emptyState={{ title: "No container conveys access to this item." }}
+          read={readOf({ loading }, { what: "conveying containers" })}
           toolbar={{
             title: "Conveying containers",
             search: true,

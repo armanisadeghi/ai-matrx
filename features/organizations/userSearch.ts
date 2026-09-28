@@ -10,6 +10,11 @@ export interface UserSearchResult {
   id: string;
   email: string;
   exists: boolean;
+  /**
+   * Set when the lookup itself FAILED — `exists: false` then means "unknown",
+   * never "no such user". Callers must say the failure, not "not found".
+   */
+  error?: string;
 }
 
 /**
@@ -24,7 +29,10 @@ export async function searchUserByEmail(
       lookup_email: normalized,
     });
 
-    if (error || !data?.length) {
+    if (error) {
+      return { id: "", email: normalized, exists: false, error: error.message };
+    }
+    if (!data?.length) {
       return {
         id: "",
         email: normalized,
@@ -44,6 +52,7 @@ export async function searchUserByEmail(
       id: "",
       email: normalized,
       exists: false,
+      error: error instanceof Error ? error.message : "The user lookup failed",
     };
   }
 }

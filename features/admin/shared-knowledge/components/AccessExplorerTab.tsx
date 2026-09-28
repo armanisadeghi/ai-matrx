@@ -24,6 +24,7 @@
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { readOf } from "@/components/read-state/ReadGate";
 import { useEffect, useMemo, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import AppLink from "@/components/navigation/AppLink";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
@@ -123,8 +124,9 @@ export function AccessExplorerTab({
     email: string;
   } | null>(null);
   const [lookupState, setLookupState] = useState<
-    "idle" | "loading" | "not_found"
+    "idle" | "loading" | "not_found" | "failed"
   >("idle");
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   const {
     assignments,
@@ -270,11 +272,16 @@ export function AccessExplorerTab({
   const onLookupUser = async () => {
     if (!email.trim()) return;
     setLookupState("loading");
+    setLookupError(null);
     setLookedUpUser(null);
     const result = await searchUserByEmail(email);
     if (result.exists) {
       setLookedUpUser({ id: result.id, email: result.email });
       setLookupState("idle");
+    } else if (result.error) {
+      // A failed lookup is not "no such user".
+      setLookupError(result.error);
+      setLookupState("failed");
     } else {
       setLookupState("not_found");
     }
@@ -452,6 +459,14 @@ export function AccessExplorerTab({
               Look up
             </Button>
           </div>
+          {lookupState === "failed" ? (
+            <ReadFailure
+              className="m-0"
+              error={lookupError ?? true}
+              what="that user"
+              onRetry={() => void onLookupUser()}
+            />
+          ) : null}
           {lookupState === "not_found" ? (
             <div className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
               No user with that email.
@@ -461,6 +476,7 @@ export function AccessExplorerTab({
             <div className="space-y-3">
               <div className="group/entity-ref flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                 <span>{lookedUpUser.email} · member of</span>
+                {/* read-gate-exempt: lookedUpUser is set only by a lookup that succeeded (a failed one shows ReadFailure above) and the memberships come from the server-read directory prop */}
                 {userOrgIds.length === 0 ? (
                   <span>no organizations</span>
                 ) : (
