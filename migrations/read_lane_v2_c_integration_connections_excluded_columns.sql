@@ -1,3 +1,4 @@
+-- draft: deep-lane read-lane-v2 — lands in the 2026-09-27 window before users.integration_connections is regenerated
 -- read_lane_v2_c_integration_connections_excluded_columns — declare the columns a signed-in client must
 -- NEVER hold on users.integration_connections, so iam.apply_table_grants (which grants every live column
 -- not declared excluded) keeps them withheld when the table is regenerated.
