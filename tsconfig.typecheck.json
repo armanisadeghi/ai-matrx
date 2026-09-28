@@ -34,6 +34,9 @@
     "work",
     ".matrx",
     ".coldwalk*",
+    // Gitignored agent scratch (.gitignore: /tmp/ and /tmp*.ts): copies and probes that never ship.
+    "tmp",
+    "tmp*.ts",
     "out",
     "utils/schema/schemaUtils.ts",
     "next-env.d.ts",
