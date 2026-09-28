@@ -1,4 +1,3 @@
--- draft: claude-opus T-33 not yet applied
 -- lane: access-ladder T-33 — an archived organization is closed.
 -- based-on: iam.has_org_access_for(uuid, uuid) 63b99a61ff26b58382daa3338c83eec108ea682e9a8056fea7c68b996a7b91d8
 -- based-on: public.is_org_admin_for(uuid, uuid) 2925ad0b0d493764e8c464a0a10529a3c293ccc2fa55cd03af4a23ceb5227b4f
@@ -88,7 +87,7 @@ values ('iam', 'my_admin_orgs', '', '{}'::oid[], 'access-ladder T-33 (access_lad
         'Caller-identity reader, the same shape as iam.my_orgs(): takes no argument and returns only the organizations the CALLER (auth.uid()) owns or administers that are not archived — the set form of public.is_org_admin_for, asked by the organization-role arm of every generated std_select policy. Reveals nothing is_org_admin_for does not.',
         true);
 
-revoke all on function iam.my_admin_orgs() from public, anon;
+-- (no REVOKE: the §6d-4 guard clears PUBLIC's implicit EXECUTE at a definer's birth)
 grant execute on function iam.my_admin_orgs() to authenticated, service_role;
 
 -- ===== iam.has_org_access_for(uuid,uuid)
@@ -2287,6 +2286,22 @@ begin
 end
 $function$;
 
+
+
+-- Two server-only definers this file replaces had no declared access decision (the provision shape
+-- guard asks at COMMIT). Declared here as they already are: no client role holds EXECUTE on either.
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, non_client_lane, signed_in_callers, anonymous_callers)
+select 'iam', p.proname, pg_get_function_identity_arguments(p.oid), platform.door_argtypes(p.proargtypes),
+       'access-ladder T-33 (access_ladder_t33_archived_organization_is_closed.sql)', v.reason, v.lane, false, false
+  from (values
+    ('iam.has_org_access_for(uuid,uuid)'::regprocedure,
+     'p_user_id is the person asked about and p_org the organization; true only for a member of a NOT archived organization (or a super admin on a global-readable system organization); NULL in either answers false.',
+     'server_only: asked inside other SECURITY DEFINER functions (iam.has_org_access, iam.has_access_for_base, billing and organization-admin doors) and by the svc_seo and vault_history_writer server roles; no client role holds EXECUTE.'),
+    ('iam.discoverable_ids(uuid,text,permission_level,integer,boolean)'::regprocedure,
+     'p_user_id is the person asked about and p_type a registered entity token; returns the ids of that type the person may discover, with organization lanes limited to NOT archived organizations; NULL p_user_id answers an empty set.',
+     'server_only: called by the server (service_role) for discovery lists on a person''s behalf; no client role holds EXECUTE on it.')
+  ) v(fn, reason, lane)
+  join pg_proc p on p.oid = v.fn;
 
 -- 6. re-record the read-kernel fingerprint.
 do $rerecord$

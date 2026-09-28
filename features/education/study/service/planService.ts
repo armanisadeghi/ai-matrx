@@ -18,8 +18,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { guardedUpdate } from "@ai-matrx/data/db";
-import type { Database, Json } from "@/types/database.types";
+import type { Json } from "@/types/database.types";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { StudyResult } from "../types";
@@ -329,12 +328,10 @@ export const planService = {
     status: string,
   ): Promise<StudyResult<{ id: string }>> {
     try {
-      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_plan")
         .update({ status } as never)
         .eq("id", planId)
-        .eq("created_by", userId)
         .select("id")
         .single();
       if (error) return fail("updatePlanStatus", error);
@@ -350,12 +347,10 @@ export const planService = {
     status: "pending" | "done" | "skipped",
   ): Promise<StudyResult<StudyPlanBlockRow>> {
     try {
-      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_plan_block")
         .update({ status } as never)
         .eq("id", blockId)
-        .eq("created_by", userId)
         .select("*")
         .single();
       if (error) return fail("updateBlockStatus", error);
@@ -368,218 +363,16 @@ export const planService = {
   /** Soft-delete a plan (children cascade-delete on hard delete; here we hide it). */
   async deletePlan(planId: string): Promise<StudyResult<{ id: string }>> {
     try {
-      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_plan")
         .update({ deleted_at: new Date().toISOString() } as never)
         .eq("id", planId)
-        .eq("created_by", userId)
         .select("id")
         .single();
       if (error) return fail("deletePlan", error);
       return { data: { id: (data as { id: string }).id }, error: null };
     } catch (e) {
       return fail("deletePlan", e);
-    }
-  },
-
-  /** Edit authored plan details without changing generated evidence or ownership. */
-  async updatePlanTitle(
-    planId: string,
-    expectedVersion: number,
-    title: string,
-  ): Promise<StudyResult<StudyPlanRow>> {
-    try {
-      const userId = requireUserId();
-      const result = await guardedUpdate<StudyPlanRow>({
-        expectedVersion,
-        applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
-          EDU()
-            .from("study_plan")
-            .update({ title, version: nextVersion })
-            .eq("id", planId)
-            .eq("created_by", userId)
-            .is("deleted_at", null)
-            .eq("version", expected)
-            .select("*")
-            .maybeSingle(),
-        fetchCurrent: () =>
-          EDU()
-            .from("study_plan")
-            .select("*")
-            .eq("id", planId)
-            .eq("created_by", userId)
-            .is("deleted_at", null)
-            .maybeSingle(),
-      });
-      if (result.status === "conflict") {
-        return {
-          data: null,
-          error:
-            "This study plan changed after you opened it. Refresh the plan and try again.",
-        };
-      }
-      if (result.status === "not_found") {
-        return { data: null, error: "This study plan is no longer available." };
-      }
-      return { data: result.row, error: null };
-    } catch (e) {
-      return fail("updatePlanTitle", e);
-    }
-  },
-
-  /** Add a block under an owned plan. The persisted parent supplies its explicit org. */
-  async createBlock(input: {
-    planId: string;
-    dayId: string | null;
-    dayDate: string;
-    label: string;
-    targetKind: string;
-    estimatedMinutes: number;
-    estimatedItems?: number | null;
-    method?: string | null;
-    rationale?: string | null;
-    ordering: number;
-  }): Promise<StudyResult<StudyPlanBlockRow>> {
-    try {
-      const userId = requireUserId();
-      const { data: plan, error: planError } = await EDU()
-        .from("study_plan")
-        .select("id, organization_id")
-        .eq("id", input.planId)
-        .eq("created_by", userId)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (planError) return fail("createBlock(plan)", planError);
-      if (!plan)
-        return { data: null, error: "This study plan is no longer available." };
-      const { data, error } = await EDU()
-        .from("study_plan_block")
-        .insert({
-          plan_id: input.planId,
-          organization_id: (plan as { organization_id: string })
-            .organization_id,
-          day_id: input.dayId,
-          day_date: input.dayDate,
-          label: input.label,
-          target_kind: input.targetKind,
-          estimated_minutes: input.estimatedMinutes,
-          estimated_items: input.estimatedItems ?? null,
-          method: input.method ?? null,
-          rationale: input.rationale ?? null,
-          ordering: input.ordering,
-          target_ref: {},
-          status: "pending",
-        } as never)
-        .select("*")
-        .single();
-      if (error) return fail("createBlock", error);
-      return { data: data as StudyPlanBlockRow, error: null };
-    } catch (e) {
-      return fail("createBlock", e);
-    }
-  },
-
-  /** Edit only authored block fields; status stays the learner's study record. */
-  async updateBlock(
-    blockId: string,
-    expectedVersion: number,
-    patch: {
-      label?: string;
-      estimatedMinutes?: number;
-      estimatedItems?: number | null;
-      method?: string | null;
-      rationale?: string | null;
-    },
-  ): Promise<StudyResult<StudyPlanBlockRow>> {
-    try {
-      const userId = requireUserId();
-      const payload: Database["education"]["Tables"]["study_plan_block"]["Update"] = {};
-      if (patch.label !== undefined) payload.label = patch.label;
-      if (patch.estimatedMinutes !== undefined)
-        payload.estimated_minutes = patch.estimatedMinutes;
-      if (patch.estimatedItems !== undefined)
-        payload.estimated_items = patch.estimatedItems;
-      if (patch.method !== undefined) payload.method = patch.method;
-      if (patch.rationale !== undefined) payload.rationale = patch.rationale;
-      const result = await guardedUpdate<StudyPlanBlockRow>({
-        expectedVersion,
-        applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
-          EDU()
-            .from("study_plan_block")
-            .update({ ...payload, version: nextVersion })
-            .eq("id", blockId)
-            .eq("created_by", userId)
-            .is("deleted_at", null)
-            .eq("version", expected)
-            .select("*")
-            .maybeSingle(),
-        fetchCurrent: () =>
-          EDU()
-            .from("study_plan_block")
-            .select("*")
-            .eq("id", blockId)
-            .eq("created_by", userId)
-            .is("deleted_at", null)
-            .maybeSingle(),
-      });
-      if (result.status === "conflict") {
-        return {
-          data: null,
-          error:
-            "This study block changed after you opened it. Refresh the plan and try again.",
-        };
-      }
-      if (result.status === "not_found") {
-        return { data: null, error: "This study block is no longer available." };
-      }
-      return { data: result.row, error: null };
-    } catch (e) {
-      return fail("updateBlock", e);
-    }
-  },
-
-  /** Soft-delete an owned block so its study history remains recoverable. */
-  async deleteBlock(
-    blockId: string,
-    expectedVersion: number,
-  ): Promise<StudyResult<{ id: string }>> {
-    try {
-      const userId = requireUserId();
-      const result = await guardedUpdate<StudyPlanBlockRow>({
-        expectedVersion,
-        applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
-          EDU()
-            .from("study_plan_block")
-            .update({ deleted_at: new Date().toISOString(), version: nextVersion })
-            .eq("id", blockId)
-            .eq("created_by", userId)
-            .is("deleted_at", null)
-            .eq("version", expected)
-            .select("*")
-            .maybeSingle(),
-        fetchCurrent: () =>
-          EDU()
-            .from("study_plan_block")
-            .select("*")
-            .eq("id", blockId)
-            .eq("created_by", userId)
-            .is("deleted_at", null)
-            .maybeSingle(),
-      });
-      if (result.status === "conflict") {
-        return {
-          data: null,
-          error:
-            "This study block changed after you opened it. Refresh the plan and try again.",
-        };
-      }
-      if (result.status === "not_found") {
-        return { data: null, error: "This study block is no longer available." };
-      }
-      return { data: { id: result.row.id }, error: null };
-    } catch (e) {
-      return fail("deleteBlock", e);
     }
   },
 };

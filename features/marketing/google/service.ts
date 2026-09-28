@@ -647,12 +647,19 @@ export async function connectGoogle(
   };
 }
 
-export async function disconnectGoogle(connectionId: string): Promise<void> {
-  await postGoogleBackend(
+export async function disconnectGoogle(connectionId: string): Promise<{ googleAuthorizationRemainsActive: boolean }> {
+  const response = await postGoogleBackend(
     "/api/google-integrations/disconnect",
     { connection_id: connectionId },
     "Unable to disconnect Google.",
   );
+  const body: unknown = await response.json();
+  if (!body || typeof body !== "object" || typeof (body as Record<string, unknown>).google_authorization_remains_active !== "boolean") {
+    throw new Error("Google disconnected, but its authorization status could not be confirmed. Refresh your connections.");
+  }
+  return {
+    googleAuthorizationRemainsActive: (body as { google_authorization_remains_active: boolean }).google_authorization_remains_active,
+  };
 }
 
 /** A fresh bounded Gmail read; queries and messages stay out of local storage. */

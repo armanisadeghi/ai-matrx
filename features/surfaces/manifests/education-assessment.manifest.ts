@@ -281,17 +281,6 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "record",
   },
   {
-    name: "assessment_version",
-    label: "Assessment version",
-    description:
-      "The revision number of the open assessment. Agent changes include it so an approval prepared against an older assessment is refused.",
-    valueType: "number",
-    alwaysAvailable: false,
-    typicalCharCount: 2,
-    sortOrder: 735,
-    group: "record",
-  },
-  {
     name: "assessment_topic",
     label: "Assessment topic",
     description:
@@ -306,7 +295,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "assessment_exam_type",
     label: "Assessment exam type",
     description:
-      'The exam the open assessment targets (e.g. "AP Biology"). Absent when the row has none, and on the list/create views.',
+      "The exam the open assessment targets (e.g. \"AP Biology\"). Absent when the row has none, and on the list/create views.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 15,
@@ -350,7 +339,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "items",
     label: "Questions",
     description:
-      "The open assessment's questions as { id, version, question_type, prompt, options, correct_answer, depth, points }. In the editor, version is required for an update or deletion so an agent cannot overwrite a newer question. Absent on the list/create views. Includes answer keys and can be large — bindable-only so it never silently reaches an agent mid-take.",
+      "The open assessment's questions as { id, question_type, prompt, options, correct_answer, depth, points }. Absent on the list/create views. Includes answer keys and can be large — bindable-only so it never silently reaches an agent mid-take.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 8000,
@@ -456,7 +445,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "generation_topic",
     label: "Draft topic",
     description:
-      'Stages the topic the assessment will be generated from into the create form, replacing whatever is there. Plain string, 1-500 characters — the subject itself (e.g. "Cellular respiration"), not an instruction. Because the topic only feeds ungrounded topic-mode generation, applying this also switches the Source selector to Topic; a deck/document already picked stays selected and returns if the user switches back. The user still presses Generate.',
+      "Stages the topic the assessment will be generated from into the create form, replacing whatever is there. Plain string, 1-500 characters — the subject itself (e.g. \"Cellular respiration\"), not an instruction. Because the topic only feeds ungrounded topic-mode generation, applying this also switches the Source selector to Topic; a deck/document already picked stays selected and returns if the user switches back. The user still presses Generate.",
     valueType: "string",
     updatesValue: "topic",
     mode: "draft",
@@ -537,61 +526,13 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "generation_time_limit_minutes",
     label: "Draft time limit",
     description:
-      'Stages the time limit, in whole minutes, into the create form. Timed kinds only — accepted when assessment_kind is "practice_test" and rejected for a quiz, which has no time-limit control on screen. Integer 0-600; 0 means untimed. The user still presses Generate.',
+      "Stages the time limit, in whole minutes, into the create form. Timed kinds only — accepted when assessment_kind is \"practice_test\" and rejected for a quiz, which has no time-limit control on screen. Integer 0-600; 0 means untimed. The user still presses Generate.",
     valueType: "number",
     updatesValue: "time_limit_minutes",
     mode: "draft",
     applyPolicy: "ask",
     group: "generation",
     sortOrder: 170,
-  },
-  {
-    name: "update_assessment",
-    label: "Update assessment title",
-    description:
-      "Changes the open assessment's title and saves immediately through the same editor service. Value is { expected_version: positive integer from assessment_version, title: non-empty string }. A newer revision is refused rather than overwritten.",
-    valueType: "object",
-    updatesValue: "assessment_title",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "record",
-    sortOrder: 180,
-  },
-  {
-    name: "add_assessment_items",
-    label: "Add questions",
-    description:
-      "Adds questions to the open assessment and saves immediately. Value is a JSON ARRAY of { expected_assessment_version: positive integer from assessment_version, question_type: multiple_choice | true_false | fill_blank | short_answer | written_response, prompt: non-empty string, options?: string[] | null, correct_answer?: string | null, acceptable_answers?: string[] | null, explanation?: string | null, rubric?: string | null, depth?: recall | applied | exam | null, points?: positive number, topic?: string | null }. Each entry must name the loaded assessment version. Before saving, the editor re-reads the assessment and its questions; if the parent revision or any loaded question id/version changed, the addition is refused and the learner reloads.",
-    valueType: "array",
-    updatesValue: "items",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "record",
-    sortOrder: 190,
-  },
-  {
-    name: "update_assessment_items",
-    label: "Update questions",
-    description:
-      "Updates loaded questions and saves immediately. Value is a JSON ARRAY of { id: string from items, expected_version: positive integer from that question's version, question_type?, prompt?, options?: string[] | null, correct_answer?: string | null, acceptable_answers?: string[] | null, explanation?: string | null, rubric?: string | null, depth?: recall | applied | exam | null, points?: positive number, topic?: string | null }. Only supplied fields change. A stale, missing, repeated, or empty update is refused before approval; the service compares the version again when applying.",
-    valueType: "array",
-    updatesValue: "items",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "record",
-    sortOrder: 200,
-  },
-  {
-    name: "delete_assessment_items",
-    label: "Delete questions",
-    description:
-      "Soft-deletes loaded questions. Value is a JSON ARRAY of { id: string from items, expected_version: positive integer from that question's version }. The question no longer appears in this assessment and future takers do not receive it; existing result history remains. A stale, missing, or repeated id is refused before approval, and the service compares the version again when applying.",
-    valueType: "array",
-    updatesValue: "items",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "record",
-    sortOrder: 210,
   },
 ];
 
@@ -607,23 +548,18 @@ export const educationAssessmentManifest: SurfaceManifest = {
   label: "Assessments",
   urlPattern: "/education/quizzes/[id]",
   intro: `<surface_intro>
-You are on the Assessments surface — ONE quiz or practice test (create, detail, take, edit), under /education/quizzes/* or /education/practice-tests/*. Quizzes and practice tests share every component; assessment_kind tells you which family the learner is in, and practice tests are the timed, longer variant.
+You are on the Assessments surface — ONE quiz or practice test (create, detail, take), under /education/quizzes/* or /education/practice-tests/*. Quizzes and practice tests share every component; assessment_kind tells you which family the learner is in, and practice tests are the timed, longer variant.
 Read assessment_kind and view first — view decides which groups are populated. In "create" they are composing a generation: the Generation config group is the exact request they are about to send (source_mode says whether it is an ungrounded topic run or grounded in a deck/document — grounded runs cite their source). In "detail" one assessment is open: the Open assessment group describes it and the Attempts group carries their history.
 When is_taking is true the learner is mid-attempt: never reveal correct answers, hints toward the key, or the contents of items — help with process, pacing, and understanding only. The questions list (items) includes answer keys and is deliberately bindable-only for that reason.
-On the edit route, update_assessment changes the title; add_assessment_items, update_assessment_items, and delete_assessment_items use the same service as the editor. Every saved change asks the learner first and requires the loaded version.
 </surface_intro>`,
   groups,
-  values: mergeBaselineValues(
-    pickBaseline("selection", "context"),
-    surfaceSpecific,
-  ),
+  values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
   writeTargets,
 };
 
 /** One entry in `items` (answer keys included — bindable-only). */
 export interface AssessmentItemSummary {
   id: string;
-  version: number;
   question_type: string;
   prompt: string;
   options: string[] | null;
@@ -657,7 +593,7 @@ export interface AssessmentSourceSummary {
 export function createEducationAssessmentScope(values: {
   // alwaysAvailable: true → required
   assessment_kind: string;
-  view: "create" | "detail" | "take" | "edit";
+  view: "create" | "detail" | "take";
   // alwaysAvailable: false → optional
   selection?: string;
   context?: Record<string, unknown>;
@@ -679,7 +615,6 @@ export function createEducationAssessmentScope(values: {
   assessment_title?: string;
   assessment_description?: string;
   assessment_status?: string;
-  assessment_version?: number;
   assessment_topic?: string;
   assessment_exam_type?: string;
   assessment_depth?: string;

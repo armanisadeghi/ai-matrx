@@ -179,11 +179,7 @@ function useToastHold() {
     const onEnter = (e: Event) => {
       const related = (e as PointerEvent | FocusEvent).relatedTarget
       if (inToaster(e.target)) {
-        // Focus holds only when it is KEYBOARD focus (a click also focuses).
-        const keyboardFocus =
-          e.type !== "focusin" ||
-          (e.target instanceof Element && e.target.matches(":focus-visible"))
-        if (!inToaster(related) && keyboardFocus) holdTrackedToasts()
+        if (!inToaster(related)) holdTrackedToasts()
         return
       }
       // A toast closed under the pointer is removed without a pointerout, so

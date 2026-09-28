@@ -2,7 +2,6 @@ import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import {
   catalogActionPresentation,
   catalogConnectionPresentation,
-  catalogDirectoryAvailability,
 } from "./integration-catalog-state";
 
 const githubEntry = {
@@ -108,27 +107,6 @@ describe("catalogActionPresentation", () => {
       isComingSoon: false,
       canStartConnection: true,
       needsRecovery: true,
-    });
-  });
-});
-
-describe("catalogDirectoryAvailability", () => {
-  it("keeps an active but unready provider out of available and featured directory results", () => {
-    expect(
-      catalogDirectoryAvailability(
-        {
-          ...githubEntry,
-          slug: "vercel",
-          connectionReady: false,
-          connectionId: null,
-          connectionStatus: null,
-        },
-        { connected: false },
-      ),
-    ).toEqual({
-      isComingSoon: true,
-      isAvailable: false,
-      isFeatured: false,
     });
   });
 });

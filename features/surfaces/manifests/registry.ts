@@ -130,13 +130,10 @@ import { organizationsManifest } from "./organizations.manifest";
 import { organizationPerformanceReviewsManifest } from "./organization-performance-reviews.manifest";
 import { dashboardManifest } from "./dashboard.manifest";
 import { educationManifest } from "./education.manifest";
-import { educationFamilyManifest } from "./education-family.manifest";
-import { educationNotesManifest } from "./education-notes.manifest";
 import { educationStudyGuidesManifest } from "./education-study-guides.manifest";
 import { educationStudyGuideManifest } from "./education-study-guide.manifest";
 import { messageTemplateManifest } from "./message-template.manifest";
 import { educationTutorManifest } from "./education-tutor.manifest";
-import { educationTutorHistoryManifest } from "./education-tutor-history.manifest";
 import { educationFlashcardsManifest } from "./education-flashcards.manifest";
 import { educationFlashcardSetManifest } from "./education-flashcard-set.manifest";
 import { educationFlashcardEditorManifest } from "./education-flashcard-editor.manifest";
@@ -156,13 +153,11 @@ import { educationSummariesManifest } from "./education-summaries.manifest";
 import { educationMemoryManifest } from "./education-memory.manifest";
 import { educationPracticeOralManifest } from "./education-practice-oral.manifest";
 import { educationLearnAuthoringManifest } from "./education-learn-authoring.manifest";
-import { educationQuickMathAuthoringManifest } from "./education-quick-math-authoring.manifest";
 import { educationAudioStudyManifest } from "./education-audio-study.manifest";
 import { educationGameManifest } from "./education-game.manifest";
 import { educationGameSoloManifest } from "./education-game-solo.manifest";
 import { educationLearnManifest } from "./education-learn.manifest";
 import { educationProgressManifest } from "./education-progress.manifest";
-import { educationCreatorManifest } from "./education-creator.manifest";
 import { educationSessionsManifest } from "./education-sessions.manifest";
 import { educationLibraryManifest } from "./education-library.manifest";
 import { educationLibraryCommunityManifest } from "./education-library-community.manifest";
@@ -396,13 +391,10 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   organizationPerformanceReviewsManifest,
   dashboardManifest,
   educationManifest,
-  educationFamilyManifest,
-  educationNotesManifest,
   educationStudyGuidesManifest,
   educationStudyGuideManifest,
   messageTemplateManifest,
   educationTutorManifest,
-  educationTutorHistoryManifest,
   educationFlashcardsManifest,
   educationFlashcardSetManifest,
   educationFlashcardEditorManifest,
@@ -422,13 +414,11 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationMemoryManifest,
   educationPracticeOralManifest,
   educationLearnAuthoringManifest,
-  educationQuickMathAuthoringManifest,
   educationAudioStudyManifest,
   educationGameManifest,
   educationGameSoloManifest,
   educationLearnManifest,
   educationProgressManifest,
-  educationCreatorManifest,
   educationSessionsManifest,
   educationLibraryManifest,
   educationLibraryCommunityManifest,
@@ -685,5 +675,6 @@ export function getSurfaceValue(surfaceName: string, valueName: string) {
 // The runtime's loaded-value check (ALC-14) reads declarations through this
 // lookup, so the runtime never imports the registry (no import cycle).
 registerLoadedValueDeclarations(
-  (surfaceName) => getManifest(surfaceName) as unknown as ReturnType<LoadedValueDeclarationLookup>,
+  (surfaceName) =>
+    getManifest(surfaceName) as unknown as ReturnType<LoadedValueDeclarationLookup>,
 );

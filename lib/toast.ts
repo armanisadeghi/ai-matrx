@@ -245,18 +245,11 @@ export function toasterIsHeld(): boolean {
   if (heldByPointer) return true;
   if (typeof document === "undefined") return false;
   try {
-    // Sonner draws one stack per screen position — every one of them counts.
-    for (const toaster of document.querySelectorAll("[data-sonner-toaster]")) {
-      if (toaster.matches(":hover") || toaster.querySelector(":hover")) return true;
-      // KEYBOARD focus only: a mouse click leaves focus on the clicked button
-      // (and a closing menu hands it back to its trigger), which would hold
-      // every toast until the person clicked somewhere else.
-      if (toaster.querySelector(":focus-visible")) return true;
-      // A menu opened from a toast (a popup trigger reporting itself open) —
-      // never a mere collapsible, which is content, not a hold.
-      if (toaster.querySelector('[aria-haspopup]:not([aria-haspopup="false"])[aria-expanded="true"]')) return true;
-    }
-    return false;
+    const toaster = document.querySelector("[data-sonner-toaster]");
+    if (!toaster) return false;
+    if (toaster.matches(":hover") || toaster.querySelector(":hover")) return true;
+    if (document.activeElement && toaster.contains(document.activeElement)) return true;
+    return !!toaster.querySelector('[aria-expanded="true"], [data-state="open"]');
   } catch {
     return false;
   }
@@ -487,10 +480,6 @@ function track(
   };
 
   toastId = emit(message, passthrough);
-  // Re-raised under the same id: the old entry's timer must not later dismiss
-  // (or keep re-arming for) the refreshed toast.
-  const previous = liveToasts.get(toastId);
-  if (previous?.timer) clearTimeout(previous.timer);
 
   const entry: LiveToast = {
     toastId,

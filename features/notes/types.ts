@@ -7,8 +7,7 @@ export type NoteRow = Database["workbench"]["Tables"]["notes"]["Row"];
 export type NoteInsert = Database["workbench"]["Tables"]["notes"]["Insert"];
 export type NoteUpdate = Database["workbench"]["Tables"]["notes"]["Update"];
 
-export type NoteFolderRow =
-  Database["workbench"]["Tables"]["note_folders"]["Row"];
+export type NoteFolderRow = Database["workbench"]["Tables"]["note_folders"]["Row"];
 // note_versions retired -> history.row_versions (use the get_note_versions RPCs).
 // note_shares retired -> canonical permissions table. Neither has a public type row anymore.
 
@@ -17,107 +16,104 @@ export type NoteFolderRow =
 // physical FK on workbench.notes. These two fields are a read projection that
 // keeps the note UI ergonomic while the generated NoteRow remains DB truth.
 export interface NoteContextLinks {
-  project_id: string | null;
-  task_id: string | null;
+    project_id: string | null;
+    task_id: string | null;
 }
 
 // `content_preview` is a database-maintained projection of `content` (a stored
 // generated column, audit N-24): the server writes it, a client never does, and
 // a full row read carries it while a locally minted record does not — so it is
 // optional on the app-side shape.
-export type Note = Omit<NoteRow, "content_preview"> & {
-  content_preview?: string | null;
-} & NoteContextLinks;
+export type Note = Omit<NoteRow, "content_preview"> &
+  { content_preview?: string | null } &
+  NoteContextLinks;
 
 // ── Narrowed shapes for JSON columns ────────────────────────────────────────
 // `metadata` is a Json column — the generated type is `unknown`. Consumers use
 // this helper to read it as a structured object.
 export interface NoteMetadata {
-  lastEditorMode?: string;
-  [key: string]: unknown;
+    lastEditorMode?: string;
+    [key: string]: unknown;
 }
 
 export function getNoteMetadata(
-  note: Pick<Note, "metadata"> | null | undefined,
+    note: Pick<Note, "metadata"> | null | undefined,
 ): NoteMetadata {
-  const raw = note?.metadata;
-  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-    return raw as NoteMetadata;
-  }
-  return {};
+    const raw = note?.metadata;
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+        return raw as NoteMetadata;
+    }
+    return {};
 }
 
 // ── Sidebar list projection (subset returned by fetchNotesList) ─────────────
 // Only fields selected in the list query — keep in sync with thunks.ts.
 export type NoteListItem = Pick<
-  NoteRow,
-  | "id"
-  | "created_by"
-  | "label"
-  | "folder_name"
-  | "folder_id"
-  | "tags"
-  | "updated_at"
-  | "position"
-  | "organization_id"
-  | "visibility"
-  | "version"
-> &
-  NoteContextLinks;
+    NoteRow,
+    | "id"
+    | "created_by"
+    | "label"
+    | "folder_name"
+    | "folder_id"
+    | "tags"
+    | "updated_at"
+    | "position"
+    | "organization_id"
+    | "visibility"
+    | "version"
+> & NoteContextLinks;
 
 // ── Group-by modes for the sidebar ──────────────────────────────────────────
-export type NoteGroupBy =
-  "folder" | "organization" | "project" | "task" | "scope";
+export type NoteGroupBy = "folder" | "organization" | "project" | "task" | "scope";
 
 // ── View modes for the editor ────────────────────────────────────────────────
-export type NoteViewMode =
-  "edit" | "split" | "rich" | "md" | "preview" | "diff";
+export type NoteViewMode = "edit" | "split" | "rich" | "md" | "preview" | "diff";
 
 export const NOTE_VIEW_MODES: readonly NoteViewMode[] = [
-  "edit",
-  "split",
-  "rich",
-  "md",
-  "preview",
-  "diff",
+    "edit",
+    "split",
+    "rich",
+    "md",
+    "preview",
+    "diff",
 ];
 
 // ── Input types ─────────────────────────────────────────────────────────────
 // Derived from the DB Insert/Update shapes so new columns flow automatically
 // and removed columns break callers.
 export type CreateNoteInput = Pick<
-  NoteInsert,
-  | "label"
-  | "content"
-  | "folder_name"
-  | "folder_id"
-  | "tags"
-  | "metadata"
-  | "custom_fields"
-  | "position"
-  | "visibility"
+    NoteInsert,
+    | "label"
+    | "content"
+    | "folder_name"
+    | "folder_id"
+    | "tags"
+    | "metadata"
+    | "custom_fields"
+    | "position"
+    | "visibility"
 > & {
-  /** Captured at the initiating edge. The note writer never resolves it. */
-  organization_id: string;
+    /** Captured at the initiating edge. The note writer never resolves it. */
+    organization_id: string;
 } & Partial<NoteContextLinks>;
 
 /** Immutable identity for a folder operation; its name is display data only. */
 export interface FolderReference {
-  id: string;
-  organizationId: string;
-  name: string;
+    id: string;
+    organizationId: string;
+    name: string;
 }
 
 /** A persisted folder can be moved to by its stable organization-qualified ID. */
 export function noteFolderReference(
-  note: Pick<Note, "organization_id" | "folder_id" | "folder_name">,
+    note: Pick<Note, "organization_id" | "folder_id" | "folder_name">,
 ): FolderReference | null {
-  if (!note.folder_id || !note.organization_id) return null;
-  return {
-    id: note.folder_id,
-    organizationId: note.organization_id,
-    name: note.folder_name ?? "Uncategorized",
-  };
+    if (!note.folder_id || !note.organization_id) return null;
+    return {
+        id: note.folder_id,
+        organizationId: note.organization_id,
+        name: note.folder_name ?? "Uncategorized",
+    };
 }
 
 /**
@@ -127,31 +123,23 @@ export function noteFolderReference(
  * never a refusal telling the person to choose the folder she just chose.
  */
 export function newNoteFolderDestination(
-  target:
-    Pick<Note, "organization_id" | "folder_id" | "folder_name"> | undefined,
-  folder: string,
-  organizationId: string,
+    target: Pick<Note, "organization_id" | "folder_id" | "folder_name"> | undefined,
+    folder: string,
+    organizationId: string,
 ):
-  | { kind: "existing"; folder: FolderReference }
-  | { kind: "create"; name: string; organizationId: string }
-  | { kind: "unfiled"; organizationId: string } {
-  const reference = target ? noteFolderReference(target) : null;
-  if (reference) return { kind: "existing", folder: reference };
-  if (target && target.folder_name === null)
-    return { kind: "unfiled", organizationId };
-  return {
-    kind: "create",
-    name: target?.folder_name ?? folder,
-    organizationId,
-  };
+    | { kind: "existing"; folder: FolderReference }
+    | { kind: "create"; name: string; organizationId: string }
+    | { kind: "unfiled"; organizationId: string } {
+    const reference = target ? noteFolderReference(target) : null;
+    if (reference) return { kind: "existing", folder: reference };
+    if (target && target.folder_name === null) return { kind: "unfiled", organizationId };
+    return { kind: "create", name: target?.folder_name ?? folder, organizationId };
 }
 
-export function noteFolderIdentityKey(
-  note: Pick<Note, "organization_id" | "folder_id" | "folder_name">,
-): string {
-  return note.folder_id
-    ? `folder:${note.organization_id ?? "unassigned"}:${note.folder_id}`
-    : `pending:${note.organization_id ?? "unassigned"}:${note.folder_name ?? "Uncategorized"}`;
+export function noteFolderIdentityKey(note: Pick<Note, "organization_id" | "folder_id" | "folder_name">): string {
+    return note.folder_id
+        ? `folder:${note.organization_id ?? "unassigned"}:${note.folder_id}`
+        : `pending:${note.organization_id ?? "unassigned"}:${note.folder_name ?? "Uncategorized"}`;
 }
 
 export type NoteContentUpdate = Pick<
@@ -163,8 +151,7 @@ export type NoteContentUpdate = Pick<
   | "custom_fields"
   | "position"
   | "visibility"
-> &
-  Partial<NoteContextLinks>;
+> & Partial<NoteContextLinks>;
 
 /**
  * A persisted folder relationship is always changed by its admitted ID. The
@@ -214,29 +201,22 @@ export interface UpdateNoteOptions {
   expectedSnapshotId?: string;
 }
 
-/** Identity captured by an agent or editor before moving a note to Trash. */
-export interface DeleteNoteOptions {
-  expectedVersion?: number;
-  expectedOrganizationId?: string;
-  expectedActorId?: string;
-}
-
 export interface FolderGroup {
-  folder_name: string;
-  notes: Note[];
-  count: number;
+    folder_name: string;
+    notes: Note[];
+    count: number;
 }
 
 export interface NoteFilters {
-  search?: string;
-  tags?: string[];
-  folder_name?: string;
+    search?: string;
+    tags?: string[];
+    folder_name?: string;
 }
 
-export type NoteSortField = "label" | "created_at" | "updated_at";
-export type NoteSortOrder = "asc" | "desc";
+export type NoteSortField = 'label' | 'created_at' | 'updated_at';
+export type NoteSortOrder = 'asc' | 'desc';
 
 export interface NoteSortConfig {
-  field: NoteSortField;
-  order: NoteSortOrder;
+    field: NoteSortField;
+    order: NoteSortOrder;
 }

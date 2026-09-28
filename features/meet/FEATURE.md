@@ -158,6 +158,7 @@ meeting). UI lives in [`components/record/`](./components/record/).
 | Saved chat after the meeting | `ChatLogPanel.tsx` |
 | Export: notes (copy / .md / Word / PDF via `@ai-matrx/print/document`), transcript (copy / .txt / .vtt / Word), attendance CSV | `RecordExportMenu.tsx` |
 | Recap email: server draft from the wrap-up, host edits + picks recipients, "Check delivery" = dry run, Send only on click | `RecapDialog.tsx` |
+| "Share with everyone in the meeting" — host / co-host only, in the record bar beside Email recap; `?share=1` (the meeting-end offer notice) opens it. The group-sharing primitive (access ladder T-32) lives in `features/sharing/audience/` | `MeetingRecordWorkspace.tsx` → `ShareWithAudienceButton` |
 | `/meetings?tab=recordings` — library (state, play in place, download, Share… on the file, rename, archive/restore via `ArchiveFilter`) | `RecordingsLibrary.tsx` |
 | `/meetings` search also searches inside meetings (agenda, summary, decisions, action items, transcript) → hit opens the line | `MeetingContentSearch.tsx` |
 
@@ -262,6 +263,8 @@ reader of an older tag will otherwise conclude the package is broken.
    "captions, live notes, Q&A and the wrap-up without a page reload".
 
 ## Change log
+
+- 2026-09-28 — Access ladder T-32: "Share with everyone in the meeting" in the record bar (recording + transcript + notes to every invitee and attendee as person shares; knob `meet.share_with_attendees_after_meeting`, default offer). See `features/sharing/FEATURE.md`.
 
 - 2026-09-27 — Meet wave 4: calendar events in Upcoming, Find a time, Draft agenda, Prepare (brief), templates, after-meeting workflows + CRM log readback. See § Before and after the meeting.
 

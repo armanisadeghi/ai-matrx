@@ -11,15 +11,11 @@
 // React Compiler is on: no manual memo.
 
 import { useRouter } from "next/navigation";
-import { createElement } from "react";
 import {
   Check,
   ChevronRight,
   Coffee,
-  Pencil,
-  Plus,
   SkipForward,
-  Trash2,
   Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,18 +29,8 @@ import type {
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
 function parseLocalDate(iso: string): Date {
@@ -63,20 +49,10 @@ export interface PlanAgendaProps {
     blockId: string,
     status: "pending" | "done" | "skipped",
   ) => void;
-  onAddBlock: (day: StudyPlanDayRow, ordering: number) => void;
-  onEditBlock: (block: StudyPlanBlockRow) => void;
-  onDeleteBlock: (block: StudyPlanBlockRow) => void;
   busyBlockId?: string | null;
 }
 
-export function PlanAgenda({
-  plan,
-  onBlockStatus,
-  onAddBlock,
-  onEditBlock,
-  onDeleteBlock,
-  busyBlockId,
-}: PlanAgendaProps) {
+export function PlanAgenda({ plan, onBlockStatus, busyBlockId }: PlanAgendaProps) {
   const today = todayIso();
   const dailyMinutes = plan.plan.daily_minutes ?? 30;
 
@@ -91,9 +67,6 @@ export function PlanAgenda({
           isPast={day.day_date < today}
           dailyMinutes={dailyMinutes}
           onBlockStatus={onBlockStatus}
-          onAddBlock={onAddBlock}
-          onEditBlock={onEditBlock}
-          onDeleteBlock={onDeleteBlock}
           busyBlockId={busyBlockId}
         />
       ))}
@@ -108,9 +81,6 @@ function DayCard({
   isPast,
   dailyMinutes,
   onBlockStatus,
-  onAddBlock,
-  onEditBlock,
-  onDeleteBlock,
   busyBlockId,
 }: {
   day: StudyPlanDayRow;
@@ -119,9 +89,6 @@ function DayCard({
   isPast: boolean;
   dailyMinutes: number;
   onBlockStatus: PlanAgendaProps["onBlockStatus"];
-  onAddBlock: PlanAgendaProps["onAddBlock"];
-  onEditBlock: PlanAgendaProps["onEditBlock"];
-  onDeleteBlock: PlanAgendaProps["onDeleteBlock"];
   busyBlockId?: string | null;
 }) {
   const date = parseLocalDate(day.day_date);
@@ -134,7 +101,9 @@ function DayCard({
     <section
       className={cn(
         "rounded-xl border bg-card p-4 transition-colors",
-        isToday ? "border-primary/60 ring-1 ring-primary/30" : "border-border",
+        isToday
+          ? "border-primary/60 ring-1 ring-primary/30"
+          : "border-border",
         isPast && !isToday && "opacity-70",
       )}
     >
@@ -185,10 +154,7 @@ function DayCard({
           </div>
         </div>
         {!day.is_rest_day && (
-          <div
-            className="hidden w-24 shrink-0 sm:block"
-            title={`${loadPct}% of your daily budget`}
-          >
+          <div className="hidden w-24 shrink-0 sm:block" title={`${loadPct}% of your daily budget`}>
             <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
                 className={cn(
@@ -209,21 +175,6 @@ function DayCard({
         )}
       </div>
 
-      {!day.is_rest_day && (
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">
-            Study blocks
-          </span>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 px-2 text-xs"
-            onClick={() => onAddBlock(day, blocks.length)}
-          >
-            <Plus className="h-3.5 w-3.5" /> Add block
-          </Button>
-        </div>
-      )}
       {!day.is_rest_day && blocks.length > 0 && (
         <ul className="mt-3 flex flex-col gap-2">
           {blocks.map((b) => (
@@ -232,8 +183,6 @@ function DayCard({
               block={b}
               busy={busyBlockId === b.id}
               onStatus={onBlockStatus}
-              onEdit={onEditBlock}
-              onDelete={onDeleteBlock}
             />
           ))}
         </ul>
@@ -246,17 +195,13 @@ function BlockRow({
   block,
   busy,
   onStatus,
-  onEdit,
-  onDelete,
 }: {
   block: StudyPlanBlockRow;
   busy: boolean;
   onStatus: PlanAgendaProps["onBlockStatus"];
-  onEdit: PlanAgendaProps["onEditBlock"];
-  onDelete: PlanAgendaProps["onDeleteBlock"];
 }) {
   const router = useRouter();
-  const icon = blockIcon(block.target_kind);
+  const Icon = blockIcon(block.target_kind);
   const href = blockHref(
     block.target_kind,
     (block.target_ref as { topic?: string; href?: string } | null) ?? null,
@@ -272,7 +217,7 @@ function BlockRow({
       )}
     >
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        {createElement(icon, { className: "h-4 w-4" })}
+        <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
@@ -291,13 +236,9 @@ function BlockRow({
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
           <span className="tabular-nums">{block.estimated_minutes} min</span>
           {block.estimated_items != null && (
-            <span className="tabular-nums">
-              · {block.estimated_items} items
-            </span>
+            <span className="tabular-nums">· {block.estimated_items} items</span>
           )}
-          {block.rationale && (
-            <span className="italic">· {block.rationale}</span>
-          )}
+          {block.rationale && <span className="italic">· {block.rationale}</span>}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1">
@@ -312,26 +253,6 @@ function BlockRow({
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         )}
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-muted-foreground"
-          disabled={busy}
-          title="Edit block"
-          onClick={() => onEdit(block)}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-destructive"
-          disabled={busy}
-          title="Remove block"
-          onClick={() => onDelete(block)}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
         {done || skipped ? (
           <Button
             size="icon"

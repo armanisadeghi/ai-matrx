@@ -46,7 +46,7 @@ export function googleRedirectOutcome(
   pending: GoogleOAuthRedirectPending,
   result: GoogleConnectionResult,
 ): { returnTo: string; status: "connected" | "partial"; message?: string } {
-  if (pending.connectionPurpose !== "google_products") {
+  if (pending.connectionPurpose !== "google_products" && pending.connectionPurpose !== "youtube_isolated") {
     return { returnTo: pending.returnTo, status: "connected" };
   }
   if (result.productOutcomeConfirmed && result.refusedCapabilityKeys.length === 0 &&

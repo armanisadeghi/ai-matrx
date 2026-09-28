@@ -73,7 +73,7 @@ export function AudioStudyDetail({ mediaId, edit = false }: { mediaId: string; e
   // The raw failure, never a sentence — the access gate decides what it means.
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const { isOwner, loading: accessLoading } = useAccess("study_media", mediaId);
+  const { isOwner } = useAccess("study_media", mediaId);
   // A persisted Redux identity can briefly precede Supabase's restored
   // browser session; firing getById before all three signals are ready sends
   // it as `anon`, which a private study_media row refuses with 42501 —
@@ -95,7 +95,7 @@ export function AudioStudyDetail({ mediaId, edit = false }: { mediaId: string; e
       audio_is_ready:
         media.status === "ready" &&
         Boolean(media.audio_file_id || media.episode_id),
-      audio_is_owner: accessLoading ? undefined : isOwner,
+      audio_is_owner: isOwner,
       audio_source_kind: media.source_kind ?? undefined,
       audio_source_title: media.source_title ?? undefined,
       audio_source_id: media.source_id ?? undefined,

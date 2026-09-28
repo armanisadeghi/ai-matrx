@@ -11,12 +11,8 @@
 
 "use client";
 
-import {
-  displayTitle,
-  withDisplayTitle,
-} from "@/components/markdown-core/plain-title";
+import { displayTitle, withDisplayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
-import { guardedUpdate } from "@ai-matrx/data/db";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -49,12 +45,7 @@ function describeError(error: unknown): string {
       code?: string;
     };
     return (
-      [
-        e.message,
-        e.details,
-        e.hint && `hint: ${e.hint}`,
-        e.code && `(${e.code})`,
-      ]
+      [e.message, e.details, e.hint && `hint: ${e.hint}`, e.code && `(${e.code})`]
         .filter(Boolean)
         .join(" — ") || "Unknown error"
     );
@@ -69,11 +60,7 @@ function fail<T>(context: string, error: unknown): AsResult<T> {
   // programmer, so the remedy sentence replaces it and the console noise is
   // dropped. Law: common-docs/policies/context-is-carried-never-rebuilt.md.
   if (isOrganizationRequiredError(error)) {
-    return {
-      data: null,
-      error:
-        "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu.",
-    };
+    return { data: null, error: "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu." };
   }
   console.error(`[assessmentService] ${context}:`, error);
   return { data: null, error: `${context}: ${describeError(error)}` };
@@ -99,9 +86,7 @@ export const assessmentService = {
           status: input.status ?? "draft",
           source_kind: input.sourceKind ?? null,
           source_id: input.sourceId ?? null,
-          source_title: input.sourceTitle
-            ? displayTitle(input.sourceTitle)
-            : null,
+          source_title: input.sourceTitle ? displayTitle(input.sourceTitle) : null,
           topic: input.topic ? displayTitle(input.topic) : null,
           exam_type: input.examType ?? null,
           depth: input.depth ?? null,
@@ -115,10 +100,7 @@ export const assessmentService = {
       if (error) return fail("createAssessment", error);
       // Provenance is single-valued → captured by source_kind/source_id columns
       // (the study_media precedent), not a polymorphic association edge.
-      return {
-        data: withDisplayTitle(data as AssessmentRow, "title"),
-        error: null,
-      };
+      return { data: withDisplayTitle(data as AssessmentRow, "title"), error: null };
     } catch (e) {
       return fail("createAssessment", e);
     }
@@ -130,10 +112,8 @@ export const assessmentService = {
   ): Promise<AsResult<AssessmentRow>> {
     try {
       const clean: AssessmentPatch = { ...patch };
-      if (typeof clean.title === "string")
-        clean.title = displayTitle(clean.title);
-      if (typeof clean.topic === "string")
-        clean.topic = displayTitle(clean.topic) || null;
+      if (typeof clean.title === "string") clean.title = displayTitle(clean.title);
+      if (typeof clean.topic === "string") clean.topic = displayTitle(clean.topic) || null;
       const { data, error } = await EDU()
         .from("assessment")
         .update(clean as never)
@@ -141,57 +121,9 @@ export const assessmentService = {
         .select("*")
         .single();
       if (error) return fail("updateAssessment", error);
-      return {
-        data: withDisplayTitle(data as AssessmentRow, "title"),
-        error: null,
-      };
+      return { data: withDisplayTitle(data as AssessmentRow, "title"), error: null };
     } catch (e) {
       return fail("updateAssessment", e);
-    }
-  },
-
-  /** Save an assessment only if it is still the revision the editor read. */
-  async updateAssessmentVersioned(
-    id: string,
-    expectedVersion: number,
-    patch: AssessmentPatch,
-  ): Promise<AsResult<AssessmentRow>> {
-    try {
-      const clean: AssessmentPatch = { ...patch };
-      if (typeof clean.title === "string")
-        clean.title = displayTitle(clean.title);
-      if (typeof clean.topic === "string")
-        clean.topic = displayTitle(clean.topic) || null;
-      const result = await guardedUpdate<AssessmentRow>({
-        expectedVersion,
-        applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
-          EDU()
-            .from("assessment")
-            .update({ ...clean, version: nextVersion } as never)
-            .eq("id", id)
-            .eq("version", expected)
-            .is("deleted_at", null)
-            .select("*")
-            .maybeSingle(),
-        fetchCurrent: () =>
-          EDU()
-            .from("assessment")
-            .select("*")
-            .eq("id", id)
-            .is("deleted_at", null)
-            .maybeSingle(),
-      });
-      if (result.status === "conflict")
-        return {
-          data: null,
-          error:
-            "This assessment changed after the agent prepared the update. Reload it and try again.",
-        };
-      if (result.status === "not_found")
-        return { data: null, error: "This assessment is no longer available." };
-      return { data: withDisplayTitle(result.row, "title"), error: null };
-    } catch (e) {
-      return fail("updateAssessmentVersioned", e);
     }
   },
 
@@ -208,10 +140,7 @@ export const assessmentService = {
         .select("*")
         .single();
       if (error) return fail("updateVisibility", error);
-      return {
-        data: withDisplayTitle(data as AssessmentRow, "title"),
-        error: null,
-      };
+      return { data: withDisplayTitle(data as AssessmentRow, "title"), error: null };
     } catch (e) {
       return fail("updateVisibility", e);
     }
@@ -241,10 +170,7 @@ export const assessmentService = {
         .is("deleted_at", null)
         .maybeSingle();
       if (error) return fail("getAssessment", error);
-      return {
-        data: data ? withDisplayTitle(data as AssessmentRow, "title") : null,
-        error: null,
-      };
+      return { data: data ? withDisplayTitle(data as AssessmentRow, "title") : null, error: null };
     } catch (e) {
       return fail("getAssessment", e);
     }
@@ -297,12 +223,7 @@ export const assessmentService = {
       if (filter.limit != null) q = q.limit(filter.limit);
       const { data, error } = await q;
       if (error) return fail("listAssessments", error);
-      return {
-        data: ((data ?? []) as AssessmentRow[]).map((r) =>
-          withDisplayTitle(r, "title"),
-        ),
-        error: null,
-      };
+      return { data: ((data ?? []) as AssessmentRow[]).map((r) => withDisplayTitle(r, "title")), error: null };
     } catch (e) {
       return fail("listAssessments", e);
     }
@@ -386,46 +307,6 @@ export const assessmentService = {
     }
   },
 
-  /** Save one question only if it is still the revision the editor read. */
-  async updateItemVersioned(
-    itemId: string,
-    expectedVersion: number,
-    patch: AssessmentItemPatch,
-  ): Promise<AsResult<AssessmentItemRow>> {
-    try {
-      const result = await guardedUpdate<AssessmentItemRow>({
-        expectedVersion,
-        applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
-          EDU()
-            .from("assessment_item")
-            .update({ ...patch, version: nextVersion } as never)
-            .eq("id", itemId)
-            .eq("version", expected)
-            .is("deleted_at", null)
-            .select("*")
-            .maybeSingle(),
-        fetchCurrent: () =>
-          EDU()
-            .from("assessment_item")
-            .select("*")
-            .eq("id", itemId)
-            .is("deleted_at", null)
-            .maybeSingle(),
-      });
-      if (result.status === "conflict")
-        return {
-          data: null,
-          error:
-            "This question changed after the agent prepared the update. Reload it and try again.",
-        };
-      if (result.status === "not_found")
-        return { data: null, error: "This question is no longer available." };
-      return { data: result.row, error: null };
-    } catch (e) {
-      return fail("updateItemVersioned", e);
-    }
-  },
-
   async deleteItem(itemId: string): Promise<AsResult<{ id: string }>> {
     try {
       const { data, error } = await EDU()
@@ -438,48 +319,6 @@ export const assessmentService = {
       return { data: { id: (data as { id: string }).id }, error: null };
     } catch (e) {
       return fail("deleteItem", e);
-    }
-  },
-
-  /** Soft-delete one question only if it is still the revision the editor read. */
-  async deleteItemVersioned(
-    itemId: string,
-    expectedVersion: number,
-  ): Promise<AsResult<{ id: string }>> {
-    try {
-      const result = await guardedUpdate<AssessmentItemRow>({
-        expectedVersion,
-        applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
-          EDU()
-            .from("assessment_item")
-            .update({
-              deleted_at: new Date().toISOString(),
-              version: nextVersion,
-            } as never)
-            .eq("id", itemId)
-            .eq("version", expected)
-            .is("deleted_at", null)
-            .select("*")
-            .maybeSingle(),
-        fetchCurrent: () =>
-          EDU()
-            .from("assessment_item")
-            .select("*")
-            .eq("id", itemId)
-            .is("deleted_at", null)
-            .maybeSingle(),
-      });
-      if (result.status === "conflict")
-        return {
-          data: null,
-          error:
-            "This question changed after the agent prepared the deletion. Reload it and try again.",
-        };
-      if (result.status === "not_found")
-        return { data: null, error: "This question is no longer available." };
-      return { data: { id: result.row.id }, error: null };
-    } catch (e) {
-      return fail("deleteItemVersioned", e);
     }
   },
 
@@ -521,8 +360,7 @@ export const assessmentService = {
         );
       const { assessment: a, items } = src.data;
       const created = await this.createAssessment({
-        assessmentKind:
-          a.assessment_kind as NewAssessmentInput["assessmentKind"],
+        assessmentKind: a.assessment_kind as NewAssessmentInput["assessmentKind"],
         title: `${a.title} (copy)`,
         description: a.description,
         status: "ready",
@@ -542,13 +380,11 @@ export const assessmentService = {
         await this.addItems(
           created.data.id,
           items.map((it) => ({
-            questionType:
-              it.question_type as NewAssessmentItemInput["questionType"],
+            questionType: it.question_type as NewAssessmentItemInput["questionType"],
             prompt: it.prompt,
             options: (it.options as string[] | null) ?? null,
             correctAnswer: it.correct_answer,
-            acceptableAnswers:
-              (it.acceptable_answers as string[] | null) ?? null,
+            acceptableAnswers: (it.acceptable_answers as string[] | null) ?? null,
             explanation: it.explanation,
             rubric: it.rubric,
             depth: it.depth as NewAssessmentItemInput["depth"],
@@ -634,10 +470,7 @@ export const assessmentService = {
         .is("deleted_at", null)
         .maybeSingle();
       if (error) return fail("getResult", error);
-      return {
-        data: (data ?? null) as AssessmentResultRow | null,
-        error: null,
-      };
+      return { data: (data ?? null) as AssessmentResultRow | null, error: null };
     } catch (e) {
       return fail("getResult", e);
     }
@@ -677,7 +510,9 @@ export const assessmentService = {
    * baseline/post results, newest-first — callers pair them by gain_group_id or
    * by (topic/source). Capped; a heavier trend query moves to an RPC later.
    */
-  async listGainResults(limit = 500): Promise<AsResult<AssessmentResultRow[]>> {
+  async listGainResults(
+    limit = 500,
+  ): Promise<AsResult<AssessmentResultRow[]>> {
     try {
       const { data, error } = await EDU()
         .from("assessment_result")

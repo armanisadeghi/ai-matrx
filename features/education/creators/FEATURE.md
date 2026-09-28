@@ -36,8 +36,7 @@ Migration: [`migrations/education_creator_profiles.sql`](../../../migrations/edu
 | `components/CreatorLandingPage.tsx` | The public `/c/[handle]` page (server): hero + videos + free tools + classes + funnel + Person/Course JSON-LD |
 | `components/YouTubeEmbed.tsx` | Responsive privacy-friendly (nocookie) 16:9 iframe (server) |
 | `components/EnrollButton.tsx` | Leaf client island — open/closed via `edu_class_join`, **paid via real Stripe Checkout** (`startClassCheckout`); webhook-only paid gate |
-| `components/CreatorDashboard.tsx` | The authed manage UI (claim → editor: identity, links, featured picker, publish) + the earnings panel; emits the Creator profile surface and its canonical write handlers |
-| `features/surfaces/manifests/education-creator.manifest.ts` | Partial `matrx-user/education-creator` contract: persisted profile scope plus approved claim, identity/links, and publish-state writes |
+| `components/CreatorDashboard.tsx` | The authed manage UI (claim → editor: identity, links, featured picker, publish) + the earnings panel |
 | `components/CreatorPayoutsPanel.tsx` | Creator earnings surface — Connect onboard/status + Stripe Express dashboard link (`/api/stripe/connect/*`) |
 | `app/(public)/c/[handle]/page.tsx` | Public route (metadata, canonical, robots:index, notFound) |
 | `app/(public)/c/[handle]/opengraph-image.tsx` | Per-creator OG (reuses `renderEduOgImage`) |
@@ -98,8 +97,6 @@ A featured class's **access mode + price are single-sourced LIVE from the class 
 - **Featured resource types** the picker offers today: `fc_set` + `learn_doc` (the creator's public free tools). `note`/`study_media` resolve if hand-added but aren't in the picker yet.
 
 ## Change log
-
-- **2026-09-28** — Added the partial `matrx-user/education-creator` surface to `/education/creator`. It emits the persisted creator profile and active workspace, and its approval-gated handlers call only `claimHandle`, `updateCreatorProfile`, and `setCreatorPublic`. Payouts, permissions, handle changes, featured content, and deletion remain outside agent write targets. No canonical profile-delete RPC exists; unpublishing via `creator_set_public(false)` is the safe available retirement action.
 
 - **2026-08-13** — Featured YouTube embeds and dashboard rows now render the
   shared compact publish date without changing embed dimensions; legacy items

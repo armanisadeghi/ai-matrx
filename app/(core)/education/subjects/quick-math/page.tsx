@@ -10,7 +10,6 @@ import { MarketingPageShell } from "@/features/shell/components/MarketingPageShe
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { getCurrentUserAdminStatus } from "@/utils/auth/adminUtils";
 
 export const metadata: Metadata = {
   title: "Quick Math Lessons — Interactive Algebra | AI Matrx Education",
@@ -42,10 +41,7 @@ function groupProblemsByModule(
 }
 
 export default async function QuickMathPage() {
-  const [problems, adminStatus] = await Promise.all([
-    getAllMathProblems(),
-    getCurrentUserAdminStatus(),
-  ]);
+  const problems = await getAllMathProblems();
   const groupedProblems = groupProblemsByModule(problems);
 
   return (
@@ -77,14 +73,6 @@ export default async function QuickMathPage() {
             Free, interactive lessons designed to help you understand and master
             algebraic concepts through detailed problem solving.
           </p>
-          {adminStatus?.level === "super_admin" ? (
-            <Link
-              href="/education/subjects/quick-math/admin"
-              className="mt-3 inline-block text-sm text-primary hover:underline"
-            >
-              Manage Quick Math problems
-            </Link>
-          ) : null}
         </div>
 
         <div className="grid grid-cols-3 gap-3 mb-6">

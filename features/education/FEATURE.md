@@ -90,6 +90,33 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- `2026-09-28` — page-pass wave 7, first-run experience (test@test.com, near-empty account):
+  `/education` home's tool-chip row showed a count on every tile ("0 Kits", "1 Flashcard
+  Studio", "0 Quizzes"…) except **Study Guides**, which showed no number at all —
+  `toolNavigation()` in `home/EducationHome.tsx` had no `libraryMetric` entry for the
+  `study-guides` slug, so `value` stayed `undefined` for that one tile. Root cause traced into
+  the DB: study guides and Smart Notes are the same underlying rows (`workbench.notes` in the
+  `Study Notes` folder, `education-notes.ts`) — `edu_library_scope_rows` gives them both
+  `subtype='notes'`, so there is no separate count to read. Fixed by keying the Study Guides
+  tile off the same `library.bySubtype.notes` count so it matches its siblings instead of
+  silently showing nothing (`home/EducationHome.tsx`). Flagging, not fixing: Study Guides and
+  Smart Notes appear as two separate tools on the hub but read the exact same list
+  (`listEducationNotes`) — that's a product-naming/duplication question for Arman, not a page
+  bug. Census: test@test.com owns 2 fc_set (1 live: "biology-cells", 4 cards; 1 soft-deleted
+  test fixture), 16 study_session rows, 34 fc_card + 2 assessment_item mastery rows (most from
+  class-assigned decks, not its own), 0 assessments/quizzes/plans/docs/media/goals — a
+  genuinely near-empty account. Walked `/education`, `/education/overview` (same page),
+  `/education/start`, `/education/progress`, `/education/library`, `/education/classes`,
+  `/education/tutor` as `--as member --fresh`: all render an honest empty/low-data state (no
+  fake zeros-as-charts, no dead skeletons); `/education/classes` correctly holds on "Choose
+  organization" because this shared test account carries 28 organization memberships (a real
+  new student would auto-select their one org and never see this screen — not reproducible as a
+  bug on this account). `/education/progress`'s "What your data says" narrator card also holds
+  on "Choose an organization" for the same reason, by the same `NarrativeCard.tsx` org-gate
+  design (correct behavior, not a lie). Did not reach the remaining first-run steps (build a kit
+  end-to-end, study the generated deck, join a class) or the other tool homes
+  (quizzes/practice-tests/notes/mind-maps/memory/audio-study/summaries/kits/planner/game) in
+  this pass — see the dispatch report for what is still open.
 - `2026-09-27` — page-pass `/education/planner`: type single-record/AI workspace hybrid, posture
   sharp after Linear. Header "Re-plan" duplicated the stale-plan banner's own "Re-plan now" (two
   doors for one action) — the header button now hides while that banner is up

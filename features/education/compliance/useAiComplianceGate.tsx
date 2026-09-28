@@ -165,7 +165,7 @@ export function useAiComplianceGate(
           { reason: res.data.reason, ageBand: res.data.ageBand },
         );
       }
-      const verdict = await coppaService.getGate();
+      const verdict = await coppaService.getGate({ force: true });
       if (verdict.data) {
         gateRef.current = verdict.data;
         gateAtRef.current = Date.now();

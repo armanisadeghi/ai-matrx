@@ -108,6 +108,26 @@ describe("Google OAuth redirect state", () => {
       .toThrow("Choose Google products");
   });
 
+  it("round-trips a focused YouTube grant and binds its exact selection to redirect state", () => {
+    const storage = new MemoryStorage();
+    const options = {
+      initiatingUserId: "owner-user",
+      owner: { type: "user" as const },
+      organizationContextId: "org-1",
+      connectionPurpose: "youtube_isolated" as const,
+      capabilityKeys: ["youtube", "youtube_analytics"],
+      scopes: ["openid", "email", "profile", "https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/yt-analytics.readonly"],
+    };
+    const pending = buildGoogleOAuthRedirectPending("youtube", options, ORIGIN, 1_000);
+    storeGoogleOAuthRedirectPending(storage, pending);
+    expect(readGoogleOAuthRedirectPending(storage, "youtube", ORIGIN, 1_001)).toMatchObject(options);
+    storage.setItem("mx-google-oauth-redirect:youtube", JSON.stringify({ ...pending, capabilityKeys: [] }));
+    expect(readGoogleOAuthRedirectPending(storage, "youtube", ORIGIN, 1_001)).toBeNull();
+    expect(() => buildGoogleOAuthRedirectPending("youtube", {
+      ...options, targetConnectionId: "workspace-connection",
+    }, ORIGIN)).toThrow("YouTube connects separately");
+  });
+
   it("rejects expired, mismatched, and cross-origin continuations", () => {
     const storage = new MemoryStorage();
     const pending = buildGoogleOAuthRedirectPending(

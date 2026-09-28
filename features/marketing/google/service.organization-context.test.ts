@@ -23,7 +23,7 @@ import {
   resetGate,
   selectOrganization,
 } from "@/lib/organization/__tests__/gate-harness";
-import { connectGoogle, listGmailLabels, modifyGmailMessage, postGoogleBackend } from "./service";
+import { connectGoogle, disconnectGoogle, listGmailLabels, modifyGmailMessage, postGoogleBackend } from "./service";
 
 describe("Google backend transport — organization gate", () => {
   beforeEach(() => {
@@ -33,6 +33,14 @@ describe("Google backend transport — organization gate", () => {
     selectOrganization(getState, null);
   });
   afterEach(resetGate);
+
+  it("reports when a sibling Google connection keeps the provider authorization active", async () => {
+    selectOrganization(getState, CHOSEN_ORG);
+    mockFetchJson({ google_authorization_remains_active: true });
+    await expect(disconnectGoogle("youtube-connection")).resolves.toEqual({
+      googleAuthorizationRemainsActive: true,
+    });
+  });
 
   it("keeps the backend's mixed product result for the redirect notice", async () => {
     const previousClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;

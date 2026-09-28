@@ -321,43 +321,6 @@ export function LearnDocAdmin({ initialDocs }: Props) {
       );
     };
     return {
-      start_learn_doc_draft: (value) => {
-        if (value !== true) throw new Error("start_learn_doc_draft requires true.");
-        if (state.mode !== "list") {
-          throw new Error("Close or save the current editor before starting another draft.");
-        }
-        setState({ mode: "new" });
-      },
-      delete_learn_docs: async (value) => {
-        if (state.mode !== "list") {
-          throw new Error("Close or save the current editor before deleting guides.");
-        }
-        if (!Array.isArray(value) || value.length < 1 || value.length > 10) {
-          throw new Error("delete_learn_docs requires an array of 1-10 guide ids from learn_docs.");
-        }
-        const ids = value.map((item) => {
-          if (typeof item !== "string" || !item.trim()) {
-            throw new Error("Every delete_learn_docs entry must be a guide id string.");
-          }
-          return item.trim();
-        });
-        if (new Set(ids).size !== ids.length) {
-          throw new Error("A guide cannot be deleted twice in one request.");
-        }
-        const loaded = new Map(docs.map((doc) => [doc.id, doc.updatedAt]));
-        if (ids.some((id) => !loaded.has(id))) {
-          throw new Error("Every guide id must come from the current learn_docs list.");
-        }
-        const latest = await listLearnDocsAdminAction();
-        if (ids.some((id) => latest.find((doc) => doc.id === id)?.updatedAt !== loaded.get(id))) {
-          throw new Error("A guide changed or disappeared. Reload the list before deleting it.");
-        }
-        try {
-          for (const id of ids) await deleteLearnDocAction(id);
-        } finally {
-          await refresh();
-        }
-      },
       doc_metadata: noEditor("doc_metadata"),
       doc_sections: noEditor("doc_sections"),
       add_sections: noEditor("add_sections"),

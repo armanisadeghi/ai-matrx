@@ -160,6 +160,10 @@ export const GOOGLE_FAILURE_LANGUAGE: Record<string, string> = {
     "Our Google sign-in changed, so this account needs a fresh approval. Close the Google window, press Reconnect, and approve everything it asks for — nothing you picked is lost.",
   google_reconnect_target_conflict:
     "The Google window signed in as a different account, or for a different owner, than the one being reconnected. Nothing changed — try again and choose the account named on this screen.",
+  youtube_isolated_scope_conflict:
+    "Google did not return only the requested YouTube permissions. Your other Google connections were not changed. Try connecting YouTube again by itself.",
+  youtube_isolated_connection_conflict:
+    "This Google login has duplicate YouTube connections. Disconnect the extra YouTube connection in Settings, then reconnect YouTube; your other Google products are unaffected.",
 };
 
 /**
@@ -239,9 +243,10 @@ export function consentFailureAnswer(cause: unknown): ConsentFailureAnswer {
 export function googleAccount(row: GoogleConnectionSummary): ConnectorAccount {
   const diagnosis = diagnoseGoogleConnection(row);
   const recorded = parseGoogleCapabilityHealth(row.capability_health);
+  const isolatedYouTube = row.metadata.connection_purpose === "youtube_isolated";
   return {
     id: row.id,
-    label: row.account_email || row.account_name || "Google account",
+    label: `${row.account_email || row.account_name || "Google account"}${isolatedYouTube ? " — YouTube" : ""}`,
     ownerKind: row.owner_type === "organization" ? "organization" : "person",
     organizationId: row.organization_id,
     providerSubject: row.provider_subject,
@@ -418,7 +423,9 @@ export function useGoogleConsentRunner() {
         const code = await googleAuth.openAuthorizationWindow(
           request.scopes,
           options.loginHint ?? undefined,
-          undefined,
+          request.connectionPurpose === "youtube_isolated"
+            ? { forceConsent: true }
+            : undefined,
           gate,
         );
         const result = await connectGoogle.mutateAsync({
@@ -473,6 +480,7 @@ export function useGoogleConsentRunner() {
                 : { type: "user" },
             organizationContextId: workspace.organizationId,
             connectionPurpose: request.connectionPurpose,
+            forceConsent: request.connectionPurpose === "youtube_isolated",
             loginHint: options.loginHint ?? undefined,
             targetConnectionId: request.targetAccountId ?? undefined,
             capabilityKeys: request.capabilityKeys,

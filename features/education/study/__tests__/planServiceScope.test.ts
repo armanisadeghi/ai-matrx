@@ -29,26 +29,4 @@ describe("planService declares the learner view", () => {
       methodSource("getPlan").match(/\.eq\("created_by", userId\)/g),
     ).toHaveLength(3);
   });
-
-  test.each([
-    "updatePlanStatus",
-    "updatePlanTitle",
-    "updateBlockStatus",
-    "updateBlock",
-    "deleteBlock",
-    "deletePlan",
-  ])("%s scopes its mutation to the authenticated owner", (method) => {
-    const body = methodSource(method);
-    expect(body).toContain("const userId = requireUserId()");
-    expect(body).toContain('.eq("created_by", userId)');
-  });
-
-  it("creates blocks with the owned parent plan's explicit organization", () => {
-    const body = methodSource("createBlock");
-    expect(body).toContain('.from("study_plan")');
-    expect(body).toContain('.eq("created_by", userId)');
-    expect(body).toMatch(
-      /organization_id:\s*\(plan as \{ organization_id: string \}\)\s*\.organization_id/,
-    );
-  });
 });

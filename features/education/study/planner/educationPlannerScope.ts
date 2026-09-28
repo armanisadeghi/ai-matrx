@@ -62,16 +62,11 @@ function goalEntry(
 
 function agendaFor(plan: PlanWithDays): PlannerAgendaDay[] {
   return plan.days.map(({ day, blocks }) => ({
-    id: day.id,
     date: day.day_date,
     target_minutes: day.target_minutes,
     is_rest_day: day.is_rest_day,
     rationale: day.rationale,
     blocks: blocks.map((b) => ({
-      id: b.id,
-      version: b.version,
-      day_id: b.day_id,
-      day_date: b.day_date,
       label: b.label,
       target_kind: b.target_kind,
       estimated_minutes: b.estimated_minutes,
@@ -143,7 +138,6 @@ export function buildEducationPlannerScope(
       ? {
           active_plan: {
             id: plan.plan.id,
-            version: plan.plan.version,
             title: plan.plan.title,
             status: plan.plan.status,
             start_date: plan.plan.start_date,

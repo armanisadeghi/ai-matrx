@@ -48,12 +48,12 @@
  *   audio_trust          What the open study is grounded in (READ-ONLY evidence)
  *   review_session        Read-only state of a live Audio Review session
  *
- * WRITE TARGETS — saved recordings have the same create, edit, and soft-delete
- * path as the human "Add audio file" and edit screens. They only accept an
- * existing accessible audio file; agents cannot generate audio because that
- * would spend a metered allowance. The Audio Review setup form (deck +
- * adaptive toggle) is a second small composer but the view has no emitter in
- * this pass, so it has no write target.
+ * NO WRITE TARGETS — same reasoning as `education-memory`: the only editable
+ * fields are the /new composer's source/format/options, consumed by ONE
+ * metered, human-pressed Generate button (`education.audio_generate`). Nothing
+ * on the detail view is editable (regenerate routes back to /new). The Audio
+ * Review setup form (deck + adaptive toggle) is a second small composer but the
+ * view has no emitter in this pass, so no write target is declared against it.
  *
  * Emitters: `AudioStudyHome.tsx` (list), `AudioStudyNew.tsx` (new),
  * `AudioStudyDetail.tsx` (detail) — all in
@@ -155,7 +155,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "audio_library",
     label: "Audio library",
     description:
-    "Every saved audio study on the list view, as { id, title, format, source_title, status, version, is_owner }. `is_owner` says whether this learner may soft-delete it; `version` is required to edit it. Status is 'ready' | 'error' | in-progress. Empty array when the learner has none. Only present on the list view.",
+      "Every saved audio study on the list view, as { id, title, format, source_title, status } — status is 'ready' | 'error' | in-progress. Empty array when the learner has none. Only present on the list view.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 900,
@@ -455,7 +455,7 @@ export const educationAudioStudyManifest: SurfaceManifest = {
     "Audio study episodes: generate, listen, spoken review (/education/audio-study).",
   readiness: "partial",
   readinessNote:
-    "Manual saved-recording CRUD is declared and uses the same service as the human Add audio file and edit screens. AI generation remains human-initiated because it spends a metered allowance. DB sync has not been run; the Audio Review live-voice session (/education/audio-study/review) declares review_* values but has no SurfaceRuntimeProvider mount (its phase machine deserves its own pass, see manifest header); no agent roles; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed.",
+    "Manifest + three emitters (list, new, detail) shipped, targeting a live DB row that previously had no manifest at all. NOT yet: DB sync has not been run; the Audio Review live-voice session (/education/audio-study/review) declares review_* values but has no SurfaceRuntimeProvider mount (its phase machine deserves its own pass, see manifest header); this surface declares no write targets (composer fields are consumed by a single metered, human-pressed Generate button — same judgment as education-memory) and no agent roles; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed.",
   label: "Audio Study",
   urlPattern: "/education/audio-study",
   intro: `<surface_intro>
@@ -482,7 +482,6 @@ export interface AudioLibraryEntry {
   source_title: string | null;
   status: string;
   version: number;
-  is_owner: boolean;
 }
 
 /** One entry in `available_decks`. */

@@ -23,24 +23,28 @@
  * gap). It is resolved to its own `matrx-user/education-game-solo` before the
  * `/education/game` prefix table entry (see `route-to-surface.ts`) and has a
  * real `SurfaceRuntimeProvider` emitter — see `education-game-solo.manifest.ts`.
- * `MultiplayerGame` (`/education/game/play/[roomId]`) emits only the narrow
- * durable room scope the page already loads. Its one write target cancels a
- * host-owned lobby room after approval; live game state stays Broadcast-only.
+ * `MultiplayerGame` (`/education/game/play/[roomId]`) is the one remaining
+ * gap: `room_*` values are declared below but nothing mounts a
+ * `SurfaceRuntimeProvider` inside `MultiplayerGameImpl` yet — wiring a
+ * synchronous `getScope` into the realtime Broadcast/presence engine deserves
+ * its own review pass, not a bolt-on here.
  *
  * Curated groups (band 0-899):
  *
  *   tool_view       Which of the routes the learner is on — read first
  *   host_setup      The host composer: source pick + room size
  *   join_room       The join composer: room code entry
- *   room_session     Current multiplayer room and the host's safe cancellation action
+ *   room_session     Read-only state of a live multiplayer room (not yet emitted)
  *
- * ONE WRITE TARGET. `delete_game_rooms` retires only the host's current lobby
- * room, after approval. It cannot touch an active room because that would
- * interrupt players and their study sessions. `host`'s source picker and
- * `join`'s code field remain human-pressed composite actions.
+ * NO WRITE TARGETS. `host`'s source picker and `join`'s code field are each
+ * consumed by one human-pressed button (Create room / Join) that performs a
+ * real side effect (room creation, cross-owner room lookup) — same "one
+ * composite request behind a deliberate button" judgment as
+ * `education-memory` and `education-audio-study`. Nothing on `home` is
+ * editable at all.
  *
- * Emitters: `EngageHome.tsx`, `HostSetupImpl.tsx`, `JoinRoomImpl.tsx`, and
- * `MultiplayerGameImpl.tsx` — all in `features/education/engage/components/`.
+ * Emitters: `EngageHome.tsx`, `HostSetupImpl.tsx`, `JoinRoomImpl.tsx` — all in
+ * `features/education/engage/components/`.
  */
 
 import type {
@@ -48,7 +52,6 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -79,7 +82,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Multiplayer room",
     sortOrder: 500,
     description:
-      "Read-only state of a live multiplayer room on /education/game/play/[roomId]. The play view emits this scope while the room is loaded.",
+      "Read-only state of a live multiplayer room on /education/game/play/[roomId]. No emitter is mounted here yet — see the manifest header.",
   },
 ];
 
@@ -89,7 +92,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "view",
     label: "Current view",
     description:
-      'Which Study Games route the learner is on: "home" (the hub — streak, league, badges, and the three primary actions), "host" (the room-creation composer), "join" (the room-code entry), or "play" (a live multiplayer room). Solo Arcade (/education/game/solo) has its own surface — see education-game-solo.manifest.ts.',
+      'Which Study Games route the learner is on: "home" (the hub — streak, league, badges, and the three primary actions), "host" (the room-creation composer), "join" (the room-code entry), or "play" (a live multiplayer room). Solo Arcade (/education/game/solo) has its own surface — see education-game-solo.manifest.ts. Always present when the surface emits at all — "play" currently never emits (see manifest header).',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 4,
@@ -113,7 +116,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "host_source_set_id",
     label: "Selected deck",
     description:
-      'UUID of the flashcard deck picked as the room\'s question source. Absent when host_source_kind is "due" or no deck has been picked yet.',
+      "UUID of the flashcard deck picked as the room's question source. Absent when host_source_kind is \"due\" or no deck has been picked yet.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -124,7 +127,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "host_source_set_name",
     label: "Selected deck name",
     description:
-      'Name of the currently selected deck. Absent when host_source_kind is "due" or no deck is picked.',
+      "Name of the currently selected deck. Absent when host_source_kind is \"due\" or no deck is picked.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 40,
@@ -181,7 +184,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "join_error",
     label: "Join error",
     description:
-      'The validation or lookup error shown under the code field — e.g. a too-short code or "No open room with that code." Absent whenever there is no error, which is the normal case.',
+      "The validation or lookup error shown under the code field — e.g. a too-short code or \"No open room with that code.\" Absent whenever there is no error, which is the normal case.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 40,
@@ -205,7 +208,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "room_id",
     label: "Room id",
     description:
-      "UUID of the verified multiplayer room the learner is in on /education/game/play/[roomId]. Absent while the room is loading or cannot be opened.",
+      "UUID of the multiplayer room the learner is in on /education/game/play/[roomId]. Not currently emitted — see manifest header.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -216,7 +219,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "room_phase",
     label: "Room phase",
     description:
-      "The room's durable stage: lobby, active, or ended. Absent while the room is loading or cannot be opened.",
+      "Which stage the live room is in — lobby, playing, or results. Not currently emitted — see manifest header.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 7,
@@ -227,38 +230,12 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "room_player_count",
     label: "Players in room",
     description:
-      "How many players are currently in the room (host + joiners), from Broadcast presence. Absent while the room is loading or cannot be opened.",
+      "How many players are currently in the room (host + joiners), from Broadcast presence. Not currently emitted — see manifest header.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 2,
     sortOrder: 320,
     group: "room_session",
-  },
-  {
-    name: "owned_game_rooms",
-    label: "My current room",
-    description:
-      "The verified room currently open on this page when the learner is its host, as an array of at most one { id, status }. It is an empty array for guests. delete_game_rooms may cancel it only while status is lobby.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 100,
-    sortOrder: 330,
-    group: "room_session",
-  },
-];
-
-const writeTargets: SurfaceWriteTarget[] = [
-  {
-    name: "delete_game_rooms",
-    label: "Cancel waiting room",
-    description:
-      'Cancels the host\'s currently open WAITING room, saved immediately. Value is a JSON ARRAY with exactly its one id from owned_game_rooms, for example ["…"]. The person must approve. This ends the lobby, soft-deletes its room record, and invalidates the join code so no new player can join. It refuses guests, an unknown id, a room that is already active or ended, and requests with any number of ids other than one. A live round cannot be deleted here because cancelling it would interrupt players and their study sessions.',
-    valueType: "array",
-    updatesValue: "owned_game_rooms",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "room_session",
-    sortOrder: 330,
   },
 ];
 
@@ -270,7 +247,7 @@ export const educationGameManifest: SurfaceManifest = {
     "Study game arcade hub + multiplayer host/join (/education/game). Solo Arcade has its own surface, matrx-user/education-game-solo.",
   readiness: "partial",
   readinessNote:
-    "Manifest + home, host, join, and narrow play-route emitters shipped, targeting a live DB row that previously had no manifest at all. The play route supplies only the current durable room state and an approval-gated host cancellation target; it does not expose mutable live scores, presence, or active-round controls. Solo Arcade moved to its own surface (matrx-user/education-game-solo). NOT yet: DB sync has not been run; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed.",
+    "Manifest + three emitters (home, host, join) shipped, targeting a live DB row that previously had no manifest at all. Solo Arcade moved to its own surface (matrx-user/education-game-solo). NOT yet: DB sync has not been run; the live-multiplayer view (MultiplayerGameImpl, a dynamic({ssr:false}) real-time game engine) declares room_* values but has no SurfaceRuntimeProvider mount (deliberately deferred, see manifest header); no write targets, agent roles, or config namespaces are declared; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed.",
   label: "Study Games",
   urlPattern: "/education/game",
   intro: `<surface_intro>
@@ -278,15 +255,14 @@ You are in Study Games at /education/game — play-as-review: every question in 
 On "home" the learner sees their streak, weekly league standing, badges, and three entry points: Solo Arcade, Host a game, Join a game. Nothing here is editable.
 On "host" they are composing a room: \`host_source_kind\` is "due" (their cross-deck due queue, the adaptive default) or "set" (one specific deck, from \`host_available_sets\`); a private deck can't be used for a cross-account room, which the picker itself flags. \`host_max_players\` is the entitlement-capped room size, shown before creating. The learner still presses Create room.
 On "join" they are typing a 5-character room code (\`join_code\`); \`join_error\` explains a bad or unknown code.
-On "play", room_id, room_phase, and room_player_count describe the verified room currently open. owned_game_rooms contains that one room only for its host. delete_game_rooms cancels a host-owned lobby by its id after the person approves; it soft-deletes the room and disables the join code. It refuses guests and active or ended rooms, because interrupting a live round would harm players and their study sessions.
-Creating and joining rooms remain actions the learner triggers themselves; never use generic tools for those composite actions.
+"play" is a live multiplayer game engine (timers, live scoring, a realtime multiplayer room) that this surface currently emits NOTHING from — treat any room_* value you see as stale/absent until told otherwise.
+You cannot WRITE anything here — no write targets are declared, and creating/joining a room is a real side effect the learner triggers themselves.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
-  writeTargets,
 };
 
 /** One entry in `host_available_sets`. */
@@ -301,7 +277,7 @@ export interface GameDeckOption {
  * `alwaysAvailable: true`; optional keys mirror `alwaysAvailable: false`.
  *
  * Only `view` is guaranteed: the emitted views each supply only their own
- * group.
+ * group. `play` currently emits nothing at all (no mount).
  */
 export function createEducationGameScope(values: {
   // alwaysAvailable: true → required
@@ -320,11 +296,10 @@ export function createEducationGameScope(values: {
   join_code?: string;
   join_error?: string;
   join_joining?: boolean;
-  // play
+  // play (declared, not emitted — see manifest header)
   room_id?: string;
   room_phase?: string;
   room_player_count?: number;
-  owned_game_rooms?: Array<{ id: string; status: string }>;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

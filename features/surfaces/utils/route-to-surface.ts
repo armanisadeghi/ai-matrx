@@ -178,12 +178,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/transcripts/studio", surface: "matrx-user/transcript-studio" },
   { prefix: "/transcripts", surface: "matrx-user/transcripts" },
   // Education: specific tools BEFORE the hub prefix.
-  { prefix: "/education/family", surface: "matrx-user/education-family" },
-  { prefix: "/education/notes", surface: "matrx-user/education-notes" },
-  {
-    prefix: "/education/study-guides",
-    surface: "matrx-user/education-study-guides",
-  },
+  { prefix: "/education/study-guides", surface: "matrx-user/education-study-guides" },
   { prefix: "/education/tutor", surface: "matrx-user/education-tutor" },
   {
     prefix: "/education/flashcards",
@@ -209,12 +204,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-user/education-practice-oral",
   },
   { prefix: "/education/progress", surface: "matrx-user/education-progress" },
-  { prefix: "/education/creator", surface: "matrx-user/education-creator" },
   { prefix: "/education/sessions", surface: "matrx-user/education-sessions" },
-  {
-    prefix: "/education/subjects/quick-math/admin",
-    surface: "matrx-user/education-quick-math-authoring",
-  },
   { prefix: "/education/learn", surface: "matrx-user/education-learn" },
   {
     prefix: "/education/audio-study",
@@ -648,13 +638,10 @@ const ADMIN_SUITE_PAGES = new Set([
 ]);
 
 function resolveMandateSuiteSurface(stripped: string): string | null {
-  const suite = stripped.match(
-    /^\/administration\/intelligence\/mandates(?:\/([^/]+))?(?:\/|$)/,
-  );
+  const suite = stripped.match(/^\/administration\/intelligence\/mandates(?:\/([^/]+))?(?:\/|$)/);
   if (suite) {
     const segment = suite[1];
-    if (!segment || ADMIN_SUITE_PAGES.has(segment))
-      return "matrx-admin/mandates";
+    if (!segment || ADMIN_SUITE_PAGES.has(segment)) return "matrx-admin/mandates";
     return "matrx-admin/mandate-workspace";
   }
   if (/^\/mandates\/record-preview\/[^/]+\/?$/.test(stripped)) {
@@ -720,11 +707,6 @@ export function surfaceFromPathname(
   }
   if (/^\/education\/flashcards\/[^/]+\/sessions(?:\/|$)/.test(stripped)) {
     return "matrx-user/education-sessions";
-  }
-  // The Smart Notes library is an Education collection surface. One open note
-  // stays on the canonical Notes editor surface, whose runtime owns body edits.
-  if (/^\/education\/notes\/[^/]+\/?$/.test(stripped)) {
-    return "matrx-user/notes";
   }
   if (
     /^\/education\/flashcards\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i.test(
