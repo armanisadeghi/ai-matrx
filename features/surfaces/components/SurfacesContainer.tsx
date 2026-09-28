@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  AlertCircle,
   AlertTriangle,
   Loader2,
   MoreHorizontal,
@@ -100,7 +99,7 @@ import { SURFACE_CANDIDATES } from "@/features/surfaces/data/surface-candidates"
 import { listParentFilterOptions } from "@/features/surfaces/utils/surface-hierarchy";
 import { surfaceCheckState } from "@/features/surfaces/utils/surface-check-ledger";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export function SurfacesContainer() {
   const router = useRouter();
@@ -582,14 +581,6 @@ export function SurfacesContainer() {
         </div>
       </div>
 
-      {error && (
-        <div className="mx-3 mt-2 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive flex items-center gap-2">
-          <AlertCircle className="h-3.5 w-3.5" />
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      )}
-
       {/* Body: table + optional detail panel */}
       <div className="flex-1 min-h-0 flex">
         <div
@@ -599,6 +590,8 @@ export function SurfacesContainer() {
           <SurfacesTable
             rows={visible}
             isLoading={loading}
+            // The surfaces read's failure is said once, by the table.
+            read={readOf({ loading, error }, { what: "surfaces", onRetry: () => void load() })}
             selectedName={selectedName}
             manifestedSurfaceNames={manifestedSurfaceNames}
             onSelect={openEditor}
@@ -620,7 +613,7 @@ export function SurfacesContainer() {
         {/* Peek — a side panel on desktop (narrow enough that the triage
             columns stay in view), a bottom sheet on a phone. */}
         {selected && !isMobile && (
-          <div className="w-[400px] shrink-0 border-l border-border min-w-0">
+          <div className="w-[380px] shrink-0 border-l border-border min-w-0">
             {peekPanel(selected)}
           </div>
         )}

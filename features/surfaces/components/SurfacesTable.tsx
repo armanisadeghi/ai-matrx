@@ -41,6 +41,7 @@ import {
   SurfacesFilterBar,
   type SurfacesFilterState,
 } from "@/features/surfaces/components/SurfacesFilterBar";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 const READINESS_SORT_WEIGHT: Record<string, number> = {
   verified: 0,
@@ -68,6 +69,8 @@ interface Props {
   parentNames: string[];
   onRefresh: () => void | Promise<void>;
   onAdd: () => void | Promise<void>;
+  /** The surfaces read these rows answer (the container owns it). */
+  read?: ReadOutcome | undefined;
 }
 
 function checkedBadge(row: SurfaceWithStats) {
@@ -197,7 +200,7 @@ function surfaceColumns(
     {
       accessorKey: "name",
       header: "Name",
-      width: 280,
+      width: 260,
       filterValue: (row) => `${surfaceRowTitle(row)} ${row.name}`,
       sortValue: (row) => surfaceRowTitle(row).toLowerCase(),
       cell: (row) => (
@@ -209,7 +212,7 @@ function surfaceColumns(
       header: "Readiness",
       accessorFn: (row) => readinessBucketOf(row),
       sortValue: (row) => READINESS_SORT_WEIGHT[readinessBucketOf(row)],
-      width: 120,
+      width: 112,
       cell: (row) => <SurfaceReadinessBadge row={row} />,
     },
     {
@@ -217,7 +220,7 @@ function surfaceColumns(
       header: "Agents",
       accessorFn: (row) => row.agentCount,
       align: "right",
-      width: 84,
+      width: 72,
       cell: (row) => (row.agentCount > 0 ? row.agentCount : EMPTY),
     },
     {
@@ -225,7 +228,7 @@ function surfaceColumns(
       header: "Tools",
       accessorFn: (row) => row.toolCount,
       align: "right",
-      width: 76,
+      width: 68,
       cell: (row) => (row.toolCount > 0 ? row.toolCount : EMPTY),
     },
     {
@@ -233,7 +236,7 @@ function surfaceColumns(
       header: "Values",
       accessorFn: (row) => declaredValueCount(row.name) ?? row.surfaceValueCount,
       align: "right",
-      width: 130,
+      width: 120,
       cell: (row) => <ValuesCell row={row} />,
     },
     {
@@ -243,14 +246,14 @@ function surfaceColumns(
       sortValue: (row) =>
         `${String(checkSortWeight(row)).padStart(4, "0")}:${row.name}`,
       defaultSortDirection: "desc",
-      width: 100,
+      width: 92,
       cell: checkedBadge,
     },
     {
       accessorKey: "is_active",
       header: "Active",
       filter: "boolean",
-      width: 90,
+      width: 84,
       cell: (row) => <ActiveBadge active={row.is_active !== false} />,
     },
     {
@@ -342,6 +345,7 @@ export function SurfacesTable({
   parentNames,
   onRefresh,
   onAdd,
+  read,
 }: Props) {
   const isMobile = useIsMobile();
   const hasSpecializedFilters =
@@ -374,6 +378,7 @@ export function SurfacesTable({
           .join(" ")
       }
       isLoading={isLoading}
+      read={read}
       defaultSort={{ id: "sort_order", direction: "asc" }}
       selectedId={selectedName}
       onRowOpen={onSelect}
