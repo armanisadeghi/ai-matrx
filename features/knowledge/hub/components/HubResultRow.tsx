@@ -202,7 +202,9 @@ export function ResultRow({
     ...metaParts(hit, { hideKind, facts: handlers.rowFacts?.(hit) }),
   ];
   const menu = handlers.rowMenu?.(hit);
-  const tags = compact ? [] : hitTags(hit);
+  // A tag that repeats a fact already on the line (#Veritasium beside "Veritasium") is noise.
+  const said = new Set(parts.map((p) => p.toLowerCase()));
+  const tags = compact ? [] : hitTags(hit).filter((t) => !said.has(t.replace(/^#/, "").toLowerCase()));
   return (
     <div
       role="option"

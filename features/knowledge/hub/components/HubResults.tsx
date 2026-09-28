@@ -330,7 +330,8 @@ function SectionHeader({ label, count, pinned = false }: { label: string; count:
     <div
       className={cn(
         "flex h-8 items-end gap-2 px-2.5 pb-1.5 text-xs font-medium text-muted-foreground",
-        pinned && "bg-background/85 backdrop-blur-sm",
+        // The page's own surface, opaque, so rows pass cleanly beneath it; a hairline says it is pinned.
+        pinned && "bg-textured border-b border-border/50",
       )}
     >
       <span className="text-foreground/80">{label}</span>
