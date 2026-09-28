@@ -350,7 +350,8 @@ export function NoteEditorDock({
         open={sheetOpen === "context"}
         onOpenChange={(open) => setSheetOpen(open ? "context" : null)}
         title="Note Context"
-        contentClassName="bg-card border-border shadow-lg backdrop-blur-none backdrop-saturate-100"
+        // Solid like the More sheet: the note's text showed through the glass.
+        surface="solid"
       >
         <BottomSheetHeader title="Note Context" />
         <BottomSheetBody>
