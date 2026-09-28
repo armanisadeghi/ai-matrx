@@ -34,7 +34,7 @@ import {
 // The leading segments' words ride along (`segments->N->>text`) so a row can show its opening
 // lines without reading the whole transcript body.
 const SEGMENT_HEADS = Array.from({ length: SNIPPET_SEGMENTS }, (_, i) => `seg${i}:segments->${i}->>text`).join(",");
-const TRANSCRIPT_COLUMNS = `id,title,description,is_draft,folder_name,tags,visibility,metadata,organization_id,created_by,created_at,updated_at,processed_document_id,${SEGMENT_HEADS}`;
+const TRANSCRIPT_COLUMNS = `id,title,description,is_draft,folder_name,tags,visibility,metadata,organization_id,created_by,created_at,updated_at,processed_document_id,source_type,${SEGMENT_HEADS}`;
 const SESSION_COLUMNS =
   "id,title,source,status,visibility,total_duration_ms,transcript_id,organization_id,created_by,created_at,updated_at";
 const EDIT_OF_COLUMNS: string = "id,edit_of:metadata->>edit_of";

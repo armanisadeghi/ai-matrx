@@ -4,7 +4,21 @@
  * origin in words, where "Open full" goes, and the facet values it reports.
  */
 
-import { Boxes, FileText, Globe, Mic, TextCursorInput, type LucideIcon } from "lucide-react";
+import {
+  AudioLines,
+  Boxes,
+  FileText,
+  Film,
+  Globe,
+  MessagesSquare,
+  Mic,
+  MonitorPlay,
+  Podcast,
+  TextCursorInput,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import { getFileTypeDetails } from "@/features/files/utils/file-types";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import { RELATIVE_DATE_LABEL } from "@/features/knowledge/api/knowledgeQueryText";
@@ -32,9 +46,36 @@ export const ORIGIN_WORDS: Record<string, string> = {
 const SOURCE_KIND_ICON: Record<string, LucideIcon> = {
   web_page: Globe,
   scrape_parsed_page: Globe,
-  cld_file: FileText,
-  transcript: Mic,
   inline: TextCursorInput,
+  legacy: FileText,
+  youtube_video: MonitorPlay,
+};
+
+/**
+ * What a transcript IS, from its own record (census 2026-09-27 of
+ * transcripts.transcripts: audio 1,249 · YouTube 273 · podcast 13 · interview
+ * 34 · meeting 1 · other 1). Each gets its own glyph — never one mic for all.
+ */
+export type TranscriptMediaKind = "youtube" | "podcast" | "video" | "meeting" | "interview" | "recording" | "text";
+
+export const TRANSCRIPT_MEDIA_ICON: Record<TranscriptMediaKind, LucideIcon> = {
+  youtube: MonitorPlay,
+  podcast: Podcast,
+  video: Film,
+  meeting: Users,
+  interview: MessagesSquare,
+  recording: Mic,
+  text: FileText,
+};
+
+export const TRANSCRIPT_MEDIA_LABEL: Record<TranscriptMediaKind, string> = {
+  youtube: "YouTube",
+  podcast: "Podcast",
+  video: "Video",
+  meeting: "Meeting",
+  interview: "Interview",
+  recording: "Recording",
+  text: "Transcript",
 };
 
 /** "Web page" for a Source, else the registry label ("Chat", "Note"…). */
@@ -50,10 +91,44 @@ export function tokenLabel(token: string): string {
   return tryGetEntityInfo(token)?.label ?? token.replace(/_/g, " ");
 }
 
-export function kindIcon(hit: Pick<KnowledgeHit, "entity" | "source_kind">): LucideIcon {
-  if (hit.source_kind && SOURCE_KIND_ICON[hit.source_kind]) return SOURCE_KIND_ICON[hit.source_kind];
-  if (hit.entity === "segment") return FileText;
-  return tryGetEntityInfo(hit.entity)?.Icon ?? Boxes;
+/** A file's own type (the Files system's table): PDF, sheet, image, audio… by its name. */
+function fileTypeIcon(name: string): { Icon: LucideIcon; className: string } | null {
+  const d = getFileTypeDetails(name);
+  return d.category === "UNKNOWN" ? null : { Icon: d.icon, className: d.color };
+}
+
+/**
+ * The glyph a row wears, and its tint. Each kind its own: a file by its type,
+ * a web page a globe, pasted text a cursor, a transcript by what it came from
+ * (a YouTube capture before its record is read; the record decides after —
+ * see TRANSCRIPT_MEDIA_ICON); everything else the registry's own icon.
+ */
+export function hitIcon(
+  hit: Pick<KnowledgeHit, "entity" | "source_kind" | "title" | "origin">,
+): { Icon: LucideIcon; className?: string } {
+  if (hit.entity === "file" || hit.source_kind === "cld_file") {
+    const f = fileTypeIcon(hit.title);
+    if (f) return f;
+    return { Icon: FileText };
+  }
+  if (hit.source_kind === "transcript" || hit.entity === "transcript") {
+    if (hit.origin === "youtube") return { Icon: MonitorPlay };
+    // Not read yet: the transcript glyph, until its record says recording / meeting / video.
+    return { Icon: AudioLines };
+  }
+  if (hit.source_kind && SOURCE_KIND_ICON[hit.source_kind]) return { Icon: SOURCE_KIND_ICON[hit.source_kind] };
+  if (hit.entity === "segment") return { Icon: FileText };
+  return { Icon: tryGetEntityInfo(hit.entity)?.Icon ?? Boxes };
+}
+
+export function kindIcon(hit: Pick<KnowledgeHit, "entity" | "source_kind" | "title" | "origin">): LucideIcon {
+  return hitIcon(hit).Icon;
+}
+
+/** Titles that are a placeholder, not a name ("unlabeled", "Untitled transcript"). */
+export function isPlaceholderTitle(title: string | null | undefined): boolean {
+  const t = (title ?? "").trim().toLowerCase();
+  return !t || /^(unlabeled|unlabelled|untitled|untitled transcript|untitled session|new transcript|no title|null|undefined)$/.test(t);
 }
 
 export function originLabel(origin: string | null | undefined): string {

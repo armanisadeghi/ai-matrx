@@ -19,6 +19,11 @@
  */
 
 import { formatCount, formatDurationSeconds } from "@ai-matrx/kit/format";
+import {
+  TRANSCRIPT_MEDIA_LABEL,
+  isPlaceholderTitle,
+  type TranscriptMediaKind,
+} from "@/features/knowledge/hub/hubPresentation";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import {
   KIND_META,
@@ -44,6 +49,8 @@ export interface TranscriptRecordFields {
   created_at: string | null;
   updated_at: string | null;
   processed_document_id: string | null;
+  /** audio · video · meeting · other — what the recorder captured. */
+  source_type?: string | null;
   /**
    * The first few segments' words (PostgREST `segments->N->>text`) — the row's
    * snippet without reading a whole transcript body. Absent when not selected.
@@ -546,6 +553,10 @@ export function transcriptRowFacts(
 // ─── Row content (Granola / Otter: what is inside sells the row) ────────────
 
 export interface TranscriptRowContent {
+  /** What it came from — decides the row's glyph (hubPresentation TRANSCRIPT_MEDIA_ICON). */
+  mediaKind: TranscriptMediaKind;
+  /** A name to show when the record's own title is a placeholder ("unlabeled"): its opening words, else "Recording · 12:35 PM". */
+  title: string | null;
   /** The opening words, ~160 characters, cut on a word. */
   snippet: string | null;
   /** The YouTube channel it came from. */
@@ -583,13 +594,46 @@ function speakersOf(record: TranscriptRecordFields): string[] {
   return [...new Set(names)];
 }
 
+/** What a transcript came from, by its own record (census in hubPresentation). */
+export function transcriptMediaKind(record: TranscriptRecordFields): TranscriptMediaKind {
+  const media = mediaOf(record);
+  const adapter = media && typeof media.adapter === "string" ? media.adapter : null;
+  if (adapter === "youtube") return "youtube";
+  if (adapter === "podcast_rss") return "podcast";
+  if (record.source_type === "meeting") return "meeting";
+  const origin = meta(record, "origin");
+  const surface = origin && typeof origin === "object" ? (origin as { surface?: unknown }).surface : null;
+  if (typeof surface === "string" && /interview|masterwork/i.test(surface)) return "interview";
+  if (record.source_type === "video") return "video";
+  if (record.source_type === "audio") return "recording";
+  return "text";
+}
+
+/** The first words as a name: up to 7 words, no trailing punctuation. */
+function titleFromWords(snippet: string | null): string | null {
+  if (!snippet) return null;
+  const words = snippet.replace(/…$/, "").split(/\s+/).filter(Boolean).slice(0, 7);
+  if (words.length < 2) return null;
+  const t = words.join(" ").replace(/[\s,.;:!?–—-]+$/, "");
+  return t.charAt(0).toUpperCase() + t.slice(1) + (snippet.split(/\s+/).length > 7 ? "…" : "");
+}
+
 /** What a transcript record says about itself for its row. */
 export function transcriptRowContent(record: TranscriptRecordFields): TranscriptRowContent {
   const media = mediaOf(record);
+  const snippet = snippetFromSegments([record.seg0, record.seg1, record.seg2, record.seg3, record.seg4, record.seg5]);
+  const mediaKind = transcriptMediaKind(record);
+  const when = record.created_at ? new Date(record.created_at) : null;
+  const title = isPlaceholderTitle(record.title)
+    ? (titleFromWords(snippet) ??
+      `${TRANSCRIPT_MEDIA_LABEL[mediaKind]}${when && Number.isFinite(when.getTime()) ? ` · ${when.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : ""}`)
+    : null;
   const channel = media && typeof media.channel_title === "string" && media.channel_title.trim() ? media.channel_title.trim() : null;
   const videoId = media && media.adapter === "youtube" && typeof media.external_id === "string" ? media.external_id : null;
   return {
-    snippet: snippetFromSegments([record.seg0, record.seg1, record.seg2, record.seg3, record.seg4, record.seg5]),
+    mediaKind,
+    title,
+    snippet,
     channel,
     speakers: speakersOf(record),
     thumbnailUrl: videoId && /^[\w-]{6,20}$/.test(videoId) ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null,

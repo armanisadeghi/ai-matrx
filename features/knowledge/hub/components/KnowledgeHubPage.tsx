@@ -93,7 +93,7 @@ import {
   uniqueTargets,
   type FileUnderContainer,
 } from "@/features/knowledge/hub/hubActions";
-import { hitKey, openFullHref, tokenLabel } from "@/features/knowledge/hub/hubPresentation";
+import { TRANSCRIPT_MEDIA_ICON, hitKey, openFullHref, tokenLabel } from "@/features/knowledge/hub/hubPresentation";
 import {
   HUB_PRESETS,
   expandAnyContainers,
@@ -824,7 +824,11 @@ export function KnowledgeHubPage({
     rowMenu: transcriptMenuNode,
     rowFacts: (h) =>
       isTranscriptHit(h) ? transcriptRowFacts(transcriptFacts.factFor(h), transcriptFacts.contentFor(h)) : [],
-    rowContent: (h) => (isTranscriptHit(h) ? transcriptFacts.contentFor(h) : undefined),
+    rowContent: (h) => {
+      if (!isTranscriptHit(h)) return undefined;
+      const c = transcriptFacts.contentFor(h);
+      return c ? { ...c, icon: TRANSCRIPT_MEDIA_ICON[c.mediaKind] } : undefined;
+    },
     renamingKey,
     onRenameCommit: (h, title) => void commitRename(h, title),
     onRenameCancel: () => setRenamingKey(null),

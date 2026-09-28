@@ -9,12 +9,13 @@
 
 import { useState } from "react";
 import { Checkbox } from "@ai-matrx/design-system";
+import type { LucideIcon } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/utils/cn";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import {
+  hitIcon,
   hitKey,
-  kindIcon,
   kindLabel,
   originLabel,
 } from "@/features/knowledge/hub/hubPresentation";
@@ -24,6 +25,10 @@ import { hitTags } from "@/features/knowledge/hub/tags/tagActions";
 export interface RowContent {
   snippet?: string | null;
   thumbnailUrl?: string | null;
+  /** The row's own glyph when its record says more than its kind does (a meeting, a podcast). */
+  icon?: LucideIcon | null;
+  /** A name to show when the record's own title is a placeholder ("unlabeled"). */
+  title?: string | null;
 }
 
 export interface ResultHandlers {
@@ -80,7 +85,8 @@ export function HitTitle({ hit, handlers, className }: { hit: KnowledgeHit; hand
         }}
       />
     );
-  return <div className={className}>{hit.title}</div>;
+  const shown = handlers.rowContent?.(hit)?.title;
+  return <div className={className}>{shown || hit.title}</div>;
 }
 
 function filedWords(hit: KnowledgeHit): string | null {
@@ -138,8 +144,11 @@ function clickHandlers(hit: KnowledgeHit, h: ResultHandlers) {
 }
 
 /** The list row's kind tile: a video's poster frame when it has one, else the kind icon. */
-function KindTile({ hit, thumbnailUrl }: { hit: KnowledgeHit; thumbnailUrl?: string | null }) {
-  const Icon = kindIcon(hit);
+function KindTile({ hit, content }: { hit: KnowledgeHit; content?: RowContent }) {
+  const base = hitIcon(hit);
+  const Icon = content?.icon ?? base.Icon;
+  const tint = content?.icon ? undefined : base.className;
+  const thumbnailUrl = content?.thumbnailUrl;
   const [broken, setBroken] = useState(false);
   if (thumbnailUrl && !broken)
     return (
@@ -154,7 +163,7 @@ function KindTile({ hit, thumbnailUrl }: { hit: KnowledgeHit; thumbnailUrl?: str
     );
   return (
     <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
-      <Icon className="h-4 w-4" />
+      <Icon className={cn("h-4 w-4", tint)} />
     </div>
   );
 }
@@ -220,7 +229,7 @@ export function ResultRow({
     >
       <div className="relative h-9 w-9 shrink-0 self-start" onClick={(e) => e.stopPropagation()}>
         <div className={cn("transition-opacity", isSelected ? "opacity-0" : "group-hover:opacity-0")} aria-hidden>
-          <KindTile hit={hit} thumbnailUrl={content?.thumbnailUrl} />
+          <KindTile hit={hit} content={content} />
         </div>
         <label
           className={cn(
@@ -292,7 +301,9 @@ export function ResultCard({
   tall?: boolean;
 }) {
   const key = hitKey(hit);
-  const Icon = kindIcon(hit);
+  const base = hitIcon(hit);
+  const content = handlers.rowContent?.(hit);
+  const Icon = content?.icon ?? base.Icon;
   const isSelected = handlers.selected.has(key);
   const isFocused = handlers.focusedKey === key;
   return (
@@ -308,7 +319,7 @@ export function ResultCard({
       {...clickHandlers(hit, handlers)}
     >
       <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <Icon className={cn("h-4 w-4 shrink-0 text-muted-foreground", !content?.icon && base.className)} />
         <span className="truncate text-xs text-muted-foreground">{kindLabel(hit)}</span>
         <div className="ml-auto">{handlers.rowMenu?.(hit)}</div>
         <div
