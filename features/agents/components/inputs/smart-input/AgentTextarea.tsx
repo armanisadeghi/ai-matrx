@@ -271,7 +271,7 @@ export function AgentTextarea({
   //      per-keystroke write restarted its own 150ms transition on every key
   //      (this effect restores the mid-animation height, then re-targets), so
   //      the box crept and the caret-reveal scroll fought the clipped height.
-  useLayoutEffect(() => {
+  const sizeToContent = () => {
     const el = textareaRef.current;
     if (!el) return;
 
@@ -330,7 +330,36 @@ export function AgentTextarea({
     // at no other moment.
     if (natural === startHeight) return;
     el.style.height = `${natural}px`;
+  };
+  // The width observer below outlives renders; it always calls the latest.
+  const sizeToContentRef = useRef(sizeToContent);
+  useLayoutEffect(() => {
+    sizeToContentRef.current = sizeToContent;
+    sizeToContent();
   }, [visibleText, isExpanded, singleRow, compact, unexpandedCapPx]);
+
+  // ── Re-measure when the WIDTH changes ─────────────────────────────────────
+  // Content height depends on width: the same draft (or the empty placeholder)
+  // wraps to more lines in a narrower box. A composer can mount before its
+  // host has its final width — a Battle column added to a resizable group is
+  // laid out at a sliver, measured there at the 200px cap, and then widened —
+  // and nothing re-measured it, so the NEWEST column's empty composer stayed
+  // stretched while its siblings were compact. Width changes only; the
+  // effect's own height writes never re-trigger it.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    let lastWidth = el.clientWidth;
+    const observer = new ResizeObserver(() => {
+      const width = el.clientWidth;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      sizeToContentRef.current();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
 
   // ── Auto-focus ──────────────────────────────────────────────────────────────
   useEffect(() => {

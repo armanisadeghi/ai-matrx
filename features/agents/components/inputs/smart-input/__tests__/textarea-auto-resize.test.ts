@@ -70,7 +70,7 @@ describe("AgentTextarea auto-resize", () => {
     // line grid and skip the write when the snapped height equals the
     // rendered one; and the base class list must carry NO height transition —
     // it is added only for the expand/collapse toggles.
-    const effectStart = source.indexOf("useLayoutEffect(() => {");
+    const effectStart = source.indexOf("const sizeToContent = () => {");
     const snapIndex = source.indexOf("snapToLineGrid(", effectStart);
     const skipIndex = source.indexOf(
       "if (natural === startHeight) return;",
@@ -87,6 +87,22 @@ describe("AgentTextarea auto-resize", () => {
     const resetIndex = source.indexOf('el.style.height = "0px";');
     expect(source.indexOf("el.scrollTop = scrollTop;", resetIndex)).toBeGreaterThan(
       resetIndex,
+    );
+  });
+
+  it("re-measures when the composer's width changes", () => {
+    // A Battle column added to a resizable group mounts at a sliver: the
+    // empty draft was measured there at the 200px cap and never re-measured
+    // when the column widened, so the newest column's composer stayed tall
+    // (2026-09-27). The measurement is shared by the text effect and a width
+    // observer that reacts to width changes only.
+    const observerIndex = source.indexOf("new ResizeObserver(");
+    expect(observerIndex).toBeGreaterThan(-1);
+    expect(source.indexOf("if (width === lastWidth) return;", observerIndex)).toBeGreaterThan(
+      observerIndex,
+    );
+    expect(source.indexOf("sizeToContentRef.current();", observerIndex)).toBeGreaterThan(
+      observerIndex,
     );
   });
 
