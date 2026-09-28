@@ -156,3 +156,37 @@ export function hitKey(hit: Pick<KnowledgeHit, "entity" | "id">): string {
 export function capturedByLabel(hit: KnowledgeHit): string {
   return hit.captured_by?.name ?? (hit.captured_by ? "Someone" : "Not reported");
 }
+
+// ─── Display text ───────────────────────────────────────────────────────────
+
+const NAMED_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+
+/**
+ * Text as a person should read it: tags stripped and entities decoded (a title
+ * captured from a page arrives as "Why <b>OpenAI</b> &amp; …"). Plain text is
+ * returned untouched.
+ */
+export function plainText(value: string | null | undefined): string {
+  const s = value ?? "";
+  if (!/[<&]/.test(s)) return s;
+  return s
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) => {
+      if (e[0] === "#") {
+        const code = e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+        return Number.isFinite(code) ? String.fromCodePoint(code) : m;
+      }
+      return NAMED_ENTITIES[e.toLowerCase()] ?? m;
+    })
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** A snippet without transcript scaffolding: "[Music]", "[Applause]", "Speaker 1:", "Unknown:". */
+export function cleanSnippet(value: string | null | undefined): string {
+  return plainText(value)
+    .replace(/\[(?:music|applause|laughter|laughs|inaudible|silence|noise|crosstalk|foreign)\]/gi, " ")
+    .replace(/(?:^|\s)(?:speaker[ _]?\d+|unknown|SPEAKER_\d+)\s*:\s*/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}

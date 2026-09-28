@@ -72,11 +72,10 @@ it("with no view query (a saved view, Everything) every filter stays a chip", ()
 const row = (over: Partial<TranscriptListRow>): TranscriptListRow =>
   ({ kind: "transcript", duration_seconds: null, word_count: null, is_draft: false, status: "", ...over }) as TranscriptListRow;
 
-it("a transcript row says its duration, words and draft state — and nothing it does not know", () => {
+it("a transcript row says its duration and words — never a draft flag no other layout shows — and nothing it does not know", () => {
   expect(transcriptRowFacts(row({ duration_seconds: 754, word_count: 2340, is_draft: true }))).toEqual([
     "13 min",
     "2,340 words",
-    "Draft",
   ]);
   expect(transcriptRowFacts(row({}))).toEqual([]);
   expect(transcriptRowFacts(row({ duration_seconds: 0, word_count: 0 }))).toEqual([]);

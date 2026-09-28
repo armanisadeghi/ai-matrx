@@ -1541,10 +1541,6 @@ export function KnowledgeHubPage({
                 <DropdownMenuRadioItem value="on">Rerank passages (best first, about a second slower)</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="off">Don&apos;t rerank (fastest)</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <p className="px-2 py-1.5 text-[11px] text-muted-foreground">
-                Developer tools for search (pipeline trace, agent simulation, diagnostics) are in the admin Search Lab.
-              </p>
             </DropdownMenuContent>
           </DropdownMenu>
           {dirty && openSavedView?.mine ? (

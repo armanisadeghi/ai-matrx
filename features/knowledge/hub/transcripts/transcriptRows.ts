@@ -21,6 +21,7 @@
 import { formatCount, formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
   TRANSCRIPT_MEDIA_LABEL,
+  cleanSnippet,
   isPlaceholderTitle,
   type TranscriptMediaKind,
 } from "@/features/knowledge/hub/hubPresentation";
@@ -544,8 +545,9 @@ export function transcriptRowFacts(
     out.push(formatDurationSeconds(fact.duration_seconds, { style: "coarse" }));
   if (typeof fact.word_count === "number" && fact.word_count > 0)
     out.push(`${formatCount(fact.word_count)} ${fact.word_count === 1 ? "word" : "words"}`);
-  if (fact.kind === "transcript" && fact.is_draft) out.push("Draft");
-  else if ((fact.kind === "session" || fact.kind === "cleanup") && fact.status && fact.status !== "completed")
+  // A live session says so; a transcript's draft flag is not shown on the row — it is not a
+  // status any other layout carries (the Status facet filters by it).
+  if ((fact.kind === "session" || fact.kind === "cleanup") && fact.status && fact.status !== "completed")
     out.push(fact.status.charAt(0).toUpperCase() + fact.status.slice(1).replace(/_/g, " "));
   return out;
 }
@@ -571,12 +573,12 @@ const SNIPPET_CHARS = 160;
 
 /** Join the leading segments, collapse whitespace, drop "[00:00:02] Unknown:" stamps, cut on a word. */
 export function snippetFromSegments(parts: (string | null | undefined)[], max = SNIPPET_CHARS): string | null {
-  const text = parts
-    .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
-    .join(" ")
-    .replace(/\[\d{1,2}:\d{2}(?::\d{2})?\]\s*(?:[^:\n]{1,40}:\s*)?/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const text = cleanSnippet(
+    parts
+      .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
+      .join(" ")
+      .replace(/\[\d{1,2}:\d{2}(?::\d{2})?\]\s*(?:[^:\n]{1,40}:\s*)?/g, " "),
+  );
   if (!text) return null;
   if (text.length <= max) return text;
   const cut = text.slice(0, max);

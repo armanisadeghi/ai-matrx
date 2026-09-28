@@ -14,8 +14,10 @@ import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/utils/cn";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import {
+  cleanSnippet,
   hitIcon,
   hitKey,
+  plainText,
   kindLabel,
   originLabel,
 } from "@/features/knowledge/hub/hubPresentation";
@@ -29,6 +31,8 @@ export interface RowContent {
   icon?: LucideIcon | null;
   /** A name to show when the record's own title is a placeholder ("unlabeled"). */
   title?: string | null;
+  /** The channel it came from — said instead of the origin ("Veritasium", not "YouTube · Veritasium"). */
+  channel?: string | null;
 }
 
 export interface ResultHandlers {
@@ -86,7 +90,7 @@ export function HitTitle({ hit, handlers, className }: { hit: KnowledgeHit; hand
       />
     );
   const shown = handlers.rowContent?.(hit)?.title;
-  return <div className={className}>{shown || hit.title}</div>;
+  return <div className={className}>{shown || plainText(hit.title)}</div>;
 }
 
 function filedWords(hit: KnowledgeHit): string | null {
@@ -101,11 +105,11 @@ function filedWords(hit: KnowledgeHit): string | null {
  * (a transcript's duration and word count), origin, the passage locator, and
  * where it is filed. The date is drawn separately (right edge of a row).
  */
-function metaParts(hit: KnowledgeHit, opts: { hideKind?: boolean; facts?: string[] }): string[] {
+function metaParts(hit: KnowledgeHit, opts: { hideKind?: boolean; hideOrigin?: boolean; facts?: string[] }): string[] {
   const filed = filedWords(hit);
   return [
     opts.hideKind ? null : kindLabel(hit),
-    hit.origin ? originLabel(hit.origin) : null,
+    hit.origin && !opts.hideOrigin ? originLabel(hit.origin) : null,
     ...(opts.facts ?? []),
     hit.entity === "segment" && hit.segment?.locator ? hit.segment.locator : null,
     filed ? `in ${filed}` : null,
@@ -205,10 +209,10 @@ export function ResultRow({
   const when = hitWhen(hit);
   const date = whenLabel !== undefined ? whenLabel : when ? formatRelativeTime(when) : null;
   const content = handlers.rowContent?.(hit);
-  const snippet = hit.snippet || content?.snippet || null;
+  const snippet = cleanSnippet(hit.snippet || content?.snippet) || null;
   const parts = [
     ...(compact && date ? [date] : []),
-    ...metaParts(hit, { hideKind, facts: handlers.rowFacts?.(hit) }),
+    ...metaParts(hit, { hideKind, hideOrigin: Boolean(content?.channel), facts: handlers.rowFacts?.(hit) }),
   ];
   const menu = handlers.rowMenu?.(hit);
   // A tag that repeats a fact already on the line (#Veritasium beside "Veritasium") is noise.
@@ -334,9 +338,9 @@ export function ResultCard({
         </div>
       </div>
       <HitTitle hit={hit} handlers={handlers} className="line-clamp-2 font-medium text-foreground" />
-      {hit.snippet || handlers.rowContent?.(hit)?.snippet ? (
+      {cleanSnippet(hit.snippet || content?.snippet) ? (
         <div className={cn("text-xs text-muted-foreground", tall ? "line-clamp-4" : "line-clamp-2")}>
-          {hit.snippet || handlers.rowContent?.(hit)?.snippet}
+          {cleanSnippet(hit.snippet || content?.snippet)}
         </div>
       ) : null}
       <TagChips tags={hitTags(hit)} onFilter={handlers.onFilterTag} />

@@ -116,7 +116,7 @@ export const HUB_KEY_SHEET: readonly { group: string; keys: { keys: string[]; la
       { keys: ["k", "↑"], label: "Previous item" },
       { keys: ["↵"], label: "Peek" },
       { keys: ["⌘", "↵"], label: "Open full" },
-      { keys: ["Esc"], label: "Close peek / clear selection" },
+      { keys: ["Esc"], label: "Close or clear" },
     ],
   },
   {
@@ -127,7 +127,7 @@ export const HUB_KEY_SHEET: readonly { group: string; keys: { keys: string[]; la
       { keys: ["i"], label: "Back to Inbox" },
       { keys: ["m"], label: "File under…" },
       { keys: ["t"], label: "Tag…" },
-      { keys: ["a"], label: "Accept the first filing suggestion" },
+      { keys: ["a"], label: "Accept suggestion" },
     ],
   },
   {
