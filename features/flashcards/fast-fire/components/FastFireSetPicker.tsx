@@ -68,7 +68,7 @@ export function FastFireSetPicker({
   value,
   onChange,
   disabled,
-  placeholder = "Select a flashcard set…",
+  placeholder = "Select a deck…",
 }: {
   id?: string;
   sets: FcSetRow[];
@@ -128,7 +128,7 @@ export function FastFireSetPicker({
       >
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search sets…"
+            placeholder="Search decks…"
             value={search}
             onValueChange={setSearch}
             className="text-base"
@@ -154,7 +154,7 @@ export function FastFireSetPicker({
             ))}
           </div>
           <CommandList className="max-h-64">
-            <CommandEmpty>No sets match your search.</CommandEmpty>
+            <CommandEmpty>No decks match your search.</CommandEmpty>
             <CommandGroup>
               {visibleSets.map((set) => {
                 const searchable = [

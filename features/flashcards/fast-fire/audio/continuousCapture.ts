@@ -338,7 +338,7 @@ async function startContinuousCaptureInner(
 ): Promise<void> {
   claimCapture({
     id: CAPTURE_ID,
-    label: "FastFire drill",
+    label: "Fast Fire drill",
     stop: () => hardStopCapture(),
   });
 
@@ -434,7 +434,7 @@ async function startContinuousCaptureInner(
 
   store.audioSession = beginRecordingSession({
     source: "recording",
-    label: "FastFire drill",
+    label: "Fast Fire drill",
     controls: { stop: () => hardStopCapture() },
   });
 

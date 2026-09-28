@@ -100,7 +100,7 @@ export function EducationHub() {
       steps: [
         { number: "01", title: "Bring anything", description: "Upload a PDF, record a lecture, paste a YouTube link, or snap a photo of your notes." },
         { number: "02", title: "Auto-build study material", description: "Flashcards, quizzes, summaries, mind maps, and audio overviews generate in seconds." },
-        { number: "03", title: "Study every way you learn", description: "FastFire spoken recall, spaced repetition, practice tests, and a context-aware AI tutor." },
+        { number: "03", title: "Study every way you learn", description: "Fast Fire spoken recall, spaced repetition, practice tests, and a context-aware AI tutor." },
         { number: "04", title: "Measure real progress", description: "Per-card mastery, weak-area surfacing, and pre/post learning-gain — not just streaks." },
       ],
     },
@@ -110,7 +110,7 @@ export function EducationHub() {
       subheading: "The capabilities no single competitor has matched.",
       columns: 2,
       items: [
-        { icon: AGENT_ICON, title: "FastFire", description: "Rapid-fire spoken recall, graded live and adapting mid-session.", href: eduHref("features", "fastfire") },
+        { icon: AGENT_ICON, title: "Fast Fire", description: "Rapid-fire spoken recall, graded live and adapting mid-session.", href: eduHref("features", "fastfire") },
         { icon: GraduationCap, title: "An AI tutor that knows everything", description: "Your sets, your history, your exam dates — present at every surface.", href: eduHref("features", "ai-tutor") },
         { icon: Upload, title: "Ingest anything", description: "PDF, video, audio, photos, YouTube, live lectures — all become study material.", href: "/education/start" },
         { icon: Trophy, title: "Graded the way you actually answer", description: "Spoken, written, typed, and handwritten — all graded with feedback.", href: eduHref("features", "ai-grading") },

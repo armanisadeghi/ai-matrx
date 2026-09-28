@@ -22,7 +22,7 @@ export default async function FastFireToolPage({
   const { set } = await searchParams;
   return (
     <>
-      <EducationToolHeader title="FastFire" />
+      <EducationToolHeader title="Fast Fire" />
       <div className="h-full overflow-hidden bg-textured">
         {/* One scroll owner for setup and scoreboard. The header offset keeps
             their first interactive controls below the AppShell glass. */}

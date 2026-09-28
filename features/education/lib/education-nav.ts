@@ -73,7 +73,7 @@ export const EDU_TOOL_NAV: EduToolNavEntry[] = [
   },
   {
     slug: "fastfire",
-    label: "FastFire",
+    label: "Fast Fire",
     iconName: "Flame",
     group: "Study",
     description: "Rapid-fire spoken recall, graded live",

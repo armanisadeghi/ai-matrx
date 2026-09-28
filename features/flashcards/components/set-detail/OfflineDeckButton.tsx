@@ -44,20 +44,13 @@ import {
   type OfflineDeckStatus,
 } from "../../data/offlineDeck";
 
-export function OfflineDeckButton({
-  setId,
-  disabled = false,
-  size = "default",
-  className,
-}: {
-  setId: string;
-  disabled?: boolean;
-  size?: "default" | "sm";
-  className?: string;
-}) {
+/**
+ * The offline-download state and actions for one deck — shared by the button
+ * and by menu items (the deck page's Export menu), so both say the same thing.
+ */
+export function useOfflineDeck(setId: string) {
   const userId = useAppSelector(selectUserId) ?? "";
   const [status, setStatus] = useState<OfflineDeckStatus | null>(null);
-  const [busy, startBusy] = useTransition();
   const [working, setWorking] = useState(false);
 
   useEffect(() => {
@@ -108,6 +101,81 @@ export function OfflineDeckButton({
     }
   };
 
+  return { status, working, download, remove };
+}
+
+/** The same control as menu items, for a DropdownMenuContent. */
+export function OfflineDeckMenuItems({
+  setId,
+  disabled = false,
+}: {
+  setId: string;
+  disabled?: boolean;
+}) {
+  const { status, working, download, remove } = useOfflineDeck(setId);
+  if (status && !status.available) {
+    return (
+      <DropdownMenuItem disabled className="gap-2">
+        <CloudOff className="h-4 w-4 text-muted-foreground" />
+        Offline unavailable in this browser
+      </DropdownMenuItem>
+    );
+  }
+  if (status?.downloaded) {
+    return (
+      <>
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+          On this device since{" "}
+          {status.cachedAt ? new Date(status.cachedAt).toLocaleDateString() : "recently"}
+        </DropdownMenuLabel>
+        <DropdownMenuItem
+          className="gap-2"
+          disabled={working}
+          onClick={() => void download(true)}
+        >
+          <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          Update offline download
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="gap-2"
+          disabled={working}
+          onClick={() => void remove()}
+        >
+          <Trash2 className="h-4 w-4 text-muted-foreground" />
+          Remove from this device
+        </DropdownMenuItem>
+      </>
+    );
+  }
+  return (
+    <DropdownMenuItem
+      className="gap-2"
+      disabled={disabled || working}
+      onClick={() => void download(false)}
+    >
+      {working ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <CloudDownload className="h-4 w-4 text-muted-foreground" />
+      )}
+      Download for offline
+    </DropdownMenuItem>
+  );
+}
+
+export function OfflineDeckButton({
+  setId,
+  disabled = false,
+  size = "default",
+  className,
+}: {
+  setId: string;
+  disabled?: boolean;
+  size?: "default" | "sm";
+  className?: string;
+}) {
+  const { status, working, download, remove } = useOfflineDeck(setId);
+  const [busy, startBusy] = useTransition();
   // Unknown yet — render the un-downloaded shape rather than a flicker of
   // "Downloaded" that turns out to be wrong.
   const known = status != null;

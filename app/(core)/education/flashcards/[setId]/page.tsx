@@ -8,6 +8,31 @@ import { toolMetadata } from "@/features/education/route-helpers";
 import { SetDetailView } from "@/features/flashcards/components/set-detail/SetDetailView";
 import { loginHref } from "@/utils/auth/auth-destination";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
+import { createClient } from "@/utils/supabase/server";
+import { displayTitle } from "@/components/markdown-core/plain-title";
+
+/** A server read never waits without a limit: past this the header shows a
+ *  placeholder and the client fills the name in. */
+const DECK_NAME_READ_MS = 1500;
+
+/** The deck's name for the header's first paint (page-pass 2026-09-27: the
+ *  header said "Flashcard set" for seconds while the client loaded). */
+async function readDeckName(setId: string): Promise<string | null> {
+  const read = (async () => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .schema("education")
+      .from("fc_set")
+      .select("name")
+      .eq("id", setId)
+      .maybeSingle();
+    return data?.name ? displayTitle(data.name) : null;
+  })().catch(() => null);
+  const timeout = new Promise<null>((resolve) =>
+    setTimeout(() => resolve(null), DECK_NAME_READ_MS),
+  );
+  return Promise.race([read, timeout]);
+}
 
 export const metadata: Metadata = toolMetadata("flashcards");
 
@@ -22,5 +47,6 @@ export default async function FlashcardSetPage({
   const destination = `/education/flashcards/${setId}`;
   const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect(loginHref(destination));
-  return <SetDetailView setId={setId} />;
+  const initialName = await readDeckName(setId);
+  return <SetDetailView setId={setId} initialName={initialName} />;
 }

@@ -495,8 +495,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   {
     key: "flashcard",
     token: "fc_set",
-    label: "Flashcard Set",
-    labelPlural: "Flashcards",
+    label: "Flashcard Deck",
+    labelPlural: "Flashcard Decks",
     role: "destination",
     icon: Layers,
     description: "Study cards generated from your content.",

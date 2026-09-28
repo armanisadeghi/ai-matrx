@@ -53,7 +53,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
   },
   {
     slug: "fastfire",
-    name: "FastFire",
+    name: "Fast Fire",
     tagline: "Rapid-fire spoken-recall sessions, graded live",
     description: "The signature mode: configure pace, fire cards, answer aloud, get parallel AI grading and live session adaptation.",
     icon: Flame,

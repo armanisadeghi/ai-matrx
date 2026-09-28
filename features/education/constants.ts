@@ -77,7 +77,7 @@ export const EDU_AXES: AxisConfig[] = [
     id: "features",
     label: "Features",
     segment: "features",
-    blurb: "FastFire, the AI tutor, voice grading — what makes us different.",
+    blurb: "Fast Fire, the AI tutor, voice grading — what makes us different.",
     icon: BrainCircuit,
     letter: "Ef",
   },

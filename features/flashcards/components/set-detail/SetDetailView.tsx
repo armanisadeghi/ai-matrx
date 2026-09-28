@@ -53,6 +53,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -136,7 +138,7 @@ import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromCh
 import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { AddMoreCardsButton } from "./AddMoreCardsButton";
 import { ClassPicker } from "@/features/education/classes/components/ClassPicker";
-import { OfflineDeckButton } from "./OfflineDeckButton";
+import { OfflineDeckButton, OfflineDeckMenuItems } from "./OfflineDeckButton";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import {
   Drawer,
@@ -410,7 +412,14 @@ function CardPeek({
   );
 }
 
-export function SetDetailView({ setId }: { setId: string }) {
+export function SetDetailView({
+  setId,
+  initialName = null,
+}: {
+  setId: string;
+  /** Read on the server so the header names the deck on its first paint. */
+  initialName?: string | null;
+}) {
   useFlashcardMandates(["enrichCard"]);
   const router = useRouter();
   const [data, setData] = useState<SetWithCards | null>(null);
@@ -458,7 +467,7 @@ export function SetDetailView({ setId }: { setId: string }) {
       const res = await fcService.getSetWithCards(setId);
       if (cancelled) return;
       if (!res.data) {
-        setError(res.error ?? recordUnavailableMessage("flashcard set", "unknown"));
+        setError(res.error ?? recordUnavailableMessage("deck", "unknown"));
         setData(null);
         setLoading(false);
       } else {
@@ -601,7 +610,7 @@ export function SetDetailView({ setId }: { setId: string }) {
     const selected = selectedIds.size > 0 ? selectedIds : null;
     if (enrichPlan.todo.length === 0) {
       toast.info(
-        "Every card in this set already has detail layers. Select the cards you want more on and run it again.",
+        "Every card in this deck already has detail layers. Select the cards you want more on and run it again.",
       );
       return;
     }
@@ -804,7 +813,7 @@ export function SetDetailView({ setId }: { setId: string }) {
 
   return (
     <div className="h-full w-full overflow-y-auto bg-textured">
-      <EducationToolHeader title={data?.set.name ?? "Flashcard set"} />
+      <EducationToolHeader title={data?.set.name ?? initialName ?? "Deck"} />
       <div className="matrx-touch-targets mx-auto max-w-6xl px-3 pb-safe pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-6 sm:pb-8 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
         {loading ? (
           <>
@@ -1026,6 +1035,9 @@ export function SetDetailView({ setId }: { setId: string }) {
                   <History className="mr-1.5 h-4 w-4" />
                   History
                 </Button>
+                {/* Export, Print and Download for offline are one menu
+                    (page-pass 2026-09-27): every one still one click away on
+                    desktop, in one button instead of three. */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -1034,33 +1046,37 @@ export function SetDetailView({ setId }: { setId: string }) {
                     >
                       <Download className="mr-1.5 h-4 w-4" />
                       Export
+                      <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="start" className="w-64">
+                    <DropdownMenuItem onClick={handlePrint} className="gap-2">
+                      <Printer className="h-4 w-4 text-muted-foreground" />
+                      Print
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {/* Keeps THIS deck studiable here with no connection
+                        (a file export is below). */}
+                    <OfflineDeckMenuItems
+                      setId={setId}
+                      disabled={data.cards.length === 0}
+                    />
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                      Download as a file
+                    </DropdownMenuLabel>
                     {(["csv", "anki", "md", "json"] as const).map((format) => (
                       <DropdownMenuItem
                         key={format}
                         onClick={() => exportDeck(format)}
+                        className="gap-2"
                       >
+                        <Download className="h-4 w-4 text-muted-foreground" />
                         {DECK_EXPORT_FILE[format].label}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button
-                  variant="outline"
-                  onClick={handlePrint}
-                  disabled={data.cards.length === 0}
-                >
-                  <Printer className="mr-1.5 h-4 w-4" />
-                  Print
-                </Button>
-                {/* Download for offline — keeps THIS deck studiable in THIS
-                    app with no connection (Export hands you a file). */}
-                <OfflineDeckButton
-                  setId={setId}
-                  disabled={data.cards.length === 0}
-                />
                 {canEdit && (
                   <div className="flex flex-col items-start gap-0.5">
                     <Button
@@ -1103,7 +1119,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                       ) : (
                         <Images className="mr-1.5 h-4 w-4" />
                       )}
-                      Illustrate this set
+                      Illustrate
                     </Button>
                     {/* Limits BEFORE the cap — never ambush a batch mid-run. */}
                     <EntitlementMeter capability="education.card_image_source" />
@@ -1117,15 +1133,73 @@ export function SetDetailView({ setId }: { setId: string }) {
                   <Boxes className="mr-1.5 h-4 w-4" />
                   Convert
                 </Button>
+                {/* The deck's audio jobs — one menu in the same row (they
+                    were their own row of three buttons). */}
+                {data.cards.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline">
+                        <Volume2 className="mr-1.5 h-4 w-4" />
+                        Audio
+                        <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuItem
+                        className="gap-2"
+                        onClick={() => startAudioJob("generate")}
+                      >
+                        <Volume2 className="h-4 w-4 text-muted-foreground" />
+                        {data.set.audio_overview_file_id
+                          ? "Regenerate audio overview"
+                          : "Generate audio overview"}
+                      </DropdownMenuItem>
+                      {(
+                        [
+                          ["spoken_front", "card audio", Mic],
+                          ["helper", "instant help", HelpCircle],
+                        ] as const
+                      ).map(([lane, noun, Icon]) => {
+                        const { ready, total } = deckAudioCoverage(data.cards, lane);
+                        const done = ready >= total;
+                        return (
+                          <DropdownMenuItem
+                            key={lane}
+                            className="gap-2"
+                            disabled={done}
+                            onClick={() => startAudioJob(lane)}
+                          >
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                            {done
+                              ? `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ready`
+                              : ready > 0
+                                ? `Prepare ${noun} (${ready}/${total} done)`
+                                : `Prepare ${noun}`}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-              <EducationCollectionSearch
-                value={cardSearch}
-                onValueChange={setCardSearch}
-                label="cards in this deck"
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <EducationCollectionSearch
+                  value={cardSearch}
+                  onValueChange={setCardSearch}
+                  label="cards in this deck"
+                />
+                {/* Desktop: selection starts beside the card search (the
+                    phone opens it from Deck tools). */}
+                {canEdit && !isPhone && !selecting && data.cards.length > 0 && (
+                  <Button variant="outline" onClick={() => setSelecting(true)}>
+                    <MousePointerClick className="mr-1.5 h-4 w-4" />
+                    Select cards
+                  </Button>
+                )}
+              </div>
               {cardSearch.trim() && (
                 <span className="text-xs text-muted-foreground">
                   {filteredCards.length} of {data.cards.length} cards match
@@ -1236,7 +1310,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                 in Deck tools); desktop keeps the whole section. */}
             <div className="mt-4 empty:hidden">
               <AudioOverviewSection
-                statusOnly={isPhone}
+                statusOnly
                 runSignals={audioRun}
                 setId={setId}
                 set={data.set}
@@ -1261,10 +1335,10 @@ export function SetDetailView({ setId }: { setId: string }) {
                 <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center">
                   <BookOpen className="h-6 w-6 text-muted-foreground" />
                   <p className="text-sm font-medium text-foreground">
-                    This set has no cards yet
+                    This deck has no cards yet
                   </p>
                   <p className="max-w-sm text-xs text-muted-foreground">
-                    Generate cards for this set in chat to start studying.
+                    Generate cards for this deck in chat to start studying.
                   </p>
                 </div>
               ) : (
@@ -1277,7 +1351,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                       states exactly what each action will do. */}
                   {/* Desktop keeps "Select cards" on the page; the phone
                       opens selection from Deck tools. */}
-                  {canEdit && (selecting || !isPhone) && (
+                  {canEdit && selecting && (
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       {selecting ? (
                         <>
@@ -1665,8 +1739,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                             void illustrate.guard(runIllustrate);
                           }}
                         >
-                          <Images className="mr-2 h-4 w-4" /> Illustrate this
-                          set
+                          <Images className="mr-2 h-4 w-4" /> Illustrate this deck
                         </Button>
                       )}
                       {canEdit && (

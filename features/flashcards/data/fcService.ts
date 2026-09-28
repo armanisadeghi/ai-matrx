@@ -258,6 +258,32 @@ export const fcService = {
     return softDeleteOne("fc_set", setId, "deleteSet", "set");
   },
 
+  /**
+   * The deck's name and whether it is archived — for a link that names a deck
+   * the normal (live-only) reads do not return. Null when the person cannot
+   * see it at all.
+   */
+  async getSetIncludingArchived(
+    setId: string,
+  ): Promise<FcResult<{ name: string; archived: boolean } | null>> {
+    try {
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .select("name, deleted_at")
+        .eq("id", setId)
+        .maybeSingle();
+      if (error) return fail("getSetIncludingArchived", error);
+      return {
+        data: data
+          ? { name: displayTitle(data.name), archived: data.deleted_at !== null }
+          : null,
+        error: null,
+      };
+    } catch (e) {
+      return fail("getSetIncludingArchived", e);
+    }
+  },
+
   async getSet(setId: string): Promise<FcResult<FcSetRow>> {
     try {
       // maybeSingle (not single): an RLS-hidden or missing row returns no row

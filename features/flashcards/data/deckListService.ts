@@ -9,6 +9,7 @@
 // SECURITY INVOKER RPCs: the table's RLS is the ceiling; each call declares
 // its lane (THE VIEW LAW).
 
+import { displayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 
@@ -68,6 +69,9 @@ export async function fetchDeckPage(
   return {
     rows: rows.map(({ total_count: _total, ...row }) => ({
       ...row,
+      // Display form: rows saved before the write boundary cleaned titles
+      // still start with a markdown "# " (page-pass 2026-09-27).
+      name: displayTitle(row.name),
       folder_ids: row.folder_ids ?? [],
     })),
     total: rows[0]?.total_count ?? 0,
