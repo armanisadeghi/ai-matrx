@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-28T19:48:13.129Z",
+  "generated_at": "2026-09-28T20:12:00.906Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -769,6 +769,12 @@
       "filename": "datahome2_b_the_data_home_default_organization_is_a_knob.sql",
       "checksum": "8d31a2c749827b6736967bd16a1bb1cd1ffd7aa8cca6755a4e747f49f2f00048",
       "applied_at": "2026-09-28 19:20:48.464373+00"
+    },
+    "migrations/campaign/datahome2_c_the_data_home_lists_every_organizations_forms_and_pages.sql": {
+      "source": "matrx-frontend",
+      "filename": "datahome2_c_the_data_home_lists_every_organizations_forms_and_pages.sql",
+      "checksum": "5291f3d038afbb8ff9d185ae6df5608860d6894fd5c720d446eeb6341b62b62b",
+      "applied_at": "2026-09-28 19:58:47.230636+00"
     },
     "migrations/campaign/datav2face2_a_copied_table_opens_as_the_sheet_it_was.sql": {
       "source": "campaign",
@@ -2600,6 +2606,12 @@
       "checksum": "50b3f907d66c67d44774352ce4b8ff8703919122a7d130d4398df52bd001488b",
       "applied_at": "2026-09-27 19:16:45.581814+00"
     },
+    "migrations/campaign/handover_a_public_choice_question_carries_its_choices.sql": {
+      "source": "matrx-frontend",
+      "filename": "handover_a_public_choice_question_carries_its_choices.sql",
+      "checksum": "83d5a7c0aa11674665fe121de9d6aeb7fb6965fb15b1d37437a95c4aafeaf2f2",
+      "applied_at": "2026-09-28 20:11:59.79853+00"
+    },
     "migrations/campaign/handover_a_refusal_never_prints_an_id_or_a_clock.sql": {
       "source": "matrx-frontend",
       "filename": "handover_a_refusal_never_prints_an_id_or_a_clock.sql",
@@ -4045,6 +4057,24 @@
       "filename": "scopeadmin2_the_platform_admin_edits_any_organizations_scopes_from_administration.sql",
       "checksum": "516563d6e3f585f1f080c16e755eebf6038438c7204a32308a2282db312e1512",
       "applied_at": "2026-09-25 23:12:07.380961+00"
+    },
+    "migrations/campaign/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql",
+      "checksum": "a7adf2c5fed76cfbce47bd780b872e9c8a4a46c6993a877f46adbd3157a766d4",
+      "applied_at": "2026-09-28 20:10:01.796498+00"
+    },
+    "migrations/campaign/scopeshomes_a_scope_slug_is_unique_in_its_table_for_every_writer.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeshomes_a_scope_slug_is_unique_in_its_table_for_every_writer.sql",
+      "checksum": "8afbea7526257de197df3d7dfab6e06e887ef83ace3f84a82af0897c7c8d6afa",
+      "applied_at": "2026-09-28 19:55:15.263351+00"
+    },
+    "migrations/campaign/scopeshomes_a_unique_rule_skips_a_write_that_keeps_the_value.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeshomes_a_unique_rule_skips_a_write_that_keeps_the_value.sql",
+      "checksum": "6a33d108b29990880784356c998353da197a05d14f393d494e17b4e05f36005e",
+      "applied_at": "2026-09-28 20:11:05.222036+00"
     },
     "migrations/campaign/scopeshomes_every_column_a_scope_reader_uses_has_a_home_in_the_store.sql": {
       "source": "matrx-frontend",
