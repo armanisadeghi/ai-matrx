@@ -34,7 +34,8 @@ import {
 } from '@/features/data-tables/validation';
 import { columnRuleRefusal, type ColumnRuleRefusal } from '@/features/data-tables/validation-refusal';
 import { FieldRuleRefusal } from '@/features/data-tables/components/FieldRuleRefusal';
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProInput } from "@/components/official/ProInput";
+import { columnKindWord } from "@/features/data-tables/column-kind-word";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AddRowModalProps {
@@ -373,13 +374,14 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relat
         );
         
       default: // string and other types
+        // A plain text column is one line, the way the grid's cell edits it (DATA-V2-BASICS-2,
+        // B-F3): three-line boxes under every name made a four-column row a page tall. Long text
+        // and Markdown columns have their own box (FormatAwareInput, above).
         return (
-          <ProTextarea
+          <ProInput
             id={field.field_name}
             value={value === null || value === undefined ? '' : value}
             onChange={(e) => handleValueChange(field.field_name, e.target.value)}
-            rows={3}
-            className="resize-y"
             placeholder={`Enter ${field.display_name.toLowerCase()}`}
           />
         );
@@ -413,7 +415,7 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relat
                       {field.is_required && <span className="text-red-500 ml-1">*</span>}
                     </Label>
                     <span className="text-xs text-muted-foreground">
-                      {field.data_type}
+                      {columnKindWord(field)}
                     </span>
                   </div>
                   {renderFieldInput(field)}

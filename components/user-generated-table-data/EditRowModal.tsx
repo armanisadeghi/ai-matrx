@@ -52,6 +52,7 @@ import {
 import { columnRuleRefusal, type ColumnRuleRefusal } from "@/features/data-tables/validation-refusal";
 import { FieldRuleRefusal } from "@/features/data-tables/components/FieldRuleRefusal";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { columnKindWord } from "@/features/data-tables/column-kind-word";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface TableField {
@@ -591,7 +592,7 @@ export default function EditRowModal({
                       )}
                     </Label>
                     <span className="text-xs text-muted-foreground">
-                      {field.data_type}
+                      {columnKindWord(field)}
                     </span>
                   </div>
                   {renderFieldInput(field)}
