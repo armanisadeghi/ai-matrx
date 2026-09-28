@@ -693,6 +693,7 @@ export function GoogleContactsImportPanel({
             Back
           </Button>
           <span className="text-xs text-muted-foreground">
+            {/* read-gate-exempt: contacts in the import plan the person just built; plans is set only when that plan call returned */}
             {plans.length} contact{plans.length === 1 ? "" : "s"} — check where each
             value lands, then save.
           </span>
@@ -922,7 +923,7 @@ export function GoogleContactsImportPanel({
             <span className="flex items-center gap-1">
               <Loader2 className="h-3 w-3 animate-spin" /> Reading Google Contacts…
             </span>
-          ) : search ? (
+          ) : readFailure == null && search ? (
             <span>
               {search.count} shown of {search.total_read} read from{" "}
               {search.google_account ?? "your Google account"}
@@ -1117,6 +1118,7 @@ export function GoogleContactsImportPanel({
       {selectionControls.offered ? (
       <div className="flex items-center gap-2 border-t border-border px-4 py-2">
         <span className="text-xs text-muted-foreground">
+          {/* read-gate-exempt: selection controls are offered only over rows a read of this account returned (googleImportSelectionControls absent under failure) */}
           {selectionControls.ids.length} selected
         </span>
         <Button

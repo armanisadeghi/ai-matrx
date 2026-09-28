@@ -465,7 +465,9 @@ function ResourceAttachPickerBody({
           <span className="text-[11px] text-muted-foreground">
             {selectedList.length > 0
               ? `${selectedList.length} selected`
-              : `${matches.length} ${noun}`}
+              : loadError
+                ? ""
+                : `${matches.length} ${noun}`}
           </span>
           <div className="flex items-center gap-2">
             <Button
