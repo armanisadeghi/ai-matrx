@@ -270,12 +270,8 @@ export default function AdminEventsPage() {
         </span>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-500">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      )}
+      {/* One failure, one message: the table below shows this read's failure
+          (read=…) — as ReadFailure with no rows, or a stale notice over rows. */}
 
       <div className="min-h-0 flex-1">
         {/* A PLAIN DOM CHILD, not the table itself — MatrxDataTable forwards
