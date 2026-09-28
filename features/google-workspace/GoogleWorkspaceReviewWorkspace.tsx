@@ -489,13 +489,15 @@ export function GoogleWorkspaceReviewWorkspace({
   const disconnect = () => {
     if (!activeConnection) return;
     void run("disconnect", async () => {
-      await disconnectGoogle.mutateAsync(activeConnection.id);
+      const result = await disconnectGoogle.mutateAsync(activeConnection.id);
       if (pickerSessionConnectionId === activeConnection.id) {
         setPickerSessionConnectionId(null);
       }
       setActiveConnectionId(null);
       setSelectedResourceId(null);
-      toast.success("Google account disconnected and authorization revoked.");
+      toast.success(result.googleAuthorizationRemainsActive
+        ? "Google connection removed from AI Matrx. Google authorization remains active for your other connection to this account."
+        : "Google account disconnected. Google authorization revocation was requested.");
     });
   };
 
