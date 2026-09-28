@@ -19,10 +19,7 @@ import {
   type AuditSchemaSummaryRow,
   type AuditSummaryRow,
 } from "../types";
-import {
-  auditRowsToAgentInput,
-  SCHEMA_SUMMARY_TABLE_COPY,
-} from "../utils/aiExport";
+import { SCHEMA_SUMMARY_TABLE_COPY } from "../utils/aiExport";
 import { exportRowsAsCsv } from "../utils/exportCsv";
 
 /** Rolls the per-table `audit.summary` rows up to one row per schema. */
@@ -184,7 +181,10 @@ export function SchemaSummaryPage() {
   const initialSort = COLUMNS.some((column) => column.id === legacySort)
     ? {
         id: legacySort ?? "fails",
-        direction: searchParams.get("dir") === "asc" ? ("asc" as const) : ("desc" as const),
+        direction:
+          searchParams.get("dir") === "asc"
+            ? ("asc" as const)
+            : ("desc" as const),
       }
     : { id: "fails", direction: "desc" as const };
   const { rows, loading, error, reload } = useAuditDataset<AuditSummaryRow>(
@@ -240,10 +240,6 @@ export function SchemaSummaryPage() {
             ...SCHEMA_SUMMARY_TABLE_COPY,
             listHuman: (visible) =>
               visible.map(SCHEMA_SUMMARY_TABLE_COPY.humanRow).join("\n\n"),
-            listAgent: (visible, all) =>
-              auditRowsToAgentInput(SCHEMA_SUMMARY_TABLE_COPY, visible, all, {
-                filtered: visible.length !== all.length ? "yes" : "no",
-              }),
             export: (visible) => ({
               items: [
                 {
