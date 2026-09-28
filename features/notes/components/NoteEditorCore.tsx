@@ -509,10 +509,10 @@ export function NoteEditorCore({
           editor (and delivers pending typing) instead of remounting it. The host's
           mode control is the one view switch — the editor draws no toolbar row. */}
       {isRichEditorMode(editorMode) && (
-        // The app's text, not a stylesheet's: Toast UI's global CSS (still
-        // loaded by other screens) styles every `.ProseMirror` as 13px Open
-        // Sans; Write reads in the same font and size as Read and Plain.
-        <div className="absolute inset-0 w-full h-full [&_.ProseMirror]:font-sans [&_.ProseMirror]:text-sm [&_.ProseMirror]:leading-relaxed [&_.ProseMirror]:text-foreground">
+        // Write reads in the same font and size as Read and Plain (14px app
+        // sans) — `!` because the editor's own prose-base is also a utility.
+        // rich-editor.css neutralises Toast UI's global 13px Open Sans rule.
+        <div className="absolute inset-0 w-full h-full [&_.ProseMirror]:font-sans [&_.ProseMirror]:text-sm!">
           <RichEditor
             key={resetKey}
             value={content}

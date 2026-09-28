@@ -147,3 +147,13 @@
 .rich-editor-island[data-island-type="fence"] .rich-editor-island-render [data-code-snippet-header] {
   display: none;
 }
+
+/* Toast UI's global stylesheet (still loaded by other screens) sets every
+   `.ProseMirror` to 13px Open Sans, unlayered — so it beats every Tailwind
+   utility, prose sizes included. revert-layer hands both back to the layered
+   cascade: the app's font and the editor's own prose size.
+   (page-pass /notes, 2026-09-27) */
+.rich-editor-visual .ProseMirror {
+  font-family: revert-layer;
+  font-size: revert-layer;
+}
