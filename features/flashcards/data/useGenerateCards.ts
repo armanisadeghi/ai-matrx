@@ -157,9 +157,6 @@ export function useGenerateCards(): GenerateCardsResult {
     const fromSource = isFromSourceVars(vars);
     return run<GeneratedCardSet>({
       mandateKey,
-      ...(opts.onConversationCreated
-        ? { onConversationCreated: opts.onConversationCreated }
-        : {}),
       surfaceKey: fromSource
         ? "flashcards-create-from-source"
         : "flashcards-create-from-topic",
@@ -195,7 +192,11 @@ export function useGenerateCards(): GenerateCardsResult {
       // claim the conversation so the stream's commit never materializes a
       // twin deck (a check-then-create race both writers could lose, seen
       // live 2026-09-28 on /education/flashcards/new).
-      onConversationCreated: claimConversationForSurface,
+      // The caller's own hook (e.g. stamping an existing deck) still runs.
+      onConversationCreated: (conversationId: string) => {
+        claimConversationForSurface(conversationId);
+        opts.onConversationCreated?.(conversationId);
+      },
       timeoutMs: EXTRACTION_TIMEOUT_MS,
       pollIntervalMs: POLL_INTERVAL_MS,
       failureMessages: {
