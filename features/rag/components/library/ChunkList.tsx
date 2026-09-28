@@ -458,6 +458,7 @@ export function ChunksOnPage({
         {total > chunks.length && (
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground italic">
+              {/* read-gate-exempt: both numbers come from pages that DID load; a failed next page keeps them (stale-while-error) and says the failure above */}
               Showing first {chunks.length} of {total}.
             </p>
             <Button
