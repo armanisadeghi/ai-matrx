@@ -141,6 +141,17 @@ same anchor and whatever is made lands in THIS kit.
 
 ## Change log
 
+- **wave 4b adversarial proof, 2026-09-28** — Agent surface proven live on production with a real
+  agent run against a real kit ("Photosynthesis in Plant Cells", `sourceId`
+  `b9dd08a8-c8a6-445d-9848-69205e04adf8`): asked "What study materials came out of this kit, and
+  how many are there?" and it correctly named all 6 (summary, study guide/notes, mind map,
+  flashcard deck with 8 cards, memory aid, audio overview) from the surface's own `study_aids`
+  context, none invented. Also fixed a real bug found while proving this: `listKits()` ran a
+  library-page scan plus up to four concurrent `assoc_for_sources` calls with no retry, so a single
+  transient PostgREST condition (57014/08006-class — common under the shared preview server's
+  concurrent agent-walk load) failed the WHOLE `/education/kits` list with "Could not load your
+  study kits"; both reads now go through `lib/db/transientRetry.ts`
+  (`features/education/kits/kitService.ts`).
 - **page-pass 2026-09-28 (wave 4c)** — type list/detail, posture sharp after Linear. `/education/kits` and `/education/kits/[id]` on phone: "New kit" (90x32), the "Search study kits" input (343x36), and the empty state's "Create a study kit" (151x32) all sat under the 44px touch floor. Gave `KitsHome.tsx`'s and `KitHub.tsx`'s roots `matrx-touch-targets` and marked the two Link-as-Button anchors `data-tap-target`. Verified live against production (signed in as admin). Commit `d59b6f6abb`.
 - **2026-09-27** — Agent surface `matrx-user/education-kits` (label "Study Kits",
   `features/surfaces/manifests/education-kits.manifest.ts`) for both routes; view-only. The
