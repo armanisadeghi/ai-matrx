@@ -389,7 +389,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "find_replace",
     label: "Find & replace state",
     description:
-      "Present only while the find & replace bar is open: { query, scope: file|global, case_sensitive, use_regex, match_count }. Absent when the bar is closed. Bindable-only — rarely useful as automatic context.",
+      "While the find & replace bar is open: { query, scope: file|global, case_sensitive, use_regex, match_count }. null while the bar is closed (answered, never absent). Bindable-only — rarely useful as automatic context.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 120,
@@ -648,7 +648,9 @@ export function createNotesScope(values: {
     case_sensitive: boolean;
     use_regex: boolean;
     match_count: number;
-  };
+  } | null;
+  /** Baseline value: a note shows no custom-fields section, so it is always []. */
+  custom_fields?: unknown[];
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }
