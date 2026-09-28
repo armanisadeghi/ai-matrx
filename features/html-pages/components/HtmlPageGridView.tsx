@@ -83,7 +83,10 @@ function LazyPreviewCard({
             sandbox="allow-scripts allow-same-origin"
             loading="lazy"
             onLoad={() => setIframeLoaded(true)}
-            className="pointer-events-none absolute top-0 left-0 origin-top-left border-0"
+            className="pointer-events-none absolute top-0 left-0 max-w-none origin-top-left border-0"
+            // Drawn at 200% then scaled to half: `max-w-none` keeps the phone
+            // `* { max-width: 100% }` default from clamping it back to 100%,
+            // which left the preview filling only the left half of the card.
             style={{
               width: "200%",
               height: "200%",
