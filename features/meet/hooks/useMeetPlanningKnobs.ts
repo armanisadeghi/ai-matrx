@@ -31,6 +31,7 @@ import {
 
 export interface MeetPlanningKnobs {
   readonly loaded: boolean;
+  readonly failure: string | null;
   readonly showExternalEvents: boolean;
   readonly hours: WorkingHours;
   readonly stepMinutes: number;
@@ -40,6 +41,7 @@ export interface MeetPlanningKnobs {
 
 export const PLANNING_DEFAULTS: MeetPlanningKnobs = {
   loaded: false,
+  failure: null,
   showExternalEvents: true,
   hours: DEFAULT_WORKING_HOURS,
   stepMinutes: 30,
@@ -76,29 +78,39 @@ export function useMeetPlanningKnobs(
     if (userId === null) return undefined;
     let live = true;
     const read = (key: string) =>
-      supabase
-        .schema("platform")
-        .rpc("knob_resolve", {
-          p_feature: "meet",
-          p_key: key,
-          p_organization_id: organizationId as string,
-          p_user_id: userId,
-        })
-        .then(({ data, error }) => (error ? undefined : (data as unknown)));
+      supabase.schema("platform").rpc("knob_resolve", {
+        p_feature: "meet",
+        p_key: key,
+        p_organization_id: organizationId as string,
+        p_user_id: userId,
+      });
     void Promise.all(KEYS.map(read)).then(
       ([show, start, end, days, step, count, horizon]) => {
         if (!live) return;
+        const failure = [show, start, end, days, step, count, horizon].find(
+          (result) => result.error,
+        )?.error;
+        if (failure) {
+          setState({
+            ...PLANNING_DEFAULTS,
+            failure:
+              failure.message || "Your calendar settings could not be read.",
+            showExternalEvents: false,
+          });
+          return;
+        }
         setState({
           loaded: true,
-          showExternalEvents: typeof show === "boolean" ? show : true,
+          failure: null,
+          showExternalEvents: typeof show.data === "boolean" ? show.data : true,
           hours: {
-            start: parseClock(start, DEFAULT_WORKING_HOURS.start),
-            end: parseClock(end, DEFAULT_WORKING_HOURS.end),
-            days: parseWorkingDays(days),
+            start: parseClock(start.data, DEFAULT_WORKING_HOURS.start),
+            end: parseClock(end.data, DEFAULT_WORKING_HOURS.end),
+            days: parseWorkingDays(days.data),
           },
-          stepMinutes: positive(step, PLANNING_DEFAULTS.stepMinutes),
-          suggestions: positive(count, PLANNING_DEFAULTS.suggestions),
-          horizonDays: positive(horizon, PLANNING_DEFAULTS.horizonDays),
+          stepMinutes: positive(step.data, PLANNING_DEFAULTS.stepMinutes),
+          suggestions: positive(count.data, PLANNING_DEFAULTS.suggestions),
+          horizonDays: positive(horizon.data, PLANNING_DEFAULTS.horizonDays),
         });
       },
     );
@@ -108,7 +120,8 @@ export function useMeetPlanningKnobs(
   }, [organizationId, userId, nonce]);
 
   return {
-    ...state,
+    ...(userId === null ? PLANNING_DEFAULTS : state),
+    retry: () => setNonce((value) => value + 1),
     /**
      * The person's own answer (user rung, inside the active organization). The
      * screen changes at once; a refusal is thrown as the door's own sentence.

@@ -23,26 +23,26 @@ export interface ExternalEventsState {
   readonly loading: boolean;
   readonly failure: string | null;
   readonly events: readonly ExternalEvent[];
+  readonly retry: () => void;
 }
 
 export function useExternalEvents(
   userId: string | null,
   enabled: boolean,
-  nonce = 0,
 ): ExternalEventsState {
+  const [nonce, setNonce] = useState(0);
   const [state, setState] = useState<ExternalEventsState>({
     loading: false,
     failure: null,
     events: [],
+    retry: () => setNonce((value) => value + 1),
   });
 
   useEffect(() => {
     if (!enabled || userId === null) {
-      setState({ loading: false, failure: null, events: [] });
       return undefined;
     }
     let live = true;
-    setState((s) => ({ ...s, loading: true, failure: null }));
     const from = new Date(Date.now() - 24 * 3_600_000).toISOString();
     const to = new Date(
       Date.now() + UPCOMING_WINDOW_DAYS * 86_400_000,
@@ -63,7 +63,12 @@ export function useExternalEvents(
       .then(({ data, error }) => {
         if (!live) return;
         if (error) {
-          setState({ loading: false, failure: error.message, events: [] });
+          setState((current) => ({
+            ...current,
+            loading: false,
+            failure: error.message || "Your calendar events could not be read.",
+            events: [],
+          }));
           return;
         }
         const origin =
@@ -74,12 +79,20 @@ export function useExternalEvents(
           const event = toExternalEvent(row, origin);
           return event ? [event] : [];
         });
-        setState({ loading: false, failure: null, events });
+        setState((current) => ({
+          ...current,
+          loading: false,
+          failure: null,
+          events,
+        }));
       });
     return () => {
       live = false;
     };
   }, [userId, enabled, nonce]);
 
+  if (!enabled || userId === null) {
+    return { ...state, loading: false, failure: null, events: [] };
+  }
   return state;
 }

@@ -330,7 +330,7 @@ export function MeetingsHome() {
   const upcoming = upcomingRows(directory.occurrences, { scope, query, now });
   const listedSlugs = new Set(directory.meetings.map((m) => m.slug));
   const externalRows =
-    planning.showExternalEvents && scope === "mine"
+    planning.loaded && planning.showExternalEvents && scope === "mine"
       ? agendaExternalEvents(external.events, { now, query, listedSlugs })
       : [];
   const agendaRows: AgendaRow[] = [
@@ -433,6 +433,48 @@ export function MeetingsHome() {
                 size="sm"
                 className="mt-3"
                 onClick={directory.reload}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : tab === "upcoming" && planning.failure !== null ? (
+            <div
+              role="alert"
+              className="mt-6 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm"
+            >
+              <p className="font-medium">
+                Your calendar settings could not be loaded.
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                {planning.failure}
+                <ErrorAlchemyMenu error={planning.failure} size="xs" />
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={planning.retry}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : tab === "upcoming" && external.failure !== null ? (
+            <div
+              role="alert"
+              className="mt-6 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm"
+            >
+              <p className="font-medium">
+                Your calendar events could not be listed.
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                {external.failure}
+                <ErrorAlchemyMenu error={external.failure} size="xs" />
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={external.retry}
               >
                 Try again
               </Button>
