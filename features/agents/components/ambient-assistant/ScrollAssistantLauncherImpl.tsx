@@ -100,7 +100,11 @@ function AuthenticatedAmbientAssistant({
     // answered, so the page facts below reach a binding's consumption map.
     // `agentId` still paints the input bar from the chain's own resolution.
     mandateKey,
-    ready: Boolean(mandate) && !dismissed,
+    // Wait for the whole page → module → system chain: while an override is
+    // still loading the answering rung (and so `mandateKey`) can change, and a
+    // key change relaunches the managed conversation under the same id — the
+    // superseded launch's cleanup then reaps the new one and Send does nothing.
+    ready: Boolean(mandate) && !loading && !dismissed,
     retainOnUnmount: true,
     preferFresh: true,
     config: {
