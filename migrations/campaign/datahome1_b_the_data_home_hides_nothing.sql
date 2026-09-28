@@ -82,6 +82,19 @@ begin
          and (g.expires_at is null or g.expires_at > now())
        where not a.member
     ),
+    options_ids as materialized (
+      -- THE FIELD GRAPH, READ ONCE for every organization walked: which Tables a list column takes
+      -- its choices from. custom.table_placement asks this per Table (an EXISTS over the Field
+      -- kernel), which cost 21 s for a person in 46 organizations; asked once it is one scan.
+      select distinct (f.data -> 'config' ->> 'options_table_id') as id
+        from admitted a
+        join custom.record f
+          on f.organization_id = a.id
+         and f.table_id = custom.field_kernel_id()
+         and f.deleted_at is null
+         and f.data ->> 'type' = 'list'
+         and nullif(f.data -> 'config' ->> 'options_table_id', '') is not null
+    ),
     granted as materialized (
       -- SHARED: a live grant on a Table naming the person, given by somebody else.
       select distinct g.resource_id as id
@@ -136,7 +149,21 @@ begin
        and t.table_id = v_kernel
        and t.deleted_at is null
       cross join lateral (
-        select custom.table_placement(t.organization_id, t.id, t.data, t.data_class = 'kernel') as p
+        -- custom.table_placement's rule, word for word, with its one Field-graph question answered
+        -- from options_ids above instead of per row: kept when the store derives a keeper word, or
+        -- the document says kept_by_the_app / kept_for; kept_for = the stored word, else the
+        -- derived one, else 'app'.
+        select jsonb_build_object(
+                 'kept_by_the_app', d.kept,
+                 'kept_for', case when d.kept then coalesce(nullif(btrim(t.data ->> 'kept_for'), ''), d.word, 'app') end) as p
+          from (select w.word,
+                       (w.word is not null
+                        or coalesce(t.data ->> 'kept_by_the_app', '') = 'true'
+                        or coalesce(btrim(t.data ->> 'kept_for'), '') <> '') as kept
+                  from (select custom.table_kept_for_derived(
+                                 t.data, t.data_class = 'kernel',
+                                 case when t.data_class = 'kernel' then false
+                                      else exists (select 1 from options_ids o where o.id = t.id::text) end) as word) w) d
       ) pl;
 end;
 $function$;
