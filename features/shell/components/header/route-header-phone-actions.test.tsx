@@ -155,7 +155,11 @@ describe("RouteHeader on a phone — a menu is never the primary", () => {
     document.body.appendChild(rowEl);
     root = createRoot(rowEl);
     act(() => {
-      root.render(<RouteHeader left={<span>Record</span>} right={right} />);
+      root.render(
+        <ds.TooltipProvider>
+          <RouteHeader left={<span>Record</span>} right={right} />
+        </ds.TooltipProvider>,
+      );
     });
     return rowEl.querySelector("[data-route-header-right]")!;
   }
