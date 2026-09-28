@@ -1224,7 +1224,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // creates no scroll container, so the clipping is identical and sticky works.
   const containerStyles = cn(
     "pt-1 pb-0 px-0 space-y-4 font-sans text-md antialiased leading-relaxed tracking-wide overflow-x-clip min-w-0 break-words",
-    "block w-full bg-inherit",
+    // The first block starts flush (no top margin) — app/globals.css.
+    "block w-full bg-inherit markdown-flush-start",
     className,
   );
 

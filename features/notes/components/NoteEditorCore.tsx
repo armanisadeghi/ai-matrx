@@ -442,12 +442,16 @@ export function NoteEditorCore({
           actionsExclude={NOTE_EXCLUDED_ACTIONS}
           editorOverlay={findOverlay}
           previewContainerRef={previewContainerRef}
+          // Both panes start at the 24px every other view starts at (the
+          // preview's renderer adds its own 4px).
           textareaClassName={cn(
+            "pt-6",
             bottomPad,
             largeScrollbar && "scrollbar-contrast-lg",
             textareaClassName,
           )}
           previewClassName={cn(
+            "pt-5",
             bottomPad,
             largeScrollbar && "scrollbar-contrast-lg",
             previewClassName,
@@ -469,7 +473,8 @@ export function NoteEditorCore({
         <div
           ref={setPreviewScrollRef}
           className={cn(
-            "h-full overflow-y-auto max-w-3xl mx-auto py-6 px-6",
+            // pt-5 + the renderer's own pt-1 = the 24px Write and Plain start at.
+            "h-full overflow-y-auto max-w-3xl mx-auto pt-5 pb-6 px-6",
             bottomPad,
             previewScrollbarClass,
             previewClassName,

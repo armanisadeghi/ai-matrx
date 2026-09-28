@@ -2540,3 +2540,14 @@
   right: 0.5rem;
   padding-left: 0;
 }
+
+/* A RENDERED DOCUMENT STARTS FLUSH WITH ITS CONTAINER (page-pass /notes,
+   2026-09-28). The first block's top margin (the block wrapper's my-2 and a
+   leading heading's mt-4) pushed a note's Read view 24px below its Write and
+   Plain views; GitHub, Notion and every prose reader zero the first child's top
+   margin. "First" = the first block wrapper no earlier block precedes (empty
+   `contents` slots come first). Unlayered, so it out-ranks the utilities. */
+.markdown-flush-start > .contents:not(.contents:has(> .math-content-wrapper) ~ .contents) > .math-content-wrapper,
+.markdown-flush-start > .contents:not(.contents:has(> .math-content-wrapper) ~ .contents) > .math-content-wrapper > :first-child {
+  margin-top: 0;
+}
