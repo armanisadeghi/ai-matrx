@@ -57,8 +57,11 @@ const friction = (what) => {
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
 const page = await context.newPage();
+// The walk's own Resume request (the preview's walk cap) answers 409 when the host is already
+// running; that is the tooling, before the person signs in, and is not counted.
+let counting = false;
 page.on("console", (m) => {
-  if (m.type() !== "error") return;
+  if (m.type() !== "error" || !counting) return;
   const t = m.text();
   // The dev server's hot-reload socket and its own compile overlay are the preview, not the page.
   if (/_next\/hmr|WebSocket connection/.test(t)) return;
@@ -124,6 +127,45 @@ async function columnSettings(col) {
   return d;
 }
 
+/** Delete a column the way a person does: its settings → Delete column… → Remove column. */
+async function deleteColumn(col) {
+  await sleep(1500);
+  const d = await columnSettings(col).catch(async () => {
+    // The header row redraws after the previous removal; one more look, as a person would.
+    await page.keyboard.press("Escape");
+    await sleep(2500);
+    return columnSettings(col);
+  });
+  await d.getByRole("button", { name: /^Delete column/ }).click();
+  const ask = page.getByRole("alertdialog").filter({ hasText: `Remove "${col}"?` });
+  await ask.waitFor({ timeout: 15000 });
+  await ask.getByRole("button", { name: "Remove column", exact: true }).click();
+  await sleep(3500);
+  return !(await headers()).includes(col);
+}
+
+/** Stock Status back to a Choice column from its own settings, its values added as its choices. */
+async function stockBackToChoice() {
+  const d = await columnSettings("Stock Status");
+  const shows = d.getByRole("combobox").nth(1);
+  if (/Choice/.test(await shows.innerText())) {
+    await page.keyboard.press("Escape");
+    return "already a choice";
+  }
+  await shows.click();
+  await sleep(700);
+  await page.getByRole("option").filter({ hasText: /^Choice/ }).first().click();
+  await sleep(2500);
+  const addAll = d.getByRole("button", { name: /^Add all/ });
+  if (await addAll.count()) await addAll.first().click();
+  await sleep(400);
+  await d.getByRole("button", { name: "Save", exact: true }).click();
+  const ok = page.getByRole("alertdialog").getByRole("button").filter({ hasNotText: "Cancel" });
+  if (await ok.count().catch(() => 0)) await ok.first().click().catch(() => {});
+  await sleep(5000);
+  return "changed back";
+}
+
 async function nudgeRound(row, col, word) {
   const c = await cellOf(row, col);
   await c.click();
@@ -143,6 +185,7 @@ try {
   const pw = who === "admin" ? env.AI_ADMIN_PASSWORD : env.AI_MEMBER_PASSWORD;
   await resumeWalk();
   out.signed_in_as = await signIn(page, ORIGIN, email, pw, who);
+  counting = true;
   step("signed in", { as: out.signed_in_as });
 
   if (PHASE === "owner") {
@@ -162,31 +205,27 @@ try {
     if (asc >= 0) await sortItems.nth(asc).click();
     else { friction(`no sort item in the header menu: ${sortTexts.slice(0, 6).join(" | ")}`); await page.keyboard.press("Escape"); }
     await sleep(2000);
-    const before = (await rowTexts()).slice(0, 3);
-    const itemCell = await cellOf("Nitrile gloves, medium", "Item");
-    await itemCell.dblclick();
-    await sleep(500);
-    await page.keyboard.press("Home");
-    await page.keyboard.type("Z ", { delay: 20 });
-    await page.keyboard.press("Enter");
-    await sleep(2500);
-    const after = (await rowTexts()).slice(0, 3);
-    await shot("o02-edit-resorts");
-    step("sorted by Item, an edit re-sorts", { before, after, url: page.url().replace(ORIGIN, "") });
-    if (!after[after.length - 1]?.startsWith("Z Nitrile") && !(await rowTexts()).slice(0, 4).some((t, i, a) => i === a.length - 1 && t.startsWith("Z "))) {
-      const all = await rowTexts();
-      if (all.findIndex((t) => t.startsWith("Z Nitrile")) !== all.filter((t) => !/^Add row/.test(t)).length - 1) friction(`the edited row did not re-sort to the end: ${all.join(" | ")}`);
-    }
-    // put it back
-    const back = await cellOf("Z Nitrile gloves, medium", "Item");
-    if (await back.count()) {
-      await back.dblclick();
+    // The gloves row's Item, typed as a person types it (whatever an earlier stopped walk left).
+    const nameGloves = async (to) => {
+      const cell = await cellOf("Nitrile gloves", "Item");
+      await cell.dblclick();
       await sleep(400);
       await page.keyboard.press("ControlOrMeta+a");
-      await page.keyboard.type("Nitrile gloves, medium", { delay: 10 });
+      await page.keyboard.type(to, { delay: 10 });
       await page.keyboard.press("Enter");
-      await sleep(1500);
-    }
+      await sleep(2500);
+    };
+    const dataRows = async () => (await rowTexts()).filter((r) => !/^Add row/.test(r));
+    if (!(await dataRows()).some((r) => r.startsWith("Nitrile gloves, medium"))) await nameGloves("Nitrile gloves, medium");
+    const before = (await dataRows()).slice(0, 3);
+    await nameGloves("Z Nitrile gloves, medium");
+    const after = await dataRows();
+    await shot("o02-edit-resorts");
+    step("sorted by Item, an edit re-sorts", { before, after, url: page.url().replace(ORIGIN, "") });
+    if (!before[0]?.startsWith("Nitrile gloves")) friction(`sorted by Item, the gloves row was not first before the edit: ${before.join(" | ")}`);
+    if (!after[after.length - 1]?.startsWith("Z Nitrile gloves, medium")) friction(`the edited row did not re-sort to the end: ${after.join(" | ")}`);
+    // put it back
+    await nameGloves("Nitrile gloves, medium");
 
     // ── 3 · click-off clears a range and grid focus ─────────────────────────────────────────────
     const a1 = await cellOf("Saliva ejectors", "Operatory");
@@ -300,6 +339,10 @@ try {
     await shot("o07-column-after-old-key");
     step(`added "${bin}", renamed it, added "${bin}" again`, { headers: hdrs, dialogs: await popups() });
     if (!hdrs.includes(bin) || !hdrs.includes(`${bin} (old shelf)`)) friction(`headers after the add: ${hdrs.join(", ")}`);
+    // And both go again the way a person removes a column (Delete column…), so the table ends as it began.
+    const gone = { [bin]: await deleteColumn(bin), [`${bin} (old shelf)`]: await deleteColumn(`${bin} (old shelf)`) };
+    step("both removed (Delete column…)", gone);
+    if (Object.values(gone).some((v) => v !== true)) friction(`a column did not go: ${JSON.stringify(gone)}`);
 
     // ── 7 · colours: colour by Stock Status, Cancel puts it back ───────────────────────────────
     // Each row's paint before the dialog opens — Cancel must put back exactly this.
@@ -409,15 +452,20 @@ try {
     await open(T.supplies);
     await shot("m02-member-shared-editor");
     const s = await cellOf("Foam rollers", "Room");
+    const was = (await s.innerText()).trim();
+    // A different value each run, so the edit is proven to land (not already there).
+    const typed = /east wall/.test(was) ? "Gym B (west wall)" : "Gym B (east wall)";
     await s.dblclick();
     await sleep(600);
     await page.keyboard.press("ControlOrMeta+a");
-    await page.keyboard.type("Gym B (east wall)", { delay: 15 });
+    await page.keyboard.type(typed, { delay: 15 });
     await page.keyboard.press("Enter");
     await sleep(2500);
     const now = (await (await cellOf("Foam rollers", "Room")).innerText()).trim();
-    step("a member shared as editor edits a cell", { cell: now, popups: await popups() });
-    if (!/east wall/.test(now)) friction(`the editor's edit did not land: "${now}"`);
+    await open(T.supplies);
+    const reread = (await (await cellOf("Foam rollers", "Room")).innerText()).trim();
+    step("a member shared as editor edits a cell", { was, typed, cell: now, after_reload: reread, popups: await popups() });
+    if (now !== typed || reread !== typed) friction(`the editor's edit did not land: was "${was}", typed "${typed}", reads "${now}", after reload "${reread}"`);
   }
 
   if (PHASE === "breaker" || PHASE === "bf9") {
@@ -429,23 +477,45 @@ try {
       await sleep(2500);
     }
     let d;
+    // Names of this run, so the walk can be run again and again on the same table.
+    const n = String(Date.now()).slice(-4);
     if (PHASE === "breaker") {
-    // B-F5/F7: rename, then add the old name; an emoji name beside a real one
-    d = await columnSettings("Room");
-    await d.locator("#col-name").fill("Treatment area");
-    await d.getByRole("button", { name: "Save", exact: true }).click();
-    await sleep(3000);
-    for (const name of ["Room", "Stock Status 🔥"]) {
+    const addNamed = async (name) => {
       await page.getByRole("button", { name: /^Column$/ }).first().click();
       const add = page.getByRole("dialog").filter({ hasText: "Add New Column" });
       await add.waitFor({ timeout: 20000 });
       await add.getByPlaceholder("e.g. Total Revenue").fill(name);
+      await sleep(400);
+      return add;
+    };
+    // B-F5: add a column, rename it, then add its old name again
+    let add = await addNamed(`Room ${n}`);
+    await add.getByRole("button", { name: "Add Column", exact: true }).click();
+    await sleep(4000);
+    d = await columnSettings(`Room ${n}`);
+    await d.locator("#col-name").fill(`Treatment area ${n}`);
+    await d.getByRole("button", { name: "Save", exact: true }).click();
+    await sleep(3000);
+    // B-F7: the old name again, then an emoji name beside a real one
+    for (const name of [`Room ${n}`, `Room ${n} 🔥`]) {
+      add = await addNamed(name);
       await add.getByRole("button", { name: "Add Column", exact: true }).click();
       await sleep(4000);
-      step(`B-F5/F7 add "${name}"`, { headers: await headers(), popups: await popups() });
-      if (!(await headers()).some((h) => h.startsWith(name.replace(" 🔥", "")))) friction(`"${name}" did not appear`);
+      const hs = await headers();
+      step(`B-F5/F7 add "${name}"`, { found: hs.filter((h) => h.includes(n)), popups: await popups() });
+      if (!hs.includes(name)) friction(`"${name}" did not appear: ${hs.filter((h) => h.includes(n)).join(", ")}`);
       await page.keyboard.press("Escape");
     }
+    // A name another column already has is said as it is typed, and never sent.
+    add = await addNamed(`Treatment area ${n}`);
+    const said = (await add.innerText()).replace(/\s+/g, " ").match(/You already have a column called "[^"]+"/)?.[0] ?? null;
+    await add.getByRole("button", { name: "Add Column", exact: true }).click();
+    await sleep(1500);
+    await shot("b00-a-taken-name-is-said");
+    step("a taken name is said before it is sent", { said, dialog_still_open: await add.isVisible() });
+    if (!said) friction(`adding "Treatment area ${n}" again did not say the name is taken`);
+    await page.keyboard.press("Escape");
+    await sleep(500);
     // B-F8: rename onto another column's name
     d = await columnSettings("Stock Count");
     await d.locator("#col-name").fill("Title");
@@ -457,17 +527,14 @@ try {
     if (refusal.length === 0) friction("renaming onto another column's name was not refused by name");
     await page.keyboard.press("Escape");
     // B-F1: a choice column with no choices stays a choice
-    await page.getByRole("button", { name: /^Column$/ }).first().click();
-    const add = page.getByRole("dialog").filter({ hasText: "Add New Column" });
-    await add.waitFor({ timeout: 20000 });
-    await add.getByPlaceholder("e.g. Total Revenue").fill("Supplier");
+    add = await addNamed(`Vendor ${n}`);
     await add.getByRole("combobox").nth(1).click();
     await sleep(500);
     await page.getByRole("option", { name: /^Choice/ }).first().click();
     await sleep(600);
     await add.getByRole("button", { name: "Add Column", exact: true }).click();
     await sleep(4000);
-    d = await columnSettings("Supplier");
+    d = await columnSettings(`Vendor ${n}`);
     const showsAs = (await d.innerText()).match(/Shows as\s*\n?\s*(\w[\w ]*)/)?.[1] ?? null;
     await shot("b02-choice-with-no-choices");
     step("B-F1 a choice column with no choices", { shows_as: showsAs });
@@ -513,7 +580,31 @@ try {
     step("B-F3 + Row form", { kind_words: kinds, choosers });
     if (kinds.some((k) => /^(string|number|datetime)$/.test(k))) friction("the + Row form prints storage words");
     await page.keyboard.press("Escape");
+    await sleep(800);
+    // The table ends as it began: B-F9's Text back to a Choice, and this run's columns removed.
+    const stock = await stockBackToChoice();
+    await open(T.supplies, "?view=sheet");
+    const i = await colIndex("Stock Status");
+    const cells = await page.evaluate((ix) => [...document.querySelectorAll("tbody tr")].map((tr) => tr.querySelectorAll("td")[ix]?.innerText.trim()).filter(Boolean), i);
+    step("Stock Status back to a Choice", { stock, cells });
+    if (cells.some((c) => /_/.test(c))) friction(`Stock Status shows a hidden key: ${cells.join(" | ")}`);
+    if (PHASE === "breaker") {
+      const removed = {};
+      for (const col of [`Room ${n} 🔥`, `Room ${n}`, `Treatment area ${n}`, `Vendor ${n}`]) removed[col] = await deleteColumn(col).catch((e) => String(e).slice(0, 120));
+      step("this run's columns removed (Delete column…)", removed);
+      if (Object.values(removed).some((v) => v !== true)) friction(`a column this run added did not go: ${JSON.stringify(removed)}`);
+    }
   }
+  if (PHASE === "tidy") {
+    // Columns earlier walks added and left on the test table, removed the way a person removes them.
+    await open(T.supplies, "?view=sheet");
+    const leftovers = (await headers()).filter((h) => /^(Bin \d{4}( \(old shelf\))?|Stock Status 🔥|(Room|Treatment area|Vendor) \d{4}( 🔥)?)$/.test(h));
+    const removed = {};
+    for (const col of leftovers) removed[col] = await deleteColumn(col).catch((e) => String(e).slice(0, 120));
+    step("walk leftovers removed", { removed, headers_now: await headers() });
+    if (Object.values(removed).some((v) => v !== true)) friction(`a leftover column did not go: ${JSON.stringify(removed)}`);
+  }
+
   if (PHASE === "look-stock") {
     await open(T.supplies, "?view=sheet");
     const d = await columnSettings("Stock Status");

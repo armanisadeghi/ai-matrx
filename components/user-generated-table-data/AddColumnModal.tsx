@@ -25,6 +25,7 @@ import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer'
 import { setFieldFormat } from '@/features/data-tables/service';
 import { FormulaExpressionEditor } from '@/features/data-tables/components/FormulaExpressionEditor';
 import { isServiceFailure } from '@/features/data-tables/types';
+import { columnNameTaken } from '@/features/data-tables/column-name-taken';
 import { FieldFormatPicker } from '@/lib/field-formats/FieldFormatPicker';
 import {
   offerFormatWhereRelationIs,
@@ -99,9 +100,16 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
   };
 
   // Handle form submission
+  // A name another column already has is said as it is typed, and never sent (column-name-taken.ts).
+  const nameTaken = columnNameTaken(displayName, siblingFields);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (nameTaken) {
+      setError(nameTaken);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -118,7 +126,9 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
       });
       
       if (!result.success) {
-        throw new Error(result.error);
+        // A refusal is the store's answer, said in the dialog — not an error in the console.
+        setError(result.error ?? "The column could not be added.");
+        return;
       }
 
       // Attach the display format if the user picked a non-plain one. This is a
@@ -192,7 +202,14 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
               onChange={(e) => handleDisplayNameChange(e.target.value)}
               placeholder="e.g. Total Revenue"
               required
+              aria-invalid={nameTaken ? true : undefined}
+              aria-describedby={nameTaken ? "displayName-taken" : undefined}
             />
+            {nameTaken && !error ? (
+              <p id="displayName-taken" className="text-xs text-destructive">
+                {nameTaken}
+              </p>
+            ) : null}
             <p className="text-xs text-muted-foreground">
               Internal field name: <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-xs">{fieldName || 'auto-generated'}</code>
             </p>
