@@ -1,6 +1,6 @@
 -- draft: deep-lane read-lane-v2 client declarations — chair runs it in the 2026-09-27 window, after read_lane_v2_b_lock_order
 -- chair-step: adds two registry declarations (platform.entity_types.client_read_only_columns, client_deletes_refused), accepts a column-level anon grant on a component's public parent (was a false refusal), and replaces iam._apply_rls_unchecked, iam.apply_table_grants and iam.verify_canonical to honour them; no policy statement, no freeze. Nothing changes for any table until it is declared (read_lane_v2_e) and regenerated.
--- based-on: iam._apply_rls_unchecked(text, text, text, text) fe411e6fd8322593a685ffa4ac7477438cf3b0cb8b1528c1530cc41fc0a7fdcd
+-- based-on: iam._apply_rls_unchecked(text, text, text, text) 57e9b3f4119119ce6f76881a6bc728356f77ea7bd56798284fc6c1ad5458df7c
 -- based-on: iam.apply_table_grants(text, text, text) fc782fbe5edec12ca24aabcc5d2a5f879b0f4d0118ee5a4cbd45a96c9b3c1062
 -- based-on: iam.verify_canonical(text, text, text, text) abaf69c8c15a8b34a02035673d0ff7d740eb1dd909bb7c096aef73e91315325c
 -- (the _apply_rls_unchecked hash above is the body read_lane_v2_b_lock_order installs: b runs first)
@@ -10,14 +10,6 @@
 --   * CLIENT DELETES REFUSED: Arman's law is archive, never hard-delete. A declared token gets no std_delete
 --     policy and no DELETE grant; deletes go through archive doors.
 -- Both are asserted on the privileges apply_table_grants just issued (it raises if either is not true).
--- Adding two nullable/defaulted columns to platform.entity_types is metadata-only.
-alter table platform.entity_types add column if not exists client_read_only_columns text[];
-alter table platform.entity_types add column if not exists client_deletes_refused boolean not null default false;
-comment on column platform.entity_types.client_read_only_columns is
-  'Columns a signed-in client may read but never insert or update (server-derived). Honoured by iam.apply_table_grants (SELECT-only column grant). Chair ruling 2026-09-26 (read-lane v2).';
-comment on column platform.entity_types.client_deletes_refused is
-  'Archive, never hard-delete: the generator emits no client DELETE policy and iam.apply_table_grants issues no DELETE grant; deletes go through archive doors. Chair ruling 2026-09-26 (read-lane v2).';
-
 CREATE OR REPLACE FUNCTION iam._apply_rls_unchecked(p_schema text, p_table text, p_token text, p_variant text DEFAULT 'entity'::text)
  RETURNS void
  LANGUAGE plpgsql
@@ -2672,3 +2664,21 @@ BEGIN
 END;
 
 $function$;
+
+-- LOCK ORDER (measured 2026-09-28): platform.entity_types is read ~290 times a second on production.
+-- The column adds take ACCESS EXCLUSIVE on it until COMMIT, so they run LAST — after the three function
+-- replaces (~5.5 s, which lock nothing a reader waits on) — and the registry is exclusive only for the
+-- final statement. PL/pgSQL resolves the new columns at first call, never at CREATE.
+-- Adding two nullable/defaulted columns to platform.entity_types is metadata-only.
+-- One statement, one round trip: the registry is exclusive for the few milliseconds the catalog change takes.
+do $cols$
+begin
+  alter table platform.entity_types
+    add column if not exists client_read_only_columns text[],
+    add column if not exists client_deletes_refused boolean not null default false;
+  comment on column platform.entity_types.client_read_only_columns is
+    'Columns a signed-in client may read but never insert or update (server-derived). Honoured by iam.apply_table_grants (SELECT-only column grant). Chair ruling 2026-09-26 (read-lane v2).';
+  comment on column platform.entity_types.client_deletes_refused is
+    'Archive, never hard-delete: the generator emits no client DELETE policy and iam.apply_table_grants issues no DELETE grant; deletes go through archive doors. Chair ruling 2026-09-26 (read-lane v2).';
+end
+$cols$;
