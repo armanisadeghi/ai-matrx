@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-28T02:50:09.337Z",
+  "generated_at": "2026-09-28T04:42:36.787Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -715,6 +715,18 @@
       "filename": "datacreatefix_a_new_data_table_carries_its_organization.sql",
       "checksum": "3253529c343b7f2fc0314df4f65a8a94da659f5f8f68bd1c384ed023626a5534",
       "applied_at": "2026-09-21 00:15:35.465735+00"
+    },
+    "migrations/campaign/datahome1_the_data_home_default_scope_is_a_knob.sql": {
+      "source": "matrx-frontend",
+      "filename": "datahome1_the_data_home_default_scope_is_a_knob.sql",
+      "checksum": "bc47fd082a7d4f2d846378fbbf8fec1339e20f68d249f1765960ca393aeb2855",
+      "applied_at": "2026-09-28 04:42:35.850458+00"
+    },
+    "migrations/campaign/datahome1_the_data_home_knows_whose_each_table_is.sql": {
+      "source": "matrx-frontend",
+      "filename": "datahome1_the_data_home_knows_whose_each_table_is.sql",
+      "checksum": "9716d2beba84956ec11c8db4a0d1ae5e71710c4cc5c76eb1fe031f16c6566e0b",
+      "applied_at": "2026-09-28 04:41:43.768958+00"
     },
     "migrations/campaign/datav2face2_a_copied_table_opens_as_the_sheet_it_was.sql": {
       "source": "campaign",

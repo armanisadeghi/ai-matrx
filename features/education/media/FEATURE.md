@@ -145,6 +145,7 @@ is the defect, not a deferral.
 
 ## Change log
 
+- **page-pass 2026-09-27**: mind-maps (list + detail) and audio-study (list + detail) — fixed. Both the list-row "from &lt;source&gt;" line and the detail header's eyebrow duplicated the title verbatim whenever a topic-generated artifact's `source_title` equals its own `title` ("Agent Test Topic: the water cycle" shown twice). Fixed with a shared `distinctSourceTitle` helper (`features/education/components/EducationCollectionSearch.tsx`, also used by the `education/memory` sibling) that suppresses the line when it matches the title and strips a leading markdown `#` a raw source line can carry. Live-verified on `/education/mind-maps`, `/education/mind-maps/[id]`, `/education/audio-study`. The mind-map docked node panel from 2026-09-26 was re-verified live: click a node, the panel updates non-blockingly, the diagram stays interactive underneath.
 - **2026-09-26** — **Mind-map node panel and Sources panel were blocking layers, fixed.** Both
   used `@ai-matrx/design-system` `Sheet`, which (unlike `Dialog`) defaults `modal` to `true` —
   they rendered `aria-modal="true"`, trapping focus and dimming the page. `MindMapView`'s

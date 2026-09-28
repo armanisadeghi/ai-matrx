@@ -687,16 +687,7 @@ export function ToolRefetchConsole() {
         <AssistStrip surfaceName={ADMIN_REPORTING_SURFACE_NAME} />
       </header>
 
-      {error && (
-        <div className="flex items-center gap-2 rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200">
-          <AlertTriangle className="h-4 w-4" />
-          <span className="flex-1">{error}</span>
-          <Button size="sm" variant="outline" onClick={() => void report.refetch()}>
-            Retry
-          </Button>
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      )}
+      {/* The report read's failure is said once, by the table (read=). */}
 
       {/*
         NOTHING FAILS SILENTLY: the read hit a real server limit. Name the
