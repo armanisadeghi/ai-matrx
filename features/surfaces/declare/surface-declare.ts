@@ -49,6 +49,7 @@ export const SYNC_SCHEMA: SyncSchema = {
   contentHash: true,
 };
 
+import { SURFACE_BRIEF_MAX_VALUES } from "@/features/surfaces/runtime/surface-brief";
 const NAME_RE = /^[a-z][a-z0-9_]*$/;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -238,6 +239,17 @@ export const agentHintsExtension: DeclarationExtension<Manifest> = {
     for (const t of m.writeTargets ?? []) {
       if (t.applyPolicy === "auto" && t.mode !== "ui" && !(t as { approval?: unknown }).approval)
         out.push(issue(s, `writeTargets/${t.name}/applyPolicy`, `Surface "${s}" target "${t.name}" applies automatically (applyPolicy "auto") in mode "${t.mode}". Only "ui" targets may skip the person's approval on their own.`, `Use applyPolicy "ask", or record Arman's approval on the target: approval: "Arman <date>: <why>".`));
+    }
+    if (m.briefValues !== undefined) {
+      const declared = new Set(
+        (context?.all.find((d) => d.surfaceName === s)?.values ?? m.values).map((v) => v.name),
+      );
+      if (m.briefValues.length === 0 || m.briefValues.length > SURFACE_BRIEF_MAX_VALUES)
+        out.push(issue(s, "briefValues", `Surface "${s}" declares ${m.briefValues.length} brief values — a brief names 1 to ${SURFACE_BRIEF_MAX_VALUES}.`, "Keep the few values that say which record this is and its state at a glance, or omit briefValues."));
+      for (const name of m.briefValues) {
+        if (!declared.has(name))
+          out.push(issue(s, `briefValues/${name}`, `Surface "${s}" names brief value "${name}", which it does not declare.`, "Name a declared value, or declare it."));
+      }
     }
     if (m.guide !== undefined) {
       const expected = surfaceGuidePath(s);

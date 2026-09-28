@@ -126,6 +126,8 @@ jest.mock("@/features/unified-data/row-change-agent/RowChangeAgentLink", () => (
   ROW_CHANGE_AGENT_LABEL: "When a row changes, run an agent…",
   useRowChangeAgentOffer: () => ({ state: "absent" }),
 }));
+jest.mock("@/features/unified-data/tableCopyEvaluation", () => ({ tableCopyEvaluation: jest.fn(), useTableCopyEvaluation: () => ({ state: "not-a-test-copy" }) }));
+jest.mock("@/features/data-tables/records-ui-host/mergedGridKnob", () => ({ useMergedGridKnob: () => false }));
 jest.mock("@/features/unified-data/recordsNotify", () => ({ RECORDS_NOTIFY: {} }));
 // The real writer (a history write, no navigation) so the address the page leaves is asserted.
 jest.mock("@/lib/url-state/addressWithoutNavigating", () => ({

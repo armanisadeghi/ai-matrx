@@ -131,15 +131,34 @@ hardware with a production build before tuning further.
 ## Agent tools — the board is a surface
 
 Every host wraps its board in **`components/SpatialBoardSurface.tsx`**: it mounts the
-`matrx-user/spatial-board` surface runtime (values `board_title`, `board_tiles`, `selected_tile`)
+`matrx-user/spatial-board` surface runtime (values `board_title`, `board_items`, `selected_tile`)
 and registers the board's client tools, so ANY agent running while a board is on screen (the chat
 beside it, a shortcut, a mandate) receives them automatically (`listLiveSurfaceClientTools` →
 tool injection; no per-agent arming, no aidream change).
 
+**THE BRIDGE — every item in two requests** (`tools/item-surfaces.ts`). Only the LIVE tile
+(selected, worked in or focused) registers its feature surface globally (`SurfaceActivity`; the
+one-live-registration law). Every tile ALSO registers into its own **capture**
+(`<SurfaceActivity capture>`, `createSurfaceCapture` — features/surfaces FEATURE.md), live or
+dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfaces`).
+- **Request one — `board_items`**, on every turn: each item's id, title, kind, surface, `live`, and
+  for a dormant item its **basics** (`surfaceBrief`: the manifest's `briefValues`, projected small),
+  bounded (`BOARD_ITEMS_MAX`, `BOARD_ITEMS_BRIEF_BUDGET_CHARS`, stated in `limits`). The live item
+  carries none: its full surface already reaches the agent as a surface-chain level.
+- **Request two, same turn — `board_open_item(id)`**: the item's declared values (with descriptions,
+  capped) and controls — write-target lines from `describeAgentWritableTargets` (the injected
+  `apply_surface_write` wording) and client tools with schemas — and it selects the item (a parked
+  one comes back). **`board_item_act(id, target+value | tool+input)`** runs through the canonical
+  `applySurfaceWrite` / `executeSurfaceClientTool` with `source: capture` and the call's
+  `agentWrite` (`SurfaceToolCall`): same type check, anchored patch, value contract, `validate`,
+  apply policy (ask → this call's approval card) and `surfaceWriteToolOutput` envelope as on the page.
+- A host without `itemSurfaces` (meeting, War Room, workflow boards) lists identity only.
+
 | Piece | File |
 |---|---|
-| Tool declarations: `board_read`, `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_focus`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/spatial-board.manifest.ts`) |
+| Tool declarations: `board_read`, `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_focus`, `board_open_item`, `board_item_act`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/spatial-board.manifest.ts`) |
 | Handlers — host-agnostic, drive `useBoard` + the store; errors come back as `{ok:false, error}` with a remedy; remove toasts an Undo; adding never moves the camera | `tools/useBoardAgentTools.ts` |
+| The bridge: per-tile capture index, `board_items` overview, open / act on any item | `tools/item-surfaces.ts` |
 | Pure layout math | `engine/arrange.ts` |
 
 A host supplies a `BoardToolHost`: `board` (a `BoardToolTarget` — the NARROW interface the
@@ -153,7 +172,8 @@ and `read().removed` lists tiles off the board that `board_park parked:false` re
 `board_focus` on a parked/removed tile restores it and moves the camera once it has rendered.
 Markdown written by an agent renders through the stream pipeline (`tiles/MarkdownTileBody.tsx`,
 an instant `ReplayStream` → `StreamTileBody`), never a second renderer; an agent's note is a real
-Note (`NoteTileBody` `text` prop creates/saves it). Wired: the demo; the meeting board
+Note in the notes core (`items/NoteItemBody.tsx`; its `text` is the note's seed while no note exists
+yet, and a real note's text changes through `note_content`). Wired: the demo; the meeting board
 (`features/meet/components/board/MeetingBoard.tsx` — markdown / html page or `srcDoc` / image; a
 "note" is the board's own scratchpad and "text" becomes markdown; the live meeting sections refuse
 content edits); the workflow run board (`features/workflow-runtime/components/spatial/WorkflowRunSpatialView.tsx`
@@ -192,9 +212,50 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 - **The chat beside the board** is `ChatCanvasWorkspace`'s; the board publishes its own surface
   (`matrx-user/spatial-board`: values + `board_*` tools), so no page-level snapshot is passed.
+- **A note tile is the notes core**: `items/NoteItemBody.tsx` → `NoteWorkspace` (features/notes) in
+  its own notes instance `board-note:<tileId>` — the /notes modes, outline / versions / clean-up, the
+  note chip (rename, mic, "…" menu), `NoteContentEditor` (which mounts `matrx-user/notes` itself, so
+  the item declares `surface: { name }` with no `Host`), metadata bar, save strip, version history.
+  Lifecycle (`noteTilePlan`, `items/work-sources.ts`): a new tile starts a client-only draft exactly
+  as /notes "New note" (Draft folder, organization via `useNewNoteOrganization`, no row until the
+  first words; the tile saves `meta.draft` and restarts the draft under the same id after a reload);
+  text from a paste or `board_add_tile` becomes a note at once through `NotesAPI.create`. The demo
+  board and the workflow run board render the same body inside `SurfaceActivity`. The board's Text
+  tool label is `tiles/TextTileBody.tsx`.
+- **Feature tiles are the feature's page body, with its surface** (`items/feature-items.tsx`). Each body
+  mounts its surface through the SAME host the feature's page uses, so no feature item declares a
+  `Host`: Task → `TaskEditor` (`TaskEditorBody` mounts `matrx-user/tasks`); War Room → the room's
+  `StageView` under `RoomViewProvider` + `WarRoomSurfaceHost` (`matrx-user/war-room`; the tile
+  HYDRATES the room — `hydrateWarRoomSession` — and never changes the active room); Research →
+  `DocumentViewer` under `TopicProvider` + `ResearchTopicSurfaceHost`; Project →
+  `ProjectRecordWorkspace chrome="embedded"` (the whole project workspace + `matrx-user/projects`);
+  Meeting → `MeetingDetail chrome="embedded"` (sections and actions in a strip; it mounts
+  `MeetingSurfaceHost`, `matrx-user/meeting`); Workflow run → `RunStage` under
+  `WorkflowRunSurfaceHost` (`matrx-user/workflow-run`).
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-09-28 — Feature tiles carry their feature's full surface: Task (`matrx-user/tasks`, already in
+  `TaskEditorBody`), War Room (`WarRoomSurfaceHost`, body now the room's `StageView`; the tile hydrates
+  without taking the active room), Research (`ResearchTopicSurfaceHost`), Project
+  (`ProjectRecordWorkspace` — the whole workspace, not just its task list), Meeting (NEW
+  `matrx-user/meeting`, body now `MeetingDetail` embedded) and Workflow run (NEW
+  `matrx-user/workflow-run`). Each host is shared with the feature's own page.
+
+- 2026-09-28 — The bridge: every tile registers its surface into a per-tile capture (live or dormant);
+  `board_items` replaces `board_tiles` (every item + a dormant item's basics); `board_open_item` /
+  `board_item_act` read and act on ANY item in the same turn through the canonical writeback and
+  client-tool runtimes (approval flow included). `board_focus` no longer says "act next turn".
+
+- 2026-09-28 — Note tile is the real notes core (`NoteWorkspace`) instead of a plain-text `NoteEditorCore`;
+  `tiles/NoteTileBody.tsx` deleted (label body moved to `tiles/TextTileBody.tsx`); "Note" starts a note
+  the /notes way; agent and pasted text become real notes; agent `text` on a real note refuses with the
+  `note_content` remedy. Note tiles default to 560×620.
+
+- 2026-09-28 — File tile: the body is the single-file page's own working area (`SingleFileWorkspace`: name menu,
+  Copy link / Download / More, per-tab rail, all seven tabs) and its surface is `matrx-user/file` through the
+  page's own host (`SingleFileSurfaceHost` as `surface.Host`). Default size 800×600.
 
 - 2026-09-27 — Frame fly-to includes its title band in the fit target; War Room’s board-only down throw uses the reversible 'remove' action, distinct from destructive 'delete'.
 

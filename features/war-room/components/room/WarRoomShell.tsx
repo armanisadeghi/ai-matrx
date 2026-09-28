@@ -20,16 +20,13 @@
 // (loadWarRoomSession) with real loading / empty / not-found states; all data
 // flows through the warRoom thunks + selectors.
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { buildWarRoomRoomScope } from "@/features/war-room/lib/war-room-scope";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
 import { RoomRecordingController } from "@/features/war-room/components/room/RoomRecordingController";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
-  selectOrderedGalleryThreadIds,
   selectSessionById,
   selectThreadsStatusForRoom,
 } from "@/features/war-room/redux/selectors";
@@ -45,11 +42,10 @@ import { useActiveThreadRestore } from "./useActiveThreadRestore";
 import { useRoomUrlSync } from "./useRoomUrlSync";
 import {
   RoomViewProvider,
-  resolveStagedId,
   useRoomView,
   type RoomMode,
 } from "./roomViewContext";
-import { useWarRoomWriteHandlers } from "./useWarRoomWriteHandlers";
+import { WarRoomSurfaceHost } from "./WarRoomSurfaceHost";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 // The TIER-2 ROOM agent panel — its floating WindowPanel wrapper plus the whole
@@ -89,42 +85,8 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   const roomView = useRoomView();
   const { mode } = roomView;
 
-  // ── Surface emitter (`matrx-user/war-room`) ──────────────────────────────
-  // The shell owns the room's session state AND the ephemeral cockpit view
-  // state, so it is the one place that can emit the full room scope. Built at
-  // TRIGGER time from the live store + the live view context — never a render
-  // snapshot. The thread agent panel nests a DEEPER provider, so while a tile's
-  // agent is open the thread surface wins (by design).
-  const store = useAppStore();
-  const visibleThreadIdsForStage = useAppSelector(
-    selectOrderedGalleryThreadIds(sessionId),
-  );
-  const getRoomScope = useCallback(
-    () =>
-      buildWarRoomRoomScope(store.getState(), sessionId, {
-        mode: roomView.mode,
-        projectedTab: roomView.projectedTab,
-        density: roomView.density,
-        stagedThreadId: resolveStagedId(
-          roomView.chosenStageId,
-          visibleThreadIdsForStage,
-        ),
-      }),
-    [
-      store,
-      sessionId,
-      roomView.mode,
-      roomView.projectedTab,
-      roomView.density,
-      roomView.chosenStageId,
-      visibleThreadIdsForStage,
-    ],
-  );
-
-  // Write half of the same surface (manifest `writeTargets`) — the shell owns
-  // the room's session state, so it is also the one place that can service an
-  // agent's write. Handlers run the room's own thunks; see the hook.
-  const getRoomWriteHandlers = useWarRoomWriteHandlers(sessionId);
+  // The room's agent surface (`matrx-user/war-room`, read + write) is
+  // `WarRoomSurfaceHost` — the same host a room on the Board mounts.
 
   // Restore the room VIEW on open, two complementary layers:
   //   • URL params (thread + view + density) — the fast, shareable layer; a
@@ -173,11 +135,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   }, [ready, mode, sessionId]);
 
   return (
-    <SurfaceRuntimeProvider
-      surfaceName="matrx-user/war-room"
-      getScope={getRoomScope}
-      getWriteHandlers={getRoomWriteHandlers}
-    >
+    <WarRoomSurfaceHost sessionId={sessionId}>
     <div className="@container h-full flex flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
       {/* ── Header — injected into the shell's glass row via <PageHeader>.
           Hides itself while a thread owns the route surface. ── */}
@@ -240,7 +198,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
           nothing; registers its imperative API in roomRecordingBridge. */}
       <RoomRecordingController />
     </div>
-    </SurfaceRuntimeProvider>
+    </WarRoomSurfaceHost>
   );
 }
 

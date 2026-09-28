@@ -362,6 +362,9 @@ export interface WorkflowRunState {
    * created_at). The elapsed clock reads this, never the attach time — a
    * mid-run refresh must not restart the timer at zero. */
   startedAtTs: string | null;
+  /** What the run was started with — the run row's `input`, from the run read
+   * (`seedRunRow`). Null until the row lands, and for a run started empty. */
+  input: Record<string, unknown> | null;
 }
 
 export interface WorkflowRunsState {
@@ -456,6 +459,7 @@ function makeRunState(
     activitySeq: 0,
     appendedThroughSeq: 0,
     startedAtTs: null,
+    input: null,
   };
 }
 
@@ -1244,6 +1248,7 @@ const workflowRunsSlice = createSlice({
         if (rowTerminal && row.completed_at) run.statusTs = row.completed_at;
       }
       if (row.error && run.error === null) run.error = row.error;
+      if (row.input && run.input === null) run.input = row.input;
       // THE ELISION GATE for the run read: the ROW is the frame, so
       // `output_ref: "output.<node_id>"` resolves against it here and nowhere
       // else. A row without a `result` leaves the previous one alone — a later

@@ -40,6 +40,7 @@ import {
   useAlchemySurfaceHandle,
 } from "@/components/agent-copy/AlchemySurfaceBridge";
 import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
+import type { ApplySurfaceWriteOptions } from "./surface-writeback";
 
 /**
  * What a write handler may RETURN so the caller (and, for an agent write, the
@@ -161,41 +162,368 @@ type SurfaceScopeContribution = {
 
 type RegistryEntry = { id: number; depth: number; value: SurfaceRuntimeValue };
 
-let nextId = 0;
-let stack: RegistryEntry[] = [];
+/**
+ * One handler per declared `SurfaceClientTool.name`. A handler executes the
+ * tool against the live page (moves focus, stages a draft, runs the page's
+ * canonical write) and returns the tool OUTPUT the agent receives (any
+ * JSON-serializable value, or nothing). It may throw — the client-tool
+ * runtime (`surface-client-tools.ts`) wraps every call in a safe, loud
+ * envelope and never lets a throw escape to the delegation loop.
+ *
+ * `call` is present when an AGENT made the call: a handler that writes on the
+ * agent's behalf spreads `call.agentWrite` into `applySurfaceWrite`, so the
+ * write carries `origin: "agent"`, the agent's name and THIS call's approval
+ * card — exactly as the agent's own `apply_surface_write` would.
+ */
+export type SurfaceClientToolHandlers = Record<
+  string,
+  (input: unknown, call?: SurfaceToolCall) => Promise<unknown> | unknown
+>;
+
+/** What the delegation seam knows about one agent tool call. */
+export interface SurfaceToolCall {
+  conversationId: string;
+  callId: string;
+  toolName: string;
+  /**
+   * Spread into `applySurfaceWrite` for any write made on the agent's behalf
+   * during this call: `origin: "agent"`, the actor label, provenance and the
+   * inline approval-card bridge bound to this call.
+   */
+  agentWrite: Pick<
+    ApplySurfaceWriteOptions,
+    "origin" | "actorLabel" | "requestApproval" | "conversationId" | "agentId"
+  >;
+  /** True once the person approved an approval card raised during this call. */
+  approvedByUser: () => boolean;
+}
 
 /**
- * DORMANT subtrees register nothing: no runtime, no write handlers, no client
- * tools, no scope contributions. A screen that shows several copies of one
- * surface-owning component — the tiles of a board, a list of live previews —
- * marks every copy but the one the person is working in as dormant, so the
- * ONE-live-registration-per-surface law holds (FOUND_DEFECTS D194: two
- * same-name registrations are a coin flip, and an agent's write lands in
- * whichever mounted last). Flipping `active` registers / unregisters live.
+ * A SURFACE REGISTRY — where mounted surfaces register their runtime, write
+ * handlers, client-tool handlers and descendant scope contributions.
+ *
+ * There is ONE global registry: it is what every agent, the header Agents
+ * chrome and the surface chain read, and it obeys the ONE-live-registration
+ * law (FOUND_DEFECTS D194). Every module function below without a registry
+ * argument (`getSurfaceRuntimeStack`, `getRegisteredWriteHandlers`, …) reads
+ * it, unchanged.
+ *
+ * A CAPTURE (`createSurfaceCapture`) is a private registry for ONE copy of a
+ * surface-owning subtree — a board tile. `<SurfaceActivity capture={…}>`
+ * routes every registration inside the subtree into it, live or dormant, so
+ * the host can read and act on a DORMANT copy (its scope, its handlers, its
+ * tools) without it ever entering the global stack. The capture is read only
+ * through the canonical runtimes with an explicit `source`
+ * (`applySurfaceWrite`, `executeSurfaceClientTool`), so validation, apply
+ * policy and the approval card are identical to acting on a page.
+ */
+export interface SurfaceRegistry {
+  readonly kind: "global" | "capture";
+  /** Register a live runtime at `depth`. Returns an unregister for this entry only. */
+  register: (value: SurfaceRuntimeValue, depth?: number) => () => void;
+  /** All registered runtimes, DEEPEST first (ties broken by registration recency). */
+  stack: () => readonly SurfaceRuntimeValue[];
+  /** The deepest registered runtime, or null. */
+  primary: () => SurfaceRuntimeValue | null;
+  /** Handlers registered by descendants for `surfaceName` (later wins per name). */
+  writeHandlers: (surfaceName: string) => SurfaceWriteHandlers;
+  /** Client-tool handlers registered by descendants for `surfaceName`. */
+  clientTools: (surfaceName: string) => SurfaceClientToolHandlers;
+  addWriteHandlers: (surfaceName: string, handlers: SurfaceWriteHandlers) => () => void;
+  addClientTools: (surfaceName: string, handlers: SurfaceClientToolHandlers) => () => void;
+  addScopeContribution: (
+    surfaceName: string,
+    owner: string,
+    getScope: () => SurfaceScopePayload,
+  ) => () => void;
+  /** Descendant scope fragments for `surfaceName`, merged (duplicates are a loud error). */
+  scopeContributions: (surfaceName: string) => SurfaceScopePayload;
+  /** `getScope` plus this registry's contributions (see `withScopeContributions`). */
+  withScopeContributions: (
+    surfaceName: string,
+    getScope: () => SurfaceScopePayload | Promise<SurfaceScopePayload>,
+  ) => () => SurfaceScopePayload | Promise<SurfaceScopePayload>;
+  /** Called after every registration change. */
+  subscribe: (listener: () => void) => () => void;
+}
+
+let nextId = 0;
+
+function createRegistry(
+  kind: SurfaceRegistry["kind"],
+  onRegister?: (value: SurfaceRuntimeValue) => void,
+): SurfaceRegistry {
+  let stack: RegistryEntry[] = [];
+  const listeners = new Set<() => void>();
+  const contributions = new Map<string, SurfaceScopeContribution[]>();
+  const writeHandlerLists = new Map<
+    string,
+    Array<{ id: number; handlers: SurfaceWriteHandlers }>
+  >();
+  const clientToolLists = new Map<
+    string,
+    Array<{ id: number; handlers: SurfaceClientToolHandlers }>
+  >();
+
+  const emit = () => {
+    for (const listener of listeners) listener();
+  };
+
+  function addTo<H>(
+    lists: Map<string, Array<{ id: number; handlers: H }>>,
+    surfaceName: string,
+    handlers: H,
+  ): () => void {
+    const id = ++nextId;
+    lists.set(surfaceName, [...(lists.get(surfaceName) ?? []), { id, handlers }]);
+    emit();
+    return () => {
+      const next = (lists.get(surfaceName) ?? []).filter((entry) => entry.id !== id);
+      if (next.length === 0) lists.delete(surfaceName);
+      else lists.set(surfaceName, next);
+      emit();
+    };
+  }
+
+  function mergedFrom<H extends object>(
+    lists: Map<string, Array<{ id: number; handlers: H }>>,
+    surfaceName: string,
+  ): H {
+    const merged = {} as H;
+    // Later registrations win: iterate oldest→newest and overwrite.
+    for (const entry of lists.get(surfaceName) ?? []) Object.assign(merged, entry.handlers);
+    return merged;
+  }
+
+  const scopeContributions = (surfaceName: string): SurfaceScopePayload => {
+    const merged: SurfaceScopePayload = {};
+    const owners = new Map<string, string>();
+    for (const contribution of contributions.get(surfaceName) ?? []) {
+      const fragment = contribution.getScope();
+      for (const [name, value] of Object.entries(fragment)) {
+        const priorOwner = owners.get(name);
+        if (priorOwner) {
+          throw new Error(
+            `[surfaces] scope value "${name}" for "${surfaceName}" is emitted by both "${priorOwner}" and "${contribution.owner}"`,
+          );
+        }
+        owners.set(name, contribution.owner);
+        merged[name] = value;
+      }
+    }
+    return merged;
+  };
+
+  const withContributions: SurfaceRegistry["withScopeContributions"] = (
+    surfaceName,
+    getScope,
+  ) => {
+    const merge = (own: SurfaceScopePayload): SurfaceScopePayload => {
+      const contributed = scopeContributions(surfaceName);
+      for (const name of Object.keys(contributed)) {
+        if (name in own) {
+          throw new Error(
+            `[surfaces] a descendant contribution to "${surfaceName}" tried to replace the provider-owned value "${name}"`,
+          );
+        }
+      }
+      const loaded = { ...own, ...contributed };
+      announceUndeclaredLoadedValues(surfaceName, loaded);
+      return loaded;
+    };
+    return () => {
+      const own = getScope();
+      return own && typeof (own as Promise<SurfaceScopePayload>).then === "function"
+        ? (own as Promise<SurfaceScopePayload>).then(merge)
+        : merge(own as SurfaceScopePayload);
+    };
+  };
+
+  const sortedStack = (): readonly SurfaceRuntimeValue[] =>
+    [...stack].sort((a, b) => b.depth - a.depth || b.id - a.id).map((entry) => entry.value);
+
+  return {
+    kind,
+    register(value, depth = 0) {
+      const id = ++nextId;
+      onRegister?.(value);
+      const registered: SurfaceRuntimeValue = {
+        ...value,
+        getScope: withContributions(value.surfaceName, value.getScope),
+      };
+      stack = [...stack, { id, depth, value: registered }];
+      emit();
+      return () => {
+        stack = stack.filter((entry) => entry.id !== id);
+        emit();
+      };
+    },
+    stack: sortedStack,
+    primary() {
+      let winner: RegistryEntry | null = null;
+      for (const entry of stack) {
+        if (
+          !winner ||
+          entry.depth > winner.depth ||
+          (entry.depth === winner.depth && entry.id > winner.id)
+        ) {
+          winner = entry;
+        }
+      }
+      return winner?.value ?? null;
+    },
+    writeHandlers: (surfaceName) => mergedFrom(writeHandlerLists, surfaceName),
+    clientTools: (surfaceName) => mergedFrom(clientToolLists, surfaceName),
+    addWriteHandlers: (surfaceName, handlers) => addTo(writeHandlerLists, surfaceName, handlers),
+    addClientTools: (surfaceName, handlers) => addTo(clientToolLists, surfaceName, handlers),
+    addScopeContribution(surfaceName, owner, getScope) {
+      const entry = { id: ++nextId, owner, getScope };
+      contributions.set(surfaceName, [...(contributions.get(surfaceName) ?? []), entry]);
+      return () => {
+        const remaining = (contributions.get(surfaceName) ?? []).filter(
+          (candidate) => candidate.id !== entry.id,
+        );
+        if (remaining.length === 0) contributions.delete(surfaceName);
+        else contributions.set(surfaceName, remaining);
+      };
+    },
+    scopeContributions,
+    withScopeContributions: withContributions,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+}
+
+/** Every surface that has had a live provider in this page session. */
+const mountedThisSession = new Set<string>();
+
+const globalRegistry = createRegistry("global", (value) =>
+  mountedThisSession.add(value.surfaceName),
+);
+
+/** The ONE global registry — what agents and chrome read. */
+export function getGlobalSurfaceRegistry(): SurfaceRegistry {
+  return globalRegistry;
+}
+
+/**
+ * A private registry for one copy of a surface-owning subtree (a board tile).
+ * Pass it to `<SurfaceActivity capture={…}>`; read it through the canonical
+ * runtimes with `{ source: capture }`. See `SurfaceRegistry`.
+ */
+export function createSurfaceCapture(): SurfaceRegistry {
+  return createRegistry("capture");
+}
+
+/**
+ * Resolves with the capture's primary runtime once one has registered — a
+ * tile just brought back onto the board mounts its surface on its next
+ * render. Null when none registers within `timeoutMs`.
+ */
+export function waitForCapturedRuntime(
+  capture: SurfaceRegistry,
+  timeoutMs: number,
+): Promise<SurfaceRuntimeValue | null> {
+  const now = capture.primary();
+  if (now) return Promise.resolve(now);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      unsubscribe();
+      resolve(capture.primary());
+    }, timeoutMs);
+    const unsubscribe = capture.subscribe(() => {
+      const runtime = capture.primary();
+      if (!runtime) return;
+      clearTimeout(timer);
+      unsubscribe();
+      resolve(runtime);
+    });
+  });
+}
+
+/**
+ * DORMANT subtrees register nothing GLOBALLY: no runtime, no write handlers,
+ * no client tools, no scope contributions. A screen that shows several copies
+ * of one surface-owning component — the tiles of a board, a list of live
+ * previews — marks every copy but the one the person is working in as
+ * dormant, so the ONE-live-registration-per-surface law holds (FOUND_DEFECTS
+ * D194: two same-name registrations are a coin flip, and an agent's write
+ * lands in whichever mounted last). Flipping `active` registers / unregisters
+ * live.
+ *
+ * `capture` (optional) additionally routes every registration in the subtree
+ * — dormant OR active — into that private registry, so the host can still
+ * reach this copy (`createSurfaceCapture`). A nested `SurfaceActivity`
+ * without its own `capture` inherits its parent's.
  */
 const SurfaceDormantContext = createContext(false);
+const SurfaceCaptureContext = createContext<SurfaceRegistry | null>(null);
 
-export function SurfaceActivity({ active, children }: { active: boolean; children: ReactNode }) {
+export function SurfaceActivity({
+  active,
+  capture,
+  children,
+}: {
+  active: boolean;
+  capture?: SurfaceRegistry;
+  children: ReactNode;
+}) {
   const parentDormant = useContext(SurfaceDormantContext);
-  return <SurfaceDormantContext.Provider value={parentDormant || !active}>{children}</SurfaceDormantContext.Provider>;
+  const parentCapture = useContext(SurfaceCaptureContext);
+  return (
+    <SurfaceDormantContext.Provider value={parentDormant || !active}>
+      <SurfaceCaptureContext.Provider value={capture ?? parentCapture}>
+        {children}
+      </SurfaceCaptureContext.Provider>
+    </SurfaceDormantContext.Provider>
+  );
 }
 
-/** The surface name to register under, or null inside a dormant subtree. */
-function useLiveSurfaceName(surfaceName: string | null): string | null {
-  return useContext(SurfaceDormantContext) ? null : surfaceName;
-}
-const listeners = new Set<() => void>();
-const scopeContributions = new Map<string, SurfaceScopeContribution[]>();
-
-function emit() {
-  for (const l of listeners) l();
+/**
+ * True inside a dormant `SurfaceActivity` subtree. For registries OUTSIDE this
+ * module (custom-field doors…): a registration made here must not reach the
+ * whole page while its copy is dormant.
+ */
+export function useSurfaceDormant(): boolean {
+  return useContext(SurfaceDormantContext);
 }
 
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
+/** Where registrations in this subtree go: the global registry unless dormant, and the enclosing capture. */
+function useRegistrationTargets(): {
+  live: SurfaceRegistry | null;
+  capture: SurfaceRegistry | null;
+} {
+  const dormant = useContext(SurfaceDormantContext);
+  return {
+    live: dormant ? null : globalRegistry,
+    capture: useContext(SurfaceCaptureContext),
   };
+}
+
+/**
+ * Keep ONE registration in `registry` while `identity` holds (null = none).
+ * `add` is read through a ref, so it always registers the latest closure and
+ * a new function identity never re-registers. Each hook calls this once for
+ * the global registry and once for its capture, so flipping dormancy never
+ * disturbs the capture's registration.
+ */
+function useRegistrationIn(
+  registry: SurfaceRegistry | null,
+  identity: string | null,
+  add: (registry: SurfaceRegistry) => () => void,
+): void {
+  const addRef = useRef(add);
+  useEffect(() => {
+    addRef.current = add;
+  });
+  useEffect(() => {
+    if (!registry || identity === null) return;
+    return addRef.current(registry);
+  }, [registry, identity]);
 }
 
 /**
@@ -208,16 +536,7 @@ export function registerSurfaceScopeContribution(
   owner: string,
   getScope: () => SurfaceScopePayload,
 ): () => void {
-  const entry = { id: ++nextId, owner, getScope };
-  const current = scopeContributions.get(surfaceName) ?? [];
-  scopeContributions.set(surfaceName, [...current, entry]);
-  return () => {
-    const remaining = (scopeContributions.get(surfaceName) ?? []).filter(
-      (candidate) => candidate.id !== entry.id,
-    );
-    if (remaining.length === 0) scopeContributions.delete(surfaceName);
-    else scopeContributions.set(surfaceName, remaining);
-  };
+  return globalRegistry.addScopeContribution(surfaceName, owner, getScope);
 }
 
 /**
@@ -228,22 +547,7 @@ export function registerSurfaceScopeContribution(
 export function getRegisteredSurfaceScopeContributions(
   surfaceName: string,
 ): SurfaceScopePayload {
-  const merged: SurfaceScopePayload = {};
-  const owners = new Map<string, string>();
-  for (const contribution of scopeContributions.get(surfaceName) ?? []) {
-    const fragment = contribution.getScope();
-    for (const [name, value] of Object.entries(fragment)) {
-      const priorOwner = owners.get(name);
-      if (priorOwner) {
-        throw new Error(
-          `[surfaces] scope value "${name}" for "${surfaceName}" is emitted by both "${priorOwner}" and "${contribution.owner}"`,
-        );
-      }
-      owners.set(name, contribution.owner);
-      merged[name] = value;
-    }
-  }
-  return merged;
+  return globalRegistry.scopeContributions(surfaceName);
 }
 
 /**
@@ -258,45 +562,25 @@ export function withScopeContributions(
   surfaceName: string,
   getScope: () => SurfaceScopePayload | Promise<SurfaceScopePayload>,
 ): () => SurfaceScopePayload | Promise<SurfaceScopePayload> {
-  const merge = (own: SurfaceScopePayload): SurfaceScopePayload => {
-    const contributed = getRegisteredSurfaceScopeContributions(surfaceName);
-    for (const name of Object.keys(contributed)) {
-      if (name in own) {
-        throw new Error(
-          `[surfaces] a descendant contribution to "${surfaceName}" tried to replace the provider-owned value "${name}"`,
-        );
-      }
-    }
-    const loaded = { ...own, ...contributed };
-    announceUndeclaredLoadedValues(surfaceName, loaded);
-    return loaded;
-  };
-  return () => {
-    const own = getScope();
-    return own && typeof (own as Promise<SurfaceScopePayload>).then === "function"
-      ? (own as Promise<SurfaceScopePayload>).then(merge)
-      : merge(own as SurfaceScopePayload);
-  };
+  return globalRegistry.withScopeContributions(surfaceName, getScope);
 }
 
 /** Register a descendant's latest scope fragment without re-registering it. */
 export function useSurfaceScopeContribution(
-  declaredSurfaceName: string | null,
+  surfaceName: string | null,
   owner: string,
   getScope: () => SurfaceScopePayload,
 ): void {
-  const surfaceName = useLiveSurfaceName(declaredSurfaceName);
+  const { live, capture } = useRegistrationTargets();
   const getScopeRef = useRef(getScope);
   useEffect(() => {
     getScopeRef.current = getScope;
   });
-
-  useEffect(() => {
-    if (!surfaceName) return;
-    return registerSurfaceScopeContribution(surfaceName, owner, () =>
-      getScopeRef.current(),
-    );
-  }, [surfaceName, owner]);
+  const identity = surfaceName ? `${surfaceName}|${owner}` : null;
+  const add = (registry: SurfaceRegistry) =>
+    registry.addScopeContribution(surfaceName ?? "", owner, () => getScopeRef.current());
+  useRegistrationIn(live, identity, add);
+  useRegistrationIn(capture, identity, add);
 }
 
 /**
@@ -308,27 +592,9 @@ export function useSurfaceScopeContribution(
  * rich one (the exact inversion of the nested-provider contract).
  */
 export function getSurfaceRuntime(): SurfaceRuntimeValue | null {
-  let winner: RegistryEntry | null = null;
-  for (const entry of stack) {
-    if (
-      !winner ||
-      entry.depth > winner.depth ||
-      (entry.depth === winner.depth && entry.id > winner.id)
-    ) {
-      winner = entry;
-    }
-  }
-  return winner?.value ?? null;
+  return globalRegistry.primary();
 }
 
-/**
- * Read the deepest live provider for one canonical surface name.
- *
- * Submit-time execution refreshes must follow the surface stamped onto the
- * conversation, not an unrelated overlay that happens to be the registry's
- * current global winner. Within the requested surface the normal provider
- * law still applies: deepest wins, registration recency breaks ties.
- */
 /**
  * True when `conversationId` is a mounted page's OWN conversation (declared
  * via `ownConversationId`). Such a conversation gets no page context and no
@@ -346,6 +612,14 @@ export function isPageOwnConversation(
   );
 }
 
+/**
+ * Read the deepest live provider for one canonical surface name.
+ *
+ * Submit-time execution refreshes must follow the surface stamped onto the
+ * conversation, not an unrelated overlay that happens to be the registry's
+ * current global winner. Within the requested surface the normal provider
+ * law still applies: deepest wins, registration recency breaks ties.
+ */
 export function getSurfaceRuntimeForName(
   surfaceName: string,
 ): SurfaceRuntimeValue | null {
@@ -368,18 +642,8 @@ function getServerSnapshot(): SurfaceRuntimeValue | null {
  * panel is open.
  */
 export function getSurfaceRuntimeStack(): readonly SurfaceRuntimeValue[] {
-  return [...stack]
-    .sort((a, b) => b.depth - a.depth || b.id - a.id)
-    .map((entry) => entry.value);
+  return globalRegistry.stack();
 }
-
-/**
- * Register a live runtime. Returns an unregister that only clears this entry
- * (safe under nested providers / remounts). `depth` is the provider's nesting
- * depth in the React tree (see `SurfaceRuntimeDepthContext`); deeper wins.
- */
-/** Every surface that has had a live provider in this page session. */
-const mountedThisSession = new Set<string>();
 
 /**
  * True when `surfaceName` had a live provider at some point in this page
@@ -391,27 +655,25 @@ export function wasSurfaceMountedThisSession(surfaceName: string): boolean {
   return mountedThisSession.has(surfaceName);
 }
 
+/**
+ * Register a live runtime. Returns an unregister that only clears this entry
+ * (safe under nested providers / remounts). `depth` is the provider's nesting
+ * depth in the React tree (see `SurfaceRuntimeDepthContext`); deeper wins.
+ */
 export function registerSurfaceRuntime(
   value: SurfaceRuntimeValue,
   depth = 0,
 ): () => void {
-  const id = ++nextId;
-  mountedThisSession.add(value.surfaceName);
-  const registered: SurfaceRuntimeValue = {
-    ...value,
-    getScope: withScopeContributions(value.surfaceName, value.getScope),
-  };
-  stack = [...stack, { id, depth, value: registered }];
-  emit();
-  return () => {
-    stack = stack.filter((e) => e.id !== id);
-    emit();
-  };
+  return globalRegistry.register(value, depth);
 }
 
 /** Hook for the header panel (and any other chrome outside the page tree). */
 export function useSurfaceRuntime(): SurfaceRuntimeValue | null {
-  return useSyncExternalStore(subscribe, getSurfaceRuntime, getServerSnapshot);
+  return useSyncExternalStore(
+    globalRegistry.subscribe,
+    getSurfaceRuntime,
+    getServerSnapshot,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -431,21 +693,12 @@ export function useSurfaceRuntime(): SurfaceRuntimeValue | null {
  * registered handler wins over the provider's (the deeper, more specific
  * owner registered it).
  */
-const extraHandlers = new Map<
-  string,
-  Array<{ id: number; handlers: SurfaceWriteHandlers }>
->();
 
 /** Handlers registered by descendants for `surfaceName`, most recent first. */
 export function getRegisteredWriteHandlers(
   surfaceName: string,
 ): SurfaceWriteHandlers {
-  const entries = extraHandlers.get(surfaceName);
-  if (!entries || entries.length === 0) return {};
-  const merged: SurfaceWriteHandlers = {};
-  // Later registrations win: iterate oldest→newest and overwrite.
-  for (const entry of entries) Object.assign(merged, entry.handlers);
-  return merged;
+  return globalRegistry.writeHandlers(surfaceName);
 }
 
 /**
@@ -462,22 +715,21 @@ export function getRegisteredWriteHandlers(
  * every call in a safe, loud envelope.
  */
 export function useSurfaceWriteHandlers(
-  declaredSurfaceName: string | null,
+  surfaceName: string | null,
   handlers: SurfaceWriteHandlers,
 ): void {
-  const surfaceName = useLiveSurfaceName(declaredSurfaceName);
+  const { live, capture } = useRegistrationTargets();
   const handlersRef = useRef(handlers);
   useEffect(() => {
     handlersRef.current = handlers;
   });
 
-  useEffect(() => {
-    if (!surfaceName) return;
-    const id = ++nextId;
-    // Indirect through the ref so the registered handlers always call the
-    // LATEST closure (fresh page state), never the one from mount. The proxy
-    // is always the two-phase shape so a handler may switch between a plain
-    // function and `{ validate, apply }` across renders without re-registering.
+  // Indirect through the ref so the registered handlers always call the
+  // LATEST closure (fresh page state), never the one from mount. The proxy is
+  // always the two-phase shape so a handler may switch between a plain
+  // function and `{ validate, apply }` across renders without re-registering.
+  const add = (registry: SurfaceRegistry) => {
+    const name = surfaceName ?? "";
     const proxied: SurfaceWriteHandlers = {};
     for (const key of Object.keys(handlersRef.current)) {
       proxied[key] = {
@@ -491,7 +743,7 @@ export function useSurfaceWriteHandlers(
           const current = handlersRef.current[key];
           if (!current) {
             throw new Error(
-              `The handler for "${key}" on ${surfaceName} was unregistered before it could run.`,
+              `The handler for "${key}" on ${name} was unregistered before it could run.`,
             );
           }
           return typeof current === "function"
@@ -500,43 +752,21 @@ export function useSurfaceWriteHandlers(
         },
       };
     }
-    const list = extraHandlers.get(surfaceName) ?? [];
-    extraHandlers.set(surfaceName, [...list, { id, handlers: proxied }]);
-    emit();
-    return () => {
-      const current = extraHandlers.get(surfaceName) ?? [];
-      const next = current.filter((entry) => entry.id !== id);
-      if (next.length === 0) extraHandlers.delete(surfaceName);
-      else extraHandlers.set(surfaceName, next);
-      emit();
-    };
-    // The KEY SET is the registration identity — a stable set of target names
-    // registers once for the component's life, while values stay fresh via the
-    // ref above.
-  }, [surfaceName, Object.keys(handlers).sort().join("|")]);
+    return registry.addWriteHandlers(name, proxied);
+  };
+  // The KEY SET is the registration identity — a stable set of target names
+  // registers once for the component's life, while values stay fresh via the
+  // ref above.
+  const identity = surfaceName
+    ? `${surfaceName}|${Object.keys(handlers).sort().join("|")}`
+    : null;
+  useRegistrationIn(live, identity, add);
+  useRegistrationIn(capture, identity, add);
 }
 
 // ---------------------------------------------------------------------------
 // Surface client-tool handlers — the ACTION twin of the write handlers above.
 // ---------------------------------------------------------------------------
-
-/**
- * One handler per declared `SurfaceClientTool.name`. A handler executes the
- * tool against the live page (moves focus, stages a draft, runs the page's
- * canonical write) and returns the tool OUTPUT the agent receives (any
- * JSON-serializable value, or nothing). It may throw — the client-tool
- * runtime (`surface-client-tools.ts`) wraps every call in a safe, loud
- * envelope and never lets a throw escape to the delegation loop.
- */
-export type SurfaceClientToolHandlers = Record<
-  string,
-  (input: unknown) => Promise<unknown> | unknown
->;
-
-const extraClientToolHandlers = new Map<
-  string,
-  Array<{ id: number; handlers: SurfaceClientToolHandlers }>
->();
 
 /**
  * Client-tool handlers registered by descendants for `surfaceName`, most
@@ -546,12 +776,7 @@ const extraClientToolHandlers = new Map<
 export function getRegisteredSurfaceClientTools(
   surfaceName: string,
 ): SurfaceClientToolHandlers {
-  const entries = extraClientToolHandlers.get(surfaceName);
-  if (!entries || entries.length === 0) return {};
-  const merged: SurfaceClientToolHandlers = {};
-  // Later registrations win: iterate oldest→newest and overwrite.
-  for (const entry of entries) Object.assign(merged, entry.handlers);
-  return merged;
+  return globalRegistry.clientTools(surfaceName);
 }
 
 /**
@@ -571,38 +796,30 @@ export function getRegisteredSurfaceClientTools(
  * loud envelope.
  */
 export function useSurfaceClientTools(
-  declaredSurfaceName: string | null,
+  surfaceName: string | null,
   handlers: SurfaceClientToolHandlers,
 ): void {
-  const surfaceName = useLiveSurfaceName(declaredSurfaceName);
+  const { live, capture } = useRegistrationTargets();
   const handlersRef = useRef(handlers);
   useEffect(() => {
     handlersRef.current = handlers;
   });
 
-  useEffect(() => {
-    if (!surfaceName) return;
-    const id = ++nextId;
+  const add = (registry: SurfaceRegistry) => {
     const proxied: SurfaceClientToolHandlers = {};
     for (const key of Object.keys(handlersRef.current)) {
-      proxied[key] = (input: unknown) => handlersRef.current[key]?.(input);
+      proxied[key] = (input: unknown, call?: SurfaceToolCall) =>
+        handlersRef.current[key]?.(input, call);
     }
-    const list = extraClientToolHandlers.get(surfaceName) ?? [];
-    extraClientToolHandlers.set(surfaceName, [
-      ...list,
-      { id, handlers: proxied },
-    ]);
-    emit();
-    return () => {
-      const current = extraClientToolHandlers.get(surfaceName) ?? [];
-      const next = current.filter((entry) => entry.id !== id);
-      if (next.length === 0) extraClientToolHandlers.delete(surfaceName);
-      else extraClientToolHandlers.set(surfaceName, next);
-      emit();
-    };
-    // The KEY SET is the registration identity — same contract as
-    // useSurfaceWriteHandlers above.
-  }, [surfaceName, Object.keys(handlers).sort().join("|")]);
+    return registry.addClientTools(surfaceName ?? "", proxied);
+  };
+  // The KEY SET is the registration identity — same contract as
+  // useSurfaceWriteHandlers above.
+  const identity = surfaceName
+    ? `${surfaceName}|${Object.keys(handlers).sort().join("|")}`
+    : null;
+  useRegistrationIn(live, identity, add);
+  useRegistrationIn(capture, identity, add);
 }
 
 /**
@@ -663,7 +880,7 @@ export function SurfaceRuntimeProvider({
 }: SurfaceRuntimeValue & { children: ReactNode }) {
   const depth = useContext(SurfaceRuntimeDepthContext) + 1;
   const layer = useContext(SurfaceLayerContext);
-  const dormant = useContext(SurfaceDormantContext);
+  const { live, capture } = useRegistrationTargets();
   const getScopeRef = useRef(getScope);
   // This is a local ref assignment, not a registry mutation. Registration
   // remains effect-owned, but its already-registered callback sees the current
@@ -690,9 +907,8 @@ export function SurfaceRuntimeProvider({
     isOwnConversationRef.current = isOwnConversation;
   });
 
-  useEffect(() => {
-    if (dormant) return;
-    return registerSurfaceRuntime(
+  const add = (registry: SurfaceRegistry) =>
+    registry.register(
       {
         surfaceName,
         isEditable,
@@ -705,7 +921,9 @@ export function SurfaceRuntimeProvider({
       },
       depth,
     );
-  }, [surfaceName, isEditable, layer, depth, stableGetScope, dormant]);
+  const identity = JSON.stringify([surfaceName, isEditable ?? null, layer, depth]);
+  useRegistrationIn(live, identity, add);
+  useRegistrationIn(capture, identity, add);
 
   return (
     <SurfaceRuntimeDepthContext.Provider value={depth}>
@@ -745,7 +963,7 @@ export function useSurfaceRuntimeRegistration(
   });
 
   const surfaceName = value?.surfaceName ?? null;
-  const liveSurfaceName = useLiveSurfaceName(surfaceName);
+  const { live, capture } = useRegistrationTargets();
   const transferHandle = useAlchemySurfaceHandle(
     surfaceName ?? "__unbound_surface_runtime__",
     () => {
@@ -759,33 +977,36 @@ export function useSurfaceRuntimeRegistration(
     },
   );
   const isEditable = value?.isEditable;
-  useEffect(() => {
-    if (!surfaceName || !liveSurfaceName) return;
-    return registerSurfaceRuntime(
-      {
-        surfaceName,
-        isEditable,
-        layer,
-        getScope: () => {
-          const current = valueRef.current;
-          if (!current) {
-            // Unreachable while registered (the registration is torn down in
-            // the same effect that could clear the value) — loud rather than
-            // a silent empty scope if that ever stops being true.
-            throw new Error(
-              `[surfaces] runtime for "${surfaceName}" was read after its owner stopped emitting`,
-            );
-          }
-          return current.getScope();
-        },
-        beforeExecute: (input) => valueRef.current?.beforeExecute?.(input),
-        getWriteHandlers: () => valueRef.current?.getWriteHandlers?.() ?? {},
-        getOwnConversationId: () => valueRef.current?.ownConversationId,
-        isOwnConversation: (id) =>
-          valueRef.current?.isOwnConversation?.(id) === true,
+  const add = (registry: SurfaceRegistry) => {
+    const name = surfaceName ?? "";
+    const runtime: SurfaceRuntimeValue = {
+      surfaceName: name,
+      isEditable,
+      layer,
+      getScope: () => {
+        const current = valueRef.current;
+        if (!current) {
+          // Unreachable while registered (the registration is torn down in
+          // the same effect that could clear the value) — loud rather than
+          // a silent empty scope if that ever stops being true.
+          throw new Error(
+            `[surfaces] runtime for "${name}" was read after its owner stopped emitting`,
+          );
+        }
+        return current.getScope();
       },
-      depth,
-    );
-  }, [surfaceName, liveSurfaceName, isEditable, layer, depth]);
+      beforeExecute: (input) => valueRef.current?.beforeExecute?.(input),
+      getWriteHandlers: () => valueRef.current?.getWriteHandlers?.() ?? {},
+      getOwnConversationId: () => valueRef.current?.ownConversationId,
+      isOwnConversation: (id) =>
+        valueRef.current?.isOwnConversation?.(id) === true,
+    };
+    return registry.register(runtime, depth);
+  };
+  const identity = surfaceName
+    ? JSON.stringify([surfaceName, isEditable ?? null, layer, depth])
+    : null;
+  useRegistrationIn(live, identity, add);
+  useRegistrationIn(capture, identity, add);
   return surfaceName ? transferHandle : null;
 }

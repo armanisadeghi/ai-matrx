@@ -279,6 +279,13 @@ export const selectRunStartedAt = (runId: string) =>
     (byRunId): string | null => byRunId[runId]?.startedAtTs ?? null,
   );
 
+/** What the run was started with (the run row's `input`); null until read. */
+export const selectRunInput = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): Record<string, unknown> | null => byRunId[runId]?.input ?? null,
+  );
+
 /** The ts of the last status transition — the run's end once it is terminal. */
 /**
  * Has the server actually told us this run's status yet?

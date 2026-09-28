@@ -67,7 +67,11 @@ import { ShapesLayer } from "../components/ShapesLayer";
 import { ToolBar } from "../components/ToolBar";
 import { ZoomMenu } from "../components/ZoomMenu";
 import { LayersPanel } from "../components/LayersPanel";
-import { NoteTileBody, TextTileBody } from "../tiles/NoteTileBody";
+import { TextTileBody } from "../tiles/TextTileBody";
+import { NoteItemBody } from "../items/NoteItemBody";
+import { entityId, isNoteDraft, noteSeedEdit } from "../items/work-sources";
+import type { NodeSource } from "../board/document";
+import { SurfaceActivity } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MarkdownTileBody } from "../tiles/MarkdownTileBody";
 import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
 import type {
@@ -109,8 +113,8 @@ type TileContent =
   | { type: "markdown"; text: string }
   | { type: "image"; src: string; waitFor?: ReplayStream }
   | { type: "pending"; message: string }
-  /** A quick note: a real Note once its first words are typed. */
-  | { type: "note"; noteId: string | null; text?: string }
+  /** A real Note, in the notes core (the Board's note item body). */
+  | { type: "note"; source: NodeSource }
   /** A text label placed with the Text tool (board-only). */
   | { type: "text"; text: string };
 
@@ -442,10 +446,10 @@ export function SpatialDemoBoard({
   const saveAndClose = async (id: string) => {
     const spec = specOf(id);
     if (!spec) return;
-    if (spec.content.type === "note" && spec.content.noteId) {
+    if (spec.content.type === "note" && spec.content.source.kind === "entity" && spec.content.source.id) {
       const undo = tiles.removeTile(id);
       toast.success(
-        `"${spec.title}" is already in Notes (Board notes) — closed it here`,
+        `"${spec.title}" is already in Notes — closed it here`,
         {
           action: { label: "Put back", onClick: undo },
         },
@@ -519,8 +523,8 @@ export function SpatialDemoBoard({
           title: "Note",
           subtitle: "Quick note",
           icon: StickyNote,
-          rect: { x: c.at.x - 180, y: c.at.y - 20, w: 360, h: 280 },
-          content: { type: "note", noteId: null },
+          rect: { x: c.at.x - 280, y: c.at.y - 20, w: 560, h: 620 },
+          content: { type: "note", source: { kind: "entity", entity: "note", id: null } },
         });
         break;
       case "text":
@@ -751,7 +755,15 @@ function createAgentTile(
         ...base,
         title: input.title ?? "Note",
         subtitle: "Note · by an agent",
-        content: { type: "note", noteId: null, text: input.text ?? "" },
+        content: {
+          type: "note",
+          source: {
+            kind: "entity",
+            entity: "note",
+            id: null,
+            ...(input.text ? { meta: { seed: input.text } } : {}),
+          },
+        },
       };
     case "markdown":
       if (!input.text)
@@ -804,8 +816,14 @@ function editAgentTile(
   input: EditTileInput,
 ): Partial<TileSpec> | { ok: false; error: string } {
   const c = tile.content;
-  if (c.type === "note" && input.text !== undefined)
-    return { content: { ...c, text: input.text } };
+  if (c.type === "note" && input.text !== undefined) {
+    const seeded = noteSeedEdit(c.source, input.text);
+    if (seeded) return { content: { type: "note", source: seeded } };
+    return {
+      ok: false,
+      error: `"${tile.title}" is a real note in Notes. Change its text through the note itself: make the tile live (board_focus) and use its note_content write target.`,
+    };
+  }
   if (c.type === "markdown" && input.text !== undefined)
     return { content: { type: "markdown", text: input.text } };
   if (c.type === "text" && input.text !== undefined)
@@ -829,7 +847,10 @@ function describeTile(tile: TileSpec): {
       return { kind: tile.subtitle.split(" · ")[0] || "result", status: phase };
     }
     case "note":
-      return { kind: "note", status: c.noteId ? "saved" : "draft" };
+      return {
+        kind: "note",
+        status: entityId(c.source) && !isNoteDraft(c.source) ? "saved" : "draft",
+      };
     case "pending":
       return { kind: "pending", status: "queued" };
     default:
@@ -889,7 +910,7 @@ function BoardTile({
             value:
               c.type === "pending"
                 ? QUEUED
-                : c.type === "note" && !c.noteId
+                : c.type === "note" && c.source.kind === "entity" && !c.source.id
                   ? IDLE
                   : DONE,
           };
@@ -937,13 +958,19 @@ function BoardTile({
             );
           case "note":
             return (
-              <NoteTileBody
-                noteId={c.noteId}
-                text={c.text}
-                onCreated={(noteId, label) =>
-                  onContent({ type: "note", noteId, text: c.text }, label)
-                }
-              />
+              // Only the tile being worked in registers the notes surface.
+              <SurfaceActivity active={interacting}>
+                <NoteItemBody
+                  tileId={spec.id}
+                  source={c.source}
+                  title={spec.title}
+                  tier={tier}
+                  interacting={interacting}
+                  onSource={(source, label) =>
+                    onContent({ type: "note", source }, label)
+                  }
+                />
+              </SurfaceActivity>
             );
           case "text":
             return (

@@ -424,9 +424,25 @@ export const deleteSession =
     }
   };
 
+/**
+ * OPEN a room: it becomes THE active room (the one the room route shows), then
+ * its session, threads and assignments are read. Only the room's own page does
+ * this — a surface that merely SHOWS a room (a board tile) hydrates it with
+ * `hydrateWarRoomSession`, which never touches the active room.
+ */
 export const loadWarRoomSession =
-  (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
+  (id: string) => async (dispatch: AppDispatch) => {
     dispatch(setActiveSession(id));
+    return dispatch(hydrateWarRoomSession(id));
+  };
+
+/**
+ * Read one room's session, threads and assignments into the store WITHOUT
+ * making it the active room. Several rooms may be hydrated at once (the tiles
+ * of a board); `activeSessionId` stays whatever the room page set.
+ */
+export const hydrateWarRoomSession =
+  (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
     dispatch(setThreadsStatus({ roomId: id, status: "loading" }));
     try {
       const existing = getState().warRoom.sessionsById[id];

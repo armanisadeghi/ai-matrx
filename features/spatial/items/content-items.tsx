@@ -13,7 +13,7 @@ import { Input } from "@ai-matrx/design-system";
 import type { NodeSource } from "../board/document";
 import { HtmlTileBody, ImageTileBody } from "../tiles/MediaTileBodies";
 import { MarkdownTileBody } from "../tiles/MarkdownTileBody";
-import { TextTileBody } from "../tiles/NoteTileBody";
+import { TextTileBody } from "../tiles/TextTileBody";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
 import { parseWebUrl } from "./web-address";
 

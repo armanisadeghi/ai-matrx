@@ -56,6 +56,9 @@ export type CustomFieldSetResult =
   | { ok: false; message: string };
 
 export interface CustomFieldsAgentDoor {
+  /** False while the section sits in a dormant copy (a board tile that is not
+   * live): the door stays registered but is not offered to the page's agents. */
+  isLive?: () => boolean;
   entityToken: string;
   recordId: string;
   state: () => CustomFieldsAgentState;
@@ -87,11 +90,11 @@ export function registerCustomFieldsDoor(door: CustomFieldsAgentDoor): () => voi
 }
 
 export function listCustomFieldsDoors(): CustomFieldsAgentDoor[] {
-  return [...doors.values()];
+  return [...doors.values()].filter((d) => d.isLive?.() !== false);
 }
 
 export function hasCustomFieldsDoors(): boolean {
-  return doors.size > 0;
+  return listCustomFieldsDoors().length > 0;
 }
 
 /** Test seam. */

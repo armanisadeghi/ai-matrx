@@ -33,7 +33,7 @@ import { selectNoteById } from "@/features/notes/redux/selectors";
 import {
   selectActiveAudioSessionId,
   selectActiveNoteId,
-  selectActiveSessionId,
+  selectRoomIdForThread,
   selectAttachmentsForThread,
   selectAudioSessionIdsForThread,
   selectContentAssignmentsForThread,
@@ -306,7 +306,7 @@ export function buildThreadAgentContextEntries(
   const thread = selectThreadById(threadId)(state);
   if (!thread) return [];
 
-  const roomId = selectActiveSessionId(state);
+  const roomId = selectRoomIdForThread(threadId)(state);
   const room = roomId ? selectSessionById(roomId)(state) : null;
   const roomTitle = room?.title?.trim() || "this War Room";
   const projectId = roomId

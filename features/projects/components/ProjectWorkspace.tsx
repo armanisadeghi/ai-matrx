@@ -16,7 +16,6 @@
  */
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -86,43 +85,17 @@ const EXCLUDE_FROM_RESOURCES = new Set(["task", "project"]);
 // (the description editor below mounts its own editable Pro "…" menu).
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
+/**
+ * The /projects/[projectId] route: resolves the project by UUID or slug, owns
+ * the loading / failed-read / no-access states, then renders the ONE project
+ * workspace (`ProjectRecordWorkspace`) with the route's chrome.
+ */
 export function ProjectWorkspace() {
   const params = useParams();
-  const router = useRouter();
   const projectParam = params.projectId as string;
 
   const [project, setProject] = React.useState<Project | null>(null);
   const [resolving, setResolving] = React.useState(true);
-  const [org, setOrg] = React.useState<{
-    name: string;
-    slug: string;
-  } | null>(null);
-  const [taskCounts, setTaskCounts] = React.useState<{
-    open: number;
-    done: number;
-  }>({
-    open: 0,
-    done: 0,
-  });
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!project?.organizationId) {
-        setOrg(null);
-        return;
-      }
-      // Label enrichment only: the organization chip is absent without it.
-      const o = await getOrganizationBySlugOrId(project.organizationId).catch((err: unknown) => {
-        console.error("[ProjectWorkspace] organization label unavailable:", err);
-        return null;
-      });
-      if (!cancelled && o)
-        setOrg({ name: o.name, slug: o.slug });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [project?.organizationId]);
 
   // A failed project read is its own state (RC-B12 r13) — `getProject` used
   // to answer null for a fault, which showed the access gate.
@@ -162,51 +135,11 @@ export function ProjectWorkspace() {
       if (cancelled) return;
       setProject(resolved);
       setResolving(false);
-      if (resolved?.organizationId) {
-        const o = await getOrganizationBySlugOrId(resolved.organizationId).catch((err: unknown) => {
-          console.error("[ProjectWorkspace] organization label unavailable:", err);
-          return null;
-        });
-        if (!cancelled && o)
-          setOrg({ name: o.name, slug: o.slug });
-      }
     })();
     return () => {
       cancelled = true;
     };
   }, [projectParam, projectReadAttempt]);
-
-  const { members } = useProjectMembers(project?.id);
-  const { role, canManageSettings } = useProjectUserRole(project?.id);
-  const { projects: siblingProjects } = useUserProjects();
-
-  // Inline edits (name/description/status/priority/dates/org) patch local state
-  // so the workspace IS the edit surface — no trip to a separate page.
-  const applyPatch = React.useCallback(
-    (patch: Partial<Project>) =>
-      setProject((prev) => (prev ? { ...prev, ...patch } : prev)),
-    [],
-  );
-  // Canonical association reads — the project's attached resources are its
-  // incoming platform.associations edges (the spine conveys project-member
-  // access down to each attached item). Tasks keep their own FK-based section.
-  const { status: linksStatus, countFor } = useContainerLinks({
-    containerType: "project",
-    containerId: project?.id ?? null,
-    orgId: project?.organizationId ?? null,
-  });
-  const countsLoading = linksStatus === "loading" || linksStatus === "idle";
-
-  const resourceTokens = curatedTokens().filter(
-    (t) => !EXCLUDE_FROM_RESOURCES.has(t),
-  );
-
-  // Sum ONLY the tokens the grid shows — a raw all-edges total would count
-  // task→project edges the grid excludes and disagree with the visible cards.
-  const totalResources = resourceTokens.reduce(
-    (sum, t) => sum + countFor(t),
-    0,
-  );
 
   if (resolving) {
     return (
@@ -259,14 +192,102 @@ export function ProjectWorkspace() {
     );
   }
 
+  return (
+    <ProjectRecordWorkspace
+      key={project.id}
+      initialProject={project}
+      chrome="page"
+    />
+  );
+}
+
+/**
+ * ProjectRecordWorkspace — THE workspace for ONE resolved project: the hero
+ * (inline name / status / priority / dates / context / description), the task
+ * list, the associated-resources grid, scopes and references — AND the
+ * project's agent surface (`matrx-user/projects`, read + write). The project
+ * route and a project on the Board both render this, so every control and
+ * every agent write is identical in both places.
+ *
+ * `chrome="page"` adds the route's shell header (back, sibling switcher,
+ * modes, actions) and the under-the-glass padding; `chrome="embedded"` is the
+ * same workspace for a host that brings its own frame (a board tile).
+ */
+export function ProjectRecordWorkspace({
+  initialProject,
+  chrome,
+}: {
+  initialProject: Project;
+  chrome: "page" | "embedded";
+}) {
+  const router = useRouter();
+  // Inline edits (name/description/status/priority/dates/org) patch this copy
+  // so the workspace IS the edit surface — no trip to a separate page.
+  const [project, setProject] = React.useState<Project>(initialProject);
+  const applyPatch = (patch: Partial<Project>) =>
+    setProject((prev) => ({ ...prev, ...patch }));
+  const [org, setOrg] = React.useState<{
+    name: string;
+    slug: string;
+  } | null>(null);
+  const [taskCounts, setTaskCounts] = React.useState<{
+    open: number;
+    done: number;
+  }>({
+    open: 0,
+    done: 0,
+  });
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!project.organizationId) {
+        setOrg(null);
+        return;
+      }
+      // Label enrichment only: the organization chip is absent without it.
+      const o = await getOrganizationBySlugOrId(project.organizationId).catch((err: unknown) => {
+        console.error("[ProjectWorkspace] organization label unavailable:", err);
+        return null;
+      });
+      if (!cancelled && o)
+        setOrg({ name: o.name, slug: o.slug });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [project.organizationId]);
+
+  const { members } = useProjectMembers(project.id);
+  const { role, canManageSettings } = useProjectUserRole(project.id);
+  const { projects: siblingProjects } = useUserProjects();
+
+  // Canonical association reads — the project's attached resources are its
+  // incoming platform.associations edges (the spine conveys project-member
+  // access down to each attached item). Tasks keep their own FK-based section.
+  const { status: linksStatus, countFor } = useContainerLinks({
+    containerType: "project",
+    containerId: project.id,
+    orgId: project.organizationId ?? null,
+  });
+  const countsLoading = linksStatus === "loading" || linksStatus === "idle";
+
+  const resourceTokens = curatedTokens().filter(
+    (t) => !EXCLUDE_FROM_RESOURCES.has(t),
+  );
+
+  // Sum ONLY the tokens the grid shows — a raw all-edges total would count
+  // task→project edges the grid excludes and disagree with the visible cards.
+  const totalResources = resourceTokens.reduce(
+    (sum, t) => sum + countFor(t),
+    0,
+  );
+
   const kgHref = org
     ? `/knowledge/graph?org=${encodeURIComponent(org.slug)}`
     : "/knowledge/graph";
 
   // ── Surface agent context (matrx-user/projects) ───────────────────────────
-  // `project` is non-null past the guards above, so these are plain values /
-  // functions — NOT hooks (a useCallback here would sit after an early return
-  // and break rules-of-hooks). React Compiler memoizes the build for free.
+  // Plain values / functions — React Compiler memoizes the build for free.
   // Resource counts, excluding tasks/projects (they have their own values) and
   // still-loading nulls — same discipline as the on-page `totalResources` stat.
   const resourceCounts: Record<string, number> = {};
@@ -326,6 +347,7 @@ export function ProjectWorkspace() {
       isEditable={false}
       getWriteHandlers={getWriteHandlers}
     >
+      {chrome === "page" ? (
       <EntityModeHeader
         backHref="/projects"
         entityLabel={project.name}
@@ -372,8 +394,21 @@ export function ProjectWorkspace() {
           </>
         }
       />
-      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
-        <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
+      ) : null}
+      <div
+        className={
+          chrome === "page"
+            ? "h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]"
+            : "h-full overflow-y-auto bg-textured"
+        }
+      >
+        <div
+          className={
+            chrome === "page"
+              ? "max-w-6xl mx-auto p-4 md:p-6 space-y-5"
+              : "mx-auto max-w-6xl space-y-4 p-3"
+          }
+        >
           {/* Hero */}
           <Card className="p-5 md:p-6 relative overflow-hidden">
             <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500" />

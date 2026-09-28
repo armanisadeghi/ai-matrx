@@ -51,6 +51,7 @@ import {
   selectAllFoldersMap,
   selectTreeStatus,
 } from "@/features/files/redux/selectors";
+import type { RootState } from "@/lib/redux/store";
 import type { ChipFilter, KindFilter, SortBy, SortDirection, ViewMode } from "@/features/files/types";
 import { isSyntheticId } from "@/features/files/virtual-sources/path";
 import {
@@ -83,6 +84,53 @@ function asNullableString(value: unknown, target: string): string | null {
   return trimmed.length === 0 ? null : trimmed;
 }
 
+/**
+ * Rename guard shared by every surface that renames a file or folder
+ * (`matrx-user/files` here, `matrx-user/file` in SingleFileSurfaceHost). The
+ * tree must be fully loaded, because the sibling-collision half of
+ * `validateRenameInput` is only as good as the rows in the store — renaming
+ * against a half-loaded tree can silently create the duplicate name the dialog
+ * exists to prevent. An in-flight upload can add a colliding sibling mid-run,
+ * so that blocks too. Both refuse LOUDLY rather than writing anyway.
+ */
+export function assertFilesRenameAllowed(state: RootState, target: string): void {
+  const treeStatus = selectTreeStatus(state);
+  if (treeStatus !== "loaded") {
+    throw new Error(
+      `${target} refused: the files tree is "${treeStatus}", not "loaded". ` +
+        `Renaming against an incomplete listing can miss a name collision. ` +
+        `Wait for the listing to finish and try again.`,
+    );
+  }
+  if (selectActiveUploads(state).length > 0) {
+    throw new Error(
+      `${target} refused: an upload is in progress. A file landing mid-rename ` +
+        `can collide with the new name. Wait for the upload to finish.`,
+    );
+  }
+}
+
+/** Sibling names in the same parent, excluding the resource itself — the
+ * exact list RenameDialog builds for its collision check. */
+export function siblingNamesInFolder(
+  state: RootState,
+  parentId: string | null,
+  resourceId: string,
+): string[] {
+  const filesById = selectAllFilesMap(state);
+  const foldersById = selectAllFoldersMap(state);
+  const out: string[] = [];
+  for (const f of Object.values(filesById)) {
+    if (!f || f.id === resourceId || f.deletedAt) continue;
+    if ((f.parentFolderId ?? null) === parentId) out.push(f.fileName);
+  }
+  for (const fo of Object.values(foldersById)) {
+    if (!fo || fo.id === resourceId || fo.deletedAt) continue;
+    if ((fo.parentId ?? null) === parentId) out.push(fo.folderName);
+  }
+  return out;
+}
+
 export interface FilesSurfaceWriteDeps {
   /** PageShell's own folder-activation path (URL sync + lazy hydration). */
   selectFolder: (folderId: string) => void;
@@ -97,48 +145,13 @@ export function useFilesSurfaceWriteHandlers({
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
-  /**
-   * Rename guard. The tree must be fully loaded before a rename, because the
-   * sibling-collision half of `validateRenameInput` is only as good as the
-   * rows in the store — renaming against a half-loaded tree can silently
-   * create the duplicate name the dialog exists to prevent. An in-flight
-   * upload can add a colliding sibling mid-run, so that blocks too. Both
-   * refuse LOUDLY rather than writing anyway.
-   */
+  /** Rename guard — see `assertFilesRenameAllowed`. */
   function assertRenameAllowed(target: string): void {
-    const state = store.getState();
-    const treeStatus = selectTreeStatus(state);
-    if (treeStatus !== "loaded") {
-      throw new Error(
-        `${target} refused: the files tree is "${treeStatus}", not "loaded". ` +
-          `Renaming against an incomplete listing can miss a name collision. ` +
-          `Wait for the listing to finish and try again.`,
-      );
-    }
-    if (selectActiveUploads(state).length > 0) {
-      throw new Error(
-        `${target} refused: an upload is in progress. A file landing mid-rename ` +
-          `can collide with the new name. Wait for the upload to finish.`,
-      );
-    }
+    assertFilesRenameAllowed(store.getState(), target);
   }
 
-  /** Sibling names in the same parent, excluding the resource itself — the
-   * exact list RenameDialog builds for its collision check. */
   function siblingNamesFor(parentId: string | null, resourceId: string): string[] {
-    const state = store.getState();
-    const filesById = selectAllFilesMap(state);
-    const foldersById = selectAllFoldersMap(state);
-    const out: string[] = [];
-    for (const f of Object.values(filesById)) {
-      if (!f || f.id === resourceId || f.deletedAt) continue;
-      if ((f.parentFolderId ?? null) === parentId) out.push(f.fileName);
-    }
-    for (const fo of Object.values(foldersById)) {
-      if (!fo || fo.id === resourceId || fo.deletedAt) continue;
-      if ((fo.parentId ?? null) === parentId) out.push(fo.folderName);
-    }
-    return out;
+    return siblingNamesInFolder(store.getState(), parentId, resourceId);
   }
 
   // Fresh closures per call — the `getWriteHandlers` contract. Every handler
