@@ -28,8 +28,13 @@
 -- Locks: SHARE ROW EXCLUSIVE for trigger creation on files.files, transcripts.studio_recording_segments
 -- and the 23 referencing tables below, each for milliseconds; lock_timeout 2s.
 set local lock_timeout = '2s';
--- based-on: files._stamp_parent_record() 275b53a7d73b296c5d17dfba047ab2db61615b648808454cf7b0028bee3a0ce0
--- based-on: files._adopt_chat_attachment_ids(uuid, uuid[]) d6894d7571c098fea0f83cf07c80f48ad0bc346bae1dd009be751fe76ae5f1ac
+-- based-on: files.ultimate_parent_record(uuid) aaa19c37f03df6aed1b5203f50fdc28901f020eb005e00aed83e04ceb09c86e2
+-- based-on: files.is_dictation_chunk(text, text, jsonb) e7d1cff3f0489209525905c1b38a09b432255f2864734284c5c4ad1b9e01976a
+-- based-on: files._stamp_parent_record() e1748e44c2897b08e68f105d7c48dc1e4416cb6da6caf6e8c9b308a3f34f7606
+-- based-on: files._variants_follow_their_source() 97fe525b9f3f86fbdb8bbee656f80b4328ff7df9600eb219b85c3c4da3a0daa9
+-- based-on: files._adopt_chat_attachment_ids(uuid, uuid[]) 30cc134461a230233db020bd16d4e465c0222358e549aa5cdc85da9e16a56aba
+-- based-on: files._adopt_files_named_by_row() 7ed5790a72f75e6baca6948a40a40f8d7b42da9ca10d1b91ede5ebbec0a4dd7a
+-- based-on: files._dictation_chunks_join_their_session() 22a9a11ee6443eb5e9cfb63cf7f6de90970b5864d508a591bfa0cbc0ce213177
 
 -- ── A file's ultimate parent record ────────────────────────────────────────────────────────────
 create or replace function files.ultimate_parent_record(p_file_id uuid, out parent_type text, out parent_id uuid)

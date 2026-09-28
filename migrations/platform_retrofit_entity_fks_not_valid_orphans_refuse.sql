@@ -16,6 +16,7 @@
 -- Applied as seven exact string replacements on the live body (md5-guarded): common-docs
 -- projects/database-estate-reduction/evidence/retrofit_entity_not_valid.sql. Reverse = apply the
 -- pairs backwards.
+-- based-on: platform.retrofit_entity(text, text, text, text, text, text, text, text, text, text) 67906d60f97fde528f74925be0076fce8412e9f449ec6f27d3210f309aa49803
 set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION platform.retrofit_entity(p_schema text, p_table text, p_token text, p_org_strategy text, p_org_expr text DEFAULT NULL::text, p_owner_col text DEFAULT NULL::text, p_parent_ref text DEFAULT NULL::text, p_parent_fk text DEFAULT NULL::text, p_visibility_expr text DEFAULT NULL::text, p_legacy_trigger text DEFAULT NULL::text)
