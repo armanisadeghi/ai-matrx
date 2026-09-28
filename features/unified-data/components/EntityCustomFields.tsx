@@ -75,10 +75,8 @@ export function EntityCustomFields({
   const liveRef = useRef(!dormant);
   // Registration is consumed during the same render transition; an effect is
   // one paint late and briefly offers a dormant field door as live.
+  // eslint-disable-next-line react-hooks/refs
   liveRef.current = !dormant;
-  useEffect(() => {
-    liveRef.current = !dormant;
-  });
   // WHAT THE AGENT SEES: the fields and this record's values, contributed as the
   // `custom_fields` value of the surface this page is on — when that surface
   // declares it (`pickBaseline("custom_fields")`); a surface that does not keeps

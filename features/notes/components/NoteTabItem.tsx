@@ -718,8 +718,8 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
                   ref={moreRef}
                   data-note-tab-more=""
                   className={actionBtnClass}
-                  title="Tab and note actions"
-                  aria-label="Tab and note actions"
+                  title={standalone ? "Note actions" : "Tab and note actions"}
+                  aria-label={standalone ? "Note actions" : "Tab and note actions"}
                   aria-haspopup="menu"
                   onClick={(e) => {
                     e.stopPropagation();
