@@ -834,8 +834,15 @@ export function KnowledgeHubPage({
         items: [
           { id: "open", label: "Open", icon: ArrowUpRight, href: open, shortcut: "⌘↵" },
           ...(open ? [] : [{ id: "peek", label: "Open", icon: ArrowUpRight, onSelect: () => openPeek(hit), shortcut: "↵" }]),
-          { id: "keep", label: "Keep", icon: Check, onSelect: () => void doTriage([hit], "kept"), shortcut: "S" },
-          { id: "archive", label: "Archive", icon: Archive, onSelect: () => void doTriage([hit], "archived"), shortcut: "E" },
+          ...(hit.triage_state !== "kept"
+            ? [{ id: "keep", label: "Keep", icon: Check, onSelect: () => void doTriage([hit], "kept"), shortcut: "S" }]
+            : []),
+          ...(hit.triage_state !== "archived"
+            ? [{ id: "archive", label: "Archive", icon: Archive, onSelect: () => void doTriage([hit], "archived"), shortcut: "E" }]
+            : []),
+          ...(hit.triage_state && hit.triage_state !== "inbox"
+            ? [{ id: "inbox", label: "Back to Inbox", icon: Inbox, onSelect: () => void doTriage([hit], "inbox"), shortcut: "I" }]
+            : []),
           { id: "tag", label: "Tag…", icon: Hash, onSelect: () => setTagFor([hit]), shortcut: "T" },
           { id: "file", label: "File to…", icon: FolderInput, onSelect: () => setFileUnderFor([hit]), shortcut: "M" },
           ...(ref("rename") ? [{ id: "rename", label: "Rename", icon: Pencil, onSelect: () => onTranscriptAction(hit, "rename") }] : []),
@@ -1821,6 +1828,7 @@ export function KnowledgeHubPage({
             tags={hubTags}
             activeScopeId={state.view.kind === "container" && state.view.type === "scope" ? state.view.id : null}
             onSelect={(id) => select({ kind: "container", type: "scope", id })}
+            onSelectName={filterByTag}
           />
         )
       }
@@ -1850,31 +1858,7 @@ export function KnowledgeHubPage({
       onAcceptSuggestion={acceptSuggestion}
       isFavorite={peekHit ? favoriteKeys.has(`${actionTarget(peekHit).entity}:${actionTarget(peekHit).id}`) : false}
       onToggleFavorite={(h) => void toggleFavorite(h)}
-      extraActions={
-        peekHit ? (
-          <>
-            {transcriptMenuNode(peekHit)}
-            <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={busy} onClick={() => setTagFor([peekHit])} title="Tag (t)">
-              <Hash className="h-3.5 w-3.5" /> Tag
-            </Button>
-            {peekHit.triage_state !== "kept" ? (
-              <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={busy} onClick={() => void doTriage([peekHit], "kept")} title="Keep (s)">
-                <Check className="h-3.5 w-3.5" /> Keep
-              </Button>
-            ) : null}
-            {peekHit.triage_state !== "archived" ? (
-              <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={busy} onClick={() => void doTriage([peekHit], "archived")} title="Archive (e)">
-                <Archive className="h-3.5 w-3.5" /> Archive
-              </Button>
-            ) : null}
-            {peekHit.triage_state && peekHit.triage_state !== "inbox" ? (
-              <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={busy} onClick={() => void doTriage([peekHit], "inbox")} title="Back to Inbox (i)">
-                <Inbox className="h-3.5 w-3.5" /> Back to Inbox
-              </Button>
-            ) : null}
-          </>
-        ) : null
-      }
+      extraActions={peekHit ? rowMenuNode(peekHit) : null}
       tagsSection={peekHit ? <PeekTags hit={peekHit} live={!sample} onFilter={filterByTag} /> : null}
     />
   ) : null;

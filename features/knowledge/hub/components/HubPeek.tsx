@@ -16,7 +16,7 @@
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useState } from "react";
-import { ExternalLink, FolderInput, Lightbulb, Star, X } from "lucide-react";
+import { ExternalLink, Lightbulb, Star, X } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { useAssociations, useEntityTitles } from "@ai-matrx/associations/react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import {
   kindLabel,
   openFullHref,
   originLabel,
+  plainText,
   tokenLabel,
 } from "@/features/knowledge/hub/hubPresentation";
 
@@ -118,7 +119,6 @@ export function HubPeek({
   sample,
   onClose,
   onOpenFull,
-  onFileUnder,
   onAcceptSuggestion,
   isFavorite = false,
   onToggleFavorite,
@@ -255,48 +255,42 @@ export function HubPeek({
   );
   return (
     <aside className="flex h-full min-h-0 flex-col" aria-label={`Peek: ${hit.title}`}>
+      {/* One header line (Linear's issue peek): what it is, then Open, Favorite, the row menu
+          (Keep, Archive, Tag, File to, Copy, Trash — the same menu the row carries), Close. */}
       <div className="flex items-start gap-2 border-b border-border px-4 py-3">
         <Icon className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <h2 className="line-clamp-2 text-base font-semibold leading-snug">{hit.title}</h2>
+          <h2 className="line-clamp-2 text-base font-semibold leading-snug">{plainText(hit.title)}</h2>
           <p className="text-xs text-muted-foreground">
-            {kindLabel(hit)} · {originLabel(hit.origin)}
-            {when ? ` · ${formatRelativeTime(when)}` : ""}
+            {[kindLabel(hit), hit.origin ? originLabel(hit.origin) : null, when ? formatRelativeTime(when) : null]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
-        <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close peek (Esc)" title="Close (Esc)">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="flex flex-wrap gap-2 border-b border-border px-4 py-2">
-        <Button
-          size="sm"
-          variant="default"
-          className="h-8 gap-1.5"
-          disabled={!href}
-          title={href ? "Open full (⌘↵)" : "This kind has no page of its own yet"}
-          onClick={() => onOpenFull(hit)}
-        >
-          <ExternalLink className="h-3.5 w-3.5" /> Open full
-          <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] sm:inline">⌘↵</kbd>
-        </Button>
-        <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => onFileUnder(hit)}>
-          <FolderInput className="h-3.5 w-3.5" /> File under…
-        </Button>
-        {onToggleFavorite ? (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1.5"
-            aria-pressed={isFavorite}
-            onClick={() => onToggleFavorite(hit)}
-            title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-          >
-            <Star className={isFavorite ? "h-3.5 w-3.5 fill-amber-400 text-amber-500" : "h-3.5 w-3.5"} />
-            {isFavorite ? "Favorited" : "Favorite"}
+        <div className="flex shrink-0 items-center gap-0.5">
+          {href ? (
+            <Button size="sm" variant="default" className="h-7 gap-1.5 px-2.5" title="Open (⌘↵)" onClick={() => onOpenFull(hit)}>
+              <ExternalLink className="h-3.5 w-3.5" /> Open
+            </Button>
+          ) : null}
+          {onToggleFavorite ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0"
+              aria-pressed={isFavorite}
+              aria-label={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+              title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+              onClick={() => onToggleFavorite(hit)}
+            >
+              <Star className={isFavorite ? "h-4 w-4 fill-amber-400 text-amber-500" : "h-4 w-4"} />
+            </Button>
+          ) : null}
+          {extraActions}
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={onClose} aria-label="Close peek (Esc)" title="Close (Esc)">
+            <X className="h-4 w-4" />
           </Button>
-        ) : null}
-        {extraActions}
+        </div>
       </div>
       {embed ? (
         <>

@@ -8,6 +8,32 @@ import { ChevronDown, ChevronRight, Hash, RotateCw } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import type { HubTagsState } from "./useHubTags";
+import type { HubTag } from "./tagApi";
+
+/**
+ * A tag is a name: "#rulebook" in two organizations is two scope rows but ONE
+ * tag to the person. Rows merge by name (case and spacing ignored), counts
+ * add up, and a merged tag filters by its name across every organization.
+ */
+export interface MergedTag {
+  key: string;
+  name: string;
+  count: number;
+  ids: string[];
+}
+
+export function mergeTagsByName(items: HubTag[]): MergedTag[] {
+  const byKey = new Map<string, MergedTag>();
+  for (const t of items) {
+    const key = t.name.trim().replace(/\s+/g, " ").toLowerCase();
+    const m = byKey.get(key);
+    if (m) {
+      m.count += t.count;
+      m.ids.push(t.id);
+    } else byKey.set(key, { key, name: t.name.trim(), count: t.count, ids: [t.id] });
+  }
+  return [...byKey.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
 
 const PREVIEW = 8;
 const ROW =
@@ -17,15 +43,19 @@ export function TagsSidebarGroup({
   tags,
   activeScopeId,
   onSelect,
+  onSelectName,
 }: {
   tags: HubTagsState;
   activeScopeId: string | null;
   onSelect: (scopeId: string) => void;
+  /** A tag that lives in several organizations filters by its name across all of them. */
+  onSelectName?: (name: string) => void;
 }) {
+  const merged = mergeTagsByName(tags.items);
   const hasActive = Boolean(activeScopeId && tags.items.some((t) => t.id === activeScopeId));
   const [open, setOpen] = useState(hasActive);
   const [all, setAll] = useState(false);
-  const rows = all ? tags.items : tags.items.slice(0, PREVIEW);
+  const rows = all ? merged : merged.slice(0, PREVIEW);
   return (
     <div data-testid="sidebar-tags">
       <button type="button" className={ROW} aria-expanded={open || hasActive} onClick={() => setOpen((o) => !o)}>
@@ -37,7 +67,7 @@ export function TagsSidebarGroup({
         <Hash className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate">Tags</span>
         {tags.status === "ready" ? (
-          <span className="text-xs tabular-nums text-muted-foreground">{tags.items.length}</span>
+          <span className="text-xs tabular-nums text-muted-foreground">{merged.length}</span>
         ) : null}
       </button>
       {open || hasActive ? (
@@ -61,30 +91,28 @@ export function TagsSidebarGroup({
                 <RotateCw className="h-3 w-3" /> Try again
               </button>
             </div>
-          ) : tags.items.length === 0 ? (
-            <p className="px-2 py-1 pl-7 text-xs text-muted-foreground">
-              No tags yet. Press t on any item, or its Tag button, to add one.
-            </p>
+          ) : merged.length === 0 ? (
+            <p className="px-2 py-1 pl-7 text-xs text-muted-foreground">No tags yet</p>
           ) : null}
           {rows.map((t) => (
             <button
-              key={t.id}
+              key={t.key}
               type="button"
-              className={cn(ROW, "pl-7", activeScopeId === t.id && "bg-accent font-medium text-foreground")}
-              aria-current={activeScopeId === t.id ? "page" : undefined}
-              onClick={() => onSelect(t.id)}
+              className={cn(ROW, "pl-7", activeScopeId && t.ids.includes(activeScopeId) && "bg-accent font-medium text-foreground")}
+              aria-current={activeScopeId && t.ids.includes(activeScopeId) ? "page" : undefined}
+              onClick={() => (t.ids.length > 1 && onSelectName ? onSelectName(t.name) : onSelect(t.ids[0]))}
             >
               <span className="min-w-0 flex-1 truncate">#{t.name}</span>
               <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{t.count}</span>
             </button>
           ))}
-          {!all && tags.items.length > PREVIEW ? (
+          {!all && merged.length > PREVIEW ? (
             <button
               type="button"
               className="px-2 py-1 pl-7 text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setAll(true)}
             >
-              Show all {tags.items.length}
+              Show all {merged.length}
             </button>
           ) : null}
         </div>
