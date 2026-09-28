@@ -180,15 +180,15 @@ export function AdvancedMandateCrud() {
     load();
   };
 
-  const doDelete = async (row: Row, mode: "soft" | "hard") => {
+  const doDelete = async (row: Row) => {
     if (!pk) return;
     const id = String(row[pk]);
-    const result = await advancedDeleteRow({ relation: relKey, id, mode });
+    const result = await advancedDeleteRow({ relation: relKey, id });
     if (result.error) {
       toast.error(result.error);
       return;
     }
-    toast.success(`${mode === "soft" ? "Soft-deleted" : "HARD-deleted"} ${relKey} ${id}.`);
+    toast.success(`Moved ${relKey} ${id} to Trash.`);
     load();
   };
 
@@ -333,29 +333,20 @@ export function AdvancedMandateCrud() {
               : undefined
           }
           rowActions={
-            relation?.writable && pk
+            // Delete means archive: only a table with the Trash column (deleted_at)
+            // gets a delete control, and it only ever sets deleted_at.
+            relation?.writable && pk && relation.softDeletes
               ? (row) => (
-                  <>
-                    {relation.softDeletes && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => doDelete(row, "soft")}
-                        title="Set deleted_at = now()"
-                      >
-                        Soft
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => doDelete(row, "hard")}
-                      title="DELETE FROM — permanent"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive"
+                    onClick={() => doDelete(row)}
+                    title="Move to Trash (sets deleted_at; restorable)"
+                    aria-label="Move to Trash"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 )
               : undefined
           }

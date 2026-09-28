@@ -257,9 +257,7 @@ export async function advancedInsertRow(input: {
 export async function advancedDeleteRow(input: {
   relation: string;
   id: string;
-  /** Soft = set deleted_at (the platform's normal delete). Hard = DELETE. */
-  mode: "soft" | "hard";
-}): Promise<AdvancedResult<{ mode: "soft" | "hard"; sql: string }>> {
+}): Promise<AdvancedResult<{ sql: string }>> {
   const denied = await requireAdmin();
   if (denied) return { data: null, error: denied };
   try {
@@ -267,21 +265,24 @@ export async function advancedDeleteRow(input: {
     if (!relation.writable || !relation.pk) {
       return { data: null, error: `${qualified} is read-only in this console.` };
     }
-    if (input.mode === "soft" && !relation.softDeletes) {
-      return { data: null, error: `${qualified} has no deleted_at — use a hard delete.` };
+    // Delete means archive (Arman, 2026-09-27): this console only ever sets
+    // deleted_at. A table without the Trash column gets no delete at all — the
+    // remedy is adding deleted_at to it, never destroying the row.
+    if (!relation.softDeletes) {
+      return {
+        data: null,
+        error: `${qualified} has no Trash column (deleted_at), so its rows cannot be deleted here. Add deleted_at to the table to enable Move to Trash.`,
+      };
     }
     const pk = assertSafeIdentifier(relation.pk, "primary key");
     const idLit = `${sqlLiteral(input.id)}::uuid`;
-    const sql =
-      input.mode === "soft"
-        ? `UPDATE ${qualified} AS t SET deleted_at = now() WHERE t.${pk} = ${idLit} RETURNING t.${pk}`
-        : `DELETE FROM ${qualified} AS t WHERE t.${pk} = ${idLit} RETURNING t.${pk}`;
+    const sql = `UPDATE ${qualified} AS t SET deleted_at = now() WHERE t.${pk} = ${idLit} AND t.deleted_at IS NULL RETURNING t.${pk}`;
     const result = await runSql(sql);
     if (result.error) return { data: null, error: result.error };
     if (rowsOf(result.data).length === 0) {
-      return { data: null, error: "No row matched that id — nothing was deleted." };
+      return { data: null, error: "No live row matched that id — nothing was moved to Trash." };
     }
-    return { data: { mode: input.mode, sql }, error: null };
+    return { data: { sql }, error: null };
   } catch (err) {
     return { data: null, error: err instanceof Error ? err.message : String(err) };
   }
