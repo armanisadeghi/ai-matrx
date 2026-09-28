@@ -1229,6 +1229,21 @@ export interface EvaluatorsComparativeJudgeOffer {
   reference?: string;
   allowed_verdicts: string;
   web_clause?: string;
+  composed_message: string;
+  judge_key: string;
+  judge_version: string;
+  judge_mode: string;
+  question_text: string;
+  rubric_name?: string;
+  rubric_text?: string;
+  subject_label?: string;
+  subject_content: string;
+  subject_metrics_json?: string;
+  reference_label?: string;
+  reference_content?: string;
+  reference_metrics_json?: string;
+  context_json?: string;
+  web_access: boolean;
 }
 
 /** Offered shape of provision `evaluators.rubric_judge` (kind `evaluators.rubric_judge.offer`). */
@@ -1239,6 +1254,21 @@ export interface EvaluatorsRubricJudgeOffer {
   reference?: string;
   allowed_verdicts: string;
   web_clause?: string;
+  composed_message: string;
+  judge_key: string;
+  judge_version: string;
+  judge_mode: string;
+  question_text: string;
+  rubric_name?: string;
+  rubric_text?: string;
+  subject_label?: string;
+  subject_content: string;
+  subject_metrics_json?: string;
+  reference_label?: string;
+  reference_content?: string;
+  reference_metrics_json?: string;
+  context_json?: string;
+  web_access: boolean;
 }
 
 /** Offered shape of provision `extend.browser_chat` (kind `extend.browser_chat.offer`). */
@@ -1547,6 +1577,11 @@ export interface ImagePipelineConceptOffer {
   num_concepts: number;
   audience?: string;
   style_hint?: string;
+  composed_message: string;
+  topic_text: string;
+  concept_count: number;
+  audience_text?: string;
+  style_hint_text?: string;
 }
 
 /** Offered shape of provision `image_pipeline.prompt_write` (kind `image_pipeline.prompt_write.offer`). */
@@ -1556,6 +1591,14 @@ export interface ImagePipelinePromptWriteOffer {
   style?: string;
   aspect_ratio: string;
   n_prompts: number;
+  composed_message: string;
+  concept_name: string;
+  concept_description: string;
+  concept_suggested_style?: string;
+  style_preset?: string;
+  style_guidance: string;
+  aspect_ratio_text: string;
+  prompt_count: number;
 }
 
 /** Offered shape of provision `image_pipeline.qc_judge` (kind `image_pipeline.qc_judge.offer`). */
@@ -1569,6 +1612,12 @@ export interface ImagePipelineQcJudgeOffer {
   mime_type?: string;
 };
   rubric: string;
+  instruction_text: string;
+  rubric_text: string;
+  expected_concept_name?: string;
+  expected_concept_description?: string;
+  extra_criteria: string[];
+  image_url?: string;
 }
 
 /** Offered shape of provision `iteration.rebuild_chain` (kind `iteration.rebuild_chain.offer`). */
