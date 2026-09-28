@@ -486,12 +486,8 @@ export async function renameKit(kit: StudyKit, title: string, expectedFingerprin
       targetType: kit.sourceType as AssociationTargetType,
       targetId: kit.sourceId,
       role: artifact.membershipRole ?? "source",
-      label: artifact.title,
       metadata: {
         ...(artifact.edgeMetadata && typeof artifact.edgeMetadata === "object" && !Array.isArray(artifact.edgeMetadata) ? artifact.edgeMetadata : {}),
-        targetKind: artifact.targetKind,
-        href: artifact.href,
-        detail: artifact.detail,
         ...(artifact.membershipRole === "member" ? { educationKit: true, kitTitle: sourceTitle } : { sourceTitle }),
       },
     });
@@ -518,6 +514,13 @@ export async function removeKitMember(
     role: artifact.membershipRole ?? "source",
   });
   if (!result.ok) throw new Error("Could not remove this study aid from the kit.");
+}
+
+export async function removeKitMemberVersioned(kit: StudyKit, artifact: GeneratedArtifact, expectedFingerprint: string): Promise<void> {
+  const current = await currentKitOrThrow(kit, expectedFingerprint);
+  const fresh = current.artifacts.find((item) => item.artifactType === artifact.artifactType && item.artifactId === artifact.artifactId);
+  if (!fresh) throw new Error("This study aid is no longer in the kit.");
+  await removeKitMember(current, fresh);
 }
 
 /**

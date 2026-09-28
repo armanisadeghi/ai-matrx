@@ -48,6 +48,7 @@ import {
   readKit,
   readKitArtifactStats,
   removeKitMember,
+  removeKitMemberVersioned,
   renameKit,
   type KitArtifactStats,
   type StudyKit,
@@ -288,7 +289,7 @@ export function KitHub({
     });
   const getWriteHandlers = () => {
     if (!kit) return {};
-    return collectionWriteHandlers({
+    const collection = collectionWriteHandlers({
       plural: "kits", singular: "kit",
       update: {
         parse: (value) => { if (writing || (managing && draftTitle !== kit.title)) throw new Error("Save or cancel your kit title edits before applying agent changes."); return parseKitUpdates(value, [kit]); },
@@ -310,6 +311,26 @@ export function KitHub({
         nameOf: (plan) => plan.kit.title,
       },
     }, refuseSurfaceWrite);
+    return { ...collection, remove_kit_members: {
+      validate: (value: unknown) => {
+        if (writing || (managing && draftTitle !== kit.title)) throw new Error("Save or cancel your kit title edits before applying agent changes.");
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("remove_kit_members needs { expected_membership_fingerprint, artifact_refs }.");
+        const raw = value as Record<string, unknown>;
+        if (raw.expected_membership_fingerprint !== kitMembershipFingerprint(kit)) throw new Error("remove_kit_members membership fingerprint is stale.");
+        if (!Array.isArray(raw.artifact_refs) || raw.artifact_refs.length === 0) throw new Error("remove_kit_members needs artifact_refs.");
+      },
+      apply: async (value: unknown) => {
+        const raw = value as Record<string, unknown>;
+        const refs = raw.artifact_refs as Array<{ kind: string; id: string }>;
+        for (const ref of refs) {
+          const artifact = kit.artifacts.find((item) => item.artifactType === ref.kind && item.artifactId === ref.id);
+          if (!artifact) throw new Error("One requested aid is no longer in this kit.");
+          await removeKitMemberVersioned(kit, artifact, raw.expected_membership_fingerprint as string);
+        }
+        setRefreshKey((key) => key + 1);
+        return { summary: `Removed ${refs.length} study aid${refs.length === 1 ? "" : "s"} from the kit.` };
+      },
+    } };
   };
   const withSurface = (children: ReactNode) => (
     <SurfaceRuntimeProvider
