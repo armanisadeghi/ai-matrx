@@ -3,6 +3,7 @@
 // AgentRunSidebarMenu — conversation history grouped by agent version.
 // Controls (back, agent selector, new run) live in the shell header, not here.
 
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Loader2, ChevronRight, ChevronDown } from "lucide-react";
@@ -84,8 +85,10 @@ export default function AgentRunSidebarMenu({
   const {
     status: convStatus,
     conversations,
+    archived,
     error: convError,
   } = useAppSelector(selectConversations);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (canonicalAgentId && convStatus === "idle") {
@@ -102,6 +105,7 @@ export default function AgentRunSidebarMenu({
     () => groupByVersion(conversations),
     [conversations],
   );
+  const archivedGroups = useMemo(() => groupByVersion(archived), [archived]);
 
   const handleConversationSelect = (convId: string) => {
     if (!runRoute) return;
@@ -168,7 +172,9 @@ export default function AgentRunSidebarMenu({
             <ErrorAlchemyMenu error={convError} />
           </p>
         )}
-        {convStatus === "succeeded" && conversations.length === 0 && (
+        {convStatus === "succeeded" &&
+          conversations.length === 0 &&
+          archived.length === 0 && (
           <div className="px-2 py-3 text-center">
             <p className="text-[10px] text-muted-foreground">
               No test runs yet
@@ -185,6 +191,23 @@ export default function AgentRunSidebarMenu({
             onSelect={handleConversationSelect}
           />
         ))}
+        <ArchivedDisclosure
+          count={archived.length}
+          open={showArchived}
+          onOpenChange={setShowArchived}
+          className="mx-1 mt-1"
+        >
+          {archivedGroups.map(({ version, items }) => (
+            <VersionGroup
+              key={version}
+              version={version}
+              items={items}
+              runRoute={runRoute}
+              activeConversationId={conversationIdFromUrl}
+              onSelect={handleConversationSelect}
+            />
+          ))}
+        </ArchivedDisclosure>
       </div>
     </div>
   );

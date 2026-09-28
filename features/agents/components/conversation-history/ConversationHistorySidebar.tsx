@@ -62,6 +62,7 @@ import { selectIsStreaming } from "@/features/agents/redux/execution-system/sele
 import {
   seedScopeSourceFilter,
   setScopeAgentIds,
+  setScopeArchiveView,
   setScopeLanes,
   setScopeGrouping,
   setScopeSearch,
@@ -73,7 +74,10 @@ import {
   originClassLabel,
   sourceKey,
 } from "@/features/agents/redux/conversation-history/source-registry";
-import type { HistoryGrouping } from "@/features/agents/redux/conversation-history/types";
+import {
+  rowMatchesArchiveView,
+  type HistoryGrouping,
+} from "@/features/agents/redux/conversation-history/types";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import { useSurfaceSourceFilter } from "@/features/agents/redux/conversation-history/useSurfaceSourceFilter";
 import {
@@ -89,6 +93,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { AllLanesOffNotice } from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "@/lib/toast";
 import {
@@ -360,6 +365,15 @@ function useConversationHistoryController(
     void dispatch(fetchConversationHistory({ scopeId, replace: false }));
   }, [dispatch, scopeId, hasMore, status]);
 
+  // THE ARCHIVED-ITEMS LAW: "Archived (N)" switches the list to the archive
+  // (a server-side filter), and the same control is the way back.
+  const onArchiveViewChange = (open: boolean) => {
+    dispatch(
+      setScopeArchiveView({ scopeId, view: open ? "archived" : "active" }),
+    );
+    void dispatch(fetchConversationHistory({ scopeId, replace: true }));
+  };
+
   const onRefresh = () => {
     void dispatch(fetchConversationHistory({ scopeId, replace: true }));
     if (surfaceId) {
@@ -399,8 +413,12 @@ function useConversationHistoryController(
   );
 
   const favorites = useMemo(() => {
-    return scope.items.filter((i) => isFavoriteResolved(i.conversationId));
-  }, [scope.items, isFavoriteResolved]);
+    return scope.items.filter(
+      (i) =>
+        isFavoriteResolved(i.conversationId) &&
+        rowMatchesArchiveView(i.status, scope.archiveView ?? "active"),
+    );
+  }, [scope.items, scope.archiveView, isFavoriteResolved]);
 
   const resolveHref = useCallback(
     (conv: ConversationListItem): string =>
@@ -514,6 +532,7 @@ function useConversationHistoryController(
     onGroupingChange,
     onLoadMore,
     onRefresh,
+    onArchiveViewChange,
     isFavoriteResolved,
     onToggleFavoriteResolved,
     favorites,
@@ -801,6 +820,7 @@ const DenseView: React.FC<
 
       {/* DD-179 — a deleted conversation is in the trash, not gone. Closed by
           default; one click to open; Restore on every row. */}
+      <ConversationArchivedToggle ctl={ctl} />
       <ConversationTrashSection variant="dense" />
     </div>
   );
@@ -851,8 +871,12 @@ const ConsumerView: React.FC<
       serverSearchState.status === "loading-more" ||
       (serverSearchState.status === "failed" &&
         serverSearchState.items.length > 0));
+  // Server search answers from the whole library; the list shows one archive
+  // half at a time (archived-items law), so its results do too.
   const searchItems = hasAuthoritativeResults
-    ? serverSearchState.items
+    ? serverSearchState.items.filter((item) =>
+        rowMatchesArchiveView(item.status, ctl.scope.archiveView ?? "active"),
+      )
     : cachedSearchItems;
 
   const favoriteIds = useMemo(
@@ -1075,10 +1099,31 @@ const ConsumerView: React.FC<
       </div>
 
       {/* DD-179 — the same trash the dense view carries, same component. */}
+      <ConversationArchivedToggle ctl={ctl} />
       <ConversationTrashSection variant="consumer" />
     </div>
   );
 };
+
+/**
+ * "Archived (N)" — the archived-items law's one control for this list. Closed
+ * by default (archived hidden); one click shows only archived conversations;
+ * the same control brings the list back. Renders nothing when there are none.
+ */
+function ConversationArchivedToggle({ ctl }: { ctl: HistoryController }) {
+  const open = ctl.scope.archiveView === "archived";
+  const count = ctl.scope.archivedCount;
+  return (
+    <ArchivedDisclosure
+      count={count ?? 0}
+      countLabel={count === null ? null : undefined}
+      open={open}
+      onOpenChange={ctl.onArchiveViewChange}
+      keepWhileOpen
+      className="px-2 py-1"
+    />
+  );
+}
 
 type ServerSearchState = ReturnType<typeof useConversationServerSearch>;
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
@@ -254,7 +255,9 @@ export function AgentContentHistoryPanel({
   const conversationState = useAppSelector(selectConversations);
   const status = conversationState?.status ?? "idle";
   const conversations = conversationState?.conversations ?? [];
+  const archived = conversationState?.archived ?? [];
   const error = conversationState?.error ?? null;
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (canonicalAgentId && status === "idle") {
@@ -271,6 +274,7 @@ export function AgentContentHistoryPanel({
     () => groupByVersion(conversations),
     [conversations],
   );
+  const archivedGroups = useMemo(() => groupByVersion(archived), [archived]);
 
   const handleSelect = useCallback(
     async (conversationId: string) => {
@@ -337,7 +341,9 @@ export function AgentContentHistoryPanel({
               </p>
             )}
 
-            {status === "succeeded" && conversations.length === 0 && (
+            {status === "succeeded" &&
+              conversations.length === 0 &&
+              archived.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 px-3 text-center">
                 <History className="w-6 h-6 text-muted-foreground mb-2 opacity-40" />
                 <p className="text-xs text-muted-foreground">
@@ -356,6 +362,23 @@ export function AgentContentHistoryPanel({
                 defaultOpen={i === 0}
               />
             ))}
+            <ArchivedDisclosure
+              count={archived.length}
+              open={showArchived}
+              onOpenChange={setShowArchived}
+              className="mx-1 mt-1"
+            >
+              {archivedGroups.map((group) => (
+                <VersionGroupRow
+                  key={group.versionNumber}
+                  group={group}
+                  agentId={agentId}
+                  selectedId={selectedConversationId}
+                  onSelect={handleSelect}
+                  defaultOpen={false}
+                />
+              ))}
+            </ArchivedDisclosure>
           </div>
         </div>
       </ResizablePanel>

@@ -97,7 +97,10 @@ export function makeSelectAgentConversationList(
     (
       slice,
     ): {
+      /** Live conversations — archived ones are NEVER mixed in (archived-items law). */
       conversations: ConversationListItem[];
+      /** The archived half, for the list's one "Archived (N)" control. */
+      archived: ConversationListItem[];
       status: ConversationListLoadStatus;
       error: string | null;
       fetchedAt: string | null;
@@ -106,18 +109,23 @@ export function makeSelectAgentConversationList(
       if (!entry) {
         return {
           conversations: EMPTY_ITEMS,
+          archived: EMPTY_ITEMS,
           status: "idle",
           error: null,
           fetchedAt: null,
         };
       }
       const items: ConversationListItem[] = [];
+      const archived: ConversationListItem[] = [];
       for (const id of entry.conversationIds) {
         const item = slice.byConversationId[id];
-        if (item) items.push(item);
+        if (!item) continue;
+        if (item.status === "archived") archived.push(item);
+        else items.push(item);
       }
       return {
         conversations: items.length === 0 ? EMPTY_ITEMS : items,
+        archived: archived.length === 0 ? EMPTY_ITEMS : archived,
         status: entry.status,
         error: entry.error,
         fetchedAt: entry.fetchedAt,

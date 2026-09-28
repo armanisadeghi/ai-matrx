@@ -38,6 +38,8 @@ const scope: ConversationHistoryScopeState = {
   status: "idle",
   error: null,
   lastFetchedAt: null,
+  archiveView: "active",
+  archivedCount: null,
 };
 
 describe("/chat authoritative server search", () => {

@@ -111,6 +111,25 @@ export interface ConversationHistoryScopeState {
   error: string | null;
   /** Last `Date.now()` at which a fresh fetch completed. */
   lastFetchedAt: number | null;
+  /**
+   * THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md): the list
+   * hides archived conversations by default; "Archived (N)" switches this to
+   * `"archived"` in one click. The server query and the client view both obey
+   * it, so a conversation archived from any ⋯ leaves the list at once.
+   */
+  archiveView: HistoryArchiveView;
+  /** Archived conversations under this scope's filters; null = not known yet. */
+  archivedCount: number | null;
+}
+
+export type HistoryArchiveView = "active" | "archived";
+
+/** Does this row belong in the list for `view`? The one test, shared. */
+export function rowMatchesArchiveView(
+  status: string | null | undefined,
+  view: HistoryArchiveView,
+): boolean {
+  return (status === "archived") === (view === "archived");
 }
 
 /**
@@ -164,6 +183,8 @@ export const defaultScopeState: ConversationHistoryScopeState = {
   status: "idle",
   error: null,
   lastFetchedAt: null,
+  archiveView: "active",
+  archivedCount: null,
 };
 
 /** Fetched rows are considered stale after this window. */

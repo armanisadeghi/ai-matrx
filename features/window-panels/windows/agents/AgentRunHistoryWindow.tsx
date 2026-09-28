@@ -1,5 +1,6 @@
 "use client";
 
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import React, {
   useCallback,
   useEffect,
@@ -248,7 +249,9 @@ function RunHistorySidebar({
 
   const status = conversationState?.status ?? "idle";
   const conversations = conversationState?.conversations ?? [];
+  const archived = conversationState?.archived ?? [];
   const error = conversationState?.error ?? null;
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (canonicalAgentId && status === "idle") {
@@ -265,6 +268,7 @@ function RunHistorySidebar({
     () => groupByVersion(conversations),
     [conversations],
   );
+  const archivedGroups = useMemo(() => groupByVersion(archived), [archived]);
 
   // The roster lives here, the selection lives in the window. Rather than a
   // second SurfaceRuntimeProvider (which would out-depth the window's and
@@ -348,7 +352,10 @@ function RunHistorySidebar({
           </p>
         )}
 
-        {agentId && status === "succeeded" && conversations.length === 0 && (
+        {agentId &&
+          status === "succeeded" &&
+          conversations.length === 0 &&
+          archived.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 px-3 text-center">
             <History className="w-6 h-6 text-muted-foreground mb-2 opacity-40" />
             <p className="text-xs text-muted-foreground">
@@ -368,6 +375,25 @@ function RunHistorySidebar({
               defaultOpen={i === 0}
             />
           ))}
+        {agentId && (
+          <ArchivedDisclosure
+            count={archived.length}
+            open={showArchived}
+            onOpenChange={setShowArchived}
+            className="mx-1 mt-1"
+          >
+            {archivedGroups.map((group) => (
+              <VersionGroupRow
+                key={group.versionNumber}
+                group={group}
+                agentId={agentId}
+                selectedId={selectedConversationId}
+                onSelect={onSelect}
+                defaultOpen={false}
+              />
+            ))}
+          </ArchivedDisclosure>
+        )}
       </div>
     </div>
   );

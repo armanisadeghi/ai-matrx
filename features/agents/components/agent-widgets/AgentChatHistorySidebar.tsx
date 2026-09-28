@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
@@ -28,11 +29,17 @@ export function AgentChatHistorySidebar({
     ? makeSelectAgentConversations(agentId, null)
     : null;
 
-  const { status, conversations, error } = useAppSelector((state) =>
+  const { status, conversations, archived, error } = useAppSelector((state) =>
     selectConversations
       ? selectConversations(state)
-      : { status: "idle" as const, conversations: [], error: null },
+      : {
+          status: "idle" as const,
+          conversations: [] as ConversationListItem[],
+          archived: [] as ConversationListItem[],
+          error: null,
+        },
   );
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (!agentId) return;
@@ -68,7 +75,8 @@ export function AgentChatHistorySidebar({
           )}
 
           {(status === "succeeded" || status === "idle") &&
-            conversations.length === 0 && (
+            conversations.length === 0 &&
+            archived.length === 0 && (
               <div className="flex flex-col items-center gap-2 py-8 px-3 text-center">
                 <MessageSquare className="h-4 w-4 text-muted-foreground/50" />
                 <span className="text-xs text-muted-foreground">
@@ -86,6 +94,24 @@ export function AgentChatHistorySidebar({
                 dispatch={dispatch}
               />
             ))}
+
+          {agentId && (
+            <ArchivedDisclosure
+              count={archived.length}
+              open={showArchived}
+              onOpenChange={setShowArchived}
+              className="mx-1 mt-1"
+            >
+              {archived.map((conv) => (
+                <ConversationRow
+                  key={conv.conversationId}
+                  conv={conv}
+                  agentId={agentId}
+                  dispatch={dispatch}
+                />
+              ))}
+            </ArchivedDisclosure>
+          )}
         </div>
       </ScrollArea>
     </div>

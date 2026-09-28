@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Loader2, ChevronRight, MessageSquare } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -62,8 +63,10 @@ export function AgentRunsSidebar({
   const {
     status: convStatus,
     conversations,
+    archived,
     error: convError,
   } = useAppSelector((state) => selectConversations(state));
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (convStatus === "idle") {
@@ -127,7 +130,9 @@ export function AgentRunsSidebar({
               <ErrorAlchemyMenu error={convError} />
             </p>
           )}
-          {convStatus === "succeeded" && conversations.length === 0 && (
+          {convStatus === "succeeded" &&
+            conversations.length === 0 &&
+            archived.length === 0 && (
             <div className="px-3 pb-3 text-center">
               <p className="text-[10px] text-muted-foreground">
                 No conversations yet
@@ -144,6 +149,23 @@ export function AgentRunsSidebar({
               onSelect={() => handleConversationSelect(conv.conversationId)}
             />
           ))}
+          <ArchivedDisclosure
+            count={archived.length}
+            open={showArchived}
+            onOpenChange={setShowArchived}
+            className="mx-1 mt-1"
+          >
+            {archived.map((conv) => (
+              <ConversationListRow
+                key={conv.conversationId}
+                conv={conv}
+                agentId={agentId}
+                surfaceKey={surfaceKey}
+                isActive={conv.conversationId === activeConversationId}
+                onSelect={() => handleConversationSelect(conv.conversationId)}
+              />
+            ))}
+          </ArchivedDisclosure>
         </div>
       </div>
       <div className="shrink-0 border-t border-border pb-2">

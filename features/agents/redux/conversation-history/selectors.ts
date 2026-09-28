@@ -3,7 +3,11 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type { RootState } from "@/lib/redux/store";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { defaultScopeState, type ConversationHistoryScopeState } from "./types";
+import {
+  defaultScopeState,
+  rowMatchesArchiveView,
+  type ConversationHistoryScopeState,
+} from "./types";
 import {
   CONVERSATION_LANES,
   normalizeLanes,
@@ -67,9 +71,15 @@ export const makeSelectConversationHistoryScope = (scopeId: string) =>
 export const makeSelectConversationHistoryItems = (scopeId: string) => {
   const selectScope = makeSelectConversationHistoryScope(scopeId);
   return createSelector(selectScope, (scope) => {
+    // The archive half this list shows (archived-items law). A row archived or
+    // restored from any ⋯ leaves the view here, before any refetch.
+    const view = scope.archiveView ?? "active";
+    const inView = scope.items.filter((item) =>
+      rowMatchesArchiveView(item.status, view),
+    );
     const term = scope.searchTerm.trim().toLowerCase();
-    if (!term) return scope.items;
-    return scope.items.filter((item) => {
+    if (!term) return inView;
+    return inView.filter((item) => {
       const title = (item.title ?? "").toLowerCase();
       const desc = (item.description ?? "").toLowerCase();
       return title.includes(term) || desc.includes(term) || idMatchesQuery(item, term);

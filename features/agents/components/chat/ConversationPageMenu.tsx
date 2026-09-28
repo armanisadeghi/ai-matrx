@@ -90,6 +90,21 @@ export function ConversationPageMenu({
     (state) => state.conversations.byConversationId[conversationId]?.title,
   );
   const title = conv?.title ?? instanceTitle ?? null;
+  // Archived state: the list row when loaded, else any history scope that
+  // lists it, else the open conversation's own record — so the verb flips to
+  // "Unarchive" after an archive even when no list loaded this conversation.
+  const scopedStatus = useAppSelector((state) => {
+    for (const scope of Object.values(state.conversationHistory.scopes)) {
+      const row = scope.items.find((i) => i.conversationId === conversationId);
+      if (row) return row.status;
+    }
+    return undefined;
+  });
+  const recordStatus = useAppSelector(
+    (state) =>
+      state.conversations.byConversationId[conversationId]?.persistedStatus,
+  );
+  const status = conv?.status ?? scopedStatus ?? recordStatus;
 
   // Conversation-level answer tools (RC-B9) live HERE, in the menu this
   // conversation already has — never as a row stacked on the transcript.
@@ -198,7 +213,7 @@ export function ConversationPageMenu({
     conversationId,
     title,
     isFavorite: conv?.isFavorite ?? false,
-    isArchived: conv?.status === "archived",
+    isArchived: status === "archived",
     excludeFromKg: conv?.excludeFromKg ?? false,
     href,
     dispatch,

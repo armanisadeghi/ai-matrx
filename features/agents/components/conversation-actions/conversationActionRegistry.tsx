@@ -286,6 +286,33 @@ export function buildConversationMenu(
                   result.payload?.message ?? "Failed to update archive status",
                 );
               } else {
+                // Never silent: say what happened, and offer the way back.
+                // (The row leaves every list at once — archived-items law.)
+                const archivedNow = !ctx.isArchived;
+                toast.success(
+                  archivedNow ? "Conversation archived" : "Conversation restored",
+                  {
+                    action: {
+                      label: "Undo",
+                      onClick: () =>
+                        void ctx
+                          .dispatch(
+                            setConversationArchived({
+                              conversationId: ctx.conversationId,
+                              archived: !archivedNow,
+                            }),
+                          )
+                          .then((undo) => {
+                            if (setConversationArchived.rejected.match(undo)) {
+                              toast.error(
+                                undo.payload?.message ??
+                                  "Could not undo the archive",
+                              );
+                            }
+                          }),
+                    },
+                  },
+                );
                 ctx.onMutationSuccess?.();
               }
             },

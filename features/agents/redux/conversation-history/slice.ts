@@ -5,6 +5,7 @@ import {
   type ConversationHistoryScopeState,
   type ConversationHistoryState,
   type HistoryGrouping,
+  type HistoryArchiveView,
   type HistoryStatus,
   type SourceFacet,
   type SourceFacetsStatus,
@@ -49,6 +50,8 @@ function ensureScope(
   // Fields added later: heal scopes created before they existed.
   if (scope.includeOriginClasses === undefined) scope.includeOriginClasses = [];
   if (scope.includeLanes === undefined) scope.includeLanes = null;
+  if (scope.archiveView === undefined) scope.archiveView = "active";
+  if (scope.archivedCount === undefined) scope.archivedCount = null;
   return scope;
 }
 
@@ -255,6 +258,23 @@ const slice = createSlice({
       ensureScope(state, action.payload.scopeId).searchTerm =
         action.payload.searchTerm;
     },
+    /** "Archived (N)" ⇄ back: switches which half the list shows and refetches. */
+    setScopeArchiveView(
+      state,
+      action: PayloadAction<{ scopeId: string; view: HistoryArchiveView }>,
+    ) {
+      const scope = ensureScope(state, action.payload.scopeId);
+      if (scope.archiveView === action.payload.view) return;
+      scope.archiveView = action.payload.view;
+      invalidateScopeWindow(scope);
+    },
+    setScopeArchivedCount(
+      state,
+      action: PayloadAction<{ scopeId: string; count: number | null }>,
+    ) {
+      ensureScope(state, action.payload.scopeId).archivedCount =
+        action.payload.count;
+    },
     setScopeGrouping(
       state,
       action: PayloadAction<{ scopeId: string; grouping: HistoryGrouping }>,
@@ -328,7 +348,22 @@ const slice = createSlice({
           (i) => i.conversationId === conversationId,
         );
         if (idx === -1) continue;
+        const before = scope.items[idx].status;
         scope.items[idx] = { ...scope.items[idx], ...patch };
+        // Archive / restore moves the row between halves: keep "Archived (N)"
+        // honest without a round-trip (the row itself leaves the view through
+        // the selector's archive test).
+        if (
+          patch.status !== undefined &&
+          scope.archivedCount !== null &&
+          scope.archivedCount !== undefined &&
+          (before === "archived") !== (patch.status === "archived")
+        ) {
+          scope.archivedCount = Math.max(
+            0,
+            scope.archivedCount + (patch.status === "archived" ? 1 : -1),
+          );
+        }
       }
     },
     /**
@@ -438,6 +473,8 @@ export const {
   setScopeStatus,
   setScopePageSuccess,
   patchConversationInScopes,
+  setScopeArchiveView,
+  setScopeArchivedCount,
   removeConversationFromScopes,
   upsertConversationIntoScopes,
   clearScope,

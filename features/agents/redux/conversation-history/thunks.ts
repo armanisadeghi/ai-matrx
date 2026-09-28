@@ -16,6 +16,7 @@ import type { ConversationListItem } from "@/features/agents/redux/conversation-
 import { applyFavoritesFromUes } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
 import type { AppThunk, RootState } from "@/lib/redux/store";
 import {
+  setScopeArchivedCount,
   setScopePageSuccess,
   setScopeStatus,
   configureScope,
@@ -173,15 +174,50 @@ export const fetchConversationHistory = createAsyncThunk<
       query = query.in("initial_agent_id", agentIds);
     }
 
-    const filtered = applyHistoryFilters(
-      query,
-      historyFilterInputFromScope(scope, {
-        excludeSourceFeatures,
-        includeSourceFeatures,
-        includeSourceApps,
-        includeEmptySource,
-      }),
-    );
+    // THE ARCHIVED-ITEMS LAW: the default hides archived conversations and
+    // "Archived (N)" shows only them (scope.archiveView).
+    const archiveView = scope.archiveView ?? "active";
+    query =
+      archiveView === "archived"
+        ? query.eq("status", "archived")
+        : query.neq("status", "archived");
+
+    const filterInput = historyFilterInputFromScope(scope, {
+      excludeSourceFeatures,
+      includeSourceFeatures,
+      includeSourceApps,
+      includeEmptySource,
+    });
+    const filtered = applyHistoryFilters(query, filterInput);
+
+    // The other half's size, under the SAME filters — what "Archived (N)"
+    // will reveal. Only on a first page; a failed count prints no number
+    // rather than a false one.
+    if (replace) {
+      let countQuery = supabase
+        .schema("chat").from("conversation")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
+        .eq("is_ephemeral", false)
+        .eq("status", "archived");
+      if (viewerId) countQuery = countQuery.eq("created_by", viewerId);
+      if (agentIds.length > 0) {
+        countQuery = countQuery.in("initial_agent_id", agentIds);
+      }
+      const countFiltered = applyHistoryFilters(countQuery, filterInput);
+      if (countFiltered === null) {
+        dispatch(setScopeArchivedCount({ scopeId: args.scopeId, count: 0 }));
+      } else {
+        void Promise.resolve(countFiltered).then(({ count, error: countError }) => {
+          dispatch(
+            setScopeArchivedCount({
+              scopeId: args.scopeId,
+              count: countError ? null : (count ?? 0),
+            }),
+          );
+        });
+      }
+    }
 
     // Every lane is off: the honest answer is "nothing", without a round-trip.
     if (filtered === null) {

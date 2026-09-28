@@ -33,6 +33,7 @@ import {
   revertRename,
 } from "./conversation-list.slice";
 import { patchConversationInScopes } from "../conversation-history/slice";
+import { patchConversation as patchConversationRecord } from "../execution-system/conversations/conversations.slice";
 import { setConversationLabel as setMessagesConversationLabel } from "../execution-system/messages/messages.slice";
 import {
   setConversationLabel as setInstancesConversationLabel,
@@ -249,6 +250,12 @@ export const setConversationArchived = createAsyncThunk<
         conversationId,
         patch: { status: nextStatus },
       }),
+    );
+    // The open conversation's own record too: a conversation no list has
+    // loaded (a tutor chat, a deep link) must still flip its header verb to
+    // "Unarchive" — otherwise Archive looks like it did nothing.
+    dispatch(
+      patchConversationRecord({ conversationId, persistedStatus: nextStatus }),
     );
 
     return { conversationId, status: nextStatus };
