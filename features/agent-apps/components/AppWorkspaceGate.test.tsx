@@ -26,6 +26,10 @@ const mandateState = {
   organizationPending: true,
 };
 
+let searchParamValue: string | null = null;
+jest.mock("next/navigation", () => ({
+  useSearchParams: () => ({ get: () => searchParamValue }),
+}));
 jest.mock("@/features/mandates/useMandate", () => ({
   useMandate: () => mandateState,
 }));
@@ -107,4 +111,18 @@ it("AppWorkspaceGate shows the workspace picker instead of the app", () => {
     "Deconstruct claims and uncover the objective truth.",
   );
   expect(container.querySelector('[data-testid="app-body"]')).toBeNull();
+});
+
+it("a link that names a run opens it without an organization (reading needs none)", () => {
+  searchParamValue = "476d9617-4451-4605-8db2-5c4704b72977";
+  act(() =>
+    root.render(
+      <AppWorkspaceGate app={app}>
+        <div data-testid="app-body">app</div>
+      </AppWorkspaceGate>,
+    ),
+  );
+  expect(container.querySelector('[data-testid="gate"]')).toBeNull();
+  expect(container.querySelector('[data-testid="app-body"]')).not.toBeNull();
+  searchParamValue = null;
 });

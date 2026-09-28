@@ -44,7 +44,20 @@ export interface TranscriptRecordFields {
   created_at: string | null;
   updated_at: string | null;
   processed_document_id: string | null;
+  /**
+   * The first few segments' words (PostgREST `segments->N->>text`) — the row's
+   * snippet without reading a whole transcript body. Absent when not selected.
+   */
+  seg0?: string | null;
+  seg1?: string | null;
+  seg2?: string | null;
+  seg3?: string | null;
+  seg4?: string | null;
+  seg5?: string | null;
 }
+
+/** How many leading segments the facts reader selects for the snippet. */
+export const SNIPPET_SEGMENTS = 6;
 
 /** A studio session's own fields (transcripts.studio_sessions). */
 export interface StudioSessionFields {
@@ -120,6 +133,21 @@ function baseRow(id: string, kind: string, title: string): TranscriptListRow {
   } as TranscriptListRow;
 }
 
+/** A captured video's own facts (`metadata.media`, written by the YouTube lane). */
+function mediaOf(record: TranscriptRecordFields): Record<string, unknown> | null {
+  const m = meta(record, "media");
+  return m && typeof m === "object" && !Array.isArray(m) ? (m as Record<string, unknown>) : null;
+}
+
+/** Recorded length: the recorder's `duration`, else the captured video's `duration_seconds`. */
+function durationOf(record: TranscriptRecordFields): number | null {
+  const d = num(meta(record, "duration"));
+  if (d && d > 0) return d;
+  const m = mediaOf(record);
+  const v = m ? num(m.duration_seconds) : null;
+  return v && v > 0 ? v : null;
+}
+
 /** A transcript record → the list's row shape (same derivations as `trx_list_scoped`). */
 export function rowFromTranscript(t: TranscriptRecordFields, userId: string | null): TranscriptListRow {
   const row = baseRow(t.id, "transcript", t.title?.trim() || "Untitled transcript");
@@ -129,7 +157,7 @@ export function rowFromTranscript(t: TranscriptRecordFields, userId: string | nu
     status: t.is_draft ? "draft" : "final",
     folder_name: t.folder_name?.trim() || "Transcripts",
     tags: t.tags ?? [],
-    duration_seconds: num(meta(t, "duration")) as number,
+    duration_seconds: durationOf(t) as number,
     word_count: num(meta(t, "wordCount")) as number,
     is_draft: Boolean(t.is_draft),
     visibility: t.visibility ?? "",
@@ -170,7 +198,7 @@ export function rowFromSource(hit: KnowledgeHit, from: TranscriptRecordFields | 
     tags: from?.tags ?? [],
     visibility: from?.visibility ?? "",
     transcript_id: from?.id ?? "",
-    duration_seconds: (from ? num(meta(from, "duration")) : null) as number,
+    duration_seconds: (from ? durationOf(from) : null) as number,
     word_count: (from ? num(meta(from, "wordCount")) : null) as number,
     created_by: hit.captured_by?.id ?? from?.created_by ?? "",
     organization_id: hit.organization_id ?? "",
@@ -199,6 +227,8 @@ export interface TranscriptFactsInput {
   userEmail?: string | null;
   /** organization id → name (the Organization column of Export / Copy). */
   orgNames?: Map<string, string>;
+  /** Source id → the id its transcript links to, when the listed Source is an edited version (`metadata.edit_of`). */
+  sourceAlias?: Map<string, string>;
 }
 
 /** Organization and owner, the way the list named them (org name; the owner's email, else their name). */
@@ -229,7 +259,8 @@ export function buildTranscriptFacts(hits: KnowledgeHit[], input: TranscriptFact
     } else if (h.entity === UNSORTED_TOKEN) {
       put(h, rowFromUnsorted(h));
     } else if (isTranscriptSourceHit(h)) {
-      put(h, rowFromSource(h, bySource.get(h.id) ?? null, input.userId));
+      const from = bySource.get(h.id) ?? bySource.get(input.sourceAlias?.get(h.id) ?? "") ?? null;
+      put(h, rowFromSource(h, from, input.userId));
     }
   }
   return out;
@@ -502,5 +533,82 @@ export function transcriptRowFacts(fact: TranscriptListRow | null | undefined): 
   if (fact.kind === "transcript" && fact.is_draft) out.push("Draft");
   else if ((fact.kind === "session" || fact.kind === "cleanup") && fact.status && fact.status !== "completed")
     out.push(fact.status.charAt(0).toUpperCase() + fact.status.slice(1).replace(/_/g, " "));
+  return out;
+}
+
+// ─── Row content (Granola / Otter: what is inside sells the row) ────────────
+
+export interface TranscriptRowContent {
+  /** The opening words, ~160 characters, cut on a word. */
+  snippet: string | null;
+  /** The YouTube channel it came from. */
+  channel: string | null;
+  /** Named speakers the recorder captured (never "Unknown"). */
+  speakers: string[];
+  /** A poster frame for a captured video. */
+  thumbnailUrl: string | null;
+}
+
+const SNIPPET_CHARS = 160;
+
+/** Join the leading segments, collapse whitespace, drop "[00:00:02] Unknown:" stamps, cut on a word. */
+export function snippetFromSegments(parts: (string | null | undefined)[], max = SNIPPET_CHARS): string | null {
+  const text = parts
+    .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
+    .join(" ")
+    .replace(/\[\d{1,2}:\d{2}(?::\d{2})?\]\s*(?:[^:\n]{1,40}:\s*)?/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return null;
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:–—-]+$/, "")}…`;
+}
+
+function speakersOf(record: TranscriptRecordFields): string[] {
+  const raw = meta(record, "speakers");
+  if (!Array.isArray(raw)) return [];
+  const names = raw
+    .map((s) => (typeof s === "string" ? s : s && typeof s === "object" ? (s as { name?: unknown }).name : null))
+    .filter((n): n is string => typeof n === "string" && n.trim().length > 0 && !/^(unknown|speaker ?\d*)$/i.test(n.trim()))
+    .map((n) => n.trim());
+  return [...new Set(names)];
+}
+
+/** What a transcript record says about itself for its row. */
+export function transcriptRowContent(record: TranscriptRecordFields): TranscriptRowContent {
+  const media = mediaOf(record);
+  const channel = media && typeof media.channel_title === "string" && media.channel_title.trim() ? media.channel_title.trim() : null;
+  const videoId = media && media.adapter === "youtube" && typeof media.external_id === "string" ? media.external_id : null;
+  return {
+    snippet: snippetFromSegments([record.seg0, record.seg1, record.seg2, record.seg3, record.seg4, record.seg5]),
+    channel,
+    speakers: speakersOf(record),
+    thumbnailUrl: videoId && /^[\w-]{6,20}$/.test(videoId) ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null,
+  };
+}
+
+/** hitKey → the content of the record behind each transcript row (a Source reads the transcript it came from). */
+export function buildTranscriptContent(
+  hits: KnowledgeHit[],
+  transcripts: TranscriptRecordFields[],
+  /** A Source whose own id is not linked (an edited version): the id of the version that is. */
+  sourceAlias: Map<string, string> = new Map(),
+): Map<string, TranscriptRowContent> {
+  const byId = new Map(transcripts.map((t) => [t.id, t]));
+  const bySource = new Map(
+    transcripts.filter((t) => t.processed_document_id).map((t) => [t.processed_document_id as string, t]),
+  );
+  const out = new Map<string, TranscriptRowContent>();
+  for (const h of hits) {
+    const t =
+      h.entity === TRANSCRIPT_RECORD_TOKEN
+        ? byId.get(h.id)
+        : isTranscriptSourceHit(h)
+          ? (bySource.get(h.id) ?? bySource.get(sourceAlias.get(h.id) ?? ""))
+          : undefined;
+    if (t) out.set(`${h.entity}:${h.id}`, transcriptRowContent(t));
+  }
   return out;
 }

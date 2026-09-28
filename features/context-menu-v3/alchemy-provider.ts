@@ -203,8 +203,13 @@ function toAction(node: MenuNode, place: Placement, instanceId: string, opts: Pr
       if (!own(t)) return absent;
       if (!node.disabled) return available;
       if (verb && (t.readOnly || opts.editable === false) && EDIT_ONLY_VERBS.has(verb.verb)) return absent;
-      // R1 (c): only a universal verb greys, and it says why.
-      return verb ? { status: "unavailable-verb", verb: verb.verb, sentence: verb.sentence } : absent;
+      // R1 (c): a universal verb greys, and it says why.
+      if (verb) return { status: "unavailable-verb", verb: verb.verb, sentence: verb.sentence };
+      // ABSENT OR HONEST (admin pass 2026-09-27): a row that is off FOR A REASON it states
+      // ("Manifested surfaces are managed in code") stays, greyed, with the reason. With no
+      // reason it is absent.
+      const reason = "description" in node && typeof node.description === "string" ? node.description.trim() : "";
+      return reason ? { status: "unavailable", sentence: reason } : absent;
     },
     run: () => node.onSelect(),
   };
@@ -214,7 +219,9 @@ function toAction(node: MenuNode, place: Placement, instanceId: string, opts: Pr
 function unusable(node: MenuNode): boolean {
   if (node.kind === "separator" || node.kind === "label") return false;
   if (node.kind === "submenu") return !node.loading && (Boolean(node.disabled) || !hasRows(node.children));
-  return "disabled" in node && Boolean(node.disabled);
+  // A disabled row that says why stays (greyed, with its reason); one with no reason cannot run.
+  if (!("disabled" in node) || !node.disabled) return false;
+  return !("description" in node && typeof node.description === "string" && node.description.trim());
 }
 
 function hasRows(nodes: MenuNode[]): boolean {

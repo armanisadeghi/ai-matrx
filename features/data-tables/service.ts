@@ -1488,6 +1488,13 @@ export async function revertRowField(args: { tableId: string; rowId: string; fie
   return recordStore.revertRowField(home, args);
 }
 
+/** Bring a removed (retired) column back with its values — record store only (DATA-V2-BASICS-2 F18). */
+export async function restoreField(args: { tableId: string; fieldId: string }) {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return { success: false, error: "A column removed from an older table cannot be brought back from here." } as ServiceErr;
+  return recordStore.restoreField(home, args);
+}
+
 export async function restoreArchivedRow(args: { tableId: string; rowId: string }) {
   const home = recordStoreHomeOf(args.tableId);
   if (!home) return { success: false, error: "An older row that was deleted is re-inserted from its snapshot." } as ServiceErr;

@@ -17,23 +17,29 @@
  * (compare-and-swap on `version`, re-read and re-merge on a lost race). A key
  * this tab did not change is never written, so it can never go back.
  *
- * Granularity is `module.field` — the unit every edit reducer writes
- * (`setPreference(module, preference)`); a field holding an object or array
- * (favorites.items, listViews.views) is one value. Two writers of the SAME
- * field still resolve last-write-wins, which is the honest answer for one
- * control changed in two places.
+ * Granularity is the changed LEAF: objects are diffed key by key down to the
+ * value that changed, and keyed lists (favorites.items,
+ * aiModels.favoriteModels, listViews.<surface>.views) are merged by item
+ * identity, so two tabs adding different items keep both. Two writers of the
+ * SAME leaf still resolve last-write-wins — the honest answer for one control
+ * changed in two places.
  */
 
 import type { MaybeSingleResponse } from "@ai-matrx/data";
 import { asJsonObject, mergeJsonColumn, type JsonObject } from "@ai-matrx/data/db";
 
-/** One changed leaf: `field === null` means the whole module value changed shape. */
-export interface PreferenceChange {
-  module: string;
-  field: string | null;
-  /** `undefined` = the key was removed. */
-  value: unknown;
-}
+/**
+ * One change this tab made, at a path under the record (`["display","darkMode"]`,
+ * `["listViews","agents-browse","views"]`).
+ *  - `set`  — the leaf's new value (`undefined` = the key was removed).
+ *  - `list` — a KEYED list (strings/numbers, or objects carrying a string `id`:
+ *    favorites.items, aiModels.favoriteModels, listViews.<surface>.views). It
+ *    carries what this tab added/changed and removed relative to its base, so a
+ *    concurrent writer's additions to the same list survive.
+ */
+export type PreferenceChange =
+  | { kind: "set"; path: string[]; value: unknown }
+  | { kind: "list"; path: string[]; base: unknown[]; body: unknown[] };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -56,9 +62,49 @@ export function sameJson(a: unknown, b: unknown): boolean {
   return false;
 }
 
+type ListKey = string;
+
+/** The identity of a keyed-list item, or null when the item has none. */
+function itemKey(item: unknown): ListKey | null {
+  if (typeof item === "string") return `s:${item}`;
+  if (typeof item === "number") return `n:${item}`;
+  if (isPlainObject(item) && typeof item.id === "string") return `id:${item.id}`;
+  return null;
+}
+
+/** True when every item of both lists has an identity (so it can be merged by key). */
+function isKeyedList(a: unknown[], b: unknown[]): boolean {
+  if (a.length === 0 && b.length === 0) return false;
+  return [...a, ...b].every((item) => itemKey(item) !== null);
+}
+
+function diffInto(
+  before: unknown,
+  after: unknown,
+  path: string[],
+  changes: PreferenceChange[],
+): void {
+  if (sameJson(before, after)) return;
+  if (isPlainObject(after) && (isPlainObject(before) || before === undefined)) {
+    const from = isPlainObject(before) ? before : {};
+    const keys = new Set([...Object.keys(from), ...Object.keys(after)]);
+    for (const key of keys) diffInto(from[key], after[key], [...path, key], changes);
+    return;
+  }
+  if (Array.isArray(after) && (Array.isArray(before) || before === undefined)) {
+    const from = Array.isArray(before) ? before : [];
+    if (isKeyedList(from, after)) {
+      changes.push({ kind: "list", path, base: from, body: after });
+      return;
+    }
+  }
+  changes.push({ kind: "set", path, value: after });
+}
+
 /**
- * What `body` changed relative to `base`, at `module.field` granularity, over
- * the given modules only (the persisted modules — `_meta` never travels).
+ * What `body` changed relative to `base`, over the given modules only (the
+ * persisted modules — `_meta` never travels). Recurses through objects to the
+ * leaf that changed; keyed lists become item-level changes.
  */
 export function diffPreferences(
   base: unknown,
@@ -68,27 +114,51 @@ export function diffPreferences(
   const from = isPlainObject(base) ? base : {};
   const to = isPlainObject(body) ? body : {};
   const changes: PreferenceChange[] = [];
-  for (const module of modules) {
-    const before = from[module];
-    const after = to[module];
-    if (sameJson(before, after)) continue;
-    if (isPlainObject(before) && isPlainObject(after)) {
-      const fields = new Set([...Object.keys(before), ...Object.keys(after)]);
-      for (const field of fields) {
-        if (!sameJson(before[field], after[field])) {
-          changes.push({ module, field, value: after[field] });
-        }
-      }
-    } else if (isPlainObject(after)) {
-      // No usable base for this module: every field it holds is this tab's.
-      for (const [field, value] of Object.entries(after)) {
-        changes.push({ module, field, value });
-      }
-    } else {
-      changes.push({ module, field: null, value: after });
-    }
-  }
+  for (const module of modules) diffInto(from[module], to[module], [module], changes);
   return changes;
+}
+
+/**
+ * Merge this tab's list edit into the CURRENT list: this tab's items in its
+ * order (its adds and in-place changes win for its own items), then every item
+ * another writer added that this tab never saw, minus what this tab removed.
+ */
+function mergeKeyedList(current: unknown, base: unknown[], body: unknown[]): unknown[] {
+  const removed = new Set(base.map(itemKey));
+  for (const item of body) removed.delete(itemKey(item));
+  const seen = new Set<ListKey | null>();
+  const merged: unknown[] = [];
+  for (const item of body) {
+    const key = itemKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+  }
+  for (const item of Array.isArray(current) ? current : []) {
+    const key = itemKey(item);
+    if (key === null || seen.has(key) || removed.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+  }
+  return merged;
+}
+
+function setAtPath(
+  node: Record<string, unknown>,
+  path: string[],
+  update: (current: unknown) => unknown,
+): Record<string, unknown> {
+  const [head, ...rest] = path;
+  const next: Record<string, unknown> = { ...node };
+  if (rest.length === 0) {
+    const value = update(node[head]);
+    if (value === undefined) delete next[head];
+    else next[head] = value;
+    return next;
+  }
+  const child = isPlainObject(node[head]) ? (node[head] as Record<string, unknown>) : {};
+  next[head] = setAtPath(child, rest, update);
+  return next;
 }
 
 /** Apply changes onto the CURRENT record. Pure; never touches an unchanged key. */
@@ -96,19 +166,11 @@ export function applyPreferenceChanges(
   current: JsonObject,
   changes: readonly PreferenceChange[],
 ): JsonObject {
-  const next: JsonObject = { ...current };
-  for (const { module, field, value } of changes) {
-    if (field === null) {
-      if (value === undefined) delete next[module];
-      else next[module] = value;
-      continue;
-    }
-    const moduleValue: Record<string, unknown> = isPlainObject(next[module])
-      ? { ...(next[module] as Record<string, unknown>) }
-      : {};
-    if (value === undefined) delete moduleValue[field];
-    else moduleValue[field] = value;
-    next[module] = moduleValue;
+  let next: JsonObject = { ...current };
+  for (const change of changes) {
+    next = setAtPath(next, change.path, (existing) =>
+      change.kind === "set" ? change.value : mergeKeyedList(existing, change.base, change.body),
+    );
   }
   return next;
 }

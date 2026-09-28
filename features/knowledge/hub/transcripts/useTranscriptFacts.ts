@@ -19,17 +19,22 @@ import { selectUserEmail, selectUserId } from "@/lib/redux/selectors/userSelecto
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import type { TranscriptListRow } from "@/features/transcripts/browse/types";
 import {
+  SNIPPET_SEGMENTS,
   STUDIO_SESSION_TOKEN,
   TRANSCRIPT_RECORD_TOKEN,
+  buildTranscriptContent,
   buildTranscriptFacts,
   isTranscriptHit,
   isTranscriptSourceHit,
   type StudioSessionFields,
   type TranscriptRecordFields,
+  type TranscriptRowContent,
 } from "./transcriptRows";
 
-const TRANSCRIPT_COLUMNS =
-  "id,title,description,is_draft,folder_name,tags,visibility,metadata,organization_id,created_by,created_at,updated_at,processed_document_id";
+// The leading segments' words ride along (`segments->N->>text`) so a row can show its opening
+// lines without reading the whole transcript body.
+const SEGMENT_HEADS = Array.from({ length: SNIPPET_SEGMENTS }, (_, i) => `seg${i}:segments->${i}->>text`).join(",");
+const TRANSCRIPT_COLUMNS = `id,title,description,is_draft,folder_name,tags,visibility,metadata,organization_id,created_by,created_at,updated_at,processed_document_id,${SEGMENT_HEADS}`;
 const SESSION_COLUMNS =
   "id,title,source,status,visibility,total_duration_ms,transcript_id,organization_id,created_by,created_at,updated_at";
 /** PostgREST `in.(…)` stays well under URL limits at this size. */
@@ -44,6 +49,8 @@ function chunks<T>(xs: T[]): T[][] {
 export interface TranscriptFactsState {
   factFor: (hit: KnowledgeHit) => TranscriptListRow | undefined;
   facts: Map<string, TranscriptListRow>;
+  /** The row's content — opening words, channel, speakers, poster (Granola / Otter rows). */
+  contentFor: (hit: KnowledgeHit) => TranscriptRowContent | undefined;
   status: "idle" | "loading" | "ready" | "error";
   error: string | null;
   retry: () => void;
@@ -57,6 +64,7 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
   const [orgNames, setOrgNames] = useState<Map<string, string>>(new Map());
   const [transcripts, setTranscripts] = useState<Map<string, TranscriptRecordFields>>(new Map());
   const [sessions, setSessions] = useState<Map<string, StudioSessionFields>>(new Map());
+  const [sourceAlias, setSourceAlias] = useState<Map<string, string>>(new Map());
   const [asked, setAsked] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<TranscriptFactsState["status"]>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +120,32 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
           );
         const results = await Promise.all(reads);
         if (cancelled) return;
+        // A listed Source that is an EDITED version is not the id its transcript links to:
+        // follow `metadata.edit_of` once, so its row still gets its transcript's facts.
+        const linked = new Set(results.flatMap((r) => (r.t ?? []).map((t) => t.processed_document_id)));
+        const unlinked = sourceIds.filter((id) => !linked.has(id));
+        const aliases = new Map<string, string>();
+        if (unlinked.length) {
+          const { data: docs, error: docError } = await supabase
+            .schema("docproc")
+            .from("processed_documents")
+            .select("id,edit_of:metadata->>edit_of")
+            .in("id", unlinked);
+          if (docError) throw new Error(`edited Sources: ${docError.message}`);
+          for (const d of (docs ?? []) as { id: string; edit_of: string | null }[]) if (d.edit_of) aliases.set(d.id, d.edit_of);
+          const originals = [...new Set(aliases.values())];
+          if (originals.length) {
+            const { data: more, error: moreError } = await supabase
+              .schema("transcripts")
+              .from("transcripts")
+              .select(TRANSCRIPT_COLUMNS)
+              .in("processed_document_id", originals)
+              .is("deleted_at", null);
+            if (moreError) throw new Error(`edited Sources' transcripts: ${moreError.message}`);
+            results.push({ t: (more ?? []) as unknown as TranscriptRecordFields[] });
+          }
+          if (cancelled) return;
+        }
         // Organization names for the Organization column (the list's own join).
         const orgIds = [
           ...new Set(
@@ -145,6 +179,12 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
           for (const r of results) for (const s of r.s ?? []) next.set(s.id, s);
           return next;
         });
+        if (aliases.size)
+          setSourceAlias((prev) => {
+            const next = new Map(prev);
+            for (const [k, v] of aliases) next.set(k, v);
+            return next;
+          });
         setAsked((prev) => new Set([...prev, ...keys]));
         setStatus("ready");
         setError(null);
@@ -168,11 +208,14 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
     userId,
     userEmail,
     orgNames,
+    sourceAlias,
   });
+  const content = buildTranscriptContent(wanted, [...transcripts.values()], sourceAlias);
 
   return {
     facts,
     factFor: (hit) => facts.get(`${hit.entity}:${hit.id}`),
+    contentFor: (hit) => content.get(`${hit.entity}:${hit.id}`),
     status: wanted.length ? status : "idle",
     error,
     retry: () => setNonce((n) => n + 1),

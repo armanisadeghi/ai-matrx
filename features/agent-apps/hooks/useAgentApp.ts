@@ -34,6 +34,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useConversationRoutePromotion } from "@/features/agents/hooks/useConversationRoutePromotion";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
 // The run's failure in words a person reads — `request.error` (ErrorPayload),
 // never `errorMessage` (a tool-call field). Shared with the app's run record.
@@ -529,7 +530,14 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   // Which conversation this page reopened from its address (null = none).
   const [reopenedId, setReopenedId] = useState<string | null>(null);
   useEffect(() => {
-    if (!urlConversationId || !agentId || !isReady) return;
+    // READING a finished run you own needs no organization — only starting a
+    // new one does. While the holder waits for an organization (no agent
+    // resolved yet), reopen the run for reading under the app's own pinned
+    // agent; a new Submit still resolves the organization first.
+    const readingAgentId =
+      agentId || (holder.organizationPending ? (holderSource?.agent_id ?? "") : "");
+    if (!urlConversationId || !readingAgentId) return;
+    if (agentId && !isReady) return;
     if (restoredRef.current === urlConversationId) return;
     restoredRef.current = urlConversationId;
     void (async () => {
@@ -542,7 +550,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
         if (!state.conversations?.byConversationId[urlConversationId]) {
           await dispatch(
             createManualInstance({
-              agentId,
+              agentId: readingAgentId,
               conversationId: urlConversationId,
               apiEndpointMode: "agent",
               sourceFeature: "agent-app",
@@ -608,7 +616,16 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
         replaceAddressWithoutNavigating(`${window.location.pathname}${qs ? `?${qs}` : ""}`);
       }
     })();
-  }, [urlConversationId, agentId, isReady, store, dispatch, surfaceKey]);
+  }, [
+    urlConversationId,
+    agentId,
+    isReady,
+    store,
+    dispatch,
+    surfaceKey,
+    holder.organizationPending,
+    holderSource,
+  ]);
 
   // ── Settings → Redux ─────────────────────────────────────────────────
   // Each setting that's defined on the args dispatches a setter once the
@@ -876,10 +893,22 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   // the person has just typed their input (often right after choosing a
   // workspace, which re-resolves the agent), and "still loading — try again"
   // threw that input away. The submit waits, bounded, on the live values.
-  const readinessRef = useRef({ isReady, conversationId, payloadRefusal, holderError: holder.error });
+  const readinessRef = useRef({
+    isReady,
+    conversationId,
+    payloadRefusal,
+    holderError: holder.error,
+    organizationPending: holder.organizationPending,
+  });
   useEffect(() => {
-    readinessRef.current = { isReady, conversationId, payloadRefusal, holderError: holder.error };
-  }, [isReady, conversationId, payloadRefusal, holder.error]);
+    readinessRef.current = {
+      isReady,
+      conversationId,
+      payloadRefusal,
+      holderError: holder.error,
+      organizationPending: holder.organizationPending,
+    };
+  }, [isReady, conversationId, payloadRefusal, holder.error, holder.organizationPending]);
 
   // While a submit is held the app shows its own pending state (isExecuting
   // is true), so the control never looks idle and never refuses on press.
@@ -889,12 +918,17 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     submitArgs?: SubmitArgs,
   ): Promise<SubmitReceipt> => {
     {
+      // No organization chosen: a NEW run is held until the person picks one
+      // (the platform's ask-then-continue gate), then proceeds with it.
+      if (readinessRef.current.organizationPending) {
+        await ensureOrganizationContext();
+      }
       const deadline = Date.now() + SUBMIT_READY_WAIT_MS;
       while (
         !readinessRef.current.payloadRefusal &&
         // A holder that REFUSED (no runnable agent) will not become ready by
-        // waiting — say so now.
-        !readinessRef.current.holderError &&
+        // waiting — say so now. Waiting for an organization is not a refusal.
+        (!readinessRef.current.holderError || readinessRef.current.organizationPending) &&
         !(readinessRef.current.isReady && readinessRef.current.conversationId) &&
         Date.now() < deadline
       ) {

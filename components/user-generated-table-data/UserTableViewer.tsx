@@ -159,6 +159,7 @@ import { computedColumnsFor } from "@/features/data-tables/data-source/computed-
 import {
   bulkWrite,
   deleteField,
+  restoreField,
   getCompleteTable,
   getRowsForClientSort,
   isRecordStoreTable,
@@ -2264,7 +2265,7 @@ const UserTableViewer = ({
       description: isRecordStoreTable(tableId)
         ? // The record store RETIRES a column (custom.field_retire): it leaves the
           // table and every screen, and its values stay on each record's history.
-          "This column leaves the table and every screen that shows it. Its values are kept in each row's history, but there is no undo in the app."
+          "This column leaves the table and every screen that shows it. Its values are kept on every row, and Undo on the notice brings it back with them."
         : "This column and its values are removed from every row in the table. Row history keeps a record, but there is no undo in the app.",
       confirmLabel: "Remove column",
       variant: "destructive",
@@ -2281,14 +2282,39 @@ const UserTableViewer = ({
       return;
     }
 
-    toast({
-      title: `Removed "${result.data.display_name}"`,
-      description:
-        result.data.rows_cleared > 0
-          ? `Cleared its value from ${result.data.rows_cleared} row${result.data.rows_cleared === 1 ? "" : "s"}.`
-          : "No rows carried a value for it.",
-      variant: "success",
-    });
+    if (isRecordStoreTable(tableId)) {
+      // A RETIRED COLUMN KEEPS ITS VALUES AND COMES BACK WITH UNDO (DATA-V2-BASICS-2 F18). The
+      // notice used to say "No rows carried a value for it." — false: the store keeps every value.
+      const removedName = result.data.display_name;
+      const removedId = field.id;
+      notify.success(`Removed "${removedName}"`, {
+        description: "Its values are kept on every row. Undo brings the column back with them.",
+        duration: 10000,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void (async () => {
+              const back = await restoreField({ tableId, fieldId: removedId });
+              if (isServiceFailure(back)) {
+                notify.error(back.error);
+                return;
+              }
+              notify.success(`"${removedName}" is back`);
+              await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+            })();
+          },
+        },
+      });
+    } else {
+      toast({
+        title: `Removed "${result.data.display_name}"`,
+        description:
+          result.data.rows_cleared > 0
+            ? `Cleared its value from ${result.data.rows_cleared} row${result.data.rows_cleared === 1 ? "" : "s"}.`
+            : "No rows carried a value for it.",
+        variant: "success",
+      });
+    }
 
     setAllSortedData(null);
     await loadTableData(

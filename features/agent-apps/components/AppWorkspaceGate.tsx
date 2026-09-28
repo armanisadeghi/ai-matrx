@@ -19,6 +19,7 @@
  */
 
 import type { ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAppHolder } from "@/features/agent-apps/lib/appHolder";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 import type { PublicAgentApp } from "@/features/agent-apps/types";
@@ -31,9 +32,14 @@ export function AppWorkspaceGate({
   children: ReactNode;
 }) {
   const holder = useAppHolder(app);
+  // A link that names a run (`?conversationId=`) opens it for READING without
+  // an organization — only starting a new run needs one, and the app asks for
+  // it at Submit (ask-then-continue). The address is never touched here.
+  const searchParams = useSearchParams();
+  const readingARun = Boolean(searchParams?.get("conversationId"));
   return (
     <WorkspaceGate
-      blocked={holder.organizationPending}
+      blocked={holder.organizationPending && !readingARun}
       // One word everywhere — the header, the picker and this line all say
       // "organization" — and the app says what it is, so the state is no void.
       sentence={`Choose an organization to run ${app.name?.trim() || "this app"}.`}

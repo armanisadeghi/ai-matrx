@@ -34,6 +34,56 @@ interface PendingWrite {
     body: unknown;
     timerHandle: ReturnType<typeof setTimeout> | null;
     inFlightController: AbortController | null;
+    /** Consecutive failed remote writes of this pending body (0 = none). */
+    failures: number;
+}
+
+/**
+ * A failed remote write is NEVER dropped. The record stays pending (so no
+ * background refresh can land over the unsaved edit — `isRemoteWritePending`)
+ * and the flush re-arms itself: 2s, 4s, 8s, 16s, then every 30s until it lands.
+ */
+export const REMOTE_WRITE_RETRY_BASE_MS = 2_000;
+export const REMOTE_WRITE_RETRY_MAX_MS = 30_000;
+/** After this many consecutive failures the person is told, with a Retry now. */
+export const REMOTE_WRITE_FAILURES_BEFORE_NOTICE = 3;
+
+export function remoteWriteRetryDelay(failures: number): number {
+    return Math.min(
+        REMOTE_WRITE_RETRY_BASE_MS * 2 ** Math.max(0, failures - 1),
+        REMOTE_WRITE_RETRY_MAX_MS,
+    );
+}
+
+/** Test seam + production default: tell the person a save keeps failing. */
+export interface RemoteWriteFailureNotice {
+    /** The failures reached the notice threshold (called once per streak). */
+    failing(sliceName: string, message: string, retryNow: () => void): void;
+    /** The write finally landed — withdraw the notice. */
+    recovered(sliceName: string): void;
+}
+
+function toastNotice(): RemoteWriteFailureNotice {
+    const id = (sliceName: string) => `sync-remote-write-failing:${sliceName}`;
+    return {
+        failing(sliceName, message, retryNow) {
+            void import("@/lib/toast").then(({ toast }) => {
+                toast.error(
+                    `Your change is not saved yet: ${message}. It is kept on this device and retried automatically.`,
+                    {
+                        id: id(sliceName),
+                        duration: Infinity,
+                        action: { label: "Retry now", onClick: retryNow },
+                    },
+                );
+            });
+        },
+        recovered(sliceName) {
+            void import("@/lib/toast").then(({ toast }) => {
+                toast.dismiss(id(sliceName));
+            });
+        },
+    };
 }
 
 export interface RemoteWriteScheduler {
@@ -64,6 +114,8 @@ export interface CreateRemoteWriteSchedulerOptions {
     attachPageHide?: (flush: () => void) => () => void;
     /** Test-only default debounce override. Policy-level debounceMs still wins. */
     defaultDebounceMs?: number;
+    /** Test-only: how a persistent write failure is told to the person. Default: a toast. */
+    failureNotice?: RemoteWriteFailureNotice;
 }
 
 const DEFAULT_DEBOUNCE_MS = 150;
@@ -89,6 +141,7 @@ export function createRemoteWriteScheduler(
 ): RemoteWriteScheduler {
     const { policies, store, getIdentity } = opts;
     const defaultDebounce = opts.defaultDebounceMs ?? DEFAULT_DEBOUNCE_MS;
+    const failureNotice = opts.failureNotice ?? toastNotice();
 
     // Every warm-cache policy gets a pending entry when it mutates. Policies
     // without `remote.write` still flow through for the IDB-persist leg.
@@ -192,6 +245,7 @@ export function createRemoteWriteScheduler(
             base: baseBySlice.get(sliceName),
         };
 
+        let failure: unknown = null;
         try {
             logger.debug("remote.write.flush", {
                 sliceName,
@@ -203,12 +257,63 @@ export function createRemoteWriteScheduler(
             // changes are sent again with the next one.)
             if (!controller.signal.aborted) baseBySlice.set(sliceName, sliceState);
         } catch (err) {
+            failure = err;
+        }
+
+        if (failure !== null && !controller.signal.aborted) {
+            // NEVER dropped: keep the record pending and re-arm with backoff.
+            retryAfterFailure(sliceName, controller, failure);
+            return;
+        }
+        if (failure === null && !controller.signal.aborted && record.failures > 0) {
+            logger.info("remote.write.recovered", {
+                sliceName,
+                meta: { afterFailures: record.failures },
+            });
+            if (record.failures >= REMOTE_WRITE_FAILURES_BEFORE_NOTICE) {
+                failureNotice.recovered(sliceName);
+            }
+            record.failures = 0;
+        }
+        maybeClearPending(sliceName, controller);
+    }
+
+    function retryAfterFailure(
+        sliceName: string,
+        controller: AbortController,
+        err: unknown,
+    ): void {
+        const record = pending.get(sliceName);
+        if (!record) return;
+        if (record.inFlightController === controller) record.inFlightController = null;
+        record.failures += 1;
+        const message = extractErrorMessage(err);
+        // A newer edit already scheduled its own flush: it carries these
+        // changes too (same base), so it is the retry.
+        if (record.timerHandle === null) {
+            const delay = remoteWriteRetryDelay(record.failures);
+            record.timerHandle = setTimeout(() => {
+                record.timerHandle = null;
+                void flushOne(sliceName);
+            }, delay);
             logger.warn("remote.write.error", {
                 sliceName,
-                meta: { error: extractErrorMessage(err) },
+                meta: { error: message, failures: record.failures, retryInMs: delay },
             });
-        } finally {
-            maybeClearPending(sliceName, controller);
+        } else {
+            logger.warn("remote.write.error", {
+                sliceName,
+                meta: { error: message, failures: record.failures, retry: "next edit's flush" },
+            });
+        }
+        if (record.failures === REMOTE_WRITE_FAILURES_BEFORE_NOTICE) {
+            failureNotice.failing(sliceName, message, () => {
+                const now = pending.get(sliceName);
+                if (!now) return;
+                if (now.timerHandle) clearTimeout(now.timerHandle);
+                now.timerHandle = null;
+                void flushOne(sliceName);
+            });
         }
     }
 
@@ -248,6 +353,7 @@ export function createRemoteWriteScheduler(
             body,
             timerHandle: null,
             inFlightController: null,
+            failures: 0,
         };
         next.body = body;
         // If there's an in-flight write, abort it — the new body is newer.
@@ -304,7 +410,9 @@ export function createRemoteWriteScheduler(
             baseBySlice.set(sliceName, body);
         },
         hasPending(sliceName) {
-            return pending.has(sliceName);
+            // Only a REMOTE write makes a refresh wait: an IDB-only slice has
+            // nothing a server answer could overwrite.
+            return pending.has(sliceName) && !!bySlice.get(sliceName)?.config.remote?.write;
         },
         dispose() {
             for (const record of pending.values()) {

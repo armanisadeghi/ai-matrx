@@ -29,6 +29,7 @@ function model(): MenuModel {
         item("paste", "Paste", { disabled: true }),
         item("select-all", "Select All"),
         item("speak", "Speak", { disabled: true }),
+        item("activate", "Activate", { disabled: true, description: "Manifested surfaces are managed in code" } as Partial<MenuNode>),
       ],
     },
     {
@@ -79,10 +80,15 @@ describe("context-menu provider", () => {
     expect(byId["cm:undo"]).toMatchObject({ status: "unavailable-verb", verb: "undo" });
   });
 
-  it("absent: a disabled row that is not a universal verb is not drawn", async () => {
+  it("absent: a disabled row that is not a universal verb, and says nothing, is not drawn", async () => {
     const ids = (await resolveFor("m1")).map((r) => r.action.id);
     expect(ids).not.toContain("cm:speak");
     expect(ids).toContain("cm:select-all");
+  });
+
+  it("honest: a disabled row WITH its reason stays, greyed, with the reason (admin pass 2026-09-27)", async () => {
+    const byId = Object.fromEntries((await resolveFor("m1")).map((r) => [r.action.id, r.eligibility]));
+    expect(byId["cm:activate"]).toEqual({ status: "unavailable", sentence: "Manifested surfaces are managed in code" });
   });
 
   it("the rich-document tree is not re-emitted; libraries join the one AI group inline, under no heading", async () => {
