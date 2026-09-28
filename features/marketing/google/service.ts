@@ -662,10 +662,22 @@ export async function disconnectGoogle(connectionId: string): Promise<{ googleAu
   const status = body && typeof body === "object"
     ? (body as Record<string, unknown>).google_authorization_status
     : undefined;
-  if (status !== "active_for_other_connection" && status !== "revoked" && status !== "revocation_unconfirmed") {
-    throw new Error("Google disconnected, but its authorization status could not be confirmed. Refresh your connections.");
+  const previousResponse = body && typeof body === "object"
+    ? (body as Record<string, unknown>).google_authorization_remains_active
+    : undefined;
+  if (status === "active_for_other_connection" || status === "revoked" || status === "revocation_unconfirmed") {
+    return { googleAuthorizationStatus: status };
   }
-  return { googleAuthorizationStatus: status };
+  // A previously deployed server returns only this boolean. `false` says no
+  // sibling remains; it does not prove Google's best-effort revoke succeeded.
+  if (typeof previousResponse === "boolean") {
+    return {
+      googleAuthorizationStatus: previousResponse
+        ? "active_for_other_connection"
+        : "revocation_unconfirmed",
+    };
+  }
+  throw new Error("Google disconnected, but its authorization status could not be confirmed. Refresh your connections.");
 }
 
 /** A fresh bounded Gmail read; queries and messages stay out of local storage. */
