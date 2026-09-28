@@ -543,6 +543,7 @@ export async function createManualKit(input: {
   title: string;
   artifacts: readonly EducationLibraryRow[];
   allowExisting?: boolean;
+  expectedFingerprint?: string;
 }): Promise<void> {
   const sourceTitle = writableTitle(input.title);
   if (!input.sourceId) throw new Error("Choose the saved file for this kit.");
@@ -550,6 +551,7 @@ export async function createManualKit(input: {
   await getFileMetadata(input.sourceId);
   const existing = await readKit("file", input.sourceId);
   if (existing && !input.allowExisting) throw new Error(`This file already has a study kit. Open ${kitHref("file", input.sourceId)} to add or manage its aids.`);
+  if (existing && input.expectedFingerprint) requireFreshKitMembership(existing, input.expectedFingerprint);
   const wanted = new Set(input.artifacts.map((artifact) => `${artifact.kind}:${artifact.id}`));
   const fresh: EducationLibraryRow[] = [];
   for (let page = 1; wanted.size; page += 1) {

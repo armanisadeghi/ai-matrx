@@ -9,7 +9,7 @@ import { getFileMetadata } from "@/features/files/api/files";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
 import type { EducationLibraryRow } from "@/features/education/library/types";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
-import { createManualKit, kitHref } from "../kitService";
+import { createManualKit, kitHref, kitMembershipFingerprint, readKit } from "../kitService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -35,11 +35,16 @@ export function ManualKitCreator() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [recoveryReady, setRecoveryReady] = useState(false);
+  const [existingFingerprint, setExistingFingerprint] = useState<string | null>(null);
   const draftKey = "manual-study-kit-draft";
 
   useEffect(() => {
     if (existingSourceId && !sourceId) queueMicrotask(() => setSourceId(existingSourceId));
   }, [existingSourceId, sourceId]);
+  useEffect(() => {
+    if (!existingSourceId) return;
+    void readKit("file", existingSourceId).then((kit) => setExistingFingerprint(kit ? kitMembershipFingerprint(kit) : null));
+  }, [existingSourceId]);
 
   useEffect(() => {
     let active = true;
@@ -89,12 +94,12 @@ export function ManualKitCreator() {
     current.some((item) => item.id === row.id) ? current.filter((item) => item.id !== row.id) : [...current, row]);
   const save = async () => {
     setSaving(true); setError(null);
-    try { await createManualKit({ sourceId: sourceId ?? "", title, artifacts: selected, allowExisting: !!existingSourceId }); sessionStorage.removeItem(draftKey); router.push(kitHref("file", sourceId ?? "")); }
+    try { await createManualKit({ sourceId: sourceId ?? "", title, artifacts: selected, allowExisting: !!existingSourceId, expectedFingerprint: existingFingerprint ?? undefined }); sessionStorage.removeItem(draftKey); router.push(kitHref("file", sourceId ?? "")); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create this kit."); }
     finally { setSaving(false); }
   };
   const candidates = [...new Map([...rows, ...selected].map((row) => [`${row.kind}:${row.id}`, row])).values()];
-  const getScope = () => createEducationKitsScope({ view: "new", kit_draft_title: title, kit_source_file_id: sourceId ?? undefined, kit_member_candidates: candidates.map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })) });
+  const getScope = () => createEducationKitsScope({ view: "new", kit_draft_title: title, kit_source_file_id: sourceId ?? undefined, kit_membership_fingerprint: existingFingerprint ?? undefined, kit_member_candidates: candidates.map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })) });
   const getWriteHandlers = () => collectionWriteHandlers({ plural: "kits", singular: "kit", create: {
     parse: (value) => readCollectionList("create_kits", "kits", value, 25).map((raw, index) => {
       if (index > 0) throw new Error("create_kits accepts exactly one kit for the selected source file.");
@@ -102,6 +107,7 @@ export function ManualKitCreator() {
       const item = raw as Record<string, unknown>;
       if (typeof item.title !== "string" || !item.title.trim()) throw new Error(`create_kits[${index}].title needs text.`);
       if (item.source_file_id !== sourceId) throw new Error(`create_kits[${index}].source_file_id must be the file selected in this creator.`);
+      if (existingSourceId && item.expected_membership_fingerprint !== existingFingerprint) throw new Error(`create_kits[${index}].expected_membership_fingerprint is stale. Reload this kit before adding aids.`);
       if (!Array.isArray(item.artifact_refs) || !item.artifact_refs.length) throw new Error(`create_kits[${index}].artifact_refs needs one or more visible study aids.`);
       const refs = item.artifact_refs;
       if (!refs.every((ref) => ref && typeof ref === "object" && typeof (ref as Record<string, unknown>).kind === "string" && typeof (ref as Record<string, unknown>).id === "string")) throw new Error(`create_kits[${index}].artifact_refs must contain { kind, id } objects.`);
@@ -109,9 +115,9 @@ export function ManualKitCreator() {
       if (new Set(keys).size !== keys.length) throw new Error(`create_kits[${index}].artifact_refs must be distinct kind and id pairs.`);
       const artifacts = refs.map((ref) => candidates.find((row) => `${row.kind}:${row.id}` === `${(ref as Record<string, string>).kind}:${(ref as Record<string, string>).id}`));
       if (artifacts.some((row) => !row)) throw new Error(`create_kits[${index}] includes an aid that is not in the current picker.`);
-      return { title: item.title.trim(), sourceId: sourceId ?? "", artifacts: artifacts.filter((row): row is EducationLibraryRow => !!row) };
+      return { title: item.title.trim(), sourceId: sourceId ?? "", artifacts: artifacts.filter((row): row is EducationLibraryRow => !!row), expectedFingerprint: existingFingerprint ?? undefined };
     }),
-    run: async (plan) => { await createManualKit({ sourceId: plan.sourceId, title: plan.title, artifacts: plan.artifacts }); return { id: plan.sourceId, name: plan.title }; },
+    run: async (plan) => { await createManualKit({ sourceId: plan.sourceId, title: plan.title, artifacts: plan.artifacts, allowExisting: !!existingSourceId, expectedFingerprint: plan.expectedFingerprint }); return { id: plan.sourceId, name: plan.title }; },
     nameOf: (plan) => plan.title,
   } }, refuseSurfaceWrite);
   return <SurfaceRuntimeProvider surfaceName={EDUCATION_KITS_SURFACE_NAME} getScope={getScope} getWriteHandlers={getWriteHandlers}><main className="mx-auto w-full max-w-3xl space-y-5 p-4">
