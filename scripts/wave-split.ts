@@ -112,8 +112,12 @@ function runTsc(flag: string): string {
       },
     );
   } catch (e: unknown) {
-    const err = e as { stdout?: string; stderr?: string };
+    const err = e as { stdout?: string; stderr?: string; status?: number };
     raw = (err.stdout ?? "") + (err.stderr ?? "");
+    if (![1, 2].includes(err.status ?? -1) || !ERROR_RE.test(raw)) {
+      if (existsSync(TMP_CONFIG)) rmSync(TMP_CONFIG);
+      throw new Error(`Type-check did not complete; results are unmeasured (exit ${err.status ?? "unknown"}).\n${raw}`, { cause: e });
+    }
   } finally {
     if (existsSync(TMP_CONFIG)) rmSync(TMP_CONFIG);
   }
