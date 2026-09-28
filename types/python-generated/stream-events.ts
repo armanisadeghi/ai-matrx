@@ -2239,6 +2239,16 @@ export interface WorkflowStepData {
   data?: Record<string, unknown>;
 }
 
+export interface YouTubeTranscriptSourceData {
+  type?: "youtube_transcript_source";
+  processed_document_id: string;
+  transcript_id: string;
+  video_id: string;
+  title: string;
+  segment_count: number;
+  reused_existing: boolean;
+}
+
 export type TypedDataPayload =
   | AssignmentProgressData
   | AudioOutputData
@@ -2379,7 +2389,8 @@ export type TypedDataPayload =
   | StructuredInputWarningData
   | VideoOutputData
   | WorkflowNodeTestResultData
-  | WorkflowStepData;
+  | WorkflowStepData
+  | YouTubeTranscriptSourceData;
 
 /** Fallback for data events whose `type` isn't in TypedDataPayload. */
 export interface UntypedDataPayload {
