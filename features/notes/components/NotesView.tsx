@@ -682,9 +682,9 @@ export function NotesView({
           // is selected (a bolder selected label used to nudge it sideways).
           <div className="matrx-glass-thin-border grid grid-cols-4 items-center gap-0.5 rounded-full p-0.5">
             {/* The four note modes, one click each, from the one
-                NOTE_VIEW_MODES list: Write (formatted, the default), Plain
-                (quick unformatted text), Source (Markdown with a live
-                preview), Read. */}
+                NOTE_VIEW_MODES list: Split (plain text left, the formatted
+                note live right — the default), Plain (quick unformatted
+                text), Write (the one editor), Read. */}
             {NOTE_VIEW_MODES.map(({ mode, label, hint, icon: Icon }) => (
               <button
                 key={mode}

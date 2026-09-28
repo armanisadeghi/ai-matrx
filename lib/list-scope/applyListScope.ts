@@ -68,6 +68,13 @@ export function applyListScope<Q extends EqCapable<Q>>(
         );
       }
       return query.eq(orgColumn, scope.organizationId);
+    case "team":
+      throw new Error(
+        "[list-scope] applyListScope does not support 'team' — it needs the " +
+          "caller's team reach first (an async read). Fetch it with " +
+          "fetchMyTeamReach and filter with teamReachOrFilter " +
+          "(lib/list-scope/teamReach.ts), or use this feature's *_list_scoped RPC.",
+      );
     case "shared":
       throw new Error(
         "[list-scope] applyListScope does not support 'shared' — there is " +

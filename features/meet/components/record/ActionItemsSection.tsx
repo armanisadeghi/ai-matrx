@@ -42,6 +42,10 @@ import {
   useActionItemTasks,
   type LinkedTask,
 } from "@/features/meet/hooks/useActionItemTasks";
+import {
+  defaultTaskOwner,
+  taskOwnerChoices,
+} from "@/features/meet/lib/task-owner";
 
 interface Person {
   readonly userId: string;
@@ -100,21 +104,19 @@ export function ActionItemsSection({
   const [editing, setEditing] = useState<MeetingNote | null>(null);
   const [bulk, setBulk] = useState(false);
 
-  // People who can own a task: everyone with an account who was there, and me.
-  const people: Person[] = [];
-  const seen = new Set<string>();
-  for (const person of bundle.attendees) {
-    if (!person.userId || person.isAgent || seen.has(person.userId)) continue;
-    seen.add(person.userId);
-    people.push({
+  // People who can own a task: everyone with an account who was there, and me
+  // — "(you)" marks me. An item the meeting named nobody for stays unowned.
+  const people: Person[] = taskOwnerChoices(
+    bundle.attendees.map((person) => ({
       userId: person.userId,
+      isAgent: person.isAgent,
       name: displayNameFor(bundle.names, person.identity, person.displayName),
-    });
-  }
-  if (userId && !seen.has(userId)) people.unshift({ userId, name: "Me" });
+    })),
+    userId,
+  );
 
   const defaultOwner = (item: MeetingNote): string | null =>
-    item.assigneeUserId ?? userId;
+    defaultTaskOwner(item);
 
   const loose = items.filter((item) => !linked.tasks.has(item.id));
 
