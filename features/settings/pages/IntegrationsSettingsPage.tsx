@@ -82,6 +82,8 @@ import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/Surface
 import {
   catalogActionPresentation,
   catalogConnectionPresentation,
+  catalogDirectoryAvailability,
+  catalogMatchesViewFilter,
 } from "./integration-catalog-state";
 import {
   buildManualMcpCredentials,
@@ -254,15 +256,14 @@ export default function IntegrationsPage({
 
   if (viewFilter === "connected") {
     filtered = filtered.filter(
-      (entry) => catalogPresentation(entry).connected,
+      (entry) => catalogMatchesViewFilter(entry, "connected", catalogPresentation(entry)),
     );
   } else if (viewFilter === "available") {
     filtered = filtered.filter(
-      (entry) =>
-        entry.serverStatus === "active" || entry.serverStatus === "beta",
+      (entry) => catalogMatchesViewFilter(entry, "available", catalogPresentation(entry)),
     );
   } else if (viewFilter === "coming_soon") {
-    filtered = filtered.filter((entry) => entry.serverStatus === "coming_soon");
+    filtered = filtered.filter((entry) => catalogMatchesViewFilter(entry, "coming_soon", catalogPresentation(entry)));
   }
 
   if (search.trim()) {
@@ -278,7 +279,9 @@ export default function IntegrationsPage({
     const aConn = catalogPresentation(a).connected ? 0 : 1;
     const bConn = catalogPresentation(b).connected ? 0 : 1;
     if (aConn !== bConn) return aConn - bConn;
-    if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
+    const aFeatured = catalogDirectoryAvailability(a, catalogPresentation(a)).isFeatured;
+    const bFeatured = catalogDirectoryAvailability(b, catalogPresentation(b)).isFeatured;
+    if (aFeatured !== bFeatured) return aFeatured ? -1 : 1;
     const statusOrder = {
       active: 0,
       beta: 1,
@@ -772,6 +775,10 @@ function ServerCard({
     entry,
     connectionPresentation,
   );
+  const directoryAvailability = catalogDirectoryAvailability(
+    entry,
+    connectionPresentation,
+  );
   const isComingSoon = actionPresentation.isComingSoon;
   const isCommunity = entry.serverStatus === "community";
   const isConnected = connectionPresentation.connected;
@@ -904,7 +911,7 @@ function ServerCard({
                   <TooltipContent>Official integration</TooltipContent>
                 </Tooltip>
               )}
-              {entry.isFeatured && (
+              {directoryAvailability.isFeatured && (
                 <Tooltip>
                   <TooltipTrigger>
                     <Zap className="h-3.5 w-3.5 text-amber-500 shrink-0" />

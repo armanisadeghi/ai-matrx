@@ -20,6 +20,18 @@ export type CatalogActionPresentation = {
   canStartConnection: boolean;
 };
 
+export type CatalogDirectoryAvailability = {
+  isComingSoon: boolean;
+  isAvailable: boolean;
+  isFeatured: boolean;
+};
+
+export type CatalogViewFilter =
+  | "all"
+  | "connected"
+  | "available"
+  | "coming_soon";
+
 /**
  * The catalog RPC's `connection_ready` is the provider-registration contract:
  * it is true only when the server has proved that this web surface can start
@@ -52,6 +64,33 @@ export function catalogActionPresentation(
     needsRecovery,
     canStartConnection: providerCanConnect && !connection.connected,
   };
+}
+
+export function catalogDirectoryAvailability(
+  entry: McpCatalogEntry,
+  connection: Pick<CatalogConnectionPresentation, "connected">,
+): CatalogDirectoryAvailability {
+  const actions = catalogActionPresentation(entry, connection);
+  const isLocalOnly = entry.transport === "stdio" && !entry.endpointUrl;
+  const isComingSoon = actions.isComingSoon;
+  return {
+    isComingSoon,
+    isAvailable:
+      !isComingSoon && !isLocalOnly && entry.serverStatus !== "deprecated",
+    isFeatured: entry.isFeatured && !isLocalOnly && !isComingSoon,
+  };
+}
+
+export function catalogMatchesViewFilter(
+  entry: McpCatalogEntry,
+  filter: CatalogViewFilter,
+  connection: Pick<CatalogConnectionPresentation, "connected">,
+): boolean {
+  const availability = catalogDirectoryAvailability(entry, connection);
+  if (filter === "connected") return connection.connected;
+  if (filter === "available") return availability.isAvailable;
+  if (filter === "coming_soon") return availability.isComingSoon;
+  return true;
 }
 
 /**
