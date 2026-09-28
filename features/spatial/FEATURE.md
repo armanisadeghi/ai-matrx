@@ -196,6 +196,10 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-09-28 — File tile: the body is the single-file page's own working area (`SingleFileWorkspace`: name menu,
+  Copy link / Download / More, per-tab rail, all seven tabs) and its surface is `matrx-user/file` through the
+  page's own host (`SingleFileSurfaceHost` as `surface.Host`). Default size 800×600.
+
 - 2026-09-27 — Frame fly-to includes its title band in the fit target; War Room’s board-only down throw uses the reversible 'remove' action, distinct from destructive 'delete'.
 
 - 2026-09-25 — Created: engine, zoom-paced streaming, demo board (research/study kinds, podcast

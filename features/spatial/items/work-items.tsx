@@ -3,7 +3,7 @@
 /**
  * Work items on a board: Chat, Note, File. Each Body is the feature's
  * canonical component (see ./types.ts) — the platform's one chat column, the
- * real Note editor, the real file preview — never a board copy. The chat tile
+ * real Note editor, the real single-file workspace — never a board copy. The chat tile
  * reuses the canvas workspace's conversation hook and chat column.
  *
  * Saved sources (board/document.ts `NodeSource`):
@@ -14,7 +14,7 @@
  *         write the entity form; no migration pass is needed).
  */
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
 import { File as FileIcon, FolderOpen, MessagesSquare, StickyNote, Upload } from "lucide-react";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -31,7 +31,9 @@ import { useRetainLatestRequestForViewer } from "@/features/agents/redux/executi
 import { CanvasChatColumn } from "@/features/canvas/workspace/CanvasChatColumn";
 import { useCanvasWorkspaceConversation } from "@/features/canvas/workspace/useCanvasWorkspaceConversation";
 import { NotePickerInline } from "@/features/notes/components/NotePickerPopover";
-import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
+import { SingleFileSurfaceHost } from "@/features/files/components/surfaces/single-file/SingleFileSurfaceHost";
+import { SingleFileWorkspace } from "@/features/files/components/surfaces/single-file/SingleFileWorkspace";
+import { FILE_SURFACE_NAME } from "@/features/surfaces/manifests/file.manifest";
 import { FilesResourcePicker } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import { InlineUploadArea } from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import { NoteTileBody } from "../tiles/NoteTileBody";
@@ -208,6 +210,28 @@ function NotePicker({ onPick, onCancel }: PickerProps) {
 
 // ── File ─────────────────────────────────────────────────────────────────────
 
+/**
+ * The file's surface host for one tile — the SAME `SingleFileSurfaceHost` the
+ * `/files/f/[id]` page mounts (values, rename / move / visibility / restore
+ * write targets, open-tab / go-to-page / download tools). Keyed by file so a
+ * re-pointed tile starts on Preview.
+ */
+function FileSurfaceHost({ source, children }: { source: NodeSource; children: ReactNode }) {
+  const fileId = fileIdOf(source);
+  if (!fileId) return <>{children}</>;
+  return (
+    <SingleFileSurfaceHost key={fileId} fileId={fileId}>
+      {children}
+    </SingleFileSurfaceHost>
+  );
+}
+
+/**
+ * The file page's own working area: the file's name menu and actions, the
+ * per-tab control rail and all seven tabs (Preview, Edit, Knowledge,
+ * Analysis, Share, Info, Versions). Route navigation (back, breadcrumb, Show
+ * files) is the page's, not the file's, so it is not here.
+ */
 function FileBody({ source }: ItemBodyProps) {
   const fileId = fileIdOf(source);
   if (!fileId) {
@@ -217,11 +241,7 @@ function FileBody({ source }: ItemBodyProps) {
       </div>
     );
   }
-  return (
-    <div data-spatial-scroll className="h-full min-h-0 overflow-auto bg-card">
-      <FilePreview fileId={fileId} className="h-full" />
-    </div>
-  );
+  return <SingleFileWorkspace toolbar density="compact" className="h-full" />;
 }
 
 function FilePicker({ onPick, onCancel }: PickerProps) {
@@ -327,11 +347,11 @@ export const WORK_ITEMS: BoardItemType[] = [
   },
   {
     key: "file",
-    surface: { name: "matrx-user/files" },
+    surface: { name: FILE_SURFACE_NAME, Host: FileSurfaceHost },
     label: "File",
     icon: FileIcon,
     group: "work",
-    defaultSize: { w: 640, h: 560 },
+    defaultSize: { w: 800, h: 600 },
     matches: (s: NodeSource) => fileIdOf(s) !== null || isEntity(s, "file"),
     Body: FileBody,
     bringIn: { label: "File", Picker: FilePicker },

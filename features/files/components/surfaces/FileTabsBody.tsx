@@ -68,7 +68,7 @@ const ALL_TABS: readonly FileTab[] = [
   "versions",
 ];
 
-function isFileTab(value: string | null): value is FileTab {
+export function isFileTab(value: string | null): value is FileTab {
   if (!value) return false;
   return (ALL_TABS as readonly string[]).includes(value);
 }
