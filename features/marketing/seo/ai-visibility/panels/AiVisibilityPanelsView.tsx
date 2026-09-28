@@ -136,7 +136,11 @@ function PromptRow({
 
 /** Read a column lane A adds to the panel row, before the generated types carry it. */
 function rowStatus(row: AiVisibilityPanelRow): string | null {
-  const value = (row as AiVisibilityPanelRow & { status?: unknown }).status;
+  const extended = row as AiVisibilityPanelRow & { status?: unknown; design_run_id?: unknown };
+  const value = extended.status;
+  // A hand-typed panel carries the column default "draft" but was never designed: calling it
+  // "still being designed" would be false. It reads as hand-typed (null) until a design runs.
+  if (value === "draft" && !extended.design_run_id) return null;
   return typeof value === "string" ? value : null;
 }
 
