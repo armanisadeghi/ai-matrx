@@ -38,7 +38,7 @@ export async function fetchAckedSuggestionIds(
 /**
  * Dismiss a batch of suggestion ids while their acknowledgement is live.
  *
- * `rag.kg_suggestion_ack` keeps one lifetime identity per (user_id,
+ * `rag.kg_suggestion_ack` keeps one lifetime identity per (created_by,
  * suggestion_id). A deliberate repeat dismissal explicitly revives that same
  * identity from Trash; it does not attempt to mint a second acknowledgement.
  */
@@ -54,15 +54,19 @@ export async function ackSuggestions(
   const organizationId = await ensureOrgId(null);
   for (const suggestion_id of suggestionIds) {
     const row = {
-      user_id: userId,
       created_by: userId,
       suggestion_id,
       organization_id: organizationId,
       deleted_at: null,
     };
+    // `user_id` is retired (created_by is the owner); the generated Insert type
+    // still lists it as required until the column drops and types regenerate.
+    // The live `zz_owner_mirror` trigger fills it from created_by meanwhile.
     const { error } = await supabase
       .schema("rag").from("kg_suggestion_ack")
-      .upsert(row, { onConflict: "user_id,suggestion_id" });
+      .upsert(row as typeof row & { user_id: string }, {
+        onConflict: "created_by,suggestion_id",
+      });
     // The composite primary key makes concurrent/repeated dismissals one
     // atomic write. Any failure is honest: swallowing it would promise a
     // durable acknowledgement that was never persisted.

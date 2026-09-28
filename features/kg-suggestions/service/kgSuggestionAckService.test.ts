@@ -27,12 +27,11 @@ describe("ackSuggestions with the lifetime acknowledgement identity", () => {
     await expect(ackSuggestions("member-7", ["suggestion-a"])).resolves.toBeUndefined();
 
     expect(upsert).toHaveBeenCalledWith({
-      user_id: "member-7",
       created_by: "member-7",
       suggestion_id: "suggestion-a",
       organization_id: "org-42",
       deleted_at: null,
-    }, { onConflict: "user_id,suggestion_id" });
+    }, { onConflict: "created_by,suggestion_id" });
   });
 
   it("keeps simultaneous dismissals on the same lifetime identity", async () => {
@@ -50,22 +49,22 @@ describe("ackSuggestions with the lifetime acknowledgement identity", () => {
 
     expect(upsert).toHaveBeenCalledTimes(2);
     expect(releases).toHaveLength(2);
-    expect(upsert.mock.calls.every(([, options]) => options.onConflict === "user_id,suggestion_id")).toBe(true);
+    expect(upsert.mock.calls.every(([, options]) => options.onConflict === "created_by,suggestion_id")).toBe(true);
 
     releases.forEach((release) => release());
     await expect(writes).resolves.toEqual([undefined, undefined]);
   });
 
   it("makes a deleted acknowledgement live again after an explicit dismissal", async () => {
-    const rows = [{ user_id: "member-7", suggestion_id: "suggestion-a", deleted_at: "2026-09-27T00:00:00Z" }];
+    const rows = [{ created_by: "member-7", suggestion_id: "suggestion-a", deleted_at: "2026-09-27T00:00:00Z" }];
     upsert.mockImplementation(async (row) => {
-      const existing = rows.find((candidate) => candidate.user_id === row.user_id && candidate.suggestion_id === row.suggestion_id);
+      const existing = rows.find((candidate) => candidate.created_by === row.created_by && candidate.suggestion_id === row.suggestion_id);
       if (existing) existing.deleted_at = row.deleted_at;
       return { error: null };
     });
     eq.mockImplementation(async (_column, userId) => ({
       data: rows
-        .filter((row) => row.user_id === userId && row.deleted_at === null)
+        .filter((row) => row.created_by === userId && row.deleted_at === null)
         .map((row) => ({ suggestion_id: row.suggestion_id })),
       error: null,
     }));
