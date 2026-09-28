@@ -24,6 +24,14 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  // "Review what goes in" — the one follow-up for any set of Sources
+  // (features/resource-manager/source-input/review/). Opened by
+  // `openSourceReview(sourceSet, options)`, which awaits the person's choice.
+  sourceReviewWindow: {
+    label: "Review what goes in",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   // THE approval queue as a floating window (the same surface as /approvals).
   approvalsWindow: {
     label: "Waiting on you",
