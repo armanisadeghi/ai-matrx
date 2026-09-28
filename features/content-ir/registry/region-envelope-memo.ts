@@ -25,9 +25,12 @@ import { fingerprintText } from "@ai-matrx/content-ir";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { kindRegistry } from "./kind-registry";
 import { componentRegistry } from "./component-registry";
+import { KIND_CORRECTIONS_KEY, correctKindRegionSource } from "./kind-correctors";
 
 const memo = new Map<string, CanonicalBlockIR>();
 const MEMO_CAP = 200;
+/** region source → the corrections its kind corrector made (kind-correctors.ts). */
+const correctionsBySource = new Map<string, string[]>();
 
 // ── Persisted-envelope seed (Phase 5: reload without re-parse) ─────────────
 
@@ -141,9 +144,18 @@ export function memoizedRegionEnvelope(
   // `schemas` is the live RESOLVER, not a static snapshot: the lazy registry
   // holds only sighted kinds, and the resolver's `request` fires the cold
   // fetch for a missing one — the static-map path could never even ask.
-  const envelope = normalizeJsonRegion(source, {
+  // A kind whose stated numbers derive from its own fields (draft_critique) is
+  // corrected HERE, before the envelope exists, so no renderer sees the model's
+  // arithmetic. The memo stays keyed by the ORIGINAL source.
+  const corrected = completeJson ? correctKindRegionSource(source) : null;
+  if (corrected) {
+    if (correctionsBySource.size >= MEMO_CAP) correctionsBySource.clear();
+    correctionsBySource.set(source, corrected.corrections);
+  }
+  const parseSource = corrected?.source ?? source;
+  const envelope = normalizeJsonRegion(parseSource, {
     schemas: kindRegistry.resolver(),
-    existing: seededEnvelopeFor(source),
+    existing: seededEnvelopeFor(parseSource),
   });
   if (!completeJson && !envelope.root.kind) return null;
 
@@ -194,5 +206,10 @@ export function withIrEnvelope(
 ): Record<string, unknown> | undefined {
   const envelope = memoizedRegionEnvelope(source, options);
   if (!envelope) return metadata;
-  return { ...(metadata ?? {}), [IR_ENVELOPE_KEY]: envelope };
+  const corrections = correctionsBySource.get(source);
+  return {
+    ...(metadata ?? {}),
+    [IR_ENVELOPE_KEY]: envelope,
+    ...(corrections ? { [KIND_CORRECTIONS_KEY]: corrections } : {}),
+  };
 }
