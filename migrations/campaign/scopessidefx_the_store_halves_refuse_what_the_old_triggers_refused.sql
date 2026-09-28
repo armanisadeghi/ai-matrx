@@ -1,6 +1,6 @@
 -- chair-step: lane SCOPES-SIDE-EFFECTS (SCOPES-CUTOVER-PLAN step 0.3, the validation twins). Three refusals that live today only in triggers on the old scope tables move into the record store's own scope halves, so they hold when the old tables are no longer written: a scope filed under a parent of another type (public.ctx_validate_scope_parent) is refused by custom._ctx_store_scope, a value for a field of another type (public.ctx_validate_value_scope_type) by custom._ctx_store_value, and a field bound to a dataset template that is not a one-table reference or names a template the organization may not use (context.enforce_context_item_reference_source) by custom._ctx_store_item — each through one new helper, one added line per half, with the old sentence and no ids. An archive is never refused. While the old tables are written their BEFORE triggers refuse first, so nothing a person meets changes. Writes no data.
--- based-on: custom._ctx_store_scope(uuid, uuid, uuid, jsonb) 4f11098ad9d184cb0d673bf14186d3a7de50b6c4ac39d437b5ec1da115dec6cb
--- based-on: custom._ctx_store_item(uuid, uuid, uuid, jsonb) af2d9a9d6fd0fb45ce45f6f2d98f6ce042f9e2191736d3f464765fb65d1e32d7
+-- based-on: custom._ctx_store_scope(uuid, uuid, uuid, jsonb) 08b5825e5e7eabe5066972620b5206ad6df24c6f0240f76c0021be6cc7c47025
+-- based-on: custom._ctx_store_item(uuid, uuid, uuid, jsonb) 4fbd5b0c5c2988af733315d0dac1ea393037e89d681d682d408019bdb81aa94d
 -- based-on: custom._ctx_store_value(uuid, jsonb) 51722ed5e7d50c4c6a45eb95f1e5ce412968fbbf1e1492c464cffe9a7ce5f828
 -- lane: SCOPES-SIDE-EFFECTS
 -- INVERSE: migrations/inverse/scopessidefx_the_store_halves_refuse_what_the_old_triggers_refused_down.sql

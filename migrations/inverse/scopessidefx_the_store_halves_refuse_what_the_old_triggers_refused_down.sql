@@ -1,6 +1,9 @@
 -- INVERSE of migrations/campaign/scopessidefx_the_store_halves_refuse_what_the_old_triggers_refused.sql (lane SCOPES-SIDE-EFFECTS).
 -- chair-step: puts the three store halves (custom._ctx_store_scope, custom._ctx_store_item, custom._ctx_store_value) back byte for byte as production held them, without the parent, dataset-template and type checks, then drops the three helpers. Writes no data.
 -- lane: SCOPES-SIDE-EFFECTS
+-- based-on: custom._ctx_store_scope(uuid, uuid, uuid, jsonb) d410e8434da898a14e7006ed7e03a1f2ef0de06bd02291f0d961b31567df1ebe
+-- based-on: custom._ctx_store_item(uuid, uuid, uuid, jsonb) 20fffb9e35c620f9339550b8e03fee1974e537ddda8672e7d9f480e1cd3ee8b3
+-- based-on: custom._ctx_store_value(uuid, jsonb) fb56ee4736e60bb54caaa0c413080f6800fa4a2bc311f42e68d58f9476585f86
 -- window-class: three restored function bodies, three dropped functions; no relation lock.
 
 CREATE OR REPLACE FUNCTION custom._ctx_store_scope(p_org uuid, p_type uuid, p_scope uuid, p_spec jsonb)

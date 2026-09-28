@@ -1,0 +1,594 @@
+{
+  "census": "scopes side effects — every trigger on context.*",
+  "lane": "SCOPES-SIDE-EFFECTS",
+  "plan_step": "SCOPES-CUTOVER-PLAN 0.3",
+  "measured": {
+    "database": "production (read-only)",
+    "at": "2026-09-28T18:20Z",
+    "triggers": 66
+  },
+  "rulings": {
+    "twin_exists": "the record store already does this job for every Record, Field and Table",
+    "needs_twin": "only the old tables did this; the twin named here does it from the store and is proven with the image off",
+    "dies": "a job of the image itself; it goes with the old tables, and the reason says why nothing is lost",
+    "stays": "reference data that is not dropped; its trigger stays"
+  },
+  "twin_proof": "matrx-frontend scripts/campaign-tests/scopessidefx_the_side_effects_hold_with_the_image_off_red_green.sql",
+  "rows": [
+    {
+      "table": "context.context_item_values",
+      "trigger": "_stamp_actor_tier",
+      "function": "platform._stamp_actor_tier",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function",
+      "twin": "custom.record trigger _stamp_actor_tier"
+    },
+    {
+      "table": "context.context_item_values",
+      "trigger": "custom_fields_validation",
+      "function": "custom._entity_custom_fields_guard",
+      "fires": "BEFORE INSERT OR UPDATE OF custom_fields",
+      "ruling": "twin_exists",
+      "plain": "the custom_fields column is validated on every Record",
+      "twin": "custom.record trigger custom_fields_validation (custom._entity_custom_fields_guard)"
+    },
+    {
+      "table": "context.context_item_values",
+      "trigger": "trg_ctx_validate_value_scope_type",
+      "function": "public.ctx_validate_value_scope_type",
+      "fires": "BEFORE INSERT OR UPDATE OF context_item_id, scope_id",
+      "ruling": "needs_twin",
+      "plain": "a value for a field of another type is refused: built into the store half",
+      "twin": "custom._ctx_value_fits_its_scope (called by custom._ctx_store_value)"
+    },
+    {
+      "table": "context.context_item_values",
+      "trigger": "trg_ctx_version_context_item_value",
+      "function": "public.ctx_version_context_item_value",
+      "fires": "BEFORE INSERT",
+      "ruling": "dies",
+      "plain": "numbers value versions and demotes the previous current row; the store keeps one current value per Field in the Record and every version in history.record (SCOPES-CUTOVER-PLAN E5, 0.2)"
+    },
+    {
+      "table": "context.context_item_values",
+      "trigger": "zz_follow_to_the_copy",
+      "function": "context._follow_to_the_copy",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "dies",
+      "plain": "the follow / write-through into the store itself: it IS the image's bridge and goes with the image at 4.3.3"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "_gc_assoc_harddelete",
+      "function": "platform._gc_entity_associations",
+      "fires": "AFTER DELETE",
+      "ruling": "twin_exists",
+      "plain": "associations of a purged Record are collected by the store's own statement trigger",
+      "twin": "custom.record trigger _gc_assoc_harddelete_s"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "_gc_assoc_softdelete",
+      "function": "platform._gc_entity_associations",
+      "fires": "AFTER UPDATE OF deleted_at",
+      "ruling": "twin_exists",
+      "plain": "associations of an archived Record are collected by the store's own statement trigger",
+      "twin": "custom.record trigger _gc_assoc_softdelete_s"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "_guard_soft_delete_parent",
+      "function": "platform._guard_soft_delete_parent",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "a row cannot live under an archived parent: the store's containment guard, and the scope doors archive and restore a Table with its Fields and Records (scopeswt T3)",
+      "twin": "custom.record trigger custom_record_containment_guard + custom.context_type_archive / _restore"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "_history",
+      "function": "platform._version_capture",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "every version of a Table, Field and Record is kept in history.record",
+      "twin": "custom.record triggers zzz_history_capture_s_i/_s_u/_s_d (history.record)"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "_stamp_actor",
+      "function": "platform._stamp_actor",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "who made and last changed a row: every Record is stamped by the same function",
+      "twin": "custom.record trigger _stamp_actor (platform._stamp_actor)"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "_stamp_actor_tier",
+      "function": "platform._stamp_actor_tier",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function",
+      "twin": "custom.record trigger _stamp_actor_tier"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "_touch_row",
+      "function": "platform._touch_row",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "updated_at moves on every write of a Record",
+      "twin": "custom.record trigger _touch_row"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "context_items_compute_review",
+      "function": "public.compute_context_item_review_date",
+      "fires": "BEFORE INSERT",
+      "ruling": "dies",
+      "plain": "derives next_review_at from last_verified_at + review_interval_days; measured 2026-09-28 on production: 0 live items carry last_verified_at and 0 carry next_review_at, and no server or web code reads next_review_at (only a type in features/agent-context/types.ts and a test fixture). review_interval_days has its store home (lane SCOPES-STORE-HOMES); a review date, if it is ever wanted, is derived on read from it and the Record's history"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "context_items_updated_at",
+      "function": "public.update_context_item_timestamp",
+      "fires": "BEFORE UPDATE",
+      "ruling": "twin_exists",
+      "plain": "updated_at moves on every write of a Field; the review-date half of this function is ruled with context_items_compute_review",
+      "twin": "custom.record trigger _touch_row"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "custom_fields_validation",
+      "function": "custom._entity_custom_fields_guard",
+      "fires": "BEFORE INSERT OR UPDATE OF custom_fields",
+      "ruling": "twin_exists",
+      "plain": "the custom_fields column is validated on every Record",
+      "twin": "custom.record trigger custom_fields_validation (custom._entity_custom_fields_guard)"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "enforce_context_item_reference_source",
+      "function": "context.enforce_context_item_reference_source",
+      "fires": "BEFORE INSERT OR UPDATE OF reference_source, value_type, allowed_reference_types, max_items, scope_type_id",
+      "ruling": "needs_twin",
+      "plain": "a field bound to a dataset template must be a one-table reference to a template the organization may use: built into the store half",
+      "twin": "custom._ctx_dataset_field_holds (called by custom._ctx_store_item)"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "ensure_slug",
+      "function": "context.ensure_slug",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "dies",
+      "plain": "slugs of the old grammar: a Table keeps its own slug in the store's grammar, a Field's key is its slug, and a scope's slug gets its home as a unique Field (lane SCOPES-STORE-HOMES decision table, the store's own unique rule)"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "provision_scope_datasets_on_item",
+      "function": "context.provision_scope_datasets_trigger",
+      "fires": "AFTER INSERT OR UPDATE OF reference_source, is_active, deleted_at",
+      "ruling": "needs_twin",
+      "plain": "a dataset-template field provisions a table for every live scope of its type: built on the change feed",
+      "twin": "custom._context_side_effects + custom.scope_table_provision"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "trg_sweep_notify_context_item",
+      "function": "public._notify_suggestion_sweep_context_item",
+      "fires": "AFTER INSERT",
+      "ruling": "needs_twin",
+      "plain": "wakes the suggestion sweep when an active context field is made: built on the change feed, at most once per field",
+      "twin": "custom._context_side_effects"
+    },
+    {
+      "table": "context.context_items",
+      "trigger": "zz_follow_to_the_copy",
+      "function": "context._follow_to_the_copy",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "dies",
+      "plain": "the follow / write-through into the store itself: it IS the image's bridge and goes with the image at 4.3.3"
+    },
+    {
+      "table": "context.context_value_refs",
+      "trigger": "_stamp_actor_tier",
+      "function": "platform._stamp_actor_tier",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function (this table goes to the graveyard with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
+      "twin": "custom.record trigger _stamp_actor_tier"
+    },
+    {
+      "table": "context.context_value_refs",
+      "trigger": "custom_fields_validation",
+      "function": "custom._entity_custom_fields_guard",
+      "fires": "BEFORE INSERT OR UPDATE OF custom_fields",
+      "ruling": "twin_exists",
+      "plain": "the custom_fields column is validated on every Record (this table goes to the graveyard with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
+      "twin": "custom.record trigger custom_fields_validation (custom._entity_custom_fields_guard)"
+    },
+    {
+      "table": "context.scope_dataset_instances",
+      "trigger": "_stamp_actor_tier",
+      "function": "platform._stamp_actor_tier",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function (this table goes to the graveyard with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
+      "twin": "custom.record trigger _stamp_actor_tier"
+    },
+    {
+      "table": "context.scope_dataset_instances",
+      "trigger": "custom_fields_validation",
+      "function": "custom._entity_custom_fields_guard",
+      "fires": "BEFORE INSERT OR UPDATE OF custom_fields",
+      "ruling": "twin_exists",
+      "plain": "the custom_fields column is validated on every Record (this table goes to the graveyard with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
+      "twin": "custom.record trigger custom_fields_validation (custom._entity_custom_fields_guard)"
+    },
+    {
+      "table": "context.scope_door_registry",
+      "trigger": "_stamp_actor_tier",
+      "function": "platform._stamp_actor_tier",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "_cascade_softdelete",
+      "function": "platform._cascade_soft_delete",
+      "fires": "AFTER UPDATE OF deleted_at",
+      "ruling": "twin_exists",
+      "plain": "archiving a scope type archives its Table, Fields and Records; archiving a scope archives its Record (scopeswt T3)",
+      "twin": "custom.context_type_archive / custom.context_scope_archive + custom._ctx_store_type (archives the Table's column Fields)"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "_gc_assoc_harddelete",
+      "function": "platform._gc_entity_associations",
+      "fires": "AFTER DELETE",
+      "ruling": "twin_exists",
+      "plain": "associations of a purged Record are collected by the store's own statement trigger",
+      "twin": "custom.record trigger _gc_assoc_harddelete_s"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "_gc_assoc_softdelete",
+      "function": "platform._gc_entity_associations",
+      "fires": "AFTER UPDATE OF deleted_at",
+      "ruling": "twin_exists",
+      "plain": "associations of an archived Record are collected by the store's own statement trigger",
+      "twin": "custom.record trigger _gc_assoc_softdelete_s"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "_guard_soft_delete_parent",
+      "function": "platform._guard_soft_delete_parent",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "a row cannot live under an archived parent: the store's containment guard, and the scope doors archive and restore a Table with its Fields and Records (scopeswt T3)",
+      "twin": "custom.record trigger custom_record_containment_guard + custom.context_type_archive / _restore"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "_history",
+      "function": "platform._version_capture",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "every version of a Table, Field and Record is kept in history.record",
+      "twin": "custom.record triggers zzz_history_capture_s_i/_s_u/_s_d (history.record)"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "_search_item_sync",
+      "function": "platform._search_item_sync_scope_type",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "needs_twin",
+      "plain": "the platform search index row (platform.search_item) for the scope / scope type: built on the store's change feed (custom.io_outbox records.changed, via custom._record_events_to_activity)",
+      "twin": "custom._context_side_effects"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "_stamp_actor",
+      "function": "platform._stamp_actor",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "who made and last changed a row: every Record is stamped by the same function",
+      "twin": "custom.record trigger _stamp_actor (platform._stamp_actor)"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "_stamp_actor_tier",
+      "function": "platform._stamp_actor_tier",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function",
+      "twin": "custom.record trigger _stamp_actor_tier"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "_touch_row",
+      "function": "platform._touch_row",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "updated_at moves on every write of a Record",
+      "twin": "custom.record trigger _touch_row"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "custom_fields_validation",
+      "function": "custom._entity_custom_fields_guard",
+      "fires": "BEFORE INSERT OR UPDATE OF custom_fields",
+      "ruling": "twin_exists",
+      "plain": "the custom_fields column is validated on every Record",
+      "twin": "custom.record trigger custom_fields_validation (custom._entity_custom_fields_guard)"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "ensure_slug",
+      "function": "context.ensure_slug",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "dies",
+      "plain": "slugs of the old grammar: a Table keeps its own slug in the store's grammar, a Field's key is its slug, and a scope's slug gets its home as a unique Field (lane SCOPES-STORE-HOMES decision table, the store's own unique rule)"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "set_updated_at",
+      "function": "public.set_updated_at",
+      "fires": "BEFORE UPDATE",
+      "ruling": "twin_exists",
+      "plain": "updated_at moves on every write of a Record",
+      "twin": "custom.record trigger _touch_row"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "trg_sweep_notify_scope_type",
+      "function": "public._notify_suggestion_sweep_scope_type",
+      "fires": "AFTER INSERT",
+      "ruling": "needs_twin",
+      "plain": "wakes the suggestion sweep when a scope type is made: built on the change feed, at most once per type",
+      "twin": "custom._context_side_effects"
+    },
+    {
+      "table": "context.scope_types",
+      "trigger": "zz_follow_to_the_copy",
+      "function": "context._follow_to_the_copy",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "dies",
+      "plain": "the follow / write-through into the store itself: it IS the image's bridge and goes with the image at 4.3.3"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_cascade_softdelete",
+      "function": "platform._cascade_soft_delete",
+      "fires": "AFTER UPDATE OF deleted_at",
+      "ruling": "twin_exists",
+      "plain": "archiving a scope type archives its Table, Fields and Records; archiving a scope archives its Record (scopeswt T3)",
+      "twin": "custom.context_type_archive / custom.context_scope_archive + custom._ctx_store_type (archives the Table's column Fields)"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_gc_assoc_harddelete",
+      "function": "platform._gc_entity_associations",
+      "fires": "AFTER DELETE",
+      "ruling": "twin_exists",
+      "plain": "associations of a purged Record are collected by the store's own statement trigger",
+      "twin": "custom.record trigger _gc_assoc_harddelete_s"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_gc_assoc_softdelete",
+      "function": "platform._gc_entity_associations",
+      "fires": "AFTER UPDATE OF deleted_at",
+      "ruling": "twin_exists",
+      "plain": "associations of an archived Record are collected by the store's own statement trigger",
+      "twin": "custom.record trigger _gc_assoc_softdelete_s"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_gc_scope_assoc",
+      "function": "platform._gc_scope_associations",
+      "fires": "AFTER DELETE",
+      "ruling": "twin_exists",
+      "plain": "deletes associations naming a hard-deleted scope; after 3.1 every tag edge names the Record and the store's own collector covers it",
+      "twin": "custom.record trigger _gc_assoc_harddelete_s (record-typed edges); the scope-typed tag edges are retargeted to record by lane SCOPES-OLD-WRITERS (plan 3.1)"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_guard_governance",
+      "function": "iam._guard_governance_columns",
+      "fires": "BEFORE UPDATE",
+      "ruling": "twin_exists",
+      "plain": "governed columns are guarded on every Record by the same function",
+      "twin": "custom.record trigger _guard_governance (iam._guard_governance_columns)"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_guard_soft_delete_parent",
+      "function": "platform._guard_soft_delete_parent",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "a row cannot live under an archived parent: the store's containment guard, and the scope doors archive and restore a Table with its Fields and Records (scopeswt T3)",
+      "twin": "custom.record trigger custom_record_containment_guard + custom.context_type_archive / _restore"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_history",
+      "function": "platform._version_capture",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "every version of a Table, Field and Record is kept in history.record",
+      "twin": "custom.record triggers zzz_history_capture_s_i/_s_u/_s_d (history.record)"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_search_item_sync",
+      "function": "platform._search_item_sync_scope",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "needs_twin",
+      "plain": "the platform search index row (platform.search_item) for the scope / scope type: built on the store's change feed (custom.io_outbox records.changed, via custom._record_events_to_activity)",
+      "twin": "custom._context_side_effects"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_stamp_actor",
+      "function": "platform._stamp_actor",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "who made and last changed a row: every Record is stamped by the same function",
+      "twin": "custom.record trigger _stamp_actor (platform._stamp_actor)"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_stamp_actor_tier",
+      "function": "platform._stamp_actor_tier",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function",
+      "twin": "custom.record trigger _stamp_actor_tier"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "_touch_row",
+      "function": "platform._touch_row",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "twin_exists",
+      "plain": "updated_at moves on every write of a Record",
+      "twin": "custom.record trigger _touch_row"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "custom_fields_validation",
+      "function": "custom._entity_custom_fields_guard",
+      "fires": "BEFORE INSERT OR UPDATE OF custom_fields",
+      "ruling": "twin_exists",
+      "plain": "the custom_fields column is validated on every Record",
+      "twin": "custom.record trigger custom_fields_validation (custom._entity_custom_fields_guard)"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "ensure_slug",
+      "function": "context.ensure_slug",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "dies",
+      "plain": "slugs of the old grammar: a Table keeps its own slug in the store's grammar, a Field's key is its slug, and a scope's slug gets its home as a unique Field (lane SCOPES-STORE-HOMES decision table, the store's own unique rule)"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "provision_scope_datasets_on_scope",
+      "function": "context.provision_scope_datasets_trigger",
+      "fires": "AFTER INSERT",
+      "ruling": "needs_twin",
+      "plain": "a new scope gets its own table from each dataset-template field of its type: built on the change feed; the provisioner reads a store-only scope or field and writes its pointer through the store half",
+      "twin": "custom._context_side_effects + custom.scope_table_provision"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "set_updated_at",
+      "function": "public.set_updated_at",
+      "fires": "BEFORE UPDATE",
+      "ruling": "twin_exists",
+      "plain": "updated_at moves on every write of a Record",
+      "twin": "custom.record trigger _touch_row"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "trg_ctx_validate_scope_parent",
+      "function": "public.ctx_validate_scope_parent",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "needs_twin",
+      "plain": "a scope under a parent of another type (or without the parent its type requires) is refused: built into the store half, the old sentence, an archive never refused",
+      "twin": "custom._ctx_scope_parent_holds (called by custom._ctx_store_scope)"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "trg_sweep_notify_scope",
+      "function": "public._notify_suggestion_sweep_scope",
+      "fires": "AFTER INSERT",
+      "ruling": "needs_twin",
+      "plain": "wakes the suggestion sweep (rag.kg_sweep_queue + pg_notify suggestion_sweep) when a scope is made: built on the change feed, at most once per scope",
+      "twin": "custom._context_side_effects"
+    },
+    {
+      "table": "context.scopes",
+      "trigger": "zz_follow_to_the_copy",
+      "function": "context._follow_to_the_copy",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "dies",
+      "plain": "the follow / write-through into the store itself: it IS the image's bridge and goes with the image at 4.3.3"
+    },
+    {
+      "table": "context.system_context_item",
+      "trigger": "_gc_assoc_harddelete",
+      "function": "platform._gc_entity_associations",
+      "fires": "AFTER DELETE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.system_context_item",
+      "trigger": "_gc_assoc_softdelete",
+      "function": "platform._gc_entity_associations",
+      "fires": "AFTER UPDATE OF deleted_at",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.system_context_item",
+      "trigger": "_guard_governance",
+      "function": "iam._guard_governance_columns",
+      "fires": "BEFORE UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.system_context_item",
+      "trigger": "_stamp_actor",
+      "function": "platform._stamp_actor",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.system_context_item",
+      "trigger": "_touch_row",
+      "function": "platform._touch_row",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.system_context_item",
+      "trigger": "_version_capture",
+      "function": "platform._version_capture",
+      "fires": "AFTER INSERT OR DELETE OR UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.templates",
+      "trigger": "set_updated_at",
+      "function": "public.set_updated_at",
+      "fires": "BEFORE UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.user_active_context",
+      "trigger": "custom_fields_validation",
+      "function": "custom._entity_custom_fields_guard",
+      "fires": "BEFORE INSERT OR UPDATE OF custom_fields",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.user_active_context",
+      "trigger": "set_updated_at",
+      "function": "public.set_updated_at",
+      "fires": "BEFORE UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    }
+  ]
+}
