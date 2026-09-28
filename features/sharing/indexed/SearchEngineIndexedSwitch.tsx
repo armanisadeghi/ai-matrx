@@ -55,13 +55,9 @@ export function SearchEngineIndexedSwitch({
 
   const onChange = async (next: boolean) => {
     setBusy(true);
-    // Choosing the type's own default stores "follow the default" (null), so a later change
-    // to the default reaches this record; choosing the other value stores the choice.
-    const res = await setSearchEngineIndexed(
-      resourceType,
-      resourceId,
-      next === state.type_default ? null : next,
-    );
+    // A flip is a deliberate choice and is stored as one: a later change to the type's
+    // default (organization or person) never overrides what the creator set by hand.
+    const res = await setSearchEngineIndexed(resourceType, resourceId, next);
     setBusy(false);
     if (res.error || !res.state) {
       toast({

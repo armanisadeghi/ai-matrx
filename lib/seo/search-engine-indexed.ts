@@ -11,7 +11,7 @@
 // indexing on its own — a page, the proxy and the sitemap all ask that resolver.
 //
 // Anyone-link and secure-link pages are NEVER indexed; they do not ask anything and always
-// carry `NOT_INDEXED_ROBOTS` plus the static `X-Robots-Tag` in utils/next-config/headers.js.
+// carry `NOT_INDEXED_ROBOTS`, and proxy.ts stamps `X-Robots-Tag` on them (isNeverIndexedPath).
 //
 // This module is isomorphic on purpose (no "server-only"): proxy.ts imports it.
 
