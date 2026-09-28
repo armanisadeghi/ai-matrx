@@ -314,3 +314,5 @@ structured 4xx — no new convention.
 `features/organizations/gate/OrganizationGateDialog.test.tsx`, both still
 green) but no browser walk was done end to end through a real 400 from either
 server.
+
+- 2026-09-27 (page-pass coordinator, preference-sync fix): `iam.default_organization_id(uuid)` in the live DB still reads `users.user_preferences.default_organization_id` (a column nothing writes; admin's holds a stale value), then `preferences.organization.defaultOrganizationId`, then the oldest membership — a server-side default-org resolver. Referenced by name in `billing.tier_no_downgrade` / `billing.resolve_tier` (maybe only in comments). Needs its owner: confirm callers, remove the resolver and the dead column.
