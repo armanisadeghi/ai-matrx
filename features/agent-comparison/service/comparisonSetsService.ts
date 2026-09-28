@@ -101,6 +101,7 @@ export async function loadComparisonSet(
       .schema("agent").from("cmp_comparison_entries")
       .select("*")
       .eq("comparison_set_id", setId)
+      .is("deleted_at", null)
       .order("display_order", { ascending: true }),
   ]);
 
@@ -215,6 +216,10 @@ export async function replaceEntries(
       agent_version: e.agentVersion,
       agent_version_snapshot_id: e.agentVersionSnapshotId,
       metadata: e.metadata ?? {},
+      // (comparison_set_id, conversation_id) is a FULL unique index: an entry
+      // dropped earlier is in Trash but still holds the pair, so re-adding it
+      // revives that row.
+      deleted_at: null,
     }));
 
     const { data, error } = await client
@@ -225,10 +230,12 @@ export async function replaceEntries(
     written = (data ?? []) as ComparisonEntryRow[];
   }
 
+  // Entries no longer in the set move to Trash (delete means archive).
   let stale = client
     .schema("agent").from("cmp_comparison_entries")
-    .delete()
-    .eq("comparison_set_id", setId);
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("comparison_set_id", setId)
+    .is("deleted_at", null);
   if (entries.length > 0) {
     const keep = entries.map((e) => e.conversationId).join(",");
     stale = stale.not("conversation_id", "in", `(${keep})`);
