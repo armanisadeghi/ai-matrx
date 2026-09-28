@@ -42,6 +42,8 @@ export type TableRealtimeRow = {
   id?: string;
   data?: Record<string, unknown>;
   updated_at?: string;
+  /** Set when the row was moved to Trash (delete means archive). */
+  deleted_at?: string | null;
 };
 
 export type TableRealtimeEvent = {
@@ -113,14 +115,19 @@ export function useTableRealtime(
           new?: unknown;
           old?: unknown;
         }) => {
-          const kind = payload.eventType as TableRealtimeEvent["kind"];
           // `new` is empty on DELETE; `old` is empty on INSERT.
           const newRow = (payload.new ?? null) as TableRealtimeRow | null;
           const oldRow = (payload.old ?? null) as TableRealtimeRow | null;
+          // Deleting a row archives it (an UPDATE that sets deleted_at): for
+          // every viewer it leaves the table exactly like a removal.
+          const archived = payload.eventType === "UPDATE" && !!newRow?.deleted_at;
+          const kind = archived
+            ? "DELETE"
+            : (payload.eventType as TableRealtimeEvent["kind"]);
           onChangeRef.current({
             kind,
             rowId: newRow?.id ?? oldRow?.id ?? null,
-            row: newRow && Object.keys(newRow).length > 0 ? newRow : null,
+            row: !archived && newRow && Object.keys(newRow).length > 0 ? newRow : null,
           });
         },
       },

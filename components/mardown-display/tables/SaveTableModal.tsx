@@ -905,12 +905,12 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
         title="Replace table contents"
         description={
           <>
-            This permanently deletes all <b>{selectedTable?.row_count ?? 0}</b>{" "}
+            This archives all <b>{selectedTable?.row_count ?? 0}</b>{" "}
             existing row
             {selectedTable?.row_count === 1 ? "" : "s"} in{" "}
-            <b>{selectedTable?.table_name}</b> and replaces them with your{" "}
-            <b>{rowCount}</b> row{rowCount === 1 ? "" : "s"}. This cannot be
-            undone.
+            <b>{selectedTable?.table_name}</b> (they leave the table and are
+            kept, not destroyed) and replaces them with your{" "}
+            <b>{rowCount}</b> row{rowCount === 1 ? "" : "s"}.
           </>
         }
         confirmLabel="Replace"

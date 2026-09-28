@@ -537,22 +537,20 @@ export type DeleteFieldResponse = {
   field_id: string;
   field_name: string;
   display_name: string;
-  /** How many rows carried a value for this column and were rewritten. */
+  /** Always 0: removing a column archives it and keeps every row's value. */
   rows_cleared: number;
 };
 
 /**
- * Removes a column and purges its key from every row.
+ * Removes a column: it is archived (delete means archive, 2026-09-27) and its
+ * values stay on every row.
  *
- * THE ONE delete-column path. Before this existed a user could add columns
- * forever and never remove one — the original `remove_column_from_user_table`
- * was dropped without a replacement. Every surface that lets a user manage
- * columns (TableConfigModal, the column header menu) must call this rather
- * than deleting the field row directly, because the orphaned JSONB key would
- * otherwise resurrect itself the moment a column of the same name is re-added.
+ * THE ONE delete-column path. Every surface that lets a user manage columns
+ * (TableConfigModal, the column header menu) calls this rather than touching
+ * the field row directly. Re-adding a column with the same name
+ * (`add_column_to_user_table`) revives the archived column with its values.
  *
- * Refuses to remove the last remaining column. Cleared values remain in
- * `udt_dataset_row_versions` history.
+ * Refuses to remove the last remaining column.
  */
 export async function deleteField(
   args: DeleteFieldArgs,
@@ -1276,7 +1274,7 @@ export async function setDefaultSort(args: {
   return failed ?? { success: true, data: null };
 }
 
-/** Delete (older store) or archive (record store) one row. */
+/** Archive one row (both stores: delete means archive). */
 export async function deleteRow(args: {
   tableId: string;
   rowId: string;

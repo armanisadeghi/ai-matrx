@@ -229,9 +229,9 @@ export interface ReplaceTableArgs {
 }
 
 /**
- * Replace the entire contents of a table: delete every existing row and insert
- * the incoming rows, all in one `udt_bulk_write` transaction (deletes run
- * before inserts within the batch). New columns (if requested) are created
+ * Replace the entire contents of a table: archive every existing row (a
+ * `delete` op archives — delete means archive) and insert the incoming rows,
+ * all in one `udt_bulk_write` transaction (archives run before inserts). New columns (if requested) are created
  * first. The caller is responsible for confirming this destructive action.
  */
 export async function replaceTable(

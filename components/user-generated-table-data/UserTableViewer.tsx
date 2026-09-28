@@ -2281,7 +2281,8 @@ const UserTableViewer = ({
         ? // The record store RETIRES a column (custom.field_retire): it leaves the
           // table and every screen, and its values stay on each record's history.
           "This column leaves the table and every screen that shows it. Its values are kept on every row, and Undo on the notice brings it back with them."
-        : "This column and its values are removed from every row in the table. Row history keeps a record, but there is no undo in the app.",
+        : // The older store archives the column too (delete means archive, 2026-09-27).
+          "This column leaves the table and every screen that shows it. Its values are kept on every row, and adding a column with the same name brings it back with them.",
       confirmLabel: "Remove column",
       variant: "destructive",
     });
@@ -2323,10 +2324,8 @@ const UserTableViewer = ({
     } else {
       toast({
         title: `Removed "${result.data.display_name}"`,
-        description:
-          result.data.rows_cleared > 0
-            ? `Cleared its value from ${result.data.rows_cleared} row${result.data.rows_cleared === 1 ? "" : "s"}.`
-            : "No rows carried a value for it.",
+        // udt_delete_field archives the column and keeps its values (rows_cleared is 0).
+        description: "Its values are kept on every row. Adding a column with the same name brings it back.",
         variant: "success",
       });
     }

@@ -206,6 +206,7 @@ async function resolveCell(
     .from("udt_dataset_rows")
     .select("data, table_id, organization_id")
     .eq("id", rowId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error || !data) return undefined;
   const row = data as {
@@ -459,6 +460,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .select("display_name, field_name")
         .eq("table_id", ref.table_id)
         .eq("field_name", ref.column_name)
+        .is("deleted_at", null)
         .maybeSingle();
       if (error || !data) return stringify(ref.column_name);
       const row = data as {
@@ -491,6 +493,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
           .from("udt_dataset_rows")
           .select("data")
           .eq("id", ref.row_id)
+          .is("deleted_at", null)
           .maybeSingle();
         if (error || !data) return undefined;
         cells = (data as { data?: Record<string, unknown> | null }).data;

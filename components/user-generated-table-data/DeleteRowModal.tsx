@@ -106,9 +106,9 @@ export default function DeleteRowModal({
               ? // THE RECORD STORE ARCHIVES — it never destroys a row (REC-23), so
                 // "cannot be undone" would be a false sentence here.
                 `${rowLabel ? `The row "${rowLabel}"` : "This row"} will be archived: it leaves this table, and it stays restorable from the table's archive for the table's retention period.`
-              : rowLabel
-                ? `The row "${rowLabel}" will be deleted. This action cannot be undone.`
-                : "Are you sure you want to delete this row? This action cannot be undone."}
+              : // The older store archives too (delete means archive, 2026-09-27): the
+                // row leaves the table and is kept, never destroyed.
+                `${rowLabel ? `The row "${rowLabel}"` : "This row"} will be archived: it leaves this table and is kept, not destroyed.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
