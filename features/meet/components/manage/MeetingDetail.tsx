@@ -24,7 +24,9 @@ import { useRouter } from "next/navigation";
 import {
   Archive,
   ArchiveRestore,
+  BookmarkPlus,
   CalendarClock,
+  ClipboardList,
   Check,
   Copy,
   CopyPlus,
@@ -39,6 +41,7 @@ import {
   UserPlus,
   Users,
   Video,
+  Workflow,
   XCircle,
 } from "lucide-react";
 import {
@@ -75,6 +78,15 @@ import { meetingOrigin } from "@/features/meet/components/invite/MeetingInviteBu
 import { MeetingGuests } from "@/features/meet/components/manage/MeetingGuests";
 import { MeetingRecordWorkspace } from "@/features/meet/components/record/MeetingRecordWorkspace";
 import { RsvpControl } from "@/features/meet/components/manage/RsvpControl";
+import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { SaveTemplateDialog } from "@/features/meet/components/manage/SaveTemplateDialog";
+import {
+  AfterMeetingWorkflows,
+  afterMeetingRuns,
+  afterWorkflowIds,
+} from "@/features/meet/components/manage/AfterMeetingWorkflows";
+import { useMeetTemplates } from "@/features/meet/hooks/useMeetTemplates";
+import { useMeetPrepStream } from "@/features/meet/hooks/useMeetPrepStream";
 import { useMeetingInviteesLive } from "@/features/meet/hooks/useMeetingInviteesLive";
 import { MoveOccurrenceDialog } from "@/features/meet/components/manage/MoveOccurrenceDialog";
 import { useMeetingActionHost } from "@/features/meet/components/manage/useMeetingActionHost";
@@ -152,6 +164,26 @@ export function MeetingDetail({
   useMeetingInviteesLive(meetingId, reload);
   const repository = actions.repository;
   const isMobile = useIsMobile();
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const templates = useMeetTemplates(actions.organizationId, actions.userId);
+  const brief = useMeetPrepStream(
+    `meet-brief:${meetingId}`,
+    "Preparing the brief",
+  );
+  const prepare = async (m: MeetingRecord) => {
+    if (!actions.organizationId) {
+      toast.error(
+        "Choose the organization you are working in, then press Prepare again.",
+      );
+      return;
+    }
+    const text = await brief.start({
+      kind: "brief",
+      meetingId: m.id,
+      organizationId: m.organizationId,
+    });
+    if (text !== null) reload();
+  };
 
   useEffect(() => {
     if (repository === null) return undefined;
@@ -329,6 +361,18 @@ export function MeetingDetail({
         onPress: () => void run("reschedule", meeting, focus, invitees),
       });
   }
+  if (canManage && !ended && !inactive)
+    primaryActions.push({
+      label: brief.run.status === "running" ? "Preparing…" : "Prepare",
+      icon: ClipboardList,
+      onPress: () => void prepare(meeting),
+    });
+  if (canManage && templates.loaded)
+    moreActions.push({
+      label: "Save as template…",
+      icon: BookmarkPlus,
+      onPress: () => setSavingTemplate(true),
+    });
   if (canManage)
     moreActions.push({
       label: "Duplicate",
@@ -426,6 +470,15 @@ export function MeetingDetail({
         >
           {section === "details" ? (
             <DetailsSection
+              brief={
+                <BriefBlock
+                  meeting={meeting}
+                  canManage={canManage && !ended && !inactive}
+                  running={brief.run.status === "running"}
+                  error={brief.run.status === "error" ? brief.run.error : null}
+                  onPrepare={() => void prepare(meeting)}
+                />
+              }
               meeting={meeting}
               zone={zone}
               viewerZone={viewerZone}
@@ -484,6 +537,7 @@ export function MeetingDetail({
             <SettingsSection
               meeting={meeting}
               onSaved={(m) => setLoaded({ ...loaded, meeting: m })}
+              onReload={reload}
             />
           ) : null}
 
@@ -503,8 +557,83 @@ export function MeetingDetail({
           onDone={reload}
         />
       ) : null}
+      {savingTemplate ? (
+        <SaveTemplateDialog
+          open
+          onOpenChange={setSavingTemplate}
+          meeting={meeting}
+          invitees={invitees}
+          templates={templates}
+        />
+      ) : null}
       {dialogs}
     </>
+  );
+}
+
+/** The host's pre-meeting brief (Meet wave 4) — kept on the meeting once prepared. */
+function BriefBlock({
+  meeting,
+  canManage,
+  running,
+  error,
+  onPrepare,
+}: {
+  meeting: MeetingRecord;
+  canManage: boolean;
+  running: boolean;
+  error: string | null;
+  onPrepare: () => void;
+}) {
+  const stored = (meeting.metadata as Record<string, unknown> | null)
+    ?.prep_brief as { text?: unknown; generated_at?: unknown } | undefined;
+  const text = typeof stored?.text === "string" ? stored.text.trim() : "";
+  const at =
+    typeof stored?.generated_at === "string" ? stored.generated_at : null;
+  if (!text && !canManage) return null;
+  return (
+    <Field icon={ClipboardList}>
+      <div className="flex items-center gap-2">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Brief
+        </div>
+        {at ? (
+          <span className="text-xs text-muted-foreground">
+            prepared{" "}
+            {new Date(at).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </span>
+        ) : null}
+        {canManage ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto h-7 px-2 text-xs"
+            onClick={onPrepare}
+            disabled={running}
+          >
+            {running ? "Preparing…" : text ? "Prepare again" : "Prepare"}
+          </Button>
+        ) : null}
+      </div>
+      {error ? (
+        <p role="alert" className="mt-1 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+      {text ? (
+        <div className="mt-1">
+          <BasicMarkdownContent content={text} showCopyButton={false} />
+        </div>
+      ) : !error ? (
+        <p className="mt-1 text-muted-foreground">
+          Who is coming, what the last meeting decided, what is still open —
+          read in two minutes before you join.
+        </p>
+      ) : null}
+    </Field>
   );
 }
 
@@ -527,6 +656,7 @@ function Field({
 }
 
 function DetailsSection({
+  brief,
   meeting,
   zone,
   viewerZone,
@@ -536,6 +666,7 @@ function DetailsSection({
   mine,
   onCopy,
 }: {
+  brief: React.ReactNode;
   meeting: MeetingRecord;
   zone: string;
   viewerZone: string;
@@ -629,6 +760,7 @@ function DetailsSection({
           />
         </Field>
       ) : null}
+      {brief}
       <Field icon={FileText}>
         <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Agenda
@@ -783,9 +915,11 @@ function SettingsRow({
 function SettingsSection({
   meeting,
   onSaved,
+  onReload,
 }: {
   meeting: MeetingRecord;
   onSaved: (meeting: MeetingRecord) => void;
+  onReload: () => void;
 }) {
   const actions = useMeetingActions();
   const [saving, setSaving] = useState<string | null>(null);
@@ -865,6 +999,92 @@ function SettingsSection({
           </SelectContent>
         </Select>
       </SettingsRow>
+      <div className="py-3">
+        <div className="flex items-center gap-1.5 text-sm font-medium">
+          <Workflow
+            className="h-3.5 w-3.5 text-muted-foreground"
+            aria-hidden="true"
+          />
+          After the meeting
+        </div>
+        <div className="mb-2 text-xs text-muted-foreground">
+          Workflows that run when it ends, with its summary, decisions, action
+          items and attendees. Outside guests who match a CRM contact get the
+          meeting logged on their record.
+        </div>
+        <AfterMeetingWorkflows
+          value={afterWorkflowIds(meeting.metadata)}
+          runs={afterMeetingRuns(meeting.metadata)}
+          disabled={disabled}
+          onChange={(ids) => {
+            setSaving("after");
+            void actions
+              .setAfterWorkflows(meeting.id, ids)
+              .then(() => {
+                toast.success("Saved.");
+                onReload();
+              })
+              .catch((thrown: unknown) => toast.error(errorSentence(thrown)))
+              .finally(() => setSaving(null));
+          }}
+        />
+        <CrmLogLine metadata={meeting.metadata} />
+      </div>
     </div>
+  );
+}
+
+/** What the CRM log did after the meeting (`metadata.after_meeting.crm`), with doors. */
+function CrmLogLine({ metadata }: { metadata: unknown }) {
+  const after =
+    metadata && typeof metadata === "object"
+      ? ((metadata as Record<string, unknown>).after_meeting as
+          Record<string, unknown> | undefined)
+      : undefined;
+  const crm = after?.crm as
+    | {
+        logged?: { party_id: string; as?: string }[];
+        unmatched?: string[];
+        skipped?: string;
+        error?: string;
+      }
+    | undefined;
+  if (!crm) return null;
+  if (crm.error)
+    return (
+      <p className="mt-2 text-xs text-destructive">
+        CRM log failed: {crm.error}
+      </p>
+    );
+  if (crm.skipped)
+    return (
+      <p className="mt-2 text-xs text-muted-foreground">CRM: {crm.skipped}</p>
+    );
+  const logged = crm.logged ?? [];
+  return (
+    <p className="mt-2 text-xs text-muted-foreground">
+      {logged.length > 0 ? (
+        <>
+          Logged to the CRM on{" "}
+          {logged.map((l, i) => (
+            <span key={l.party_id}>
+              {i > 0 ? ", " : ""}
+              <a
+                href={`/crm/${l.party_id}`}
+                className="text-primary hover:underline"
+              >
+                {l.as === "company" ? "their company" : "a contact"}
+              </a>
+            </span>
+          ))}
+          .
+        </>
+      ) : (
+        "No outside guest matched a CRM contact."
+      )}
+      {crm.unmatched && crm.unmatched.length > 0
+        ? ` Not in the CRM: ${crm.unmatched.length}.`
+        : ""}
+    </p>
   );
 }

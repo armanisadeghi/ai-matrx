@@ -15,7 +15,17 @@
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
-import { Clock, Globe, Loader2, Settings2, Users } from "lucide-react";
+import {
+  CalendarSearch,
+  Clock,
+  Globe,
+  LayoutTemplate,
+  Loader2,
+  PenLine,
+  Settings2,
+  Users,
+  Workflow,
+} from "lucide-react";
 import {
   type MeetingInvitee,
   type MeetingRecord,
@@ -48,6 +58,16 @@ import { toast } from "@/lib/toast";
 import { RecurrenceEditor } from "@/features/meet/components/manage/RecurrenceEditor";
 import { GuestPicker } from "@/features/meet/components/manage/GuestPicker";
 import { useMeetDefaults } from "@/features/meet/hooks/useMeetDefaults";
+import { useMeetPlanningKnobs } from "@/features/meet/hooks/useMeetPlanningKnobs";
+import { useFindTime } from "@/features/meet/hooks/useFindTime";
+import { useMeetTemplates } from "@/features/meet/hooks/useMeetTemplates";
+import { useMeetPrepStream } from "@/features/meet/hooks/useMeetPrepStream";
+import { applyTemplate } from "@/features/meet/lib/meeting-template";
+import { FindTimePanel } from "@/features/meet/components/manage/FindTimePanel";
+import {
+  AfterMeetingWorkflows,
+  afterWorkflowIds,
+} from "@/features/meet/components/manage/AfterMeetingWorkflows";
 import {
   errorSentence,
   useMeetingActions,
@@ -83,8 +103,14 @@ export interface OccurrenceRef {
   readonly durationMinutes: number | null;
 }
 
+/** What a create form starts from besides the person's defaults: a template or a calendar event. */
+export interface MeetingPrefill {
+  readonly patch?: Partial<MeetingDraft>;
+  readonly afterWorkflows?: readonly string[];
+}
+
 export type MeetingFormMode =
-  | { readonly kind: "create" }
+  | { readonly kind: "create"; readonly prefill?: MeetingPrefill }
   | {
       readonly kind: "edit";
       readonly meeting: MeetingRecord;
@@ -102,13 +128,15 @@ function initialDraft(
   zone: string,
   defaults: ReturnType<typeof useMeetDefaults>,
 ): MeetingDraft {
-  if (mode.kind === "create")
-    return emptyDraft(
+  if (mode.kind === "create") {
+    const base = emptyDraft(
       zone,
       new Date(),
       defaults.settings,
       defaults.durationMinutes,
     );
+    return mode.prefill?.patch ? { ...base, ...mode.prefill.patch } : base;
+  }
   const base = meetingToDraft(mode.meeting, mode.invitees, zone);
   if (mode.kind === "duplicate") return duplicateDraft(base);
   if (mode.occurrence) {
@@ -169,15 +197,31 @@ export function MeetingFormDialog({
   const [scopeAsk, setScopeAsk] = useState(false);
   const [scope, setScope] = useState<"occurrence" | "series">("occurrence");
   const [touchedSettings, setTouchedSettings] = useState(false);
+  const planning = useMeetPlanningKnobs(actions.organizationId, actions.userId);
+  const findTime = useFindTime();
+  const templates = useMeetTemplates(actions.organizationId, actions.userId);
+  const agendaDraft = useMeetPrepStream(
+    `meet-agenda:${mode.kind === "create" ? "new" : mode.meeting.id}`,
+    "Drafting an agenda",
+  );
+  const [pendingAgenda, setPendingAgenda] = useState<string | null>(null);
+  const [templateId, setTemplateId] = useState<string>("");
+  const initialAfter =
+    mode.kind === "create"
+      ? [...(mode.prefill?.afterWorkflows ?? [])]
+      : afterWorkflowIds(mode.meeting.metadata);
+  const [afterWorkflows, setAfterWorkflows] = useState<string[]>(initialAfter);
+  const [savedAfter] = useState<string[]>(initialAfter);
 
   // A create form shows the person's own defaults once they load, unless they
   // already changed a setting.
   useEffect(() => {
     if (mode.kind !== "create" || !defaults.loaded || touchedSettings) return;
+    const patch = mode.prefill?.patch;
     setDraft((d) => ({
       ...d,
-      settings: defaults.settings,
-      durationMinutes: defaults.durationMinutes,
+      settings: { ...defaults.settings, ...(patch?.settings ?? {}) },
+      durationMinutes: patch?.durationMinutes ?? defaults.durationMinutes,
     }));
   }, [defaults, mode.kind, touchedSettings]);
 
@@ -271,6 +315,9 @@ export function MeetingFormDialog({
     if (diff.add.length + diff.remove.length + diff.roleChanges.length > 0) {
       await actions.applyInvitees(meeting.id, diff);
     }
+    if (afterWorkflows.join(",") !== savedAfter.join(",")) {
+      await actions.setAfterWorkflows(meeting.id, afterWorkflows);
+    }
     if (notify && hasGuests) await actions.announce(meeting.id);
     finish(
       updated,
@@ -293,7 +340,12 @@ export function MeetingFormDialog({
           mode.kind === "create"
             ? changedSettings(draft.settings, defaults.settings)
             : draft.settings;
-        const meeting = await actions.create(draft, sent, notify);
+        const meeting = await actions.create(
+          draft,
+          sent,
+          notify,
+          afterWorkflows,
+        );
         finish(meeting, "Meeting scheduled.");
       }
     } catch (thrown) {
@@ -316,6 +368,69 @@ export function MeetingFormDialog({
     void submit("series");
   };
 
+  const guestName = (userId: string) =>
+    userId === actions.userId
+      ? "you"
+      : (draft.invitees.find((i) => i.userId === userId)?.displayName ??
+        draft.invitees.find((i) => i.userId === userId)?.email ??
+        "A guest");
+
+  const runFindTime = () => {
+    const hostId = editing?.meeting.hostUserId ?? actions.userId;
+    const ids = [
+      ...(hostId ? [hostId] : []),
+      ...draft.invitees.flatMap((i) => (i.userId ? [i.userId] : [])),
+    ];
+    void findTime.find({
+      userIds: ids,
+      zone: draft.timeZone,
+      durationMinutes: draft.durationMinutes,
+      knobs: planning,
+    });
+  };
+
+  const runAgendaDraft = async () => {
+    if (!actions.organizationId || draft.title.trim() === "") return;
+    setPendingAgenda(null);
+    let scheduledFor: string | null = null;
+    try {
+      scheduledFor = zonedToUtcIso(draft.date, draft.time, draft.timeZone);
+    } catch {
+      scheduledFor = null;
+    }
+    const text = await agendaDraft.start({
+      kind: "agenda",
+      body: {
+        organization_id: actions.organizationId,
+        meeting_id: editing?.meeting.id ?? null,
+        title: draft.title.trim(),
+        agenda: draft.agenda.trim() || null,
+        scheduled_for: scheduledFor,
+        time_zone: draft.timeZone,
+        duration_minutes: draft.durationMinutes,
+        recurrence_rule: draftSchedule(draft).recurrenceRule,
+        guests: draft.invitees.map((i) => ({
+          user_id: i.userId,
+          email: i.email,
+          name: i.displayName,
+          cohost: i.cohost,
+        })),
+      },
+    });
+    if (text === null) return;
+    if (draft.agenda.trim() === "") set({ agenda: text });
+    else setPendingAgenda(text);
+  };
+
+  const chooseTemplate = (id: string) => {
+    const template = templates.templates.find((t) => t.id === id);
+    if (!template) return;
+    setTemplateId(id);
+    setTouchedSettings(true);
+    setDraft((d) => applyTemplate(d, template));
+    setAfterWorkflows([...template.afterWorkflows]);
+  };
+
   const title = reschedule
     ? `Reschedule “${draft.title}”`
     : mode.kind === "create"
@@ -331,8 +446,32 @@ export function MeetingFormDialog({
         onOpenChange={(next) => (!saving ? onOpenChange(next) : undefined)}
       >
         <DialogContent className="flex max-h-[92dvh] max-w-2xl flex-col gap-0 p-0">
-          <DialogHeader className="border-b border-border px-5 py-3">
+          <DialogHeader className="flex-row items-center gap-2 space-y-0 border-b border-border px-5 py-3">
             <DialogTitle className="text-base">{title}</DialogTitle>
+            {!editing && !reschedule && templates.templates.length > 0 ? (
+              <Select value={templateId} onValueChange={chooseTemplate}>
+                <SelectTrigger
+                  className="ml-auto h-8 w-44 gap-1.5 text-xs"
+                  aria-label="Start from a template"
+                >
+                  <LayoutTemplate
+                    className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                  <SelectValue placeholder="From a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.templates.map((t) => (
+                    <SelectItem key={`${t.scope}:${t.id}`} value={t.id}>
+                      {t.name}
+                      <span className="ml-1.5 text-xs text-muted-foreground">
+                        {t.scope === "organization" ? "Organization" : "Mine"}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
             <DialogDescription className="sr-only">
               Title, time, repeat, guests, agenda and settings for this meeting.
             </DialogDescription>
@@ -388,7 +527,41 @@ export function MeetingFormDialog({
                       ))}
                   </SelectContent>
                 </Select>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 gap-1.5"
+                  onClick={runFindTime}
+                  disabled={findTime.loading}
+                >
+                  {findTime.loading ? (
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <CalendarSearch className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  Find a time
+                </Button>
               </div>
+              {findTime.loading || findTime.failure || findTime.result ? (
+                <FindTimePanel
+                  loading={findTime.loading}
+                  failure={findTime.failure}
+                  result={findTime.result}
+                  durationMinutes={draft.durationMinutes}
+                  horizonDays={planning.horizonDays}
+                  emailOnlyGuests={
+                    draft.invitees.filter((i) => !i.userId).length
+                  }
+                  nameOf={guestName}
+                  selected={`${draft.date} ${draft.time}`}
+                  onPick={(slot) => set({ date: slot.date, time: slot.time })}
+                  onClose={findTime.clear}
+                />
+              ) : null}
               <div className="flex items-center gap-2">
                 <Globe
                   className="h-4 w-4 shrink-0 text-muted-foreground"
@@ -442,12 +615,34 @@ export function MeetingFormDialog({
                 </section>
 
                 <section className="space-y-2" aria-label="Agenda">
-                  <Label
-                    htmlFor="meeting-agenda"
-                    className="text-sm font-medium"
-                  >
-                    Agenda
-                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Label
+                      htmlFor="meeting-agenda"
+                      className="text-sm font-medium"
+                    >
+                      Agenda
+                    </Label>
+                    {draft.title.trim() !== "" && actions.organizationId ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto h-7 gap-1.5 px-2 text-xs"
+                        onClick={() => void runAgendaDraft()}
+                        disabled={agendaDraft.run.status === "running"}
+                      >
+                        {agendaDraft.run.status === "running" ? (
+                          <Loader2
+                            className="h-3.5 w-3.5 animate-spin"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <PenLine className="h-3.5 w-3.5" aria-hidden="true" />
+                        )}
+                        Draft agenda
+                      </Button>
+                    ) : null}
+                  </div>
                   <Textarea
                     id="meeting-agenda"
                     value={draft.agenda}
@@ -455,6 +650,56 @@ export function MeetingFormDialog({
                     placeholder="What this meeting is for, and what you want to leave with"
                     rows={4}
                   />
+                  {agendaDraft.run.status === "error" &&
+                  agendaDraft.run.error ? (
+                    <p role="alert" className="text-xs text-destructive">
+                      {agendaDraft.run.error}
+                    </p>
+                  ) : null}
+                  {pendingAgenda !== null ? (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
+                      <span className="text-muted-foreground">
+                        A drafted agenda is ready (shown in the run window).
+                      </span>
+                      <div className="ml-auto flex gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            set({ agenda: pendingAgenda });
+                            setPendingAgenda(null);
+                          }}
+                        >
+                          Replace
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            set({
+                              agenda: `${draft.agenda.trim()}\n\n${pendingAgenda}`,
+                            });
+                            setPendingAgenda(null);
+                          }}
+                        >
+                          Add below
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={() => setPendingAgenda(null)}
+                        >
+                          Discard
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </section>
 
                 <section aria-label="Settings">
@@ -527,6 +772,23 @@ export function MeetingFormDialog({
                         </SelectContent>
                       </Select>
                     </SettingRow>
+                    <div className="py-2">
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <Workflow
+                          className="h-3.5 w-3.5 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        After the meeting
+                      </div>
+                      <div className="mb-1.5 text-xs text-muted-foreground">
+                        Workflows that run when it ends, with its summary,
+                        decisions and action items.
+                      </div>
+                      <AfterMeetingWorkflows
+                        value={afterWorkflows}
+                        onChange={setAfterWorkflows}
+                      />
+                    </div>
                   </div>
                 </section>
               </>

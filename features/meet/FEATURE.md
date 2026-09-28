@@ -165,6 +165,22 @@ Without an active organization the workspace says so and offers the picker (the 
 chat and recap ride the org-aware Meet client). The public `/meet/<slug>` record is still the
 package's `MeetingRecordView`.
 
+## Before and after the meeting — Meet wave 4 (2026-09-27)
+
+Bar: Google Calendar's agenda + Find a time, Zoom's templates and Workflows, Salesforce/HubSpot
+meeting logging. Server: aidream `services/meet/FEATURE.md` § Meet wave 4. No package change —
+everything here is the host (the package publishes nothing new for it).
+
+| Piece | File |
+|---|---|
+| Synced Google / Outlook events in Upcoming — timed, not declined, not an AI Matrx meeting already listed; marked with their calendar and call provider; click opens the calendar event (item presentation `calendar_event`); menu: "Open/Move to AI Matrx, with the note-taker" (the New meeting form prefilled: title, time, length, guests), "Open the call link", the honest line "Zoom call — the AI note-taker joins AI Matrx meetings only."; toolbar switch "Calendar events" = the person's knob `meet.show_external_calendar_events` | `components/manage/MeetingsHome.tsx` (`ExternalEventRow`), `hooks/useExternalEvents.ts`, `lib/external-events.ts` |
+| Find a time — host + every guest with an account; free/busy only (`communication.calendar_free_busy`); first N slots in the host's working day (knobs `working_hours_*`, `working_days`, `find_time_*`); says whose calendar was not checked and why | `components/manage/FindTimePanel.tsx`, `hooks/useFindTime.ts`, `lib/find-time.ts`, knobs `hooks/useMeetPlanningKnobs.ts` |
+| Draft agenda (form) and Prepare (meeting page header + Details "Brief") — aidream streams, the stream is ADOPTED (`adoptForeignStream`) and shown in the floating LiveRunWindow; a refusal (nobody assigned yet, AI off) is the server's sentence + remedy | `hooks/useMeetPrepStream.ts`, `MeetingFormDialog.tsx`, `MeetingDetail.tsx` (`BriefBlock`) |
+| Templates — "From a template" in the New meeting header; "Save as template…" in the meeting's "…" (just for me / everyone in the organization when the knob's door allows); delete from the same dialog. Knob-backed: `meet.personal_templates` (user), `meet.templates` (org) | `lib/meeting-template.ts`, `hooks/useMeetTemplates.ts`, `components/manage/SaveTemplateDialog.tsx` |
+| After the meeting — workflows picked with the ONE workflow picker, on the form's and the page's Settings; saved to `metadata.after_meeting_workflows` through `mergeJsonColumn`; what ran (run doors) and the CRM log (contact/company doors) read back from `metadata.after_meeting` | `components/manage/AfterMeetingWorkflows.tsx`, `useMeetingActions.setAfterWorkflows`, `MeetingDetail.tsx` (`CrmLogLine`) |
+
+Guards: `lib/find-time.test.ts`, `lib/external-events.test.ts`, `lib/meeting-template.test.ts`.
+
 ## The Invite panel (2026-09-27)
 
 One panel, opened from **Invite** in the room header (`headerControls`, both
@@ -246,6 +262,8 @@ reader of an older tag will otherwise conclude the package is broken.
    "captions, live notes, Q&A and the wrap-up without a page reload".
 
 ## Change log
+
+- 2026-09-27 — Meet wave 4: calendar events in Upcoming, Find a time, Draft agenda, Prepare (brief), templates, after-meeting workflows + CRM log readback. See § Before and after the meeting.
 
 - 2026-09-27 — Meet wave 3 (after the meeting): record workspace, recordings library, action items → tasks, attendance, chat log, export, recap email, search inside meetings. See § After the meeting. Adopted `@ai-matrx/meet` 0.7.7.
 

@@ -23,7 +23,12 @@ function row(extra: Record<string, unknown> = {}) {
       __kind: "calendar_event_attendees",
       attendees: [
         { email: "me@us.com", self: true, rsvp: "accepted" },
-        { email: "Lee@Acme.com", display_name: "Lee Park", self: false, rsvp: "needsAction" },
+        {
+          email: "Lee@Acme.com",
+          display_name: "Lee Park",
+          self: false,
+          rsvp: "needsAction",
+        },
         { email: "room-4@resource.calendar.google.com", self: false },
       ],
     },
@@ -37,17 +42,27 @@ function row(extra: Record<string, unknown> = {}) {
 describe("external calendar events", () => {
   it("classifies call links honestly", () => {
     expect(providerOf("https://acme.zoom.us/j/123")).toBe("zoom");
-    expect(providerOf("https://meet.google.com/abc-defg-hij")).toBe("google_meet");
-    expect(providerOf("https://teams.microsoft.com/l/meetup-join/x")).toBe("teams");
-    expect(providerOf("https://aimatrx.com/meet/1a2-3b4c-5d6")).toBe("ai_matrx");
+    expect(providerOf("https://meet.google.com/abc-defg-hij")).toBe(
+      "google_meet",
+    );
+    expect(providerOf("https://teams.microsoft.com/l/meetup-join/x")).toBe(
+      "teams",
+    );
+    expect(providerOf("https://aimatrx.com/meet/1a2-3b4c-5d6")).toBe(
+      "ai_matrx",
+    );
     expect(providerOf("https://example.com/room")).toBe("other");
     expect(providerOf(null)).toBeNull();
   });
 
   it("reads a link from the location when the event has none of its own", () => {
-    const event = toExternalEvent(row({ location: "Join: https://acme.zoom.us/j/99 (pw 1)" }))!;
+    const event = toExternalEvent(
+      row({ location: "Join: https://acme.zoom.us/j/99 (pw 1)" }),
+    )!;
     expect(event.link).toBe("https://acme.zoom.us/j/99");
-    expect(noteTakerLine(event)).toBe("Zoom call — the AI note-taker joins AI Matrx meetings only.");
+    expect(noteTakerLine(event)).toBe(
+      "Zoom call — the AI note-taker joins AI Matrx meetings only.",
+    );
     expect(event.durationMinutes).toBe(30);
   });
 
@@ -55,9 +70,19 @@ describe("external calendar events", () => {
     expect(toExternalEvent(row({ all_day: true }))).toBeNull();
     expect(toExternalEvent(row({ sync_status: "failed" }))).toBeNull();
     const declined = toExternalEvent(
-      row({ attendees: { attendees: [{ email: "me@us.com", self: true, rsvp: "declined" }] } }),
+      row({
+        attendees: {
+          attendees: [{ email: "me@us.com", self: true, rsvp: "declined" }],
+        },
+      }),
     )!;
-    const ours = toExternalEvent(row({ id: "e2", external_id: "g-2", meeting_url: "https://aimatrx.com/meet/1a2-3b4c-5d6" }))!;
+    const ours = toExternalEvent(
+      row({
+        id: "e2",
+        external_id: "g-2",
+        meeting_url: "https://aimatrx.com/meet/1a2-3b4c-5d6",
+      }),
+    )!;
     const plain = toExternalEvent(row({ id: "e3", external_id: "g-3" }))!;
     const twin = toExternalEvent(row({ id: "e4", external_id: "g-3" }))!;
     const shown = agendaExternalEvents([declined, ours, plain, twin], {
@@ -66,11 +91,19 @@ describe("external calendar events", () => {
       listedSlugs: new Set(["1a2-3b4c-5d6"]),
     });
     expect(shown.map((e) => e.id)).toEqual(["e3"]);
-    expect(agendaExternalEvents([plain], { now: NOW, query: "budget", listedSlugs: new Set() })).toEqual([]);
+    expect(
+      agendaExternalEvents([plain], {
+        now: NOW,
+        query: "budget",
+        listedSlugs: new Set(),
+      }),
+    ).toEqual([]);
   });
 
   it("prefills guests from the event, never you and never a room", () => {
     const event = toExternalEvent(row())!;
-    expect(prefillGuests(event)).toEqual([{ email: "lee@acme.com", name: "Lee Park" }]);
+    expect(prefillGuests(event)).toEqual([
+      { email: "lee@acme.com", name: "Lee Park" },
+    ]);
   });
 });

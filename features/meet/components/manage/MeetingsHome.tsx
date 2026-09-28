@@ -170,7 +170,10 @@ export function MeetingsHome() {
   const [scope, setScope] = useState<AgendaScope>("mine");
   const [creating, setCreating] = useState(false);
   const [prefill, setPrefill] = useState<MeetingPrefill | undefined>(undefined);
-  const planning = useMeetPlanningKnobs(actions.organizationId, directory.userId);
+  const planning = useMeetPlanningKnobs(
+    actions.organizationId,
+    directory.userId,
+  );
   const external = useExternalEvents(
     directory.userId,
     planning.loaded && planning.showExternalEvents,
@@ -380,19 +383,19 @@ export function MeetingsHome() {
               />
             </div>
             {tab !== "recordings" ? (
-            <Select
-              value={scope}
-              onValueChange={(v) => setScope(v as AgendaScope)}
-            >
-              <SelectTrigger className="h-8 w-40" aria-label="Whose meetings">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mine">All my meetings</SelectItem>
-                <SelectItem value="hosting">Hosting</SelectItem>
-                <SelectItem value="invited">Invited to</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select
+                value={scope}
+                onValueChange={(v) => setScope(v as AgendaScope)}
+              >
+                <SelectTrigger className="h-8 w-40" aria-label="Whose meetings">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mine">All my meetings</SelectItem>
+                  <SelectItem value="hosting">Hosting</SelectItem>
+                  <SelectItem value="invited">Invited to</SelectItem>
+                </SelectContent>
+              </Select>
             ) : null}
             {tab === "upcoming" && planning.loaded ? (
               <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -828,6 +831,110 @@ function MeetingList({
         );
       })}
     </ul>
+  );
+}
+
+/**
+ * An event from the person's synced calendar, beside their AI Matrx meetings —
+ * marked with its calendar, never mistaken for one of ours. Clicking opens the
+ * calendar event; the menu says honestly what the AI note-taker can do.
+ */
+function ExternalEventRow({
+  event,
+  zone,
+  now,
+  onOpen,
+  onCreate,
+  onHide,
+}: {
+  event: ExternalEvent;
+  zone: string;
+  now: Date;
+  onOpen: () => void;
+  onCreate: () => void;
+  onHide: () => void;
+}) {
+  const live = isLive(event, now);
+  const soon = startsSoon(event, now);
+  const hosted = event.provider !== null && event.provider !== "ai_matrx";
+  const limit =
+    noteTakerLine(event) ??
+    "No call link — open it in AI Matrx to add the AI note-taker.";
+  const openLink = () => {
+    if (event.link) window.open(event.link, "_blank", "noopener,noreferrer");
+  };
+  return (
+    <Row
+      onOpen={onOpen}
+      live={live}
+      time={
+        <span className="text-sm tabular-nums text-muted-foreground">
+          {formatTimeRange(event.occurrenceStart, event.durationMinutes, zone)}
+        </span>
+      }
+      title={event.title}
+      muted
+      meta={[
+        <span key="src" className="inline-flex items-center gap-1">
+          <CalendarDays className="h-3 w-3" aria-hidden="true" />
+          {SOURCE_LABELS[event.source] ?? "Calendar"}
+        </span>,
+        ...(hosted
+          ? [
+              <span key="call" className="inline-flex items-center gap-1">
+                <Video className="h-3 w-3" aria-hidden="true" />
+                {PROVIDER_LABELS[event.provider!]}
+              </span>,
+            ]
+          : []),
+      ]}
+      primary={
+        event.link && (live || soon)
+          ? { label: "Join", onClick: openLink }
+          : null
+      }
+      menu={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label={`More actions for ${event.title}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72">
+            {limit ? (
+              <DropdownMenuLabel className="text-xs font-normal leading-snug text-muted-foreground">
+                {limit}
+              </DropdownMenuLabel>
+            ) : null}
+            <DropdownMenuItem className="gap-2" onSelect={onCreate}>
+              <Video className="h-4 w-4" aria-hidden="true" />
+              {hosted ? "Move to AI Matrx" : "Open in AI Matrx"}
+            </DropdownMenuItem>
+            {event.link ? (
+              <DropdownMenuItem className="gap-2" onSelect={openLink}>
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                Open the call link
+              </DropdownMenuItem>
+            ) : null}
+            <DropdownMenuItem className="gap-2" onSelect={onOpen}>
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />
+              Open the calendar event
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="gap-2" onSelect={onHide}>
+              Hide calendar events here
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+    />
   );
 }
 

@@ -14,9 +14,11 @@
 // covers PostgrestFilterBuilder / PostgrestTransformBuilder generically
 // without erasing to `any`.
 import type { ListScope } from "./types";
+import { shownToFilter, type ShownToContext } from "./shownTo";
 
 export interface EqCapable<Self> {
   eq(column: string, value: string): Self;
+  or(filters: string): Self;
 }
 
 export interface ApplyListScopeOpts {
@@ -26,6 +28,12 @@ export interface ApplyListScopeOpts {
   ownerColumn?: string;
   /** Column that stores the row's org. Default "organization_id". */
   orgColumn?: string;
+  /**
+   * The viewer's "Shown to" context for this list's type (`fetchShownToContext(token)`). When
+   * given, an organization list shows only what each row's Shown to lets it show (access ladder
+   * T-11). Omit only for a table with no `shown_to` column (Private / Confidential types).
+   */
+  shownTo?: ShownToContext;
 }
 
 /**
@@ -67,7 +75,18 @@ export function applyListScope<Q extends EqCapable<Q>>(
             "Narrow to one organizationId, or use this feature's *_list_scoped RPC.",
         );
       }
-      return query.eq(orgColumn, scope.organizationId);
+      return opts.shownTo
+        ? query
+            .eq(orgColumn, scope.organizationId)
+            .or(shownToFilter(opts.shownTo, scope.organizationId, opts.userId, ownerColumn))
+        : query.eq(orgColumn, scope.organizationId);
+    case "team":
+      throw new Error(
+        "[list-scope] applyListScope does not support 'team' — it needs the " +
+          "caller's team reach first (an async read). Fetch it with " +
+          "fetchMyTeamReach and filter with teamReachOrFilter " +
+          "(lib/list-scope/teamReach.ts), or use this feature's *_list_scoped RPC.",
+      );
     case "shared":
       throw new Error(
         "[list-scope] applyListScope does not support 'shared' — there is " +
