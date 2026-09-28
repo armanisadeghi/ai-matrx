@@ -59,6 +59,7 @@ export function useMyClaims(userId: string | undefined) {
           "id, applicant_name, case_number, date_of_injury, occupational_code, " +
             "user_id, organization_id, project_id, visibility, tags, created_at, updated_at",
         )
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
       if (error) throw operationFailed("load your saved cases", error);
@@ -67,7 +68,10 @@ export function useMyClaims(userId: string | undefined) {
   });
 }
 
-/** Delete a saved WC claim (RLS gates: only the owner can DELETE). */
+/**
+ * Move a saved WC claim to Trash (soft delete; restorable from Trash). Its
+ * injuries stay attached to it, so a restore brings the whole case back.
+ */
 export function useDeleteClaim() {
   const qc = useQueryClient();
   return useMutation<void, Error, { userId: string; claimId: string }>({
@@ -76,13 +80,13 @@ export function useDeleteClaim() {
         supabase
           .schema(SCHEMA as never)
           .from(TABLE as never)
-          .delete()
+          .update({ deleted_at: new Date().toISOString() } as never)
           .eq("id", claimId)
           .select("id"),
-        { action: "delete", noun: "saved case" },
+        { action: "archive", noun: "saved case" },
       );
       if (error) {
-        throw error instanceof WriteDidNotLandError ? error : operationFailed("delete this saved case", error);
+        throw error instanceof WriteDidNotLandError ? error : operationFailed("move this saved case to Trash", error);
       }
     },
     onSuccess: (_, { userId }) => {

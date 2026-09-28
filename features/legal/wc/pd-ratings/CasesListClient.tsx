@@ -150,16 +150,15 @@ export function CasesListClient() {
         onOpenChange={(open) => {
           if (!open && !busy) setConfirmTarget(null);
         }}
-        title="Delete case"
+        title="Move case to Trash"
         description={
           <>
-            Permanently delete{" "}
-            <b>{confirmTarget?.applicant_name ?? "this case"}</b>? This removes
-            the claim and all of its injuries from the database. This cannot be
-            undone.
+            Move <b>{confirmTarget?.applicant_name ?? "this case"}</b> to Trash?
+            The case and its injuries leave your list. You can restore it from
+            Trash.
           </>
         }
-        confirmLabel="Delete case"
+        confirmLabel="Move to Trash"
         variant="destructive"
         busy={busy}
         onConfirm={async () => {
@@ -170,10 +169,10 @@ export function CasesListClient() {
               userId,
               claimId: confirmTarget.id,
             });
-            toast.success("Case deleted");
+            toast.success("Case moved to Trash");
             setConfirmTarget(null);
           } catch (err) {
-            toast.error("Couldn't delete case", {
+            toast.error("Couldn't move case to Trash", {
               description: err instanceof Error ? err.message : undefined,
             });
           } finally {
@@ -225,7 +224,7 @@ function CaseRow({
           variant="ghost"
           className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
           onClick={onDelete}
-          aria-label="Delete case"
+          aria-label="Move case to Trash"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
