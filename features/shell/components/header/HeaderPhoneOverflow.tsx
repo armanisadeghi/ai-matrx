@@ -56,7 +56,7 @@ import { InboxPanel } from "@/features/notifications/components/InboxPanel";
 import { useInboxCounts } from "@/features/notifications/useInbox";
 import { cn } from "@/lib/utils";
 import {
-  setPhonePageActionsHost,
+  pushPhonePageActionsHost,
   usePhonePageActions,
 } from "./phone-page-actions";
 
@@ -247,9 +247,9 @@ export function HeaderPhoneOverflow({
     node.setAttribute("data-header-page-actions-host", "");
     holder.appendChild(node);
     setHost(node);
-    setPhonePageActionsHost(node);
+    const release = pushPhonePageActionsHost(node);
     return () => {
-      setPhonePageActionsHost(null);
+      release();
       node.remove();
     };
   }, [holder]);

@@ -62,6 +62,7 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import type { ResourceType } from "@/utils/permissions/types";
 import { SurfaceAgentsHeaderButton } from "@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton";
 import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
+import { HeaderPhoneOverflow } from "@/features/shell/components/header/HeaderPhoneOverflow";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { ComposerModeSwitch } from "@/features/agents/components/inputs/smart-input/composer/ComposerModeSwitch";
 import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
@@ -499,8 +500,15 @@ export function ChatCanvasWorkspace({
             ) : null}
           </div>
 
-          <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
-          <InboxHeaderButton isAuthenticated={isAuthenticated} />
+          {/* On a phone Agents + Inbox (and the hosted page's own actions and
+              section nav) fold into ONE ⋮ — the shell's overflow, which takes
+              over the page-actions host while this header replaces the shell
+              header — so the page title gets the row (page-pass, 2026-09-27). */}
+          <div className="shell-header-secondary">
+            <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
+            <InboxHeaderButton isAuthenticated={isAuthenticated} />
+          </div>
+          <HeaderPhoneOverflow isAuthenticated={isAuthenticated} />
           {record?.commentToken ? (
             <EntityCommentPopover
               token={record.commentToken}

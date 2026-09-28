@@ -47,7 +47,7 @@ it("lists the record's actions directly in the shell sheet — no second 'More' 
   store.__resetPhonePageActionsForTest();
   const host = document.createElement("div");
   document.body.appendChild(host);
-  store.setPhonePageActionsHost(host);
+  store.pushPhonePageActionsHost(host);
   const el = document.createElement("div");
   document.body.appendChild(el);
   root = createRoot(el);

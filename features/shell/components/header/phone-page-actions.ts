@@ -39,10 +39,23 @@ function subscribe(listener: () => void) {
 
 const SERVER: State = { host: null, count: 0 };
 
-/** The shell's ⋮ publishes the node route actions portal into (null = no ⋮ mounted). */
-export function setPhonePageActionsHost(host: HTMLElement | null): void {
-  if (state.host === host) return;
+/**
+ * The ⋮ that is ON SCREEN owns the host. Two can be mounted — the shell's, and
+ * a canvas workspace's own header, which replaces the shell header on its
+ * routes — so hosts stack: the last one mounted wins, and removing it hands
+ * the host back to the one beneath.
+ */
+const hosts: HTMLElement[] = [];
+
+export function pushPhonePageActionsHost(host: HTMLElement): () => void {
+  hosts.push(host);
   emit({ ...state, host });
+  return () => {
+    const i = hosts.lastIndexOf(host);
+    if (i !== -1) hosts.splice(i, 1);
+    const top = hosts[hosts.length - 1] ?? null;
+    if (state.host !== top) emit({ ...state, host: top });
+  };
 }
 
 const counts = new Map<string, number>();
@@ -69,6 +82,7 @@ export function getPhonePageActionCountForTest(): number {
 /** Tests only. */
 export function __resetPhonePageActionsForTest(): void {
   state = { host: null, count: 0 };
+  hosts.length = 0;
   counts.clear();
   listeners.clear();
 }

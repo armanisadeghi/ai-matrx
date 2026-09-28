@@ -209,7 +209,13 @@ export default function RouteHeader({
   const primary = actions.length > 0 ? actions[actions.length - 1] : null;
   const primaryCanCompact = primary != null && iconOnlyLabel(primary.node) != null;
   const compact = compactPrimary && primaryCanCompact;
-  const hasCenter = Boolean(center);
+  const isPhone = useIsMobile();
+  const { host: phoneHost } = usePhonePageActions();
+  const yielded = useYieldedFallback(fallback);
+  // The section nav folds too (page-pass shared defects, 2026-09-27): on a
+  // phone the title gets the row and the nav is the first thing in the ⋮ sheet.
+  const centerToSheet = isPhone && !yielded && phoneHost != null && center != null;
+  const hasCenter = Boolean(center) && !centerToSheet;
 
   // Latest render's inputs for the (stable) observer callback.
   const liveRef = useRef({ actions, fold, compact });
@@ -321,15 +327,12 @@ export default function RouteHeader({
   // defects, 2026-09-27): one overflow button per phone header, and the title
   // gets the row. They are PORTALED into the ⋮ sheet's host node, so each
   // stays mounted in this page's tree. See `phone-page-actions.ts`.
-  const isPhone = useIsMobile();
-  const { host: phoneHost } = usePhonePageActions();
-  const yielded = useYieldedFallback(fallback);
   const toSheet = isPhone && !yielded && phoneHost != null && actions.length > 0;
   const owner = useId();
   useEffect(() => {
-    setPhonePageActionCount(owner, toSheet ? actions.length : 0);
+    setPhonePageActionCount(owner, (toSheet ? actions.length : 0) + (centerToSheet ? 1 : 0));
     return () => setPhonePageActionCount(owner, 0);
-  }, [owner, toSheet, actions.length]);
+  }, [owner, toSheet, centerToSheet, actions.length]);
 
   const overflowActions = toSheet ? [] : actions.slice(0, fold);
   const rowActions = toSheet ? [] : actions.slice(fold);
@@ -400,6 +403,18 @@ export default function RouteHeader({
           className="relative z-10 flex shrink-0 items-center justify-end"
         >
           {inert.map((a) => a.node)}
+          {centerToSheet && phoneHost
+            ? createPortal(
+                <div
+                  data-route-header-overflow-item
+                  data-route-header-phone-nav
+                  className="w-full min-w-0 px-1 pb-1"
+                >
+                  {center}
+                </div>,
+                phoneHost,
+              )
+            : null}
           {toSheet && phoneHost
             ? createPortal(
                 <div data-route-header-phone-actions className="flex flex-col gap-0.5">

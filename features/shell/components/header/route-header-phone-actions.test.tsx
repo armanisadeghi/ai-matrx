@@ -60,7 +60,7 @@ beforeEach(() => {
   store.__resetPhonePageActionsForTest();
   hostEl = document.createElement("div");
   document.body.appendChild(hostEl);
-  store.setPhonePageActionsHost(hostEl);
+  store.pushPhonePageActionsHost(hostEl);
 });
 afterEach(() => {
   act(() => root.unmount());
