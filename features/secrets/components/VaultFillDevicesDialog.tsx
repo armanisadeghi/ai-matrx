@@ -81,8 +81,9 @@ export function VaultFillDevicesDialog({
         <CredenzaBody className="space-y-3 pb-4">
           <p className="text-sm text-muted-foreground">
             Only the AI Matrx browser extension can fill a saved password, and
-            only in a browser listed here. Turning one off stops it at once; it
-            fills again only after you sign in to the extension there again.
+            only in a browser listed here. Turning one off stops it at once and
+            signs the extension out there; it fills again only after you sign
+            in there and confirm with your password or passkey.
           </p>
           {error && (
             <ErrorNotice
@@ -99,8 +100,8 @@ export function VaultFillDevicesDialog({
           )}
           {devices !== null && devices.length === 0 && (
             <p className="rounded-lg border border-border p-3 text-sm text-muted-foreground">
-              No browser has filled a saved password yet. The extension sets
-              itself up the first time it fills one.
+              No browser can fill saved passwords yet. Turn filling on from the
+              Vault tab of the AI Matrx extension in the browser you use.
             </p>
           )}
           {devices !== null && devices.length > 0 && (

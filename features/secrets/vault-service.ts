@@ -715,7 +715,25 @@ async function vaultFetch<T>(
           : "Your Matrx session was not accepted. Sign in again, then retry this Vault action.",
       );
     }
-    throw new Error(`Vault request failed (${resp.status})`);
+    // The server's own plain sentence (detail.user_message) when it sent one.
+    let userMessage: string | null = null;
+    try {
+      const body: unknown = await resp.json();
+      const detail =
+        body && typeof body === "object" && "detail" in body
+          ? (body as { detail: unknown }).detail
+          : null;
+      if (
+        detail &&
+        typeof detail === "object" &&
+        typeof (detail as { user_message?: unknown }).user_message === "string"
+      ) {
+        userMessage = (detail as { user_message: string }).user_message;
+      }
+    } catch {
+      // No readable body: the status line below is all there is.
+    }
+    throw new Error(userMessage ?? `Vault request failed (${resp.status})`);
   }
   if (resp.status === 204) return undefined as T;
   try {
@@ -1683,4 +1701,34 @@ export function revokeVaultFillDevice(deviceId: string): Promise<VaultFillDevice
     `/fill-devices/${encodeURIComponent(deviceId)}/revoke`,
     { method: "POST" },
   );
+}
+
+/** How this person can confirm it is them to turn filling on in a browser. */
+export interface VaultFillStepUpMethods {
+  password: boolean;
+  passkey: boolean;
+}
+
+export function getVaultFillStepUpMethods(): Promise<VaultFillStepUpMethods> {
+  return vaultFetch<VaultFillStepUpMethods>("/fill-devices/step-up-methods");
+}
+
+/** Approve ONE browser's key with the person's passkey (T-30c). The assertion
+ * is verified by the auth server; the approval is single-use and expires in
+ * minutes. The extension claims it the next time it turns filling on. */
+export function approveVaultFillDeviceWithPasskey(params: {
+  keyThumbprint: string;
+  label: string | null;
+  challengeId: string;
+  credential: Record<string, unknown>;
+}): Promise<{ approved: boolean; key_thumbprint: string; expires_at: string }> {
+  return vaultFetch("/fill-devices/approvals", {
+    method: "POST",
+    body: JSON.stringify({
+      key_thumbprint: params.keyThumbprint,
+      label: params.label,
+      challenge_id: params.challengeId,
+      credential: params.credential,
+    }),
+  });
 }

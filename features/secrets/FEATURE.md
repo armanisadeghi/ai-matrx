@@ -196,6 +196,21 @@ worked example.
 - Browser fill is off by default and cannot be enabled without a login URL.
   Matching is enforced SERVER-side on every call (`/api/vault/browser-login/*`)
   — the client never decides what may be filled.
+- **Which browsers may fill (access ladder T-30, T-30c).** Only an AI Matrx
+  extension install with its own registered key fills. Header **Browsers**
+  (`VaultFillDevicesDialog`) lists them and turns one off (revokes the key and
+  signs that extension out). Turning filling on needs a step-up: the person's
+  password typed in the extension, OR **passkey approval** at
+  `/vault/approve-browser?key=<thumbprint>&label=<browser>`
+  (`ApproveBrowserWorkspace` + `passkey-approval.ts`), which the extension
+  opens. The page runs one ceremony against the auth server's own passkeys
+  (`supabase.auth.passkey.startAuthentication` + `navigator.credentials.get`,
+  never `signInWithPasskey`, so no new sign-in) and posts the assertion to
+  `POST /api/vault/fill-devices/approvals`; aidream verifies it with the auth
+  server. A person with no passkey is told so and can add one there
+  (`registerPasskey`). Passkeys belong to `aimatrx.com`; off that domain
+  (localhost) the page says so and links there. Server mechanics:
+  `aidream/aidream/services/user_secrets/FEATURE.md` (fill path).
 
 ## Shared UI contract (2026-07-28)
 
@@ -396,6 +411,8 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- `2026-09-28` — Passkey approval for turning on filling in a browser (`/vault/approve-browser`), the equal alternative to the password; Browsers dialog copy says what re-enabling takes; vault calls surface the server's own refusal sentence instead of "Vault request failed (N)".
 
 - `2026-09-25` — Added Firefox, RoboForm, Dashlane, and Apple Passwords ordinary-login CSV choices to selected-login preview and download; external destination ingestion remains unverified.
 
