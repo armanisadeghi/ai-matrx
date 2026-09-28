@@ -19,6 +19,7 @@ import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer"
 import { bulkWrite, createTable } from "./service";
 import { isBulkOpError, isServiceFailure, type BulkOp } from "./types";
 import { resolveUniqueDatasetName } from "./resolve-unique-dataset-name";
+import { inferDataType } from "@/utils/user-table-utls/type-inference";
 
 export interface CreateDatasetFromTableArgs {
   /** Display name for the new dataset (e.g. the artifact / conversation title). */
@@ -63,7 +64,7 @@ export async function createDatasetFromTable(
     return {
       field_name: fieldName,
       display_name: header || `Column ${index + 1}`,
-      data_type: "string",
+      data_type: columnTypeOf(rows.map((row) => row[header])),
       field_order: index + 1,
       is_required: index === 0,
     };
@@ -114,4 +115,30 @@ export async function createDatasetFromTable(
     (r) => !isBulkOpError(r),
   ).length;
   return { success: true, tableId, inserted };
+}
+
+/**
+ * A COLUMN IS TYPED BY WHAT EVERY ONE OF ITS VALUES IS (lane HANDOVER, 2026-09-28).
+ *
+ * A table saved from a chat answer came out all text: Cedar Ridge Physical Therapy's "Sets" (3, 3, 2)
+ * could not be summed, charted or sorted as a number. A column is a number, a yes/no or a date only
+ * when EVERY value in it reads as one (integers and decimals together are a number); one value that
+ * does not ("10-15" among the Reps) keeps the whole column text, because a guess that loses a
+ * person's words is worse than a text column. Blanks say nothing either way. The one reader of a
+ * value's type is `inferDataType` (the CSV and JSON imports use it too).
+ */
+export function columnTypeOf(values: ReadonlyArray<unknown>): string {
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (value === null || value === undefined || String(value).trim() === "") continue;
+    seen.add(inferDataType(value));
+  }
+  if (seen.size === 0) return "string";
+  if ([...seen].every((t) => t === "integer")) return "integer";
+  if ([...seen].every((t) => t === "integer" || t === "number")) return "number";
+  if (seen.size === 1) {
+    const only = [...seen][0]!;
+    if (only === "boolean" || only === "date" || only === "datetime") return only;
+  }
+  return "string";
 }

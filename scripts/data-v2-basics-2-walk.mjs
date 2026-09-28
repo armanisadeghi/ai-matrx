@@ -656,6 +656,17 @@ try {
       if (Object.values(removed).some((v) => v !== true)) friction(`a column this run added did not go: ${JSON.stringify(removed)}`);
     }
   }
+  if (PHASE === "menu-dom") {
+    await open(T.supplies, "?view=sheet");
+    await page.locator("tbody tr").first().locator("td").nth(1).click({ button: "right" });
+    await sleep(900);
+    await page.locator("[role=menu] [role^=menuitem]").filter({ hasText: /^Row · / }).first().hover();
+    await sleep(1200);
+    const html = await page.evaluate(() => { const m = [...document.querySelectorAll("[role=menu]")]; return m[m.length - 1]?.outerHTML.replace(/class="[^"]*"/g, "").slice(0, 3000); });
+    step("submenu dom", { html });
+    await page.keyboard.press("Escape");
+  }
+
   if (PHASE === "tidy") {
     // Columns earlier walks added and left on the test table, removed the way a person removes them.
     await open(T.supplies, "?view=sheet");
