@@ -137,6 +137,7 @@ export const toolUiComponentsAdapter: LibrarySourceAdapter = {
     const { data, error } = await supabase
       .schema("tool").from("ui")
       .select(LIST_COLUMNS)
+      .is("deleted_at", null)
       .eq("is_active", true)
       .order("display_name", { ascending: true })
       .limit(300);

@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .schema("tool").from("ui")
       .select("*")
+      .is("deleted_at", null)
       .order("tool_name", { ascending: true });
 
     if (toolName) {
@@ -123,11 +124,42 @@ export async function POST(request: NextRequest) {
       contract_version: body.contract_version === 1 ? 1 : 2,
     };
 
-    const { data, error } = await supabase
+    // (tool_name, surface_name) is unique across live AND archived rows
+    // (tool_ui_tool_name_surface_name_key). A component in Trash for the same
+    // tool and surface is revived with the new content; a live one is refused.
+    const { data: sameKey, error: sameKeyError } = await supabase
       .schema("tool").from("ui")
-      .insert([componentData])
-      .select()
-      .single();
+      .select("id, deleted_at")
+      .eq("tool_name", componentData.tool_name)
+      .eq("surface_name", componentData.surface_name)
+      .maybeSingle();
+    if (sameKeyError) {
+      return NextResponse.json(
+        { error: "Failed to create component", details: sameKeyError.message },
+        { status: 500 },
+      );
+    }
+    if (sameKey && sameKey.deleted_at === null) {
+      return NextResponse.json(
+        {
+          error: `A component for "${componentData.tool_name}" on ${componentData.surface_name} already exists. Open it to edit instead.`,
+        },
+        { status: 409 },
+      );
+    }
+
+    const { data, error } = sameKey
+      ? await supabase
+          .schema("tool").from("ui")
+          .update({ ...componentData, deleted_at: null })
+          .eq("id", sameKey.id)
+          .select()
+          .single()
+      : await supabase
+          .schema("tool").from("ui")
+          .insert([componentData])
+          .select()
+          .single();
 
     if (error) {
       return NextResponse.json(

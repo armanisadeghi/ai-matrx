@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         const { data, error } = await supabase
             .schema("tool").from("ui")
             .select("*")
+            .is("deleted_at", null)
             .eq("tool_name", toolName)
             .eq("is_active", true)
             .single();

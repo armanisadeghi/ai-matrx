@@ -31,6 +31,7 @@ export async function fetchToolRendererRow(
     .select(
       "inline_code, allowed_imports, display_name, results_label, header_subtitle_code, keep_expanded_on_stream",
     )
+    .is("deleted_at", null)
     .eq("tool_name", toolName)
     .eq("surface_name", WEB_TOOL_UI_SURFACE)
     .eq("is_active", true)

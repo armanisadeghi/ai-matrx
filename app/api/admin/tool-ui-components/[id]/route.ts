@@ -140,20 +140,23 @@ export async function DELETE(
     const { id } = await params;
     const supabase = createAdminClient();
 
+    // Delete means archive (Arman, 2026-09-27): the component moves to Trash
+    // and stays restorable; its versions and incidents are kept.
     const { error } = await supabase
       .schema("tool")
       .from("ui")
-      .delete()
-      .eq("id", id);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null);
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to delete component", details: error.message },
+        { error: "Failed to move component to Trash", details: error.message },
         { status: 500 },
       );
     }
 
-    return NextResponse.json({ message: "Component deleted successfully" });
+    return NextResponse.json({ message: "Component moved to Trash" });
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;

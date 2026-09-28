@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .schema("tool").from("ui_incident")
       .select("*", { count: "exact" })
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 

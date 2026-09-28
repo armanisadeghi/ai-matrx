@@ -260,6 +260,7 @@ export function McpToolsManager() {
           .schema("tool")
           .from("ui")
           .select("tool_name")
+          .is("deleted_at", null)
           .in("tool_name", toolNames),
       ]);
 

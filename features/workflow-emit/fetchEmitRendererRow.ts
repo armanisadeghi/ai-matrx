@@ -27,6 +27,7 @@ export async function fetchEmitRendererRow(
   const { data, error } = await supabase
     .schema("tool").from("ui")
     .select("inline_code, allowed_imports")
+    .is("deleted_at", null)
     .eq("tool_name", componentRef)
     .eq("surface_name", WORKFLOW_EMIT_SURFACE)
     .eq("is_active", true)

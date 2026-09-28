@@ -87,20 +87,22 @@ export async function DELETE(
     const { id } = await params;
     const supabase = createAdminClient();
 
+    // Delete means archive (Arman, 2026-09-27): the incident moves to Trash.
     const { error } = await supabase
       .schema("tool")
       .from("ui_incident")
-      .delete()
-      .eq("id", id);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null);
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to delete incident", details: error.message },
+        { error: "Failed to move incident to Trash", details: error.message },
         { status: 500 },
       );
     }
 
-    return NextResponse.json({ message: "Incident deleted" });
+    return NextResponse.json({ message: "Incident moved to Trash" });
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;

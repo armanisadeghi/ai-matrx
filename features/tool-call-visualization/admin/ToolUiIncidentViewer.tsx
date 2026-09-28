@@ -125,12 +125,12 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed");
-      toast({ title: "Success", description: "Incident deleted" });
+      toast({ title: "Success", description: "Incident moved to Trash" });
       fetchIncidents();
     } catch {
       toast({
         title: "Error",
-        description: "Failed to delete incident",
+        description: "Failed to move incident to Trash",
         variant: "destructive",
       });
     }
@@ -384,7 +384,7 @@ function IncidentCard({
                 onClick={onDelete}
               >
                 <Trash2 className="w-3 h-3 mr-1" />
-                Delete
+                Move to Trash
               </Button>
             </div>
           </div>

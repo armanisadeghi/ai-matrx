@@ -481,6 +481,7 @@ export async function getSurfaceUsage(
       .schema("tool")
       .from("ui")
       .select("id, tool_name, display_name, is_active")
+      .is("deleted_at", null)
       .eq("surface_name", surfaceName)
       .order("tool_name", { ascending: true }),
     // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
