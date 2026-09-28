@@ -132,9 +132,21 @@ export function SourceInput({
   }, [set.totalChars, threshold]);
 
   const refuseOverMax = (): boolean => {
-    if (!atMax) return false;
+    // Read the store, not this render: two quick clicks must not both pass.
+    if (max === undefined || set.liveCount() < max) return false;
     toast.info(`This takes at most ${max} ${max === 1 ? "source" : "sources"}. Remove one to add another.`);
     return true;
+  };
+
+  /** Keep only as many files as there is room for, and say what was left out. */
+  const fitFiles = (files: File[]): File[] => {
+    if (max === undefined) return files;
+    const room = Math.max(0, max - set.liveCount());
+    if (files.length > room)
+      toast.info(
+        `This takes at most ${max} ${max === 1 ? "source" : "sources"}, so only ${room} of the ${files.length} files were added.`,
+      );
+    return files.slice(0, room);
   };
 
   const onPicked = (resource: Resource, kind: SourceKindId) => {
@@ -218,6 +230,7 @@ export function SourceInput({
               set={set}
               intake={intake}
               refuseOverMax={refuseOverMax}
+              fitFiles={fitFiles}
               onSearchEverything={() => setSearchEverything(true)}
             />
           )}
@@ -323,12 +336,14 @@ function TileArea({
   set,
   intake,
   refuseOverMax,
+  fitFiles,
   onSearchEverything,
 }: {
   tile: SourceKindDef;
   set: ReturnType<typeof useSourceSet>;
   intake: ReturnType<typeof useSourceIntake>;
   refuseOverMax: () => boolean;
+  fitFiles: (files: File[]) => File[];
   onSearchEverything: () => void;
 }) {
   const [text, setText] = useState("");
@@ -453,8 +468,8 @@ function TileArea({
           onDrop={(e) => {
             e.preventDefault();
             setDragging(false);
-            const files = Array.from(e.dataTransfer.files);
-            if (!files.length || refuseOverMax()) return;
+            const files = fitFiles(Array.from(e.dataTransfer.files));
+            if (!files.length) return;
             if (tile.control === "audio") files.forEach((f) => void intake.addRecording(f));
             else void intake.addFiles(files, tile.id);
           }}
@@ -486,9 +501,10 @@ function TileArea({
             multiple={tile.control !== "audio"}
             accept={tile.accept}
             onChange={(e) => {
-              const files = Array.from(e.target.files ?? []);
+              const chosen = Array.from(e.target.files ?? []);
               e.target.value = "";
-              if (!files.length || refuseOverMax()) return;
+              const files = fitFiles(chosen);
+              if (!files.length) return;
               if (tile.control === "audio") files.forEach((f) => void intake.addRecording(f));
               else void intake.addFiles(files, tile.id);
             }}

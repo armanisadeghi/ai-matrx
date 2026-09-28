@@ -123,6 +123,8 @@ export interface UseSourceSetResult {
   /** Change the pointer's choices (form, parts, cap, delivery). */
   updateRef: (id: string, options: SourceRefOptions) => void;
   setWaitForClean: (id: string, wait: boolean) => void;
+  /** How many Sources are picked RIGHT NOW (read from the store, never a stale render). */
+  liveCount: () => number;
   /** True when this pointer is already picked (the "Your sources" list ticks it). */
   hasRef: (resourceType: string, resourceId: string) => boolean;
   /** The frozen v1 payload, built from the ready Sources. */
@@ -347,6 +349,11 @@ export function useSourceSet(
     persist({ topic });
   };
 
+  const liveCount = () =>
+    Object.values(store.getState().instanceResources.byConversationId[key] ?? {}).filter(
+      (r) => r.blockType === "source_ref",
+    ).length;
+
   const hasRef = (resourceType: string, resourceId: string) =>
     sources.some(
       (s) =>
@@ -467,6 +474,7 @@ export function useSourceSet(
     remove,
     updateRef,
     setWaitForClean,
+    liveCount,
     hasRef,
     toSourceSet,
     applySourceSet,

@@ -124,7 +124,7 @@ export function YourSources({
             aria-checked={stage === f.id}
             onClick={() => setStage(f.id)}
             className={cn(
-              "min-h-9 rounded-full border px-3 text-xs transition-colors matrx-touch-targets",
+              "min-h-11 rounded-full border px-3 text-xs transition-colors sm:min-h-9",
               stage === f.id
                 ? "border-primary/60 bg-primary/10 text-foreground"
                 : "border-border text-muted-foreground hover:bg-accent/50",
