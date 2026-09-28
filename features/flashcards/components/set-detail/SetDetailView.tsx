@@ -37,6 +37,7 @@ import {
   Headphones,
   Merge,
   MousePointerClick,
+  HelpCircle,
   Printer,
   Images,
   Loader2,
@@ -88,7 +89,11 @@ import {
   type DeckExportFormat,
 } from "../../utils/exportDeck";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
-import { AudioOverviewSection } from "./AudioOverviewSection";
+import {
+  AudioOverviewSection,
+  deckAudioCoverage,
+  type DeckAudioRunSignals,
+} from "./AudioOverviewSection";
 import { EnhanceSetDialog } from "./EnhanceSetDialog";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
 // BUNDLE-LEAK GUARD (F9): these two float as draggable WindowPanels, and a
@@ -417,6 +422,17 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [cardSearch, setCardSearch] = useState("");
   // WP3 gap 5 — card merge selection.
   const [selecting, setSelecting] = useState(false);
+  // The Deck tools menu starts the audio jobs; the section on the page runs
+  // them and shows their progress (page-pass 2026-09-27).
+  const [audioRun, setAudioRun] = useState<DeckAudioRunSignals>({
+    generate: 0,
+    spoken_front: 0,
+    helper: 0,
+  });
+  const startAudioJob = (job: keyof DeckAudioRunSignals) => {
+    setDeckToolsOpen(false);
+    setAudioRun((prev) => ({ ...prev, [job]: prev[job] + 1 }));
+  };
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mergeOpen, setMergeOpen] = useState(false);
   const [lineageKey, setLineageKey] = useState(0);
@@ -1116,9 +1132,12 @@ export function SetDetailView({ setId }: { setId: string }) {
               </div>
             )}
 
-            {/* Audio overview (Phase 7 — podcast-from-deck) */}
-            <div className="mt-4">
+            {/* Audio overview (Phase 7 — podcast-from-deck): the player and any
+                running audio job. Its buttons live in Deck tools. */}
+            <div className="mt-4 empty:hidden">
               <AudioOverviewSection
+                statusOnly
+                runSignals={audioRun}
                 setId={setId}
                 set={data.set}
                 cards={data.cards}
@@ -1156,7 +1175,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                       cards who wants 10 enriched picks them here. Selection
                       stays opt-in so a normal visit is unchanged, and the bar
                       states exactly what each action will do. */}
-                  {canEdit && (
+                  {canEdit && selecting && (
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       {selecting ? (
                         <>
@@ -1204,17 +1223,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                             Cancel
                           </Button>
                         </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelecting(true)}
-                          disabled={data.cards.length === 0}
-                        >
-                          <MousePointerClick className="mr-1.5 h-3.5 w-3.5" />
-                          Select cards
-                        </Button>
-                      )}
+                      ) : null}
                     </div>
                   )}
                   {filteredCards.length === 0 ? (
@@ -1439,6 +1448,69 @@ export function SetDetailView({ setId }: { setId: string }) {
                       )}
                     </div>
                   </section>
+
+                  {data.cards.length > 0 && (
+                    <section className="space-y-2">
+                      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Audio
+                      </h2>
+                      <div className="grid gap-2">
+                        <Button
+                          variant="outline"
+                          className="h-11 justify-start"
+                          onClick={() => startAudioJob("generate")}
+                        >
+                          <Volume2 className="mr-2 h-4 w-4" />
+                          {data.set.audio_overview_file_id
+                            ? "Regenerate audio overview"
+                            : "Generate audio overview"}
+                        </Button>
+                        {(
+                          [
+                            ["spoken_front", "card audio", Mic],
+                            ["helper", "instant help", HelpCircle],
+                          ] as const
+                        ).map(([lane, noun, Icon]) => {
+                          const { ready, total } = deckAudioCoverage(data.cards, lane);
+                          const done = ready >= total;
+                          return (
+                            <Button
+                              key={lane}
+                              variant="outline"
+                              className="h-11 justify-start"
+                              disabled={done}
+                              onClick={() => startAudioJob(lane)}
+                            >
+                              <Icon className="mr-2 h-4 w-4" />
+                              {done
+                                ? `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ready`
+                                : ready > 0
+                                  ? `Prepare ${noun} (${ready}/${total} done)`
+                                  : `Prepare ${noun}`}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+                  {canEdit && data.cards.length > 0 && (
+                    <section className="space-y-2">
+                      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Cards
+                      </h2>
+                      <Button
+                        variant="outline"
+                        className="h-11 w-full justify-start"
+                        onClick={() => {
+                          setDeckToolsOpen(false);
+                          setSelecting(true);
+                        }}
+                      >
+                        <MousePointerClick className="mr-2 h-4 w-4" />
+                        Select cards to enrich or merge
+                      </Button>
+                    </section>
+                  )}
 
                   <section className="space-y-2">
                     <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

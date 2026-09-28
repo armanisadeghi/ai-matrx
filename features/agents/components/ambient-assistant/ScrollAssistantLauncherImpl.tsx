@@ -18,6 +18,7 @@ import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { cn } from "@/lib/utils";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 export interface ScrollAssistantLauncherImplProps {
   inputVariant?: "single-line" | "multiline";
@@ -65,10 +66,11 @@ function GuestAmbientAssistant({
 
 function AuthenticatedAmbientAssistant({
   inputVariant = "single-line",
-}: ScrollAssistantLauncherImplProps) {
+  onRetry,
+}: ScrollAssistantLauncherImplProps & { onRetry: () => void }) {
   const pathname = usePathname();
   const runtime = useSurfaceRuntime();
-  const { mandate, loading, error } = useMandateChain(
+  const { mandate, loading, error, organizationPending } = useMandateChain(
     ambientAssistantMandateChain(pathname),
   );
   const [dismissed, setDismissed] = useState(false);
@@ -145,16 +147,35 @@ function AuthenticatedAmbientAssistant({
                 : "h-9 rounded-xl",
             )}
           />
+        ) : organizationPending ? (
+          // Never a dead pill (page-pass 2026-09-27): no organization yet is
+          // a wait with a remedy, in place.
+          <OrganizationRequiredNotice
+            compact
+            what="The page assistant"
+            description="Pick the organization you are working in and it is ready."
+            className="rounded-xl border border-border bg-card shadow-sm"
+          />
         ) : error || !mandate ? (
           <div
+            role="alert"
             className={cn(
-              "flex items-center rounded-xl bg-card/80 px-3 text-xs text-muted-foreground shadow-sm backdrop-blur-md",
-              inputVariant === "multiline" ? "h-[72px]" : "h-9",
+              "flex items-center gap-2 rounded-xl bg-card/90 py-1 pl-3 pr-1 text-xs text-muted-foreground shadow-sm backdrop-blur-md",
+              inputVariant === "multiline" ? "min-h-[72px]" : "min-h-9",
             )}
           >
             <span className="min-w-0 flex-1 truncate">
-              Assistant unavailable
+              The page assistant didn&apos;t load{error ? ` — ${error}` : "."}
             </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 shrink-0"
+              onClick={onRetry}
+            >
+              Try again
+            </Button>
           </div>
         ) : !conversationId ? (
           <div
@@ -202,10 +223,17 @@ export default function ScrollAssistantLauncherImpl(
 ) {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [dismissed, setDismissed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   if (dismissed) return null;
   if (!isAuthenticated) {
     return <GuestAmbientAssistant onDismiss={() => setDismissed(true)} />;
   }
-  return <AuthenticatedAmbientAssistant {...props} />;
+  return (
+    <AuthenticatedAmbientAssistant
+      key={attempt}
+      {...props}
+      onRetry={() => setAttempt((n) => n + 1)}
+    />
+  );
 }
