@@ -408,25 +408,32 @@ function ProcessingLine({
   const started = useRef(Date.now());
   const cleanDone = stages.status?.stages.find((s) => s.stage === "clean_text")?.state === "done";
   const jobDone = job?.status === "succeeded";
-  const fired = useRef(false);
+  const remeasures = useRef(0);
 
   useEffect(() => {
     if (entry.state !== "processing") return undefined;
     if (cleanDone || jobDone) {
-      // Once: the host re-measures, and the card follows the new manifest.
-      if (!fired.current) {
-        fired.current = true;
-        onSettled();
-      }
-      return undefined;
+      // The reading finished: re-measure so the card follows the server. The
+      // server's own state can trail the stage table by a few seconds, so ask
+      // up to three times, spaced out — never a tight loop.
+      if (remeasures.current >= 3) return undefined;
+      const t = setTimeout(
+        () => {
+          remeasures.current += 1;
+          onSettled();
+        },
+        remeasures.current === 0 ? 0 : 4000,
+      );
+      return () => clearTimeout(t);
     }
     if (!pdId) return undefined;
     const delay = factsPollDelayMs(true, Date.now() - started.current);
     if (delay === null) return undefined;
     const t = setTimeout(stages.reload, delay);
     return () => clearTimeout(t);
-    // stages.status changes after every re-read, which schedules the next one.
-  }, [entry.state, cleanDone, jobDone, pdId, stages.status, stages.reload, onSettled]);
+    // stages.status changes after every re-read, which schedules the next one;
+    // the manifest entry changes after every re-measure.
+  }, [entry, cleanDone, jobDone, pdId, stages.status, stages.reload, onSettled]);
 
   if (entry.state === "processing") {
     const progress = job?.frame?.message ?? (stages.status

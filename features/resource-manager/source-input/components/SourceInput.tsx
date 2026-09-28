@@ -212,6 +212,7 @@ export function SourceInput({
             </div>
           ) : (
             <TileArea
+              key={activeDef.id}
               tile={activeDef}
               set={set}
               intake={intake}

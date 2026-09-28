@@ -94,7 +94,6 @@ export function useSourceIntake(
   const { scrapeUrl } = useScraperApi();
   const { uploadMany } = useFileUpload();
   const attachTo = attachTargets(options.attachTo);
-  const keep = attachTo.length > 0;
 
   const needUser = (): string => {
     if (!userId)
@@ -113,7 +112,7 @@ export function useSourceIntake(
   const addPastedText = async (text: string, name?: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    const id = set.addPending({ kind: "paste", label: name?.trim() || "Pasted text", origin: "Pasted text" });
+    const id = set.addPending({ kind: "paste", label: name?.trim() || "Pasted text" });
     try {
       const organizationId = await ensureOrgId(activeOrgId);
       const body = await buildPastedTextLanding({
@@ -156,12 +155,16 @@ export function useSourceIntake(
         return;
       }
       const notes = landedNotes(result.sourceNotices);
-      if (keep) {
+      // A Source picked for real work is kept (A3): its clean → segment →
+      // embed is queued, and it is filed against the thing being made.
+      {
         try {
           await keepSource(result.processedDocumentId, { attachTo, organizationId });
         } catch (err) {
           notes.push(
-            `It is in your Sources, but it could not be filed with what you are making: ${addFailureSentence(err)}`,
+            `It is in your Sources, but it could not be kept for reuse${
+              attachTo.length ? " or filed with what you are making" : ""
+            }: ${addFailureSentence(err)}`,
           );
         }
       }
