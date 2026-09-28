@@ -10,7 +10,7 @@ import type { TargetKind } from "@/features/education/convert/types";
 import type { LibraryRowStats } from "@/features/education/library/types";
 import { createEducationKitsScope } from "@/features/surfaces/manifests/education-kits.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import { kitArtifactKey, type KitArtifactStats, type StudyKit } from "./kitService";
+import { kitArtifactKey, kitMembershipFingerprint, type KitArtifactStats, type StudyKit } from "./kitService";
 
 export interface StudyStage {
   number: string;
@@ -125,6 +125,7 @@ export function buildKitDetailScope(input: {
   return createEducationKitsScope({
     ...base,
     kit_title: kit.title,
+    kit_membership_fingerprint: kitMembershipFingerprint(kit),
     kit_created_at: kit.createdAt,
     study_aids: ordered.map((artifact) => {
       const s = statsReady ? stats[kitArtifactKey(artifact)] : undefined;
@@ -165,4 +166,3 @@ export function buildKitDetailScope(input: {
       : {}),
   });
 }
-

@@ -128,7 +128,8 @@ export function KitsHome() {
             kits: kits.map((kit) => ({
               source_id: kit.sourceId,
               source_type: kit.sourceType,
-              title: kit.title,
+            title: kit.title,
+            membership_fingerprint: kit.artifacts.map((artifact) => `${artifact.edgeId}:${artifact.createdAt}`).sort().join("|"),
               href: kitHref(kit.sourceType, kit.sourceId),
               artifact_count: kit.artifacts.length,
               formats: [
@@ -144,13 +145,13 @@ export function KitsHome() {
     plural: "kits", singular: "kit",
     update: {
       parse: (value) => parseKitUpdates(value, kits),
-      run: async (plan) => { await renameKit(plan.kit, plan.title); await reload(); return { id: plan.kit.sourceId, name: plan.title }; },
+      run: async (plan) => { await renameKit(plan.kit, plan.title, plan.fingerprint); await reload(); return { id: plan.kit.sourceId, name: plan.title }; },
       nameOf: (plan) => plan.title, changedOf: () => ["title"],
     },
     delete: {
       parse: (value) => parseKitDeletes(value, kits),
-      run: async (kit) => { await deleteKit(kit); await reload(); return { id: kit.sourceId, name: kit.title }; },
-      nameOf: (kit) => kit.title,
+      run: async (plan) => { await deleteKit(plan.kit, plan.fingerprint); await reload(); return { id: plan.kit.sourceId, name: plan.kit.title }; },
+      nameOf: (plan) => plan.kit.title,
     },
   }, refuseSurfaceWrite);
 

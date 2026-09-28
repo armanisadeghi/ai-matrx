@@ -71,6 +71,20 @@ export function kitArtifactKey(
   return `${artifact.artifactType}:${artifact.artifactId}`;
 }
 
+/** A deterministic concurrency token for the association-backed kit membership. */
+export function kitMembershipFingerprint(kit: Pick<StudyKit, "artifacts">): string {
+  return kit.artifacts
+    .map((artifact) => `${artifact.edgeId}:${artifact.createdAt}`)
+    .sort()
+    .join("|");
+}
+
+export function requireFreshKitMembership(kit: StudyKit, expectedFingerprint: string): void {
+  if (kitMembershipFingerprint(kit) !== expectedFingerprint) {
+    throw new Error("This kit changed since it was reviewed. Reload it before making changes.");
+  }
+}
+
 /**
  * Read the SAME per-artifact facts the canonical Education Library shows.
  *
@@ -429,9 +443,20 @@ function writableTitle(value: string): string {
  * A kit name belongs to its membership edges. Re-saving the same canonical
  * edge updates its display metadata without touching either endpoint.
  */
-export async function renameKit(kit: StudyKit, title: string): Promise<void> {
+async function currentKitOrThrow(kit: StudyKit, expectedFingerprint: string): Promise<StudyKit> {
+  const current = await readKit(kit.sourceType, kit.sourceId);
+  if (!current) {
+    throw new Error("This kit changed since it was reviewed. Reload it before making changes.");
+  }
+  requireFreshKitMembership(current, expectedFingerprint);
+  return current;
+}
+
+export async function renameKit(kit: StudyKit, title: string, expectedFingerprint = kitMembershipFingerprint(kit)): Promise<void> {
   const sourceTitle = writableTitle(title);
-  for (const artifact of kit.artifacts) {
+  const current = await currentKitOrThrow(kit, expectedFingerprint);
+  let completed = 0;
+  for (const artifact of current.artifacts) {
     const result = await associationsService.add({
       sourceType: artifact.artifactType,
       sourceId: artifact.artifactId,
@@ -446,7 +471,8 @@ export async function renameKit(kit: StudyKit, title: string): Promise<void> {
         sourceTitle,
       },
     });
-    if (!result.ok) throw new Error("Could not rename this study kit.");
+    if (!result.ok) throw new Error(`Renamed ${completed} of ${current.artifacts.length} study aids. The remaining aids were not changed; reload the kit and try again.`);
+    completed += 1;
   }
 }
 
@@ -469,6 +495,15 @@ export async function removeKitMember(
  * Delete this association-backed kit by removing all of its membership edges.
  * The source material and every saved study aid remain intact.
  */
-export async function deleteKit(kit: StudyKit): Promise<void> {
-  for (const artifact of kit.artifacts) await removeKitMember(kit, artifact);
+export async function deleteKit(kit: StudyKit, expectedFingerprint = kitMembershipFingerprint(kit)): Promise<void> {
+  const current = await currentKitOrThrow(kit, expectedFingerprint);
+  let completed = 0;
+  for (const artifact of current.artifacts) {
+    try {
+      await removeKitMember(current, artifact);
+      completed += 1;
+    } catch {
+      throw new Error(`Removed ${completed} of ${current.artifacts.length} study aids from this kit. The remaining aids still belong to it; reload the kit and try again.`);
+    }
+  }
 }

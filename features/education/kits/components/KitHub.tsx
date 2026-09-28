@@ -43,6 +43,7 @@ import {
 } from "@/features/scopes/registry/entityRegistry";
 import {
   kitArtifactKey,
+  kitMembershipFingerprint,
   deleteKit,
   readKit,
   readKitArtifactStats,
@@ -292,7 +293,7 @@ export function KitHub({
       update: {
         parse: (value) => parseKitUpdates(value, [kit]),
         run: async (plan) => {
-          await renameKit(plan.kit, plan.title);
+          await renameKit(plan.kit, plan.title, plan.fingerprint);
           setRefreshKey((key) => key + 1);
           return { id: plan.kit.sourceId, name: plan.title };
         },
@@ -302,9 +303,9 @@ export function KitHub({
       delete: {
         parse: (value) => parseKitDeletes(value, [kit]),
         run: async (plan) => {
-          await deleteKit(plan);
+          await deleteKit(plan.kit, plan.fingerprint);
           router.push("/education/kits");
-          return { id: plan.sourceId, name: plan.title };
+          return { id: plan.kit.sourceId, name: plan.kit.title };
         },
         nameOf: (plan) => plan.title,
       },

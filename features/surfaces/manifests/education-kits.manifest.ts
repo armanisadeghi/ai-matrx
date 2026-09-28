@@ -180,6 +180,12 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "open_kit",
   },
   {
+    name: "kit_membership_fingerprint",
+    label: "Kit membership revision",
+    description: "Token for the open kit's current membership edges. Send it as expected_membership_fingerprint for update_kits or delete_kits; stale membership is refused before any write.",
+    valueType: "string", alwaysAvailable: false, typicalCharCount: 220, sortOrder: 345, group: "open_kit",
+  },
+  {
     name: "study_aids",
     label: "Study aids",
     description:
@@ -228,12 +234,12 @@ const surfaceSpecific: SurfaceValue[] = [
 const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "update_kits", label: "Rename study kits",
-    description: "Renames existing kits. Value is an ARRAY of { source_type: string, source_id: string, title: string }. Identity must be from kits or the open kit. This updates only the grouping title on its membership edges; source material and study aids are unchanged. The person approves before saving.",
+    description: "Renames existing kits. Value is an ARRAY of { source_type: string, source_id: string, expected_membership_fingerprint: string, title: string }. Identity and fingerprint must be current. Stale membership is refused before any edge changes. The person approves before saving.",
     valueType: "array", updatesValue: "kits", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 100,
   },
   {
     name: "delete_kits", label: "Delete study kits",
-    description: "Deletes kit groupings. Value is an ARRAY of { source_type: string, source_id: string } from kits or the open kit. It removes only generated-artifact membership edges. The source material and every study aid remain saved and openable. The person approves every request.",
+    description: "Deletes kit groupings. Value is an ARRAY of { source_type: string, source_id: string, expected_membership_fingerprint: string }. Stale membership is refused before any edge changes. It removes only generated-artifact membership edges. The source material and every study aid remain saved and openable. The person approves every request.",
     valueType: "array", updatesValue: "kits", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 110,
   },
 ];
@@ -268,6 +274,7 @@ export interface KitListEntry {
   source_id: string;
   source_type: string;
   title: string;
+  membership_fingerprint: string;
   href: string;
   artifact_count: number;
   formats: string[];
@@ -305,6 +312,7 @@ export function createEducationKitsScope(values: {
   kit_source_id?: string;
   kit_source_type?: string;
   kit_title?: string;
+  kit_membership_fingerprint?: string;
   kit_created_at?: string;
   study_aids?: KitStudyAidEntry[];
   kit_totals?: {

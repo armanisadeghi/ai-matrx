@@ -27,17 +27,21 @@ function kitFor(raw: Record<string, unknown>, at: string, kits: readonly StudyKi
   return kit;
 }
 
+function fingerprint(raw: Record<string, unknown>, at: string): string {
+  return text(raw.expected_membership_fingerprint, `${at}.expected_membership_fingerprint`);
+}
+
 export function parseKitUpdates(value: unknown, kits: readonly StudyKit[]) {
   const target = "update_kits";
   return collectProblems(target, readCollectionList(target, "kits", value, MAX_KITS_PER_WRITE), (item, index) => {
     const raw = record(item, `${target}[${index}]`);
-    return { kit: kitFor(raw, `${target}[${index}]`, kits), title: text(raw.title, `${target}[${index}].title`) };
+    return { kit: kitFor(raw, `${target}[${index}]`, kits), fingerprint: fingerprint(raw, `${target}[${index}]`), title: text(raw.title, `${target}[${index}].title`) };
   }, { listChecks: (items) => [repeatsProblem(target, items.map((item) => item.value ? `${item.value.kit.sourceType}:${item.value.kit.sourceId}` : ""), "kit")] });
 }
 
 export function parseKitDeletes(value: unknown, kits: readonly StudyKit[]) {
   const target = "delete_kits";
   return collectProblems(target, readCollectionList(target, "kits", value, MAX_KITS_PER_WRITE), (item, index) =>
-    kitFor(record(item, `${target}[${index}]`), `${target}[${index}]`, kits),
+    (() => { const raw = record(item, `${target}[${index}]`); return { kit: kitFor(raw, `${target}[${index}]`, kits), fingerprint: fingerprint(raw, `${target}[${index}]`) }; })(),
   { listChecks: (items) => [repeatsProblem(target, items.map((item) => item.value ? `${item.value.sourceType}:${item.value.sourceId}` : ""), "kit")] });
 }

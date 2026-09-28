@@ -21,12 +21,16 @@ const SURFACE_NAME = "matrx-user/education-summaries";
 
 type SummaryDraft = { title: string; summary_markdown: string; key_points: string[] };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
 function draftFrom(media?: StudyMediaRow): SummaryDraft {
   const envelope = media?.ir_envelope;
-  if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) {
+  if (!isRecord(envelope)) {
     return { title: media?.title ?? "", summary_markdown: "", key_points: ["", "", ""] };
   }
-  const value = envelope as unknown as Record<string, unknown>;
+  const value = envelope;
   return {
     title: media?.title ?? "",
     summary_markdown: typeof value.summary_markdown === "string" ? value.summary_markdown : typeof value.markdown === "string" ? value.markdown : "",
