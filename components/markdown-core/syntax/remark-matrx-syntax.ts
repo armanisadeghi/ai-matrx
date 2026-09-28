@@ -15,7 +15,7 @@
 //   7. inline syntax     wikilinks, embeds, ==highlight==, ^sup^, ~sub~,
 //                        cross-references, cross-block footnote refs (inline-syntax.ts)
 //   8. CSV / TSV fences  ```csv → a sortable table element
-//   9. orphan footnotes  a definition whose reference sits in another block
+//   9. footnotes         the notes this block defines, as GFM shows the whole document
 //                        still renders (and its reference links to it)
 //
 // Environment-neutral; shared by the client and server renderers through the
@@ -358,36 +358,52 @@ function footnoteIds(tree: MNode): { defined: Set<string>; referenced: Set<strin
 }
 
 /**
- * GFM renders a footnote definition only when THIS tree references it. In a
- * document the renderer split into blocks (a code fence between the
- * reference and the note), the definition would vanish; render it here, as
- * a footnote list item the other block's reference links to.
+ * The notes of a document the renderer split into blocks, as GFM shows the
+ * WHOLE document (verify-RC-B4 round 15 ruling): GFM renders a note only when
+ * its own tree cites it, so a note whose reference sat in another block used
+ * to vanish, and the old fallback rendered every such note — even one nothing
+ * cites. With the document's numbering, THIS pass renders every note defined
+ * in this tree that the document cites, in one section, in number order, each
+ * with its back-link; an uncited note is dropped, as GFM drops it. Without a
+ * document numbering the tree is the document and GFM's own footer stands.
  */
-function renderOrphanDefinitions(tree: MNode, referenced: Set<string>): void {
-  const orphans: MNode[] = [];
+function renderFootnoteSection(tree: MNode, numbers: ReadonlyMap<string, number> | null): void {
+  if (!numbers) return;
+  const notes: { n: number; def: MNode }[] = [];
   const kept: MNode[] = [];
   for (const child of tree.children ?? []) {
-    if (child.type === "footnoteDefinition" && child.identifier && !referenced.has(child.identifier.toLowerCase())) {
-      orphans.push(child);
-    } else {
+    if (child.type !== "footnoteDefinition" || !child.identifier) {
       kept.push(child);
+      continue;
     }
+    const n = numbers.get(child.identifier.toLowerCase());
+    if (n !== undefined && !notes.some((note) => note.n === n)) notes.push({ n, def: child });
   }
-  if (orphans.length === 0) return;
-  const items = orphans.map((def) => {
-    const id = (def.identifier ?? "").toLowerCase();
-    return el(
-      "li",
-      { id: `user-content-fn-${encodeURIComponent(id)}`, value: /^\d+$/.test(id) ? Number(id) : undefined, className: ["[&>p]:inline"] },
-      def.children ?? [],
+  tree.children = kept;
+  if (notes.length === 0) return;
+  notes.sort((a, b) => a.n - b.n);
+  const items = notes.map(({ n, def }) => {
+    const id = encodeURIComponent((def.identifier ?? "").toLowerCase());
+    const back = el(
+      "a",
+      { href: `#user-content-fnref-${id}`, dataFootnoteBackref: "", ariaLabel: `Back to reference ${n}`, className: ["data-footnote-backref"] },
+      [text("↩")],
     );
+    const children = [...(def.children ?? [])];
+    const tail = children[children.length - 1];
+    if (tail?.type === "paragraph") {
+      children[children.length - 1] = { ...tail, children: [...(tail.children ?? []), text(" "), back] };
+    } else {
+      children.push(back);
+    }
+    return el("li", { id: `user-content-fn-${id}`, value: n }, children);
   });
-  kept.push(
-    el("section", { dataFootnotes: true, className: ["footnotes", "matrx-footnotes"] }, [
-      el("ol", { className: ["list-decimal", "pl-5"] }, items),
+  tree.children.push(
+    el("section", { dataFootnotes: true, className: ["footnotes"] }, [
+      el("h2", { id: "footnote-label", className: ["sr-only"] }, [text("Footnotes")]),
+      el("ol", {}, items),
     ]),
   );
-  tree.children = kept;
 }
 
 // ── 7c. a paragraph holding only an embed becomes the embed (a block) ──
@@ -427,13 +443,13 @@ export default function remarkMatrxSyntax(options: RemarkMatrxSyntaxOptions = {}
     titledImageFigures(tree);
     const xrefs = numberTargets(tree, numbering);
     resolveMathRefs(tree, xrefs);
-    const { defined, referenced } = footnoteIds(tree);
-    const ctx: InlineContext = { xrefs, footnotes: defined };
+    const { defined } = footnoteIds(tree);
+    const ctx: InlineContext = { xrefs, footnotes: defined, documentFootnotes: numbering?.footnotes };
     transformMentions(tree);
     transformInline(tree, ctx);
     unwrapStandaloneEmbeds(tree);
     applyAbbreviations(tree, abbrs);
     applyCsvFences(tree);
-    renderOrphanDefinitions(tree, referenced);
+    renderFootnoteSection(tree, numbering?.footnotes ?? null);
   };
 }

@@ -11,6 +11,10 @@
 //   tables    :::table[Caption]{#tbl:id}    → "Table n"
 //   equations \label{eq:id} in display math → "(n)"       (an explicit \tag keeps its text)
 //   sections  ## Heading {#sec:id}           → the heading text
+//   footnotes [^label]                       → "n", as GFM numbers them: only a
+//             label the document DEFINES, body references first in order of
+//             first reference, then references inside notes in note order;
+//             an undefined `[^x]` stays text, an uncited note is dropped
 //   links     [label]: url "title"            → every block resolves `[text][label]`
 //             against the WHOLE document's definitions, as GFM does (a table
 //             cell split from the definitions below it still shows its link;
@@ -36,7 +40,12 @@ export interface DocumentNumbering {
   byLabel: Map<string, NumberedTarget>;
   /** Unlabelled figures/tables by `kind|caption`, in document order (one entry per occurrence). */
   byCaption: Map<string, string[]>;
-  /** Footnote identifier (lower-case) → its number, in order of FIRST reference across the whole document. */
+  /**
+   * Footnote identifier (lower-case) → its number, exactly as GFM numbers the
+   * whole document: defined labels only, body references in order of first
+   * reference, then references inside the notes. A label absent here is either
+   * undefined (the reference stays text) or never cited (the note is dropped).
+   */
   footnotes: Map<string, number>;
   /**
    * The document's link reference definitions as canonical definition lines
@@ -125,16 +134,59 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
     const first = labels[0];
     if (first) byLabel.set(first, { kind: "eq", display });
   }
-  // Footnotes: numbered by first reference, document-wide (a definition line
-  // `[^x]:` is not a reference). Inline code spans never count.
-  for (const line of prose) {
-    const plain = line.replace(/`+[^`]*`+/g, "");
-    for (const m of plain.matchAll(/\[\^([^\]\s]+)\](?!:)/g)) {
-      const id = (m[1] ?? "").toLowerCase();
-      if (!footnotes.has(id)) footnotes.set(id, footnotes.size + 1);
-    }
-  }
+  numberFootnotes(prose, footnotes);
   return { byLabel, byCaption, footnotes, linkDefinitions: linkDefinitionLines(source) };
+}
+
+const FOOTNOTE_DEF = /^ {0,3}\[\^([^\]\s]+)\]:[ \t]?(.*)$/;
+const FOOTNOTE_REF = /\[\^([^\]\s]+)\](?!:)/g;
+/** A line that starts another block, so it ends a note's paragraph instead of continuing it lazily. */
+const INTERRUPTS_NOTE = /^ {0,3}(?:[-+*][ \t]|\d{1,9}[.)][ \t]|>|#{1,6}(?:[ \t]|$)|```|~~~|<|\[\^[^\]\s]+\]:|(?:-[ \t]*){3,}$|(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$)/;
+
+/** The footnote references on one prose line, lower-cased; inline code spans never count. */
+function footnoteRefs(line: string): string[] {
+  if (!line.includes("[^")) return [];
+  return [...line.replace(/`+[^`]*`+/g, "").matchAll(FOOTNOTE_REF)].map((m) => (m[1] ?? "").toLowerCase());
+}
+
+/**
+ * GFM's footnote numbers for the whole document (see DocumentNumbering.footnotes).
+ * A note is its definition line plus its continuation: indented lines, a blank
+ * line followed by an indented paragraph, and lazy lines that start no block.
+ */
+function numberFootnotes(prose: readonly string[], footnotes: Map<string, number>): void {
+  const notes = new Map<string, string[]>();
+  const body: string[] = [];
+  for (let i = 0; i < prose.length; i += 1) {
+    const def = FOOTNOTE_DEF.exec(prose[i] ?? "");
+    if (!def) {
+      body.push(prose[i] ?? "");
+      continue;
+    }
+    const label = (def[1] ?? "").toLowerCase();
+    const lines = [def[2] ?? ""];
+    let previous = prose[i] ?? "";
+    let j = i + 1;
+    for (; j < prose.length; j += 1) {
+      const line = prose[j] ?? "";
+      const indented = /^(?: {4}|\t)/.test(line);
+      const lazy = line.trim() !== "" && previous.trim() !== "" && !INTERRUPTS_NOTE.test(line);
+      const blankThenIndented = line.trim() === "" && /^(?: {4}|\t)\S/.test(prose[j + 1] ?? "");
+      if (!indented && !lazy && !blankThenIndented) break;
+      lines.push(line);
+      previous = line;
+    }
+    if (!notes.has(label)) notes.set(label, lines);
+    i = j - 1;
+  }
+  if (notes.size === 0) return;
+  const cite = (id: string) => {
+    if (notes.has(id) && !footnotes.has(id)) footnotes.set(id, footnotes.size + 1);
+  };
+  for (const line of body) footnoteRefs(line).forEach(cite);
+  // A reference inside a note numbers after the body's (GFM's footer order);
+  // a Map iterates entries added while iterating, so a chain is followed.
+  for (const id of footnotes.keys()) for (const line of notes.get(id) ?? []) footnoteRefs(line).forEach(cite);
 }
 
 /**

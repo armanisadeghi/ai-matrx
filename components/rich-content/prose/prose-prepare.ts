@@ -273,7 +273,8 @@ export function preprocessCellProse(rawContent: string): string {
 
 /**
  * What GFM says a block IS, for the checks below: its lists (ordered or not,
- * how many items), tables, quotes and headings, in document order. Paragraph breaks and spacing
+ * how many items), tables, quotes, headings and footnote notes (how many
+ * blocks each holds), in document order. Paragraph breaks and spacing
  * are deliberately not part of it — they are what readability rules may adjust.
  */
 function gfmStructure(markdown: string): string {
@@ -285,6 +286,7 @@ function gfmStructure(markdown: string): string {
     else if (node.type === "table") out.push(`table${node.children?.length ?? 0}`);
     else if (node.type === "blockquote") out.push("quote");
     else if (node.type === "heading") out.push(`h${node.depth ?? 0}`);
+    else if (node.type === "footnoteDefinition") out.push(`note${node.children?.length ?? 0}`);
     (node.children ?? []).forEach(walk);
   };
   walk(tree);
@@ -294,7 +296,7 @@ function gfmStructure(markdown: string): string {
 /**
  * THE rule for every readability rewrite of prose (verify-RC-B4 round 9 ruling):
  * the one core never changes what GFM says a document IS. A rewrite is kept only
- * when GFM's lists, tables, quotes and headings are the same before and after it;
+ * when GFM's lists, tables, quotes, headings and notes are the same before and after it;
  * otherwise the text stays as it was.
  */
 function keepGfmStructure(before: string, after: string): string {

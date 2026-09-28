@@ -14,7 +14,8 @@ import { preprocessProse } from "../prose/prose-prepare";
 type N = { type: string; children?: N[] };
 const tree = (md: string) => unified().use(remarkParse).use(remarkGfm).parse(md) as N;
 const count = (n: N, t: string): number => (n.type === t ? 1 : 0) + (n.children ?? []).reduce((a, c) => a + count(c, t), 0);
-const shape = (md: string) => { const t = tree(md); return { lists: count(t, "list"), items: count(t, "listItem"), quotes: count(t, "blockquote"), tables: count(t, "table"), headings: count(t, "heading") }; };
+const shape = (md: string) => { const t = tree(md); return { lists: count(t, "list"), items: count(t, "listItem"), quotes: count(t, "blockquote"), tables: count(t, "table"), headings: count(t, "heading"), notes: count(t, "footnoteDefinition"), noteParagraphs: count(t, "footnoteDefinition") && count({ type: "root", children: collect(t, "footnoteDefinition") }, "paragraph") }; };
+const collect = (n: N, t: string): N[] => [...(n.type === t ? [n] : []), ...(n.children ?? []).flatMap((c) => collect(c, t))];
 
 it.each([
   ["a bold label inside a list item, then lazy text", "- **Owner:** Priya\nkeeps the dock keys\n- **Backup:** Tom"],
@@ -24,6 +25,7 @@ it.each([
   ["an italic line inside a list item", "- Drain the queue\n  *before midnight*\n  then sign"],
   // indentation kept visible, where that would move a line out of its list item
   ["an indented table-like run under an ordered item", "5. The Ten Core Requirements\nEvery certified facility meets all ten.\n  #  Purpose\n  1  Ensures all processes are covered\n  2  Supports reuse first"],
+  ["a footnote with a second, indented paragraph (a stored chat answer)", "Duplicated footnote reference[^second].\n\n[^first]: Footnote **can have markup**\n\n    and multiple paragraphs.\n\n[^second]: Footnote text."],
   ["an indented line, then an indented item (a stored skill block)", "\n     Have them confirm only the intended traffic is matching (no real users, no SEO crawlers, no internal tools) before moving on.\n\n  3. **Block in preview first.** Edit the rule to `deny` (or `challenge`) and add an `environment = preview` condition so production stays in log mode."],
 ])("%s keeps GFM's structure", (_label, md) => {
   expect(shape(preprocessProse(md))).toEqual(shape(md));

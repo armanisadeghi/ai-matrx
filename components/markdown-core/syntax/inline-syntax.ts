@@ -26,6 +26,12 @@ export interface InlineContext {
   xrefs: Map<string, XrefTarget>;
   /** Footnote identifiers DEFINED in this tree (a `[^x]` left as text is defined elsewhere). */
   footnotes: Set<string>;
+  /**
+   * The document's footnote numbers (DocumentNumbering.footnotes): a `[^x]`
+   * left as text becomes a reference only when the DOCUMENT defines and cites
+   * `x`; an undefined label stays text, as GFM leaves it.
+   */
+  documentFootnotes?: ReadonlyMap<string, number>;
 }
 
 type Rule = {
@@ -109,13 +115,15 @@ const RULES: Rule[] = [
     build: (m) => el("sub", {}, [text(m[1] ?? "")], "matrxSub"),
   },
   {
-    // A footnote reference whose definition lives in another rendered block.
+    // A footnote reference whose definition lives in another rendered block
+    // (the document defines it; an undefined `[^x]` stays text).
     re: /\[\^([^\]\s]+)\](?!:)/g,
     build: (m, ctx) => {
       const id = m[1] ?? "";
-      if (ctx.footnotes.has(id.toLowerCase())) return null;
+      if (ctx.footnotes.has(id.toLowerCase()) || !ctx.documentFootnotes?.has(id.toLowerCase())) return null;
       return el("sup", { className: ["matrx-fnref"] }, [
-        el("a", { href: `#user-content-fn-${encodeURIComponent(id.toLowerCase())}`, dataFootnoteRef: true, ariaDescribedBy: "footnote-label" }, [text(id)]),
+        // The id is the note's back-link target when this is the first reference.
+        el("a", { href: `#user-content-fn-${encodeURIComponent(id.toLowerCase())}`, id: `user-content-fnref-${encodeURIComponent(id.toLowerCase())}`, dataFootnoteRef: true, ariaDescribedBy: "footnote-label" }, [text(id)]),
       ]);
     },
   },

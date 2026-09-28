@@ -302,15 +302,63 @@ describe("footnotes end to end", () => {
   });
 
   it("keeps a note whose reference is in another rendered block", async () => {
-    const scope = await render(
-      <>
-        {full("See the manual.[^m]")}
-        {full("[^m]: Kiln manual, page 4.")}
-      </>,
-    );
+    // A code fence splits the document: the reference and its note parse in different blocks.
+    const scope = await render(standard("See the manual.[^m]\n\n```bash\nkiln --fire cone6\n```\n\n[^m]: Kiln manual, page 4."));
     expect(text(scope)).not.toContain("[^m]");
-    expect(scope.querySelector("#user-content-fn-m")).not.toBeNull();
+    expect(text(scope.querySelector("#user-content-fn-m")!)).toContain("Kiln manual, page 4.");
     expect(scope.querySelector('a[href="#user-content-fn-m"]')).not.toBeNull();
+  });
+
+  // verify-RC-B4 round 15 ruling: the screen shows footnotes as GFM (and print) do.
+  // A studio's firing log, split by a code fence, cites two notes, one of them
+  // from inside the other; one note is cited by nobody, one citation has no note.
+  const LOG = [
+    "Bisque at cone 04[^bisque], glaze at cone 6[^glaze]; see the log[^missing].",
+    "",
+    "```bash",
+    "kiln --fire cone6",
+    "```",
+    "",
+    "Unloaded Friday[^glaze].",
+    "",
+    "[^spare]: Nobody cites this note.",
+    "[^glaze]: Cone 6 is about 1,222 °C[^pyro].",
+    "[^bisque]: Cone 04 is about 1,060 °C.",
+    "[^pyro]: Measured with witness cones.",
+  ].join("\n");
+
+  // Both render paths: one tree (the chat bubble, GFM's own footer) and a
+  // document split into blocks at the fence (the document numbering's section).
+  describe.each([
+    ["one tree", full],
+    ["split into blocks", standard],
+  ])("%s", (_path, make) => {
+    it("drops a note nobody cites and leaves an undefined citation literal", async () => {
+      const scope = await render(make(LOG));
+      expect(text(scope)).not.toContain("Nobody cites this note");
+      expect(text(scope)).toContain("see the log[^missing]");
+      expect(scope.querySelector('a[href="#user-content-fn-missing"]')).toBeNull();
+    });
+
+    it("numbers as GFM does (body first, then inside notes) and lists the notes in number order", async () => {
+      const scope = await render(make(LOG));
+      const numbers = [...scope.querySelectorAll("a[data-footnote-ref]")].map((a) => [a.getAttribute("href"), text(a)]);
+      expect(numbers).toEqual([
+        ["#user-content-fn-bisque", "1"],
+        ["#user-content-fn-glaze", "2"],
+        ["#user-content-fn-glaze", "2"],
+        ["#user-content-fn-pyro", "3"],
+      ]);
+      const notes = [...scope.querySelectorAll("section[data-footnotes] li")].map((li) => li.id);
+      expect(notes).toEqual(["user-content-fn-bisque", "user-content-fn-glaze", "user-content-fn-pyro"]);
+      expect(scope.querySelector("#user-content-fn-glaze a[data-footnote-backref]")?.getAttribute("href")).toBe("#user-content-fnref-glaze");
+    });
+  });
+
+  it("leaves a citation literal when nothing in the document defines it", async () => {
+    const scope = await render(full("Glaze notes[^m] are pending."));
+    expect(text(scope)).toContain("Glaze notes[^m] are pending.");
+    expect(scope.querySelector("a[data-footnote-ref]")).toBeNull();
   });
 });
 
