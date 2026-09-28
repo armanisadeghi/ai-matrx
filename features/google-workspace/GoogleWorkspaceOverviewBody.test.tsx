@@ -228,9 +228,31 @@ describe("GoogleWorkspaceOverviewBody", () => {
     expect(connect).toBeDefined();
     act(() => connect!.click());
     expect(mockOpenConsent).toHaveBeenCalledWith({
+      initialConnectionId: first.id,
       initialProductKeys: ["gmail_read"],
     });
     expect(onAddAccount).not.toHaveBeenCalled();
+  });
+
+  it("opens Gmail reading consent for the account selected in the overview", () => {
+    renderOverview();
+    const account = host.querySelector<HTMLSelectElement>(
+      '[aria-label="Choose account to inspect"]',
+    );
+    if (!account) throw new Error("Google account chooser was not rendered.");
+    act(() => {
+      account.value = second.id;
+      account.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    const connect = Array.from(host.querySelectorAll("button")).find(
+      (button) => button.textContent === "Manage Gmail reading",
+    );
+    if (!connect) throw new Error("Gmail reading action was not rendered.");
+    act(() => connect.click());
+    expect(mockOpenConsent).toHaveBeenCalledWith({
+      initialConnectionId: second.id,
+      initialProductKeys: ["gmail_read"],
+    });
   });
 
   it("offers Gmail reading consent when no Google account is connected", () => {

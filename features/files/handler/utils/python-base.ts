@@ -80,6 +80,22 @@ export function shareUrls(
 }
 
 /**
+ * Byte URLs for ONE child file of a shared record — a shared chat's
+ * attachment — reached with the parent's share token (access ladder T-19b).
+ * The files service answers `/share/{token}/files/{fileId}` only when the file
+ * is a child of the record that token shares; nothing else is reachable.
+ */
+export function shareChildFileUrls(
+  token: string,
+  fileId: string,
+  opts?: { baseUrl?: string },
+): { inline: string; attachment: string } {
+  const backend = (opts?.baseUrl ?? pythonBaseUrl()).replace(/\/$/, "");
+  const base = `${backend}/share/${encodeURIComponent(token)}/files/${encodeURIComponent(fileId)}`;
+  return { inline: base, attachment: `${base}?inline=false` };
+}
+
+/**
  * Python's clean public byte-streaming share endpoint. Convenience wrapper
  * around `shareUrls(token).public` for callers that just want the
  * single canonical embeddable URL.

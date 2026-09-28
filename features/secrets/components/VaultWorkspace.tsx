@@ -813,6 +813,9 @@ export function VaultWorkspace({
                     <VaultWorkspaceListRow
                       key={item.id}
                       item={item}
+                      sharedIn={
+                        scope.kind === "organization" && !item.organization_id
+                      }
                       definition={defsByKey.get(item.definition_key)}
                       selected={detailItem?.id === item.id}
                       favorite={
@@ -1207,6 +1210,9 @@ export function VaultWorkspace({
               <VaultItemCard
                 key={item.id}
                 item={item}
+                sharedIn={
+                  scope.kind === "organization" && !item.organization_id
+                }
                 definition={defsByKey.get(item.definition_key)}
                 favorite={
                   vaultItemState.stateById.get(item.id)?.isFavorite ?? false
@@ -1428,7 +1434,10 @@ function VaultWorkspaceListRow({
   stateReady,
   onOpen,
   onToggleFavorite,
+  sharedIn = false,
 }: {
+  /** A member's personal credential shared into this organization's vault. */
+  sharedIn?: boolean;
   item: VaultItem;
   definition: CredentialDefinition | undefined;
   selected: boolean;
@@ -1478,6 +1487,15 @@ function VaultWorkspaceListRow({
           )}
         </div>
       </button>
+      {sharedIn && (
+        <Badge
+          variant="outline"
+          className="shrink-0 font-normal"
+          title="A member's own credential, shared into this organization's vault"
+        >
+          Shared in
+        </Badge>
+      )}
       {item.status !== "active" && (
         <Badge
           variant="outline"
@@ -1608,7 +1626,10 @@ function VaultItemCard({
   stateReady,
   onOpen,
   onToggleFavorite,
+  sharedIn = false,
 }: {
+  /** A member's personal credential shared into this organization's vault. */
+  sharedIn?: boolean;
   item: VaultItem;
   definition: CredentialDefinition | undefined;
   favorite: boolean;
@@ -1660,6 +1681,15 @@ function VaultItemCard({
         {item.organization_id && item.access_mode === "restricted" && (
           <Badge variant="outline" className="shrink-0 font-normal">
             Restricted
+          </Badge>
+        )}
+        {sharedIn && (
+          <Badge
+            variant="outline"
+            className="shrink-0 font-normal"
+            title="A member's own credential, shared into this organization's vault"
+          >
+            Shared in
           </Badge>
         )}
       </button>

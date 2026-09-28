@@ -68,11 +68,15 @@ export function parseWorkingDays(value: unknown): number[] {
     .split(",")
     .map((d) => Number(d.trim()))
     .filter((d) => Number.isInteger(d) && d >= 1 && d <= 7);
-  return days.length > 0 ? [...new Set(days)].sort() : [...DEFAULT_WORKING_HOURS.days];
+  return days.length > 0
+    ? [...new Set(days)].sort()
+    : [...DEFAULT_WORKING_HOURS.days];
 }
 
 export function parseClock(value: unknown, fallback: string): string {
-  return typeof value === "string" && HHMM.test(value.trim()) ? value.trim() : fallback;
+  return typeof value === "string" && HHMM.test(value.trim())
+    ? value.trim()
+    : fallback;
 }
 
 function minutesOf(clock: string): number {
@@ -91,7 +95,10 @@ function addDays(date: string, days: number): string {
 
 /** The RPC's JSON → the typed shape. Unknown rows are dropped, never guessed. */
 export function parseFreeBusy(raw: unknown): FreeBusy {
-  const obj = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const obj = (raw && typeof raw === "object" ? raw : {}) as Record<
+    string,
+    unknown
+  >;
   const people = (Array.isArray(obj.users) ? obj.users : []).flatMap((u) => {
     const r = (u ?? {}) as Record<string, unknown>;
     return typeof r.user_id === "string"
@@ -108,7 +115,10 @@ export function parseFreeBusy(raw: unknown): FreeBusy {
     const r = (b ?? {}) as Record<string, unknown>;
     const start = Date.parse(String(r.starts_at));
     const end = Date.parse(String(r.ends_at));
-    return typeof r.user_id === "string" && Number.isFinite(start) && Number.isFinite(end) && end > start
+    return typeof r.user_id === "string" &&
+      Number.isFinite(start) &&
+      Number.isFinite(end) &&
+      end > start
       ? [{ userId: r.user_id, start, end }]
       : [];
   });
@@ -121,22 +131,36 @@ export function parseFreeBusy(raw: unknown): FreeBusy {
  * A slot must end inside the working day; days are walked in the meeting's zone
  * so a DST change moves the clock with it.
  */
-export function suggestSlots(busy: readonly BusyInterval[], options: SlotOptions): Slot[] {
-  const { zone, durationMinutes, stepMinutes, count, horizonDays, hours, now } = options;
+export function suggestSlots(
+  busy: readonly BusyInterval[],
+  options: SlotOptions,
+): Slot[] {
+  const { zone, durationMinutes, stepMinutes, count, horizonDays, hours, now } =
+    options;
   const step = Math.max(5, Math.floor(stepMinutes));
   const length = Math.max(1, Math.floor(durationMinutes)) * 60_000;
   const open = minutesOf(parseClock(hours.start, DEFAULT_WORKING_HOURS.start));
   const close = minutesOf(parseClock(hours.end, DEFAULT_WORKING_HOURS.end));
-  const days = new Set(hours.days.length > 0 ? hours.days : DEFAULT_WORKING_HOURS.days);
+  const days = new Set(
+    hours.days.length > 0 ? hours.days : DEFAULT_WORKING_HOURS.days,
+  );
   const sorted = [...busy].sort((a, b) => a.start - b.start);
   const out: Slot[] = [];
   const today = utcToZoned(now.toISOString(), zone).date;
-  for (let offset = 0; offset < horizonDays && out.length < count; offset += 1) {
+  for (
+    let offset = 0;
+    offset < horizonDays && out.length < count;
+    offset += 1
+  ) {
     const date = addDays(today, offset);
     const noon = utcToZoned(zonedToUtcIso(date, "12:00", zone), zone);
     const isoWeekday = noon.weekday === 0 ? 7 : noon.weekday;
     if (!days.has(isoWeekday)) continue;
-    for (let at = open; at + durationMinutes <= close && out.length < count; at += step) {
+    for (
+      let at = open;
+      at + durationMinutes <= close && out.length < count;
+      at += step
+    ) {
       const time = clockOf(at);
       const iso = zonedToUtcIso(date, time, zone);
       const start = Date.parse(iso);

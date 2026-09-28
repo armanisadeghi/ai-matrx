@@ -45,7 +45,6 @@ import { useDuplicateSchedules } from "@/features/scheduling/hooks/useDuplicateS
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { readOf } from "@/components/read-state/ReadGate";
 
 function triggerText(r: AdminTaskRow): string {
@@ -248,20 +247,6 @@ export default function AdminTasksPage() {
           void refetchDuplicates();
         }}
       />
-      {loadError != null && (
-        <ErrorNotice
-          size="compact"
-          title="Scheduled tasks couldn't load"
-          error={loadError}
-          operation="List scheduled tasks"
-          calls={["sch_task"]}
-          actions={
-            <Button variant="outline" size="sm" onClick={() => void load()} disabled={fetching} className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" /> Retry
-            </Button>
-          }
-        />
-      )}
       <div className="min-h-0 flex-1" data-surface-value="task_row_count">
         <NonEditableContextMenu
           sourceFeature="scheduled"

@@ -37,7 +37,12 @@ import {
   normalizeWireItem,
   normalizeWireAttachment,
   toPrincipalIn,
+  isOrganizationVaultAccess,
   type CredentialDefinition,
+  type MemberVaultAccessChoice,
+  type OrganizationVaultAccess,
+  type VaultMemberAccessList,
+  type VaultMemberAccessSetResponse,
   type CredentialItemMaskedRow,
   type VaultAttachment,
   type VaultAttachmentMaskedRow,
@@ -1047,6 +1052,59 @@ export function updateVaultGrant(
   );
 }
 
+/** Share a personal item into ONE organization's vault (access ladder
+ *  decision 14). `can_manage: false` = use (sign in without seeing values);
+ *  `true` = editor. Change or revoke it with the ordinary per-grant calls. */
+export function addVaultOrganizationGrant(
+  itemId: string,
+  body: { organization_id: string; can_manage?: boolean },
+): Promise<VaultGrant> {
+  return vaultFetch<VaultGrant>(
+    `/items/${encodeURIComponent(itemId)}/organization-grants`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+/** Every member's access to one organization's vault. Owners/admins only. */
+export function fetchOrganizationVaultMemberAccess(
+  organizationId: string,
+): Promise<VaultMemberAccessList> {
+  return vaultFetch<VaultMemberAccessList>(
+    `/organizations/${encodeURIComponent(organizationId)}/member-access`,
+  );
+}
+
+/** Set one member's organization vault access; `null` follows the default. */
+export function setOrganizationVaultMemberAccess(
+  organizationId: string,
+  userId: string,
+  access: MemberVaultAccessChoice | null,
+): Promise<VaultMemberAccessSetResponse> {
+  return vaultFetch<VaultMemberAccessSetResponse>(
+    `/organizations/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(userId)}/access`,
+    { method: "PUT", body: JSON.stringify({ access }) },
+  );
+}
+
+/** The signed-in person's own access to one organization's vault. */
+export async function fetchMyOrganizationVaultAccess(
+  organizationId: string,
+): Promise<OrganizationVaultAccess> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("users")
+    .rpc("my_organization_vault_access", {
+      p_organization_id: organizationId,
+    });
+  if (error) throw new Error(error.message);
+  if (!isOrganizationVaultAccess(data)) {
+    throw new Error(
+      `The vault answered an unknown access level (${String(data)}).`,
+    );
+  }
+  return data;
+}
+
 /** Revoke ONE recipient — immediate for list, reveal, and execution. */
 export function removeVaultGrant(
   itemId: string,
@@ -1158,7 +1216,14 @@ function normalizeField(row: VaultFieldMaskedRow): VaultField {
 function deriveCapabilities(
   item: CredentialItemMaskedRow,
   uid: string,
-  opts: { orgAdmin: boolean; manageGrantItemIds: ReadonlySet<string> },
+  opts: {
+    orgAdmin: boolean;
+    manageGrantItemIds: ReadonlySet<string>;
+    /** My access to the organization vault being listed (organization scope). */
+    orgVaultAccess?: OrganizationVaultAccess | null;
+    /** Items shared into that organization vault at editor. */
+    orgShareEditIds?: ReadonlySet<string>;
+  },
 ): VaultCapabilities {
   if (item.user_id === uid) {
     return {
@@ -1178,10 +1243,26 @@ function deriveCapabilities(
       };
     }
     const canManageGrant = opts.manageGrantItemIds.has(item.id);
+    const vaultEditor =
+      item.access_mode === "all_members" && opts.orgVaultAccess === "editor";
     return {
       can_use: true,
-      can_edit: canManageGrant,
-      can_reveal: canManageGrant,
+      can_edit: canManageGrant || vaultEditor,
+      can_reveal: canManageGrant || vaultEditor,
+      can_manage: false,
+    };
+  }
+  // Someone else's PERSONAL item shared into the organization vault I am
+  // listing: the lesser of the share and my vault access (server-checked).
+  if (opts.orgVaultAccess) {
+    const shareEditor =
+      (opts.orgShareEditIds?.has(item.id) ?? false) &&
+      (opts.orgVaultAccess === "editor" || opts.orgVaultAccess === "admin");
+    const canEdit = shareEditor || opts.manageGrantItemIds.has(item.id);
+    return {
+      can_use: true,
+      can_edit: canEdit,
+      can_reveal: canEdit,
       can_manage: false,
     };
   }
@@ -1339,6 +1420,28 @@ export async function fetchVaultItems(
     if (sharedItemIds.length === 0) return [];
   }
 
+  // An organization's vault holds its own items AND the personal items shared
+  // into it (a grant whose grantee is the organization — access ladder
+  // decision 14). Those grant rows are readable to members whose vault access
+  // is not none; the ids are read first, then exactly those items.
+  let sharedIntoOrgIds: string[] = [];
+  const orgShareEditIds = new Set<string>();
+  if (scope.kind === "organization") {
+    const { data: orgGrants, error: orgGrantsError } = await supabase
+      .schema("users")
+      .from("user_secret_grants")
+      .select("credential_item_id, can_use, can_manage")
+      .eq("organization_id", scope.organizationId)
+      .not("credential_item_id", "is", null);
+    assertVaultData(orgGrants, orgGrantsError);
+    for (const g of orgGrants ?? []) {
+      if (!g.credential_item_id || !(g.can_use || g.can_manage)) continue;
+      sharedIntoOrgIds.push(g.credential_item_id);
+      if (g.can_manage) orgShareEditIds.add(g.credential_item_id);
+    }
+    sharedIntoOrgIds = Array.from(new Set(sharedIntoOrgIds));
+  }
+
   let itemsQuery = supabase
     .schema("users")
     .from("credential_items")
@@ -1347,7 +1450,12 @@ export async function fetchVaultItems(
     .order("created_at", { ascending: false })
     .order("id", { ascending: false });
   if (scope.kind === "organization") {
-    itemsQuery = itemsQuery.eq("organization_id", scope.organizationId);
+    itemsQuery =
+      sharedIntoOrgIds.length > 0
+        ? itemsQuery.or(
+            `organization_id.eq.${scope.organizationId},id.in.(${sharedIntoOrgIds.join(",")})`,
+          )
+        : itemsQuery.eq("organization_id", scope.organizationId);
   } else if (scope.kind === "shared") {
     // Items I was granted — deliberately EXCLUDING my own, which live in Mine.
     itemsQuery = itemsQuery
@@ -1416,6 +1524,14 @@ export async function fetchVaultItems(
     if (alarm) throw new Error(alarm);
   }
 
+  // My own access to this organization's vault bounds what it gives me.
+  const orgVaultAccess: OrganizationVaultAccess | null =
+    scope.kind === "organization"
+      ? opts?.orgAdmin
+        ? "admin"
+        : await fetchMyOrganizationVaultAccess(scope.organizationId)
+      : null;
+
   // My own grants refine capabilities for rows I don't own (self-read policy).
   let manageGrantItemIds = new Set<string>();
   const needsGrantRefine =
@@ -1482,6 +1598,8 @@ export async function fetchVaultItems(
     capabilities: deriveCapabilities(item, user.id, {
       orgAdmin: opts?.orgAdmin ?? false,
       manageGrantItemIds,
+      orgVaultAccess,
+      orgShareEditIds,
     }),
   }));
 }

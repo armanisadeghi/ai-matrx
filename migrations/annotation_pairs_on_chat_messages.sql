@@ -1,4 +1,3 @@
--- draft: selection-toolbar lane 2026-09-26 — chair step: review and apply with pnpm db:apply (additive rows only; no function, grant or policy changes).
 --
 -- THE READING SET ON A CHAT ANSWER (chair ruling 2026-09-26: notes and chat answers get the full
 -- reading set, anchored to the saved record). Comments on a chat message already work (the

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
-import { Plus, Loader2, AlertCircle, Database as DbIcon } from "lucide-react";
+import { Plus, Loader2, Database as DbIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PencilTapButton } from "@ai-matrx/tap-target/buttons";
 import { Input } from "@ai-matrx/design-system";
@@ -146,16 +146,6 @@ function LookupsAdminPageInner() {
  * Escape, Cancel and the X still close normally.
  */
 const keepOpenOnOutsideInteraction = (event: Event) => event.preventDefault();
-
-function ErrorBox({ message }: { message: string }) {
-  return (
-    <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
-      <AlertCircle className="h-3.5 w-3.5" />
-      {message}
-      <ErrorAlchemyMenu error={message} />
-    </div>
-  );
-}
 
 function ActiveToggle({
   active,
@@ -360,7 +350,7 @@ function UiClientCrud() {
 
   return (
     <>
-      {error && <ErrorBox message={error} />}
+      {/* The read's failure is said once, by the table (read=). */}
       <MatrxDataTable<UiClientRow>
         data={rows}
         columns={clientColumns(onToggleActive)}
@@ -599,13 +589,7 @@ function UiSurfaceCrud() {
             surface scale our system needs.
           </span>
         </div>
-        {error && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
-            <AlertCircle className="h-3.5 w-3.5" />
-            {error}
-            <ErrorAlchemyMenu error={error} />
-          </div>
-        )}
+        {/* The read's failure is said once, by the table (read=). */}
         <MatrxDataTable<UiSurfaceRow>
           data={visible}
           columns={surfaceColumns(onToggleActive)}
@@ -872,7 +856,7 @@ function ToolExecutorCrud() {
 
   return (
     <>
-      {error && <ErrorBox message={error} />}
+      {/* The read's failure is said once, by the table (read=). */}
       <MatrxDataTable<ToolExecutorRow>
         data={rows}
         columns={executorColumns(onToggleActive)}

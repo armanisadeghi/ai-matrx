@@ -52,6 +52,7 @@ const actions: VaultActions = {
   addGrant: unavailable,
   updateGrant: unavailable,
   removeGrant: unavailable,
+  shareToOrganization: unavailable,
   giveOwnership: unavailable,
   assign: unavailable,
   transfer: unavailable,

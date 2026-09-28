@@ -119,6 +119,8 @@ const actions: VaultActions = {
   updateGrant: async () =>
     ({}) as Awaited<ReturnType<VaultActions["updateGrant"]>>,
   removeGrant: noop,
+  shareToOrganization: async () =>
+    ({}) as Awaited<ReturnType<VaultActions["shareToOrganization"]>>,
   giveOwnership: async () =>
     ({}) as Awaited<ReturnType<VaultActions["giveOwnership"]>>,
   assign: async () => ({}) as Awaited<ReturnType<VaultActions["assign"]>>,

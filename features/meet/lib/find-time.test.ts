@@ -36,8 +36,16 @@ describe("suggestSlots", () => {
   it("skips any slot where anyone is busy for part of the meeting", () => {
     const busy = [
       // someone busy 09:00–09:45 LA; another 10:00–10:30 LA
-      { userId: "a", start: Date.parse("2026-09-28T16:00:00Z"), end: Date.parse("2026-09-28T16:45:00Z") },
-      { userId: "b", start: Date.parse("2026-09-28T17:00:00Z"), end: Date.parse("2026-09-28T17:30:00Z") },
+      {
+        userId: "a",
+        start: Date.parse("2026-09-28T16:00:00Z"),
+        end: Date.parse("2026-09-28T16:45:00Z"),
+      },
+      {
+        userId: "b",
+        start: Date.parse("2026-09-28T17:00:00Z"),
+        end: Date.parse("2026-09-28T17:30:00Z"),
+      },
     ];
     const slots = suggestSlots(busy, options());
     expect(slots.map((s) => s.time)).toEqual(["10:30", "11:00", "11:30"]);
@@ -45,13 +53,18 @@ describe("suggestSlots", () => {
 
   it("never offers a slot that runs past the end of the working day or on a weekend", () => {
     const friday4pm = new Date("2026-10-02T23:00:00Z"); // 16:00 LA Friday
-    const slots = suggestSlots([], options({ now: friday4pm, durationMinutes: 60, count: 1 }));
+    const slots = suggestSlots(
+      [],
+      options({ now: friday4pm, durationMinutes: 60, count: 1 }),
+    );
     expect(slots[0]!.date).toBe("2026-10-05"); // Monday, not Friday 16:30 or Saturday
     expect(slots[0]!.time).toBe("09:00");
   });
 
   it("returns nothing rather than inventing a slot when the horizon is full", () => {
-    const allWeek = [{ userId: "a", start: 0, end: Date.parse("2027-01-01T00:00:00Z") }];
+    const allWeek = [
+      { userId: "a", start: 0, end: Date.parse("2027-01-01T00:00:00Z") },
+    ];
     expect(suggestSlots(allWeek, options())).toEqual([]);
   });
 });
@@ -65,13 +78,22 @@ describe("parsers", () => {
 
   it("keeps only well-formed free/busy rows", () => {
     const parsed = parseFreeBusy({
-      users: [{ user_id: "u1", visible: true, calendar_connected: false }, { nope: 1 }],
+      users: [
+        { user_id: "u1", visible: true, calendar_connected: false },
+        { nope: 1 },
+      ],
       busy: [
-        { user_id: "u1", starts_at: "2026-09-28T16:00:00Z", ends_at: "2026-09-28T17:00:00Z" },
+        {
+          user_id: "u1",
+          starts_at: "2026-09-28T16:00:00Z",
+          ends_at: "2026-09-28T17:00:00Z",
+        },
         { user_id: "u1", starts_at: "bad", ends_at: "2026-09-28T17:00:00Z" },
       ],
     });
-    expect(parsed.people).toEqual([{ userId: "u1", visible: true, calendarConnected: false }]);
+    expect(parsed.people).toEqual([
+      { userId: "u1", visible: true, calendarConnected: false },
+    ]);
     expect(parsed.busy).toHaveLength(1);
   });
 });

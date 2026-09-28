@@ -128,7 +128,7 @@ export function AgentOrgCard({
             Loop — shown once above
           </span>
         )}
-        {!d.loop && d.otherPlacements === 0 && agent?.description && d.roleTitle && (
+        {!d.loop && !d.unavailable && d.otherPlacements === 0 && agent?.description && subtitle !== agent.description && (
           <span className="line-clamp-1 text-[10px] text-muted-foreground/80">{agent.description}</span>
         )}
       </div>

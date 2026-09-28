@@ -14,10 +14,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleAlert } from "lucide-react";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { Button } from "@/components/ui/button";
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { sourceHref } from "@/features/sources/api/sourcesApi";
@@ -31,7 +29,6 @@ import {
     type SourceListRow,
 } from "@/features/sources/sourceRows";
 import { CATALOGUED_SOURCE_LABEL, cataloguedSourceIds } from "../catalog/cataloguedSources";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 export function CataloguedSourcesList({
@@ -106,7 +103,6 @@ export function CataloguedSourcesList({
         };
     }, [libraryId, organizationId, nonce]);
 
-    const shownError = error;
 
     const columns: MatrxColumnDef<SourceListRow>[] = [
         {
@@ -161,22 +157,7 @@ export function CataloguedSourcesList({
                 Pages you captured and filed in this Library. Each one is a Source — open it
                 to read, edit or process it.
             </p>
-            {shownError ? (
-                <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-                    <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-                    <span>
-                        {shownError}
-                        <Button
-                            variant="link"
-                            className="ml-1 h-auto p-0 text-sm"
-                            onClick={() => setNonce((n) => n + 1)}
-                        >
-                            Try again
-                        </Button>
-                    </span>
-                  <ErrorAlchemyMenu error={shownError} />
-                </p>
-            ) : null}
+            {/* The Sources read's failure is said once, by the table (read=). */}
             <div className="flex min-h-0 flex-1 flex-col">
                 <MatrxDataTable<SourceListRow>
                     tableId={`catalogued-sources:${CATALOGUED_SOURCE_LABEL}`}

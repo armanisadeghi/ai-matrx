@@ -27,7 +27,6 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 interface InvitationRequest {
@@ -192,12 +191,7 @@ export function InvitationsTableClient() {
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">
-      {error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      ) : null}
+      {/* The read's failure is said once, by the table (read=). */}
       <div className="min-h-0 flex-1">
         <NonEditableContextMenu
           sourceFeature="admin"

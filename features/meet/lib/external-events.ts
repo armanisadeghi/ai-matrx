@@ -16,12 +16,7 @@
 // Pure: parses rows, classifies links, filters, and builds the form prefill.
 
 export type CallProvider =
-  | "zoom"
-  | "google_meet"
-  | "teams"
-  | "webex"
-  | "ai_matrx"
-  | "other";
+  "zoom" | "google_meet" | "teams" | "webex" | "ai_matrx" | "other";
 
 export const PROVIDER_LABELS: Record<CallProvider, string> = {
   zoom: "Zoom",
@@ -67,14 +62,20 @@ const URL_IN_TEXT = /https?:\/\/[^\s<>"')]+/i;
 const MEET_SLUG = /\/meet\/([a-z0-9]{3}-[a-z0-9]{4}-[a-z0-9]{3})(?:[/?#]|$)/i;
 
 /** The call link: the event's own meeting URL, else the first URL in its location. */
-export function linkOf(meetingUrl: string | null, location: string | null): string | null {
+export function linkOf(
+  meetingUrl: string | null,
+  location: string | null,
+): string | null {
   const direct = meetingUrl?.trim();
   if (direct) return direct;
   const found = location?.match(URL_IN_TEXT)?.[0];
   return found ?? null;
 }
 
-export function providerOf(url: string | null, appOrigin?: string): CallProvider | null {
+export function providerOf(
+  url: string | null,
+  appOrigin?: string,
+): CallProvider | null {
   if (!url) return null;
   let host = "";
   try {
@@ -84,7 +85,8 @@ export function providerOf(url: string | null, appOrigin?: string): CallProvider
   }
   if (host.endsWith("zoom.us") || host.endsWith("zoom.com")) return "zoom";
   if (host === "meet.google.com") return "google_meet";
-  if (host.endsWith("teams.microsoft.com") || host.endsWith("teams.live.com")) return "teams";
+  if (host.endsWith("teams.microsoft.com") || host.endsWith("teams.live.com"))
+    return "teams";
   if (host.endsWith("webex.com")) return "webex";
   const ours = appOrigin ? safeHost(appOrigin) : null;
   if ((ours && host === ours) || host.endsWith("aimatrx.com")) {
@@ -103,8 +105,10 @@ function safeHost(origin: string): string | null {
 
 function attendeesOf(raw: unknown): ExternalAttendee[] {
   const list =
-    raw && typeof raw === "object" && Array.isArray((raw as { attendees?: unknown }).attendees)
-      ? ((raw as { attendees: unknown[] }).attendees)
+    raw &&
+    typeof raw === "object" &&
+    Array.isArray((raw as { attendees?: unknown }).attendees)
+      ? (raw as { attendees: unknown[] }).attendees
       : Array.isArray(raw)
         ? raw
         : [];
@@ -129,12 +133,17 @@ export function toExternalEvent(
   appOrigin?: string,
 ): ExternalEvent | null {
   if (row.all_day === true || row.deleted_at) return null;
-  if (typeof row.sync_status === "string" && row.sync_status !== "available") return null;
+  if (typeof row.sync_status === "string" && row.sync_status !== "available")
+    return null;
   const start = Date.parse(String(row.starts_at));
   const end = Date.parse(String(row.ends_at));
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start)
+    return null;
   const location = typeof row.location === "string" ? row.location : null;
-  const link = linkOf(typeof row.meeting_url === "string" ? row.meeting_url : null, location);
+  const link = linkOf(
+    typeof row.meeting_url === "string" ? row.meeting_url : null,
+    location,
+  );
   const provider = providerOf(link, appOrigin);
   const attendees = attendeesOf(row.attendees);
   return {
@@ -147,8 +156,12 @@ export function toExternalEvent(
     location,
     link,
     provider,
-    aiMatrxSlug: provider === "ai_matrx" ? (link?.match(MEET_SLUG)?.[1] ?? null) : null,
-    timeZone: typeof row.calendar_time_zone === "string" ? row.calendar_time_zone : null,
+    aiMatrxSlug:
+      provider === "ai_matrx" ? (link?.match(MEET_SLUG)?.[1] ?? null) : null,
+    timeZone:
+      typeof row.calendar_time_zone === "string"
+        ? row.calendar_time_zone
+        : null,
     attendees,
     selfDeclined: attendees.some((a) => a.self && a.rsvp === "declined"),
   };
@@ -187,11 +200,19 @@ export function noteTakerLine(event: ExternalEvent): string | null {
 }
 
 /** Guests for the prefilled AI Matrx meeting: everyone on the event except you. */
-export function prefillGuests(event: ExternalEvent): { email: string; name: string | null }[] {
+export function prefillGuests(
+  event: ExternalEvent,
+): { email: string; name: string | null }[] {
   const seen = new Set<string>();
   return event.attendees.flatMap((a) => {
     const email = a.email?.trim().toLowerCase();
-    if (!email || a.self || seen.has(email) || email.endsWith("resource.calendar.google.com")) return [];
+    if (
+      !email ||
+      a.self ||
+      seen.has(email) ||
+      email.endsWith("resource.calendar.google.com")
+    )
+      return [];
     seen.add(email);
     return [{ email, name: a.name }];
   });

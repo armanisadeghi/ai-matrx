@@ -70,6 +70,7 @@ import {
   type AgentWorkFold,
 } from "@/features/tool-call-visualization/grouping/foldAgentWork";
 import { AgentWorkGroup } from "@/features/tool-call-visualization/components/AgentWorkGroup";
+import { holdsADecision, recordHoldsADecision } from "@/features/tool-call-visualization/components/holdsADecision";
 import {
   EXPERT_WORKING_LABEL,
   useMachineFramesVisible,
@@ -717,6 +718,11 @@ export const EnhancedChatMarkdownInternal: React.FC<
     if (!machineFramesVisible) return groupedSlots;
     return foldAgentWork(groupedSlots, {
       classify: (slot) => {
+        // A held write is a question for the person — it never folds into "Worked for Ns".
+        if (slot.kind === "tool" && holdsADecision(toolLifecycleMap?.[slot.callId])) return "visible";
+        if (slot.kind === "tool_batch" && slot.callIds.some((id) => holdsADecision(toolLifecycleMap?.[id]))) {
+          return "visible";
+        }
         if (
           slot.kind === "thinking" ||
           slot.kind === "status" ||
@@ -767,6 +773,10 @@ export const EnhancedChatMarkdownInternal: React.FC<
     // Folded PER RUN too — the same "Worked for" boundaries a reload draws.
     return groupedSegmentRuns.flatMap((runSegments) => foldAgentWork(runSegments, {
       classify: (seg) => {
+        if (seg.type === "db_tool" && recordHoldsADecision(seg.record)) return "visible";
+        if (seg.type === "db_tool_batch" && seg.segments.some((one) => recordHoldsADecision(one.record))) {
+          return "visible";
+        }
         if (
           seg.type === "thinking" ||
           seg.type === "status" ||

@@ -73,7 +73,6 @@ import {
   type KgMentionRow,
   type KgEdgeRow,
 } from "../service/kgInspectorService";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { readOf } from "@/components/read-state/ReadGate";
 
@@ -659,13 +658,6 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
         </span>
       </div>
 
-      {error ? (
-        <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      ) : null}
-
       {loading ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -673,8 +665,8 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
           ))}
         </div>
       ) : error ? (
-<ReadFailure error={error} what="this list" />
-) : rows.length === 0 ? (
+        <ReadFailure error={error} what="this entity's mentions" />
+      ) : rows.length === 0 ? (
         <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
           No mentions recorded for this entity yet.
         </div>

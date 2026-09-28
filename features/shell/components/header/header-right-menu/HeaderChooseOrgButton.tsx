@@ -18,6 +18,7 @@
 
 import { useState } from "react";
 import { Building2 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import {
@@ -38,6 +39,14 @@ export default function HeaderChooseOrgButton() {
   // waiting for a choice and the red warning would be a lie (GATES-TAIL, VERIFIER-21 #7). The
   // page declared the object's organization: say it quietly, or say nothing.
   const objectOrganization = usePageObjectOrganization();
+  const pathname = usePathname() ?? "";
+
+  // 🚨 THE ADMIN SEAT NEVER ACTS AS ITSELF (common-docs/policies/admin-seat-
+  // never-acts-as-itself.md): admin pages act at the record owner's level and
+  // show the platform's own records, so the admin shell carries no organization
+  // chooser. An admin page that truly needs one asks through the hold-and-ask
+  // gate (lib/organization/organization-gate.ts), never this header.
+  if (pathname === "/administration" || pathname.startsWith("/administration/")) return null;
 
   if (objectOrganization && !open) {
     if (objectOrganization.shownByPage || !objectOrganization.name) return null;

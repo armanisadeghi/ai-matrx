@@ -248,12 +248,7 @@ export function SuggestionsManager() {
   if (!isMobile) {
     mainArea = (
       <>
-        {error ? (
-          <div role="alert" className="px-3 py-2 text-sm text-destructive">
-            Couldn&apos;t load suggestions: {error}
-            <ErrorAlchemyMenu className="ml-auto" />
-          </div>
-        ) : null}
+        {/* The suggestions read's failure is said once, by the table (read=). */}
         <SuggestionsTable
           rows={rows}
           // read-gate-exempt: the table takes read= below and shows the failure in place of its rows and total

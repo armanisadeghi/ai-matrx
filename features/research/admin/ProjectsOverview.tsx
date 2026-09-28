@@ -22,7 +22,6 @@ import { getTopicProjectLinks } from "../service";
 import type { ResearchTemplate } from "../types";
 import { fetchResearchTopics, fetchTemplates } from "./service";
 import { AGENT_CONFIG_KEYS } from "./types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 export interface ResearchTopicRow {
@@ -280,22 +279,7 @@ export function ProjectsOverview() {
         className="flex h-full min-h-0 flex-col"
         aria-busy={loading || isRefreshing}
       >
-        {loadError && (
-          <div
-            role="alert"
-            className="mb-2 flex shrink-0 items-center gap-2 text-sm text-red-600 dark:text-red-400"
-          >
-            Could not refresh research projects: {loadError}
-            <button
-              type="button"
-              className="underline"
-              onClick={() => void loadData()}
-            >
-              Retry
-            </button>
-            <ErrorAlchemyMenu className="ml-auto" />
-          </div>
-        )}
+        {/* The read's failure is said once, by the table (read=). */}
         <div className="min-h-0 flex-1">
           <MatrxDataTable<ResearchProjectTableRow>
             tableId="research/admin/projects"

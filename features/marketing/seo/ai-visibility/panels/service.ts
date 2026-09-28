@@ -13,6 +13,13 @@
 // reason: a stored trend can disagree with the answers beneath it, and the day
 // it does, neither number is believable again.
 //
+// 🚨 NO POOLED HEADLINE. The old "named in X% of answers, up N points" mixed
+// questions that contain the brand with questions that don't, across every
+// engine, and called a first-vs-last bucket difference a trend. It is gone
+// (brief: "Six named metrics replace the pooled headline"); the six named
+// metrics come from the server (`panel-api.ts` → `/metrics`). What stays here
+// is per-question and per-message COUNTS — never a pooled rate.
+//
 // 🚨 NULL IS UNMEASURED, NEVER ZERO. A prompt no engine has answered has no
 // presence rate — it does not have a rate of 0%. Every function here returns
 // null for an empty denominator, and no caller may coalesce that to a zero.
@@ -51,15 +58,6 @@ export interface PanelAnswer {
   answerText: string;
 }
 
-export interface PresencePoint {
-  bucket: string;
-  answers: number;
-  mentioned: number;
-  /** 0-100, or null when nothing was measured in this bucket. */
-  mentionRate: number | null;
-  citationRate: number | null;
-}
-
 export interface PromptStanding {
   key: string;
   text: string;
@@ -77,18 +75,13 @@ export interface MessageStanding {
   label: string;
   answers: number;
   presentIn: number;
-  presenceRate: number | null;
   verdict: string;
 }
 
 export interface PanelTrend {
   answers: number;
-  mentionRate: number | null;
-  citationRate: number | null;
-  points: PresencePoint[];
   prompts: PromptStanding[];
   messages: MessageStanding[];
-  headline: string;
 }
 
 function pgError(error: { message?: string; code?: string }): Error {
@@ -97,15 +90,6 @@ function pgError(error: { message?: string; code?: string }): Error {
       ? `${error.message}${error.code ? ` (${error.code})` : ""}`
       : "Supabase returned an error with no message.",
   );
-}
-
-function rate(numerator: number, denominator: number): number | null {
-  if (!denominator) return null;
-  return Math.round((numerator / denominator) * 1000) / 10;
-}
-
-export function formatPanelRate(value: number | null, whenUnmeasured = "—"): string {
-  return value === null ? whenUnmeasured : `${value}%`;
 }
 
 /** The org's saved panels for one site. */
@@ -160,18 +144,6 @@ function messagePresent(answerText: string, message: PanelKeyMessage): boolean {
   });
 }
 
-/** Monday of the week a timestamp falls in, as an ISO date. */
-function weekBucket(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso.slice(0, 10);
-  const day = (date.getUTCDay() + 6) % 7;
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - day),
-  )
-    .toISOString()
-    .slice(0, 10);
-}
-
 /**
  * Every answer this panel's questions have collected, newest first.
  *
@@ -220,46 +192,15 @@ export function buildPanelTrend(
   const engines = (row.engines ?? []).map(String);
   const keyByText = new Map(prompts.map((prompt) => [prompt.text, prompt.key]));
 
-  const buckets = new Map<string, PresencePoint>();
   // prompt key → engine → newest answer (the list arrives newest first).
   const latest = new Map<string, Map<string, PanelAnswer>>();
   for (const answer of answers) {
-    const bucket = weekBucket(answer.observedAt);
-    const point =
-      buckets.get(bucket) ??
-      ({
-        bucket,
-        answers: 0,
-        mentioned: 0,
-        mentionRate: null,
-        citationRate: null,
-      } as PresencePoint & { cited?: number });
-    point.answers += 1;
-    if (answer.mentioned) point.mentioned += 1;
-    (point as PresencePoint & { cited: number }).cited =
-      ((point as PresencePoint & { cited?: number }).cited ?? 0) +
-      (answer.cited ? 1 : 0);
-    buckets.set(bucket, point);
-
     const key = keyByText.get(answer.query);
     if (!key) continue;
     const perEngine = latest.get(key) ?? new Map<string, PanelAnswer>();
     if (!perEngine.has(answer.engine)) perEngine.set(answer.engine, answer);
     latest.set(key, perEngine);
   }
-
-  const points = [...buckets.values()]
-    .map((point) => {
-      const cited = (point as PresencePoint & { cited?: number }).cited ?? 0;
-      return {
-        bucket: point.bucket,
-        answers: point.answers,
-        mentioned: point.mentioned,
-        mentionRate: rate(point.mentioned, point.answers),
-        citationRate: rate(cited, point.answers),
-      };
-    })
-    .sort((a, b) => a.bucket.localeCompare(b.bucket));
 
   const standings: PromptStanding[] = prompts.map((prompt) => {
     const perEngine = latest.get(prompt.key) ?? new Map<string, PanelAnswer>();
@@ -276,7 +217,7 @@ export function buildPanelTrend(
       enginesMentioning: mentioning.sort(),
       enginesAbsent: absent.sort(),
       enginesUnmeasured: unmeasured.sort(),
-      lastMeasuredAt: moments.length ? moments.sort().at(-1)! : null,
+      lastMeasuredAt: moments.sort().at(-1) ?? null,
       responseIds: [...perEngine.values()].map((answer) => answer.id),
       verdict: promptVerdict(mentioning, absent, unmeasured),
     };
@@ -291,7 +232,6 @@ export function buildPanelTrend(
       label: message.label,
       answers: answers.length,
       presentIn,
-      presenceRate: rate(presentIn, answers.length),
       verdict:
         answers.length === 0
           ? `“${message.label}” has not been measured yet.`
@@ -301,16 +241,10 @@ export function buildPanelTrend(
     };
   });
 
-  const mentioned = answers.filter((answer) => answer.mentioned).length;
-  const cited = answers.filter((answer) => answer.cited).length;
   return {
     answers: answers.length,
-    mentionRate: rate(mentioned, answers.length),
-    citationRate: rate(cited, answers.length),
-    points,
     prompts: standings,
     messages: messageStandings,
-    headline: headlineFor(answers.length, rate(mentioned, answers.length), points),
   };
 }
 
@@ -332,25 +266,4 @@ function promptVerdict(
     ? ` ${unmeasured.length} engine(s) have not been asked.`
     : "";
   return `${mentioning.length} of ${mentioning.length + absent.length} engine(s) name you — missing from ${absent.join(", ")}.${tail}`;
-}
-
-function headlineFor(
-  answers: number,
-  mentionRate: number | null,
-  points: PresencePoint[],
-): string {
-  if (answers === 0 || mentionRate === null) {
-    return (
-      "No answers collected in this window — this panel has not run, which is " +
-      "not the same as you being absent from AI answers."
-    );
-  }
-  const lead = `You were named in ${mentionRate}% of ${answers} AI answer(s).`;
-  if (points.length < 2) return `${lead} One measurement so far — the trend starts next run.`;
-  const first = points[0].mentionRate;
-  const last = points.at(-1)!.mentionRate;
-  if (first === null || last === null) return lead;
-  const delta = Math.round((last - first) * 10) / 10;
-  if (Math.abs(delta) < 1) return `${lead} That is flat across the window.`;
-  return `${lead} That is ${delta > 0 ? "up" : "down"} ${Math.abs(delta)} points across the window.`;
 }

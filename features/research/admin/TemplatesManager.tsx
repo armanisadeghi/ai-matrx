@@ -77,7 +77,6 @@ import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/se
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 const SYSTEM_AGENT_TAB = ["system"] as const;
@@ -841,22 +840,7 @@ export function TemplatesManager() {
         className="flex h-full min-h-0 flex-col"
         aria-busy={loading || isRefreshing}
       >
-        {loadError && (
-          <div
-            role="alert"
-            className="mb-2 flex shrink-0 items-center gap-2 text-sm text-red-600 dark:text-red-400"
-          >
-            Could not refresh research templates: {loadError}
-            <button
-              type="button"
-              className="underline"
-              onClick={() => void loadData()}
-            >
-              Retry
-            </button>
-            <ErrorAlchemyMenu className="ml-auto" />
-          </div>
-        )}
+        {/* The read's failure is said once, by the table (read=). */}
         <div className="min-h-0 flex-1">
           <MatrxDataTable<ResearchTemplate>
             tableId="research-admin-templates"

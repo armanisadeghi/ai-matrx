@@ -135,6 +135,7 @@ export const SOURCE_FEATURES = [
   "row_history",
   "provenance",
   "reachability",
+  "billing",
   "client-unmapped",
   "web-capture",
   "admin",

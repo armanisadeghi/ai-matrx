@@ -51,7 +51,6 @@ import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 export const ANALYTICS_COVERAGE = { noun: "app", answeredBy: "client" } as const;
@@ -488,15 +487,7 @@ export default function AgentAppsAnalyticsPage() {
             />
           </div>
 
-          {loadError && (
-            <div role="alert" className="text-sm text-destructive">
-              Could not refresh app analytics: {loadError}{" "}
-              <button type="button" className="underline" onClick={() => void loadData()}>
-                Retry
-              </button>
-              <ErrorAlchemyMenu className="ml-auto" />
-            </div>
-          )}
+          {/* The analytics read's failure is said once, by the table (read=). */}
           <div className="min-h-[32rem]">
             <MatrxDataTable<AgentAppAdminView>
               tableId="admin-agent-apps-analytics"

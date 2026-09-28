@@ -1042,6 +1042,21 @@ module in the folder + the two deleted filenames).
   reachable, and it records nothing on a timeline because nothing in a chat says
   which Person the message is about.
 
+## Pitch advisories — the PR floor (`features/crm/pitch-advisories/`, 2026-09-27)
+
+ONE shared check (aidream `POST /crm/pitch-advisories`, `aidream/services/pitch_advisories/FEATURE.md`) returns
+E1–E17 warnings `{rule, severity info|warn|strong, message, offer}` — never a refusal
+(`common-docs/policies/validation-offers-never-blocks.md`). ONE component, `PitchAdvisoryPanel`, renders them
+above the action button on: `SingleSendDialog` (single_send), the Activate step of `OutreachListsPage` via
+`PitchAdvisoryConfirmDialog` (list_send), `ChaseboxDraftDialog` (chasebox_review), the Press Room
+`SourceRequestRail` "Mark submitted" (source_request), and `ReputationWorkspace` CaseCard's Complete (crisis_publish —
+there is no separate Publish step yet). The action button stays live; pressing it calls `recordGoAhead`, which
+writes `platform.log_activity` (action `pr.advisory_override`: who, when, the warnings seen). Mandate offers run by
+key through `MandateOffer` and say so in words when the job is not built or not assigned; local offers a host cannot
+perform render as "Suggested: …", never as a dead button. Knobs: the org's `pr.*` settings (Organization →
+Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` carries a hand-mirrored type block until
+`pnpm sync-types` can regenerate (see its header). Test: `features/crm/pitch-advisories/__tests__/`.
+
 ## Not built yet
 
 - A regenerated `types/python-generated/api-types.ts` for this endpoint. It still
@@ -1068,6 +1083,8 @@ module in the folder + the two deleted filenames).
 ---
 
 ## Change log
+
+- 2026-09-27 — Pitch advisories (PR floor E1–E17): one panel on five surfaces, go-ahead recorded in platform.activity_log.
 
 - page-pass 2026-09-27 round 6 (/crm/[partyId]): unset fillable fields reach
   the agent as ""/null; one note door (Notes card) and no direction toggle on a

@@ -216,7 +216,10 @@ function NestedNode({ data }: NodeProps) {
   const d = data as unknown as NestedData;
   return (
     <div style={{ width: NEST_W, height: NEST_H }}>
-      <Handle type="target" position={Position.Top} className="!h-2 !w-2 !border-0 !bg-transparent" />
+      <Handle id="top" type="target" position={Position.Top} className="!h-2 !w-2 !border-0 !bg-transparent" />
+      {/* Stacked teams hang off a trunk, so their links arrive from the side. */}
+      <Handle id="left" type="target" position={Position.Left} className="!h-2 !w-2 !border-0 !bg-transparent" />
+      <Handle id="right" type="target" position={Position.Right} className="!h-2 !w-2 !border-0 !bg-transparent" />
       <AgentOrgCard
         node={d.placed}
         state={{ selected: false, matched: false, select: () => {} }}
@@ -273,18 +276,24 @@ function buildNestedGraph(
     out.teamSize[memberId] = countDescendants(member);
     sig.push(`${memberId}:${out.teamSize[memberId]}:${collapsed.has(memberId) ? 1 : 0}`);
     if (collapsed.has(memberId)) continue;
-    const layout = layoutOrgForest(member.children, {
+    // Lay the member out WITH its team, exactly as the Org chart view does
+    // (stacked columns included), then hang everything but the member itself
+    // off the member node.
+    const layout = layoutOrgForest([member], {
       ...DEFAULT_ORG_CHART_LAYOUT,
       padding: 0,
       collapsed: new Set(),
     });
+    const self = layout.nodes[0];
+    const team = layout.nodes.slice(1);
     out.widths[memberId] = layout.width;
-    out.heights[memberId] = NEST_DROP + layout.height;
-    const offsetX = MEM_W / 2 - layout.width / 2;
-    const offsetY = MEM_H + NEST_DROP;
+    out.heights[memberId] = layout.height - NEST_H;
+    // Centre on the member card (MEM_W wide, MEM_H tall on this canvas).
+    const offsetX = MEM_W / 2 - (self.x + NEST_W / 2);
+    const offsetY = MEM_H - (self.y + NEST_H);
     const idOf = (key: string) => `nested:${key}`;
     accentOf.set(member.key, member.data.accent ?? rootAccent);
-    for (const n of layout.nodes) {
+    for (const n of team) {
       accentOf.set(n.key, n.node.data.accent ?? accentOf.get(n.parentKey ?? member.key) ?? rootAccent);
       out.nodes.push({
         id: idOf(n.key),
@@ -300,13 +309,22 @@ function buildNestedGraph(
         [n.key, nd.pending, nd.unavailable, nd.accent, nd.mode, nd.edgeKind, nd.otherPlacements, nd.loop, nd.roleTitle, memberCounts.get(nd.agentId)].join(":"),
       );
     }
-    for (const n of layout.nodes) {
+    const placedByKey = new Map(layout.nodes.map((n) => [n.key, n]));
+    for (const n of team) {
       const parentKey = n.parentKey ?? member.key;
       const manual = n.edgeKind === "manual";
+      const parent = placedByKey.get(parentKey);
+      // Same test the shared layout uses: siblings side by side in one row = a
+      // normal fan-out; siblings on several rows = a stacked team.
+      const siblings = team.filter((t) => t.parentKey === parentKey);
+      const stacked = new Set(siblings.map((t) => t.y)).size > 1;
+      const targetHandle =
+        stacked && parent ? (n.x + NEST_W / 2 < parent.x + NEST_W / 2 ? "right" : "left") : "top";
       out.edges.push({
         id: `e-${idOf(n.key)}`,
         source: parentKey === member.key ? memberId : idOf(parentKey),
         target: idOf(n.key),
+        targetHandle,
         type: "smoothstep",
         style: {
           stroke: manual
@@ -645,7 +663,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
                 <svg width="26" height="8" aria-hidden>
                   <line x1="1" y1="4" x2="25" y2="4" stroke={a.stroke} strokeWidth={2.5} strokeLinecap="round" />
                 </svg>
-                <span className="text-foreground">Automatic — Orchestra</span>
+                <span className="text-foreground">Solid — automatic (Orchestra, in its colour)</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg width="26" height="8" aria-hidden>
@@ -660,7 +678,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="text-foreground">Manual — recorded, not enforced</span>
+                <span className="text-foreground">Dashed — manual (recorded, not enforced)</span>
               </div>
             </div>
           </Panel>

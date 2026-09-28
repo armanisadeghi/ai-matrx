@@ -39,7 +39,6 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { describeBackendFailure } from "@/lib/api/errors";
-import { extractErrorMessage } from "@/utils/errors";
 import {
   BackendFailureDetails,
   formatCompactDate,
@@ -57,7 +56,6 @@ import {
   assertGoogleAnalyticsCampaignActive,
   canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 export function CollectionStatusPanel({
@@ -238,20 +236,7 @@ export function CollectionStatusPanel({
         </Button>
       </div>
       <div className="p-2">
-        {status.isError ? (
-          <div className="flex items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
-            {extractErrorMessage(status.error)}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7"
-              onClick={() => void status.refetch()}
-            >
-              Retry
-            </Button>
-            <ErrorAlchemyMenu />
-          </div>
-        ) : null}
+        {/* The status read's failure is said once, by the table (read=). */}
         <MatrxDataTable
           urlState={{ id: "collection-status" }}
           data={rows}

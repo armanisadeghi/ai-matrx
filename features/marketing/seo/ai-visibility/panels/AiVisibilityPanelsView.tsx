@@ -9,6 +9,12 @@
 // answers the question that actually decides whether anything is working: "are
 // we showing up, and is that getting better or worse".
 //
+// 🚨 NO POOLED HEADLINE. Each panel shows the six named metrics from the
+// server (`PanelMetricsSection`), each split by set, way of asking, prompted
+// state, engine and wave — never "named in X% of answers, up N points".
+// Each panel also carries its Design section (steps, reviews, files) and the
+// page offers "Design a panel", the create form it never had.
+//
 // 🚨 EVERY RATE CAN SAY "NOT MEASURED". A panel that has not run shows exactly
 // that, never 0% — a fabricated zero here reads as "assistants never mention
 // you" and sends a non-technical expert rewriting their whole site.
@@ -16,17 +22,18 @@
 // THE DOOR LAW: each question opens the saved AI answers behind it, and each
 // panel's health opens its own run history.
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { humanizeBackendError } from "@/utils/errors";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
   CalendarClock,
-  MessageSquareQuote,
+  ClipboardList,
   RefreshCw,
-  ScanSearch,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   InlineQueryError,
@@ -35,19 +42,23 @@ import {
   SectionCard,
   formatCompactDate,
 } from "@/features/marketing/components/shared/MarketingUi";
+import type { MarketingSite } from "@/features/marketing/types";
 import { cn } from "@/lib/utils";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   buildPanelTrend,
   fetchPanelAnswers,
-  formatPanelRate,
   listSitePanels,
   panelKeyMessages,
   panelPrompts,
-  PANEL_TREND_DAYS,
   type AiVisibilityPanelRow,
   type PanelTrend,
 } from "./service";
+import { DesignPanelForm } from "./DesignPanelForm";
+import { PanelDesignSection, usePanelDesign } from "./PanelDesignSection";
+import { PanelMetricsSection } from "./PanelMetricsSection";
+import { panelStatusInfo } from "./format";
+import { panelQueryKeys } from "./panel-api";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface LoadedPanel {
@@ -122,68 +133,44 @@ function PromptRow({
   );
 }
 
-function TrendBars({ trend }: { trend: PanelTrend }) {
-  if (trend.points.length === 0) {
-    return (
-      <p className="px-3 py-4 text-xs text-muted-foreground">
-        Nothing measured in the last {PANEL_TREND_DAYS} days. This panel runs on
-        its own cadence — there is nothing to switch on.
-      </p>
-    );
-  }
-  return (
-    <div className="flex items-end gap-1 px-3 py-3">
-      {trend.points.map((point) => (
-        <span
-          key={point.bucket}
-          title={`Week of ${point.bucket}: named in ${formatPanelRate(point.mentionRate)} of ${point.answers} answer(s)`}
-          className="flex min-w-0 flex-1 flex-col items-center gap-1"
-        >
-          <span className="flex w-full flex-col justify-end" style={{ height: 56 }}>
-            <span
-              className="w-full rounded-t bg-primary/70"
-              style={{ height: `${point.mentionRate ?? 0}%` }}
-            />
-          </span>
-          <span className="w-full truncate text-center text-[10px] text-muted-foreground">
-            {point.bucket.slice(5)}
-          </span>
-        </span>
-      ))}
-    </div>
-  );
+/** Read a column lane A adds to the panel row, before the generated types carry it. */
+function rowStatus(row: AiVisibilityPanelRow): string | null {
+  const value = (row as AiVisibilityPanelRow & { status?: unknown }).status;
+  return typeof value === "string" ? value : null;
 }
 
 function PanelCard({
   panel,
   brandId,
   siteId,
+  organizationId,
 }: {
   panel: LoadedPanel;
   brandId: string | null;
   siteId: string;
+  organizationId: string;
 }) {
   const { row, trend } = panel;
   const prompts = panelPrompts(row);
   const messages = panelKeyMessages(row);
+  const design = usePanelDesign(row.id, organizationId);
+  const status = panelStatusInfo(design.data?.panel_status ?? rowStatus(row));
+  const blindReviewOpen = Boolean(design.data?.open_gate?.blind);
   return (
-    <SectionCard title={row.name} anchor="ai_visibility_panel">
-      <div className="grid grid-cols-2 border-b border-border/60 sm:grid-cols-4">
-        <MetricCell
-          anchor="panel_mention_rate"
-          label="Named in answers"
-          value={formatPanelRate(trend.mentionRate, "Not measured")}
-          detail={`${trend.answers.toLocaleString()} answer(s) in ${PANEL_TREND_DAYS} days`}
-          tone={trend.mentionRate === null ? "default" : "good"}
-          icon={<ScanSearch className="h-3.5 w-3.5" />}
-        />
-        <MetricCell
-          anchor="panel_citation_rate"
-          label="Cited as a source"
-          value={formatPanelRate(trend.citationRate, "Not measured")}
-          detail="the assistant linked to you"
-          icon={<MessageSquareQuote className="h-3.5 w-3.5" />}
-        />
+    <SectionCard
+      title={row.name}
+      anchor="ai_visibility_panel"
+      headerExtra={
+        <Badge variant={status.tone} className="whitespace-nowrap">
+          {status.label}
+        </Badge>
+      }
+    >
+      <p className="border-b border-border/60 px-3 py-2 text-[11px] text-muted-foreground">
+        <span className="font-medium text-foreground">{status.label}: </span>
+        {status.explanation}
+      </p>
+      <div className="grid grid-cols-2 border-b border-border/60">
         <MetricCell
           anchor="panel_cadence"
           label="Cadence"
@@ -194,8 +181,7 @@ function PanelCard({
           icon={<CalendarClock className="h-3.5 w-3.5" />}
         />
         <MetricCell
-          anchor="panel_health"
-          label="Last run"
+          anchor="panel_health"          label="Last run"
           value={healthLabel(row)}
           detail={
             row.last_run_at
@@ -230,8 +216,27 @@ function PanelCard({
         </div>
       ) : null}
 
-      <p className="px-3 py-2 text-xs text-muted-foreground">{trend.headline}</p>
-      <TrendBars trend={trend} />
+      <div className="border-b border-border/60">
+        <p className="px-3 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Measurements
+        </p>
+        <PanelMetricsSection
+          panelId={row.id}
+          organizationId={organizationId}
+          hiddenForBlindReview={blindReviewOpen}
+        />
+      </div>
+
+      <div className="border-b border-border/60">
+        <p className="px-3 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Design
+        </p>
+        <PanelDesignSection
+          design={design}
+          panelId={row.id}
+          organizationId={organizationId}
+        />
+      </div>
 
       <div className="border-t border-border/60">
         <p className="px-3 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -261,11 +266,13 @@ function PanelCard({
                   <span className="truncate text-xs font-medium">{message.label}</span>
                   <span
                     className={cn(
-                      "text-sm font-semibold tabular-nums",
-                      message.presenceRate === null && "text-muted-foreground/70",
+                      "text-xs font-semibold tabular-nums",
+                      message.answers === 0 && "text-muted-foreground/70",
                     )}
                   >
-                    {formatPanelRate(message.presenceRate, "—")}
+                    {message.answers === 0
+                      ? "Not measured yet"
+                      : `${message.presentIn} of ${message.answers}`}
                   </span>
                 </div>
                 <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
@@ -281,49 +288,57 @@ function PanelCard({
 }
 
 export function AiVisibilityPanelsView({
-  siteId,
+  site,
   brandId,
 }: {
-  siteId: string;
+  site: MarketingSite;
   brandId: string | null;
 }) {
-  const [panels, setPanels] = useState<LoadedPanel[] | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
+  const siteId = site.id;
+  const queryClient = useQueryClient();
+  const [designing, setDesigning] = useState(false);
+  const panelsQuery = useQuery({
+    queryKey: ["marketing", "ai-visibility", "panels", siteId] as const,
+    queryFn: async (): Promise<LoadedPanel[]> => {
       const rows = await listSitePanels(siteId);
-      const loaded = await Promise.all(
+      return Promise.all(
         rows.map(async (row) => ({
           row,
           trend: buildPanelTrend(row, await fetchPanelAnswers(row)),
         })),
       );
-      setPanels(loaded);
-    } catch (e) {
-      setError(e instanceof Error ? e : new Error(String(e)));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [siteId]);
+    },
+  });
+  const panels = panelsQuery.data ?? null;
+  const isLoading = panelsQuery.isFetching;
+  const load = () => panelsQuery.refetch();
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  if (isLoading && !panels) return <LoadingSurface label="Loading your prompt panels…" />;
-  if (error && !panels) {
+  if (panelsQuery.isPending) return <LoadingSurface label="Loading your prompt panels…" />;
+  if (panelsQuery.error && !panels) {
     return (
       <InlineQueryError
         what="AI visibility panels"
-        error={error}
+        error={panelsQuery.error}
         onRetry={() => void load()}
       />
     );
   }
+
+  const designForm = designing ? (
+    <SectionCard title="Design a panel" anchor="ai_visibility_panel_design_form">
+      <DesignPanelForm
+        site={site}
+        brandId={brandId}
+        onCancel={() => setDesigning(false)}
+        onStarted={(view) => {
+          // Seed the new panel's design so its section opens already polling.
+          queryClient.setQueryData(panelQueryKeys.design(view.panel_id), view);
+          setDesigning(false);
+          void load();
+        }}
+      />
+    </SectionCard>
+  ) : null;
 
   return (
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3">
@@ -336,37 +351,50 @@ export function AiVisibilityPanelsView({
             and not a screenshot.
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => void load()}
-          disabled={isLoading}
-        >
-          <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
-        </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          {!designing ? (
+            <Button size="sm" onClick={() => setDesigning(true)}>
+              <ClipboardList className="h-3.5 w-3.5" /> Design a panel
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label="Reload panels"
+            onClick={() => void load()}
+            disabled={isLoading}
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
+          </Button>
+        </div>
       </div>
 
-      {panels && panels.length === 0 ? (
+      {designForm}
+
+      {panels && panels.length === 0 && !designing ? (
         <SectionCard title="No panels yet" anchor="ai_visibility_panels_empty">
           <div className="px-3 py-4 text-xs text-muted-foreground">
             <p>
-              A panel is a handful of the questions your buyers actually ask.
-              Once one exists, it runs on its own schedule and this page becomes
-              a trend — every question, every engine, and whether your key
-              messages are the ones coming back.
+              A panel is a set of the questions your buyers actually ask. Once
+              one exists, this page shows what AI assistants say about you —
+              asked with your name and without it, engine by engine, with how
+              sure each number is.
             </p>
-            <p className="mt-2">
-              Panels are declared through the platform&rsquo;s AI-visibility
-              service (each run is priced before it spends and capped per pass).
-              In the meantime, the{" "}
-              <Link
-                href={marketingRoutes.site(brandId, siteId, "/ai-visibility")}
-                className="text-primary hover:underline"
-              >
-                one-off analyzer
-              </Link>{" "}
-              answers the same question for a single query, right now.
-            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button size="sm" onClick={() => setDesigning(true)}>
+                <ClipboardList className="h-3.5 w-3.5" /> Design a panel
+              </Button>
+              <span>
+                Or ask one question right now with the{" "}
+                <Link
+                  href={marketingRoutes.site(brandId, siteId, "/ai-visibility")}
+                  className="text-primary hover:underline"
+                >
+                  one-off analyzer
+                </Link>
+                .
+              </span>
+            </div>
           </div>
         </SectionCard>
       ) : null}
@@ -377,6 +405,7 @@ export function AiVisibilityPanelsView({
           panel={panel}
           brandId={brandId}
           siteId={siteId}
+          organizationId={site.organization_id}
         />
       ))}
     </main>

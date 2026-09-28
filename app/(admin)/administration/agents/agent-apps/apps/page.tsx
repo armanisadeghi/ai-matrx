@@ -47,7 +47,7 @@ import {
   agentAppExecutionsHref,
 } from "@/features/agent-apps/components/AgentAppRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { readOf } from "@/components/read-state/ReadGate";
 
 function getStatusBadge(status: string) {
@@ -512,22 +512,8 @@ export default function AgentAppsAdminListPage() {
           className="flex h-full min-h-0 flex-col"
           aria-busy={loading || isRefreshing}
         >
-          {loadError && (
-            <div
-              role="alert"
-              className="mb-2 flex shrink-0 items-center gap-2 text-sm text-red-600 dark:text-red-400"
-            >
-              Could not refresh agent apps: {loadError}
-              <button
-                type="button"
-                className="underline"
-                onClick={() => void load()}
-              >
-                Retry
-              </button>
-              <ErrorAlchemyMenu className="ml-auto" />
-            </div>
-          )}
+          {/* The apps read's failure is said once, by the table (read=); the
+              counts below go blank-with-a-reason instead of saying 0. */}
           <div className="grid shrink-0 grid-cols-3 gap-3 pb-3">
             {[
               [stats.published, "Published loaded", "text-success"],
@@ -536,7 +522,9 @@ export default function AgentAppsAdminListPage() {
             ].map(([value, label, color]) => (
               <Card key={String(label)}>
                 <CardContent className="p-2">
-                  <div className={`text-2xl font-bold ${color}`}>{value}</div>
+                  <div className={`text-2xl font-bold ${color}`}>
+                    <UntrustedCount value={Number(value)} read={readOf({ loading, error: loadError })} label={String(label)} />
+                  </div>
                   <div className="text-xs text-muted-foreground">{label}</div>
                 </CardContent>
               </Card>

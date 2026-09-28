@@ -18,6 +18,7 @@ import {
   addVaultAttachment,
   addVaultField,
   addVaultGrant,
+  addVaultOrganizationGrant,
   assignVaultItem,
   createVaultItem,
   deleteVaultAttachment,
@@ -189,6 +190,12 @@ export interface VaultActions {
     body: { can_use?: boolean; can_manage?: boolean },
   ) => Promise<VaultGrant>;
   removeGrant: (itemId: string, grantId: string) => Promise<void>;
+  /** Share a personal item into an organization's vault (use or editor). */
+  shareToOrganization: (
+    itemId: string,
+    organization: { id: string; name: string },
+    canManage: boolean,
+  ) => Promise<VaultGrant>;
   /** Hand the item to ANOTHER user — the sender loses all access. */
   giveOwnership: (
     itemId: string,
@@ -417,6 +424,13 @@ export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
       run("Access revoked", async () => {
         await removeVaultGrant(itemId, grantId);
       }),
+    shareToOrganization: (itemId, organization, canManage) =>
+      run(`Shared into ${organization.name}'s vault`, () =>
+        addVaultOrganizationGrant(itemId, {
+          organization_id: organization.id,
+          can_manage: canManage,
+        }),
+      ),
     giveOwnership: (itemId, recipientEmail) =>
       run(`Ownership given to ${recipientEmail}`, () =>
         giveVaultItemOwnership(itemId, recipientEmail),

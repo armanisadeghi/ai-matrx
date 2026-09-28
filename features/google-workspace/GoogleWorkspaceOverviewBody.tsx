@@ -303,7 +303,12 @@ function GoogleWorkspaceOverviewBodyContent({
             resources={resources}
             onAddAccount={onAddAccount}
             onManageGmailReading={() =>
-              openConsent({ initialProductKeys: ["gmail_read"] })
+              openConsent({
+                ...(selectedConnection
+                  ? { initialConnectionId: selectedConnection.id }
+                  : {}),
+                initialProductKeys: ["gmail_read"],
+              })
             }
             onManageWorkspace={onManageWorkspace}
             onEnableCapability={enableCapability}

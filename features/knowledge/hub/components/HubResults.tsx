@@ -468,7 +468,9 @@ export function BrowseResults({
   if (layout === "table")
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        {failures}
+        {/* With nothing loaded the table says the failure itself (read=), once;
+            the per-section strip is for a partial failure beside rows that did load. */}
+        {hits.length > 0 ? failures : null}
         <TableLayout
           hits={hits}
           handlers={handlers}

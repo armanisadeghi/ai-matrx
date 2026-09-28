@@ -56,6 +56,18 @@ function certifiedPct(r: AuditSchemaSummaryRow): number | null {
   return scored === 0 ? null : Math.round((r.certified / scored) * 100);
 }
 
+type SchemaTotalField = Exclude<keyof AuditSchemaSummaryRow, "schema_name">;
+
+function schemaTotal(rows: readonly AuditSchemaSummaryRow[], field: SchemaTotalField): number {
+  return rows.reduce((total, row) => total + row[field], 0);
+}
+
+function schemaCertificationRate(rows: readonly AuditSchemaSummaryRow[]): string {
+  const certified = schemaTotal(rows, "certified");
+  const scored = certified + schemaTotal(rows, "uncertified");
+  return scored === 0 ? "—" : `${Math.round((certified / scored) * 100)}%`;
+}
+
 const schemaHref = (row: AuditSchemaSummaryRow) =>
   `/administration/database/canonicalization/summary?schema=${encodeURIComponent(row.schema_name)}`;
 
@@ -207,6 +219,28 @@ export function SchemaSummaryPage() {
         <MatrxDataTable<AuditSchemaSummaryRow>
           data={schemaRows}
           columns={COLUMNS}
+          summary={{
+            metrics: [
+              { id: "schemas", label: "Schemas", value: ({ rows: visible }) => visible.length },
+              { id: "tables", label: "Tables", value: ({ rows: visible }) => schemaTotal(visible, "tables") },
+              { id: "certified", label: "Certified", value: ({ rows: visible }) => schemaTotal(visible, "certified") },
+              { id: "uncertified", label: "Not certified", value: ({ rows: visible }) => schemaTotal(visible, "uncertified") },
+              { id: "machinery", label: "Machinery", value: ({ rows: visible }) => schemaTotal(visible, "machinery") },
+              { id: "fails", label: "Fails", value: ({ rows: visible }) => schemaTotal(visible, "fails") },
+              { id: "warns", label: "Warnings", value: ({ rows: visible }) => schemaTotal(visible, "warns") },
+              { id: "certification-rate", label: "Certification rate", value: ({ rows: visible }) => schemaCertificationRate(visible) },
+            ],
+            totals: {
+              fails: ({ rows: visible }) => schemaTotal(visible, "fails"),
+              warns: ({ rows: visible }) => schemaTotal(visible, "warns"),
+              tables: ({ rows: visible }) => schemaTotal(visible, "tables"),
+              failing_tables: ({ rows: visible }) => schemaTotal(visible, "failing_tables"),
+              certified: ({ rows: visible }) => schemaTotal(visible, "certified"),
+              uncertified: ({ rows: visible }) => schemaTotal(visible, "uncertified"),
+              machinery: ({ rows: visible }) => schemaTotal(visible, "machinery"),
+              certified_pct: ({ rows: visible }) => schemaCertificationRate(visible),
+            },
+          }}
           getRowId={(row) => row.schema_name}
           isLoading={loading}
           read={readOf(

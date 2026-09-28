@@ -45,7 +45,6 @@ import { isValidShortcutContext } from "@/features/agents/utils/shortcut-context
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { agentShortcutRecordSummary } from "../format";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 export interface ShortcutListProps extends ScopeProps {
@@ -373,12 +372,7 @@ export function ShortcutList({
   return (
     <TooltipProvider>
       <div className={`flex h-full min-h-0 flex-col ${className ?? ""}`}>
-        {error && (
-          <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-            Unable to load shortcuts: {error}
-            <ErrorAlchemyMenu error={error} />
-          </div>
-        )}
+        {/* The shortcuts read's failure is said once, by the table (read=). */}
         <MatrxDataTable<AgentShortcutRecord>
           data={filteredShortcuts}
           columns={columns}

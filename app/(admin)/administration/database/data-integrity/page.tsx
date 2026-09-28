@@ -574,7 +574,8 @@ export default function DataIntegrityPage() {
         </div>
       </div>
 
-      {error && (
+      {/* A failed RUN over loaded checks; a failed load of the checks is the table's to say, once. */}
+      {error && checks && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>

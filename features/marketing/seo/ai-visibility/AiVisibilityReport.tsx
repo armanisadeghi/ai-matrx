@@ -146,6 +146,13 @@ function hostname(value: string): string {
   }
 }
 
+/**
+ * Said on every one-question report (brief: "Six named metrics replace the
+ * pooled headline"). One answer per engine at one moment is an anecdote; a
+ * measurement needs a designed panel asked repeatedly.
+ */
+export const ONE_QUESTION_NOT_A_MEASUREMENT = "One question, one moment. Not a measurement.";
+
 export function AiVisibilityReport({
   result,
   shareUrl,
@@ -180,6 +187,12 @@ export function AiVisibilityReport({
             <blockquote className="mt-5 max-w-3xl border-l-2 border-primary pl-4 text-base text-muted-foreground sm:text-lg">
               “{result.query}”
             </blockquote>
+            <p
+              className="mt-3 text-sm font-medium text-foreground"
+              data-surface-value="ai_visibility_not_a_measurement"
+            >
+              {ONE_QUESTION_NOT_A_MEASUREMENT}
+            </p>
             <a
               href={result.website_url}
               target="_blank"

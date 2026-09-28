@@ -100,7 +100,8 @@ export async function checkJournalistActivity(
   input?: { windowDays?: number; useSearch?: boolean },
 ): Promise<ActivityVerdict> {
   const { data } = await apiPost(buildPath(ACTIVITY, { party_id: partyId }), {
-    window_days: input?.windowDays ?? 30,
+    // Omitted = the organization's `pr.beat_recency_days` knob (E9, default 90).
+    ...(input?.windowDays ? { window_days: input.windowDays } : {}),
     use_search: input?.useSearch ?? true,
   });
   return data;

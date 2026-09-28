@@ -53,6 +53,12 @@ export interface OrgChartLayoutOptions {
   stackGapY: number;
   /** Width of the trunk channel between the two stacked columns. */
   stackTrunkGap: number;
+  /**
+   * Target width/height ratio for the whole forest. Separate trees wrap into
+   * rows to approach it, so a chart of many small trees fits a screen at a
+   * readable zoom instead of one endless strip. Omit for a single row.
+   */
+  targetAspect?: number;
 }
 
 export const DEFAULT_ORG_CHART_LAYOUT: Omit<OrgChartLayoutOptions, "collapsed"> = {
@@ -122,6 +128,17 @@ function subtreeWidth<T>(node: OrgChartTreeNode<T>, o: OrgChartLayoutOptions): n
   if (isStacked(node, o)) return Math.max(o.cardWidth, 2 * o.cardWidth + o.stackTrunkGap);
   const childrenW = kids.reduce((sum, c) => sum + subtreeWidth(c, o), 0);
   return Math.max(o.cardWidth, childrenW + (kids.length - 1) * o.gapX);
+}
+
+/** Height a subtree needs (cards + gaps down to its deepest visible row). */
+function subtreeHeight<T>(node: OrgChartTreeNode<T>, o: OrgChartLayoutOptions): number {
+  const kids = visibleChildren(node, o);
+  if (kids.length === 0) return o.cardHeight;
+  if (isStacked(node, o)) {
+    const rows = Math.ceil(kids.length / 2);
+    return o.cardHeight + o.gapY * 0.75 + rows * o.cardHeight + (rows - 1) * o.stackGapY;
+  }
+  return o.cardHeight + o.gapY + Math.max(...kids.map((k) => subtreeHeight(k, o)));
 }
 
 /**
@@ -248,11 +265,27 @@ export function layoutOrgForest<T>(
     return placed;
   }
 
+  // Pack separate trees into rows, in the order given (callers put the biggest first).
+  const sized = roots.map((root) => ({ root, w: subtreeWidth(root, o), h: subtreeHeight(root, o) }));
+  const gap = o.gapX * 2;
+  const totalArea = sized.reduce((a, t) => a + (t.w + gap) * (t.h + o.gapY), 0);
+  const widest = sized.reduce((m, t) => Math.max(m, t.w), 0);
+  const rowLimit =
+    o.targetAspect && sized.length > 1
+      ? Math.max(widest, Math.sqrt(totalArea * o.targetAspect))
+      : Infinity;
   let x = o.padding;
-  for (const root of roots) {
-    const w = subtreeWidth(root, o);
-    place(root, x, o.padding, 0, null);
-    x += w + o.gapX * 2;
+  let y = o.padding;
+  let rowH = 0;
+  for (const t of sized) {
+    if (x > o.padding && x + t.w - o.padding > rowLimit) {
+      x = o.padding;
+      y += rowH + o.gapY * 1.5;
+      rowH = 0;
+    }
+    place(t.root, x, y, 0, null);
+    x += t.w + gap;
+    rowH = Math.max(rowH, t.h);
   }
 
   let maxX = 0;

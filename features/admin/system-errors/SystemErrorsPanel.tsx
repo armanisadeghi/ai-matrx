@@ -26,7 +26,6 @@ import type {
 import { apiGet } from "@/lib/api/typed-client";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { components } from "@/types/python-generated/api-types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
@@ -199,8 +198,6 @@ export default function SystemErrorsPanel() {
     [data],
   );
   const total = data?.pages[0]?.total;
-  const errorMessage =
-    error instanceof Error ? error.message : error ? String(error) : null;
   const byKind = useMemo(() => {
     const counts = new Map<string, number>();
     for (const row of rows) {
@@ -474,9 +471,7 @@ export default function SystemErrorsPanel() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      {errorMessage ? (
-        <ErrorNotice size="inline" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm" message={errorMessage} />
-      ) : null}
+      {/* The read's failure is said once, by the table (read=). */}
       <div className="min-h-0 flex-1">
         <MatrxDataTable<SystemErrorRow>
           data={rows}

@@ -6,6 +6,11 @@ import {
 } from "@/lib/list-scope/teamReach";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { applyListScope } from "@/lib/list-scope/applyListScope";
+import {
+  fetchShownToContext,
+  shownToBlendedFilter,
+  type ShownToContext,
+} from "@/lib/list-scope/shownTo";
 import type {
   EntityFacets,
   EntityListPage,
@@ -133,6 +138,7 @@ function applyScope<Q extends RulebookFilterable>(
   blendedOrgIds: string[],
   sharedIds: string[],
   teamReach: TeamReachPair[] = [],
+  shownTo: ShownToContext = {},
 ): Q | null {
   if (scope.kind === "public") return q.eq("visibility", "public");
   // MY TEAM: what I and the people I share a team with made, per organization.
@@ -157,9 +163,12 @@ function applyScope<Q extends RulebookFilterable>(
     const notMine = q.neq("created_by", userId) as Q;
     if (scope.organizationId === null) {
       if (blendedOrgIds.length === 0) return null;
-      return notMine.in("organization_id", blendedOrgIds);
+      // Access ladder T-11: each row shows only where its "Shown to" lets it.
+      return notMine
+        .in("organization_id", blendedOrgIds)
+        .or(shownToBlendedFilter(shownTo, blendedOrgIds, userId));
     }
-    return applyListScope(notMine, scope, { userId });
+    return applyListScope(notMine, scope, { userId, shownTo });
   }
   return applyListScope(q, scope, { userId });
 }
@@ -295,12 +304,13 @@ export async function fetchRulebookPage(
   sort: EntityListSort,
 ): Promise<EntityListPage<RulebookListRow>> {
   const userId = requireUserId();
-  const [{ ids: blendedOrgIds }, sharedIds, teamReach] = await Promise.all([
+  const [{ ids: blendedOrgIds }, sharedIds, teamReach, shownTo] = await Promise.all([
     myOrgs(),
     mySharedRulebookIds(),
     query.scope.kind === "team"
       ? fetchMyTeamReach(query.scope.organizationId)
       : Promise.resolve([]),
+    query.scope.kind === "orgs" ? fetchShownToContext("rulebook") : Promise.resolve({}),
   ]);
   let q = applyScope(
     basePage(),
@@ -309,6 +319,7 @@ export async function fetchRulebookPage(
     blendedOrgIds,
     sharedIds,
     teamReach,
+    shownTo,
   );
   if (q === null) return { rows: [], total: 0 };
   q = applyFilters(q, query);
@@ -339,10 +350,11 @@ export async function fetchRulebookCounts(
     narrow: {},
   };
 
-  const [{ ids, names }, sharedIds, teamReach] = await Promise.all([
+  const [{ ids, names }, sharedIds, teamReach, shownTo] = await Promise.all([
     myOrgs(),
     mySharedRulebookIds(),
     fetchMyTeamReach(null),
+    fetchShownToContext("rulebook"),
   ]);
 
   const countFor = async (
@@ -352,7 +364,7 @@ export async function fetchRulebookCounts(
       scope.kind === "team" && scope.organizationId
         ? teamReach.filter((p) => p.organizationId === scope.organizationId)
         : teamReach;
-    let q = applyScope(baseCount(), scope, userId, ids, sharedIds, reach);
+    let q = applyScope(baseCount(), scope, userId, ids, sharedIds, reach, shownTo);
     if (q === null) return 0;
     q = applyFilters(q, query);
     const { count, error } = await q;

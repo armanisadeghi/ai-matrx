@@ -850,7 +850,7 @@ function ToolsTab({
 
   return (
     <div className="space-y-2" data-surface-value="server_tools">
-      {error && <ErrorBox msg={error} />}
+      {/* The tools read's failure is said once, by the table (read=). */}
       <MatrxDataTable<ServerToolRow>
         data={tools}
         columns={serverToolColumns()}

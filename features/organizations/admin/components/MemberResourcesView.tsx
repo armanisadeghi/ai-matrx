@@ -127,18 +127,7 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
           {organization.name}. Personal-org resources are not shown and are
           never affected.
         </p>
-        {error && (
-          <div
-            role="alert"
-            className="flex shrink-0 items-center gap-2 text-sm text-destructive"
-          >
-            Could not refresh resources: {error}
-            <button type="button" className="underline" onClick={refresh}>
-              Retry
-            </button>
-            <ErrorAlchemyMenu className="ml-auto" />
-          </div>
-        )}
+        {/* A failed refresh is said once, by the table's stale notice (read=). */}
         <div className="min-h-0 flex-1">
           <MatrxDataTable
             tableId="organizations-admin-member-resources"

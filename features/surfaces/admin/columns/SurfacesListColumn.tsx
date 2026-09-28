@@ -408,7 +408,8 @@ export function SurfacesListColumn({
             <ErrorAlchemyMenu error={error} />
           </div>
         )}
-        {status !== "loading" && groups.length === 0 && (
+        {/* A failed read is said once, above — never also "no surfaces". */}
+        {status !== "loading" && !error && groups.length === 0 && (
           <div className="px-4 py-8 text-sm text-muted-foreground text-center">
             {emptyListMessage(filter, setupFilter)}
           </div>

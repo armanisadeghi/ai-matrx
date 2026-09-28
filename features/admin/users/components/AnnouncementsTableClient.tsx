@@ -35,7 +35,6 @@ import { USERS_ADMIN_LOCATION } from "../constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAnnouncementMenuSection } from "./announcement-menu-section";
 import SystemAnnouncementBanner from "@/components/layout/SystemAnnouncementBanner";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 const TYPE_CLASS: Record<string, string> = {
@@ -189,12 +188,7 @@ export function AnnouncementsTableClient() {
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">
-      {error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      ) : null}
+      {/* The read's failure is said once, by the table (read=). */}
       <div className="min-h-0 flex-1">
         <NonEditableContextMenu
           sourceFeature="admin"

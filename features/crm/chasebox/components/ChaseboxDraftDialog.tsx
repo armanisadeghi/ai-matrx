@@ -75,6 +75,8 @@ import type { InteractionRow } from "@/features/crm/types";
 import type { ChaseboxRow } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
+import { usePitchAdvisories } from "@/features/crm/pitch-advisories/usePitchAdvisories";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
@@ -235,6 +237,21 @@ export function ChaseboxDraftDialog({
   }, [draft, approvedAt, personalization, reply, onDraftLoaded]);
 
   const draftId = draft ? readOutreachDraftId(draft.id, draft.attributes) : null;
+  // THE PR FLOOR on the held draft under review (pitch advisories E1–E17): the
+  // same panel every outreach surface shows. It never gates Approve or Send;
+  // sending records that the reviewer saw the warnings.
+  const advisories = usePitchAdvisories(
+    row?.organization_id ?? null,
+    draftId
+      ? {
+          surface: "chasebox_review",
+          draft_id: draftId,
+          recipient_party_ids: row?.party_id ? [row.party_id] : [],
+          attachment_count: 0,
+          is_exclusive: false,
+        }
+      : null,
+  );
   const resolved = row ? resolvedIds.includes(row.id) : false;
 
   /** Move to the next unresolved draft, or close when this was the last one. */
@@ -273,6 +290,7 @@ export function ChaseboxDraftDialog({
     setBusy("send");
     setProblem(null);
     try {
+      await advisories.recordGoAhead({ entityType: "crm_interaction", entityId: draftId });
       const result = await sendOutreachDraft(draftId);
       toast.success(`Email sent to ${result.draft.recipient}`);
       if (row) setResolvedIds((ids) => [...ids, row.id]);
@@ -283,7 +301,7 @@ export function ChaseboxDraftDialog({
     } finally {
       setBusy(null);
     }
-  }, [draftId, busy, approvedAt, row, onResolved, advance]);
+  }, [draftId, busy, approvedAt, row, onResolved, advance, advisories]);
 
   const reject = useCallback(async () => {
     if (!draftId || busy) return;
@@ -717,6 +735,15 @@ export function ChaseboxDraftDialog({
             )}
             <ErrorAlchemyMenu error={problem.message} />
           </div>
+        )}
+
+        {draftId && (
+          <PitchAdvisoryPanel
+            state={advisories}
+            organizationId={row?.organization_id ?? null}
+            actionLabel="approving and sending"
+            surfaceName="crm-chasebox"
+          />
         )}
 
         <DialogFooter className="flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">

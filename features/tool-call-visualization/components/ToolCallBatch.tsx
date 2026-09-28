@@ -37,6 +37,7 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 import { getToolDisplayName } from "../registry/registry";
 import { DIFF_START_OPEN_KNOB, readSurfaceWrite } from "../surface-write/readSurfaceWrite";
+import { holdsADecision } from "./holdsADecision";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -133,8 +134,14 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
   // person most needs to see, so it stays open unless the knob says fold.
   const diffStartOpen = useSessionKnob(DIFF_START_OPEN_KNOB) !== false;
   const holdsSurfaceWrite = entries.some((e) => readSurfaceWrite(e) !== null);
+  // A write the store HELD for a person is a question waiting on them, not process detail: the
+  // batch carrying it mounts open on reload whatever the fold default or preference says (lane
+  // HANDOVER, 2026-09-27 — two held columns hid inside a folded "Records · 2 calls" line).
+  const carriesADecision = entries.some(holdsADecision);
   const effectiveMode: "auto" | "stay-open" | "never-open" =
-    userPref === "verbose"
+    carriesADecision
+      ? "stay-open"
+      : userPref === "verbose"
       ? "stay-open"
       : userPref === "minimal"
         ? "never-open"

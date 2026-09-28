@@ -65,7 +65,6 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 const ROSTER_PAGE_SIZE = 50;
@@ -549,15 +548,7 @@ export function AccountsTableClient() {
       }
     >
     <div className="flex h-full flex-col gap-3 p-4">
-      {error ? (
-        <div
-          data-surface-value="roster_load_error"
-          className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
-        >
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      ) : null}
+      {/* The read's failure is said once, by the table (read=). */}
 
       {focusedUserId ? (
         <div

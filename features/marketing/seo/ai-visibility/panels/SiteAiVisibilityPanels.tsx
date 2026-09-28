@@ -6,5 +6,5 @@ import { AiVisibilityPanelsView } from "./AiVisibilityPanelsView";
 
 export function SiteAiVisibilityPanels() {
   const { site, brandId } = useMarketingSite();
-  return <AiVisibilityPanelsView siteId={site.id} brandId={brandId} />;
+  return <AiVisibilityPanelsView site={site} brandId={brandId} />;
 }

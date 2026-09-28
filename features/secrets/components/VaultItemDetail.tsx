@@ -302,7 +302,7 @@ export function VaultItemDetail({
     {
       key: "transfer",
       icon: ArrowLeftRight,
-      label: "Move scope",
+      label: "Move to…",
       show: panelEligibility.transfer,
     },
     {
@@ -2588,6 +2588,22 @@ function SharePanel({
   const [email, setEmail] = useState("");
   const [canManage, setCanManage] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const { organizations } = useUserOrganizations();
+  const [orgTarget, setOrgTarget] = useState<string>("");
+  const [orgPermission, setOrgPermission] = useState<"use" | "editor">("use");
+
+  const shareToOrganization = async () => {
+    const organization = organizations.find((org) => org.id === orgTarget);
+    if (!organization) return;
+    await actions.shareToOrganization(
+      item.id,
+      { id: organization.id, name: organization.name },
+      orgPermission === "editor",
+    );
+    setOrgTarget("");
+    setOrgPermission("use");
+    await reload();
+  };
 
   const addRecipient = async () => {
     const trimmed = email.trim();
@@ -2631,6 +2647,59 @@ function SharePanel({
             Organization admins always retain full access.
             {mode === "all_members" &&
               " Switching to all members clears the individual list below."}
+          </p>
+        </div>
+      )}
+
+      {!isOrg && item.capabilities.can_manage && organizations.length > 0 && (
+        <div className="space-y-1.5">
+          <Label className="text-xs">Share into an organization&apos;s vault</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={orgTarget} onValueChange={setOrgTarget}>
+              <SelectTrigger
+                className="h-8 min-w-40 flex-1 text-xs"
+                aria-label="Organization"
+              >
+                <SelectValue placeholder="Choose an organization" />
+              </SelectTrigger>
+              <SelectContent>
+                {organizations.map((org) => (
+                  <SelectItem key={org.id} value={org.id}>
+                    {org.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={orgPermission}
+              onValueChange={(v) => setOrgPermission(v as "use" | "editor")}
+            >
+              <SelectTrigger
+                className="h-8 w-36 text-xs"
+                aria-label="Permission in the organization vault"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="use">Use only</SelectItem>
+                <SelectItem value="editor">Editor</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy || !orgTarget}
+              onClick={() => void shareToOrganization()}
+            >
+              Share
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            It stays yours and also appears in that organization&apos;s vault.
+            Use only: members and their agents can sign in with it but never see
+            the password. Editor: members with editor vault access can see and
+            edit it. Each member gets the lesser of this and their own vault
+            access.
           </p>
         </div>
       )}
@@ -2706,7 +2775,9 @@ function SharePanel({
                   className="flex items-center gap-2 rounded border border-border bg-background p-2 text-xs"
                 >
                   <span className="min-w-0 flex-1 whitespace-normal break-all">
-                    {grant.email || grant.user_id}
+                    {grant.organization_id
+                      ? `${grant.organization_name || "Organization"} — organization vault`
+                      : grant.email || grant.user_id}
                   </span>
                   <label className="flex shrink-0 items-center gap-1 text-muted-foreground">
                     <Checkbox
@@ -2739,7 +2810,11 @@ function SharePanel({
                         setPendingId(null);
                       }
                     }}
-                    aria-label={`Revoke access for ${grant.email || grant.user_id}`}
+                    aria-label={`Revoke access for ${
+                      grant.organization_id
+                        ? `${grant.organization_name || "the organization"} vault`
+                        : grant.email || grant.user_id
+                    }`}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -2919,7 +2994,7 @@ function TransferPanel({
       item={item}
       busy={busy}
       verb="Transfer"
-      note="Move ownership without copying values — every existing reference keeps working. Transferring into an organization requires adminhood there."
+      note="Move it between your vault and an organization's vault without copying values — every existing reference keeps working. Moving into an organization's vault needs editor access there; its old shares are cleared."
       onSubmit={onTransfer}
     />
   );

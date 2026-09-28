@@ -56,7 +56,8 @@ import {
   agentAppExecutionsHref,
 } from "@/features/agent-apps/components/AgentAppRef";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 const LIMIT = 500;
 /** Both source calls order newest first and request only the newest 500; no total receipt exists. */
@@ -613,8 +614,9 @@ function ExecutionsTable({
         className="flex min-h-0 flex-1 flex-col"
         aria-busy={loading || refreshing}
       >
-        {error && <LoadError label="executions" error={error} retry={load} />}
+        {/* The read's failure is said once, by the table (read=). */}
         <Stats
+          read={readOf({ loading, error })}
           cards={[
             [stats.success, "Success loaded", "text-success"],
             [stats.failed, "Failed loaded", "text-destructive"],
@@ -825,8 +827,9 @@ function ErrorsTable({
         className="flex min-h-0 flex-1 flex-col"
         aria-busy={loading || refreshing}
       >
-        {error && <LoadError label="errors" error={error} retry={load} />}
+        {/* The read's failure is said once, by the table (read=). */}
         <Stats
+          read={readOf({ loading, error })}
           cards={[
             [stats.unresolved, "Unresolved loaded", "text-destructive"],
             [stats.resolved, "Resolved loaded", "text-success"],
@@ -932,39 +935,19 @@ function ErrorsTable({
   );
 }
 
-function Stats({ cards }: { cards: Array<[number, string, string?]> }) {
+function Stats({ cards, read }: { cards: Array<[number, string, string?]>; read: ReadOutcome }) {
   return (
     <div className="grid shrink-0 grid-cols-2 gap-3 pb-3">
       {cards.map(([value, label, color]) => (
         <Card key={label}>
           <CardContent className="p-2">
-            <div className={`text-2xl font-bold ${color ?? ""}`}>{value}</div>
+            <div className={`text-2xl font-bold ${color ?? ""}`}>
+              <UntrustedCount value={value} read={read} label={label} />
+            </div>
             <div className="text-xs text-muted-foreground">{label}</div>
           </CardContent>
         </Card>
       ))}
-    </div>
-  );
-}
-function LoadError({
-  label,
-  error,
-  retry,
-}: {
-  label: string;
-  error: string;
-  retry: () => Promise<void>;
-}) {
-  return (
-    <div
-      role="alert"
-      className="mb-2 flex shrink-0 items-center gap-2 text-sm text-red-600 dark:text-red-400"
-    >
-      Could not refresh {label}: {error}
-      <button type="button" className="underline" onClick={() => void retry()}>
-        Retry
-      </button>
-      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { applyListScope } from "@/lib/list-scope/applyListScope";
 import { defaultListScopeFor } from "@/lib/list-scope";
+import { fetchShownToContext } from "@/lib/list-scope/shownTo";
 import type { ListScope } from "@/lib/list-scope/types";
 import type { Database, Json } from "@/types/database.types";
 import type {
@@ -86,7 +87,12 @@ export async function fetchTranscripts(
     .from("transcripts")
     .select("*")
     .is("deleted_at", null);
-  query = applyListScope(query, resolved, { userId, ownerColumn: "created_by" });
+  query = applyListScope(query, resolved, {
+    userId,
+    ownerColumn: "created_by",
+    // Access ladder T-11: an organization list honors each row\'s "Shown to".
+    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
+  });
   const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
@@ -113,7 +119,12 @@ export async function fetchTranscriptsPaginated(
     .from("transcripts")
     .select("*")
     .is("deleted_at", null);
-  query = applyListScope(query, resolved, { userId, ownerColumn: "created_by" });
+  query = applyListScope(query, resolved, {
+    userId,
+    ownerColumn: "created_by",
+    // Access ladder T-11: an organization list honors each row\'s "Shown to".
+    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
+  });
   const { data, error } = await query
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -520,7 +531,12 @@ export async function searchTranscripts(
     .from("transcripts")
     .select("*")
     .is("deleted_at", null);
-  searchQuery = applyListScope(searchQuery, resolved, { userId, ownerColumn: "created_by" });
+  searchQuery = applyListScope(searchQuery, resolved, {
+    userId,
+    ownerColumn: "created_by",
+    // Access ladder T-11: an organization list honors each row\'s "Shown to".
+    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
+  });
   const { data, error } = await searchQuery
     .or(buildSearchOr(query, ["title", "description"]))
     .order("updated_at", { ascending: false });
@@ -547,7 +563,12 @@ export async function getTranscriptsByFolder(
     .from("transcripts")
     .select("*")
     .is("deleted_at", null);
-  folderQuery = applyListScope(folderQuery, resolved, { userId, ownerColumn: "created_by" });
+  folderQuery = applyListScope(folderQuery, resolved, {
+    userId,
+    ownerColumn: "created_by",
+    // Access ladder T-11: an organization list honors each row\'s "Shown to".
+    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
+  });
   const { data, error } = await folderQuery
     .eq("folder_name", folderName)
     .order("updated_at", { ascending: false });
@@ -574,7 +595,12 @@ export async function getTranscriptsByTag(
     .from("transcripts")
     .select("*")
     .is("deleted_at", null);
-  tagQuery = applyListScope(tagQuery, resolved, { userId, ownerColumn: "created_by" });
+  tagQuery = applyListScope(tagQuery, resolved, {
+    userId,
+    ownerColumn: "created_by",
+    // Access ladder T-11: an organization list honors each row\'s "Shown to".
+    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
+  });
   const { data, error } = await tagQuery
     .contains("tags", [tag])
     .order("updated_at", { ascending: false });

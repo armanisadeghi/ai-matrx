@@ -634,12 +634,7 @@ export function UserAcquisitionTableClient() {
         localhost/agent tests. Historical gaps and direct/browser-withheld
         referrers are labeled separately instead of being combined as unknown.
       </div>
-      {error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      ) : null}
+      {/* The read's failure is said once, by the table (read=). */}
       {focusUser ? (
         <div className="flex items-center rounded-md border px-3 py-1.5 text-xs">
           Focused on {focused[0]?.display_name ?? focusUser}

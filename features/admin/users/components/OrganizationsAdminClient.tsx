@@ -57,7 +57,6 @@ import {
   withAvailability,
 } from "@/features/context-menu-v3/utils/availability";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 interface MemberDisplayRow extends AdminOrganizationMembershipRow {
@@ -477,12 +476,7 @@ export function OrganizationsAdminClient() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      {error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      ) : null}
+      {/* The read's failure is said once, by the table (read=). */}
 
       {focusedUserId ? (
         <div className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2">
@@ -748,7 +742,8 @@ export function OrganizationsAdminClient() {
                   </Button>
                 </>
               )}
-              read={readOf({ loading, error }, { what: "organization members" })}
+              // Members come from the same directory read: its failure is said once, by the organizations table.
+              read={readOf({ loading, error: selectedOrganization ? error : null }, { what: "organization members" })}
               emptyState={{
                 title: selectedOrganization
                   ? "No members"

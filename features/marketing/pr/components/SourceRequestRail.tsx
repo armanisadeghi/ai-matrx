@@ -38,6 +38,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
+import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
+import { usePitchAdvisories } from "@/features/crm/pitch-advisories/usePitchAdvisories";
 import {
   JournalistRef,
   MEDIA_LISTS_HREF,
@@ -121,6 +123,48 @@ function MatchScore({ score }: { score: number }) {
     >
       {score}
     </span>
+  );
+}
+
+/**
+ * THE PR FLOOR on a reply (pitch advisories — E11's weekly cap per platform,
+ * plus the draft checks: tragedy hooks, coverage promises, embargoes). The same
+ * panel every outreach surface shows, directly above "Mark submitted", which
+ * stays live and records that the person saw the warnings.
+ */
+function SubmitWithAdvisories({
+  request,
+  onSubmit,
+}: {
+  request: SourceRequest;
+  onSubmit: () => void;
+}) {
+  const advisories = usePitchAdvisories(request.organization_id, {
+    surface: "source_request",
+    source_request_id: request.id,
+    attachment_count: 0,
+    is_exclusive: false,
+  });
+  return (
+    <div className="w-full space-y-1.5">
+      <PitchAdvisoryPanel
+        state={advisories}
+        organizationId={request.organization_id}
+        actionLabel="submitting"
+        surfaceName="marketing-press-room"
+      />
+      <Button
+        size="sm"
+        className="h-7 text-[11px]"
+        onClick={() => {
+          void advisories
+            .recordGoAhead({ entityType: "seo_source_request", entityId: request.id })
+            .then(onSubmit);
+        }}
+      >
+        Mark submitted
+      </Button>
+    </div>
   );
 }
 
@@ -371,17 +415,17 @@ function RequestRow({
           ) : null}
 
           <div className="flex flex-wrap items-center gap-1.5">
-            {answerable && !closed ? (
+            {answerable && !closed && request.draft_response ? (
+              <SubmitWithAdvisories
+                request={request}
+                onSubmit={() => onRule("submitted")}
+              />
+            ) : answerable && !closed ? (
               <Button
                 size="sm"
                 className="h-7 text-[11px]"
-                disabled={!request.draft_response}
-                title={
-                  request.draft_response
-                    ? undefined
-                    : "Nothing to submit yet — there is no draft."
-                }
-                onClick={() => onRule("submitted")}
+                disabled
+                title="Nothing to submit yet — there is no draft."
               >
                 Mark submitted
               </Button>

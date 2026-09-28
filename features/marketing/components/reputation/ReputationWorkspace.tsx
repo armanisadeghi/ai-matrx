@@ -67,6 +67,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useReputationAnalysis } from "./useReputationAnalysis";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
+import { usePitchAdvisories } from "@/features/crm/pitch-advisories/usePitchAdvisories";
 
 const SURFACE = "matrx-user/marketing-reputation";
 
@@ -335,6 +337,23 @@ function CaseCard({
   const pageHref = row.page_id
     ? marketingRoutes.sitePage(brandId, siteId, row.page_id)
     : null;
+  // THE PR FLOOR at the crisis statement's publish step. This workspace has no
+  // separate "Publish" control yet — completing the case is where the response
+  // is finalized and goes out — so the warnings (tragedy framing, coverage
+  // promises, unsourced claims, an active embargo) sit above that row, and
+  // Complete stays live and records that they were seen.
+  const open = row.status !== "completed" && row.status !== "dismissed";
+  const advisories = usePitchAdvisories(
+    organizationId,
+    open
+      ? {
+          surface: "crisis_publish",
+          reputation_case_id: row.id,
+          attachment_count: 0,
+          is_exclusive: false,
+        }
+      : null,
+  );
   return (
     <article className="rounded-xl border bg-card shadow-sm">
       <div className="p-4">
@@ -446,6 +465,15 @@ function CaseCard({
           </div>
         </div>
       </details>
+      {open ? (
+        <PitchAdvisoryPanel
+          state={advisories}
+          organizationId={organizationId}
+          actionLabel="completing this case"
+          surfaceName="marketing-reputation"
+          className="border-t px-4 py-2.5"
+        />
+      ) : null}
       <div className="flex flex-wrap items-center justify-end gap-1.5 border-t px-4 py-2.5">
         {updating ? <Loader2 className="mr-auto h-3.5 w-3.5 animate-spin" /> : null}
         <Button size="sm" variant="ghost" className="h-7" disabled={updating} onClick={() => onStatus("dismissed")}>
@@ -462,7 +490,16 @@ function CaseCard({
         <Button size="sm" variant="outline" className="h-7" disabled={updating} onClick={() => onStatus("in_progress")}>
           <Flag className="mr-1 h-3.5 w-3.5" /> Mark in progress
         </Button>
-        <Button size="sm" className="h-7" disabled={updating} onClick={() => onStatus("completed")}>
+        <Button
+          size="sm"
+          className="h-7"
+          disabled={updating}
+          onClick={() => {
+            void advisories
+              .recordGoAhead({ entityType: "seo_reputation_case", entityId: row.id })
+              .then(() => onStatus("completed"));
+          }}
+        >
           <Check className="mr-1 h-3.5 w-3.5" /> Complete
         </Button>
       </div>

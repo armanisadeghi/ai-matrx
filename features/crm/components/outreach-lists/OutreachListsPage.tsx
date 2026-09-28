@@ -50,6 +50,7 @@ import { LoadingSurface } from "@/features/marketing/components/shared/Marketing
 import { useRead } from "@/components/read-state/useRead";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { PitchAdvisoryConfirmDialog } from "@/features/crm/pitch-advisories/PitchAdvisoryConfirmDialog";
 
 function memberCount(row: OutreachListWithCount): number {
   return row.members?.[0]?.count ?? 0;
@@ -64,6 +65,11 @@ export function OutreachListsPage() {
     searchParams.get("view") === "report" ? "report" : "lists",
   );
   const [createOpen, setCreateOpen] = useState(false);
+  // Activating a campaign IS its send step: the cadence starts mailing. The PR
+  // floor's list checks (E1–E5, E10, E17) show first; Activate stays live.
+  const [activating, setActivating] = useState<OutreachListWithCount | null>(
+    null,
+  );
 
   // ONE read with a status (RC-B12 r13): a failed read is never "No outreach
   // lists yet" — the table renders only after a read that succeeded; a failed
@@ -222,6 +228,10 @@ export function OutreachListsPage() {
             id: `status-${next}`,
             label,
             onSelect: async () => {
+              if (next === "active") {
+                setActivating(row);
+                return;
+              }
               try {
                 await setOutreachListStatus(row, next);
                 load();
@@ -452,6 +462,43 @@ export function OutreachListsPage() {
               </div>
             </NonEditableContextMenu>
           </div>
+        )}
+
+        {activating && (
+          <PitchAdvisoryConfirmDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) setActivating(null);
+            }}
+            organizationId={activating.organization_id}
+            request={{
+              surface: "list_send",
+              outreach_list_id: activating.id,
+              attachment_count: 0,
+              is_exclusive: false,
+            }}
+            title={`Activate ${activating.name}?`}
+            description="Activating starts the cadence: every member gets the first step. Here is what your PR settings say about this list."
+            confirmLabel="Activate"
+            entityType="crm_outreach_list"
+            entityId={activating.id}
+            onConfirm={async () => {
+              try {
+                await setOutreachListStatus(activating, "active");
+                load();
+                recordToast.success(
+                  {
+                    type: "crm-outreach-list",
+                    id: activating.id,
+                    title: activating.name,
+                  },
+                  `${activating.name} → active`,
+                );
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Update failed");
+              }
+            }}
+          />
         )}
 
         <OutreachListCreateDialog

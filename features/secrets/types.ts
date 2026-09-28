@@ -223,6 +223,41 @@ export type VaultPasswordHistoryRestoreResponse =
 export type VaultShareRequest = ApiSchemas["VaultShareRequest"];
 export type VaultAuditEntry = ApiSchemas["VaultAuditEntry"];
 export type VaultGrant = ApiSchemas["VaultGrantOut"];
+export type VaultOrganizationGrantAddRequest =
+  ApiSchemas["VaultOrganizationGrantAddRequest"];
+export type VaultMemberAccessList = ApiSchemas["VaultMemberAccessListResponse"];
+export type VaultMemberAccess = ApiSchemas["VaultMemberAccessOut"];
+export type VaultMemberAccessSetResponse =
+  ApiSchemas["VaultMemberAccessSetResponse"];
+
+/** A member's reach into an organization's vault (access ladder decision 14).
+ *  `use` = they and their agents sign in with its logins without seeing the
+ *  values; `editor` = see and edit; `admin` = an owner/admin (always full). */
+export type OrganizationVaultAccess = "none" | "use" | "editor" | "admin";
+/** What an owner/admin may set for one member. */
+export type MemberVaultAccessChoice = Exclude<OrganizationVaultAccess, "admin">;
+
+export function isOrganizationVaultAccess(
+  value: unknown,
+): value is OrganizationVaultAccess {
+  return (
+    value === "none" || value === "use" || value === "editor" || value === "admin"
+  );
+}
+
+export const MEMBER_VAULT_ACCESS_LABELS: Record<OrganizationVaultAccess, string> = {
+  none: "No access",
+  use: "Use only",
+  editor: "Editor",
+  admin: "Full (owner or admin)",
+};
+
+export const MEMBER_VAULT_ACCESS_HELP: Record<OrganizationVaultAccess, string> = {
+  none: "Cannot see or use the organization's saved logins.",
+  use: "They and their agents can sign in with saved logins, but cannot see passwords.",
+  editor: "Can see and edit saved values.",
+  admin: "Owners and admins always have full access.",
+};
 export type VaultGrantAddRequest = ApiSchemas["VaultGrantAddRequest"];
 export type VaultAssignRequest = ApiSchemas["VaultAssignRequest"];
 export type VaultAssignResponse = ApiSchemas["VaultAssignResponse"];

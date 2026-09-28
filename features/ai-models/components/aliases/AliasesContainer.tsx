@@ -25,7 +25,7 @@ import {
 } from "@ai-matrx/design-system/data-table";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, RefreshCw, Save, X } from "lucide-react";
+import { AlertTriangle, Save, X } from "lucide-react";
 import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { extractErrorMessage } from "@/utils/errors";
@@ -265,21 +265,7 @@ export default function AliasesContainer() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3">
-      {loadError ? (
-        <div
-          role="alert"
-          className="flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
-        >
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-          <span className="min-w-0 flex-1 break-words">{loadError}</span>
-          <Button size="sm" variant="outline" onClick={() => void load()}>
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-            Retry
-          </Button>
-          <ErrorAlchemyMenu className="ml-auto" />
-        </div>
-      ) : null}
-
+      {/* The aliases read's failure is said once, by the table (read=). */}
       {!editingId && saveError ? (
         <div
           role="alert"

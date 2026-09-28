@@ -1,6 +1,6 @@
 # AI Visibility
 
-**Status:** live · verified against code 2026-08-15
+**Status:** live · verified against code 2026-09-27
 
 ## One analysis, three surfaces
 
@@ -14,6 +14,16 @@
   recommendation positions, mentions, citations, recommendations, claims,
   decision signals, source doors, native sharing, and the AI Matrx acquisition
   CTA.
+
+- **Panels:** `/…/ai-visibility/panels` (`panels/AiVisibilityPanelsView.tsx`)
+  lists a site's saved panels. Each shows the six named metrics from
+  `GET /ai-visibility/panels/{id}/metrics` (`PanelMetricsSection`), its
+  **Design** section from `GET …/{id}/design` (steps, notices, files, review
+  history, and the open review as `GateReviewCard`), and the page offers
+  **Design a panel** (`DesignPanelForm` → `POST /ai-visibility/panels/design`).
+  Contract types live only in `panels/types.ts`; server doors only in
+  `panels/panel-api.ts`; code → display-name mapping only in `panels/format.ts`.
+  Spec: `common-docs/projects/outside-skill-packs/BRIEFS-AI-VISIBILITY.md`.
 
 ## Invariants
 
@@ -41,7 +51,29 @@
   Claims, Sources, Decision signals, and History are real path children. Never
   add an in-workspace tab bar over the same destinations.
 
+- **No pooled headline.** Never render "named in X% of answers" or "up N
+  points": metrics are per stratum from the server, "unprompted" and "we're
+  named" side by side, each with sample size, method and its does-not-prove
+  line on screen. Too few question slots → counts; `campaign_response` with no
+  design → "Not set up"; null → "Not measured yet". Never 0% for either.
+- **Display names only** in human text (`panels/format.ts`): tracked set,
+  discovery set, tripwire, false-positive check, prompted set; no web access,
+  with web search, the real app, campaign test; never `core`/`B3`/`closed_model`.
+- **Reviews offer, never block.** Every review card has Approve · Edit ·
+  Continue without approving inline (no modal); continuing leaves the panel
+  provisional. The gate-3 card is blind: it renders only whitelisted question
+  fields, and the panel's measurements fold while it is open (a "Show anyway"
+  button, never a lock).
+- **The one-question report says what it is:** "One question, one moment. Not a
+  measurement." (`ONE_QUESTION_NOT_A_MEASUREMENT`).
+
 ## Change log
+
+- 2026-09-27 — Panels: removed the pooled "Named in answers / Cited as a
+  source" cells, headline sentence and weekly bars; added the six named
+  metrics, the evidence ladder, paired comparisons, unclassified-question
+  count, per-panel Design section with the four review cards, the Design a
+  panel form, and the report's not-a-measurement line.
 
 - 2026-08-15 — Registered Overview plus the four evidence routes as path-style
   site-header views and removed both duplicate in-workspace switchers.

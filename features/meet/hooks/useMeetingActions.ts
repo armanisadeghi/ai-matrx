@@ -26,6 +26,7 @@ import {
   type MeetingSettings,
   type RsvpAnswer,
 } from "@ai-matrx/meet/react";
+import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { respondThroughServer } from "@/features/meet/lib/in-app-rsvp";
@@ -99,17 +100,68 @@ export function useMeetingActions() {
     }
   };
 
+  /**
+   * Meet wave 4 — "Run a workflow after this meeting": the host's chosen
+   * `workflow.definition` ids on `metadata.after_meeting_workflows`, merged
+   * under the row's version CAS (a concurrent note-taker write is never lost).
+   * aidream `services/meet/outcome.py` starts each one as the host when the
+   * meeting's outcome is known.
+   */
+  const setAfterWorkflows = async (
+    meetingId: MeetingRecord["id"],
+    definitionIds: readonly string[],
+  ): Promise<void> => {
+    const db = supabase.schema("communication");
+    const result = await mergeJsonColumn<{
+      id: string;
+      version: number;
+      metadata: unknown;
+    }>({
+      fetchCurrent: () =>
+        db
+          .from("meet_meetings")
+          .select("id, version, metadata")
+          .eq("id", meetingId)
+          .maybeSingle(),
+      readColumn: (row) => row.metadata,
+      merge: (current) => ({
+        ...current,
+        after_meeting_workflows: [...new Set(definitionIds)].map((id) => ({
+          definition_id: id,
+        })),
+      }),
+      applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+        db
+          .from("meet_meetings")
+          .update({ metadata: value as never, version: nextVersion })
+          .eq("id", meetingId)
+          .eq("version", expectedVersion)
+          .select("id, version, metadata")
+          .maybeSingle(),
+    });
+    if (result.status === "saved") return;
+    throw new Error(
+      result.status === "not_found"
+        ? "This meeting could not be found or you cannot change it."
+        : result.status === "conflict"
+          ? "The meeting was changing while this was saved. Try again."
+          : "The workflows could not be saved.",
+    );
+  };
+
   return {
     ready: host !== null && host.identity.userId !== null,
     userId: host?.identity.userId ?? reduxUserId,
     organizationId: host?.identity.organizationId ?? null,
     repository: host?.repository ?? plainRepository,
     announce,
+    setAfterWorkflows,
 
     async create(
       draft: MeetingDraft,
       settings: MeetingSettings,
       notify: boolean,
+      afterWorkflows: readonly string[] = [],
     ) {
       const h = require();
       const { scheduledFor, recurrenceRule } = draftSchedule(draft);
@@ -131,6 +183,15 @@ export function useMeetingActions() {
           h.identity.userId,
         );
         if (notify) await announce(meeting.id);
+      }
+      if (afterWorkflows.length > 0) {
+        try {
+          await setAfterWorkflows(meeting.id, afterWorkflows);
+        } catch (thrown) {
+          toast.error(
+            `The meeting is scheduled, but its after-meeting workflows were not saved: ${errorSentence(thrown)}`,
+          );
+        }
       }
       return meeting;
     },

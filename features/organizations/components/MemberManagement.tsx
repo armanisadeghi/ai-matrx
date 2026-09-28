@@ -29,6 +29,10 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { MemberPersonalTablesAction } from "@/features/sharing/components/MemberPersonalTablesAction";
 import {
+  MemberVaultAccessControl,
+  useOrganizationVaultMemberAccess,
+} from "@/features/secrets/components/MemberVaultAccessControl";
+import {
   HrMemberEmployeeSeamProvider,
   MemberEmployeeSeam,
   useMemberEmployeeCopyDetails,
@@ -175,6 +179,12 @@ function OrganizationMembersPanel({
   const viewerId = useAppSelector(selectUserId);
   // SHARE-LANE-2: an owner or admin governs a member's personal Tables by transferring them.
   const viewerGoverns = isOwner || userRole === "admin";
+  // Access ladder decision 14: owners/admins set each member's access to the
+  // organization vault on the member's own row.
+  const vaultAccess = useOrganizationVaultMemberAccess(
+    organizationId,
+    viewerGoverns,
+  );
   const people = members.map((m) => ({
     id: m.userId,
     name: m.user?.displayName ?? m.user?.email ?? "A member",
@@ -196,6 +206,17 @@ function OrganizationMembersPanel({
             userId={member.userId}
             displayName={member.user?.displayName ?? member.user?.email ?? null}
           />
+          {viewerGoverns && (
+            <MemberVaultAccessControl
+              organizationId={organizationId}
+              memberUserId={member.userId}
+              memberName={
+                member.user?.displayName ?? member.user?.email ?? "This member"
+              }
+              access={vaultAccess.data}
+              onChanged={vaultAccess.reload}
+            />
+          )}
           <MemberPersonalTablesAction
             organizationId={organizationId}
             organizationName={organizationName ?? "this organization"}

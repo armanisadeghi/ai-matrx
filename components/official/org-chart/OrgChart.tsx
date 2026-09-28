@@ -151,6 +151,7 @@ export function OrgChart<T>({
     cardWidth,
     cardHeight,
     collapsed,
+    targetAspect: viewport.w > 0 && viewport.h > 0 ? viewport.w / viewport.h : undefined,
   });
 
   const byKey = new Map(layout.nodes.map((n) => [n.key, n]));

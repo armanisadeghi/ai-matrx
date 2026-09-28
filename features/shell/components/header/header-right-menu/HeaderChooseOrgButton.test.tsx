@@ -43,6 +43,9 @@ jest.mock("@/lib/redux/hooks", () => ({
 
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 
+let PATHNAME = "/tasks";
+jest.mock("next/navigation", () => ({ usePathname: () => PATHNAME }));
+
 // The picker body is the canonical primitive and carries its own proofs; this
 // file is about the TRIGGER's own label, so the body renders nothing.
 jest.mock("@/features/organizations/components/OrganizationPickerPanel", () => ({
@@ -290,5 +293,38 @@ describe("HeaderChooseOrgButton — the one place a page's organization is said"
     mount();
     expect(host.querySelector("[data-page-object-organization-lit]")).toBeNull();
     expect(host.textContent).toContain("Rincon Plumbing Co");
+  });
+});
+
+
+// ── The admin seat never acts as itself: no organization chooser in the admin shell ──
+
+describe("HeaderChooseOrgButton — admin pages carry no organization chooser", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pageOrg = require("@/features/shell/pageObjectOrganization") as typeof import("@/features/shell/pageObjectOrganization");
+  beforeEach(() => {
+    pageOrg.__resetPageObjectOrganizationForTest();
+    store.organization_id = null; // "Choose organization" would show on a user page
+    store.organization_name = null;
+    store.orgBootstrapResolved = true;
+    store.orgBootstrapFailure = null;
+  });
+  afterEach(() => {
+    act(() => root.unmount());
+    document.body.innerHTML = "";
+    PATHNAME = "/tasks";
+  });
+
+  it("renders nothing on /administration/*", () => {
+    PATHNAME = "/administration/ui/surfaces";
+    mount();
+    expect(host.querySelector("button")).toBeNull();
+    expect(host.textContent).toBe("");
+  });
+
+  it("still asks on a user page", () => {
+    PATHNAME = "/tasks";
+    mount();
+    expect(trigger().textContent).toContain("Choose organization");
   });
 });

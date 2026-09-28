@@ -35,7 +35,6 @@ import {
   useUrlState,
 } from "@ai-matrx/kit/url-state";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
 import { readOf } from "@/components/read-state/ReadGate";
 
 export function TableImpactPanel() {
@@ -213,13 +212,8 @@ export function TableImpactPanel() {
         </div>
       ) : null}
 
-      {readError ? (
-        <div role="alert" className="mx-4 mb-3 flex shrink-0 items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          <span>Preflight could not be read: {asClause(readError)}. {rows.length ? "The last successful result remains below; it may be stale." : "There is no verified result for this table."}</span>
-          <Button size="sm" variant="outline" disabled={loading} onClick={() => void runImpact()}>Retry</Button>
-          <ErrorAlchemyMenu className="ml-auto" />
-        </div>
-      ) : null}
+      {/* The preflight read's failure is said once, by the table (read=): the
+          failure with no result, a stale notice over the last good one. */}
 
       <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
         <MatrxDataTable<TableImpactRow>

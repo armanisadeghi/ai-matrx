@@ -57,8 +57,8 @@ import {
   type AgentShortcutPanelRow,
   type AgentShortcutsPanelKpis,
 } from "@/features/agent-shortcuts/format";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { readOf } from "@/components/read-state/ReadGate";
 import {
   UntrustedCount,
@@ -338,34 +338,19 @@ export function AgentShortcutsPanel({
           />
         </section>
 
-        {/* Error */}
-        {errorText && (
-          <div className="group/error flex items-start justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            <span>{errorText}</span>
-            <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/error:opacity-100">
-              <CopyButtons
-                size="xs"
-                label="Shortcuts load error"
-                human={() => `${errorText}\n\n${pageHuman()}`}
-                agent={() => ({
-                  kind: "agent-shortcuts-panel-error",
-                  location,
-                  description:
-                    "The error banner rendered on the agent shortcuts panel, with the page state it is blocking.",
-                  data: {
-                    error_on_screen: errorText,
-                    agent: { id: agentId, name: agentName },
-                    kpis,
-                    shortcuts_still_rendered: panelRows.length,
-                  },
-                  attributes: { ...kpis, agent_id: agentId, has_error: true },
-                  context: { agent_name: agentName },
-                })}
-              />
-            </span>
-            <ErrorAlchemyMenu error={errorText} />
-          </div>
-        )}
+        {/* The shortcuts read's failure, said once: the failure in place of the
+            list when nothing loaded, a stale notice above rows kept from before. */}
+        {error && shortcuts.length > 0 ? (
+          <StaleDataNotice
+            hasData
+            what="this agent's shortcuts"
+            onRetry={() => {
+              void globalQuery.refetch();
+              void userQuery.refetch();
+            }}
+            detail={error}
+          />
+        ) : null}
 
         {/* List */}
         <section className="space-y-3">
@@ -374,9 +359,16 @@ export function AgentShortcutsPanel({
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading shortcuts…
             </Card>
-          ) : error ? (
-<ReadFailure error={error} what="this list" />
-) : shortcuts.length === 0 ? (
+          ) : error && shortcuts.length === 0 ? (
+            <ReadFailure
+              error={error}
+              what="this agent's shortcuts"
+              onRetry={() => {
+                void globalQuery.refetch();
+                void userQuery.refetch();
+              }}
+            />
+          ) : shortcuts.length === 0 ? (
             <EmptyState
               agentId={agentId}
               basePath={basePath}

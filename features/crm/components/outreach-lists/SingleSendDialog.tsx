@@ -44,6 +44,8 @@ import type {
   OutreachListRow,
 } from "../../outreach-lists/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
+import { usePitchAdvisories } from "@/features/crm/pitch-advisories/usePitchAdvisories";
 
 interface SingleSendDialogProps {
   open: boolean;
@@ -126,6 +128,22 @@ export function SingleSendDialog({
       .finally(() => setBusy(null));
   }, [list.organization_id, memberReputationCaseId, open]);
 
+  // THE PR FLOOR (pitch advisories E1–E17): the one shared check, run on the
+  // exact previewed message. Warnings and offers only — Send stays live, and
+  // pressing it records that the person saw them.
+  const advisories = usePitchAdvisories(
+    list.organization_id,
+    draft && !draft.sent_at
+      ? {
+          surface: "single_send",
+          draft_id: draft.id,
+          recipient_party_ids: [draft.party_id],
+          attachment_count: 0,
+          is_exclusive: false,
+        }
+      : null,
+  );
+
   const approved = Boolean(draft?.approved_at);
   const canSend = Boolean(
     draft?.eligibility.allowed &&
@@ -182,6 +200,10 @@ export function SingleSendDialog({
     setBusy("send");
     setProblem(null);
     try {
+      await advisories.recordGoAhead({
+        entityType: "crm_interaction",
+        entityId: draft.id,
+      });
       const result = await sendOutreachDraft(draft.id);
       setDraft(result.draft);
       toast.success(`Email sent to ${result.draft.recipient}`);
@@ -313,6 +335,26 @@ export function SingleSendDialog({
                 </p>
               )}
             </div>
+            {!draft.sent_at && (
+              <PitchAdvisoryPanel
+                state={advisories}
+                organizationId={list.organization_id}
+                actionLabel="the send"
+                surfaceName="crm-outreach-single-send"
+                canPerformLocal={(offer) => offer.action === "label_cold"}
+                onLocalOffer={(_advisory, offer) => {
+                  if (offer.action !== "label_cold") return false;
+                  void advisories
+                    .recordGoAhead({
+                      entityType: "crm_interaction",
+                      entityId: draft.id,
+                      choice: "label_cold",
+                    })
+                    .then(() => toast.success("Noted as a cold pitch"));
+                  return true;
+                }}
+              />
+            )}
             {(draft.eligibility.blocks ?? []).map((block) => (
               <div
                 key={block.code}

@@ -15,7 +15,6 @@ import {
   updateAssistProducerPolicy,
   type AssistProducerPolicy,
 } from "./service";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { readOf } from "@/components/read-state/ReadGate";
 
@@ -142,15 +141,7 @@ export function AssistProducerControl() {
         </label>
       </div>
 
-      {policies.error && (
-        <p className="text-sm text-destructive">
-          {policies.error instanceof Error
-            ? policies.error.message
-            : "Could not load Assist controls"}
-          <ErrorAlchemyMenu error={policies.error.message} />
-        </p>
-      )}
-
+      {/* The policies read's failure is said once, by the table (read=). */}
       <MatrxDataTable
         urlState={{ id: "assist-producer-controls" }}
         data={policies.data ?? []}

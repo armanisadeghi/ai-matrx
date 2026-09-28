@@ -44,7 +44,6 @@ import {
   listOutcomeEvents,
   type OutcomeCounts,
 } from "./service";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 const PAGE_SIZE = 25;
@@ -336,12 +335,7 @@ export function OutcomesPanel({ campaignId }: { campaignId: string }) {
           {filterChip("rejected", "Not ours", counts?.rejected)}
         </div>
       </div>
-      {error && (
-        <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      )}
+      {/* The outcomes read's failure is said once, by the table (read=). */}
       <MatrxDataTable<OutcomeEventRow>
         data={rows}
         columns={columns}

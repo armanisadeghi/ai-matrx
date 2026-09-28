@@ -65,6 +65,29 @@ describe("layoutOrgForest", () => {
   });
 });
 
+describe("forest packing", () => {
+  it("wraps many separate trees into rows toward the screen's shape", () => {
+    const roots = Array.from({ length: 9 }, (_, i) => node(`t${i}`, [node(`t${i}a`), node(`t${i}b`)], null));
+    const strip = layoutOrgForest(roots, opts());
+    const packed = layoutOrgForest(roots, opts([], { targetAspect: 16 / 10 }));
+    expect(packed.width).toBeLessThan(strip.width / 2);
+    expect(packed.height).toBeGreaterThan(strip.height);
+    const ratio = packed.width / packed.height;
+    expect(ratio).toBeGreaterThan(0.8);
+    expect(ratio).toBeLessThan(3.5);
+  });
+
+  it("never overlaps two trees", () => {
+    const roots = Array.from({ length: 7 }, (_, i) => node(`t${i}`, i % 2 ? [node(`c${i}`, [node(`g${i}`)])] : [], null));
+    const { nodes } = layoutOrgForest(roots, opts([], { targetAspect: 1.2 }));
+    const W = DEFAULT_ORG_CHART_LAYOUT.cardWidth;
+    const H = DEFAULT_ORG_CHART_LAYOUT.cardHeight;
+    for (const a of nodes)
+      for (const b of nodes)
+        if (a !== b) expect(a.x + W <= b.x || b.x + W <= a.x || a.y + H <= b.y || b.y + H <= a.y).toBe(true);
+  });
+});
+
 describe("helpers", () => {
   it("ancestorKeys returns the path to a node, root first", () => {
     const tree = node("r", [node("a", [node("x")])], null);

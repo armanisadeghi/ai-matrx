@@ -45,7 +45,6 @@ import {
   createTableRowMenuDescriptor,
 } from "@/features/context-menu-v3/table-row-context-registry";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 export interface ShortcutDirectoryProps {
@@ -376,12 +375,7 @@ export function ShortcutDirectory({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {error && (
-        <div className="border-b border-destructive/30 px-4 py-2 text-sm text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      )}
+      {/* The directory read's failure is said once, by the table (read=). */}
       <MatrxDataTable<ShortcutDirectoryRow>
         tableId={`agent-shortcuts/directory/${mode}`}
         data={filteredRows}
