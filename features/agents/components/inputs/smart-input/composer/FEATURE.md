@@ -138,6 +138,9 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-09-28** — Every composer control is reachable by Tab (a11y pass): Send, Stop, Attach/Chat options,
+  Documents & context, the variable row's choices and expand buttons had `tabIndex={-1}`, so Tab never reached Send.
+  A disabled Send is native `disabled` (skipped by the browser). Guard: `inputs/__tests__/composer-controls-are-reachable.test.ts`.
 - **2026-09-27** — Round 4: no mode has less capability (identical + menu, all phone tabs); Connectors panel;
   one-click Environment list; Search your knowledge; Auto-clear row; always-present All options; the page as ONE
   context chip (replaces the workspace's page-context row); borders removed.
