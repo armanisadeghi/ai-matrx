@@ -109,7 +109,7 @@ A SQL snippet:
 create table users.user_markdown_samples (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  user_id uuid not null references auth.users(id)
+  user_id uuid not null references iam.users(id)
 );
 \`\`\`
 

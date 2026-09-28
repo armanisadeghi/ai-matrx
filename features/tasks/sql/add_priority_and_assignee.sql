@@ -18,7 +18,7 @@ ADD COLUMN IF NOT EXISTS priority task_priority NULL;
 ALTER TABLE tasks 
 ADD COLUMN IF NOT EXISTS assignee_id UUID NULL;
 
--- 4. Add foreign key constraint for assignee_id (references auth.users)
+-- 4. Add foreign key constraint for assignee_id (references iam.users)
 -- This ensures the assignee is a valid user
 DO $$ 
 BEGIN
@@ -30,7 +30,7 @@ BEGIN
     ALTER TABLE tasks
     ADD CONSTRAINT tasks_assignee_id_fkey 
     FOREIGN KEY (assignee_id) 
-    REFERENCES auth.users(id) 
+    REFERENCES iam.users(id)
     ON DELETE SET NULL;
   END IF;
 END $$;
@@ -47,7 +47,7 @@ ON tasks(priority);
 CREATE TABLE IF NOT EXISTS task_comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES iam.users(id) ON DELETE SET NULL,
   content TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
