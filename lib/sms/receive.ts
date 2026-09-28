@@ -30,7 +30,15 @@ function requiredParam(params: Record<string, string>, key: string): string {
   return value;
 }
 
-/** Parse the signed provider form instead of asserting an untrusted object shape. */
+/**
+ * Parse the signed provider form instead of asserting an untrusted object shape.
+ *
+ * 🚨 PORTED, field for field, by aidream's inbound fallback door
+ * (aidream/services/communications/sms_inbound_fallback.py): when this route's
+ * host fails, Twilio's Fallback URL writes the receipt there with the same
+ * raw_payload and provider_event_key, and the re-drive replays it here. Change
+ * both together.
+ */
 export function parseInboundSmsPayload(
   params: Record<string, string>,
 ): InboundSmsPayload {
