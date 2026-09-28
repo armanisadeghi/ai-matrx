@@ -312,7 +312,10 @@ export function NoteEditorDock({
       <BottomSheet
         open={sheetOpen === "folder-tags"}
         onOpenChange={(open) => setSheetOpen(open ? "folder-tags" : null)}
-        title="Note Settings"
+        title="Folder & Tags"
+        // Solid: the glass blurred the floating assist button behind it into a
+        // smudge across the sheet.
+        surface="solid"
       >
         <BottomSheetHeader title="Folder &amp; Tags" />
         <BottomSheetBody>
