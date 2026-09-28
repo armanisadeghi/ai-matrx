@@ -239,13 +239,3 @@ export async function defaultListScopeFor(token: string): Promise<ListScope> {
     ? { kind: "orgs", organizationId: null }
     : { kind: "mine" };
 }
-
-/**
- * @deprecated REMOVED IN THE NEXT COMMIT (T-11 leak fixes, 2026-09-28) — kept for minutes only so a
- * release cut between the two commits cannot crash the lists still importing it. Use
- * `defaultListFilter`.
- */
-export async function scopeToOwner(token: string, requested?: ListScopeWord): Promise<boolean> {
-  if (requested) return requested === "mine";
-  return shouldFilterToOwner(await resolveListScope(token));
-}
