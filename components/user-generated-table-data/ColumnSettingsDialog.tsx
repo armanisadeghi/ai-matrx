@@ -71,22 +71,15 @@ import {
   updateTableConfig,
 } from "@/features/data-tables/service";
 import { isServiceFailure, type FieldDataType } from "@/features/data-tables/types";
+import { COLUMN_STORAGE_TYPES, storageTypesToChangeInto } from "@/features/data-tables/column-storage-types";
 import {
   parseValidationRules,
   serializeValidationRules,
   type ValidationRules,
 } from "@/features/data-tables/validation";
 
-const DATA_TYPES: { value: FieldDataType; label: string }[] = [
-  { value: "string", label: "Text" },
-  { value: "number", label: "Number" },
-  { value: "integer", label: "Whole number" },
-  { value: "boolean", label: "Yes / No" },
-  { value: "date", label: "Date" },
-  { value: "datetime", label: "Date & time" },
-  { value: "json", label: "Structured data" },
-  { value: "array", label: "List" },
-];
+// One list for every picker, in a person's words (DATA-V2-BASICS-2 T3).
+const DATA_TYPES = COLUMN_STORAGE_TYPES;
 
 const NO_SUMMARY = "__none__";
 
@@ -347,9 +340,11 @@ function ColumnSettingsForm({
                   {/* ONLY WHAT THIS TABLE CAN BECOME (DATA-V2-BASICS-2 T2): a record-store column cannot
                       be changed into "Structured data" or "List", and offering them was a Save that
                       refused every time. The column's own current kind always stays listed. */}
-                  {DATA_TYPES.filter(
-                    (t) => !onTheRecordStore || RECORD_STORE_COLUMN_TYPES.includes(t.value) || t.value === field.data_type,
-                  ).map((t) => (
+                  {storageTypesToChangeInto({
+                    onTheRecordStore,
+                    changeInto: RECORD_STORE_COLUMN_TYPES,
+                    current: field.data_type,
+                  }).map((t) => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                   ))}
                 </SelectContent>

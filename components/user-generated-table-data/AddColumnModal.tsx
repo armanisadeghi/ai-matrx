@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { VALID_DATA_TYPES } from '@/utils/user-table-utls/table-utils';
+import { storageTypeLabel } from '@/features/data-tables/column-storage-types';
 import { addTableColumn } from '@/features/data-tables/service';
 import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer';
 import { setFieldFormat } from '@/features/data-tables/service';
@@ -213,7 +214,8 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
               <SelectContent>
                 {VALID_DATA_TYPES.map((type) => (
                   <SelectItem key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    {/* The person's word for it (DATA-V2-BASICS-2 T3), never "String" or "Json". */}
+                    {storageTypeLabel(type)}
                   </SelectItem>
                 ))}
               </SelectContent>

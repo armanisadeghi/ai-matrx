@@ -1,5 +1,6 @@
 "use client";
 
+import { COLUMN_STORAGE_TYPES, storageTypesToChangeInto } from "@/features/data-tables/column-storage-types";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   changeFieldType,
@@ -7,6 +8,7 @@ import {
   getTableProfile,
   rewriteFormulasForRename,
   isRecordStoreTable,
+  RECORD_STORE_COLUMN_TYPES,
   setFieldFormat,
   setValidationMode,
   updateTableConfig,
@@ -144,16 +146,8 @@ interface TableConfigModalProps {
   onAddColumn?: () => void;
 }
 
-const DATA_TYPES = [
-  { value: "string", label: "Text", description: "Any text content" },
-  { value: "number", label: "Number", description: "Decimal numbers" },
-  { value: "integer", label: "Integer", description: "Whole numbers only" },
-  { value: "boolean", label: "Boolean", description: "True/False values" },
-  { value: "date", label: "Date", description: "Date values" },
-  { value: "datetime", label: "DateTime", description: "Date and time values" },
-  { value: "json", label: "JSON", description: "Structured data" },
-  { value: "array", label: "Array", description: "List of values" },
-];
+// One list for every picker, in a person's words (DATA-V2-BASICS-2 T3).
+const DATA_TYPES = COLUMN_STORAGE_TYPES;
 
 export default function TableConfigModal({
   isOpen,
@@ -840,7 +834,7 @@ export default function TableConfigModal({
                 const lower = name.trim().toLowerCase();
                 return fields.find((f) => f.field_name.toLowerCase() === lower) ?? fields.find((f) => f.display_name.toLowerCase() === lower);
               };
-              const types = new Set(DATA_TYPES.map((t) => t.value));
+              const types = new Set<string>(DATA_TYPES.map((t) => t.value));
               const problems: string[] = [];
               const staged: Array<() => void> = [];
               for (const raw of changes) {
@@ -997,7 +991,11 @@ export default function TableConfigModal({
                             </span>
                           </SelectTrigger>
                           <SelectContent>
-                            {DATA_TYPES.map((type) => (
+                            {storageTypesToChangeInto({
+                              onTheRecordStore: isRecordStoreTable(tableId),
+                              changeInto: RECORD_STORE_COLUMN_TYPES,
+                              current: field.data_type,
+                            }).map((type) => (
                               <SelectItem key={type.value} value={type.value}>
                                 <div>
                                   <div className="font-medium">
