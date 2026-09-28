@@ -17529,7 +17529,6 @@ export type Database = {
           timezone: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -17555,7 +17554,6 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -17581,7 +17579,6 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -29150,7 +29147,6 @@ export type Database = {
           timezone: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -29173,7 +29169,6 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -29196,7 +29191,6 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -29223,7 +29217,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           url: string
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -29247,7 +29240,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           url: string
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -29271,7 +29263,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           url?: string
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -32572,7 +32563,6 @@ export type Database = {
           state_reason: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -32601,7 +32591,6 @@ export type Database = {
           state_reason?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -32630,7 +32619,6 @@ export type Database = {
           state_reason?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -89711,7 +89699,6 @@ export type Database = {
           organization_id: string
           overlap_next_chars: number | null
           overlap_previous_chars: number | null
-          owner_id: string
           page_numbers: number[] | null
           page_spans: Json | null
           parent_chunk_id: string | null
@@ -89757,7 +89744,6 @@ export type Database = {
           organization_id: string
           overlap_next_chars?: number | null
           overlap_previous_chars?: number | null
-          owner_id?: string
           page_numbers?: number[] | null
           page_spans?: Json | null
           parent_chunk_id?: string | null
@@ -89803,7 +89789,6 @@ export type Database = {
           organization_id?: string
           overlap_next_chars?: number | null
           overlap_previous_chars?: number | null
-          owner_id?: string
           page_numbers?: number[] | null
           page_spans?: Json | null
           parent_chunk_id?: string | null
@@ -90073,7 +90058,7 @@ export type Database = {
       kg_suggestion_ack: {
         Row: {
           created_at: string
-          created_by: string | null
+          created_by: string
           custom_fields: Json
           deleted_at: string | null
           id: string
@@ -90083,13 +90068,12 @@ export type Database = {
           suggestion_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
+          created_by: string
           custom_fields?: Json
           deleted_at?: string | null
           id?: string
@@ -90099,13 +90083,12 @@ export type Database = {
           suggestion_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           custom_fields?: Json
           deleted_at?: string | null
           id?: string
@@ -90115,7 +90098,6 @@ export type Database = {
           suggestion_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -90756,7 +90738,6 @@ export type Database = {
           target_slot_name: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           viewed_at: string | null
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -90790,7 +90771,6 @@ export type Database = {
           target_slot_name?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           viewed_at?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -90824,7 +90804,6 @@ export type Database = {
           target_slot_name?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           viewed_at?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -90877,7 +90856,6 @@ export type Database = {
           target_slot_key: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           viewed_at: string | null
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -90912,7 +90890,6 @@ export type Database = {
           target_slot_key: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           viewed_at?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -90947,7 +90924,6 @@ export type Database = {
           target_slot_key?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           viewed_at?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -106774,7 +106750,6 @@ export type Database = {
           transport_used: Database["public"]["Enums"]["mcp_transport"]
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
         }
         Insert: {
@@ -106808,7 +106783,6 @@ export type Database = {
           transport_used?: Database["public"]["Enums"]["mcp_transport"]
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
         }
         Update: {
@@ -106842,7 +106816,6 @@ export type Database = {
           transport_used?: Database["public"]["Enums"]["mcp_transport"]
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
         }
         Relationships: [

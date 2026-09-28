@@ -59,12 +59,9 @@ export async function ackSuggestions(
       organization_id: organizationId,
       deleted_at: null,
     };
-    // `user_id` is retired (created_by is the owner); the generated Insert type
-    // still lists it as required until the column drops and types regenerate.
-    // The live `zz_owner_mirror` trigger fills it from created_by meanwhile.
     const { error } = await supabase
       .schema("rag").from("kg_suggestion_ack")
-      .upsert(row as typeof row & { user_id: string }, {
+      .upsert(row, {
         onConflict: "created_by,suggestion_id",
       });
     // The composite primary key makes concurrent/repeated dismissals one
