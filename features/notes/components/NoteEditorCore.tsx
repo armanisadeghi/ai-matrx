@@ -390,9 +390,9 @@ export function NoteEditorCore({
                 "w-full h-full resize-none border-0 shadow-none",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
                 // The same reading column and type size as Write and Read
-                // (max-w-3xl, 16px): the padding centres the text while the
-                // scrollbar stays at the pane's edge.
-                "text-base leading-relaxed bg-transparent py-6 px-[max(1.5rem,calc((100%-48rem)/2))]",
+                // (48rem, 14px — the app's rendered-text size): the padding
+                // centres the text while the scrollbar stays at the edge.
+                "text-sm leading-relaxed bg-transparent py-6 px-[max(1.5rem,calc((100%-48rem)/2))]",
                 bottomPad,
                 largeScrollbar && "scrollbar-contrast-lg",
                 textareaClassName,
@@ -409,9 +409,9 @@ export function NoteEditorCore({
                 "absolute inset-0 w-full h-full resize-none border-0",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
                 // The same reading column and type size as Write and Read
-                // (max-w-3xl, 16px): the padding centres the text while the
-                // scrollbar stays at the pane's edge.
-                "text-base leading-relaxed bg-transparent py-6 px-[max(1.5rem,calc((100%-48rem)/2))]",
+                // (48rem, 14px — the app's rendered-text size): the padding
+                // centres the text while the scrollbar stays at the edge.
+                "text-sm leading-relaxed bg-transparent py-6 px-[max(1.5rem,calc((100%-48rem)/2))]",
                 bottomPad,
                 // Notes get long — opt into the larger, persistent,
                 // higher-contrast scrollbar so it's easy to find and grab.
@@ -509,7 +509,10 @@ export function NoteEditorCore({
           editor (and delivers pending typing) instead of remounting it. The host's
           mode control is the one view switch — the editor draws no toolbar row. */}
       {isRichEditorMode(editorMode) && (
-        <div className="absolute inset-0 w-full h-full">
+        // The app's text, not a stylesheet's: Toast UI's global CSS (still
+        // loaded by other screens) styles every `.ProseMirror` as 13px Open
+        // Sans; Write reads in the same font and size as Read and Plain.
+        <div className="absolute inset-0 w-full h-full [&_.ProseMirror]:font-sans [&_.ProseMirror]:text-sm [&_.ProseMirror]:leading-relaxed [&_.ProseMirror]:text-foreground">
           <RichEditor
             key={resetKey}
             value={content}

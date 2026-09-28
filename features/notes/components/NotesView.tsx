@@ -691,7 +691,7 @@ export function NotesView({
                 type="button"
                 title={hint}
                 aria-pressed={editorMode === mode}
-                className={cn(modeBtnClass(mode), "justify-center")}
+                className={cn(modeBtnClass(mode), "justify-center font-medium")}
                 onClick={() => setMode(mode)}
               >
                 <Icon /> {label}
