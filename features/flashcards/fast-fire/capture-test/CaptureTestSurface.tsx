@@ -297,6 +297,7 @@ export function CaptureTestSurface() {
         {clips.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-sm font-medium text-foreground">
+              {/* read-gate-exempt: clips recorded in this browser during this capture test, not rows from a read */}
               Per-card clips ({clips.length})
             </h2>
             {clips.map((c) => (

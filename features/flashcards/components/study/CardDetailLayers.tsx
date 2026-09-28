@@ -139,6 +139,7 @@ export function CardDetailLayers({
         >
           <Layers className="h-3.5 w-3.5 shrink-0 text-primary" />
           <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+            {/* read-gate-exempt: layers are the card prop's own details plus those this session's enrichment wrote; no read happens here */}
             {count === 0
               ? "No extra help on this card yet"
               : `More on this card`}
@@ -146,6 +147,7 @@ export function CardDetailLayers({
           {count > 0 && (
             <>
               <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                {/* read-gate-exempt: layers are the card prop's own details plus those this session's enrichment wrote; no read happens here */}
                 {count}
               </span>
               <ChevronDown

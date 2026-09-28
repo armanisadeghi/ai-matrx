@@ -249,11 +249,13 @@ export function ImportSetView() {
               <div className="rounded-lg border border-border bg-muted/30 p-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-foreground">
+                    {/* read-gate-exempt: lines parsed in this browser from the text or file the person supplied, not rows from a server read */}
                     {rows.length} {rows.length === 1 ? "card" : "cards"} ready to import
                   </span>
                   {skipped.length > 0 ? (
                     <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
                       <AlertTriangle className="h-3.5 w-3.5" />
+                      {/* read-gate-exempt: lines parsed in this browser from the text or file the person supplied, not rows from a server read */}
                       {skipped.length} line{skipped.length === 1 ? "" : "s"} skipped
                     </span>
                   ) : null}

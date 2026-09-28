@@ -508,6 +508,7 @@ export function CreateDeckPage() {
                       <LoadingSpinner size="sm" />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground">
+                          {/* read-gate-exempt: counts of the sources the person added to this form and the card count they chose, not a read's rows */}
                           {phase === "reading"
                             ? `Reading ${ready.length} ${ready.length === 1 ? "source" : "sources"}…`
                             : phase === "saving"
@@ -574,6 +575,7 @@ export function CreateDeckPage() {
                       </p>
                     ) : null}
                     <p className="text-sm text-muted-foreground">
+                      {/* read-gate-exempt: counts of the sources the person added to this form and the card count they chose, not a read's rows */}
                       {blockedReason ??
                         (hasSources
                           ? `${safeCount} cards from ${ready.length} ${ready.length === 1 ? "source" : "sources"}${topic ? `, focused on “${topic}”` : ""}. Every card cites the part it came from.`

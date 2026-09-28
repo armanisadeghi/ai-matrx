@@ -104,6 +104,9 @@ export function FastFireSetup() {
     total: number;
   } | null>(null);
   const [prepDone, setPrepDone] = useState(false);
+  // The persisted-readiness reads say their failure instead of "not prepared".
+  const [prepReadError, setPrepReadError] = useState<unknown>(null);
+  const [helpReadError, setHelpReadError] = useState<unknown>(null);
 
   const prepareAudio = async (): Promise<void> => {
     if (!config.setId) return;
@@ -111,6 +114,7 @@ export function FastFireSetup() {
     setPrepping(true);
     setPrepDone(false);
     setPrepProgress(null);
+    setPrepReadError(null);
     try {
       let total = 0;
       const result = await dispatch(
@@ -157,6 +161,7 @@ export function FastFireSetup() {
       setHelpPrepDone(false);
       const before = helpPrepProgress?.done ?? 0;
       setHelpPrepProgress(null);
+      setHelpReadError(null);
       try {
         let total = 0;
         let unusableSentence: string | null = null;
@@ -199,10 +204,15 @@ export function FastFireSetup() {
     if (!setId) return undefined;
     let cancelled = false;
     void (async () => {
-      const { ready, total } = await getHelperAudioReadiness(setId);
-      if (cancelled) return;
-      setHelpPrepProgress({ done: ready, total });
-      setHelpPrepDone(total > 0 && ready >= total);
+      try {
+        const { ready, total } = await getHelperAudioReadiness(setId);
+        if (cancelled) return;
+        setHelpReadError(null);
+        setHelpPrepProgress({ done: ready, total });
+        setHelpPrepDone(total > 0 && ready >= total);
+      } catch (e) {
+        if (!cancelled) setHelpReadError(e);
+      }
     })();
     return () => {
       cancelled = true;
@@ -220,10 +230,15 @@ export function FastFireSetup() {
     if (!setId || !config.spokenFronts) return undefined;
     let cancelled = false;
     void (async () => {
-      const { ready, total } = await getSpokenFrontReadiness(setId);
-      if (cancelled) return;
-      setPrepProgress({ done: ready, total });
-      setPrepDone(total > 0 && ready >= total);
+      try {
+        const { ready, total } = await getSpokenFrontReadiness(setId);
+        if (cancelled) return;
+        setPrepReadError(null);
+        setPrepProgress({ done: ready, total });
+        setPrepDone(total > 0 && ready >= total);
+      } catch (e) {
+        if (!cancelled) setPrepReadError(e);
+      }
     })();
     return () => {
       cancelled = true;
@@ -506,7 +521,9 @@ export function FastFireSetup() {
             <div className="mt-3 border-t border-border pt-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
-                  {prepDone
+                  {prepReadError != null
+                    ? "Couldn't check which cards already have cached audio — Prepare only generates what is missing."
+                    : prepDone
                     ? "Question audio is cached and durable — it plays instantly, and nothing is re-generated when you return."
                     : prepProgress && prepProgress.done > 0
                       ? `${prepProgress.done} of ${prepProgress.total} cards already have cached audio — Prepare only generates the ${prepProgress.total - prepProgress.done} still missing.`
@@ -535,7 +552,7 @@ export function FastFireSetup() {
                         : "Prepare audio"}
                 </Button>
               </div>
-              {prepProgress && prepProgress.total > 0 && (
+              {prepReadError == null && prepProgress && prepProgress.total > 0 && (
                 <div className="mt-2">
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                     <div
@@ -650,7 +667,9 @@ export function FastFireSetup() {
                     Instant help
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {helpPrepDone
+                    {helpReadError != null
+                      ? "Couldn't check which cards already have a pre-recorded explanation — Prepare only covers what is missing."
+                      : helpPrepDone
                       ? "Every card has a pre-recorded explanation — “I'm confused” answers instantly, no wait."
                       : helpPrepProgress && helpPrepProgress.done > 0
                         ? `${helpPrepProgress.done} of ${helpPrepProgress.total} cards have a pre-recorded explanation — Prepare covers the ${helpPrepProgress.total - helpPrepProgress.done} still missing.`
@@ -681,7 +700,7 @@ export function FastFireSetup() {
                       : "Prepare help"}
               </Button>
             </div>
-            {helpPrepProgress && helpPrepProgress.total > 0 && (
+            {helpReadError == null && helpPrepProgress && helpPrepProgress.total > 0 && (
               <div className="mt-2">
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                   <div

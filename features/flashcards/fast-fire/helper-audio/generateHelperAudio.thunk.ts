@@ -70,6 +70,9 @@ export async function getHelperAudioReadiness(
   setId: string,
 ): Promise<{ ready: number; total: number }> {
   const res = await fcService.getSetWithCards(setId);
+  // A failed read is thrown, never reported as "0 of 0 ready" — the setup
+  // screen would otherwise look unprepared and invite a paid re-run.
+  if (res.error) throw new Error(res.error);
   if (!res.data) return { ready: 0, total: 0 };
   const cards = res.data.cards;
   const ready = cards.filter((c) =>
