@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { Loader2, Stars } from "lucide-react";
+import { Brush, Loader2, Play, RotateCcw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -299,7 +299,7 @@ export default function TranscriptionCleanup({
             </>
           ) : (
             <>
-              <Stars className="h-3.5 w-3.5" /> Clean Up
+              <Brush className="h-3.5 w-3.5" /> Clean Up
             </>
           )}
         </button>
@@ -378,7 +378,7 @@ export default function TranscriptionCleanup({
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex shrink-0 items-center justify-between px-3 py-1.5 border-b border-border/40">
             <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <Stars className="h-3 w-3 text-primary/80" />
+              <Brush className="h-3 w-3 text-primary/80" />
               AI Response
               {isThinking && (
                 <span className="normal-case font-normal text-primary/80 inline-flex items-center gap-1">
@@ -397,6 +397,29 @@ export default function TranscriptionCleanup({
               )}
             </span>
             <div className="flex items-center gap-1">
+              {/* The pane's own run control — the sidebar's Clean Up is the
+                  same handler, but the sidebar collapses (and is a separate
+                  pane on a phone), so the window's main job never lives only
+                  there. Absent while a pass runs. */}
+              {!ai.isBusy && (
+                <button
+                  type="button"
+                  onClick={handleProcess}
+                  title={
+                    responseValue.trim().length > 0
+                      ? "Run the cleaning agent again on the current transcript (replaces the response)"
+                      : "Run the cleaning agent on the current transcript"
+                  }
+                  className="inline-flex h-6 items-center gap-1 rounded-md bg-primary px-2 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  {responseValue.trim().length > 0 ? (
+                    <RotateCcw className="h-3 w-3" />
+                  ) : (
+                    <Play className="h-3 w-3" />
+                  )}
+                  {responseValue.trim().length > 0 ? "Re-clean" : "Clean"}
+                </button>
+              )}
               {/* Spinner occupies space always; invisible when not processing */}
               <Loader2
                 className={cn(
