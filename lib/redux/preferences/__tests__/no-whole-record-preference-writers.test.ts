@@ -9,7 +9,6 @@ import fs from "node:fs";
 import path from "node:path";
 
 const ROOTS = ["app", "lib", "features", "components", "providers", "hooks", "utils"];
-const SANCTIONED = new Set(["lib/redux/preferences/userPreferencesSlice.ts"]);
 /**
  * Known and NOT sanctioned — each needs its owner's ruling, never a silent pass.
  *  - providers/usePreferenceSync.ts: an unmounted whole-record upsert (no
@@ -26,13 +25,18 @@ function* files(dir: string): Generator<string> {
   }
 }
 
-/** Every `.from("user_preferences")` chain that writes the `preferences` column. */
+/**
+ * Every `.from("user_preferences")` chain that writes the `preferences` column
+ * WITHOUT the compare-and-swap (`.eq("version", …)`) — i.e. a blind replace.
+ */
 export function wholeRecordWriters(source: string): number {
   let hits = 0;
   const re = /from\(\s*["']user_preferences["']\s*\)/g;
   for (let m = re.exec(source); m; m = re.exec(source)) {
     const chain = source.slice(m.index, m.index + 400);
-    if (/\.(update|upsert)\(\s*\{[^}]*\bpreferences\b/.test(chain)) hits += 1;
+    if (/\.(update|upsert)\(\s*\{[^}]*\bpreferences\b/.test(chain) && !/\.eq\(\s*["']version["']/.test(chain)) {
+      hits += 1;
+    }
   }
   return hits;
 }
@@ -41,6 +45,10 @@ it("detects the old whole-record write (self-test)", () => {
   expect(wholeRecordWriters(`db.from("user_preferences").update({ preferences: body }).eq("user_id", id)`)).toBe(1);
   expect(wholeRecordWriters(`db.from('user_preferences').upsert({ organization_id, user_id, preferences })`)).toBe(1);
   expect(wholeRecordWriters(`db.from("user_preferences").update({ auto_rag_enabled: next })`)).toBe(0);
+  // The sanctioned CAS merge is not a blind replace.
+  expect(
+    wholeRecordWriters(`table().from("user_preferences").update({ preferences: value, version: nextVersion }).eq("user_id", id).eq("version", expectedVersion)`),
+  ).toBe(0);
 });
 
 it("no browser code writes the whole preferences record outside the CAS merge", () => {
@@ -49,7 +57,7 @@ it("no browser code writes the whole preferences record outside the CAS merge", 
   for (const root of ROOTS) {
     for (const file of files(path.join(cwd, root))) {
       const rel = path.relative(cwd, file);
-      if (SANCTIONED.has(rel) || KNOWN_UNMOUNTED.has(rel)) continue;
+      if (KNOWN_UNMOUNTED.has(rel)) continue;
       if (wholeRecordWriters(fs.readFileSync(file, "utf8")) > 0) offenders.push(rel);
     }
   }
@@ -64,7 +72,7 @@ it("the known unmounted writer is still unmounted", () => {
       const rel = path.relative(cwd, file);
       if (rel === "providers/usePreferenceSync.ts") continue;
       const src = fs.readFileSync(file, "utf8");
-      if (/import[^;]*\b(usePreferenceSync|PreferenceSyncProvider)\b[^;]*from|<PreferenceSyncProvider\b/.test(src)) importers.push(rel);
+      if (/^\s*import\s[^;]*?\b(usePreferenceSync|PreferenceSyncProvider)\b[^;]*?from\s|<PreferenceSyncProvider\b|\busePreferenceSync\(\)/m.test(src)) importers.push(rel);
     }
   }
   expect(importers).toEqual([]);
