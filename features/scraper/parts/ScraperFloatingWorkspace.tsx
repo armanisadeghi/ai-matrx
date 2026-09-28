@@ -226,6 +226,7 @@ export function ScraperFloatingWorkspace({
         });
         setSelectedScrapedIndex(0);
       }
+      // read-gate-exempt: a failed scrape is recorded by useScraperApi (quickApi.error) and shown in the workspace's status line
     } catch {
       /* useScraperApi sets error */
     }
@@ -320,6 +321,7 @@ export function ScraperFloatingWorkspace({
         setSelectedScrapedIndex(0);
         setMode("url");
       }
+      // read-gate-exempt: a failed scrape is recorded by useScraperApi (quickApi.error) and shown in the workspace's status line
     } catch {
       /* surfaced via quickApi */
     }
@@ -560,6 +562,7 @@ export function ScraperFloatingWorkspace({
               <span className="text-muted-foreground/30">·</span>
             )}
             <span>
+              {/* read-gate-exempt: counts pages this session scraped successfully (failed scrapes never enter the list), not a read */}
               {scrapedResults.length} page
               {scrapedResults.length !== 1 ? "s" : ""}
             </span>

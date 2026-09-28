@@ -179,8 +179,8 @@ function CopySubsetWindowBody<T>({
       setState(initialCopySubsetState(session));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
+      // Said once, in the window body (with its retry) — not also as a toast.
       setLoadError(message);
-      toast.error(`Couldn't load the rows: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -378,18 +378,23 @@ function CopySubsetWindowBody<T>({
             className="min-w-0 flex-1 text-xs tabular-nums text-muted-foreground"
             aria-live="polite"
           >
-            <span className="font-semibold text-foreground">
-              {computation.rows.length.toLocaleString()} of{" "}
-              {session.rows.length.toLocaleString()} rows
-            </span>{" "}
-            · {computation.columns.length.toLocaleString()} of{" "}
-            {session.columns.length.toLocaleString()} columns
-            {state.selectedRowIds.length > 0
-              ? ` · ${computation.rows.length.toLocaleString()} selected of ${computation.matched.length.toLocaleString()} matching`
-              : ""}
-            {estimate
-              ? ` · ${estimate.chars.toLocaleString()} chars · ${estimate.bytesLabel} · ~${estimate.tokens.toLocaleString()} tokens`
-              : ""}
+            {/* Counts only after the rows loaded — a failed load is said once, in the body. */}
+            {loading || loadError ? null : (
+              <>
+                <span className="font-semibold text-foreground">
+                  {computation.rows.length.toLocaleString()} of{" "}
+                  {session.rows.length.toLocaleString()} rows
+                </span>{" "}
+                · {computation.columns.length.toLocaleString()} of{" "}
+                {session.columns.length.toLocaleString()} columns
+                {state.selectedRowIds.length > 0
+                  ? ` · ${computation.rows.length.toLocaleString()} selected of ${computation.matched.length.toLocaleString()} matching`
+                  : ""}
+                {estimate
+                  ? ` · ${estimate.chars.toLocaleString()} chars · ${estimate.bytesLabel} · ~${estimate.tokens.toLocaleString()} tokens`
+                  : ""}
+              </>
+            )}
           </div>
           <Button type="button" variant="outline" onClick={onClose}>
             Done

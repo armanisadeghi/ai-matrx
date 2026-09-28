@@ -507,6 +507,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                   <p className="text-sm font-semibold text-foreground">{built.manifest.name}</p>
                   <p className="text-xs text-muted-foreground">{built.manifest.tagline}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
+                    {/* read-gate-exempt: counts of the kit manifest this dialog just built (review step follows a successful build; a failed detect shows detectError) */}
                     {built.manifest.tables.length} {built.manifest.tables.length === 1 ? "table" : "tables"} ·{" "}
                     {count(built.manifest.tables.reduce((n, t) => n + t.records.length, 0), "example row")} · 1 agent ·{" "}
                     {built.manifest.workflows.length} {built.manifest.workflows.length === 1 ? "workflow" : "workflows"} ·{" "}

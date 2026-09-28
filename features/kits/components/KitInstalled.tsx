@@ -161,6 +161,7 @@ function BindingPreviewCard({
             <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
               {answer.preview.row_count !== null && spec.binding.semantic_type !== "value" && (
                 <span>
+                  {/* read-gate-exempt: inside answer.state === "ok" — the preview read succeeded; its failure renders its own branch */}
                   {answer.preview.row_count} {answer.preview.row_count === 1 ? "row" : "rows"} delivered
                   {answer.preview.total_rows !== null && answer.preview.total_rows !== answer.preview.row_count
                     ? ` of ${answer.preview.total_rows}`
