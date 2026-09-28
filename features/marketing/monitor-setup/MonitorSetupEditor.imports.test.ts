@@ -1,17 +1,27 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-describe("MonitorSetupEditor input boundary", () => {
-  it("uses the published Input rather than the host-only input module", () => {
-    const source = readFileSync(
-      resolve(
-        process.cwd(),
-        "features/marketing/monitor-setup/MonitorSetupEditor.tsx",
+describe("plain Input import boundary", () => {
+  it("keeps every shipped plain Input import on the published package", () => {
+    const trackedSourceFiles = execFileSync(
+      "git",
+      ["ls-files", "*.ts", "*.tsx"],
+      { cwd: process.cwd(), encoding: "utf8" },
+    )
+      .split("\n")
+      .filter(
+        (file) =>
+          file.length > 0 &&
+          !file.includes(".test.") &&
+          !file.includes(".spec."),
+      );
+    const hostInputImports = trackedSourceFiles.filter((file) =>
+      /import\s*\{[^}]*\bInput\b[^}]*\}\s*from\s*["']@\/components\/ui\/input["']/s.test(
+        readFileSync(resolve(process.cwd(), file), "utf8"),
       ),
-      "utf8",
     );
 
-    expect(source).toContain('import { Input } from "@ai-matrx/design-system";');
-    expect(source).not.toContain('from "@/components/ui/input"');
+    expect(hostInputImports).toEqual([]);
   });
 });
