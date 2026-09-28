@@ -1,6 +1,6 @@
 # FEATURE.md — rich-document annotation sidecar
 
-**Status:** `active` (passage writes gated) · **Tier:** `1` · **Last updated:** `2026-09-25`
+**Status:** `active` (passage writes gated) · **Tier:** `1` · **Last updated:** `2026-09-27`
 **Register:** common-docs `projects/rich-content-unification/REGISTER.md` row RC-B11 · **Contract:** common-docs `operations/for-arman/2026-09-23/content-annotations-storage-brief.md` + STORE-DESIGN §3.19
 
 ## Purpose
@@ -15,6 +15,8 @@ ONE optional sidecar any surface rendering through `<RichDocument>` / `<RichCont
   <AnnotationPanel />
 </AnnotationSidecarProvider>
 ```
+
+**Every saved record gets it without installing anything:** `RecordAnnotations` (light shell + one lazy edge to `RecordAnnotationsImpl`) is mounted ONCE by `<RichDocument>` (from `source` via `record-of-source.ts`: a note, a chat message, a saved working document; or the explicit `annotationRecord` prop — the studio passes it while its buffer still equals the loaded document) and by the chat answer (`AgentAssistantMessage`). It attaches to the element it already rendered (no remount), skips itself inside an existing sidecar, holds reads and the realtime channel while the content is >800px off screen, and owns the **Notes & comments dock** (`record-annotations-store.ts`: one open app-wide): desktop = a fixed right panel over the page (the content keeps its width), phone = the bottom sheet; opened by the person's own comment/highlight/link, a click on a painted passage, or the ⋯ row "Notes & comments (N)" (`actions/handlers/annotations.ts`, present only when N > 0 or open). No suggestion is applied from these hosts (no `save` adapter) — Accept lives in the study guide and document Annotate. Highlight / Private note / Link follow the association vocabulary (`annotationPairs`: `association_link_sources` for `annotates` / `anchored_to`), absent where no pair exists — chat messages need `migrations/annotation_pairs_on_chat_messages.sql` (draft, chair step).
 
 Adopters: `/markdown-studio` → Annotate (`components/markdown-studio/AnnotateView.tsx`, a live `content.document`, source kind `document`), Education study-guide reader (`features/education/study-guides`, source `note:<id>`).
 
@@ -51,3 +53,4 @@ Adopters: `/markdown-studio` → Annotate (`components/markdown-studio/AnnotateV
 
 - 2026-09-25: Created (RC-B11).
 - 2026-09-25: verify-RC-B11 F1–F7 fixed by class: `data-content-chrome` marker; idempotent creates; reply/edit keep their text with Retry; one-transaction private notes (`migrations/rcb11_annotation_create_is_one_write.sql`, applied); plain-sentence errors; Add-menu focus; echo by write identity + CAS edits; Ctrl/Cmd+Alt+M into the toolbar with arrow roving.
+- 2026-09-27: The reading set on every saved record — `RecordAnnotations` mounted once by RichDocument and the chat answer, the Notes & comments dock (desktop floating right panel, phone bottom sheet, ⋯ toggle), Highlight/Link gated on the association vocabulary. Guard: `__tests__/record-annotations.test.tsx`.
