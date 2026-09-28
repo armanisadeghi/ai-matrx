@@ -12,8 +12,14 @@
 import { ClipboardList, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useClassAssignments } from "../hooks/useClassAssignments";
-import { useMyClassProgress } from "../hooks/useClassProgress";
+import {
+  useClassAssignments,
+  type UseClassAssignmentsReturn,
+} from "../hooks/useClassAssignments";
+import {
+  useMyClassProgress,
+  type UseMyClassProgressReturn,
+} from "../hooks/useClassProgress";
 import {
   AssignmentStatusBadge,
   DueDateLabel,
@@ -22,9 +28,21 @@ import {
 import type { AssignmentProgress } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-export function AssignedToYouPanel({ classId }: { classId: string }) {
-  const assignments = useClassAssignments(classId);
-  const { progress, loading: progressLoading } = useMyClassProgress(classId);
+export function AssignedToYouPanel({
+  classId,
+  assignments: assignmentsProp,
+  myProgress,
+}: {
+  classId: string;
+  /** The reads, when the hub owns them (so its surface scope can read the same
+   *  rows). Omitted → the panel reads them itself. */
+  assignments?: UseClassAssignmentsReturn;
+  myProgress?: UseMyClassProgressReturn;
+}) {
+  const ownAssignments = useClassAssignments(classId, !assignmentsProp);
+  const ownProgress = useMyClassProgress(classId, !myProgress);
+  const assignments = assignmentsProp ?? ownAssignments;
+  const { progress, loading: progressLoading } = myProgress ?? ownProgress;
 
   const progressByKey = new Map<string, AssignmentProgress>();
   for (const p of progress) progressByKey.set(`${p.token}:${p.resourceId}`, p);

@@ -16,6 +16,11 @@ import { EducationToolHeader } from "@/features/education/components/EducationTo
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
 import { listKits, kitHref, type StudyKit } from "../kitService";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationKitsScope,
+  EDUCATION_KITS_SURFACE_NAME,
+} from "@/features/surfaces/manifests/education-kits.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   EducationCollectionNoResults,
@@ -105,8 +110,38 @@ export function KitsHome() {
     };
   }, [reloadTick]);
 
+  // Surface `matrx-user/education-kits` (list view) — read synchronously
+  // from render state; the Surface Context window polls it.
+  const getScope = () =>
+    createEducationKitsScope({
+      view: "list",
+      kits_loaded: !loading,
+      kit_search: search,
+      ...(error ? { kits_error: error } : {}),
+      ...(!loading && !error
+        ? {
+            kit_count: kits.length,
+            kits: kits.map((kit) => ({
+              source_id: kit.sourceId,
+              source_type: kit.sourceType,
+              title: kit.title,
+              href: kitHref(kit.sourceType, kit.sourceId),
+              artifact_count: kit.artifacts.length,
+              formats: [
+                ...new Set(
+                  kit.artifacts.flatMap((a) => (a.targetKind ? [a.targetKind] : [])),
+                ),
+              ],
+            })),
+          }
+        : {}),
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_KITS_SURFACE_NAME}
+      getScope={getScope}
+    >
       <EducationToolHeader title="Study Kits" />
       <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -173,6 +208,6 @@ export function KitsHome() {
           </div>
         )}
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

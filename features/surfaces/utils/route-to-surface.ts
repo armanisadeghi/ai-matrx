@@ -196,6 +196,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   },
   { prefix: "/education/mind-maps", surface: "matrx-user/education-mind-maps" },
   { prefix: "/education/summaries", surface: "matrx-user/education-summaries" },
+  { prefix: "/education/kits", surface: "matrx-user/education-kits" },
   { prefix: "/education/memory", surface: "matrx-user/education-memory" },
   { prefix: "/education/planner", surface: "matrx-user/education-planner" },
   {
@@ -778,11 +779,14 @@ export function surfaceFromPathname(
     return "matrx-user/education-practice-tests";
   }
 
-  // My Classes is exactly `/education/classes`. A class HUB
-  // (`/education/classes/[id]`) is a different page with no surface of its
-  // own yet, so it keeps falling through to the education hub mapping.
+  // My Classes is exactly `/education/classes`. One class's HUB
+  // (`/education/classes/[id-or-slug]`) is its own surface; the join page
+  // (`/education/classes/join`) is neither and keeps the education hub.
   if (/^\/education\/classes\/?$/.test(stripped)) {
     return "matrx-user/education-classes";
+  }
+  if (/^\/education\/classes\/(?!join\/?$)[^/]+\/?$/.test(stripped)) {
+    return "matrx-user/education-class";
   }
 
   // The signed-in Study Hub home and the Create a study kit form are their

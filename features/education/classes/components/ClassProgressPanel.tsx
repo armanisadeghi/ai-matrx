@@ -19,7 +19,10 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { educationEntityRoute } from "@/features/education/data/entityRoutes";
-import { useClassProgressOverview } from "../hooks/useClassProgress";
+import {
+  useClassProgressOverview,
+  type UseClassProgressOverviewReturn,
+} from "../hooks/useClassProgress";
 import {
   AssignmentStatusBadge,
   DueDateLabel,
@@ -32,8 +35,17 @@ import type {
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-export function ClassProgressPanel({ classId }: { classId: string }) {
-  const { overview, loading, error, reload } = useClassProgressOverview(classId);
+export function ClassProgressPanel({
+  classId,
+  progress,
+}: {
+  classId: string;
+  /** The progress read, when the hub owns it (so its surface scope can read
+   *  the same grid). Omitted → the panel reads it itself. */
+  progress?: UseClassProgressOverviewReturn;
+}) {
+  const ownProgress = useClassProgressOverview(classId, !progress);
+  const { overview, loading, error, reload } = progress ?? ownProgress;
 
   const assignments = overview?.assignments ?? [];
   const students = overview?.students ?? [];

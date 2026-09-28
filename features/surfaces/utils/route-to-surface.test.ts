@@ -420,8 +420,10 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/fastfire")).toBe(
       "matrx-user/education-fastfire",
     );
+    // The exact Quizzes LIST is its own surface; one assessment keeps
+    // education-assessment.
     expect(surfaceFromPathname("/education/quizzes")).toBe(
-      "matrx-user/education-assessment",
+      "matrx-user/education-quizzes",
     );
     expect(surfaceFromPathname(`/education/quizzes/${ID}/results`)).toBe(
       "matrx-user/education-assessment",
@@ -478,13 +480,24 @@ describe("Education tool-family resolution", () => {
     expect(
       surfaceFromPathname("/education/study-guides/63ac076a-3cf9-48f8-9af6-e974a6789883"),
     ).toBe("matrx-user/education-study-guide");
-    // My Classes is the exact list route; a class hub is not that surface.
+    // My Classes is the exact list route; one class's hub is its own
+    // surface; the join page is neither.
     expect(surfaceFromPathname("/education/classes")).toBe(
       "matrx-user/education-classes",
     );
     expect(surfaceFromPathname("/education/classes/ap-biology")).toBe(
+      "matrx-user/education-class",
+    );
+    expect(surfaceFromPathname("/education/classes/join")).toBe(
       "matrx-user/education",
     );
+    // Study kits: the index and one kit share one surface.
+    expect(surfaceFromPathname("/education/kits")).toBe(
+      "matrx-user/education-kits",
+    );
+    expect(
+      surfaceFromPathname("/education/kits/63ac076a-3cf9-48f8-9af6-e974a6789883"),
+    ).toBe("matrx-user/education-kits");
     // The research topics LIST is its own surface; one topic's workspace,
     // the wizard and the landing keep the research workspace surface.
     expect(surfaceFromPathname("/research/topics")).toBe(

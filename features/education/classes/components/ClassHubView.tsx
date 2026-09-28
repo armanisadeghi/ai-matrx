@@ -10,7 +10,7 @@
 // useClasses) and a joined student (a class in the TEACHER's org, resolved by the
 // edu_class_state RPC — RLS keeps a non-member out of a closed/paid class).
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -37,6 +37,32 @@ import { useClassContent } from "../hooks/useClassContent";
 import { useClassAccess } from "../hooks/useClassAccess";
 import { useMyClasses } from "../hooks/useMyClasses";
 import { useClassAssignments } from "../hooks/useClassAssignments";
+import { useClassRoster } from "../hooks/useClassRoster";
+import {
+  useClassProgressOverview,
+  useMyClassProgress,
+} from "../hooks/useClassProgress";
+import { setAccessMode } from "../service";
+import {
+  buildClassHubMemberScope,
+  buildClassHubOwnerScope,
+  buildClassHubPlaceholderScope,
+} from "../classHubSurfaceScope";
+import {
+  parseAssignResourcesValue,
+  parseAttachContentValue,
+  parseDetachContentValue,
+  parseUnassignResourcesValue,
+  parseUpdateClassValue,
+} from "../classHubAgentWrites";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  EDUCATION_CLASS_SURFACE_NAME,
+  type ClassHubView,
+} from "@/features/surfaces/manifests/education-class.manifest";
 import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AddClassContentSheet } from "./AddClassContentSheet";
 import { AccessModeBadge } from "./AccessModeBadge";
@@ -47,6 +73,30 @@ import { ClassProgressPanel } from "./ClassProgressPanel";
 import { AssignedToYouPanel } from "./AssignedToYouPanel";
 import { daysUntil } from "../settings";
 import type { StudyClass } from "../types";
+
+/**
+ * Surface `matrx-user/education-class` for a hub state with no class data
+ * (loading / held for a workspace / unavailable) — the agent still learns
+ * which state the page is in instead of seeing the generic education hub.
+ */
+function ClassHubPlaceholderSurface({
+  view,
+  classParam,
+  children,
+}: {
+  view: Exclude<ClassHubView, "owner" | "member">;
+  classParam: string;
+  children: ReactNode;
+}) {
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_CLASS_SURFACE_NAME}
+      getScope={() => buildClassHubPlaceholderScope(view, classParam)}
+    >
+      {children}
+    </SurfaceRuntimeProvider>
+  );
+}
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -94,14 +144,14 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
 
   if (stillLoading) {
     return (
-      <>
+      <ClassHubPlaceholderSurface view="loading" classParam={classParam}>
         <EducationToolHeader title="Class" />
         <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
           <Skeleton className="h-8 w-56" />
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-40 w-full" />
         </div>
-      </>
+      </ClassHubPlaceholderSurface>
     );
   }
 
@@ -109,7 +159,9 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
   if (cls) {
     return (
       <ClassHubBody
+        classParam={classParam}
         cls={cls}
+        allOwned={[...classes, ...archived]}
         orgId={orgId}
         access={access}
         onUpdate={updateClass}
@@ -124,7 +176,7 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
   // workspace instead, the same held-not-failed pattern the list page uses.
   if (access.state?.isOwner && !orgReady) {
     return (
-      <>
+      <ClassHubPlaceholderSurface view="needs_workspace" classParam={classParam}>
         <EducationToolHeader title={access.state.name} />
         <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
           <BackToClasses />
@@ -133,30 +185,30 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
             what="This class (you own it — choose the workspace to manage it)"
           />
         </div>
-      </>
+      </ClassHubPlaceholderSurface>
     );
   }
 
   if (access.state) {
-    return <MemberClassView access={access} />;
+    return <MemberClassView classParam={classParam} access={access} />;
   }
 
   if (!orgReady) {
     return (
-      <>
+      <ClassHubPlaceholderSurface view="needs_workspace" classParam={classParam}>
         <EducationToolHeader title="Class" />
         <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
           <BackToClasses />
           <OrganizationContextNotice state={organizationState} what="This class" />
         </div>
-      </>
+      </ClassHubPlaceholderSurface>
     );
   }
 
   // Denied / deleted / never existed / signed-out all land here — a class is a
   // context scope, so the gate asks the platform which one it is.
   return (
-    <>
+    <ClassHubPlaceholderSurface view="unavailable" classParam={classParam}>
       <EducationToolHeader title="Class" />
       <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
         <BackToClasses />
@@ -169,7 +221,7 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
           fallbackLabel="Classes"
         />
       </div>
-    </>
+    </ClassHubPlaceholderSurface>
   );
 }
 
@@ -190,22 +242,40 @@ function BackToClasses() {
 
 /** The owner / personal hub — editable, with content + roster. */
 function ClassHubBody({
+  classParam,
   cls,
+  allOwned,
   orgId,
   access,
   onUpdate,
 }: {
+  classParam: string;
   cls: StudyClass;
+  /** Every class the person owns (active + archived) — rename collisions. */
+  allOwned: StudyClass[];
   orgId: string | null;
   access: ReturnType<typeof useClassAccess>;
   onUpdate: (
     id: string,
     patch: { name?: string; description?: string; settings?: ClassFormValue["settings"] },
-  ) => Promise<unknown>;
+  ) => Promise<StudyClass>;
 }) {
   const router = useRouter();
   const content = useClassContent(cls.id, orgId);
   const assignments = useClassAssignments(cls.id);
+  // Read here (not inside the panels) so the surface scope and the panels
+  // show the same rows from one read.
+  const roster = useClassRoster(cls.id);
+  const progress = useClassProgressOverview(cls.id);
+  // A new or removed assignment is a new progress column: re-read the grid
+  // (the panel used to remount on the count for the same reason).
+  const assignmentCount = assignments.assignments.length;
+  const seenAssignmentCount = useRef(assignmentCount);
+  useEffect(() => {
+    if (seenAssignmentCount.current === assignmentCount) return;
+    seenAssignmentCount.current = assignmentCount;
+    void progress.reload();
+  }, [assignmentCount, progress]);
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const today = todayIso();
@@ -251,8 +321,139 @@ function ClassHubBody({
     router.push("/education/classes");
   }
 
+  // Surface `matrx-user/education-class` — what this hub shows, and the
+  // agent's ways in, each through the same hook the page's own buttons use.
+  const getScope = () =>
+    buildClassHubOwnerScope({
+      classParam,
+      cls,
+      access,
+      roster,
+      assignments,
+      progress,
+      content,
+    });
+
+  function requireOwner() {
+    if (!isOwner)
+      throw new Error("Only the class owner can change this class.");
+  }
+
+  const writeHandlers: SurfaceWriteHandlers = {
+    update_class: {
+      validate: (value) => {
+        requireOwner();
+        parseUpdateClassValue(value, cls, allOwned);
+      },
+      apply: async (value) => {
+        requireOwner();
+        const plan = parseUpdateClassValue(value, cls, allOwned);
+        const updated = await onUpdate(plan.id, plan.patch);
+        // Same as My Classes' update_classes: an access change is also
+        // registered server-side (+ the owner membership row).
+        if (plan.accessModeChanged)
+          await setAccessMode(plan.id, plan.patch.settings.accessMode);
+        await access.refresh();
+        return {
+          summary: `Updated ${plan.previousName}: ${plan.changed.join(", ")}.`,
+          data: { id: updated.id, slug: updated.slug, name: updated.name },
+        };
+      },
+    },
+    attach_content: {
+      validate: (value) => {
+        requireOwner();
+        parseAttachContentValue(value, content.attachedKeys);
+      },
+      apply: async (value) => {
+        requireOwner();
+        const items = parseAttachContentValue(value, content.attachedKeys);
+        const done: string[] = [];
+        for (const item of items) {
+          const result = await content.attach(
+            item.token as Parameters<typeof content.attach>[0],
+            item.id,
+          );
+          if (!result.ok)
+            throw new Error(
+              `Could not tag ${item.token} ${item.id} to the class: ${result.error ?? "the write was refused"}.${done.length ? ` Already tagged: ${done.join(", ")}.` : ""}`,
+            );
+          done.push(`${item.token} ${item.id}`);
+        }
+        return { summary: `Tagged ${done.length} item(s) to ${cls.name}.`, data: items };
+      },
+    },
+    detach_content: {
+      validate: (value) => {
+        requireOwner();
+        parseDetachContentValue(value, content.attachedKeys);
+      },
+      apply: async (value) => {
+        requireOwner();
+        const items = parseDetachContentValue(value, content.attachedKeys);
+        const done: string[] = [];
+        for (const item of items) {
+          const result = await content.detach(
+            item.token as Parameters<typeof content.detach>[0],
+            item.id,
+          );
+          if (!result.ok)
+            throw new Error(
+              `Could not untag ${item.token} ${item.id} from the class: ${result.error ?? "the write was refused"}.${done.length ? ` Already untagged: ${done.join(", ")}.` : ""}`,
+            );
+          done.push(`${item.token} ${item.id}`);
+        }
+        return { summary: `Removed ${done.length} item(s) from ${cls.name}'s study content.`, data: items };
+      },
+    },
+    assign_resources: {
+      validate: (value) => {
+        requireOwner();
+        parseAssignResourcesValue(value);
+      },
+      apply: async (value) => {
+        requireOwner();
+        const items = parseAssignResourcesValue(value);
+        const done: string[] = [];
+        for (const item of items) {
+          const { ok } = await assignments.assign(item.token, item.id, item.dueDate);
+          if (!ok)
+            throw new Error(
+              `Could not assign ${item.token} ${item.id} to the class (the error was shown to the person).${done.length ? ` Already assigned: ${done.join(", ")}.` : ""}`,
+            );
+          done.push(`${item.token} ${item.id}`);
+        }
+        return { summary: `Assigned ${done.length} item(s) to ${cls.name}.`, data: items };
+      },
+    },
+    unassign_resources: {
+      validate: (value) => {
+        requireOwner();
+        parseUnassignResourcesValue(value, assignments.assignedKeys);
+      },
+      apply: async (value) => {
+        requireOwner();
+        const items = parseUnassignResourcesValue(value, assignments.assignedKeys);
+        const done: string[] = [];
+        for (const item of items) {
+          const { ok } = await assignments.unassign(item.token, item.id);
+          if (!ok)
+            throw new Error(
+              `Could not remove the assignment ${item.token} ${item.id} (the error was shown to the person).${done.length ? ` Already removed: ${done.join(", ")}.` : ""}`,
+            );
+          done.push(`${item.token} ${item.id}`);
+        }
+        return { summary: `Removed ${done.length} assignment(s) from ${cls.name}.`, data: items };
+      },
+    },
+  };
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_CLASS_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={() => writeHandlers}
+    >
       <EducationToolHeader title={cls.name} />
       <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 p-4">
       <div className="space-y-3">
@@ -358,6 +559,7 @@ function ClassHubBody({
         className={cls.name}
         isOwner={isOwner}
         onChanged={access.refresh}
+        roster={roster}
       />
 
       {/* Assignments (owner-managed) — a deck/quiz assigned to the whole roster. */}
@@ -367,12 +569,10 @@ function ClassHubBody({
         assignments={assignments}
       />
 
-      {/* Class progress — who has completed each assignment. Remounts when the
-          set of assignments changes so a new assignment appears as a column. */}
-      <ClassProgressPanel
-        key={assignments.assignments.length}
-        classId={cls.id}
-      />
+      {/* Class progress — who has completed each assignment. The grid is
+          re-read above when the set of assignments changes, so a new
+          assignment appears as a column. */}
+      <ClassProgressPanel classId={cls.id} progress={progress} />
 
       {/* Study content */}
       <section className="space-y-3">
@@ -437,14 +637,16 @@ function ClassHubBody({
         content={content}
       />
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 
 /** A joined student's view of a class they don't own. */
 function MemberClassView({
+  classParam,
   access,
 }: {
+  classParam: string;
   access: ReturnType<typeof useClassAccess>;
 }) {
   const state = access.state!;
@@ -453,9 +655,28 @@ function MemberClassView({
     isActive ? state.classId : null,
     state.organizationId,
   );
+  // Read here (not inside the panels) so the surface scope and the panels
+  // show the same rows from one read.
+  const roster = useClassRoster(state.classId, isActive);
+  const assignments = useClassAssignments(state.classId, isActive);
+  const myProgress = useMyClassProgress(state.classId, isActive);
+
+  const getScope = () =>
+    buildClassHubMemberScope({
+      classParam,
+      access,
+      state,
+      roster,
+      assignments,
+      myProgress,
+      content,
+    });
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_CLASS_SURFACE_NAME}
+      getScope={getScope}
+    >
       <EducationToolHeader title={state.name} />
       <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 p-4">
       <BackToClasses />
@@ -485,8 +706,13 @@ function MemberClassView({
             classId={state.classId}
             isOwner={false}
             onChanged={access.refresh}
+            roster={roster}
           />
-          <AssignedToYouPanel classId={state.classId} />
+          <AssignedToYouPanel
+            classId={state.classId}
+            assignments={assignments}
+            myProgress={myProgress}
+          />
           <section className="space-y-3">
             <h2 className="text-sm font-medium text-foreground">
               Study content
@@ -516,7 +742,7 @@ function MemberClassView({
         </>
       )}
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 

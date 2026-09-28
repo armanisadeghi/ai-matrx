@@ -7,7 +7,7 @@
 // every claim tied to that mode's real library/study-spine evidence, and gives
 // the learner one inviting next move.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -47,6 +47,12 @@ import {
 import { MakeMoreFromKit } from "./MakeMoreFromKit";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationKitsScope,
+  EDUCATION_KITS_SURFACE_NAME,
+} from "@/features/surfaces/manifests/education-kits.manifest";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
 interface StudyStage {
   number: string;
@@ -208,6 +214,111 @@ function ArtifactCard({
   );
 }
 
+/** The kit's aids in study-path order; anything off the path goes last. */
+function orderKitArtifacts(kit: StudyKit): GeneratedArtifact[] {
+  const ordered = orderKitArtifacts(kit);
+  return ordered;
+}
+
+/** What the page recommends next, and why. */
+function pickChallenge(
+  ordered: GeneratedArtifact[],
+  stats: KitArtifactStats,
+): { artifact: GeneratedArtifact; reason: "due" | "not_started" | "first" } | null {
+  const due = ordered.find(
+    (artifact) => (stats[kitArtifactKey(artifact)]?.dueCount ?? 0) > 0,
+  );
+  if (due) return { artifact: due, reason: "due" };
+  const notStarted = ordered.find((artifact) => {
+    const artifactStats = stats[kitArtifactKey(artifact)];
+    return (
+      artifact.targetKind != null &&
+      TRACKED_KINDS.has(artifact.targetKind) &&
+      !artifactStats?.hasProgress
+    );
+  });
+  if (notStarted) return { artifact: notStarted, reason: "not_started" };
+  return ordered[0] ? { artifact: ordered[0], reason: "first" } : null;
+}
+
+/** Surface `matrx-user/education-kits` (detail view) from render state. */
+function buildKitDetailScope(input: {
+  sourceId: string;
+  sourceType: string;
+  kit: StudyKit | null;
+  loading: boolean;
+  loadError: boolean;
+  stats: KitArtifactStats;
+  statsLoading: boolean;
+  statsFailed: boolean;
+}): SurfaceScopePayload {
+  const { kit, stats, statsLoading, statsFailed } = input;
+  const status = input.loading
+    ? "loading"
+    : input.loadError
+      ? "error"
+      : kit
+        ? "ready"
+        : "empty";
+  const base = {
+    view: "detail" as const,
+    kit_status: status as "loading" | "ready" | "empty" | "error",
+    kit_source_id: input.sourceId,
+    kit_source_type: kit?.sourceType ?? input.sourceType,
+  };
+  if (!kit || status !== "ready") return createEducationKitsScope(base);
+  const ordered = orderKitArtifacts(kit);
+  const statsReady = !statsLoading && !statsFailed;
+  const sum = (pick: (s: LibraryRowStats) => number | null) =>
+    ordered.reduce(
+      (total, artifact) => total + (pick(stats[kitArtifactKey(artifact)] ?? ({} as LibraryRowStats)) ?? 0),
+      0,
+    );
+  const challenge = pickChallenge(ordered, stats);
+  return createEducationKitsScope({
+    ...base,
+    kit_title: kit.title,
+    kit_created_at: kit.createdAt,
+    study_aids: ordered.map((artifact) => {
+      const s = statsReady ? stats[kitArtifactKey(artifact)] : undefined;
+      return {
+        kind: artifact.targetKind,
+        title: artifact.title,
+        artifact_type: artifact.artifactType,
+        artifact_id: artifact.artifactId,
+        href: artifactActionHref(artifact),
+        item_count: s?.itemCount ?? null,
+        studied_count: s?.studiedCount ?? 0,
+        accuracy_pct: s?.accuracy != null ? Math.round(s.accuracy * 100) : null,
+        due_count: s?.dueCount ?? 0,
+        last_studied_at: s?.lastStudiedAt ?? null,
+        duration_seconds: s?.durationSeconds ?? null,
+      };
+    }),
+    kit_totals: {
+      study_aids: ordered.length,
+      ...(statsReady
+        ? {
+            practice_items: sum((s) => s.itemCount),
+            practiced: sum((s) => s.studiedCount),
+            due_now: sum((s) => s.dueCount),
+          }
+        : {}),
+    },
+    progress_status: statsLoading ? "loading" : statsFailed ? "unavailable" : "ready",
+    ...(challenge
+      ? {
+          next_challenge: {
+            kind: challenge.artifact.targetKind,
+            title: challenge.artifact.title,
+            href: artifactActionHref(challenge.artifact),
+            reason: challenge.reason,
+          },
+        }
+      : {}),
+  });
+}
+
 function KitLoading() {
   return (
     <>
@@ -286,10 +397,30 @@ export function KitHub({
     };
   }, [sourceId, sourceType, refreshKey]);
 
-  if (loading) return <KitLoading />;
+  const getScope = () =>
+    buildKitDetailScope({
+      sourceId,
+      sourceType,
+      kit,
+      loading,
+      loadError,
+      stats,
+      statsLoading,
+      statsFailed,
+    });
+  const withSurface = (children: ReactNode) => (
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_KITS_SURFACE_NAME}
+      getScope={getScope}
+    >
+      {children}
+    </SurfaceRuntimeProvider>
+  );
+
+  if (loading) return withSurface(<KitLoading />);
 
   if (loadError) {
-    return (
+    return withSurface(
       <>
         <EducationToolHeader title="Study kit" />
         <div className="mx-auto w-full max-w-3xl px-4 pb-10">
@@ -314,7 +445,7 @@ export function KitHub({
   }
 
   if (!kit) {
-    return (
+    return withSurface(
       <>
         <EducationToolHeader title="Study kit" />
         <div className="mx-auto w-full max-w-3xl px-4 pb-10">
@@ -365,19 +496,7 @@ export function KitHub({
     (sum, artifact) => sum + (stats[kitArtifactKey(artifact)]?.dueCount ?? 0),
     0,
   );
-  const challenge =
-    ordered.find(
-      (artifact) => (stats[kitArtifactKey(artifact)]?.dueCount ?? 0) > 0,
-    ) ??
-    ordered.find((artifact) => {
-      const artifactStats = stats[kitArtifactKey(artifact)];
-      return (
-        artifact.targetKind != null &&
-        TRACKED_KINDS.has(artifact.targetKind) &&
-        !artifactStats?.hasProgress
-      );
-    }) ??
-    ordered[0];
+  const challenge = pickChallenge(ordered, stats)?.artifact;
   const challengeKind = challenge?.targetKind ?? null;
   const challengeLook = challengeKind
     ? TARGET_PRESENTATION[challengeKind]
@@ -387,7 +506,7 @@ export function KitHub({
     : undefined;
   const studyNotes = ordered.find((artifact) => artifact.targetKind === "notes");
 
-  return (
+  return withSurface(
     <>
       <EducationToolHeader title={kit.title} />
       <main className="mx-auto w-full max-w-6xl space-y-7 px-4 pb-10">

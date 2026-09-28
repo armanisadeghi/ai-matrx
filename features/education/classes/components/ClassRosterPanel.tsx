@@ -13,7 +13,7 @@ import { Users, Check, X, UserMinus, Crown, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useClassRoster } from "../hooks/useClassRoster";
+import { useClassRoster, type UseClassRosterReturn } from "../hooks/useClassRoster";
 import { InviteStudentsSheet } from "./InviteStudentsSheet";
 import type { ClassRosterMember } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -59,15 +59,20 @@ export function ClassRosterPanel({
   className = "this class",
   isOwner,
   onChanged,
+  roster: rosterProp,
 }: {
   classId: string;
+  /** The roster read, when the hub owns it (so its surface scope can read the
+   *  same rows). Omitted → the panel reads it itself. */
+  roster?: UseClassRosterReturn;
   /** The class display name, for the invite sheet's title. */
   className?: string;
   isOwner: boolean;
   /** Called after a roster mutation so the header member count can refresh. */
   onChanged?: () => void;
 }) {
-  const roster = useClassRoster(classId);
+  const ownRoster = useClassRoster(classId, !rosterProp);
+  const roster = rosterProp ?? ownRoster;
   const [inviteOpen, setInviteOpen] = useState(false);
 
   async function approve(m: ClassRosterMember) {
