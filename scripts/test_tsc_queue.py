@@ -305,6 +305,30 @@ sys.exit(module.main(queue_factory=factory))
         self.assertEqual(good.stdout, b'')
 
 
+class CompilerCensus(unittest.TestCase):
+    """An open editor's tsserver is not a running compiler (2026-09-27: its
+    `--cancellationPipeName .../tscancellation*` argument held every queued
+    type-check pending forever)."""
+
+    TSSERVER = ('/opt/homebrew/bin/node /Users/x/.serena/ts-lsp/node_modules/typescript/lib/tsserver.js '
+                '--serverMode partialSemantic --cancellationPipeName '
+                '/private/var/folders/cq/T/1de60b298af29bb8bf40ab2e301a6c6f/tscancellation*')
+    TSC = 'node /repo/node_modules/typescript/bin/tsc6 --noEmit -p tsconfig.typecheck.json'
+
+    def census(self, command):
+        with tempfile.TemporaryDirectory(prefix='tsc-census-') as tmp:
+            base = Path(tmp)
+            rows = [{'pid': 999999, 'pgid': 999999, 'command': command}]
+            queue = MODULE.Queue(base / 'queue', base / 'config.json', base / 'legacy', lambda: rows)
+            return queue.legacy_running({'runs': {}})
+
+    def test_editor_tsserver_does_not_hold_the_queue(self):
+        self.assertFalse(self.census(self.TSSERVER))
+
+    def test_a_real_compiler_still_holds_the_queue(self):
+        self.assertTrue(self.census(self.TSC))
+
+
 
 if __name__ == '__main__':
     unittest.main()

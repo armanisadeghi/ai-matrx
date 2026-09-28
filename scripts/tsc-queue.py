@@ -49,6 +49,23 @@ def process_snapshot():
     return rows
 
 
+# The compiler is the EXECUTABLE of a process (argv[0], or the script node runs
+# as argv[1]) — never a substring anywhere in its command line. A substring test
+# matched every editor's tsserver, whose `--cancellationPipeName
+# .../T/<hash>/tscancellation*` argument contains "/tsc" under a
+# ".../node_modules/typescript/lib/tsserver.js" path, so one open language
+# server (Serena, VS Code) held every queued type-check pending forever
+# (38 pending, none running, 2026-09-27).
+COMPILER_EXECUTABLE = re.compile(
+    r'(?:^|/)@?typescript[^/\s]*/(?:[^\s]*/)?(?:tsc[\w.-]*|tsgo)(?:\.js)?$'
+    r'|(?:^|/)tsgo$')
+
+
+def is_compiler_command(command):
+    parts = command.split()
+    return any(COMPILER_EXECUTABLE.search(part) for part in parts[:2])
+
+
 def try_lock(path):
     fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
     try:
@@ -158,10 +175,8 @@ class Queue:
             # must finish before the new cap can safely become authoritative.
             if re.match(r'^(?:\S*/)?bash(?:\s+-\w+)*\s+\S*tsc-capped\.sh(?:\s|$)', command):
                 return True
-            if ('/typescript/' in command or '/@typescript/' in command or
-                    '/@typescript+' in command or '/typescript+' in command):
-                if '/tsc' in command or '/tsgo' in command:
-                    return True
+            if is_compiler_command(command):
+                return True
         # A live legacy slot is conservative evidence, even during compiler spawn.
         by_pid = {row['pid']: row for row in rows}
         for slot in self.legacy.glob('slot-*'):
