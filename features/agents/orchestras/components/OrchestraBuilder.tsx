@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ExternalLink,
+  GitFork,
   LayoutGrid,
   Loader2,
   MousePointerClick,
@@ -57,6 +58,7 @@ import { ConductorInspector } from "./ConductorInspector";
 import { OrchestraSettingsDialog } from "./OrchestraSettingsDialog";
 import { accentClasses } from "./accents";
 import { DEFAULT_ORCHESTRA_ACCENT } from "../constants";
+import { AgentOrgChartView } from "@/features/agents/org-chart/components/AgentOrgChartView";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 // Loaded only when the user opens the embedded run panel — it drags the whole
@@ -84,7 +86,8 @@ export function OrchestraBuilder({
   // The canvas/grid choice lives in the URL so the header's ONE mode nav (and
   // its mobile drawer) can drive it like any other sub-view.
   const searchParams = useSearchParams();
-  const view = searchParams.get("view") === "grid" ? "grid" : "canvas";
+  const viewParam = searchParams.get("view");
+  const view = viewParam === "grid" ? "grid" : viewParam === "chart" ? "chart" : "canvas";
   const basePath = `/agents/orchestras/${conductorId}`;
 
   // The library rail is a static column on desktop and a slide-over below md —
@@ -324,8 +327,9 @@ export function OrchestraBuilder({
         modes={[
           { name: "Canvas", href: basePath, icon: Network },
           { name: "Grid", href: `${basePath}?view=grid`, icon: LayoutGrid },
+          { name: "Org chart", href: `${basePath}?view=chart`, icon: GitFork },
         ]}
-        activeModeHref={view === "grid" ? `${basePath}?view=grid` : basePath}
+        activeModeHref={view === "canvas" ? basePath : `${basePath}?view=${view}`}
         actions={headerActions}
         right={<IntelligenceIndicator feature="orchestras" label="Orchestra builder" />}
       />
@@ -369,6 +373,9 @@ export function OrchestraBuilder({
                 onEditMember={openMember}
                 onOpenConductor={openConductor}
               />
+            ) : view === "chart" ? (
+              // Every nested Orchestra and manual placement under this Conductor, as one chart.
+              <AgentOrgChartView rootIds={[conductorId]} />
             ) : (
               <div className="h-full overflow-y-auto">
                 {members.length === 0 ? null : (
@@ -384,7 +391,7 @@ export function OrchestraBuilder({
             )}
           </OrchestraRunStatusContext.Provider>
 
-          {members.length === 0 && (
+          {members.length === 0 && view !== "chart" && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card/70 px-6 py-5 text-center backdrop-blur">
                 <MousePointerClick className="h-5 w-5 text-muted-foreground" />

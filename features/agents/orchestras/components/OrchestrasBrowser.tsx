@@ -54,6 +54,11 @@ export function OrchestrasBrowser() {
       label: "Generate conductor",
       onPress: () => setGenerateOpen(true),
     },
+    {
+      icon: "GitFork",
+      label: "Org chart",
+      onPress: () => router.push("/agents/org-chart"),
+    },
   ];
 
   return (

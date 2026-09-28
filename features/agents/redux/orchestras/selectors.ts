@@ -72,3 +72,26 @@ export function makeSelectOrchestraStatus(conductorId: string) {
     (s) => s.byId[conductorId]?.status ?? "idle",
   );
 }
+
+// ─── manual org chart links ──────────────────────────────────────────
+
+export const selectManualOrgEdges = createSelector(
+  selectOrchestras,
+  (s) => s.manualOrgChart.edges,
+);
+
+export const selectManualOrgStatus = createSelector(
+  selectOrchestras,
+  (s) => s.manualOrgChart.status,
+);
+
+export const selectManualOrgError = createSelector(
+  selectOrchestras,
+  (s) => s.manualOrgChart.error,
+);
+
+/** Every Orchestra detail entry, by Conductor id (the automatic links). */
+export const selectOrchestraEntries = createSelector(
+  selectOrchestras,
+  (s) => s.byId,
+);

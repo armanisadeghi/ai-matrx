@@ -13,6 +13,7 @@ import type {
   OrchestraMemberMeta,
   OrchestraSummary,
 } from "@/features/agents/orchestras/types";
+import type { ManualOrgEdge } from "@/features/agents/org-chart/buildAgentOrgForest";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -26,11 +27,25 @@ export interface OrchestraDetailEntry {
   error: string | null;
 }
 
+/**
+ * Manual org chart links (agent → agent, role `org_chart`). Automatic links are
+ * the member edges in `byId`; together they are the agent org chart
+ * (features/agents/org-chart).
+ */
+export interface ManualOrgChartState {
+  edges: ManualOrgEdge[];
+  /** Manager ids whose links have been read — never read twice unless forced. */
+  queried: string[];
+  status: LoadStatus;
+  error: string | null;
+}
+
 export interface OrchestrasState {
   list: OrchestraSummary[];
   listStatus: LoadStatus;
   listError: string | null;
   byId: Record<string, OrchestraDetailEntry>;
+  manualOrgChart: ManualOrgChartState;
 }
 
 const initialState: OrchestrasState = {
@@ -38,6 +53,7 @@ const initialState: OrchestrasState = {
   listStatus: "idle",
   listError: null,
   byId: {},
+  manualOrgChart: { edges: [], queried: [], status: "idle", error: null },
 };
 
 function ensureEntry(state: OrchestrasState, orchId: string): OrchestraDetailEntry {
@@ -166,6 +182,41 @@ const slice = createSlice({
         summary.config = action.payload.config;
         if (action.payload.label !== undefined) summary.label = action.payload.label;
       }
+    },
+
+    // ─── manual org chart links ────────────────────────────────────────
+    manualOrgPending(state) {
+      state.manualOrgChart.status = "loading";
+      state.manualOrgChart.error = null;
+    },
+    manualOrgFulfilled(
+      state,
+      action: PayloadAction<{ managerIds: string[]; edges: ManualOrgEdge[] }>,
+    ) {
+      const m = state.manualOrgChart;
+      const read = new Set(action.payload.managerIds);
+      // Replace exactly the managers just read; keep everyone else's links.
+      m.edges = [...m.edges.filter((e) => !read.has(e.managerId)), ...action.payload.edges];
+      m.queried = [...new Set([...m.queried, ...action.payload.managerIds])];
+      m.status = "ready";
+      m.error = null;
+    },
+    manualOrgRejected(state, action: PayloadAction<string>) {
+      state.manualOrgChart.status = "error";
+      state.manualOrgChart.error = action.payload;
+    },
+    manualOrgEdgeAdded(state, action: PayloadAction<ManualOrgEdge>) {
+      const m = state.manualOrgChart;
+      const e = action.payload;
+      if (!m.edges.some((x) => x.managerId === e.managerId && x.reportId === e.reportId)) {
+        m.edges.push(e);
+      }
+    },
+    manualOrgEdgeRemoved(state, action: PayloadAction<{ managerId: string; reportId: string }>) {
+      const { managerId, reportId } = action.payload;
+      state.manualOrgChart.edges = state.manualOrgChart.edges.filter(
+        (x) => !(x.managerId === managerId && x.reportId === reportId),
+      );
     },
   },
 });

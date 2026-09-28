@@ -7,12 +7,12 @@
 // eslint.config.mjs.
 //
 // Renders the conductor as a hub node presiding over member nodes connected by
-// animated edges. Agents are dragged in from the library rail (native DnD) and
+// solid edges (dashed is reserved for manual org chart links). Agents are dragged in from the library rail (native DnD) and
 // repositioned on the canvas; positions persist to each edge's metadata.
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // eslint-disable-next-line no-restricted-syntax -- The ONE sanctioned React Flow import; this module is loaded only via the OrchestraBuilderCanvas next/dynamic({ ssr:false }) wrapper (code-splitting skill + reactFlowStaticImportBan).
 import {
   ReactFlow,
@@ -34,7 +34,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./orchestra-builder-canvas.css";
 import dagre from "dagre";
-import { Network, Webhook, GitFork, CircleDot, LayoutGrid, Loader2, PanelRight, type LucideIcon } from "lucide-react";
+import { Network, Webhook, GitFork, CircleDot, LayoutGrid, Loader2, PanelRight, ChevronDown, ChevronUp, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
@@ -51,6 +51,17 @@ import { accentClasses } from "./accents";
 import { AGENT_DND_MIME } from "./AgentLibraryRail";
 import type { OrchestraBuilderCanvasProps } from "./OrchestraBuilderCanvas";
 import type { OrchestraAccent } from "../constants";
+import { useAgentOrgChart } from "@/features/agents/org-chart/useAgentOrgChart";
+import { AGENT_ORG_EDGE_KINDS } from "@/features/agents/org-chart/constants";
+import type { AgentOrgNodeData } from "@/features/agents/org-chart/buildAgentOrgForest";
+import { AgentOrgCard } from "@/features/agents/org-chart/components/AgentOrgCard";
+import {
+  DEFAULT_ORG_CHART_LAYOUT,
+  layoutOrgForest,
+  countDescendants,
+  type OrgChartTreeNode,
+  type PlacedOrgNode,
+} from "@/components/official/org-chart/layout";
 
 const ORCH_ID = "__conductor__";
 
@@ -68,6 +79,14 @@ interface MemberData {
   roleTitle: string | null;
   gap: string | null;
   onEdit: (agentId: string) => void;
+  /** Agents under this member (it leads an Orchestra, or has manual reports). */
+  teamSize: number;
+  teamCollapsed: boolean;
+  onToggleTeam: (agentId: string) => void;
+}
+interface NestedData {
+  placed: PlacedOrgNode<AgentOrgNodeData>;
+  memberCount?: number;
 }
 
 // ─── nodes ──────────────────────────────────────────────────────────────
@@ -170,6 +189,40 @@ function MemberNode({ data }: NodeProps) {
           <Loader2 className={cn("h-3 w-3 animate-spin", a.text)} />
         </span>
       )}
+      {d.teamSize > 0 && (
+        <>
+          <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-transparent" />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              d.onToggleTeam(d.agentId);
+            }}
+            title={d.teamCollapsed ? `Show the ${d.teamSize} agents under this one` : "Hide its team"}
+            className="nodrag absolute left-1/2 top-full z-10 flex h-6 -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full border border-border bg-card px-2 text-[11px] font-semibold text-muted-foreground shadow-sm transition-colors hover:border-foreground/30 hover:text-foreground"
+          >
+            {d.teamCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            Team of {d.teamSize}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** A read-only box for an agent inside a nested Orchestra (or placed under a member by hand). */
+function NestedNode({ data }: NodeProps) {
+  // MATRX-EXCEPTION: same React Flow generic-data-bag cast as ConductorNode.
+  const d = data as unknown as NestedData;
+  return (
+    <div style={{ width: NEST_W, height: NEST_H }}>
+      <Handle type="target" position={Position.Top} className="!h-2 !w-2 !border-0 !bg-transparent" />
+      <AgentOrgCard
+        node={d.placed}
+        state={{ selected: false, matched: false, select: () => {} }}
+        memberCount={d.memberCount}
+      />
+      <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-transparent" />
     </div>
   );
 }
@@ -177,7 +230,90 @@ function MemberNode({ data }: NodeProps) {
 const nodeTypes: NodeTypes = {
   conductor: ConductorNode,
   member: MemberNode,
+  nested: NestedNode,
 };
+
+const NEST_W = DEFAULT_ORG_CHART_LAYOUT.cardWidth;
+const NEST_H = DEFAULT_ORG_CHART_LAYOUT.cardHeight;
+/** Gap between a member card's bottom and its team's first row. */
+const NEST_DROP = 72;
+
+interface NestedGraph {
+  nodes: Node[];
+  edges: Edge[];
+  /** Width each member's expanded team needs (Hierarchy arrange reserves it). */
+  widths: Record<string, number>;
+  teamSize: Record<string, number>;
+  sig: string;
+}
+
+/**
+ * Lay out every member's own team (a nested Orchestra and/or agents placed
+ * under it by hand) as read-only nodes parented to the member node, so a drag
+ * of the member carries its whole team. Uses the shared org chart layout, so
+ * the team looks exactly like it does on the Org chart view.
+ */
+function buildNestedGraph(
+  root: OrgChartTreeNode<AgentOrgNodeData> | undefined,
+  memberIds: Set<string>,
+  collapsed: Set<string>,
+  memberCounts: Map<string, number>,
+  rootAccent: OrchestraAccent,
+): NestedGraph {
+  const out: NestedGraph = { nodes: [], edges: [], widths: {}, teamSize: {}, sig: "" };
+  if (!root) return out;
+  const sig: string[] = [];
+  const accentOf = new Map<string, OrchestraAccent>();
+  for (const member of root.children) {
+    const memberId = member.data.agentId;
+    if (!memberIds.has(memberId) || member.children.length === 0) continue;
+    out.teamSize[memberId] = countDescendants(member);
+    sig.push(`${memberId}:${out.teamSize[memberId]}:${collapsed.has(memberId) ? 1 : 0}`);
+    if (collapsed.has(memberId)) continue;
+    const layout = layoutOrgForest(member.children, {
+      ...DEFAULT_ORG_CHART_LAYOUT,
+      padding: 0,
+      collapsed: new Set(),
+    });
+    out.widths[memberId] = layout.width;
+    const offsetX = MEM_W / 2 - layout.width / 2;
+    const offsetY = MEM_H + NEST_DROP;
+    const idOf = (key: string) => `nested:${key}`;
+    accentOf.set(member.key, member.data.accent ?? rootAccent);
+    for (const n of layout.nodes) {
+      accentOf.set(n.key, n.node.data.accent ?? accentOf.get(n.parentKey ?? member.key) ?? rootAccent);
+      out.nodes.push({
+        id: idOf(n.key),
+        type: "nested",
+        parentId: memberId,
+        position: { x: n.x + offsetX, y: n.y + offsetY },
+        draggable: false,
+        selectable: false,
+        data: { placed: n, memberCount: memberCounts.get(n.node.data.agentId) } as unknown as Record<string, unknown>,
+      });
+      sig.push(n.key);
+    }
+    for (const n of layout.nodes) {
+      const parentKey = n.parentKey ?? member.key;
+      const manual = n.edgeKind === "manual";
+      out.edges.push({
+        id: `e-${idOf(n.key)}`,
+        source: parentKey === member.key ? memberId : idOf(parentKey),
+        target: idOf(n.key),
+        type: "smoothstep",
+        style: {
+          stroke: manual
+            ? AGENT_ORG_EDGE_KINDS.manual.color
+            : accentClasses(accentOf.get(parentKey) ?? rootAccent).stroke,
+          strokeWidth: 2,
+          strokeDasharray: manual ? "7 6" : undefined,
+        },
+      });
+    }
+  }
+  out.sig = sig.join("|");
+  return out;
+}
 
 // ─── layout ─────────────────────────────────────────────────────────────
 
@@ -203,7 +339,11 @@ const MEM_W = 244;
 const MEM_H = 132;
 
 /** Compute a fresh position for every node under one of the auto-arrange modes. */
-function computeLayout(kind: LayoutKind, memberIds: string[]): LayoutResult {
+function computeLayout(
+  kind: LayoutKind,
+  memberIds: string[],
+  teamWidths: Record<string, number> = {},
+): LayoutResult {
   const n = memberIds.length;
 
   if (kind === "grid") {
@@ -227,7 +367,8 @@ function computeLayout(kind: LayoutKind, memberIds: string[]): LayoutResult {
   g.setGraph({ rankdir: "TB", nodesep: 44, ranksep: 90, marginx: 24, marginy: 24 });
   g.setDefaultEdgeLabel(() => ({}));
   g.setNode(ORCH_ID, { width: ORCH_W, height: ORCH_H });
-  memberIds.forEach((id) => g.setNode(id, { width: MEM_W, height: MEM_H }));
+  // A member with an expanded team gets the team's width, so teams never overlap.
+  memberIds.forEach((id) => g.setNode(id, { width: Math.max(MEM_W, teamWidths[id] ?? 0), height: MEM_H }));
   memberIds.forEach((id) => g.setEdge(ORCH_ID, id));
   dagre.layout(g);
   const on = g.node(ORCH_ID);
@@ -236,6 +377,7 @@ function computeLayout(kind: LayoutKind, memberIds: string[]): LayoutResult {
     const dn = g.node(id);
     members[id] = { x: dn.x - MEM_W / 2, y: dn.y - MEM_H / 2 };
   });
+  // Teams hang below their member; members stay on one row above them.
   return { orch: { x: on.x - ORCH_W / 2, y: on.y - ORCH_H / 2 }, members };
 }
 
@@ -259,6 +401,27 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
   const dispatch = useAppDispatch();
   const { screenToFlowPosition, fitView } = useReactFlow();
   const a = accentClasses(accent);
+
+  // Nested teams: a member that leads its own Orchestra (or has agents placed
+  // under it by hand) shows that whole tree beneath it, read-only.
+  const { forest, orchestras } = useAgentOrgChart({ rootIds: [conductorId] });
+  const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(() => new Set());
+  const toggleTeam = useCallback((agentId: string) => {
+    setCollapsedTeams((prev) => {
+      const next = new Set(prev);
+      if (next.has(agentId)) next.delete(agentId);
+      else next.add(agentId);
+      return next;
+    });
+  }, []);
+  const memberCounts = new Map([...orchestras].map(([id, o]) => [id, o.members.length]));
+  const nested = buildNestedGraph(
+    forest[0],
+    new Set(members.map((m) => m.agentId)),
+    collapsedTeams,
+    memberCounts,
+    accent,
+  );
 
   // Build the RF node list from props, preserving the live position + z-order of
   // nodes that already exist (so a drag or bring-to-front survives a reconcile).
@@ -293,12 +456,15 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
             roleTitle: m.roleTitle,
             gap: m.gap,
             onEdit: onEditMember,
+            teamSize: nested.teamSize[m.agentId] ?? 0,
+            teamCollapsed: collapsedTeams.has(m.agentId),
+            onToggleTeam: toggleTeam,
           } as Record<string, unknown>,
         };
       });
-      return [orch, ...memberNodes];
+      return [orch, ...memberNodes, ...nested.nodes];
     },
-    [members, config.conductorPos, accent, conductorId, onEditMember, onOpenConductor],
+    [members, config.conductorPos, accent, conductorId, onEditMember, onOpenConductor, nested, collapsedTeams, toggleTeam],
   );
 
   // React Flow OWNS node state — a drag mutates only the dragged node (no
@@ -312,25 +478,28 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
   const sig = useMemo(
     () =>
       members.map((m) => `${m.agentId}:${m.roleTitle ?? ""}:${m.gap ?? ""}`).join("|") +
-      `#${accent}#${JSON.stringify(config.conductorPos ?? null)}`,
-    [members, accent, config.conductorPos],
+      `#${accent}#${JSON.stringify(config.conductorPos ?? null)}#${nested.sig}`,
+    [members, accent, config.conductorPos, nested.sig],
   );
 
   useEffect(() => {
     // Sync external membership/label/accent changes into RF-owned state, keyed on
     // `sig`, preserving live positions/z-order (updater form — the compiler is fine
     // with it). See buildNodes note above.
-    setNodes((cur) => buildNodes(cur));
-    setEdges(
-      members.map((m) => ({
+    // Nested nodes are rebuilt every time (their positions are computed, never
+    // dragged), so drop them from `cur` and let buildNodes append fresh ones.
+    setNodes((cur) => buildNodes(cur.filter((n) => n.type !== "nested")));
+    setEdges([
+      ...members.map((m) => ({
         id: `e-${m.agentId}`,
         source: ORCH_ID,
         target: m.agentId,
-        animated: true,
+        // Solid, not "animated": a dashed line means a MANUAL link (see the legend).
         type: "smoothstep",
         style: { stroke: a.stroke, strokeWidth: 2 },
       })),
-    );
+      ...nested.edges,
+    ]);
   }, [sig]);
 
   /** Raise a node above the rest (most-recently-active on top). Only that node's
@@ -392,7 +561,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
   // persist (per-member pos + conductor pos), then frame the graph.
   const applyLayout = useCallback(
     (kind: LayoutKind) => {
-      const layout = computeLayout(kind, members.map((m) => m.agentId));
+      const layout = computeLayout(kind, members.map((m) => m.agentId), nested.widths);
       setNodes((nds) =>
         nds.map((n) =>
           n.id === ORCH_ID
@@ -413,7 +582,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
         requestAnimationFrame(() => fitView({ padding: 0.25, maxZoom: 1, duration: 400 })),
       );
     },
-    [members, dispatch, conductorId, config, fitView, setNodes],
+    [members, dispatch, conductorId, config, fitView, setNodes, nested.widths],
   );
 
   return (
@@ -444,6 +613,33 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
             <LayoutButton icon={LayoutGrid} label="Grid" onClick={() => applyLayout("grid")} />
           </div>
         </Panel>
+        {Object.keys(nested.teamSize).length > 0 && (
+          <Panel position="bottom-left" className="!ml-14">
+            <div className="flex flex-col gap-1 rounded-lg border border-border bg-card/90 px-3 py-2 text-[11px] shadow-md backdrop-blur">
+              <div className="flex items-center gap-2">
+                <svg width="26" height="8" aria-hidden>
+                  <line x1="1" y1="4" x2="25" y2="4" stroke={a.stroke} strokeWidth={2.5} strokeLinecap="round" />
+                </svg>
+                <span className="text-foreground">Automatic — Orchestra</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg width="26" height="8" aria-hidden>
+                  <line
+                    x1="1"
+                    y1="4"
+                    x2="25"
+                    y2="4"
+                    stroke={AGENT_ORG_EDGE_KINDS.manual.color}
+                    strokeWidth={2.5}
+                    strokeDasharray="5 4"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="text-foreground">Manual — recorded, not enforced</span>
+              </div>
+            </div>
+          </Panel>
+        )}
       </ReactFlow>
     </div>
   );
