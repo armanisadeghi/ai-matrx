@@ -229,8 +229,8 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     },
     {
       name: `delete_${w.targetPlural}`,
-      label: `Delete ${w.plural}`,
-      description: `Removes one or more of the person's OWN live ${w.plural} from the list. Value is a JSON ARRAY of ids (or { id } objects). What happens: the ${w.noun} is ARCHIVED — it leaves this list, its questions and past results are kept, and it is restorable from Trash (or update_${w.targetPlural} with archived: false); nothing here deletes permanently. Unknown, repeated or already-archived ids refuse the whole list, with nothing changed.`,
+      label: `Move ${w.plural} to Trash`,
+      description: `Archives one or more of the person's OWN live ${w.plural} (moves them to Trash). Value is a JSON ARRAY of ids (or { id } objects). What happens: the ${w.noun} leaves this list, its questions and past results are kept, and it is restorable from Trash (or update_${w.targetPlural} with archived: false). Unknown, repeated or already-archived ids refuse the whole list, with nothing changed.`,
       valueType: "array",
       updatesValue: "my_assessments",
       mode: "entity",
