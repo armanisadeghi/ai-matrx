@@ -1,4 +1,3 @@
--- draft: T-11 fix lane — proof pending
 -- lane: access-ladder T-11 leak fixes, part n: every file that belongs to a record is marked its
 -- child when it is written, and a variant follows its source.
 --
@@ -36,7 +35,6 @@ set local lock_timeout = '2s';
 create or replace function files.ultimate_parent_record(p_file_id uuid, out parent_type text, out parent_id uuid)
 language plpgsql
 stable
-security definer
 set search_path to 'pg_catalog'
 as $function$
 declare
@@ -65,9 +63,8 @@ $function$;
 
 comment on function files.ultimate_parent_record(uuid) is
   'Access ladder T-11: the record a file ultimately belongs to — its own parent record, else its '
-  'source file''s (variants of variants), up to 16 steps. NULLs when none. Server-side only.';
-
-revoke all on function files.ultimate_parent_record(uuid) from public, anon, authenticated;
+  'source file''s (variants of variants), up to 16 steps. NULLs when none. Runs as its caller, so '
+  'a person asking reads only files they can open; the stamp calls it as the table owner.';
 
 -- ── Is this file a dictation chunk? One predicate, used by the stamp and the backfill ──────────
 create or replace function files.is_dictation_chunk(p_file_path text, p_file_name text, p_metadata jsonb)
@@ -87,8 +84,6 @@ comment on function files.is_dictation_chunk(text, text, jsonb) is
   'Access ladder T-11: a dictation''s staged audio (a recorder chunk or its full-audio fallback) '
   'in .matrx-tmp/transcripts. Such a file is the child of the studio session it was recorded into, '
   'else of the chunk journal type with no id (its owner''s alone).';
-
-revoke all on function files.is_dictation_chunk(text, text, jsonb) from public, anon;
 
 -- ── Insert: variants take their source's parent; coding artifacts their session; dictation ─────
 create or replace function files._stamp_parent_record()

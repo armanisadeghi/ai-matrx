@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
-import { educationEntityStudyHref } from "@/features/education/data/entityRoutes";
 import type { GeneratedArtifact } from "@/features/education/convert/lineage";
 import type { TargetKind } from "@/features/education/convert/types";
 import {
@@ -48,39 +47,15 @@ import { MakeMoreFromKit } from "./MakeMoreFromKit";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/education-kits.manifest";
 import {
-  createEducationKitsScope,
-  EDUCATION_KITS_SURFACE_NAME,
-} from "@/features/surfaces/manifests/education-kits.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-
-interface StudyStage {
-  number: string;
-  title: string;
-  description: string;
-  kinds: TargetKind[];
-}
-
-const STUDY_PATH: StudyStage[] = [
-  {
-    number: "01",
-    title: "Understand it",
-    description: "Get the big picture before you start testing yourself.",
-    kinds: ["summary", "notes", "mind_map"],
-  },
-  {
-    number: "02",
-    title: "Make it stick",
-    description: "Turn recognition into recall with active review.",
-    kinds: ["deck", "memory_aid", "audio"],
-  },
-  {
-    number: "03",
-    title: "Prove you know it",
-    description: "Find the gaps, then come back stronger.",
-    kinds: ["quiz", "practice_test"],
-  },
-];
+  artifactActionHref,
+  buildKitDetailScope,
+  orderKitArtifacts,
+  pickChallenge,
+  STUDY_PATH,
+  TRACKED_KINDS,
+} from "../kitSurfaceScope";
 
 const FORMAT_PROMISE: Record<TargetKind, string> = {
   deck: "Build recall one card at a time.",
@@ -93,21 +68,11 @@ const FORMAT_PROMISE: Record<TargetKind, string> = {
   audio: "Keep learning away from the screen.",
 };
 
-const TRACKED_KINDS = new Set<TargetKind>(["deck", "quiz", "practice_test"]);
 
 function unitCount(kind: TargetKind, count: number | null): string | null {
   const unit = TARGET_PRESENTATION[kind].unit;
   if (!unit || count == null) return null;
   return `${count} ${count === 1 ? unit.one : unit.many}`;
-}
-
-function artifactActionHref(artifact: GeneratedArtifact): string {
-  if (artifact.targetKind === "notes") {
-    return educationEntityStudyHref("note", artifact.artifactId) ?? artifact.href;
-  }
-  return artifact.targetKind === "deck"
-    ? `${artifact.href}/study`
-    : artifact.href;
 }
 
 function ArtifactCard({
@@ -212,111 +177,6 @@ function ArtifactCard({
       </span>
     </Link>
   );
-}
-
-/** The kit's aids in study-path order; anything off the path goes last. */
-function orderKitArtifacts(kit: StudyKit): GeneratedArtifact[] {
-  const ordered = orderKitArtifacts(kit);
-  return ordered;
-}
-
-/** What the page recommends next, and why. */
-function pickChallenge(
-  ordered: GeneratedArtifact[],
-  stats: KitArtifactStats,
-): { artifact: GeneratedArtifact; reason: "due" | "not_started" | "first" } | null {
-  const due = ordered.find(
-    (artifact) => (stats[kitArtifactKey(artifact)]?.dueCount ?? 0) > 0,
-  );
-  if (due) return { artifact: due, reason: "due" };
-  const notStarted = ordered.find((artifact) => {
-    const artifactStats = stats[kitArtifactKey(artifact)];
-    return (
-      artifact.targetKind != null &&
-      TRACKED_KINDS.has(artifact.targetKind) &&
-      !artifactStats?.hasProgress
-    );
-  });
-  if (notStarted) return { artifact: notStarted, reason: "not_started" };
-  return ordered[0] ? { artifact: ordered[0], reason: "first" } : null;
-}
-
-/** Surface `matrx-user/education-kits` (detail view) from render state. */
-function buildKitDetailScope(input: {
-  sourceId: string;
-  sourceType: string;
-  kit: StudyKit | null;
-  loading: boolean;
-  loadError: boolean;
-  stats: KitArtifactStats;
-  statsLoading: boolean;
-  statsFailed: boolean;
-}): SurfaceScopePayload {
-  const { kit, stats, statsLoading, statsFailed } = input;
-  const status = input.loading
-    ? "loading"
-    : input.loadError
-      ? "error"
-      : kit
-        ? "ready"
-        : "empty";
-  const base = {
-    view: "detail" as const,
-    kit_status: status as "loading" | "ready" | "empty" | "error",
-    kit_source_id: input.sourceId,
-    kit_source_type: kit?.sourceType ?? input.sourceType,
-  };
-  if (!kit || status !== "ready") return createEducationKitsScope(base);
-  const ordered = orderKitArtifacts(kit);
-  const statsReady = !statsLoading && !statsFailed;
-  const sum = (pick: (s: LibraryRowStats) => number | null) =>
-    ordered.reduce(
-      (total, artifact) => total + (pick(stats[kitArtifactKey(artifact)] ?? ({} as LibraryRowStats)) ?? 0),
-      0,
-    );
-  const challenge = pickChallenge(ordered, stats);
-  return createEducationKitsScope({
-    ...base,
-    kit_title: kit.title,
-    kit_created_at: kit.createdAt,
-    study_aids: ordered.map((artifact) => {
-      const s = statsReady ? stats[kitArtifactKey(artifact)] : undefined;
-      return {
-        kind: artifact.targetKind,
-        title: artifact.title,
-        artifact_type: artifact.artifactType,
-        artifact_id: artifact.artifactId,
-        href: artifactActionHref(artifact),
-        item_count: s?.itemCount ?? null,
-        studied_count: s?.studiedCount ?? 0,
-        accuracy_pct: s?.accuracy != null ? Math.round(s.accuracy * 100) : null,
-        due_count: s?.dueCount ?? 0,
-        last_studied_at: s?.lastStudiedAt ?? null,
-        duration_seconds: s?.durationSeconds ?? null,
-      };
-    }),
-    kit_totals: {
-      study_aids: ordered.length,
-      ...(statsReady
-        ? {
-            practice_items: sum((s) => s.itemCount),
-            practiced: sum((s) => s.studiedCount),
-            due_now: sum((s) => s.dueCount),
-          }
-        : {}),
-    },
-    progress_status: statsLoading ? "loading" : statsFailed ? "unavailable" : "ready",
-    ...(challenge
-      ? {
-          next_challenge: {
-            kind: challenge.artifact.targetKind,
-            title: challenge.artifact.title,
-            href: artifactActionHref(challenge.artifact),
-            reason: challenge.reason,
-          },
-        }
-      : {}),
-  });
 }
 
 function KitLoading() {
@@ -473,15 +333,7 @@ export function KitHub({
       : (peekHref(originToken, kit.sourceId) ?? null);
   const MaterialIcon = tryGetEntityInfo(originToken)?.Icon ?? FileSearch;
 
-  const ordered = STUDY_PATH.flatMap((stage) =>
-    stage.kinds.flatMap((kind) =>
-      kit.artifacts.filter((artifact) => artifact.targetKind === kind),
-    ),
-  );
-  const knownIds = new Set(ordered.map((artifact) => artifact.edgeId));
-  ordered.push(
-    ...kit.artifacts.filter((artifact) => !knownIds.has(artifact.edgeId)),
-  );
+  const ordered = orderKitArtifacts(kit);
 
   const itemTotal = ordered.reduce(
     (sum, artifact) => sum + (stats[kitArtifactKey(artifact)]?.itemCount ?? 0),

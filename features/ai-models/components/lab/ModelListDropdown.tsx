@@ -105,6 +105,8 @@ import {
   speedRatingLabel,
   speedRatingWord,
   type PriceTier,
+  costRatingWord,
+  priceTierRating,
 } from "@/features/ai-models/format";
 import {
   SERVICE_LABEL,
@@ -302,13 +304,16 @@ function SpeedCell({ value }: { value: number | null }) {
 function CostTier({ tier }: { tier: PriceTier | null }) {
   if (!tier)
     return <span className="text-[11px] text-muted-foreground/50">—</span>;
-  const plus = tier.endsWith("+");
-  const dollars = tier.replace("+", "");
+  const rating = priceTierRating(tier);
+  const word = costRatingWord(rating);
   return (
-    <span className="font-mono text-[11px] tabular-nums text-foreground/80">
-      {dollars}
-      {plus && <span className="text-amber-500">+</span>}
-    </span>
+    <DelayedHint
+      label={`Relative cost ${word} (${rating >= 6 ? "5+" : rating}/5 compared with other models)`}
+    >
+      <span className="inline-block w-11 text-right text-[11px] font-medium tabular-nums text-foreground/80">
+        {word}
+      </span>
+    </DelayedHint>
   );
 }
 

@@ -1,4 +1,3 @@
--- draft: T-11 fix lane — proof pending
 -- lane: access-ladder T-11 leak fixes, part m: a child opens to whoever can open its parent, and a
 -- file in the trash is its owner's alone.
 --
@@ -914,7 +913,15 @@ as $function$
 $function$;
 
 -- ── Re-record the access-kernel fingerprint (AD242) ────────────────────────────────────────────
--- PROOF PLACEHOLDER
+-- Proved before this apply, in one rolled-back transaction on the live database as test@test.com, a
+-- plain member of admin@admin.com's organization, with parts k, l, n and the backfill rules applied:
+--   admin's coding-session image variant 000b7cf0…   rows 1 -> 0, files.has_access_for true -> false
+--   HR verification letter 613bc10d…, payroll CSV 441b953e…, employee photos      1 -> 0 each
+--   dictation chunk 00b382d3… as unsent input (journal type, no id)                1 -> 0
+--   the same chunk made the child of admin's studio session 21f0a784… (which test can open): rows 1,
+--   has_access_for true — a child opens to whoever opens its parent
+--   coworkers' trashed files visible to test                                       185 -> 0
+--   admin still reads all four and his own 3,704 trashed files.
 do $$
 begin
   execute format(
