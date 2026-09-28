@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
 import { POST } from "./route";
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 
-jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn() }));
+jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient: jest.fn() }));
 
 type DbResult = { data: unknown; error: unknown };
 const future = "2099-01-01T00:00:00.000Z";
-const liveCode = { user_id: "member-7", expires_at: future, used: false };
+const liveCode = { created_by: "member-7", expires_at: future, used: false };
 
-function chain(result: DbResult, first: "select" | "update") {
+function chain(result: DbResult, first: "select" | "update" | "delete") {
   const builder: Record<string, jest.Mock> = {};
   for (const name of ["select", "update", "eq", "is", "gt", "delete", "lt"]) {
     builder[name] = jest.fn(() => builder);
@@ -48,7 +48,7 @@ describe("extension auth-code exchange", () => {
 
   it("never mints for a soft-deleted code", async () => {
     const db = client({ data: null, error: null }, { data: null, error: null });
-    jest.mocked(createClient).mockResolvedValue(db as never);
+    jest.mocked(createAdminClient).mockReturnValue(db as never);
 
     expect((await POST(request())).status).toBe(401);
     expect(db.generateLink).not.toHaveBeenCalled();
@@ -56,7 +56,7 @@ describe("extension auth-code exchange", () => {
 
   it("rejects an already-used code before attempting a claim", async () => {
     const db = client({ data: { ...liveCode, used: true }, error: null }, { data: null, error: null });
-    jest.mocked(createClient).mockResolvedValue(db as never);
+    jest.mocked(createAdminClient).mockReturnValue(db as never);
 
     expect((await POST(request())).status).toBe(401);
     expect(db.claimBuilder.update).not.toHaveBeenCalled();
@@ -65,7 +65,7 @@ describe("extension auth-code exchange", () => {
 
   it("rejects an expired code before attempting a claim", async () => {
     const db = client({ data: { ...liveCode, expires_at: "2000-01-01T00:00:00.000Z" }, error: null }, { data: null, error: null });
-    jest.mocked(createClient).mockResolvedValue(db as never);
+    jest.mocked(createAdminClient).mockReturnValue(db as never);
 
     expect((await POST(request())).status).toBe(401);
     expect(db.claimBuilder.update).not.toHaveBeenCalled();
@@ -75,7 +75,7 @@ describe("extension auth-code exchange", () => {
   it("lets exactly the atomic winner mint when concurrent exchanges read the same live code", async () => {
     const winner = client({ data: liveCode, error: null }, { data: liveCode, error: null });
     const loser = client({ data: liveCode, error: null }, { data: null, error: null });
-    jest.mocked(createClient).mockResolvedValueOnce(winner as never).mockResolvedValueOnce(loser as never);
+    jest.mocked(createAdminClient).mockReturnValueOnce(winner as never).mockReturnValueOnce(loser as never);
 
     const [first, second] = await Promise.all([POST(request()), POST(request())]);
 
@@ -88,7 +88,26 @@ describe("extension auth-code exchange", () => {
 
   it("fails closed when the conditional claim errors", async () => {
     const db = client({ data: liveCode, error: null }, { data: null, error: { message: "write failed" } });
-    jest.mocked(createClient).mockResolvedValue(db as never);
+    jest.mocked(createAdminClient).mockReturnValue(db as never);
+
+    expect((await POST(request())).status).toBe(401);
+    expect(db.generateLink).not.toHaveBeenCalled();
+  });
+
+  it("claims by the live table's columns and mints for the person who generated the code", async () => {
+    const db = client({ data: liveCode, error: null }, { data: liveCode, error: null });
+    jest.mocked(createAdminClient).mockReturnValue(db as never);
+
+    expect((await POST(request())).status).toBe(200);
+    // extend.extension_auth_codes has no user_id column: the person is created_by.
+    expect(db.claimBuilder.select).toHaveBeenCalledWith("created_by, expires_at");
+    expect(db.auth.admin.getUserById).toHaveBeenCalledWith("member-7");
+  });
+
+  it("fails closed for a claimed code that names nobody", async () => {
+    const orphan = { ...liveCode, created_by: null };
+    const db = client({ data: orphan, error: null }, { data: orphan, error: null });
+    jest.mocked(createAdminClient).mockReturnValue(db as never);
 
     expect((await POST(request())).status).toBe(401);
     expect(db.generateLink).not.toHaveBeenCalled();
