@@ -82,6 +82,8 @@ sign out.
 
 ## Change log
 
+- `2026-09-27` — **A page's primary action never leaves the phone header row**: below 768px `RouteHeader` moves only the SECONDARY actions into the ⋮ sheet (`phone-page-actions.ts`); the primary (last, per the RouteHeader contract) stays in the row, icon-only when it is a labelled tap button (caption kept as accessible name + tooltip). Fixes a93cd8029e burying "Submit all" (/agents/battle) and "New meeting" (/meetings) in the sheet. Guard: `components/header/route-header-phone-actions.test.tsx` (3 of 6 red against a93cd8029e).
+
 - `2026-09-27` — **No nav item sits under the account block**: the `--shell-user-block-h` reservation moved from `.shell-sidebar-footer` (hidden on the settings route, so /user-settings' last item sat under the avatar) to the `.shell-sidebar` column at desktop widths. Landed in sweep commit `591d465ff0`. Guard: `__tests__/sidebar-reserves-the-account-block.test.ts` (2 of 2 red against the old CSS).
 
 - **2026-09-27** — Chat beside a page is the canvas workspace (`features/canvas/workspace/`), not a shell column: the short-lived right-side chat dock and its header control were removed (Arman). Signed-in `/education` renders in canvas chrome (`SIGNED_IN_CANVAS_CHROME_ROUTES`, `data-signed-in`).

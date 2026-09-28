@@ -41,7 +41,9 @@
 //     or give the component a `routeHeaderActions` static that returns them (HeaderActions
 //     does): each is then its own action, named by the label it declares. A node that is
 //     never drawn (a `hidden` file input) stays mounted but is never an action.
-//   - The PRIMARY (last) action stays visible. Secondary actions fold first; then a
+//   - The PRIMARY (last) action stays visible — on a phone too: below 768px the other
+//     actions move into the shell's ⋮ sheet, the primary stays in the row (icon-only
+//     when it is a labelled tap button). Secondary actions fold first; then a
 //     labelled tap button (`label` + `icon`) goes icon-only — caption kept as its
 //     accessible name and tooltip — instead of folding into "…".
 //   - LEFT always ellipsizes. Loose text inside a flex/grid host element is wrapped in a
@@ -323,19 +325,26 @@ export default function RouteHeader({
     // fold point, or the presence of a center changes.
   }, [root, actionKeys, fold, compact, hasCenter]);
 
-  // 🚨 ON A PHONE THE ACTIONS LIVE IN THE SHELL'S ⋮ (page-pass shared
-  // defects, 2026-09-27): one overflow button per phone header, and the title
-  // gets the row. They are PORTALED into the ⋮ sheet's host node, so each
-  // stays mounted in this page's tree. See `phone-page-actions.ts`.
+  // 🚨 ON A PHONE THE SECONDARY ACTIONS LIVE IN THE SHELL'S ⋮ (page-pass
+  // shared defects, 2026-09-27): one overflow button per phone header, and the
+  // title gets most of the row. They are PORTALED into the ⋮ sheet's host node,
+  // so each stays mounted in this page's tree. See `phone-page-actions.ts`.
+  // 🚨 THE PRIMARY (last) ACTION NEVER LEAVES THE ROW (2026-09-27): a page's
+  // main action is never reachable only through a menu — "Submit all" on
+  // /agents/battle, "New meeting" on /meetings. It stays, icon-only when it is
+  // a labelled tap button (caption kept as its accessible name + tooltip).
   const toSheet = isPhone && !yielded && phoneHost != null && actions.length > 0;
+  const sheetActions = toSheet ? actions.slice(0, -1) : [];
   const owner = useId();
   useEffect(() => {
-    setPhonePageActionCount(owner, (toSheet ? actions.length : 0) + (centerToSheet ? 1 : 0));
+    setPhonePageActionCount(owner, sheetActions.length + (centerToSheet ? 1 : 0));
     return () => setPhonePageActionCount(owner, 0);
-  }, [owner, toSheet, centerToSheet, actions.length]);
+  }, [owner, sheetActions.length, centerToSheet]);
 
   const overflowActions = toSheet ? [] : actions.slice(0, fold);
-  const rowActions = toSheet ? [] : actions.slice(fold);
+  const rowActions = toSheet ? (primary ? [primary] : []) : actions.slice(fold);
+  // On a phone the kept primary is compact up front — the title keeps the row.
+  const compactRow = toSheet ? primaryCanCompact : compact;
 
   return (
     <PageHeader fallback={fallback}>
@@ -415,10 +424,10 @@ export default function RouteHeader({
                 phoneHost,
               )
             : null}
-          {toSheet && phoneHost
+          {sheetActions.length > 0 && phoneHost
             ? createPortal(
                 <div data-route-header-phone-actions className="flex flex-col gap-0.5">
-                  {actions.map((a) => (
+                  {sheetActions.map((a) => (
                     <PhoneSheetAction key={a.key} action={a} />
                   ))}
                 </div>,
@@ -456,7 +465,7 @@ export default function RouteHeader({
             </Popover>
           ) : null}
           {rowActions.map((a) => {
-            const iconOnly = compact && a === primary;
+            const iconOnly = compactRow && a === primary;
             return (
               <div
                 key={a.key}
