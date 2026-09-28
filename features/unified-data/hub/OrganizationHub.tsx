@@ -118,6 +118,12 @@ export interface OrganizationHubProps {
    * organization's and its name is read from the selection.
    */
   organizationName?: string | null | undefined;
+  /**
+   * THE PAGE HEADER'S "New table" / "Start from an example", pressed (a count per button). The
+   * making row is the header's action bar now, never a row of its own on the page (merged-grid
+   * review 2, J6); `TablesHome` opens the name box or the examples when asked.
+   */
+  makeAsked?: { create: number; examples: number } | undefined;
 }
 
 export function OrganizationHub({
@@ -125,6 +131,7 @@ export function OrganizationHub({
   dataSource,
   inbox,
   organizationName: namedOrganizationName,
+  makeAsked,
 }: OrganizationHubProps) {
   const router = useRouter();
   /**
@@ -558,6 +565,7 @@ export function OrganizationHub({
           twice. */}
       <TablesHome
         makingOnly
+        {...(makeAsked ? { askedBy: makeAsked } : {})}
         onOpenTable={(tableId: string, dashboardId?: string | null) =>
           router.push(
             dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`,

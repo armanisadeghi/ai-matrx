@@ -13,7 +13,7 @@
 // here, which is what the unified data ramp screen sets, once, for everybody.
 // The per-person `custom.code_paths_enabled` half is gone (lane NAV-FIX).
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ActionInbox, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
@@ -117,6 +117,8 @@ export default function UnifiedDataPage() {
    * supabase clients on one page and two ideas of who is signed in.
    */
   const dataSource = useMemo(() => recordsDataSource(createClient()), []);
+  /** How many times the header's New table / Start from an example was pressed. */
+  const [makeAsked, setMakeAsked] = useState({ create: 0, examples: 0 });
 
   const goBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
@@ -130,7 +132,23 @@ export default function UnifiedDataPage() {
           filters are navigations now, so Back walks them; with no page behind this one, Back
           lands on the home's own first view rather than doing nothing. */}
       <PageHeader>
-        <HeaderStructured back={goBack} />
+        {/* MAKING A TABLE IS THE HEADER'S ACTION (merged-grid review 2, J6: "New table" sat ~1,700 px
+            down the page, then as a row of its own). Offered once the store can take one. */}
+        <HeaderStructured
+          back={goBack}
+          {...(organizationState === "ready" && campaign.state === "on"
+            ? {
+                actions: [
+                  { icon: "Plus", label: "New table", onPress: () => setMakeAsked((n) => ({ ...n, create: n.create + 1 })) },
+                  {
+                    icon: "LayoutTemplate",
+                    label: "Start from an example",
+                    onPress: () => setMakeAsked((n) => ({ ...n, examples: n.examples + 1 })),
+                  },
+                ],
+              }
+            : {})}
+        />
       </PageHeader>
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
         {organizationState !== "ready" ? (
@@ -176,6 +194,7 @@ export default function UnifiedDataPage() {
               organizationId={organizationId!}
               dataSource={dataSource}
               organizationName={namedOrganization?.name ?? null}
+              makeAsked={makeAsked}
               /* WHAT IS WAITING ON THIS PERSON — one inbox for what they were
                  assigned, what needs their approval and what an agent has
                  proposed (PRODUCTS.md row 6), the store's own `custom.work_inbox`,
