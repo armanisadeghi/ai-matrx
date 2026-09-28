@@ -19,7 +19,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import {
   resolveResourceAccess,
   NO_ACCESS,
@@ -61,20 +65,26 @@ export function useAccess(
   const [loading, setLoading] = useState<boolean>(() =>
     Boolean(resourceType && resourceId),
   );
-  // A persisted Redux identity can briefly precede Supabase's restored
-  // browser session: firing get_resource_access before the browser client's
-  // session settles sends the request as `anon`, and the non-strict resolver
-  // above turns that failure into NO_ACCESS — `exists: false`, not "unknown"
-  // — so a resource the caller genuinely owns briefly reads as "does not
-  // exist" on first load (a real defect: it starved a mind-map's diagram of
-  // its edit affordances and reads as "not found" everywhere this hook gates
-  // an AccessGate). `authReady` (unlike an auth*ed*-only gate) also settles
-  // true for a confirmed signed-out visitor, so a real public/anon resolution
-  // is never blocked — only the race window is.
+  // A persisted Redux identity can briefly precede the browser Supabase
+  // client's own restored session: firing get_resource_access before it
+  // settles sends the request as `anon`, and the non-strict resolver above
+  // turns that failure into NO_ACCESS — `exists: false`, not "unknown" — so a
+  // resource the caller genuinely owns briefly reads as "does not exist" on
+  // first load (a real defect: it starved a mind-map's diagram of its edit
+  // affordances and read as "not found" everywhere this hook gates an
+  // AccessGate). `authReady` alone settles true the moment Redux knows a
+  // PERSISTED identity, which can be before the browser client's own local
+  // session hydrates — so a signed-in caller also needs `accessToken` (set
+  // once the client's own session is live) before firing. A confirmed
+  // signed-out visitor has no `userId` to wait on, so their real anon/public
+  // resolution is never blocked — only the signed-in race window is.
   const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
+  const sessionSettled = authReady && (!userId || Boolean(accessToken));
 
   useEffect(() => {
-    if (!resourceType || !resourceId || !authReady) return;
+    if (!resourceType || !resourceId || !sessionSettled) return;
     let active = true;
     getResourceAccess(resourceType, resourceId).then((result) => {
       if (!active) return;
@@ -84,7 +94,7 @@ export function useAccess(
     return () => {
       active = false;
     };
-  }, [resourceType, resourceId, authReady]);
+  }, [resourceType, resourceId, sessionSettled]);
 
   const refresh = async () => {
     if (!resourceType || !resourceId) return;
