@@ -107,30 +107,19 @@ export function LocatedTableViewer({ recordStoreMenuExtras, readOnly = false, ..
     );
   }
   if (!located.copyInRecordStore) return <UserTableViewer {...props} {...(readOnly ? { previewOnly: true } : {})} />;
-  return (
-    <UserTableViewer
-      {...props}
-      {...(readOnly ? { previewOnly: true } : {})}
-      toolbarTrailing={
-        <>
-          <OlderStoreNotice />
-          {props.toolbarTrailing}
-        </>
-      }
-    />
-  );
+  return <UserTableViewer {...props} {...(readOnly ? { previewOnly: true } : {})} storeNotice={<OlderStoreNotice />} />;
 }
 
 /**
- * THE OLDER GRID SAYS WHY IT IS DRAWN, in its own toolbar row (the read-only chip's pattern) — never
- * a second row, a redirect, or a second grid.
+ * THE OLDER GRID SAYS WHY IT IS DRAWN, as a chip beside its read-only chip (the viewer's own notice
+ * band) — never in the toolbar's pinned controls, never a redirect, never a second grid.
  */
 function OlderStoreNotice() {
   return (
     <span
       role="note"
       data-table-store-notice="older"
-      className="inline-flex max-w-full shrink items-center gap-1.5 truncate rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
+      className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 text-sm text-muted-foreground"
       title="The new store also holds a copy of this table. It opens there once an owner switches this organization's Data tables over."
     >
       <History className="h-3.5 w-3.5 shrink-0" aria-hidden />

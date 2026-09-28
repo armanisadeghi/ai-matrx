@@ -6,7 +6,7 @@
  * window, the dataset overlay, a chat table artifact, the quick sheet, the picker, the "view table"
  * modal) draws the older grid — correctly. What was wrong is silence: review 2 saw the older grid
  * with the merged-grid knob on and nothing said why. The consumer says it in the older grid's own
- * toolbar row (never a second row, never a redirect, never a second grid):
+ * notice band, beside its read-only chip (never a redirect, never a second grid):
  * "This table still runs in the older store until it is switched over".
  */
 import { act } from "react";
@@ -26,7 +26,12 @@ jest.mock("@/components/user-generated-table-data/UserTableViewer", () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
     viewerProps.push(props);
-    return <div data-testid="older-grid">{props.toolbarTrailing as React.ReactNode}</div>;
+    return (
+      <div data-testid="older-grid">
+        {props.storeNotice as React.ReactNode}
+        {props.toolbarTrailing as React.ReactNode}
+      </div>
+    );
   },
 }));
 jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
