@@ -1,4 +1,4 @@
-import type { StudyMediaRow } from "../../types";
+import type { StudyMediaRow } from "../types";
 import { coerceTrustEnvelope, type TrustEnvelope } from "@/features/education/trust/types";
 import {
   collectProblems,

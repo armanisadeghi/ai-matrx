@@ -23,16 +23,41 @@ export function MindMapEditor({ media, isOwner = false }: { media?: StudyMediaRo
   const router = useRouter();
   const [currentMedia, setCurrentMedia] = useState(media);
   const [base, setBase] = useState<MindMapEnvelope>(() => media ? parseMindMap(media.ir_envelope) : blankMindMap());
-  const [draft, setDraft] = useState<MindMapEnvelope>(() => recoverDraft(media));
+  const [draft, setDraft] = useState<MindMapEnvelope>(() => media ? parseMindMap(media.ir_envelope) : blankMindMap());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [persistenceReady, setPersistenceReady] = useState(false);
+  const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
   const update = (patch: Partial<MindMapEnvelope>) => setDraft((current) => ({ ...current, ...patch }));
   const dirty = JSON.stringify(draft) !== JSON.stringify(base);
   const recoveryKey = `mind-map-editor:${currentMedia?.id ?? "new"}`;
   useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(recoveryKey) ?? "null") as { draft?: unknown; baseVersion?: unknown } | null;
+        if (saved?.baseVersion === (currentMedia?.version ?? null) && saved.draft) {
+          const restored = parseMindMap(saved.draft);
+          setDraft(restored);
+          setRecoveryNotice("Restored your unsaved mind-map draft.");
+        }
+      } catch { sessionStorage.removeItem(recoveryKey); }
+      setPersistenceReady(true);
+    });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    if (!persistenceReady) return;
     if (!dirty) { sessionStorage.removeItem(recoveryKey); return; }
     sessionStorage.setItem(recoveryKey, JSON.stringify({ draft, baseVersion: currentMedia?.version ?? null }));
-  }, [base, currentMedia?.version, dirty, draft, recoveryKey]);
+  }, [base, currentMedia?.version, dirty, draft, persistenceReady, recoveryKey]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const getScope = () => createEducationMindMapsScope({ view: "detail", ...(currentMedia ? { mind_map_id: currentMedia.id, mind_map_title: currentMedia.title, mind_map_version: currentMedia.version } : {}) });
   const getWriteHandlers = () => collectionWriteHandlers({
     plural: "mind_maps", singular: "mind map",
@@ -79,6 +104,7 @@ export function MindMapEditor({ media, isOwner = false }: { media?: StudyMediaRo
     <EducationToolHeader title={currentMedia ? "Edit mind map" : "Write a mind map"} />
     <main className="mx-auto w-full max-w-4xl space-y-6 px-4 pb-20 pt-4">
       <section className="space-y-2"><Label htmlFor="mind-map-title">Title</Label><Input id="mind-map-title" value={draft.title} onChange={(event) => update({ title: event.target.value })} /></section>
+      {recoveryNotice && <p role="status" className="rounded-md border border-primary/30 bg-primary/10 p-3 text-sm text-foreground">{recoveryNotice}</p>}
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2"><div><h2 className="text-base font-semibold">Concepts</h2><p className="text-sm text-muted-foreground">Add the ideas people should see in the map.</p></div><Button type="button" size="sm" variant="outline" onClick={() => update({ nodes: [...draft.nodes, { __kind: "diagram_node", id: newId("node"), label: "", description: "", details: "" }] })}><Plus className="mr-1 h-4 w-4" />Add concept</Button></div>
         {draft.nodes.map((node, index) => <div key={String(node.id)} className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2">
@@ -106,15 +132,6 @@ export function MindMapEditor({ media, isOwner = false }: { media?: StudyMediaRo
 }
 
 function stringValue(value: unknown): string { return typeof value === "string" ? value : ""; }
-function recoverDraft(media?: StudyMediaRow): MindMapEnvelope {
-  const fallback = media ? parseMindMap(media.ir_envelope) : blankMindMap();
-  if (typeof window === "undefined") return fallback;
-  const key = `mind-map-editor:${media?.id ?? "new"}`;
-  try {
-    const saved = JSON.parse(sessionStorage.getItem(key) ?? "null") as { draft?: unknown; baseVersion?: unknown } | null;
-    return saved?.baseVersion === (media?.version ?? null) && saved.draft ? parseMindMap(saved.draft) : fallback;
-  } catch { sessionStorage.removeItem(key); return fallback; }
-}
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <Label className="space-y-1"><span>{label}</span><Input value={value} onChange={(event) => onChange(event.target.value)} /></Label>; }
 function NodeChoice({ label, value, nodes, onChange }: { label: string; value: string; nodes: JsonRecord[]; onChange: (value: string) => void }) { return <Label className="space-y-1"><span>{label}</span><select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={value} onChange={(event) => onChange(event.target.value)}>{nodes.map((node) => <option key={String(node.id)} value={stringValue(node.id)}>{stringValue(node.label) || stringValue(node.id)}</option>)}</select></Label>; }
 type JsonRecord = Record<string, unknown>;
