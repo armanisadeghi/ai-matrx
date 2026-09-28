@@ -594,6 +594,8 @@ function AgentRunHistoryWindowInner({
     >
       <WindowPanel
         id="agent-run-history-window"
+        // Escape closes it when it is the topmost window with nothing layered above.
+        closeOnEscape
         title={windowTitle}
         onClose={onClose}
         width={900}

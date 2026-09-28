@@ -31,12 +31,28 @@
 # The raw session identity, as reported by whatever agent runtime is driving.
 # MATRX_PREVIEW_SESSION is the override an operator (or a self-test) can set to
 # name a session deliberately; everything else is discovery.
+#
+# 🚨 CLAUDE_CODE_SESSION_ID MUST BE CHECKED BEFORE CLAUDE_CODE_HOST_SESSION_ID
+# (found 2026-09-26, several parallel subagents clobbering each other's
+# dev-login). CLAUDE_CODE_HOST_SESSION_ID names the top-level Claude Desktop
+# session — it is IDENTICAL for every subagent a parent session dispatches in
+# parallel, because they are all still "the same host session" from the
+# runtime's point of view. CLAUDE_CODE_SESSION_ID is the one that is actually
+# unique per dispatched agent (it is also what names that agent's own
+# scratchpad directory), including a subagent running beside its siblings
+# under one parent. Checking the host id first meant every subagent under one
+# session landed on the SAME `<label>.localhost`, so they shared one cookie
+# jar and one nonce file exactly like the pre-W56 defect this file exists to
+# fix — one agent's dev-login evicted the others' sessions and burned their
+# nonce mid-handshake. `CLAUDE_SESSION_ID` (no "CODE") is kept as a fallback
+# name for a runtime that sets that spelling instead.
 preview_session_raw() {
   local raw=""
   for candidate in \
     "${MATRX_PREVIEW_SESSION:-}" \
-    "${CLAUDE_CODE_HOST_SESSION_ID:-}" \
+    "${CLAUDE_CODE_SESSION_ID:-}" \
     "${CLAUDE_SESSION_ID:-}" \
+    "${CLAUDE_CODE_HOST_SESSION_ID:-}" \
     "${CODEX_SESSION_ID:-}" \
     "${CODEX_THREAD_ID:-}"; do
     if [[ -n "$candidate" ]]; then
@@ -54,7 +70,7 @@ preview_session_raw() {
 # True when the label had to be derived from the checkout because no agent
 # runtime named the session. Callers warn on this; nothing silently degrades.
 preview_session_is_anonymous() {
-  [[ -z "${MATRX_PREVIEW_SESSION:-}${CLAUDE_CODE_HOST_SESSION_ID:-}${CLAUDE_SESSION_ID:-}${CODEX_SESSION_ID:-}${CODEX_THREAD_ID:-}" ]]
+  [[ -z "${MATRX_PREVIEW_SESSION:-}${CLAUDE_CODE_SESSION_ID:-}${CLAUDE_SESSION_ID:-}${CLAUDE_CODE_HOST_SESSION_ID:-}${CODEX_SESSION_ID:-}${CODEX_THREAD_ID:-}" ]]
 }
 
 # A DNS label: lowercase, [a-z0-9-], never leading/trailing '-', never empty,
@@ -86,9 +102,25 @@ preview_session_url() {
   printf 'http://%s:%s' "$(preview_session_host "${2:-$PWD}")" "${1:-3001}"
 }
 
-# The per-host dev-login nonce file. Must stay in exact agreement with
+# The dev-login nonce file. Must stay in exact agreement with
 # app/api/dev-login/route.ts — the guard app/api/dev-login/route.test.ts pins
 # the shape, and scripts/check-preview-session.mjs pins that the two agree.
+#
+# It is now keyed by HOST *and* by the nonce itself, not just the host
+# (2026-09-26). One file per host meant a SECOND `pnpm dev-login` for the same
+# host overwrote the first mint's file before its URL was ever opened — which
+# is exactly what several parallel subagents landing on the same host (or one
+# agent re-running the command) do to each other: the earlier mint's nonce
+# silently stops matching anything and its printed URL 401s. Folding the nonce
+# into the filename means concurrent mints for one host are independent files
+# that never collide, while a wrong guess still can't touch a real pending
+# mint (it hashes out to a filename nothing wrote). Called with one argument
+# it returns the legacy host-only shape (used where no nonce is known yet).
 preview_nonce_file() {
-  printf '.dev-login-nonce.%s' "${1:-localhost}"
+  local host="${1:-localhost}" nonce="${2:-}"
+  if [[ -n "$nonce" ]]; then
+    printf '.dev-login-nonce.%s.%s' "$host" "$nonce"
+  else
+    printf '.dev-login-nonce.%s' "$host"
+  fi
 }

@@ -27,10 +27,13 @@ PORT="$(sed -n 's/^PORT=//p' "$META" 2>/dev/null | head -1)"
 [[ -n "$PORT" ]] || PORT=3001
 
 HOST="$(preview_session_host "$REPO_ROOT")"
-NONCE_FILE="$REPO_ROOT/$(preview_nonce_file "$HOST")"
 
 command -v openssl >/dev/null 2>&1 || { echo "[dev-login] ERROR: openssl is required" >&2; exit 1; }
 NONCE="$(openssl rand -hex 16)"
+# The nonce file is keyed by the nonce itself as well as the host, so a second
+# `pnpm dev-login` for this same host (another subagent, or a re-run) mints an
+# independent file and cannot overwrite this one's pending mint.
+NONCE_FILE="$REPO_ROOT/$(preview_nonce_file "$HOST" "$NONCE")"
 printf '%s\n' "$NONCE" >"$NONCE_FILE" || { echo "[dev-login] ERROR: could not write $NONCE_FILE" >&2; exit 1; }
 
 echo "[dev-login] host   : $HOST  (your session's own cookie jar)"

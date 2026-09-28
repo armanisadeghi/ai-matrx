@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const HOST = 'wave2edu.localhost:3001';
+const STATE = '/Users/armanisadeghi/code/matrx-frontend/.wave2-scratch/state.json';
+const browser = await chromium.launch();
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: STATE });
+const page = await context.newPage();
+await page.goto(`http://${HOST}/education`, { waitUntil: 'load', timeout: 60000 });
+await page.waitForTimeout(2500);
+await page.screenshot({ path: '/Users/armanisadeghi/code/matrx-frontend/.wave2-scratch/edu.png', fullPage: false });
+console.log('done', page.url());
+await browser.close();

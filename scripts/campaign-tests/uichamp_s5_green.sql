@@ -233,7 +233,7 @@ begin
   perform set_config('request.jwt.claims', c_desk_j, true);
   v_out := custom.work_decide_many(v_org, jsonb_build_array(jsonb_build_object('item', v_asks[2], 'decision', 'approve')));
   if v_out -> 'results' -> 0 ->> 'verdict' <> 'already_decided'
-     or v_out -> 'results' -> 0 ->> 'sentence' not like 'That was withdrawn on%' then
+     or v_out -> 'results' -> 0 ->> 'sentence' not like 'That was withdrawn%' then
     raise exception '4a: approving a withdrawn ask answered %', v_out -> 'results' -> 0;
   end if;
   raise notice 'PART 4 PASSED — "%"', v_out -> 'results' -> 0 ->> 'sentence';

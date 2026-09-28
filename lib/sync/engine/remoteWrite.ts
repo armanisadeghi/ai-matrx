@@ -18,6 +18,10 @@
 
 import type { Store } from "@reduxjs/toolkit";
 import { extractErrorMessage } from "@/utils/errors";
+// STATIC, never `import()`: the notice exists for when the network is gone,
+// and a lazily-loaded chunk cannot load then (live, 2026-09-27: offline, the
+// toast chunk failed ERR_INTERNET_DISCONNECTED and no notice ever showed).
+import { toast } from "@/lib/toast";
 // MATRX-EXCEPTION: `Policy<any>` throughout this file — same invariant-TState
 // reason as lib/sync/registry.ts (partialize: readonly (keyof TState)[] makes
 // TState invariant, so `Policy<unknown>` cannot accept the registry's
@@ -67,21 +71,17 @@ function toastNotice(): RemoteWriteFailureNotice {
     const id = (sliceName: string) => `sync-remote-write-failing:${sliceName}`;
     return {
         failing(sliceName, message, retryNow) {
-            void import("@/lib/toast").then(({ toast }) => {
-                toast.error(
-                    `Your change is not saved yet: ${message}. It is kept on this device and retried automatically.`,
-                    {
-                        id: id(sliceName),
-                        duration: Infinity,
-                        action: { label: "Retry now", onClick: retryNow },
-                    },
-                );
-            });
+            toast.error(
+                `Your change is not saved yet: ${message}. It is kept on this device and retried automatically.`,
+                {
+                    id: id(sliceName),
+                    duration: Infinity,
+                    action: { label: "Retry now", onClick: retryNow },
+                },
+            );
         },
         recovered(sliceName) {
-            void import("@/lib/toast").then(({ toast }) => {
-                toast.dismiss(id(sliceName));
-            });
+            toast.dismiss(id(sliceName));
         },
     };
 }

@@ -1,1 +1,1 @@
-{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts","features/agent-apps/hooks/useAgentApp.ts","features/agent-apps/components/AppWorkspaceGate.tsx","features/agent-apps/components/AppWorkspaceGate.test.tsx"]}
+{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts","features/window-panels/windows/agents/AgentRunHistoryWindow.tsx"]}

@@ -457,7 +457,7 @@ begin
     raise exception '3e FAILED — a date before the capture window was answered instead of refused.';
   exception when invalid_parameter_value then
     get stacked diagnostics v_msg = message_text;
-    if v_msg !~ 'History for this store starts at' then
+    if v_msg !~ 'History for this store does not reach back' then
       raise exception '3e FAILED — it refused, but not with the date history starts: %', v_msg; end if;
   end;
 

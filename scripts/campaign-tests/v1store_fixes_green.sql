@@ -348,7 +348,7 @@ begin
     perform custom.record_delete(v_org_b, gen_random_uuid());
   exception when sqlstate '02000' then get stacked diagnostics v_caught = message_text;
   end;
-  if v_caught is null or v_caught not like 'There is no record %' then
+  if v_caught is null or v_caught not like 'There is no such record %' then
     raise exception 'GREEN 2d: deleting a record that is not here did not say so (got %)', coalesce(v_caught,'nothing');
   end if;
   perform custom.record_delete(v_org_b, v_rec_b);

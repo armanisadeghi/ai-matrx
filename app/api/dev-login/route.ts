@@ -50,7 +50,8 @@ import {
 const REPO_ROOT = /* turbopackIgnore: true */ process.cwd();
 
 /**
- * A NONCE BELONGS TO A HOST (W56c, 2026-09-12).
+ * A NONCE BELONGS TO A HOST *AND* TO ITS OWN MINT (W56c 2026-09-12, extended
+ * 2026-09-26).
  *
  * There used to be ONE `.dev-login-nonce` for the whole checkout. Five agent
  * sessions drive this machine at once, and the file is consumed on ANY
@@ -58,31 +59,50 @@ const REPO_ROOT = /* turbopackIgnore: true */ process.cwd();
  * deleted the nonce another agent had just minted, and that agent's sign-in
  * then failed for a reason nothing on its screen could explain.
  *
- * Each hostname now has its own file, which is the same boundary the cookie
- * jar uses: a session driving `s3f1eb9c52.localhost` mints and burns
- * `.dev-login-nonce.s3f1eb9c52.localhost` and cannot reach anyone else's.
+ * Each hostname got its own file, which is the same boundary the cookie jar
+ * uses — but that still left ONE file per host, and parallel subagents
+ * dispatched from a single parent session land on that same host (their
+ * `CLAUDE_CODE_HOST_SESSION_ID` is shared — see
+ * `scripts/agent-harness/preview-session.sh`). A second `pnpm dev-login` for
+ * that host overwrote the first mint's file before its printed URL was ever
+ * opened, so the earlier agent's handshake 401'd for a reason nothing on its
+ * screen explained either.
+ *
+ * The nonce itself is now part of the filename: a session driving
+ * `s3f1eb9c52.localhost` mints `.dev-login-nonce.s3f1eb9c52.localhost.<nonce>`,
+ * so two mints for the same host are two independent files that cannot
+ * overwrite each other, and a wrong guess touches nothing — it hashes out to
+ * a filename nothing wrote, never a real pending mint.
  * `scripts/agent-harness/preview-session.sh` mints the matching name; the
  * two are pinned together by `pnpm check:preview-session`.
  */
-function nonceFileFor(hostname: string): string {
+function nonceFileFor(hostname: string, nonce: string): string {
   // `hostname` comes out of `new URL(...)`, so it is already a parsed host —
   // but this value becomes a PATH, so it is re-validated rather than trusted.
-  const safe = /^[a-z0-9.-]{1,253}$/.test(hostname) && !hostname.includes("..")
+  const safeHost = /^[a-z0-9.-]{1,253}$/.test(hostname) && !hostname.includes("..")
     ? hostname
     : "invalid-host";
-  return join(REPO_ROOT, `.dev-login-nonce.${safe}`);
+  // The nonce also becomes part of a PATH. It is always openssl-rand hex, but
+  // re-validated rather than trusted, exactly like the hostname above.
+  const safeNonce = /^[a-f0-9]{16,64}$/.test(nonce) ? nonce : "invalid-nonce";
+  return join(REPO_ROOT, `.dev-login-nonce.${safeHost}.${safeNonce}`);
 }
 
 function consumeNonce(presented: string, hostname: string): boolean {
-  const file = nonceFileFor(hostname);
+  const file = nonceFileFor(hostname, presented);
   let expected: string;
   try {
     expected = readFileSync(file, "utf8").trim();
   } catch {
-    return false; // no handshake file for THIS host — nothing to consume
+    // No mint exists under THIS presented value for this host — either it was
+    // never minted, already consumed, or a wrong guess. Nothing to burn: a
+    // different pending mint for the same host lives under its OWN nonce and
+    // is untouched.
+    return false;
   }
-  // Consume on ANY presentation: a wrong guess must burn the nonce too,
-  // otherwise it can be brute-forced against a long-lived file.
+  // Consume the moment it is looked up (match or mismatched content) so the
+  // nonce that unavoidably appears in the navigation URL is dead the instant
+  // anything presents it, even to a mismatching file.
   try {
     rmSync(file);
   } catch {
