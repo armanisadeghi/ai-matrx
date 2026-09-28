@@ -78,7 +78,7 @@ real error, never a blank.
 - 🚨 **THE KNOBS TAB IS A REGISTER OF ~950 ROWS, so identity and provenance are
   SCANNED, never hunted** (independent review, 2026-09-22). Every row prints its
   full `feature.key` and its origin in words — "System default", "Set for the
-  platform", plus "· overridden by N organizations" — on the row itself, from
+  platform", plus "· N overrides" (organizations and people together) — on the row itself, from
   `systemOriginSentence` in `lib/scoped-config/ladder.ts`, which the row's "…"
   panel reads too so the two can never disagree. The tab has a search box over
   `knobMatchesControlSearch` (`features/settings/search/controlSearch.ts`), the
@@ -90,6 +90,19 @@ real error, never a blank.
   `UniversalSettingsRows`) and may add only REGISTER affordances — search, the
   deep link, the overdue-review banner. Anything about how a row reads or
   writes belongs in `KnobOverrideRow`, where every destination inherits it.
+- 🚨 **EVERY LEVEL OF A KEY FROM ONE PLACE** (Arman 2026-09-26: *"defaults for
+  everyone in the admin dashboard, then overridden per-org and per-user as
+  needed"*). The row's meta line ends in an **All levels** opener; opened, the
+  key shows `KnobOverridesAdmin`: every override on the platform (level, who,
+  organization, value, set by, when — change or remove in place), an add line
+  (organization or person, searchable name pickers, never ids), and "what does
+  someone get?" — `knob_index`'s own effective answer for a picked organization
+  + person, naming the layer that decided it. Reads: `fetchPlatformKnobOverrides`
+  (RLS `platform_admin_read`) and the admin roster doors (`/api/admin/users`,
+  `/api/admin/users/organizations`). Writes: the door the KEY declares
+  (`fetchKnobWriteDoor` → `writeKnobOverrideThroughDoor`) — the same door the
+  organization Configuration page's exceptions use. Logic + tests:
+  `knobOverrides.ts`.
 
 ## Files
 
@@ -101,6 +114,8 @@ real error, never a blank.
 | [`components/PlanAllowancesPanel.tsx`](./components/PlanAllowancesPanel.tsx) | The grid that IS the free tier; exports `EnforcementBadge`. |
 | [`components/AccountAddonsPanel.tsx`](./components/AccountAddonsPanel.tsx) | Per-org grants (list + grant dialog with searchable org picker) over `billing.account_addon` / `addon_grant` / `org_plan_list` / `iam.organizations`. |
 | [`components/FeatureKnobsPanel.tsx`](./components/FeatureKnobsPanel.tsx) | The universal editor's system destination plus the register affordances: search, the `?knob=` deep link, the overdue-review banner and override counts. |
+| [`components/KnobOverridesAdmin.tsx`](./components/KnobOverridesAdmin.tsx) | One key's every level: the override table, add/change/remove, and the effective-value probe. |
+| [`knobOverrides.ts`](./knobOverrides.ts) | Naming, counting, effective-answer words, and the door-routed write for that panel. |
 
 Read-only sibling: **Entitlements & Usage** (`/administration/users/entitlements`,
 `features/admin/users/components/EntitlementsTableClient.tsx`) — enforcement

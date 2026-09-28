@@ -477,3 +477,37 @@ export async function fetchKnobOverrideCounts(
   if (error) throw new Error(`knob_override_count failed: ${error.message}`);
   return (data as KnobOverrideCount[] | null) ?? [];
 }
+
+/** One standing override anywhere on the platform, as the admin register lists it. */
+export type PlatformKnobOverrideRow = KnobRungOverrideRow & { organization_id: string };
+
+/**
+ * EVERY standing override for ONE key, across every organization — the list
+ * the admin Feature Knobs register opens under a key ("who differs from the
+ * platform default, at which level, set by whom, when").
+ *
+ * Same table read as `fetchKnobRungOverrides`, without the one-organization
+ * filter. It is NOT a new permission: `platform.knob_override` grants a
+ * platform admin SELECT under its own `platform_admin_read` policy, and anyone
+ * else gets exactly their own organizations' rows through `knob_override_read`
+ * — RLS decides, so there is nothing to gate here. Like its sibling it is a
+ * LIST read and never a resolution: the effective value for a person comes
+ * from `knob_index` (`fetchKnobDefinition`).
+ */
+export async function fetchPlatformKnobOverrides(options: {
+  feature: string;
+  key: string;
+}): Promise<PlatformKnobOverrideRow[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from("knob_override")
+    .select("scope_kind, scope_id, organization_id, value, updated_at, updated_by, set_note")
+    .eq("feature", options.feature)
+    .eq("key", options.key)
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(`Reading the overrides for ${options.feature}.${options.key} failed: ${error.message}`);
+  return ((data ?? []) as PlatformKnobOverrideRow[]).filter(
+    (row) => row.scope_id !== null && row.organization_id !== null,
+  );
+}

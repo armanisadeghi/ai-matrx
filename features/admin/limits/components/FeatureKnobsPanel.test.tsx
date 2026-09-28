@@ -3,12 +3,13 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const fetchCounts = jest.fn();
 let directive: (() => void) | null = null;
 const refresh = jest.fn();
 let knobs: Array<Record<string, unknown>> = [];
+let isLoading = false;
 let searchParams = new URLSearchParams();
 const replace = jest.fn();
 
@@ -21,7 +22,7 @@ jest.mock("@/lib/scoped-config/service", () => ({ fetchKnobOverrideCounts: (...a
 jest.mock("@/lib/client-directives/directiveRegistry", () => ({ registerDirectiveHandler: (_: string, handler: () => void) => { directive = handler; return () => { directive = null; }; } }));
 jest.mock("@/features/settings/universal/UniversalSettingsContext", () => ({
   UniversalSettingsProvider: ({ children }: { children: React.ReactNode }) => children,
-  useUniversalSettings: () => ({ isLoading: false, error: null, knobs, refresh }),
+  useUniversalSettings: () => ({ isLoading, error: null, knobs, refresh }),
 }));
 jest.mock("@/features/settings/universal/UniversalSettingsPane", () => ({
   // The real rows need the whole settings provider; what these tests assert is
@@ -73,7 +74,7 @@ const KNOB_FIXTURE = [
 describe("FeatureKnobsPanel register affordances", () => {
   let container: HTMLDivElement;
   let root: Root;
-  beforeEach(() => { fetchCounts.mockResolvedValue([]); knobs = [...KNOB_FIXTURE]; searchParams = new URLSearchParams(); container = document.createElement("div"); document.body.append(container); root = createRoot(container); });
+  beforeEach(() => { isLoading = false; fetchCounts.mockResolvedValue([]); knobs = [...KNOB_FIXTURE]; searchParams = new URLSearchParams(); container = document.createElement("div"); document.body.append(container); root = createRoot(container); });
   afterEach(() => { act(() => root.unmount()); container.remove(); });
 
   const mount = async () => { await act(async () => { root.render(<FeatureKnobsPanel />); }); };
@@ -112,6 +113,16 @@ describe("FeatureKnobsPanel register affordances", () => {
     expect(container.textContent).toContain("orchestration.loop_guard.failure_threshold");
     expect(container.textContent).not.toContain("orchestration.loop_guard.window_size");
     expect((container.querySelector("input[type=search]") as HTMLInputElement).value).toBe("orchestration.loop_guard.failure_threshold");
+  });
+
+  it("keeps the rows mounted while a refresh after a write is loading — only the first read blanks the register", async () => {
+    isLoading = true;
+    await mount();
+    expect(container.textContent).toContain("tools.result_gate.soft_cap_chars");
+    expect(container.textContent).not.toContain("Loading knobs");
+    knobs = [];
+    await mount();
+    expect(container.textContent).toContain("Loading knobs");
   });
 
   it("drops the deep link when the search is cleared, so the box cannot refill itself", async () => {

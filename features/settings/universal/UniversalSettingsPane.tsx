@@ -22,6 +22,7 @@ import { SettingsSubHeader } from "@/components/official/settings/layout/Setting
 import { SettingsNavigationRow } from "@/components/official/settings/SettingsNavigationRow";
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import type { ReactNode } from "react";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
 import {
   blastRadiusFor,
@@ -44,6 +45,8 @@ export function UniversalSettingsRows({
   knobs,
   hideKey = false,
   overrideCounts,
+  rowMetaAction,
+  rowBelow,
   onChanged,
 }: {
   knobs: ScopedKnob[];
@@ -54,6 +57,14 @@ export function UniversalSettingsRows({
    * row's origin line stays silent about overrides rather than claiming none.
    */
   overrideCounts?: Record<string, number>;
+  /**
+   * System destination only: a control printed at the end of the row's meta
+   * line (the admin register's "N overrides" opener). It rides the line that
+   * already exists, so the register grows no extra row per key.
+   */
+  rowMetaAction?: (knob: ScopedKnob) => ReactNode;
+  /** System destination only: what hangs under a row (its opened override table). */
+  rowBelow?: (knob: ScopedKnob) => ReactNode;
   onChanged?: () => void;
 }) {
   const settings = useUniversalSettings();
@@ -147,6 +158,7 @@ export function UniversalSettingsRows({
                   registeredDefault: knob.shipped_default,
                 } : undefined}
                 overrideCount={overrideCounts?.[knob.full_key]}
+                metaAction={rowMetaAction?.(knob)}
                 stateOnly={stateOnly}
                 showUserLockControl={
                   settings.editingContext === "organization" &&
@@ -167,6 +179,7 @@ export function UniversalSettingsRows({
               {settings.editingContext === "organization" && (
                 <KnobRungOverrides knob={knob} stateOnly={stateOnly} />
               )}
+              {rowBelow?.(knob)}
             </div>
             );
           })}

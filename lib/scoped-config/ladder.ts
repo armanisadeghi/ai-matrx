@@ -417,7 +417,7 @@ export function compareKnobOrder(
  * "Set for the platform" — somebody changed the platform-wide default.
  *
  * A system row has no ONE organization to name, so an organization's dissent
- * is reported as a COUNT ("overridden by 2 organizations"): that is the honest
+ * is reported as a COUNT ("2 overrides" — organizations and people together): that is the honest
  * answer at this rung, and the count is the live override register, never a
  * cached number.
  */
@@ -430,7 +430,9 @@ export function systemOriginSentence(
     JSON.stringify(knob.platform_default) !== JSON.stringify(registeredDefault);
   const base = changed ? "Set for the platform" : "System default";
   if (typeof overrideCount === "number" && overrideCount > 0) {
-    return `${base} · overridden by ${overrideCount} organization${overrideCount === 1 ? "" : "s"}`;
+    // The count is `knob_override_count.total_count` — organization AND person
+    // (and per-row) overrides together, so it is never called "organizations".
+    return `${base} · ${overrideCount} override${overrideCount === 1 ? "" : "s"}`;
   }
   return base;
 }

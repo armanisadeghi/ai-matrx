@@ -17,7 +17,7 @@
 //     the model picker and a voice key gets the voice picker at every rung —
 //     this row never decides what a control looks like, only what it says.
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Lock, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -192,6 +192,12 @@ export function KnobOverrideRow(props: {
    */
   overrideCount?: number | null;
   /**
+   * System destination only: a control appended to the meta line (key ·
+   * origin · …) — the admin register's override opener. It rides the line the
+   * row already prints, so no destination grows an extra row for it.
+   */
+  metaAction?: ReactNode;
+  /**
    * Org screen only: offer the per-key "personal overrides" switch (the scfg_50
    * rung lock — the organization turning off user-level control of this one
    * setting even though the platform allows it; Arman 2026-08-29). Owner/admin
@@ -247,6 +253,7 @@ export function KnobOverrideRow(props: {
     ladder,
     system,
     overrideCount,
+    metaAction,
     stateOnly,
     scopeLabel,
     writeDoor,
@@ -554,6 +561,12 @@ export function KnobOverrideRow(props: {
         </code>
         <span aria-hidden>·</span>
         <span>{systemOrigin}</span>
+        {metaAction ? (
+          <>
+            <span aria-hidden>·</span>
+            {metaAction}
+          </>
+        ) : null}
       </>
     ) : undefined;
 
@@ -570,8 +583,8 @@ export function KnobOverrideRow(props: {
     ? `Changes the platform value every organization inherits${
         typeof overrideCount === "number"
           ? overrideCount > 0
-            ? ` (${overrideCount} organization${overrideCount === 1 ? " has" : "s have"} its own value and ${overrideCount === 1 ? "is" : "are"} unaffected)`
-            : " (no organization has its own value)"
+            ? ` (${overrideCount} override${overrideCount === 1 ? "" : "s"} for organizations or people keep${overrideCount === 1 ? "s" : ""} its own value)`
+            : " (no organization or person has its own value)"
           : ""
       }; currently ${displayValue(knob.platform_default)}.${readerSentence}`
     : `${blastRadius}${blastRadius.trim().endsWith(".") ? "" : "."} ${

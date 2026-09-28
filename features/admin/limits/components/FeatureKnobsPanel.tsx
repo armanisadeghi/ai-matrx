@@ -27,6 +27,7 @@ import { fetchKnobOverrideCounts } from "@/lib/scoped-config/service";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { KnobOverridesAdmin } from "./KnobOverridesAdmin";
 
 /** `?knob=<feature.key>` — what a mandate page or a doc links a knob by. */
 const KNOB_PARAM = "knob";
@@ -43,6 +44,9 @@ function SystemKnobRows() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [countError, setCountError] = useState<string | null>(null);
   const [countRequest, requestCountRefresh] = useState(0);
+  // The ONE key whose every level is open. A deep link opens its key, because
+  // the operator who followed it came for that key's overrides too.
+  const [openKey, setOpenKey] = useState<string | null>(deepLinkedKey || null);
   // A deep link ARRIVES as a search: the operator lands on the one row, and the
   // box holds the key so they can widen it (drop `.failure_threshold` to see
   // the whole guard) instead of being stuck in a filter they cannot see.
@@ -79,7 +83,9 @@ function SystemKnobRows() {
   // React Compiler is on — no hand-rolled memo.
   const matching = settings.knobs.filter((knob) => knobMatchesControlSearch(knob, query));
 
-  if (settings.isLoading) return <p className="text-sm text-muted-foreground">Loading knobs…</p>;
+  // Only the FIRST read blanks the register. A refresh after a write keeps the rows (and an opened
+  // key's every-level panel) mounted, so the operator is not thrown back to the top of ~1,900 rows.
+  if (settings.isLoading && settings.knobs.length === 0) return <p className="text-sm text-muted-foreground">Loading knobs…</p>;
   if (settings.error) return <SettingsCallout tone="error" title="Knobs could not be read">{settings.error} <ErrorAlchemyMenu error={settings.error} /></SettingsCallout>;
   const overdue = settings.knobs.filter((knob) => isOverdue(knob.set_by, knob.review_due));
   const trimmed = query.trim();
@@ -128,10 +134,31 @@ function SystemKnobRows() {
         {matching.filter((knob) => (counts[knob.full_key] ?? 0) > 0).map((knob) => <Badge key={knob.full_key} variant="secondary">{knob.label}: {counts[knob.full_key]} override{counts[knob.full_key] === 1 ? "" : "s"}</Badge>)}
       </div>
       <div className="mt-4">
-        <UniversalSettingsRows knobs={matching} overrideCounts={counts} onChanged={() => {
-          requestCountRefresh((value) => value + 1);
-          settings.refresh();
-        }} />
+        <UniversalSettingsRows
+          knobs={matching}
+          overrideCounts={counts}
+          rowMetaAction={(knob) => (
+            <button
+              type="button"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+              aria-expanded={openKey === knob.full_key}
+              onClick={() => setOpenKey((current) => (current === knob.full_key ? null : knob.full_key))}
+            >
+              {openKey === knob.full_key ? "Hide levels" : "All levels"}
+            </button>
+          )}
+          rowBelow={(knob) =>
+            openKey === knob.full_key ? (
+              <div className="mb-2 ml-3 border-l-2 border-primary/30 pl-3">
+                <KnobOverridesAdmin knob={knob} onChanged={() => requestCountRefresh((value) => value + 1)} />
+              </div>
+            ) : null
+          }
+          onChanged={() => {
+            requestCountRefresh((value) => value + 1);
+            settings.refresh();
+          }}
+        />
       </div>
     </>
   );

@@ -25,12 +25,12 @@ describe("systemOriginSentence", () => {
     expect(systemOriginSentence(knob({ a: [1] }), { a: [2] })).toBe("Set for the platform");
   });
 
-  it("names organization dissent as a count, singular and plural", () => {
+  it("names every override (organizations and people) as one count, singular and plural", () => {
     expect(systemOriginSentence(knob(5), 5, 1)).toBe(
-      "System default · overridden by 1 organization",
+      "System default · 1 override",
     );
     expect(systemOriginSentence(knob(9), 5, 2)).toBe(
-      "Set for the platform · overridden by 2 organizations",
+      "Set for the platform · 2 overrides",
     );
   });
 
