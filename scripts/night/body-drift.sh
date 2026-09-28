@@ -341,7 +341,9 @@ if [ "$REPAIR" = "1" ] && [ "$BEFORE" -gt 0 ]; then
         night_readonly_psql "${SRC_ARGS[@]}" --sql "set local search_path = pg_catalog; select format('insert into platform.client_callable_door select r.* from json_populate_record(null::platform.client_callable_door, jsonb_set(%L::jsonb, ''{identity_argtypes}'', coalesce(to_jsonb((select platform.door_argtypes(p.proargtypes) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname || ''.'' || p.proname || ''('' || pg_get_function_identity_arguments(p.oid) || '')'' = %L)), ''null''::jsonb))::json) r where not exists (select 1 from platform.client_callable_door d where d.schema_name = r.schema_name and d.function_name = r.function_name and d.identity_args = r.identity_args) on conflict do nothing;', row_to_json(d), '$q') from platform.client_callable_door d join pg_namespace n on n.nspname = d.schema_name join pg_proc p on p.pronamespace = n.oid and p.proname = d.function_name where n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' = '$q' and (d.identity_argtypes = platform.door_argtypes(p.proargtypes) or (d.identity_argtypes is null and d.identity_args = pg_get_function_identity_arguments(p.oid)))" > "$WORK/door.sql" 2>"$WORK/door.err" || { say "  (could not read the $SOURCE's door rows for $key: $(head -1 "$WORK/door.err"))"; : > "$WORK/door.sql"; }
         # The source's own EXECUTE grants, used only when the body must be dropped and recreated
         # (a return-type or parameter change CREATE OR REPLACE cannot make) and so loses its ACL.
-        night_readonly_psql "${SRC_ARGS[@]}" --sql "set local search_path = pg_catalog; select 'revoke all on function ' || p.oid::regprocedure::text || ' from public;' union all select format('grant %s on function %s to %s;', a.privilege_type, p.oid::regprocedure, case when a.grantee = 0 then 'public' else quote_ident(r.rolname) end) from pg_proc p join pg_namespace n on n.oid = p.pronamespace cross join aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a left join pg_roles r on r.oid = a.grantee where n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' = '$q' and a.grantee <> p.proowner" > "$WORK/acl.sql" 2>/dev/null || : > "$WORK/acl.sql"
+        # (Until 2026-09-28 the revoke arm had no FROM, so this read ALWAYS failed into an empty file and
+        # a recreated function silently kept the copy's default grants. It now fails loudly.)
+        night_readonly_psql "${SRC_ARGS[@]}" --sql "set local search_path = pg_catalog; select l from (select 0 o, 'revoke all on function ' || p.oid::regprocedure::text || ' from public;' l from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' = '$q' union all select 1, format('grant %s on function %s to %s;', a.privilege_type, p.oid::regprocedure, case when a.grantee = 0 then 'public' else quote_ident(r.rolname) end) from pg_proc p join pg_namespace n on n.oid = p.pronamespace cross join aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a left join pg_roles r on r.oid = a.grantee where n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' = '$q' and a.grantee <> p.proowner) x order by o" > "$WORK/acl.sql" 2>"$WORK/acl.err" || { say "  (could not read the $SOURCE's grants for $key: $(head -1 "$WORK/acl.err")) — its grants are NOT carried"; : > "$WORK/acl.sql"; }
       fi
       # The OWNER is part of the body: a SECURITY DEFINER function runs as it
       # (history.vault_write_revision runs as the NOLOGIN vault_history_writer on production).
@@ -350,8 +352,21 @@ if [ "$REPAIR" = "1" ] && [ "$BEFORE" -gt 0 ]; then
         view)     OWN_SQL="set local search_path = pg_catalog; select format('alter view %s owner to %I;', c.oid::regclass, pg_get_userbyid(c.relowner)) from pg_class c where c.oid = '$q'::regclass" ;;
       esac
       night_readonly_psql "${SRC_ARGS[@]}" --sql "$OWN_SQL" > "$WORK/own.sql" 2>/dev/null || : > "$WORK/own.sql"
+      # 🚨 AN ABSENT FUNCTION IS BORN WITH THE COPY'S DEFAULT GRANTS, NOT THE SOURCE'S (2026-09-28:
+      # iam.entity_read_kernel_members() came up without authenticator/matrx_provisioner, and
+      # iam.auth_users_hands_off() WITH an `authenticated` grant production does not give). The hash
+      # above is body-only, so nothing re-measured would see it. A created function therefore takes
+      # the source's EXECUTE list exactly: every grantee the copy handed it is revoked, then acl.sql.
+      : > "$WORK/aclabs.sql"
+      if [ "$kind" = "function" ] && [ "$why" = "absent" ] && [ -s "$WORK/acl.sql" ]; then
+        SIG="$(night_readonly_psql "${SRC_ARGS[@]}" --sql "set local search_path = pg_catalog; select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' = '$q'" 2>/dev/null | head -1)"
+        if [ -n "$SIG" ]; then
+          print -r -- "do \$acl\$ declare g text; begin for g in select distinct coalesce(quote_ident(r.rolname), 'public') from pg_proc p cross join aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a left join pg_roles r on r.oid = a.grantee where p.oid = '${SIG//\'/\'\'}'::regprocedure and a.grantee <> p.proowner loop execute format('revoke all on function %s from %s', '${SIG//\'/\'\'}'::regprocedure, g); end loop; end \$acl\$;" > "$WORK/aclabs.sql"
+          cat "$WORK/acl.sql" >> "$WORK/aclabs.sql"
+        fi
+      fi
       { print -r -- "set local lock_timeout = '30s'; set local search_path = pg_catalog; set local check_function_bodies = off;"
-        cat "$WORK/def.sql"; print -r -- ";"; cat "$WORK/own.sql" "$WORK/door.sql"; } > "$WORK/apply.sql"
+        cat "$WORK/def.sql"; print -r -- ";"; cat "$WORK/own.sql" "$WORK/aclabs.sql" "$WORK/door.sql"; } > "$WORK/apply.sql"
       if "$PSQL" "${COPY_ARGS[@]}" -q -1 -v ON_ERROR_STOP=1 -f "$WORK/apply.sql" > "$WORK/apply.out" 2>&1; then
         say "  levelled ($why) $kind $key"
       elif [ "$kind" = "function" ] && grep -qE 'cannot change (return type|name of input parameter)|cannot remove parameter defaults' "$WORK/apply.out"; then
