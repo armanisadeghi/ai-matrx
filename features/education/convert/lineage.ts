@@ -37,6 +37,7 @@ export interface GeneratedArtifact {
   createdAt: string;
   membershipRole?: "source" | "member";
   kitHidden?: boolean;
+  edgeMetadata?: Json;
 }
 
 function metaString(meta: Json | undefined, key: string): string | null {
@@ -82,6 +83,7 @@ export async function listGeneratedFrom(
         createdAt: e.createdAt,
         membershipRole: "source",
         kitHidden: !!(e.metadata && typeof e.metadata === "object" && !Array.isArray(e.metadata) && (e.metadata as Record<string, unknown>).kitHidden === true),
+        edgeMetadata: e.metadata,
       };
     });
 }

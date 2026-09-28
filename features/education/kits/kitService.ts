@@ -296,7 +296,7 @@ function metaBoolean(meta: Json | undefined, key: string): boolean {
 async function manualMembers(sourceType: string, sourceId: string): Promise<GeneratedArtifact[]> {
   const result = await associationsService.listForEntity(sourceType, sourceId);
   if (!result.ok) throw new Error("Could not read manual kit members.");
-  return result.data.edges.filter((edge) => edge.direction === "incoming" && edge.role === "member" && metaBoolean(edge.metadata, "educationKit")).map((edge) => ({ edgeId: edge.id, targetKind: metaString(edge.metadata, "targetKind") as TargetKind | null, artifactType: edge.otherType, artifactId: edge.otherId, title: edge.label ?? "Study artifact", href: metaString(edge.metadata, "href") ?? "/education", detail: metaString(edge.metadata, "detail"), sourceTitle: metaString(edge.metadata, "kitTitle"), createdAt: edge.createdAt, membershipRole: "member" as const }));
+  return result.data.edges.filter((edge) => edge.direction === "incoming" && edge.role === "member" && metaBoolean(edge.metadata, "educationKit")).map((edge) => ({ edgeId: edge.id, targetKind: metaString(edge.metadata, "targetKind") as TargetKind | null, artifactType: edge.otherType, artifactId: edge.otherId, title: edge.label ?? "Study artifact", href: metaString(edge.metadata, "href") ?? "/education", detail: metaString(edge.metadata, "detail"), sourceTitle: metaString(edge.metadata, "kitTitle"), createdAt: edge.createdAt, membershipRole: "member" as const, edgeMetadata: edge.metadata }));
 }
 
 /**
@@ -371,7 +371,7 @@ export async function listKits(): Promise<StudyKit[]> {
         );
       }
       for (const edge of res.data.edges) {
-        if (edge.role !== "source") continue;
+        if (edge.role !== "source" && !(edge.role === "member" && metaBoolean(edge.metadata, "educationKit"))) continue;
         const targetKind = metaString(edge.metadata, "targetKind");
         if (!targetKind) continue; // not a converter artifact edge
         const key = `${edge.targetType}:${edge.targetId}`;
@@ -384,8 +384,11 @@ export async function listKits(): Promise<StudyKit[]> {
           title: edge.label ?? "Study artifact",
           href: metaString(edge.metadata, "href") ?? "/education",
           detail: metaString(edge.metadata, "detail"),
-          sourceTitle: metaString(edge.metadata, "sourceTitle"),
+          sourceTitle: metaString(edge.metadata, edge.role === "member" ? "kitTitle" : "sourceTitle"),
           createdAt: edge.createdAt,
+          membershipRole: edge.role === "member" ? "member" : "source",
+          kitHidden: metaBoolean(edge.metadata, "kitHidden"),
+          edgeMetadata: edge.metadata,
         };
         if (existing) {
           existing.artifacts.push(member);
@@ -477,6 +480,7 @@ export async function renameKit(kit: StudyKit, title: string, expectedFingerprin
       role: artifact.membershipRole ?? "source",
       label: artifact.title,
       metadata: {
+        ...(artifact.edgeMetadata && typeof artifact.edgeMetadata === "object" && !Array.isArray(artifact.edgeMetadata) ? artifact.edgeMetadata : {}),
         targetKind: artifact.targetKind,
         href: artifact.href,
         detail: artifact.detail,
@@ -491,10 +495,10 @@ export async function renameKit(kit: StudyKit, title: string, expectedFingerprin
 /** Detach one aid from this kit. Its saved artifact remains available elsewhere. */
 export async function removeKitMember(
   kit: StudyKit,
-  artifact: Pick<GeneratedArtifact, "artifactType" | "artifactId" | "membershipRole">,
+  artifact: Pick<GeneratedArtifact, "artifactType" | "artifactId" | "membershipRole" | "edgeMetadata">,
 ): Promise<void> {
   if (artifact.membershipRole === "source") {
-    const result = await associationsService.add({ sourceType: artifact.artifactType, sourceId: artifact.artifactId, targetType: kit.sourceType as AssociationTargetType, targetId: kit.sourceId, role: "source", metadata: { kitHidden: true } });
+    const result = await associationsService.add({ sourceType: artifact.artifactType, sourceId: artifact.artifactId, targetType: kit.sourceType as AssociationTargetType, targetId: kit.sourceId, role: "source", metadata: { ...(artifact.edgeMetadata && typeof artifact.edgeMetadata === "object" && !Array.isArray(artifact.edgeMetadata) ? artifact.edgeMetadata : {}), kitHidden: true } });
     if (!result.ok) throw new Error("Could not hide this generated study aid from the kit.");
     return;
   }
