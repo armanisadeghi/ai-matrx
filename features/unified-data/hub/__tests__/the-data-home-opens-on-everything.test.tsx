@@ -83,6 +83,38 @@ const ROWS = [
 
 /** Which organization each call to the door named (null = every organization). */
 const doorAskedFor: Array<string | null> = [];
+const pagesAskedFor: Array<string | null> = [];
+
+/** Forms and booking pages, as custom.data_home_pages answers (DATA-HOME-2 tail). */
+const PAGES = [
+  {
+    kind: "form",
+    organization_id: HARBOR,
+    organization_name: "Harbor Dental Group",
+    page_id: "f1000000-0000-4000-8000-000000000001",
+    table_id: "a1000000-0000-4000-8000-000000000001",
+    table_name: "Patient recall list",
+    page_row: { form_id: "f1000000-0000-4000-8000-000000000001", table_id: "a1000000-0000-4000-8000-000000000001", title: "New patient intake", state: "open", responses: 12, held: 0, published_at: "2026-09-20T10:00:00Z" },
+  },
+  {
+    kind: "form",
+    organization_id: OJAI,
+    organization_name: "Ojai Valley Home Services",
+    page_id: "f1000000-0000-4000-8000-000000000002",
+    table_id: "a1000000-0000-4000-8000-000000000003",
+    table_name: "Backflow test schedule",
+    page_row: { form_id: "f1000000-0000-4000-8000-000000000002", table_id: "a1000000-0000-4000-8000-000000000003", title: "Backflow test request", state: "open", responses: 3, held: 1, published_at: "2026-09-22T10:00:00Z" },
+  },
+  {
+    kind: "booking",
+    organization_id: RINCON,
+    organization_name: "Rincon Plumbing Co",
+    page_id: "f1000000-0000-4000-8000-000000000003",
+    table_id: "a1000000-0000-4000-8000-000000000002",
+    table_name: "Service calls",
+    page_row: { form_id: "f1000000-0000-4000-8000-000000000003", table_id: "a1000000-0000-4000-8000-000000000002", title: "Book a drain inspection", state: "open", slot_minutes: 60, booked: 4, upcoming: 2, published_at: "2026-09-21T10:00:00Z" },
+  },
+];
 const listArchived = jest.fn(async () => ({ ok: true as const, data: { rows: [], total: 0 } }));
 const ROUTER = { replace: jest.fn(), refresh: jest.fn(), push: jest.fn() };
 let PARAMS = new URLSearchParams();
@@ -95,7 +127,17 @@ jest.mock("next/link", () => ({
   __esModule: true,
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
 }));
-const CLIENT = { listArchived, recordRestore: jest.fn() };
+// The working organization's own forms and booking doors, as the store answers them for Rincon
+// Plumbing (the organization mounted below). The data home must not read ONLY these any more.
+const CLIENT = {
+  listArchived,
+  recordRestore: jest.fn(),
+  forms: async () => ({ ok: true as const, data: [] }),
+  bookings: async () => ({
+    ok: true as const,
+    data: PAGES.filter((p) => p.kind === "booking" && p.organization_id === RINCON).map((p) => p.page_row),
+  }),
+};
 const TABLES = { data: [], loading: false, error: null };
 jest.mock("@ai-matrx/records/react", () => ({
   useRecordsClient: () => CLIENT,
@@ -154,12 +196,18 @@ jest.mock("../doors", () => ({
     return { ok: true, data: organizationId ? ROWS.filter((r) => r.organization_id === organizationId) : ROWS };
   },
   tablesICanOpen: async () => ({ ok: true, data: ROWS }),
+  dataHomePages: async (_ds: unknown, organizationId?: string | null) => {
+    pagesAskedFor.push(organizationId ?? null);
+    return { ok: true, data: organizationId ? PAGES.filter((p) => p.organization_id === organizationId) : PAGES };
+  },
 }));
 jest.mock("../capabilities", () => {
   const actual = jest.requireActual("../capabilities");
   return {
     ...actual,
-    HUB_CAPABILITIES: actual.HUB_CAPABILITIES.filter((c: { id: string }) => c.id === "tables"),
+    HUB_CAPABILITIES: actual.HUB_CAPABILITIES.filter((c: { id: string }) =>
+      ["tables", "forms", "bookings"].includes(c.id),
+    ),
     attachChangedBy: async () => undefined,
   };
 });
@@ -229,6 +277,7 @@ afterEach(async () => {
   defaultKindKnob = undefined;
   defaultOrderKnob = undefined;
   doorAskedFor.length = 0;
+  pagesAskedFor.length = 0;
 });
 
 describe("the data home · default is everything", () => {
@@ -394,11 +443,13 @@ describe("the data home · the organization dropdown", () => {
     expect(listingText()).not.toMatch(/any of your organizations/);
   });
 
-  it("All Orgs asks the door for every organization and says whose forms and pages are below", async () => {
+  it("All Orgs asks the doors for every organization, and the bar no longer names one organization's forms", async () => {
     await mount("", { filter: "all" });
     expect(doorAskedFor).toEqual([null]);
+    expect(pagesAskedFor).toEqual([null]);
     expect(tableRows()).toHaveLength(4);
-    expect(container.querySelector("[data-hub-forms-from]")?.textContent).toBe("Forms and pages: Rincon Plumbing Co");
+    expect(container.querySelector("[data-hub-forms-from]")).toBeNull();
+    expect(container.querySelector("[data-hub-scope]")?.textContent).not.toMatch(/Forms and pages/);
   });
 
   it("picking an organization hands the pick to the page", async () => {
@@ -410,5 +461,56 @@ describe("the data home · the organization dropdown", () => {
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
     expect(onChoose).toHaveBeenCalledWith(HARBOR);
+  });
+});
+
+// ── DATA-HOME-2 TAIL (chair, 2026-09-28): under All Orgs the forms and booking pages still listed
+// only the working organization, with a sentence saying so. RED on the first DATA-HOME-2 hub: the
+// Forms and Bookings listings read custom.forms / custom.bookings for the working organization only.
+function listingRows(id: string): Array<{ title: string; organization: string }> {
+  return [...container.querySelectorAll(`[data-hub-listing="${id}"] li[data-hub-row]`)].map((li) => ({
+    title: li.querySelector("a")?.textContent ?? "",
+    organization: li.querySelector("[data-hub-row-organization]")?.textContent ?? "",
+  }));
+}
+
+async function openListing(id: string) {
+  const toggle = container.querySelector(`[data-hub-listing-toggle="${id}"]`) as HTMLButtonElement | null;
+  if (toggle && toggle.getAttribute("aria-expanded") !== "true") {
+    await act(async () => toggle.click());
+  }
+}
+
+describe("the data home · forms and booking pages follow the organization dropdown", () => {
+  it("All Orgs lists every organization's forms and booking pages, each naming its organization", async () => {
+    await mount("", { filter: "all" });
+    await openListing("forms");
+    await openListing("bookings");
+    expect(listingRows("forms").map((r) => [r.title, r.organization]).sort()).toEqual([
+      ["Backflow test request", "Ojai Valley Home Services"],
+      ["New patient intake", "Harbor Dental Group"],
+    ]);
+    expect(listingRows("bookings")).toEqual([{ title: "Book a drain inspection", organization: "Rincon Plumbing Co" }]);
+  });
+
+  it("a picked organization narrows all three lists together, and the doors are told", async () => {
+    await mount("", { filter: HARBOR });
+    await openListing("forms");
+    await openListing("bookings");
+    expect(pagesAskedFor).toEqual([HARBOR]);
+    expect(tableRows().every((r) => r.organization === "Harbor Dental Group")).toBe(true);
+    expect(listingRows("forms")).toEqual([{ title: "New patient intake", organization: "Harbor Dental Group" }]);
+    expect(listingRows("bookings")).toEqual([]);
+  });
+
+  it("the five lanes read a page's Table: Mine lists the form on her own table, Shared the one on a table shared with her", async () => {
+    await mount("scope=mine", { filter: "all" });
+    await openListing("forms");
+    expect(listingRows("forms").map((r) => r.title)).toEqual(["New patient intake"]);
+    await act(async () => root.unmount());
+    container.remove();
+    await mount("scope=shared", { filter: "all" });
+    await openListing("forms");
+    expect(listingRows("forms").map((r) => r.title)).toEqual(["Backflow test request"]);
   });
 });

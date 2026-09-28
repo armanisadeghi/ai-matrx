@@ -77,6 +77,22 @@ async function openHome(page, query = "") {
 
 const shot = (page, name) => page.screenshot({ path: `${SHOTS}/${SEAT}-${name}.png`, fullPage: false });
 
+/** Open a listing (forms, bookings) and return each row's organization label. */
+async function listingOrgs(page, id) {
+  await page.evaluate((listing) => {
+    const t = document.querySelector(`[data-hub-listing-toggle="${listing}"]`);
+    if (t && t.getAttribute("aria-expanded") !== "true") t.click();
+  }, id);
+  await page.waitForTimeout(600);
+  return page.evaluate(
+    (listing) =>
+      [...document.querySelectorAll(`[data-hub-listing="${listing}"] li[data-hub-row] [data-hub-row-organization]`)].map(
+        (e) => e.textContent,
+      ),
+    id,
+  );
+}
+
 /** Every row's organization label in the Tables listing, and the listing's count. */
 const tableFacts = (page) =>
   page.evaluate(() => {
@@ -111,6 +127,19 @@ try {
     });
     pass("starts on All Orgs", start?.value === "all" && start?.label === "All Orgs", JSON.stringify(start));
     const everything = await tableFacts(page);
+    const barText = await page.evaluate(() => document.querySelector("[data-hub-scope]")?.innerText ?? "");
+    pass("no single-organization sentence on the bar", !/Forms and pages/.test(barText), JSON.stringify(barText.replace(/\n/g, " · ").slice(-60)));
+    const allForms = await listingOrgs(page, "forms");
+    const allBookings = await listingOrgs(page, "bookings");
+    pass(
+      "All Orgs lists forms and booking pages from every organization",
+      new Set([...allForms, ...allBookings]).size > 1,
+      `${allForms.length} forms in ${new Set(allForms).size} organizations, ${allBookings.length} booking pages in ${new Set(allBookings).size}`,
+    );
+    await page.evaluate(() => document.querySelector('[data-hub-listing="forms"]')?.scrollIntoView());
+    await shot(page, "after-all-orgs-forms");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.evaluate(() => document.querySelector("[data-hub-root]")?.parentElement?.scrollTo?.(0, 0));
     await shot(page, "after-all-orgs");
 
     // ── 2. pick one organization; every lane lists only its tables ──────────────────────────
@@ -134,6 +163,15 @@ try {
       if (t && t.getAttribute("aria-expanded") !== "true") t.click();
     });
     await shot(page, "after-picked");
+    const pickedForms = await listingOrgs(page, "forms");
+    const pickedBookings = await listingOrgs(page, "bookings");
+    pass(
+      `forms and booking pages narrow to ${PICK} with the tables`,
+      [...pickedForms, ...pickedBookings].every((o) => o === PICK),
+      `${pickedForms.length} forms, ${pickedBookings.length} booking pages, ${[...pickedForms, ...pickedBookings].filter((o) => o !== PICK).length} from another organization`,
+    );
+    await page.evaluate(() => document.querySelector('[data-hub-listing="forms"]')?.scrollIntoView());
+    await shot(page, "after-picked-forms");
     for (const lane of ["all", "mine", "orgs", "shared", "public"]) {
       await page.click(`[data-hub-scope-choice="${lane}"]`);
       await until(`lane ${lane}`, async () => page.url().includes(`scope=${lane}`), 30000);

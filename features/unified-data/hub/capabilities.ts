@@ -26,7 +26,7 @@ import type { RecordsDataSource, Table } from "@ai-matrx/records";
 import { visibilityLaneFor, type VisibilityLane } from "@ai-matrx/records-ui";
 
 import * as doors from "./doors";
-import type { ChangedByKind, DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
+import type { ChangedByKind, DataHomePageRow, DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
 import type { ScopeFacts } from "./dataHomeScope";
 import { openPath } from "@/lib/deep-link/openPath";
 
@@ -78,6 +78,11 @@ export interface HubReadContext {
    * default is everything, never one organization's. A failed read is the listing's refusal.
    */
   everywhere?: { ok: true; rows: readonly DataHomeTableRow[] } | { ok: false; error: DoorFailure } | undefined;
+  /**
+   * EVERY FORM AND BOOKING PAGE, IN EVERY ORGANIZATION (`custom.data_home_pages`, lane DATA-HOME-2)
+   * — or the one organization the dropdown names. The Forms and Bookings listings are these rows.
+   */
+  pages?: { ok: true; rows: readonly DataHomePageRow[] } | { ok: false; error: DoorFailure } | undefined;
 }
 
 export type HubRead =
@@ -111,6 +116,12 @@ export interface HubCapability {
    * false.
    */
   whatInOrganization?: ((organizationName: string) => string) | undefined;
+  /**
+   * This listing reads EVERY organization the data home walks (and one when the dropdown names one).
+   * A listing without it reads the working organization only, and says so on its heading under
+   * All Orgs (DATA-HOME-2).
+   */
+  everyOrganization?: boolean | undefined;
   /** The store door this listing reads, named on screen so nobody has to guess. */
   door: string;
   /** Which kind `custom.hub_changed_by` answers for these, or null when the store cannot say. */
@@ -197,6 +208,41 @@ function plural(n: number, one: string, many = `${one}s`): string {
 }
 
 /** The store's refusal, carried as-is. A client that rewrote it would be inventing. */
+/** The data home's forms or booking pages (DATA-HOME-2), or the listing's refusal. */
+function pagesOf(
+  ctx: HubReadContext,
+  kind: DataHomePageRow["kind"],
+): { ok: true; rows: Array<{ row: DataHomePageRow; page: Record<string, unknown> }> } | { ok: false; error: DoorFailure } {
+  if (!ctx.pages) {
+    return { ok: false, error: { message: "The forms and pages across your organizations were not read, so none is listed." } };
+  }
+  if (!ctx.pages.ok) return { ok: false, error: ctx.pages.error };
+  return {
+    ok: true,
+    rows: ctx.pages.rows.filter((r) => r.kind === kind).map((row) => ({ row, page: row.page_row })),
+  };
+}
+
+/**
+ * WHAT EVERY FORM OR PAGE ROW CARRIES FROM ITS TABLE: the table, its organization, and the four
+ * facts the five lanes read — the Table's own, from `custom.data_home_tables` (the page is Mine
+ * when its Table is, Shared when its Table was shared with her …). A page whose Table the tables
+ * door did not list keeps the organization's member facts and nothing else.
+ */
+function pageFacts(ctx: HubReadContext, row: DataHomePageRow): Pick<HubItem, "tableId" | "tableName" | "lane" | "organizationName" | "scope"> {
+  const table =
+    ctx.everywhere && ctx.everywhere.ok ? ctx.everywhere.rows.find((t) => t.table_id === row.table_id) : undefined;
+  return {
+    tableId: row.table_id,
+    tableName: row.table_name || null,
+    lane: null,
+    organizationName: row.organization_name,
+    scope: table
+      ? { mine: table.mine, member: table.member, sharedWithMe: table.shared_with_me, visibility: table.visibility }
+      : { mine: false, member: true, sharedWithMe: false, visibility: null },
+  };
+}
+
 function failed(error: { message?: string; hint?: string } | undefined, door: string): HubRead {
   return {
     ok: false,
@@ -239,6 +285,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Tables",
     // THE COUNT BESIDE IT IS WHAT THIS PERSON CAN OPEN, so the sentence says exactly that.
     what: "Every table you can open, in every organization you belong to — yours and the ones the app keeps.",
+    everyOrganization: true,
     whatInOrganization: (organizationName) =>
       `Every table you can open in ${organizationName} — yours and the ones the app keeps.`,
     whatWhenSharedOnly:
@@ -288,31 +335,42 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Forms",
     what: "Questions a stranger answers with no account — the answer lands as a record.",
     empty: "No forms yet. Open a table, press Forms, write the questions and publish it.",
-    door: "custom.forms",
+    door: "custom.data_home_pages (custom.forms, every organization)",
     changedByKind: "form",
+    everyOrganization: true,
+    whatInOrganization: (organizationName) =>
+      `Questions a stranger answers with no account, in ${organizationName} — the answer lands as a record.`,
     async read(ctx) {
-      const answered = await ctx.client.forms();
-      if (!answered.ok) return failed(answered.error, "forms");
-      const index = byId(ctx.tables);
+      const pages = pagesOf(ctx, "form");
+      if (!pages.ok) return pages;
       return {
         ok: true,
-        items: answered.data.map((form) => ({
-          id: form.form_id,
-          title: form.title || "(untitled form)",
-          tableId: form.table_id,
-          tableName: nameOf(index, form.table_id),
-          lane: laneOf(index, form.table_id),
-          facts: [
-            form.state,
-            plural(Number(form.responses ?? 0), "answer"),
-            Number(form.held ?? 0) > 0 ? `${Number(form.held)} held` : "",
-          ].filter(Boolean) as string[],
-          // THE FORM'S OWN BUILDER, on the table it writes to — not that table's
-          // grid (VERIFIER-14 item 2; records-ui 0.82.0's `?rail=` + `?item=`).
-          href: `/data-v2/${form.table_id}?rail=forms&item=${form.form_id}`,
-          publicHref: form.published_at ? `/f/${form.form_id}` : undefined,
-          publicLabel: form.published_at ? "The link a stranger follows" : undefined,
-        })),
+        items: pages.rows.map(({ row, page }) => {
+          const form = page as {
+            form_id: string;
+            table_id: string;
+            title: string | null;
+            state: string;
+            responses: number | null;
+            held: number | null;
+            published_at: string | null;
+          };
+          return {
+            ...pageFacts(ctx, row),
+            id: form.form_id,
+            title: form.title || "(untitled form)",
+            facts: [
+              form.state,
+              plural(Number(form.responses ?? 0), "answer"),
+              Number(form.held ?? 0) > 0 ? `${Number(form.held)} held` : "",
+            ].filter(Boolean) as string[],
+            // THE FORM'S OWN BUILDER, on the table it writes to — not that table's
+            // grid (VERIFIER-14 item 2; records-ui 0.82.0's `?rail=` + `?item=`).
+            href: `/data-v2/${form.table_id}?rail=forms&item=${form.form_id}`,
+            publicHref: form.published_at ? `/f/${form.form_id}` : undefined,
+            publicLabel: form.published_at ? "The link a stranger follows" : undefined,
+          };
+        }),
       };
     },
   },
@@ -322,32 +380,44 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Bookings",
     what: "A page that offers only the times you are free, and writes the appointment into a table.",
     empty: "No booking pages yet. Open a table, press Bookings, and say how long a slot is.",
-    door: "custom.bookings",
+    door: "custom.data_home_pages (custom.bookings, every organization)",
     changedByKind: "form",
+    everyOrganization: true,
+    whatInOrganization: (organizationName) =>
+      `Pages in ${organizationName} that offer only the times you are free, and write the appointment into a table.`,
     async read(ctx) {
-      const answered = await ctx.client.bookings();
-      if (!answered.ok) return failed(answered.error, "bookings");
-      const index = byId(ctx.tables);
+      const pages = pagesOf(ctx, "booking");
+      if (!pages.ok) return pages;
       return {
         ok: true,
-        items: answered.data.map((booking) => ({
-          id: booking.form_id,
-          title: booking.title || "(untitled booking page)",
-          tableId: booking.table_id,
-          tableName: nameOf(index, booking.table_id),
-          lane: laneOf(index, booking.table_id),
-          facts: [
-            booking.state,
-            `${booking.slot_minutes} minutes`,
-            plural(Number(booking.booked ?? 0), "booking"),
-            Number(booking.upcoming ?? 0) > 0 ? `${Number(booking.upcoming)} still to come` : "",
-          ].filter(Boolean) as string[],
-          // THE BOOKING PAGE ITSELF, marked in the table's Bookings rail
-          // (VERIFIER-16 M4) — never the bare grid.
-          href: `/data-v2/${booking.table_id}?rail=bookings&item=${booking.form_id}`,
-          publicHref: booking.published_at ? `/b/${booking.form_id}` : undefined,
-          publicLabel: booking.published_at ? "The page somebody books on" : undefined,
-        })),
+        items: pages.rows.map(({ row, page }) => {
+          const booking = page as {
+            form_id: string;
+            table_id: string;
+            title: string | null;
+            state: string;
+            slot_minutes: number | null;
+            booked: number | null;
+            upcoming: number | null;
+            published_at: string | null;
+          };
+          return {
+            ...pageFacts(ctx, row),
+            id: booking.form_id,
+            title: booking.title || "(untitled booking page)",
+            facts: [
+              booking.state,
+              booking.slot_minutes ? `${booking.slot_minutes} minutes` : "",
+              plural(Number(booking.booked ?? 0), "booking"),
+              Number(booking.upcoming ?? 0) > 0 ? `${Number(booking.upcoming)} still to come` : "",
+            ].filter(Boolean) as string[],
+            // THE BOOKING PAGE ITSELF, marked in the table's Bookings rail
+            // (VERIFIER-16 M4) — never the bare grid.
+            href: `/data-v2/${booking.table_id}?rail=bookings&item=${booking.form_id}`,
+            publicHref: booking.published_at ? `/b/${booking.form_id}` : undefined,
+            publicLabel: booking.published_at ? "The page somebody books on" : undefined,
+          };
+        }),
       };
     },
   },
@@ -579,6 +649,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     what: "Tables another organization has shared with the person signed in — theirs, not this organization's.",
     empty: "Nobody outside has shared a table with you.",
     door: "custom.tables_shared_with_me + custom.table_share_outside_for_me",
+    everyOrganization: true,
     changedByKind: null,
     async read(ctx) {
       // TWO DOORS, BECAUSE A SHARE HAS TWO STATES, and a row must stay on this

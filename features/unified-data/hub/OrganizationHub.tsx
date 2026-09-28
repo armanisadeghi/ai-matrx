@@ -63,7 +63,7 @@ import {
 import { ArchivedTablesList, type ArchivedTable } from "./ArchivedTablesList";
 import { HubListing, type HubListingState } from "./HubListing";
 import * as doors from "./doors";
-import type { DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
+import type { DataHomePageRow, DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
 import {
   ALL_KINDS,
   ALL_ORGANIZATIONS,
@@ -192,14 +192,28 @@ export function OrganizationHub({
     | { phase: "read"; rows: readonly DataHomeTableRow[] }
     | { phase: "failed"; error: DoorFailure }
   >({ phase: "reading" });
+  /**
+   * EVERY FORM AND BOOKING PAGE, THE SAME WAY (`custom.data_home_pages`, DATA-HOME-2): All Orgs
+   * lists every organization's, the dropdown narrows them with the tables.
+   */
+  const [pages, setPages] = useState<
+    | { phase: "reading" }
+    | { phase: "read"; rows: readonly DataHomePageRow[] }
+    | { phase: "failed"; error: DoorFailure }
+  >({ phase: "reading" });
   useEffect(() => {
     let alive = true;
-    // THE DOOR IS TOLD THE ORGANIZATION (DATA-HOME-2): the listing never shows the rows of the
+    // THE DOORS ARE TOLD THE ORGANIZATION (DATA-HOME-2): the listings never show the rows of the
     // choice before, while the new choice is read.
     setEverywhere({ phase: "reading" });
+    setPages({ phase: "reading" });
     void doors.dataHomeTables(dataSource, oneOrganization).then((answered) => {
       if (!alive) return;
       setEverywhere(answered.ok ? { phase: "read", rows: answered.data } : { phase: "failed", error: answered.error });
+    });
+    void doors.dataHomePages(dataSource, oneOrganization).then((answered) => {
+      if (!alive) return;
+      setPages(answered.ok ? { phase: "read", rows: answered.data } : { phase: "failed", error: answered.error });
     });
     return () => {
       alive = false;
@@ -277,6 +291,7 @@ export function OrganizationHub({
     // rather than once before and once after.
     if (facts.phase === "reading") return;
     if (everywhere.phase === "reading") return;
+    if (pages.phase === "reading") return;
     let alive = true;
     const ctx: HubReadContext = {
       client,
@@ -286,6 +301,7 @@ export function OrganizationHub({
       tableKernelId: null,
       everywhere:
         everywhere.phase === "read" ? { ok: true, rows: everywhere.rows } : { ok: false, error: everywhere.error },
+      pages: pages.phase === "read" ? { ok: true, rows: pages.rows } : { ok: false, error: pages.error },
     };
     setStates(
       Object.fromEntries(HUB_CAPABILITIES.map((c) => [c.id, { phase: "reading" } as HubListingState])),
@@ -336,7 +352,7 @@ export function OrganizationHub({
     return () => {
       alive = false;
     };
-  }, [client, dataSource, organizationId, tables, tablesRead.loading, facts.phase, everywhere]);
+  }, [client, dataSource, organizationId, tables, tablesRead.loading, facts.phase, everywhere, pages]);
 
   // THE ARCHIVE, through the store's own archived door over the Table kernel —
   // the same door a table's own archive uses, addressed at the kernel that
@@ -548,14 +564,10 @@ export function OrganizationHub({
         </select>
       </label>
       {/* THE ORGANIZATION DROPDOWN, LAST ON THE BAR (DATA-HOME-2, Arman 2026-09-28): it starts on All
-          Orgs and is honoured by the door in every lane and kind. Under All Orgs the forms and pages
-          below are still one organization's (the one being worked in) — said here, never implied. */}
+          Orgs and is honoured by the doors in every lane and kind — tables, forms and booking pages
+          alike. A listing that still reads only the working organization says so on its own
+          heading (HubListing `workingOrganizationOnly`), never on the bar. */}
       <span className="ml-auto inline-flex items-center gap-x-2 whitespace-nowrap text-muted-foreground">
-        {oneOrganization === null && organizationName ? (
-          <span data-hub-forms-from>
-            Forms and pages: <span className="font-medium text-foreground">{organizationName}</span>
-          </span>
-        ) : null}
         <label className="inline-flex items-center gap-1">
           <span className="sr-only">Organization</span>
           <select
@@ -617,6 +629,7 @@ export function OrganizationHub({
           order={order}
           groupByOrganization={scope === "all"}
           inOrganization={oneOrganization ? organizationName : null}
+          workingOrganizationOnly={!oneOrganization && !capability.everyOrganization ? (organizationName ?? null) : null}
           /* THE TABLES LISTING IS EVERY ORGANIZATION'S (DATA-HOME-1): "this organization shows
              each member only what is shared" is one organization's setting and would be false
              over a list of eleven. It still speaks on the listings that ARE that organization's. */

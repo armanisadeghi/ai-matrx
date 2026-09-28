@@ -304,3 +304,32 @@ export function dataHomeTables(
     organizationId ? { p_organization_id: organizationId } : {},
   );
 }
+
+/** One form or booking page on the data home (`custom.data_home_pages`, lane DATA-HOME-2). */
+export interface DataHomePageRow {
+  kind: "form" | "booking";
+  organization_id: string;
+  organization_name: string;
+  page_id: string;
+  table_id: string;
+  table_name: string;
+  /** The row `custom.forms(org)` / `custom.bookings(org)` answer for it, unchanged. */
+  page_row: Record<string, unknown>;
+}
+
+/**
+ * EVERY FORM AND BOOKING PAGE THIS PERSON MAY SEE, IN EVERY ORGANIZATION THE DATA HOME WALKS — or in
+ * the one named (lane DATA-HOME-2). The same organizations `custom.data_home_tables` walks; each
+ * organization's rows are the store's own `custom.forms` / `custom.bookings` answers, so their
+ * walls decide what is listed.
+ */
+export function dataHomePages(
+  dataSource: RecordsDataSource,
+  organizationId: string | null = null,
+): Promise<DoorAnswer<DataHomePageRow[]>> {
+  return call<DataHomePageRow[]>(
+    dataSource,
+    "data_home_pages",
+    organizationId ? { p_organization_id: organizationId } : {},
+  );
+}
