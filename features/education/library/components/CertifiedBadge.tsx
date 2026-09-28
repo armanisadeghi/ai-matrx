@@ -52,7 +52,7 @@ export function CertifiedBadge({
         humanVerified
           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
           : "border-border bg-muted text-muted-foreground",
-        size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs",
+        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs",
         className,
       )}
     >

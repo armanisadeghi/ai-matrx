@@ -166,7 +166,7 @@ export function LibraryBrowser({
       getApplicationScope={getScope}
       contentSource={{ type: "raw" }}
     >
-    <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
+    <div className="matrx-touch-targets mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
       <div className="flex items-center gap-3 mb-2">
         <LibraryIcon className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold tracking-tight">Community Library</h1>
