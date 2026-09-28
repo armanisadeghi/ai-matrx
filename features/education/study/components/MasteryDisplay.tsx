@@ -145,7 +145,7 @@ export function DeckMasteryBar({
           />
         ))}
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
         {MASTERY_TIER_ORDER.filter((t) => dist.counts[t] > 0).map((t) => (
           <span key={t} className="inline-flex items-center gap-1">
             <span

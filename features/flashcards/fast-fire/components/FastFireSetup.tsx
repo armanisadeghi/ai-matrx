@@ -420,7 +420,7 @@ export function FastFireSetup() {
                 )
               }
             />
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
+            <p className="mt-1.5 text-xs text-muted-foreground">
               A light beep this many seconds before time runs out. 0 = off. Only
               fires when it lands inside a card&apos;s window.
             </p>
@@ -449,7 +449,7 @@ export function FastFireSetup() {
                 )
               }
             />
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
+            <p className="mt-1.5 text-xs text-muted-foreground">
               0 = all cards in the set.
             </p>
           </div>
@@ -465,13 +465,14 @@ export function FastFireSetup() {
             <p className="min-w-0 flex-1 text-xs text-muted-foreground">
               Show grades as they catch up, or only at the end.
             </p>
-            <Switch
-              className="matrx-tap-area"
-              checked={config.liveScore}
-              onCheckedChange={(checked) =>
-                dispatch(updateConfig({ liveScore: checked }))
-              }
-            />
+            <label className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
+              <Switch
+                checked={config.liveScore}
+                onCheckedChange={(checked) =>
+                  dispatch(updateConfig({ liveScore: checked }))
+                }
+              />
+            </label>
           </div>
         </section>
 
@@ -487,13 +488,14 @@ export function FastFireSetup() {
               Upcoming cards reorder toward the topics you&apos;re missing —
               during the drill, not the next one.
             </p>
-            <Switch
-              className="matrx-tap-area"
-              checked={config.adaptive}
+            <label className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
+              <Switch
+                checked={config.adaptive}
               onCheckedChange={(checked) =>
                 dispatch(updateConfig({ adaptive: checked }))
               }
             />
+            </label>
           </div>
         </section>
 
@@ -508,13 +510,14 @@ export function FastFireSetup() {
               A fast-paced host reads each question aloud. Generated once,
               then cached for instant playback.
             </p>
-            <Switch
-              className="matrx-tap-area"
-              checked={config.spokenFronts}
+            <label className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
+              <Switch
+                checked={config.spokenFronts}
               onCheckedChange={(checked) =>
                 dispatch(updateConfig({ spokenFronts: checked }))
               }
             />
+            </label>
           </div>
 
           {config.spokenFronts && selectedSet && (
@@ -562,7 +565,7 @@ export function FastFireSetup() {
                       }}
                     />
                   </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {prepProgress.done} / {prepProgress.total} ready
                   </p>
                 </div>
@@ -595,7 +598,7 @@ export function FastFireSetup() {
                   )
                 }
               />
-              <p className="mt-1.5 text-[11px] text-muted-foreground">
+              <p className="mt-1.5 text-xs text-muted-foreground">
                 The timer starts only after the spoken question finishes — so
                 you never lose time to the reading. Kept shorter than the{" "}
                 {config.secondsPerCard}s above since you don&apos;t spend part
@@ -710,7 +713,7 @@ export function FastFireSetup() {
                     }}
                   />
                 </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {helpPrepProgress.done} / {helpPrepProgress.total} ready
                 </p>
               </div>
