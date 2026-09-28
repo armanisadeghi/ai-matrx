@@ -355,7 +355,7 @@ export function NoteEditorDock({
         <BottomSheetHeader title="Note Context" />
         <BottomSheetBody>
           <div className="px-2 py-2">
-            <NoteContextSection noteId={noteId} />
+            <NoteContextSection noteId={noteId} embedded />
           </div>
         </BottomSheetBody>
       </BottomSheet>

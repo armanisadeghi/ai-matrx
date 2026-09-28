@@ -37,7 +37,8 @@ export function ContextAssignmentDialog({
 
   const handleSaved: ContextAssignmentFieldProps["onSaved"] = (r) => {
     onSaved?.(r);
-    if (r.ok && closeOnSaved) onOpenChange(false);
+    // An autosave tick never closes the dialog — only an explicit save does.
+    if (r.ok && closeOnSaved && !r.autosaved) onOpenChange(false);
   };
 
   if (isMobile) {

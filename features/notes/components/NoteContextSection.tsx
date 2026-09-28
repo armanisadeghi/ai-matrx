@@ -59,7 +59,14 @@ function noteSaveAdapter(dispatch: AppDispatch, noteId: string) {
   };
 }
 
-export function NoteContextSection({ noteId }: { noteId: string }) {
+export function NoteContextSection({
+  noteId,
+  embedded = false,
+}: {
+  noteId: string;
+  /** Inside a sheet that already names the note: no card, no subject row. */
+  embedded?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const note = useAppSelector(useMemo(() => selectNoteById(noteId), [noteId]));
   const onSaved = useMemo(
@@ -68,10 +75,12 @@ export function NoteContextSection({ noteId }: { noteId: string }) {
   );
   if (!note) return null;
   return (
-    <div className="my-2">
+    <div className={embedded ? undefined : "my-2"}>
       <ContextAssignmentField
         mode="assignment"
         writeMode="live"
+        hideSubject={embedded}
+        className={embedded ? "rounded-none border-0 bg-transparent [&>div]:px-1" : undefined}
         subject={{
           entityType: "note",
           entityId: noteId,
@@ -79,7 +88,7 @@ export function NoteContextSection({ noteId }: { noteId: string }) {
           icon: StickyNote,
         }}
         defaultOrganizationId={note.organization_id ?? undefined}
-        sectionHeight={260}
+        sectionHeight={embedded ? 380 : 260}
         onSaved={onSaved}
       />
       {/* Pending KG → scope-item fill suggestions for this note — the visible

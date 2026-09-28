@@ -41,7 +41,8 @@ export function ContextAssignmentWindow({
 
   const handleSaved: ContextAssignmentFieldProps["onSaved"] = (r) => {
     onSaved?.(r);
-    if (r.ok && closeOnSaved) onClose();
+    // An autosave tick never closes the window — only an explicit save does.
+    if (r.ok && closeOnSaved && !r.autosaved) onClose();
   };
 
   if (isMobile) {

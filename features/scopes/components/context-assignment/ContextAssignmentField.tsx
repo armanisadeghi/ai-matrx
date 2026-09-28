@@ -70,6 +70,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { MiddleTruncate } from "@/components/official/MiddleTruncate";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
@@ -121,6 +122,12 @@ export interface ContextAssignmentSaveResult {
   /** True when scope assignments were persisted to the DB this save. */
   wroteScopes: boolean;
   error?: string;
+  /**
+   * True when the field saved by itself after a change (autosave). A host that
+   * closes on save (popover, dialog, window) closes only on an explicit save —
+   * never on the first tick of an autosaving field.
+   */
+  autosaved?: boolean;
 }
 
 /** Collapsible levels inside the field (scopes are leaf rows, not sections). */
@@ -220,6 +227,13 @@ export interface ContextAssignmentFieldProps {
     selection: ContextSelection,
   ) => Promise<{ ok: boolean; error?: string }>;
   onSaved?: (result: ContextAssignmentSaveResult) => void;
+  /**
+   * Assignment mode: save each change by itself (debounced) and show
+   * "Saving… / Saved" in place of a Save button. Default true — the way
+   * Linear and Notion properties save. Ignored (a Save button stays) with
+   * `onSubmitSelection` (a batch apply) or `writeMode="preview"`.
+   */
+  autosave?: boolean;
   onSelectionChange?: (selection: ContextSelection) => void;
   /** Hide the subject header row (popover/dialog hosts often provide one). */
   hideSubject?: boolean;
@@ -290,7 +304,8 @@ function CheckRow({
           {on && <Check className="h-3 w-3" />}
         </span>
       )}
-      <span className={cn("min-w-0 flex-1 truncate", textClass)}>{label}</span>
+      {/* Middle-truncated: siblings that differ only at the end stay distinct. */}
+      <MiddleTruncate text={label} className={cn("flex-1", textClass)} />
       {right}
     </div>
   );
@@ -357,7 +372,6 @@ function SectionShell({
   children,
   headerExtra,
   iconClass,
-  borderClass,
   defaultOpen = false,
 }: {
   icon: React.ComponentType<{ className?: string }>;
@@ -376,8 +390,10 @@ function SectionShell({
   );
   const open = openOverride ?? defaultOpen;
   return (
-    <div className={cn("rounded-lg border", borderClass ?? "border-border")}>
-      <div className="flex items-center gap-2 px-3 py-2">
+    // FLAT ROWS (page-pass /notes 2026-09-28): a section is a header row and
+    // its rows, divided by a hairline — never a bordered card in a card.
+    <div className="border-b border-border/60 last:border-b-0" data-context-section="">
+      <div className="flex items-center gap-2 px-1 py-1.5 pointer-coarse:min-h-11">
         <button
           onClick={() => setOpenOverride((o) => !(o ?? defaultOpen))}
           className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-medium"
@@ -393,7 +409,7 @@ function SectionShell({
               iconClass ?? "text-muted-foreground",
             )}
           />
-          <span className={cn("truncate", iconClass)}>{title}</span>
+          <MiddleTruncate text={title} className={iconClass} />
           <span className="shrink-0 text-xs text-muted-foreground">
             {count}
           </span>
@@ -414,7 +430,7 @@ function SectionShell({
           </button>
         )}
       </div>
-      {open && <div className="border-t border-border p-1.5">{children}</div>}
+      {open && <div className="pb-1.5 pl-5">{children}</div>}
     </div>
   );
 }
@@ -717,6 +733,7 @@ export function ContextAssignmentField({
   onClearActive,
   onSubmitSelection,
   onSaved,
+  autosave = true,
   onSelectionChange,
   hideSubject = false,
   sectionHeight = 440,
@@ -1096,15 +1113,20 @@ export function ContextAssignmentField({
     return out.slice(0, 4);
   }, [mode, selScopes, selProjects, orgsInView, dims.projects, dims.scopes]);
 
+  // A PERSON's change (a tick, a chip removed, a quick-add, the org picked) —
+  // never hydration — is what an autosaving field saves.
+  const touchedRef = useRef(false);
   const toggle = (
     set: React.Dispatch<React.SetStateAction<Set<string>>>,
     id: string,
-  ) =>
+  ) => {
+    touchedRef.current = true;
     set((p) => {
       const n = new Set(p);
       n.has(id) ? n.delete(id) : n.add(id);
       return n;
     });
+  };
 
   function toggleScope(id: string) {
     // Free multi-select in EVERY mode (2026-06-12: the one-scope-per-type
@@ -1163,6 +1185,7 @@ export function ContextAssignmentField({
 
   /* quick-adds */
   async function addScope(typeId: string, name: string, orgIdForAdd?: string) {
+    touchedRef.current = true;
     const v = name.trim();
     const targetOrgId = orgIdForAdd ?? org?.id;
     if (!v || !targetOrgId) return;
@@ -1199,6 +1222,7 @@ export function ContextAssignmentField({
     setAdding(null);
   }
   async function addTask(title: string) {
+    touchedRef.current = true;
     const v = title.trim();
     if (!v) return;
     if (writeMode === "live") {
@@ -1244,6 +1268,7 @@ export function ContextAssignmentField({
     setAdding(null);
   }
   async function addProject(name: string) {
+    touchedRef.current = true;
     const v = name.trim();
     if (!v) return;
     const targetOrgId = org?.id ?? [...selOrgs][0] ?? null;
@@ -1294,15 +1319,38 @@ export function ContextAssignmentField({
   }
 
   /* save */
-  async function save() {
+  // AUTOSAVE (page-pass /notes 2026-09-28): assignment mode writes each change
+  // by itself, the way Linear and Notion properties do — no Save button to
+  // forget. A batch host (onSubmitSelection) and preview mode keep the button.
+  const autosaving = mode === "assignment" && autosave && !onSubmitSelection && writeMode === "live";
+  const [autoStatus, setAutoStatus] = useState<"idle" | "saved" | "error">("idle");
+  const selectionKey = JSON.stringify(selection);
+  // The latest save (it closes over this render's selection); only a change of
+  // WHAT is selected schedules one.
+  const saveRef = useRef<(opts?: { auto?: boolean }) => Promise<void>>(async () => {});
+  useEffect(() => {
+    saveRef.current = save;
+  });
+  useEffect(() => {
+    if (!autosaving || !touchedRef.current) return;
+    const t = setTimeout(() => void saveRef.current({ auto: true }), 500);
+    return () => clearTimeout(t);
+  }, [selectionKey, autosaving]);
+
+  async function save(opts: { auto?: boolean } = {}) {
+    const auto = opts.auto === true;
+    const done = (r: ContextAssignmentSaveResult) => {
+      if (auto) setAutoStatus(r.ok ? "saved" : "error");
+      onSaved?.(auto ? { ...r, autosaved: true } : r);
+    };
     setBusy(true);
     try {
       // Custom submit replaces everything (e.g. batch-apply to N uploads).
       if (onSubmitSelection) {
         const r = await onSubmitSelection(selection);
-        if (r.ok) toast.success("Saved");
+        if (r.ok && !auto) toast.success("Saved");
         else toast.error(r.error ?? "Failed to save");
-        onSaved?.({
+        done({
           ok: r.ok,
           mode,
           selection,
@@ -1318,7 +1366,7 @@ export function ContextAssignmentField({
             "[context-assignment] ACTIVE selection (no Surface A host wired) →",
             selection,
           );
-        onSaved?.({ ok: true, mode, selection, wroteScopes: false });
+        done({ ok: true, mode, selection, wroteScopes: false });
         return;
       }
       if (writeMode === "preview") {
@@ -1336,7 +1384,7 @@ export function ContextAssignmentField({
             .filter(Boolean)
             .concat(org?.name ?? []),
         });
-        onSaved?.({ ok: true, mode, selection, wroteScopes: false });
+        done({ ok: true, mode, selection, wroteScopes: false });
         toast.success("Saved (logged to console — no DB write)");
         return;
       }
@@ -1347,7 +1395,7 @@ export function ContextAssignmentField({
       const res = await entityScopes.setScopes(realScopeIds);
       if (!res.ok) {
         toast.error(res.error ?? "Failed to save scope assignments");
-        onSaved?.({
+        done({
           ok: false,
           mode,
           selection,
@@ -1376,7 +1424,7 @@ export function ContextAssignmentField({
           });
           if (!r.ok) {
             toast.error(r.error ?? "Failed to save project links");
-            onSaved?.({
+            done({
               ok: false,
               mode,
               selection,
@@ -1394,7 +1442,7 @@ export function ContextAssignmentField({
           });
           if (!r.ok) {
             toast.error(r.error ?? "Failed to save task links");
-            onSaved?.({
+            done({
               ok: false,
               mode,
               selection,
@@ -1405,8 +1453,8 @@ export function ContextAssignmentField({
           }
         }
       }
-      toast.success("Saved");
-      onSaved?.({ ok: true, mode, selection, wroteScopes: true });
+      if (!auto) toast.success("Saved");
+      done({ ok: true, mode, selection, wroteScopes: true });
     } finally {
       setBusy(false);
     }
@@ -1457,7 +1505,13 @@ export function ContextAssignmentField({
             browse every org in the hierarchy tree below) + search */}
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
           {mode === "assignment" && (
-            <Select value={orgId ?? ""} onValueChange={setOrgId}>
+            <Select
+              value={orgId ?? ""}
+              onValueChange={(v) => {
+                touchedRef.current = true;
+                setOrgId(v);
+              }}
+            >
               <SelectTrigger className="h-9 w-full shrink-0 sm:w-[260px]">
                 {/* div (not span): the trigger's [&>span]:line-clamp-1 forces
                     -webkit-box display and would break this flex row */}
@@ -1905,7 +1959,23 @@ export function ContextAssignmentField({
               </div>
             )}
           </div>
-          {mode === "assignment" && (
+          {autosaving ? (
+            // Autosave: the status, never a button to remember. An error keeps
+            // the change on screen and offers the retry (never silent).
+            <span className="shrink-0 pt-1 text-xs text-muted-foreground" aria-live="polite">
+              {busy ? (
+                <span className="inline-flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+                </span>
+              ) : autoStatus === "error" ? (
+                <button type="button" className="text-destructive underline-offset-2 hover:underline" onClick={() => void save({ auto: true })}>
+                  Couldn&apos;t save · Retry
+                </button>
+              ) : autoStatus === "saved" ? (
+                "Saved"
+              ) : null}
+            </span>
+          ) : mode === "assignment" && (
             <Button
               size="sm"
               onClick={() => void save()}

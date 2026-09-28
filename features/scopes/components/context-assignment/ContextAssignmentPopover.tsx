@@ -47,7 +47,8 @@ export function ContextAssignmentPopover({
 
   const handleSaved: ContextAssignmentFieldProps["onSaved"] = (r) => {
     onSaved?.(r);
-    if (r.ok && closeOnSaved) setOpen(false);
+    // An autosave tick never closes the popover — only an explicit save does.
+    if (r.ok && closeOnSaved && !r.autosaved) setOpen(false);
   };
 
   if (isMobile) {
