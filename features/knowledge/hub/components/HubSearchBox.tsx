@@ -66,12 +66,14 @@ interface HubSearchBoxProps {
    * filter you are carrying).
    */
   viewQuery?: KnowledgeQuery;
+  /** Names what is being searched ("Search transcripts"); defaults to the whole hub. */
+  placeholder?: string;
 }
 
 const DEBOUNCE_MS = 250;
 
 export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(function HubSearchBox(
-  { query, onQueryChange, onOpenFilters, titleFor, onEnterResults, viewQuery },
+  { query, onQueryChange, onOpenFilters, titleFor, onEnterResults, viewQuery, placeholder = "Search your knowledge" },
   ref,
 ) {
   const [draft, setDraft] = useState(query.text ?? "");
@@ -138,9 +140,9 @@ export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(func
               onQueryChange(removeChip(query, chips[chips.length - 1]), { typing: false });
             }
           }}
-          placeholder="Search your knowledge"
+          placeholder={placeholder}
           title="Search — or narrow with type:note, @Ava, #grant-2026, last week"
-          aria-label="Search your knowledge"
+          aria-label={placeholder}
           className="h-9 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-sm"
         />
         <button

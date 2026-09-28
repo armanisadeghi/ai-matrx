@@ -271,9 +271,14 @@ export function computeColumnFacets(args: {
     counts.set(trimmed, (counts.get(trimmed) ?? 0) + 1);
   }
 
-  const values: ColumnFacetValue[] = [...counts.entries()]
-    .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+  // THE COLUMN'S OWN ORDER (DATA-V2-BASICS-2 F20): a column of numbers lists them smallest first
+  // ("0, 10, 15, 5" was text order); any other column lists the most-used first, ties in natural
+  // order ("Plan 2" before "Plan 10").
+  const entries = [...counts.entries()].map(([value, count]) => ({ value, count }));
+  const allNumbers = entries.length > 0 && entries.every((e) => e.value !== "" && Number.isFinite(Number(e.value)));
+  const natural = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+  const values: ColumnFacetValue[] = entries
+    .sort((a, b) => (allNumbers ? Number(a.value) - Number(b.value) : b.count - a.count || natural(a.value, b.value)))
     .slice(0, limit);
 
   const distinctListable = counts.size;

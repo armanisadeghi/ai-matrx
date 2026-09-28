@@ -117,18 +117,27 @@ export default function HeaderChooseOrgButton() {
       type="button"
       aria-label={description}
       title={description}
-      className={`inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors sm:h-8 sm:min-w-0 ${
+      className={`group inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors sm:h-8 sm:min-w-0 sm:px-2 ${
         chosen
           ? "text-muted-foreground hover:bg-accent hover:text-foreground"
           : // 🚨 COLOUR MEANS SOMETHING (page-pass core 5, 2026-09-27). No
             // organization chosen is a routine state on every page, not an
             // alarm: red is for a real failure. The control stays and stays
             // plainly actionable — the same tinted primary chip as the
-            // "switch to the page's organization" offer above.
-            "bg-primary/10 text-primary hover:bg-primary/15"
+            // "switch to the page's organization" offer above. On a phone the
+            // 44x44 target stays, but the tint is drawn as the same 32px round
+            // icon the header's other controls are — a filled 44px square
+            // beside round icons read as broken (Transcripts walk, 2026-09-27).
+            "text-primary sm:bg-primary/10 sm:hover:bg-primary/15"
       }`}
     >
-      <Building2 size={14} strokeWidth={2} aria-hidden="true" />
+      <span
+        className={`inline-flex items-center justify-center max-sm:h-8 max-sm:w-8 max-sm:rounded-full ${
+          chosen ? "" : "max-sm:bg-primary/10 max-sm:group-hover:bg-primary/15"
+        }`}
+      >
+        <Building2 size={14} strokeWidth={2} aria-hidden="true" />
+      </span>
       <span data-header-compact-label className="hidden max-w-[10rem] truncate sm:inline">{label}</span>
     </button>
   );

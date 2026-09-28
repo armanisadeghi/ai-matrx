@@ -7,6 +7,7 @@
  * the passage or snippet.
  */
 
+import { useState } from "react";
 import { Checkbox } from "@ai-matrx/design-system";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/utils/cn";
@@ -19,6 +20,11 @@ import {
 } from "@/features/knowledge/hub/hubPresentation";
 import { TagChips } from "@/features/knowledge/hub/tags/TagChips";
 import { hitTags } from "@/features/knowledge/hub/tags/tagActions";
+
+export interface RowContent {
+  snippet?: string | null;
+  thumbnailUrl?: string | null;
+}
 
 export interface ResultHandlers {
   selected: Set<string>;
@@ -34,6 +40,8 @@ export interface ResultHandlers {
   rowMenu?: (hit: KnowledgeHit) => React.ReactNode;
   /** Kind-specific facts for a row's meta line ("12 min", "2,340 words", "Draft"). */
   rowFacts?: (hit: KnowledgeHit) => string[];
+  /** What is inside the row's record: its opening words and a poster frame (Granola / Otter rows). */
+  rowContent?: (hit: KnowledgeHit) => RowContent | undefined;
   /** The row being renamed inline, and what Enter / Esc do. */
   renamingKey?: string | null;
   onRenameCommit?: (hit: KnowledgeHit, title: string) => void;
@@ -91,14 +99,14 @@ function metaParts(hit: KnowledgeHit, opts: { hideKind?: boolean; facts?: string
   const filed = filedWords(hit);
   return [
     opts.hideKind ? null : kindLabel(hit),
-    ...(opts.facts ?? []),
     hit.origin ? originLabel(hit.origin) : null,
+    ...(opts.facts ?? []),
     hit.entity === "segment" && hit.segment?.locator ? hit.segment.locator : null,
     filed ? `in ${filed}` : null,
   ].filter((p): p is string => Boolean(p));
 }
 
-function hitWhen(hit: KnowledgeHit): string | null {
+export function hitWhen(hit: KnowledgeHit): string | null {
   return hit.updated_at ?? hit.created_at ?? null;
 }
 
@@ -129,33 +137,72 @@ function clickHandlers(hit: KnowledgeHit, h: ResultHandlers) {
   };
 }
 
+/** The list row's kind tile: a video's poster frame when it has one, else the kind icon. */
+function KindTile({ hit, thumbnailUrl }: { hit: KnowledgeHit; thumbnailUrl?: string | null }) {
+  const Icon = kindIcon(hit);
+  const [broken, setBroken] = useState(false);
+  if (thumbnailUrl && !broken)
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- remote YouTube CDN poster, no loader configured for i.ytimg.com
+      <img
+        src={thumbnailUrl}
+        alt=""
+        loading="lazy"
+        onError={() => setBroken(true)}
+        className="h-9 w-9 rounded-md bg-muted object-cover"
+      />
+    );
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+      <Icon className="h-4 w-4" />
+    </div>
+  );
+}
+
 /**
- * One list row (Linear's list chrome, Granola's meeting row): a kind tile that
- * becomes the selection checkbox on hover (tap it on a phone to select), the
- * title with its date on the right edge, then one quiet line of facts and the
- * snippet. The row menu shows on hover / focus on a pointer device and always
- * on touch, where there is no hover.
+ * One list row (Linear's list chrome, Granola / Otter's recording row): a kind
+ * tile (a video's poster frame) that becomes the selection checkbox on hover —
+ * tap it on a phone to select — the title with its date on the right, the
+ * record's opening words, then one quiet line of facts. On a narrow pane
+ * (`compact`) the title may take two lines and the date joins the facts. The
+ * menu column is always reserved, so dates line up whether a row has a menu or
+ * not; the menu shows on hover / focus with a pointer, always on touch.
  */
 export function ResultRow({
   hit,
   handlers,
   style,
   hideKind = false,
+  whenLabel,
+  compact = false,
+  titleLines = 1,
 }: {
   hit: KnowledgeHit;
   handlers: ResultHandlers;
   style?: React.CSSProperties;
   /** Every row in this list is the same kind — the kind word is noise. */
   hideKind?: boolean;
+  /** The date as its section wants it ("3:42 PM", "Sep 12"); relative when absent. */
+  whenLabel?: string | null;
+  /** A narrow pane: the date joins the fact line and tags stay in the peek. */
+  compact?: boolean;
+  /** Lines the title may take (the list measured it: 2 on a narrow pane when it will not fit one). */
+  titleLines?: 1 | 2;
 }) {
   const key = hitKey(hit);
-  const Icon = kindIcon(hit);
   const isSelected = handlers.selected.has(key);
   const isFocused = handlers.focusedKey === key;
   const isPeek = handlers.peekKey === key;
   const when = hitWhen(hit);
-  const parts = metaParts(hit, { hideKind, facts: handlers.rowFacts?.(hit) });
+  const date = whenLabel !== undefined ? whenLabel : when ? formatRelativeTime(when) : null;
+  const content = handlers.rowContent?.(hit);
+  const snippet = hit.snippet || content?.snippet || null;
+  const parts = [
+    ...(compact && date ? [date] : []),
+    ...metaParts(hit, { hideKind, facts: handlers.rowFacts?.(hit) }),
+  ];
   const menu = handlers.rowMenu?.(hit);
+  const tags = compact ? [] : hitTags(hit);
   return (
     <div
       role="option"
@@ -169,19 +216,13 @@ export function ResultRow({
       )}
       {...clickHandlers(hit, handlers)}
     >
-      <div className="relative h-8 w-8 shrink-0" onClick={(e) => e.stopPropagation()}>
-        <div
-          className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground transition-opacity",
-            isSelected ? "opacity-0" : "group-hover:opacity-0",
-          )}
-          aria-hidden
-        >
-          <Icon className="h-4 w-4" />
+      <div className="relative h-9 w-9 shrink-0 self-start" onClick={(e) => e.stopPropagation()}>
+        <div className={cn("transition-opacity", isSelected ? "opacity-0" : "group-hover:opacity-0")} aria-hidden>
+          <KindTile hit={hit} thumbnailUrl={content?.thumbnailUrl} />
         </div>
         <label
           className={cn(
-            "absolute inset-0 flex cursor-pointer items-center justify-center transition-opacity",
+            "absolute inset-0 flex cursor-pointer items-center justify-center rounded-md transition-opacity",
             isSelected ? "opacity-100" : "opacity-0 focus-within:opacity-100 group-hover:opacity-100",
           )}
         >
@@ -192,35 +233,51 @@ export function ResultRow({
           />
         </label>
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex min-w-0 items-baseline gap-3">
-          <HitTitle hit={hit} handlers={handlers} className="min-w-0 flex-1 truncate font-medium text-foreground" />
-          {when ? (
-            <time dateTime={when} className="shrink-0 text-xs tabular-nums text-muted-foreground">
-              {formatRelativeTime(when)}
+          <HitTitle
+            hit={hit}
+            handlers={handlers}
+            className={cn("min-w-0 flex-1 font-medium leading-5 text-foreground", titleLines === 2 ? "line-clamp-2 break-words" : "truncate")}
+          />
+          {!compact && date ? (
+            <time dateTime={when ?? undefined} className="shrink-0 text-xs tabular-nums text-muted-foreground">
+              {date}
             </time>
           ) : null}
         </div>
-        <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-          <span className="min-w-0 truncate">
-            {parts.join(" · ")}
-            {hit.snippet ? (
-              <span className="text-muted-foreground/80">
-                {parts.length ? " — " : ""}
-                {hit.snippet}
-              </span>
-            ) : null}
-          </span>
-          <TagChips tags={hitTags(hit)} onFilter={handlers.onFilterTag} className="shrink-0 flex-nowrap" />
-        </div>
+        {snippet ? <p className="truncate text-[13px] leading-5 text-muted-foreground">{snippet}</p> : null}
+        {parts.length || tags.length ? (
+          <div className="flex min-w-0 items-center gap-2 text-xs leading-4 text-muted-foreground/80">
+            <span className="min-w-0 truncate">{parts.join(" · ")}</span>
+            <TagChips tags={tags} onFilter={handlers.onFilterTag} className="shrink-0 flex-nowrap" />
+          </div>
+        ) : null}
       </div>
-      {menu ? (
-        <div className="shrink-0 transition-opacity md:opacity-0 md:focus-within:opacity-100 md:group-hover:opacity-100 md:has-[[data-state=open]]:opacity-100">
-          {menu}
-        </div>
-      ) : null}
+      <div className="flex w-7 shrink-0 justify-end transition-opacity md:opacity-0 md:focus-within:opacity-100 md:group-hover:opacity-100 md:has-[[data-state=open]]:opacity-100">
+        {menu}
+      </div>
     </div>
   );
+}
+
+/**
+ * How tall a list row is, from what it will show — the window math needs it
+ * before render, so a row can never be taller than the height it was given:
+ * the title is clamped to exactly the lines counted here.
+ */
+export function resultRowHeight(hit: KnowledgeHit, handlers: ResultHandlers, titleLines: 1 | 2): number {
+  const hasSnippet = Boolean(hit.snippet || handlers.rowContent?.(hit)?.snippet);
+  // py-2 (16) + title (20 a line) + snippet (22) + facts (18) + spacing (4)
+  return 16 + 20 * titleLines + (hasSnippet ? 22 : 0) + 18 + 4;
+}
+
+/** A narrow pane gives the title two lines when it will not fit one (≈7.4px per character at 14px). */
+export function titleLinesFor(title: string, paneWidth: number, compact: boolean): 1 | 2 {
+  if (!compact) return 1;
+  // row padding 20 · tile 36 · gaps 24 · menu column 28
+  const perLine = Math.max(12, Math.floor((paneWidth - 108) / 7.4));
+  return title.length > perLine ? 2 : 1;
 }
 
 export function ResultCard({
@@ -264,9 +321,9 @@ export function ResultCard({
         </div>
       </div>
       <HitTitle hit={hit} handlers={handlers} className="line-clamp-2 font-medium text-foreground" />
-      {hit.snippet ? (
+      {hit.snippet || handlers.rowContent?.(hit)?.snippet ? (
         <div className={cn("text-xs text-muted-foreground", tall ? "line-clamp-4" : "line-clamp-2")}>
-          {hit.snippet}
+          {hit.snippet || handlers.rowContent?.(hit)?.snippet}
         </div>
       ) : null}
       <TagChips tags={hitTags(hit)} onFilter={handlers.onFilterTag} />

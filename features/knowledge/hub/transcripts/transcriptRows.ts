@@ -515,14 +515,21 @@ export function transcriptFacetCounts(
 // ─── Row facts (the list row's meta line) ───────────────────────────────────
 
 /**
- * What a transcript row says beside its title (Granola / Otter: how long, how
- * much, what state): the kind when it is not a plain transcript (Session,
- * Cleanup, Unsorted), duration, word count, and a draft or live session status.
+ * What a transcript row says beside its title (Granola / Otter: who, how long,
+ * how much, what state): the channel it came from, named speakers, the kind
+ * when it is not a plain transcript (Session, Cleanup, Unsorted), duration,
+ * word count, and a draft or live session status.
  * Only facts the record actually carries — an unknown is omitted, never "0 min".
  */
-export function transcriptRowFacts(fact: TranscriptListRow | null | undefined): string[] {
+export function transcriptRowFacts(
+  fact: TranscriptListRow | null | undefined,
+  content?: Pick<TranscriptRowContent, "channel" | "speakers"> | null,
+): string[] {
   if (!fact) return [];
   const out: string[] = [];
+  if (content?.channel) out.push(content.channel);
+  if (content?.speakers.length)
+    out.push(content.speakers.length > 2 ? `${content.speakers.length} speakers` : content.speakers.join(", "));
   if (fact.kind === "session" || fact.kind === "cleanup" || fact.kind === "unsorted")
     out.push(TRANSCRIPT_KIND_LABEL[fact.kind as HubTranscriptKind]);
   // THE package formatters (dense voice): "13 min", "1h 2m"; "2,340 words".

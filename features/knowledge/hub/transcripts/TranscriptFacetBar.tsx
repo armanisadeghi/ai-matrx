@@ -75,7 +75,7 @@ export function TranscriptFacetBar({
             key={f}
             className={cn(
               "inline-flex h-8 shrink-0 items-center rounded-md border @2xl:h-7",
-              summary ? "border-primary/30 bg-primary/10 text-foreground" : "border-dashed border-border text-muted-foreground",
+              summary ? "border-primary/30 bg-primary/10 text-foreground" : "border-border bg-card/60 text-muted-foreground",
             )}
           >
             <DropdownMenu>

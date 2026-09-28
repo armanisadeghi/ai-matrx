@@ -31,6 +31,18 @@ hydration errors.
 
 ## Change log
 
+- 2026-09-27 (review) — **A failed remote write is never dropped.** It stays
+  pending (so no refresh lands over it) and re-arms itself at 2s, 4s, 8s, 16s,
+  then every 30s; at 3 consecutive failures the person gets a toast with
+  "Retry now", withdrawn when it lands (`remoteWrite.ts`
+  `retryAfterFailure`). `hasPending` now counts only slices with a
+  `remote.write` — an IndexedDB-only pending save never delays a refresh.
+  `userPreferences` diffs recurse to the changed leaf, and keyed lists
+  (strings, or objects with an `id`: favorites.items, aiModels.favoriteModels,
+  listViews.<surface>.views) merge by item identity, so two tabs adding
+  different items keep both. Guard:
+  `lib/redux/preferences/__tests__/preference-writes-never-lost.test.ts` — red
+  3/3 on the previous engine + patch (scratch-mapped), green now.
 - 2026-09-27 — **A warm-cache write sends only what this tab changed.** The
   write scheduler keeps a per-slice BASE — the record as of the last load
   (REHYDRATE / `empty`; a slice may supply it via `remote.baseline`), advanced

@@ -20,7 +20,7 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { computeWindow } from "@ai-matrx/design-system/data-table/virtual-window";
+import { computeVariableWindow } from "@ai-matrx/design-system/data-table/virtual-window";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/utils/cn";
 import type { KnowledgeHit, KnowledgeSectionKey } from "@/features/knowledge/api/knowledgeSearch";
@@ -36,8 +36,12 @@ import {
   HitTitle,
   ResultCard,
   ResultRow,
+  hitWhen,
+  resultRowHeight,
+  titleLinesFor,
   type ResultHandlers,
 } from "@/features/knowledge/hub/components/HubResultRow";
+import { dateInGroup, groupByDate, type DatedItem } from "@/features/knowledge/hub/dateGroups";
 
 // ─── shared pieces ──────────────────────────────────────────────────────────
 
@@ -57,15 +61,18 @@ export function RowsSkeleton({
       {sentence ? <p className="px-2 pb-1 text-xs text-muted-foreground">{sentence}</p> : null}
       {/* The row's own shape: kind tile, title + date, one line of facts. */}
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex items-center gap-3 px-2.5 py-2">
-          <Skeleton className="h-8 w-8 shrink-0 rounded-md" />
-          <div className="min-w-0 flex-1 space-y-1.5">
+        <div key={i} className="flex items-start gap-3 px-2.5 py-2">
+          <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
+          <div className="min-w-0 flex-1 space-y-2 pt-0.5">
             <div className="flex items-center gap-3">
               <Skeleton className={cn("h-3.5", i % 3 === 0 ? "w-1/2" : i % 3 === 1 ? "w-2/3" : "w-2/5")} />
               <Skeleton className="ml-auto h-3 w-12" />
             </div>
-            <Skeleton className={cn("h-3", i % 2 ? "w-1/3" : "w-1/2")} />
+            <Skeleton className={cn("h-3", i % 2 ? "w-3/4" : "w-5/6")} />
+            <Skeleton className={cn("h-2.5", i % 2 ? "w-1/4" : "w-1/3")} />
           </div>
+          {/* The row's reserved menu column, so the date lines up with the rows that replace it. */}
+          <div className="w-7 shrink-0" />
         </div>
       ))}
     </div>
@@ -207,8 +214,6 @@ export function SearchSections({
 
 // ─── browsing: layouts ──────────────────────────────────────────────────────
 
-const ROW_H = 56;
-
 /** Every hit is the same kind (a Transcripts view, a Files view) — the kind word on each row is noise. */
 export function oneKind(hits: KnowledgeHit[]): boolean {
   if (hits.length < 2) return false;
@@ -216,44 +221,120 @@ export function oneKind(hits: KnowledgeHit[]): boolean {
   return hits.every((h) => kindLabel(h) === first);
 }
 
-function VirtualList({ hits, handlers }: { hits: KnowledgeHit[]; handlers: ResultHandlers }) {
+const HEADER_H = 32;
+/** Below this pane width a row goes compact: two-line title, date in the facts. */
+const COMPACT_W = 560;
+
+type ListItem = DatedItem<KnowledgeHit>;
+
+/**
+ * The list layout: windowed (the design system's variable window math), and —
+ * when the page sorts by date — sectioned the way Granola is: Today,
+ * Yesterday, Previous 7 days, Previous 30 days, then month by month, with the
+ * current section pinned quietly at the top while you scroll.
+ */
+function VirtualList({
+  hits,
+  handlers,
+  groupByDate: grouped,
+}: {
+  hits: KnowledgeHit[];
+  handlers: ResultHandlers;
+  groupByDate?: boolean;
+}) {
   const hideKind = oneKind(hits);
   const ref = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
   const [viewport, setViewport] = useState(800);
+  const [width, setWidth] = useState(1000);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const update = () => setViewport(el.clientHeight || 800);
+    const update = () => {
+      setViewport(el.clientHeight || 800);
+      setWidth(el.clientWidth || 1000);
+    };
     update();
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
     ro?.observe(el);
     return () => ro?.disconnect();
   }, []);
+  const compact = width < COMPACT_W;
+  const now = new Date();
+  const items: ListItem[] = grouped
+    ? groupByDate(hits, hitWhen, now)
+    : hits.map((h) => ({ kind: "row" as const, item: h, group: { key: "undated" as const, label: "" } }));
+  const lines = items.map((it) => (it.kind === "row" ? titleLinesFor(it.item.title, width, compact) : 1));
+  const sizes = items.map((it, i) => (it.kind === "header" ? HEADER_H : resultRowHeight(it.item, handlers, lines[i])));
+  const starts: number[] = [];
+  sizes.reduce((acc, n, i) => ((starts[i] = acc), acc + n), 0);
   // Keep the keyboard-focused row in view.
   useEffect(() => {
     const el = ref.current;
     if (!el || !handlers.focusedKey) return;
-    const i = hits.findIndex((h) => hitKey(h) === handlers.focusedKey);
+    const i = items.findIndex((it) => it.kind === "row" && hitKey(it.item) === handlers.focusedKey);
     if (i < 0) return;
-    const top = i * ROW_H;
-    if (top < el.scrollTop) el.scrollTop = top;
-    else if (top + ROW_H > el.scrollTop + el.clientHeight) el.scrollTop = top + ROW_H - el.clientHeight;
+    const top = starts[i];
+    const pin = grouped ? HEADER_H : 0;
+    if (top - pin < el.scrollTop) el.scrollTop = Math.max(0, top - pin);
+    else if (top + sizes[i] > el.scrollTop + el.clientHeight) el.scrollTop = top + sizes[i] - el.clientHeight;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handlers.focusedKey, hits]);
-  const w = computeWindow({ count: hits.length, itemSize: ROW_H, viewport, offset });
+  const w = computeVariableWindow({ count: items.length, sizeAt: (i) => sizes[i] ?? 0, viewport, offset });
+  // The section the top of the viewport is in (pinned header).
+  let current: ListItem | null = null;
+  if (grouped)
+    for (let i = 0; i < items.length && starts[i] <= offset; i++) if (items[i].kind === "header") current = items[i];
   return (
     <div
       ref={ref}
-      className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+      className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
       onScroll={(e) => setOffset(e.currentTarget.scrollTop)}
       role="listbox"
       aria-label="Results"
     >
+      {current && current.kind === "header" && offset > 0 ? (
+        <div className="pointer-events-none sticky top-0 z-10 -mb-8 h-8" aria-hidden>
+          <SectionHeader label={current.group.label} count={current.count} pinned />
+        </div>
+      ) : null}
       <div style={{ height: w.padStart }} />
-      {hits.slice(w.start, w.end).map((h) => (
-        <ResultRow key={hitKey(h)} hit={h} handlers={handlers} style={{ height: ROW_H }} hideKind={hideKind} />
-      ))}
+      {items.slice(w.start, w.end).map((it, j) => {
+        const i = w.start + j;
+        if (it.kind === "header")
+          return (
+            <div key={`h:${it.group.key}:${i}`} style={{ height: sizes[i] }} role="presentation">
+              <SectionHeader label={it.group.label} count={it.count} />
+            </div>
+          );
+        return (
+          <ResultRow
+            key={hitKey(it.item)}
+            hit={it.item}
+            handlers={handlers}
+            style={{ height: sizes[i] }}
+            hideKind={hideKind}
+            compact={compact}
+            titleLines={lines[i]}
+            whenLabel={grouped ? dateInGroup(hitWhen(it.item), it.group, now) : undefined}
+          />
+        );
+      })}
       <div style={{ height: w.padEnd }} />
+    </div>
+  );
+}
+
+function SectionHeader({ label, count, pinned = false }: { label: string; count: number; pinned?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex h-8 items-end gap-2 px-2.5 pb-1.5 text-xs font-medium text-muted-foreground",
+        pinned && "bg-background/85 backdrop-blur-sm",
+      )}
+    >
+      <span className="text-foreground/80">{label}</span>
+      <span className="tabular-nums text-muted-foreground/70">{count}</span>
     </div>
   );
 }
@@ -432,6 +513,7 @@ export function BrowseResults({
   onRetry,
   stage,
   emptyExtra,
+  groupByDate = false,
 }: {
   layout: HubLayout;
   sections: SectionState[];
@@ -443,6 +525,8 @@ export function BrowseResults({
   stage?: HubStageColumn;
   /** Shown under the empty sentence (the hub's getting-started tips). */
   emptyExtra?: React.ReactNode;
+  /** The hits are newest first: the list layout sections them by date. */
+  groupByDate?: boolean;
 }) {
   const relevant = sections.filter((s) => s.key !== "top_hit" && s.key !== "segments");
   const loading = relevant.some((s) => s.status === "loading");
@@ -512,7 +596,7 @@ export function BrowseResults({
         ) : layout === "gallery" ? (
           <GalleryLayout hits={hits} handlers={handlers} />
         ) : (
-          <VirtualList hits={hits} handlers={handlers} />
+          <VirtualList hits={hits} handlers={handlers} groupByDate={groupByDate} />
         )
       ) : null}
       <div className={cn(!hits.length && "hidden")}>{footer}</div>

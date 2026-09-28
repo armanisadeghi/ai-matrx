@@ -68,7 +68,7 @@ import {
 } from "@/features/data-tables/components/EditableCell";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
-import { parseFieldInput, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import { formatFieldValue, parseFieldInput, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { formatDateCellDisplay } from "@/features/data-tables/format-date-cell";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -1244,6 +1244,16 @@ const UserTableViewer = ({
         return { ...row, data };
       });
     };
+
+  /** A numeric filter value in its column's own format ("10" → "10%"), or null for any other value. */
+  const numberInItsFormat = (fieldName: string, value: string): string | null => {
+    const field = fields.find((f) => f.field_name === fieldName);
+    if (!field || (field.data_type !== "number" && field.data_type !== "integer")) return null;
+    const n = Number(value);
+    if (value.trim() === "" || !Number.isFinite(n)) return null;
+    const shown = formatFieldValue(n, formatByField.get(fieldName), field.data_type);
+    return shown.ok && shown.text ? shown.text : null;
+  };
 
   const cellValueForReader = (row: { data?: Record<string, unknown> | null } | null | undefined, fieldName: string): unknown =>
       cellTextForReader(
@@ -4164,6 +4174,9 @@ const UserTableViewer = ({
     },
     labelForValue: (fieldName, value) =>
       choiceMap.get(fieldName)?.choices.find((c) => c.value === value)?.label ??
+      // A NUMBER READS IN ITS COLUMN'S FORMAT (DATA-V2-BASICS-2 F20): a Percent column's filter
+      // listed "10", the cell "10%".
+      numberInItsFormat(fieldName, value) ??
       // A RELATION VALUE NOTHING RESOLVED IS STILL NOT A BARE UUID: the filter list shows the
       // same words the grid's cell shows (the amber identifier chip), never the stored id.
       ((cellTextForReader(value, formatByField.get(fieldName), relationWords, fieldName) as string) || value),

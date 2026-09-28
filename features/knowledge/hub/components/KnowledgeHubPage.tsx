@@ -179,6 +179,7 @@ import { HubContainerGroupView } from "@/features/knowledge/hub/containerGroups/
 import { HUB_GROUP_LABEL, catalogFiltersToGroup } from "@/features/knowledge/hub/containerGroups/groupFilters";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import Link from "next/link";
+import { cn } from "@/utils/cn";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
@@ -287,6 +288,18 @@ function emptySentence(view: HubView, title: string, filtered: boolean): string 
     case "everything":
       return "Nothing here yet. Add a Source, capture a page or start a chat and it shows up here.";
   }
+}
+
+/** Newest first by the date a row shows (updated, else created); undated rows last, order otherwise kept. */
+function newestFirst(hits: KnowledgeHit[]): KnowledgeHit[] {
+  const t = (h: KnowledgeHit) => {
+    const v = Date.parse(h.updated_at ?? h.created_at ?? "");
+    return Number.isFinite(v) ? v : -Infinity;
+  };
+  return hits
+    .map((h, i) => ({ h, i, t: t(h) }))
+    .sort((a, b) => b.t - a.t || a.i - b.i)
+    .map((x) => x.h);
 }
 
 function isTypingTarget(t: EventTarget | null): boolean {
@@ -431,11 +444,16 @@ export function KnowledgeHubPage({
   const transcriptFacts = useTranscriptFacts(baseHits, !sample && !trashView);
   const transcriptsView = presetKey === "transcripts";
   const facetSel = transcriptsView ? facetSelectionFromGroup(state.group) : {};
-  const hits: KnowledgeHit[] = narrowByTranscriptFacets(
+  // Browsing a list, newest first: the rows arrive section by section (Sources, then records),
+  // so they are put in date order here — the list sections them by day (Granola), and j/k walk
+  // the same order the eye does. A title sort keeps its own order and no date sections.
+  const dateOrdered = !searching && state.query.sort !== "title";
+  const narrowedHits = narrowByTranscriptFacets(
     narrowByStage(baseHits, state.stage, stages.stageFor),
     facetSel,
     transcriptFacts.factFor,
   );
+  const hits: KnowledgeHit[] = dateOrdered ? newestFirst(narrowedHits) : narrowedHits;
   const moreToLoad = results.sections.some((s) => s.key !== "top_hit" && Boolean(s.section?.next_cursor));
   const stageNote = moreToLoad
     ? `Stage narrows the ${loadedSourceIds.length} Sources loaded so far; load more to check the rest.`
@@ -804,7 +822,9 @@ export function KnowledgeHubPage({
     onOpenFull: openFull,
     onFilterTag: (name) => filterByTag(name),
     rowMenu: transcriptMenuNode,
-    rowFacts: (h) => (isTranscriptHit(h) ? transcriptRowFacts(transcriptFacts.factFor(h)) : []),
+    rowFacts: (h) =>
+      isTranscriptHit(h) ? transcriptRowFacts(transcriptFacts.factFor(h), transcriptFacts.contentFor(h)) : [],
+    rowContent: (h) => (isTranscriptHit(h) ? transcriptFacts.contentFor(h) : undefined),
     renamingKey,
     onRenameCommit: (h, title) => void commitRename(h, title),
     onRenameCancel: () => setRenamingKey(null),
@@ -1333,13 +1353,37 @@ export function KnowledgeHubPage({
     </div>
   ) : null;
 
+  const LayoutIcon = LAYOUT_ICON[state.layout];
+  // Wide pane: the four layouts side by side. Narrow pane: one button that says the current
+  // layout and opens the four (Linear's Display menu) — seven icons do not fit a phone row.
   const layoutSwitch = (
+    <>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 @2xl:hidden" aria-label={`Layout: ${LAYOUT_LABEL[state.layout]}. Change`}>
+          <LayoutIcon className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuLabel className="text-xs">Layout</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={state.layout} onValueChange={(v) => write({ layout: v as HubLayout })}>
+          {(Object.keys(LAYOUT_ICON) as HubLayout[]).map((l) => {
+            const Icon = LAYOUT_ICON[l];
+            return (
+              <DropdownMenuRadioItem key={l} value={l} className="gap-2 text-xs">
+                <Icon className="h-3.5 w-3.5" /> {LAYOUT_LABEL[l]}
+              </DropdownMenuRadioItem>
+            );
+          })}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
     <ToggleGroup
       type="single"
       value={state.layout}
       onValueChange={(v) => v && write({ layout: v as HubLayout })}
       aria-label="Layout"
-      className="shrink-0"
+      className="hidden shrink-0 @2xl:flex"
     >
       {(Object.keys(LAYOUT_ICON) as HubLayout[]).map((l) => {
         const Icon = LAYOUT_ICON[l];
@@ -1350,6 +1394,7 @@ export function KnowledgeHubPage({
         );
       })}
     </ToggleGroup>
+    </>
   );
 
   // A container group (Data stores, Libraries, the Library catalog): every container of one type,
@@ -1374,8 +1419,15 @@ export function KnowledgeHubPage({
   const resultsMain = (
     <div className="@container flex h-full min-h-0 flex-col gap-2 px-4 pb-2 pt-3 md:px-4">
       {engineBanner}
-      <div className="flex min-w-0 items-start gap-2">
-        <div className="min-w-0 flex-1">
+      {/* One toolbar, reflowed by the pane's width (CSS order):
+            wide   — [search ........][settings][new][save][layout]
+                     [facets ....................][count]
+            narrow — [search .............................]
+                     [facets → scroll]
+                     [count ..........][settings][new][save][layout]
+          so the search box always gets the full width it needs on a phone. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+        <div className="order-1 min-w-0 basis-full @2xl:basis-0 @2xl:flex-1">
           <HubFilterMenu
             open={filtersOpen}
             onOpenChange={setFiltersOpen}
@@ -1403,6 +1455,11 @@ export function KnowledgeHubPage({
                 onOpenFilters={() => setFiltersOpen(true)}
                 titleFor={titleFor}
                 viewQuery={viewOwnQuery}
+                placeholder={
+                  state.view.kind === "preset" || state.view.kind === "kind"
+                    ? `Search ${title.toLowerCase()}`
+                    : undefined
+                }
                 onEnterResults={() => {
                   searchRef.current?.blur();
                   if (!focusedKey && hits[0]) setFocusedKey(hitKey(hits[0]));
@@ -1412,7 +1469,7 @@ export function KnowledgeHubPage({
           </HubFilterMenu>
         </div>
         {/* Trash lists trashed Sources only: views, layouts and search reach do not apply there. */}
-        <div className={trashView ? "hidden" : "flex shrink-0 items-center gap-1"}>
+        <div className={trashView ? "hidden" : "order-3 flex shrink-0 items-center gap-1 @2xl:order-1"}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Search settings" title="Search settings">
@@ -1483,16 +1540,14 @@ export function KnowledgeHubPage({
             <span className="hidden @3xl:inline">{dirty ? "Save as new view" : "Save view"}</span>
             <kbd className="ml-0.5 hidden rounded border border-border px-1 text-[10px] text-muted-foreground @4xl:inline">⌥V</kbd>
           </Button>
-          {!searching ? <div className="hidden @2xl:block">{layoutSwitch}</div> : null}
+          {!searching ? layoutSwitch : null}
         </div>
-      </div>
-      {bulkBar}
-      {/* One quiet line under the search: the view's own facets (Transcripts), how many rows,
-          and — on a phone — the layout switch (Linear's display row). */}
-      {!trashView && (!searching || transcriptsView) ? (
-        <div className="flex min-h-8 min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
-          <div className={transcriptsView ? "min-w-0 basis-full @2xl:basis-0 @2xl:flex-1" : "min-w-0 flex-1"}>
+        {!trashView && (transcriptsView || resultCount) ? (
+          <>
+            {/* Row break on a wide pane: facets and the count start their own line. */}
+            <div className="order-2 hidden h-0 basis-full @2xl:block" aria-hidden />
             {transcriptsView ? (
+              <div className="order-2 min-w-0 basis-full @2xl:basis-0 @2xl:flex-1">
               <TranscriptFacetBar
                 counts={transcriptFacetCounts(baseHits, transcriptFacts.factFor)}
                 selection={facetSel}
@@ -1510,16 +1565,21 @@ export function KnowledgeHubPage({
                     : null
                 }
               />
+              </div>
             ) : null}
-          </div>
-          {resultCount ? (
-            <span className="mr-auto shrink-0 text-xs tabular-nums text-muted-foreground @2xl:mr-0" aria-live="polite">
+            <span
+              className={cn(
+                "order-3 mr-auto shrink-0 text-xs tabular-nums text-muted-foreground @2xl:order-2 @2xl:ml-auto @2xl:mr-0",
+                !transcriptsView && "@2xl:ml-0",
+              )}
+              aria-live="polite"
+            >
               {resultCount}
             </span>
-          ) : null}
-          {!searching ? <div className="@2xl:hidden">{layoutSwitch}</div> : null}
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </div>
+      {bulkBar}
       {transcriptFacts.status === "error" && transcriptFacts.error ? (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs" role="status">
           <span className="min-w-0 flex-1">
@@ -1614,6 +1674,7 @@ export function KnowledgeHubPage({
             onShowMore={triageView ? triage.showMore : results.showMore}
             onRetry={triageView ? triage.refresh : results.retry}
             stage={stageColumn}
+            groupByDate={dateOrdered}
             emptyExtra={
               state.view.kind === "everything" && !sample ? (
                 <HubGettingStarted />

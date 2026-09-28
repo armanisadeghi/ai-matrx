@@ -7,7 +7,6 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Briefcase,
   Copy,
   FileCode,
   FileText,
@@ -30,7 +29,6 @@ import { EmailInputDialog } from "@/components/dialogs/EmailInputDialog";
 import { AuthGateDialog } from "@/components/dialogs/AuthGateDialog";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { toast } from "@/lib/toast";
-import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -443,10 +441,6 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
 
   // ── Coming soon stubs ──────────────────────────────────────────────────────
 
-  const handleConvertToBroker = () => {
-    void announceComingSoon("rich-document.convert-to-broker");
-    onClose();
-  };
 
   // ── Menu items — identical structure to MessageOptionsMenu ─────────────────
 
@@ -498,7 +492,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       key: "copy-docs",
       icon: FileText,
       iconColor: "text-green-500 dark:text-green-400",
-      label: "Copy for Docs",
+      label: "Copy for Google Docs",
       action: handleCopyGoogleDocs,
       category: "Copy",
       successMessage: "Formatted for Google Docs",
@@ -508,7 +502,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       key: "copy-thinking",
       icon: Brain,
       iconColor: "text-purple-500 dark:text-purple-400",
-      label: "With thinking",
+      label: "Copy with reasoning",
       action: handleCopyWithThinking,
       category: "Copy",
       successMessage: "Copied with thinking blocks",
@@ -604,15 +598,6 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       successMessage: "File saved!",
       errorMessage: "Failed to save file",
     },
-    {
-      key: "convert-broker",
-      icon: Briefcase,
-      iconColor: "text-amber-500 dark:text-amber-400",
-      label: "Convert to broker",
-      action: handleConvertToBroker,
-      category: "Actions",
-      showToast: false,
-    },
   ].filter(
     // A host with no share flow gets no "Share as HTML" row — never a row
     // that closes the menu and does nothing.
@@ -625,9 +610,12 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
         isOpen={isOpen}
         onClose={onClose}
         items={menuItems}
-        title="Message Options"
+        title="More options"
         position="bottom-left"
         anchorElement={anchorElement}
+        // An ordinary menu: no dimmed, blurred page behind it (outside click
+        // and Escape still close it).
+        showBackdrop={false}
       />
 
       <EmailInputDialog
