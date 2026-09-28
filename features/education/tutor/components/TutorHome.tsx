@@ -19,76 +19,115 @@ import {
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TutorSettingsPanel } from "./TutorSettingsPanel";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationTutorHistoryScope,
+  EDUCATION_TUTOR_HISTORY_SURFACE_NAME,
+} from "@/features/surfaces/manifests/education-tutor-history.manifest";
+import { tutorConversationWriteHandlers } from "../tutorConversationAgentWrites";
 
 export function TutorHome() {
-  return (
-    <div className="h-full overflow-y-auto bg-textured">
-      <EducationToolHeader title="AI Tutor" />
-      <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-8">
-        {/* Hero */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
-              <ShieldCheck className="h-3.5 w-3.5 text-green-600 dark:text-green-400" aria-hidden />
-              Cites your material
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
-              <AGENT_ICON className="h-3.5 w-3.5 text-primary" aria-hidden />
-              Remembers your progress
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/education/tutor/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              <Plus className="h-4 w-4" aria-hidden />
-              New tutor session
-            </Link>
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                >
-                  <Settings2 className="h-4 w-4" aria-hidden />
-                  Tutor style
-                </button>
-              </PopoverTrigger>
-              <PopoverContent sizing="content" align="start">
-                <TutorSettingsPanel />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
+  const dispatch = useAppDispatch();
+  const historyItems = useAppSelector(
+    (state) => state.conversationHistory.scopes["education-tutor"]?.items ?? [],
+  );
+  // ConversationHistorySidebar's fetch is explicitly scoped to created_by for
+  // this viewer. Keep only its Tutor provenance here so a changed list filter
+  // can never widen an agent write to another feature's conversation.
+  const ownedTutorConversations = historyItems
+    .filter((conversation) => conversation.sourceFeature === "education-tutor")
+    .map((conversation) => ({
+      id: conversation.conversationId,
+      title: conversation.title,
+      status: conversation.status,
+    }));
 
-        {/* History */}
-        <div className="flex flex-col gap-2">
-          <h2 className="px-1 text-sm font-medium text-muted-foreground">
-            Your tutor conversations
-          </h2>
-          <div className="min-h-[240px] rounded-2xl border border-border bg-card p-2">
-            <ConversationHistorySidebar
-              scopeId="education-tutor"
-              // Tutor history is scoped by the education-tutor source feature
-              // (surfaceId below), NOT by a hardcoded agent id: the tutor's
-              // agent is mandate-bound (education.tutor_message) and can be
-              // rebound, and conversations run under prior holders must stay
-              // reachable. Empty = all the user's accessible agents.
-              agentIds={[]}
-              surfaceId="education-tutor"
-              variant="consumer"
-              getConversationHref={(c) => `/education/tutor/${c.conversationId}`}
-              emptyState={
-                <div className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  No tutor conversations yet. Start one above — ask about
-                  anything you&apos;re studying.
-                </div>
-              }
-            />
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_TUTOR_HISTORY_SURFACE_NAME}
+      getScope={() =>
+        createEducationTutorHistoryScope({
+          owned_tutor_conversations: ownedTutorConversations,
+        })
+      }
+      getWriteHandlers={() =>
+        tutorConversationWriteHandlers(dispatch, ownedTutorConversations)
+      }
+    >
+      <div className="h-full overflow-y-auto bg-textured">
+        <EducationToolHeader title="AI Tutor" />
+        <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-8">
+          {/* Hero */}
+          <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
+                <ShieldCheck
+                  className="h-3.5 w-3.5 text-green-600 dark:text-green-400"
+                  aria-hidden
+                />
+                Cites your material
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
+                <AGENT_ICON className="h-3.5 w-3.5 text-primary" aria-hidden />
+                Remembers your progress
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/education/tutor/new"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                New tutor session
+              </Link>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <Settings2 className="h-4 w-4" aria-hidden />
+                    Tutor style
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent sizing="content" align="start">
+                  <TutorSettingsPanel />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          {/* History */}
+          <div className="flex flex-col gap-2">
+            <h2 className="px-1 text-sm font-medium text-muted-foreground">
+              Your tutor conversations
+            </h2>
+            <div className="min-h-[240px] rounded-2xl border border-border bg-card p-2">
+              <ConversationHistorySidebar
+                scopeId="education-tutor"
+                // Tutor history is scoped by the education-tutor source feature
+                // (surfaceId below), NOT by a hardcoded agent id: the tutor's
+                // agent is mandate-bound (education.tutor_message) and can be
+                // rebound, and conversations run under prior holders must stay
+                // reachable. Empty = all the user's accessible agents.
+                agentIds={[]}
+                surfaceId="education-tutor"
+                variant="consumer"
+                getConversationHref={(c) =>
+                  `/education/tutor/${c.conversationId}`
+                }
+                emptyState={
+                  <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    No tutor conversations yet. Start one above — ask about
+                    anything you&apos;re studying.
+                  </div>
+                }
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }

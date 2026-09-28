@@ -29,9 +29,13 @@ function loadedConversation(
   conversations: readonly OwnedTutorConversation[],
 ): OwnedTutorConversation {
   if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`${target}.conversation_id must name a loaded tutor conversation.`);
+    throw new Error(
+      `${target}.conversation_id must name a loaded tutor conversation.`,
+    );
   }
-  const conversation = conversations.find((candidate) => candidate.id === value);
+  const conversation = conversations.find(
+    (candidate) => candidate.id === value,
+  );
   if (!conversation) {
     throw new Error(
       `${target}.conversation_id is not an owned, loaded AI Tutor conversation. Refresh the Tutor list and use an id from owned_tutor_conversations.`,
@@ -46,7 +50,11 @@ export function parseTutorConversationRename(
 ): RenamePlan {
   const target = "rename_tutor_conversation";
   const input = record(value, target);
-  const conversation = loadedConversation(input.conversation_id, target, conversations);
+  const conversation = loadedConversation(
+    input.conversation_id,
+    target,
+    conversations,
+  );
   if (typeof input.title !== "string" || !input.title.trim()) {
     throw new Error(`${target}.title must be a non-empty string.`);
   }
@@ -59,9 +67,15 @@ export function parseTutorConversationArchive(
 ): ArchivePlan {
   const target = "archive_tutor_conversation";
   const input = record(value, target);
-  const conversation = loadedConversation(input.conversation_id, target, conversations);
+  const conversation = loadedConversation(
+    input.conversation_id,
+    target,
+    conversations,
+  );
   if (typeof input.archived !== "boolean") {
-    throw new Error(`${target}.archived must be true to archive or false to restore.`);
+    throw new Error(
+      `${target}.archived must be true to archive or false to restore.`,
+    );
   }
   return { conversation, archived: input.archived };
 }
@@ -73,7 +87,11 @@ export function parseTutorConversationDelete(
   const target = "delete_tutor_conversation";
   const input = record(value, target);
   return {
-    conversation: loadedConversation(input.conversation_id, target, conversations),
+    conversation: loadedConversation(
+      input.conversation_id,
+      target,
+      conversations,
+    ),
   };
 }
 
@@ -135,7 +153,8 @@ export function tutorConversationWriteHandlers(
           softDeleteConversation({ conversationId: plan.conversation.id }),
         ).unwrap();
         return {
-          summary: "Moved tutor conversation to Trash. It can be restored from Trash.",
+          summary:
+            "Moved tutor conversation to Trash. It can be restored from Trash.",
           data: { conversation_id: plan.conversation.id, deleted: true },
         };
       },

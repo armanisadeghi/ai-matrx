@@ -136,6 +136,7 @@ import { educationStudyGuidesManifest } from "./education-study-guides.manifest"
 import { educationStudyGuideManifest } from "./education-study-guide.manifest";
 import { messageTemplateManifest } from "./message-template.manifest";
 import { educationTutorManifest } from "./education-tutor.manifest";
+import { educationTutorHistoryManifest } from "./education-tutor-history.manifest";
 import { educationFlashcardsManifest } from "./education-flashcards.manifest";
 import { educationFlashcardSetManifest } from "./education-flashcard-set.manifest";
 import { educationFlashcardEditorManifest } from "./education-flashcard-editor.manifest";
@@ -401,6 +402,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationStudyGuideManifest,
   messageTemplateManifest,
   educationTutorManifest,
+  educationTutorHistoryManifest,
   educationFlashcardsManifest,
   educationFlashcardSetManifest,
   educationFlashcardEditorManifest,

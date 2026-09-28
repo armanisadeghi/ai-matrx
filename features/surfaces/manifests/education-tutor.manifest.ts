@@ -464,8 +464,7 @@ export const educationTutorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-tutor",
   client: "matrx-user",
   executionMode: "python-stream",
-  description:
-    "",
+  description: "",
   requiresBeforeExecute: true,
   readiness: "partial",
   readinessNote:

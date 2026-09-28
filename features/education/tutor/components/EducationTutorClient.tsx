@@ -143,7 +143,8 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
   // unresolved mandate REFUSES with the error visible — never a fallback id.
   // TODO(platform): managed useAgentLauncher overload should accept a
   // mandateKey — pre-resolving drops config_overrides on this path.
-  const { mandate, loading, error, organizationPending } = useMandate(TUTOR_MANDATE_KEY);
+  const { mandate, loading, error, organizationPending } =
+    useMandate(TUTOR_MANDATE_KEY);
 
   if (error && props.conversationId && props.conversationAgentId) {
     return (
@@ -157,7 +158,10 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
   if (organizationPending) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-textured">
-        <WorkspaceGate blocked sentence="The AI Tutor needs a workspace to open.">
+        <WorkspaceGate
+          blocked
+          sentence="The AI Tutor needs a workspace to open."
+        >
           <ChatRoomSkeleton />
         </WorkspaceGate>
       </div>
@@ -170,8 +174,8 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
           The AI Tutor is unavailable
         </p>
         <p className="max-w-md text-xs text-muted-foreground">
-          The {TUTOR_MANDATE_KEY} mandate could not resolve: {asClause(error)}. Fix its
-          binding at /mandates.
+          The {TUTOR_MANDATE_KEY} mandate could not resolve: {asClause(error)}.
+          Fix its binding at /mandates.
           <ErrorAlchemyMenu error={error} />
         </p>
       </div>
@@ -267,7 +271,10 @@ function EducationTutorClientInner({
           await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
         }
       } catch (err) {
-        logFailure("[EducationTutorClient] fetchAgentExecutionMinimal failed", err);
+        logFailure(
+          "[EducationTutorClient] fetchAgentExecutionMinimal failed",
+          err,
+        );
       } finally {
         if (!cancelled) setIsInitializing(false);
       }

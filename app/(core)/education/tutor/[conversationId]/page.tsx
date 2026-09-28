@@ -57,7 +57,8 @@ export default async function TutorConversationPage({
   }
 
   const { data: claims } = await supabase.auth.getClaims();
-  const viewerId = typeof claims?.claims.sub === "string" ? claims.claims.sub : null;
+  const viewerId =
+    typeof claims?.claims.sub === "string" ? claims.claims.sub : null;
   const ownedTutorConversation =
     data.source_feature === "education-tutor" && data.created_by === viewerId
       ? { id: data.id, title: data.title, status: data.status }
