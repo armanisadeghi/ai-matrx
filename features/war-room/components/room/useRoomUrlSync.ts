@@ -53,6 +53,7 @@ export function useRoomUrlSync(sessionId: string) {
     setDensity,
     chosenStageId,
     stageThread,
+    threadDetailOpen,
   } = useRoomView();
 
   // Hydration is two-phase: the non-thread params (view/density) settle on the
@@ -127,11 +128,13 @@ export function useRoomUrlSync(sessionId: string) {
     // effect needs no "last written URL" bookkeeping of its own.
     commitUrlParams(
       {
-        thread: chosenStageId || null,
+        // `?thread=` means "this thread is OPEN" (a link to it opens it), so
+        // Back to the list drops it — a reload then shows the list.
+        thread: threadDetailOpen ? chosenStageId || null : null,
         view: mode === "stage" ? null : mode,
         density: density === "compact" ? "compact" : null,
       },
       "replace",
     );
-  }, [chosenStageId, mode, density]);
+  }, [chosenStageId, mode, density, threadDetailOpen]);
 }

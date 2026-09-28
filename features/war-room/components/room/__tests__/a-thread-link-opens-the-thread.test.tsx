@@ -38,10 +38,12 @@ import { RoomViewProvider, useRoomView } from "../roomViewContext";
 import { useRoomUrlSync } from "../useRoomUrlSync";
 
 let seen: { open: boolean; chosen: string | null } | null = null;
+let closeDetail: () => void = () => undefined;
 function Probe() {
   useRoomUrlSync("room-1");
   const v = useRoomView();
   seen = { open: v.threadDetailOpen, chosen: v.chosenStageId };
+  closeDetail = v.closeThreadDetail;
   return null;
 }
 
@@ -83,5 +85,15 @@ describe("?thread= deep link", () => {
     act(() => root.render(<RoomViewProvider><Probe /></RoomViewProvider>));
     expect(seen?.open).toBe(true);
     expect(dispatched).toEqual([]);
+  });
+
+  it("Back to the list drops ?thread= from the address, so a reload shows the list", () => {
+    const root = mount();
+    visible = [THREAD];
+    act(() => root.render(<RoomViewProvider><Probe /></RoomViewProvider>));
+    expect(seen?.open).toBe(true);
+    act(() => closeDetail());
+    expect(seen?.open).toBe(false);
+    expect(commits[commits.length - 1]?.thread).toBeNull();
   });
 });
