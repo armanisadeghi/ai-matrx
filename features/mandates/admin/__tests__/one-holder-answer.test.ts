@@ -83,8 +83,12 @@ describe("a host that shows the holder's answer is not told it twice", () => {
 
 describe("the admin mandate page asks for one holder answer, and the panel gates its facts on it", () => {
   it("the page passes showHolderAnswer={false}", () => {
+    // AdminMandateWorkspacePage.tsx was removed in the swap to the new admin
+    // mandate record page (commit 7d4e1d834f); RecordAdminPanels.tsx mounts
+    // the same MandateDetailView and carries the same showHolderAnswer/showGoal
+    // gating now (features/mandates/record-next/RecordAdminPanels.tsx).
     const source = readFileSync(
-      join(ADMIN_DIR, "AdminMandateWorkspacePage.tsx"),
+      join(ADMIN_DIR, "..", "record-next", "RecordAdminPanels.tsx"),
       "utf8",
     );
     expect(source).toContain("showHolderAnswer={false}");
