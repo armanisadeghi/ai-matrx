@@ -1943,6 +1943,7 @@ export function KnowledgeHubPage({
     <HubPeek
       key={`${peekKey}:${filedVersion}`}
       hit={peekHit}
+      displayTitle={peekHit ? handlers.rowContent?.(peekHit)?.title : null}
       peekKey={peekKey}
       sample={sample}
       onClose={closePeek}

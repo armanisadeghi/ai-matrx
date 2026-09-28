@@ -50,6 +50,8 @@ interface HubPeekProps {
   onToggleFavorite?: (hit: KnowledgeHit) => void;
   /** Triage and Tag buttons (features/knowledge/hub/triage, tags). */
   extraActions?: React.ReactNode;
+  /** The name the row shows when the record's own title is a placeholder ("unlabeled"). */
+  displayTitle?: string | null;
   /** The Tags section (chips; click = filter). */
   tagsSection?: React.ReactNode;
 }
@@ -123,6 +125,7 @@ export function HubPeek({
   isFavorite = false,
   onToggleFavorite,
   extraActions,
+  displayTitle,
   tagsSection,
 }: HubPeekProps) {
   const searchParams = useSearchParams();
@@ -253,7 +256,7 @@ export function HubPeek({
       <div className="flex items-start gap-2 border-b border-border px-4 py-3">
         <Icon className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <h2 className="line-clamp-2 text-base font-semibold leading-snug">{plainText(hit.title)}</h2>
+          <h2 className="line-clamp-2 text-base font-semibold leading-snug">{displayTitle || plainText(hit.title)}</h2>
           <p className="text-xs text-muted-foreground">
             {[kindLabel(hit), hit.origin ? originLabel(hit.origin) : null, when ? formatRelativeTime(when) : null]
               .filter(Boolean)
