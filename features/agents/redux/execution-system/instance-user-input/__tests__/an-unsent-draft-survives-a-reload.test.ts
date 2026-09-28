@@ -249,6 +249,61 @@ describe("the composer draft survives a reload", () => {
     expect(peekComposerDraft(SECOND, SURFACE)).toBeNull();
   });
 
+  it("composers sharing one surface key never hand one column's draft to the others", () => {
+    // Measured live 2026-09-27 in Agent Battle Request Mod: five columns share
+    // one surface key; text typed in column 1 came back in all five after a
+    // reload, and Submit all would have sent it five times.
+    const SURFACE = "agent-comparison-request-mod";
+    const COLUMNS = [
+      "55555555-5555-4555-8555-555555555551",
+      "55555555-5555-4555-8555-555555555552",
+      "55555555-5555-4555-8555-555555555553",
+    ];
+
+    let store = makeStore();
+    for (const id of COLUMNS) {
+      registerComposerDraftAlias(id, SURFACE);
+      store.dispatch(initInstanceUserInput({ conversationId: id }));
+    }
+    store.dispatch(
+      setUserInputText({ conversationId: COLUMNS[0], text: LONG_DRAFT }),
+    );
+    __flushComposerDraftWritesForTest();
+    __resetComposerDraftGenerationsForTest();
+
+    // Reload: the saved columns come back under the same ids, one at a time.
+    store = makeStore();
+    for (const id of COLUMNS) {
+      registerComposerDraftAlias(id, SURFACE);
+      store.dispatch(initInstanceUserInput({ conversationId: id }));
+    }
+    expect(peekComposerDraft(COLUMNS[0], SURFACE)?.value).toBe(LONG_DRAFT);
+    expect(peekComposerDraft(COLUMNS[1], SURFACE)).toBeNull();
+    expect(peekComposerDraft(COLUMNS[2], SURFACE)).toBeNull();
+  });
+
+  it("a lone composer's alias draft is dropped the moment a second one shares it", () => {
+    const SURFACE = "agent-comparison-model";
+    const FIRST = "66666666-6666-4666-8666-666666666661";
+    const SECOND = "66666666-6666-4666-8666-666666666662";
+    const store = makeStore();
+    registerComposerDraftAlias(FIRST, SURFACE);
+    store.dispatch(initInstanceUserInput({ conversationId: FIRST }));
+    store.dispatch(
+      setUserInputText({ conversationId: FIRST, text: LONG_DRAFT }),
+    );
+    __flushComposerDraftWritesForTest();
+    registerComposerDraftAlias(SECOND, SURFACE);
+    __resetComposerDraftGenerationsForTest();
+    // After a reload a fresh id on that surface finds nothing to adopt.
+    registerComposerDraftAlias("66666666-6666-4666-8666-666666666663", SURFACE);
+    expect(
+      peekComposerDraft("66666666-6666-4666-8666-666666666663", SURFACE),
+    ).toBeNull();
+    // The first column still has its own draft under its own id.
+    expect(peekComposerDraft(FIRST)?.value).toBe(LONG_DRAFT);
+  });
+
   it("the knob off means nothing is kept at all", () => {
     const store = makeStore(false);
     store.dispatch(setUserInputText({ conversationId: CID, text: LONG_DRAFT }));

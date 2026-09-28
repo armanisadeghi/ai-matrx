@@ -166,8 +166,12 @@ and Runs floating windows.
 
 ### Known gaps (2026-09-26)
 
-- **Attachments on a shared request are not saved** — `metadata.locked` holds message and variables
-  only; the files live in each column's conversation history.
+- **Attachments are saved as the complete request** (2026-09-27): `metadata.locked.request` (locked
+  modes) and each Request Mod entry's `metadata.request` hold a `RequestDraftSnapshot`
+  (`features/agents/redux/execution-system/thunks/request-draft-snapshot.ts`) — text, message parts,
+  variables, attachments by durable file id, context, run settings, model changes. A reopened battle
+  restores it with `applyRequestDraft`. An attachment that cannot come back identically (still
+  uploading, failed, temporary signed link) is listed in `omitted_attachments` and the save says so.
 - **Six near-copies of `LockedInputSection`** (one per locked mode) remain; consolidating them is
   a separate, state-sensitive change.
 
@@ -230,6 +234,12 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-09-27 — **A saved battle keeps its identical request.** Every locked mode saves the shared
+  composer's complete request (`readBattleInputDraft().request`) and a reopen restores it
+  (`hydrateBattleInputDraft({ request })`); Request Mod saves each column's own. Saves that could not
+  keep an attachment warn by name. Also: reopening a battle no longer copies column 1's unsent text into
+  every other column — the durable composer draft's surface alias is refused once two live composers
+  share it (`composer-draft-store.ts`).
 - 2026-09-26 — **Ratings and ranks survive a reload.** A reopened conversation now carries its run
   history (`fetchConversationBundle` reads `chat.request`/`user_request` when the bundle RPC omits
   them), so the feedback bar and run numbers come back; feedback is keyed by the server's run id

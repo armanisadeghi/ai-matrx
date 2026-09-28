@@ -133,6 +133,29 @@ export function composerDraftAliasKey(alias: string): string {
 // ── Surface aliases ─────────────────────────────────────────────────────────
 
 const aliases = new Map<string, string>();
+/** Every live conversation holding each alias key. */
+const aliasHolders = new Map<string, Set<string>>();
+
+// 🚨 AN ALIAS HELD BY TWO LIVE COMPOSERS IS NOT A STABLE KEY. A page that
+// mounts several composers under one surface key at once (every Agent Battle
+// column, for one) would otherwise mirror column 1's draft to the alias, and
+// after a reload every empty column adopted it — Submit all then sent column
+// 1's text from all of them (measured live 2026-09-27, Request Mod, 5 columns).
+// So the moment an alias is shared nothing writes it, its record is dropped,
+// and no one restores from it. Each conversation keeps its own key.
+
+function isAliasShared(aliasKey: string): boolean {
+  return (aliasHolders.get(aliasKey)?.size ?? 0) > 1;
+}
+
+function dropAliasHolder(conversationId: string): void {
+  const key = aliases.get(conversationId);
+  aliases.delete(conversationId);
+  if (!key) return;
+  const holders = aliasHolders.get(key);
+  holders?.delete(conversationId);
+  if (holders && holders.size === 0) aliasHolders.delete(key);
+}
 
 /**
  * Give this conversation a surface-stable second key. Registered by the
@@ -142,11 +165,17 @@ export function registerComposerDraftAlias(
   conversationId: string,
   alias: string,
 ): void {
-  aliases.set(conversationId, composerDraftAliasKey(alias));
+  dropAliasHolder(conversationId);
+  const key = composerDraftAliasKey(alias);
+  aliases.set(conversationId, key);
+  const holders = aliasHolders.get(key) ?? new Set<string>();
+  holders.add(conversationId);
+  aliasHolders.set(key, holders);
+  if (isAliasShared(key)) removeAt(key);
 }
 
 export function unregisterComposerDraftAlias(conversationId: string): void {
-  aliases.delete(conversationId);
+  dropAliasHolder(conversationId);
 }
 
 /**
@@ -160,14 +189,15 @@ export function unregisterComposerDraftAlias(conversationId: string): void {
  */
 export function releaseComposerDraftAlias(conversationId: string): void {
   const key = aliases.get(conversationId);
-  aliases.delete(conversationId);
-  if (!key) return;
+  const shared = key ? isAliasShared(key) : false;
+  dropAliasHolder(conversationId);
+  if (!key || shared) return;
   if (readAt(key)?.sent) removeAt(key);
 }
 
 function keysFor(conversationId: string): string[] {
   const alias = aliases.get(conversationId);
-  return alias
+  return alias && !isAliasShared(alias)
     ? [composerDraftKey(conversationId), alias]
     : [composerDraftKey(conversationId)];
 }
@@ -307,7 +337,9 @@ export function peekComposerDraft(
 ): ComposerDraftToken | null {
   const conversationGen = currentGeneration(conversationId);
   const candidates = [composerDraftKey(conversationId)];
-  if (alias) candidates.push(composerDraftAliasKey(alias));
+  if (alias && !isAliasShared(composerDraftAliasKey(alias))) {
+    candidates.push(composerDraftAliasKey(alias));
+  }
   for (const key of candidates) {
     const record = readAt(key);
     if (!record || record.sent) continue;
@@ -340,4 +372,5 @@ export function isComposerDraftTokenLive(token: ComposerDraftToken): boolean {
 export function __resetComposerDraftGenerationsForTest(): void {
   generations.clear();
   aliases.clear();
+  aliasHolders.clear();
 }

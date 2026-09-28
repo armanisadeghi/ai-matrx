@@ -49,9 +49,14 @@ describe("columnRequestToSave", () => {
 
     const result = columnRequestToSave(state, col);
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       user_message: "What is the return policy?",
       variables: { customer_name: "Dana" },
+    });
+    // The complete request rides along, so a reopened battle restores it exactly.
+    expect(result.request).toMatchObject({
+      text: "What is the return policy?",
+      userValues: { customer_name: "Dana" },
     });
   });
 
@@ -92,6 +97,6 @@ describe("columnRequestToSave", () => {
 
     const result = columnRequestToSave(state, col);
 
-    expect(result).toEqual({ user_message: "", variables: {} });
+    expect(result).toMatchObject({ user_message: "", variables: {} });
   });
 });
