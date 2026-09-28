@@ -69,6 +69,7 @@ import {
 } from "../redux/assistsSlice";
 import { AssistChip } from "./AssistChip";
 import { useDockDrag } from "./useDockDrag";
+import { useAssistClearance } from "../assistClearance";
 import { useAssistsPrefs } from "../hooks/useAssistsPrefs";
 import { ASSISTS_MANAGER_HREF } from "../constants";
 import {
@@ -141,6 +142,11 @@ export default function AssistsDock() {
     setPresentationCycle,
   ]);
 
+  // The scroll area under the floating control reserves room for it, so the
+  // control never sits on a row's menu, a pager arrow or a card's answer
+  // (list-shell fix D, 2026-09-28 — ../assistClearance.ts).
+  useAssistClearance(Boolean(userId));
+
   if (!userId) return null;
   const visible = presentedAssists(pending, presentationCycle);
 
@@ -184,6 +190,7 @@ export default function AssistsDock() {
     return (
       <>
         <div
+          data-assists-dock=""
           className="fixed right-3 z-40 md:hidden"
           style={mobileLauncherStyle}
         >
@@ -204,7 +211,7 @@ export default function AssistsDock() {
             <BellOff className="h-4 w-4" />
           </button>
         </div>
-        <div className="fixed z-40 hidden pb-safe md:block" style={style}>
+        <div data-assists-dock="" className="fixed z-40 hidden pb-safe md:block" style={style}>
           <button
             type="button"
             onPointerDown={onPointerDown}
@@ -240,6 +247,7 @@ export default function AssistsDock() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label={`Open ${visible.length} assist${visible.length === 1 ? "" : "s"}`}
+          data-assists-dock=""
           className="fixed right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-glass text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[background-color,transform] hover:bg-glass-hover md:hidden"
           style={mobileLauncherStyle}
         >
@@ -351,6 +359,7 @@ export default function AssistsDock() {
         </div>
       )}
       <div
+        data-assists-dock=""
         className={cn(
           "pointer-events-auto group flex items-center gap-0.5 rounded-full border border-primary/30 bg-card pl-1 pr-1 shadow-md",
           dragging && "ring-1 ring-primary/40",
