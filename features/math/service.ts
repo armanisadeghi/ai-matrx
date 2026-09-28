@@ -1,5 +1,6 @@
 // features/math/service.ts
 import { createClient } from "@/utils/supabase/server";
+import { readAllRows } from "@ai-matrx/data/db";
 import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type { Database, Json } from "@/types/database.types";
 import {
@@ -102,22 +103,20 @@ function mapMathRow(row: MathProblemRow): MathProblem {
  */
 export async function getAllMathProblems(): Promise<MathProblem[]> {
   const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .schema("education")
-    .from("math_problems")
-    .select("*")
-    .eq("is_published", true)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching math problems:", error);
-    throw new Error("Failed to fetch math problems");
-  }
-
-  return (data ?? []).map(mapMathRow);
+  const rows = await readAllRows(
+    ({ from, to }) => supabase
+      .schema("education")
+      .from("math_problems")
+      .select("*", { count: "exact" })
+      .eq("is_published", true)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(from, to),
+    { label: "published Quick Math problems" },
+  );
+  return rows.map(mapMathRow);
 }
 
 /**
@@ -155,23 +154,22 @@ export async function getMathProblemsByModule(
 ): Promise<MathProblem[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .schema("education")
-    .from("math_problems")
-    .select("*")
-    .eq("course_name", courseName)
-    .eq("topic_name", topicName)
-    .eq("module_name", moduleName)
-    .eq("is_published", true)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching math problems by module:", error);
-    throw new Error("Failed to fetch math problems");
-  }
-
-  return (data ?? []).map(mapMathRow);
+  const rows = await readAllRows(
+    ({ from, to }) => supabase
+      .schema("education")
+      .from("math_problems")
+      .select("*", { count: "exact" })
+      .eq("course_name", courseName)
+      .eq("topic_name", topicName)
+      .eq("module_name", moduleName)
+      .eq("is_published", true)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("id")
+      .range(from, to),
+    { label: "published Quick Math module problems" },
+  );
+  return rows.map(mapMathRow);
 }
 
 /**
@@ -179,18 +177,17 @@ export async function getMathProblemsByModule(
  */
 export async function getMathCourseStructure() {
   const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .schema("education")
-    .from("math_problems")
-    .select("course_name, topic_name, module_name")
-    .eq("is_published", true)
-    .is("deleted_at", null);
-
-  if (error) {
-    console.error("Error fetching course structure:", error);
-    throw new Error("Failed to fetch course structure");
-  }
+  const data = await readAllRows(
+    ({ from, to }) => supabase
+      .schema("education")
+      .from("math_problems")
+      .select("id,course_name,topic_name,module_name", { count: "exact" })
+      .eq("is_published", true)
+      .is("deleted_at", null)
+      .order("id")
+      .range(from, to),
+    { label: "published Quick Math course structure" },
+  );
 
   // Group by course > topic > module
   const structure: Record<string, Record<string, Set<string>>> = {};

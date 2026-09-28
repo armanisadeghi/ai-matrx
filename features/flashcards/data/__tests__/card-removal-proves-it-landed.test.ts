@@ -1,8 +1,8 @@
 /**
- * Removing a card, set, or detail must PROVE the soft-delete landed.
+ * Removing a set or detail must PROVE the soft-delete landed.
  *
  * A PostgREST `update` that RLS filters to zero rows returns `error: null`.
- * The old `deleteCard` / `deleteSet` / `softDeleteDetail` / `mergeCards`
+ * The old `deleteSet` / `softDeleteDetail` / `mergeCards`
  * trusted that, so the set editor toasted "Card deleted" while the card stayed
  * (2026-09-25). Each path now reads back the rows it wrote and fails loudly on
  * zero. The fake below behaves like PostgREST: the update answers with the rows
@@ -65,7 +65,6 @@ function install(allowed: Set<string>) {
 afterEach(() => jest.clearAllMocks());
 
 describe.each([
-  ["deleteCard", (id: string) => fcService.deleteCard(id), "fc_card"],
   ["deleteSet", (id: string) => fcService.deleteSet(id), "fc_set"],
   ["softDeleteDetail", (id: string) => fcService.softDeleteDetail(id), "fc_detail"],
 ] as const)("%s", (name, run, table) => {

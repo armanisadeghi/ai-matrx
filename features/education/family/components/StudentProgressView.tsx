@@ -10,6 +10,8 @@
 // guardian_can_view before mounting this); the RPCs re-check on every read.
 
 import { StudyAnalyticsView } from "@/features/education/study/analytics/components/StudyAnalyticsView";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationFamilyScope } from "@/features/surfaces/manifests/education-family.manifest";
 import { useGuardianStudentAnalytics } from "../useGuardianStudentAnalytics";
 
 export function StudentProgressView({
@@ -28,6 +30,16 @@ export function StudentProgressView({
     : `${studentLabel}'s`;
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/education-family"
+      getScope={() => createEducationFamilyScope({
+        view: "student_progress",
+        linked_student_id: studentId,
+        linked_student_label: studentLabel,
+        linked_progress_loading: loading,
+        ...(error ? { linked_progress_error: error } : {}),
+      })}
+    >
     <StudyAnalyticsView
       analytics={analytics}
       mastery={mastery}
@@ -39,5 +51,6 @@ export function StudentProgressView({
       backHref="/education/family"
       emptyHint={`${studentLabel} hasn't recorded any study activity yet. Mastery, accuracy, trends, and time studied will appear here once they start studying.`}
     />
+    </SurfaceRuntimeProvider>
   );
 }
