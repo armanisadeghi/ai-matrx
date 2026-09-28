@@ -54,8 +54,43 @@ export const PROPOSED_MENU_GROUPING: MenuGrouping = {
     { key: "admin", label: "Admin", definition: "Creator and admin tools: inspect, debug, server-side message surgery. Admins only.", icon: icon(Shield), category: "admin", order: 0 },
   ],
   rules: [
-    // The clicked thing's own rows (a quiz row's Open / Take / Archive, a note's
-    // rows, a conversation's rows) always come first, as they are.
+    // ── The page's own rows that DUPLICATE a category (Arman, 2026-09-28: "the
+    // more of that we do, the better"): they move into that category, and merge
+    // into the universal row that does the same thing when it is in the menu.
+    // Only genuinely unique record actions (Open, Take, Duplicate, Move to Trash…)
+    // stay at the top.
+    { when: { pageOwnLabels: ["^copy( to clipboard)?$"] }, to: { kind: "group", key: "copy" }, mergeWithIds: ["cm:copy", "copy"] },
+    { when: { pageOwnLabels: ["^copy\\b"] }, to: { kind: "group", key: "copy" } },
+    {
+      when: { pageOwnLabels: ["^(export|download)( as)? markdown"] },
+      to: { kind: "group", key: "download" },
+      mergeWithIds: ["save-as-file"],
+    },
+    { when: { pageOwnLabels: ["^(export|download)\\b", "^print\\b"] }, to: { kind: "group", key: "download" } },
+    { when: { pageOwnLabels: ["^share( link)?…?$"] }, to: { kind: "group", key: "share" }, mergeWithIds: ["cm:share"] },
+    { when: { pageOwnLabels: ["^(share|send|email)\\b"] }, to: { kind: "group", key: "share" } },
+    { when: { pageOwnLabels: ["^publish\\b"] }, to: { kind: "group", key: "publish" } },
+    { when: { pageOwnLabels: ["^(convert|save to|save as|create (a )?(task|note|document))\\b"] }, to: { kind: "group", key: "convert" } },
+    { when: { pageOwnLabels: ["^(move to folder|add tags?|tags?|attach)\\b"] }, to: { kind: "group", key: "organize" } },
+    { when: { pageOwnLabels: ["^(read aloud|listen)\\b"] }, to: { kind: "group", key: "listen" } },
+    { when: { pageOwnLabels: ["^compare\\b"] }, to: { kind: "group", key: "compare" } },
+    { when: { pageOwnLabels: ["^save$"] }, to: { kind: "top" }, mergeWithIds: ["cm:save"] },
+    // A conversation's own rows, by id (their labels are computed at open).
+    {
+      when: { ids: ["conversation-copy-plain", "conversation-copy-markdown", "conversation-copy-formatted", "conversation-copy-for-ai", "conversation-copy-link"] },
+      to: { kind: "group", key: "copy" },
+    },
+    { when: { idPrefixes: ["conversation-download-"] }, to: { kind: "group", key: "download" } },
+    {
+      when: { ids: ["conversation-save-to-notes", "conversation-create-document", "conversation-create-task"] },
+      to: { kind: "group", key: "convert" },
+    },
+    { when: { ids: ["conversation-share", "conversation-email-to-me"] }, to: { kind: "group", key: "share" } },
+    { when: { ids: ["conversation-open-in-new-chat"] }, to: { kind: "group", key: "ai" } },
+    { when: { ids: ["conversation-rename", "conversation-duplicate"] }, to: { kind: "group", key: "edit" } },
+
+    // The clicked thing's remaining own rows (a quiz row's Open / Take / Archive,
+    // a note's Duplicate / Move to Trash) come first, as they are.
     { when: { pageOwn: true }, to: { kind: "page-first" } },
     // The universal verb strip (icons across the top) stays exactly as it is.
     {

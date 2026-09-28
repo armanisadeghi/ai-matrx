@@ -53,8 +53,20 @@ export interface GroupingRule {
     categories?: readonly ActionCategory[];
     /** The clicked thing's own section (a row's or a note's actions). */
     pageOwn?: boolean;
+    /**
+     * A page's OWN row whose label matches one of these (case-insensitive
+     * regular expressions): a record action that duplicates a category
+     * ("Export as Markdown", "Share link…") moves into that category.
+     */
+    pageOwnLabels?: readonly string[];
   };
   to: GroupingDestination;
+  /**
+   * Universal rows that do the same thing. When one of them is in the menu,
+   * the matched row merges into it (one row, recorded as merged) instead of
+   * sitting beside it.
+   */
+  mergeWithIds?: readonly string[];
 }
 
 export interface MenuGrouping {
@@ -103,8 +115,17 @@ function isPageOwn(action: Action): boolean {
   return Boolean(section && (section.primary || section.kind === "target"));
 }
 
-function ruleMatches(rule: GroupingRule, action: Action): boolean {
+function labelOf(action: Pick<Action, "id" | "label">, target?: ClickTarget): string {
+  if (typeof action.label === "string") return action.label;
+  return target ? actionLabel(action as Action, target) : "";
+}
+
+function ruleMatches(rule: GroupingRule, action: Action, target?: ClickTarget): boolean {
   const w = rule.when;
+  if (w.pageOwnLabels && isPageOwn(action)) {
+    const label = labelOf(action, target);
+    if (label && w.pageOwnLabels.some((p) => new RegExp(p, "i").test(label))) return true;
+  }
   if (w.ids?.includes(action.id)) return true;
   if (w.idPrefixes?.some((p) => action.id.startsWith(p))) return true;
   if (w.categories?.includes(action.category)) return true;
@@ -113,12 +134,16 @@ function ruleMatches(rule: GroupingRule, action: Action): boolean {
 }
 
 /** The rule that places this action, or null when it falls through to `fallback`. */
-export function matchRule(grouping: MenuGrouping, action: Pick<Action, "id" | "category" | "section">): GroupingRule | null {
-  return grouping.rules.find((r) => ruleMatches(r, action as Action)) ?? null;
+export function matchRule(
+  grouping: MenuGrouping,
+  action: Pick<Action, "id" | "category" | "section"> & { label?: Action["label"] },
+  target?: ClickTarget,
+): GroupingRule | null {
+  return grouping.rules.find((r) => ruleMatches(r, action as Action, target)) ?? null;
 }
 
-export function destinationFor(grouping: MenuGrouping, action: Action): GroupingDestination {
-  return matchRule(grouping, action)?.to ?? grouping.fallback;
+export function destinationFor(grouping: MenuGrouping, action: Action, target?: ClickTarget): GroupingDestination {
+  return matchRule(grouping, action, target)?.to ?? grouping.fallback;
 }
 
 const sameName = (label: string) =>
@@ -164,8 +189,25 @@ export function regroupResolved(
   const home = new Map<string, ProposedHome>();
   const wanted = new Map<string, ResolvedAction[]>();
 
+  // Equivalent rows: a matched row whose universal twin is in this menu merges into it.
+  const present = new Map(resolved.map((r) => [r.action.id, r]));
+  const twinOf = (r: ResolvedAction): ResolvedAction | null => {
+    const rule = matchRule(grouping, r.action, target);
+    for (const id of rule?.mergeWithIds ?? []) {
+      const twin = present.get(id);
+      if (twin && twin !== r) return twin;
+    }
+    return null;
+  };
+  const mergedInto = new Map<string, ResolvedAction>();
+
   for (const r of resolved) {
-    const to = destinationFor(grouping, r.action);
+    const twin = twinOf(r);
+    if (twin) {
+      mergedInto.set(r.action.id, twin);
+      continue;
+    }
+    const to = destinationFor(grouping, r.action, target);
     if (to.kind === "group" && groupDef.has(to.key)) {
       if (r.eligibility.status !== "available") {
         top.push(r);
@@ -238,6 +280,17 @@ export function regroupResolved(
     groupActions.push({ action: submenu, eligibility: { status: "available" } });
   }
 
+  // Where each twin ended up names where the merged row now lives.
+  for (const [id, twin] of mergedInto) {
+    const at = home.get(twin.action.id);
+    home.set(id, {
+      kind: "merged",
+      intoId: twin.action.id,
+      intoLabel: actionLabel(twin.action, target),
+      groupLabel: at?.kind === "group" ? at.label : at?.kind === "merged" ? at.groupLabel : "",
+    });
+  }
+
   return { resolved: [...top, ...groupActions], members, home };
 }
 
@@ -280,6 +333,8 @@ export interface AuditRow {
   label: string;
   category: ActionCategory;
   isSubmenu: boolean;
+  /** The clicked thing's own row (surface-specific), not a universal one. */
+  pageOwn: boolean;
   current: string;
   proposed: ProposedHome | null;
   proposedPlace: string;
@@ -325,13 +380,14 @@ export function auditRegroup(
       proposedPlace =
         home?.kind === "group" ? `${home.label} ▸` : (proposedPlaces.get(r.action.id) ?? "Top level");
     } else if (home?.kind === "merged" && held.has(home.intoId)) {
-      proposedPlace = `${home.groupLabel} ▸ ${home.intoLabel}`;
+      proposedPlace = home.groupLabel ? `${home.groupLabel} ▸ ${home.intoLabel}` : `Top level · ${home.intoLabel}`;
     }
     return {
       id: r.action.id,
       label: actionLabel(r.action, target),
       category: r.action.category,
       isSubmenu: Boolean(r.action.expand),
+      pageOwn: isPageOwn(r.action),
       current: currentPlaces.get(r.action.id) ?? "Top level",
       proposed: proposedPlace ? home : null,
       proposedPlace,

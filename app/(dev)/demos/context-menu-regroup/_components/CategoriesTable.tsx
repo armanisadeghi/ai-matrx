@@ -66,14 +66,34 @@ export function CategoriesTable({
     }
   }
   // Rows the live menus resolved that the inventory does not list: a page's own
-  // rows (expected) and — the thing to fix — any universal row missing here.
+  // rows go where v2 put them (first, into a category, or merged into their
+  // universal twin); a UNIVERSAL row missing from the inventory is the thing to fix.
   const seenOwn = new Map<string, Item>();
   const missing = new Map<string, Item>();
+  const groupKeyByLabel = new Map(grouping.groups.map((g) => [g.label, g.key]));
   for (const audit of audits) {
     for (const row of audit.rows) {
       if (known.has(row.id) || CONTEXT_MENU_ENGINE_ID_PREFIXES.some((p) => row.id.startsWith(p))) continue;
-      if (row.proposed?.kind === "page-first") seenOwn.set(row.id, { id: row.id, label: row.label });
-      else missing.set(row.id, { id: row.id, label: row.label });
+      if (!row.pageOwn) {
+        missing.set(row.id, { id: row.id, label: row.label });
+        continue;
+      }
+      const home = row.proposed;
+      const item = { id: row.id, label: `${row.label} (this page)` };
+      if (home?.kind === "group") {
+        const key = groupKeyByLabel.get(home.label);
+        const list = key ? (byGroup.get(key) ?? []) : [];
+        if (key && !list.some((i) => i.id === row.id)) byGroup.set(key, [...list, item]);
+      } else if (home?.kind === "merged") {
+        const merged = { id: row.id, label: `${row.label} (this page — merged into ${home.intoLabel})` };
+        const key = home.groupLabel ? groupKeyByLabel.get(home.groupLabel) : undefined;
+        if (key) byGroup.set(key, [...(byGroup.get(key) ?? []).filter((i) => i.id !== row.id), merged]);
+        else if (!top.some((i) => i.id === row.id)) top.push(merged);
+      } else if (home?.kind === "top") {
+        if (!top.some((i) => i.id === row.id)) top.push(item);
+      } else {
+        seenOwn.set(row.id, { id: row.id, label: row.label });
+      }
     }
   }
   const own = [...pageOwnByContext, ...seenOwn.values()];
@@ -118,7 +138,7 @@ export function CategoriesTable({
             {block(
               "own",
               "This item (first)",
-              "The clicked thing’s own actions — Open, Take, Edit questions, Move to Folder. Different on every page; shown first, never folded.",
+              "The clicked thing’s own unique actions — Open, Take, Duplicate, Move to Trash. Different on every page; shown first, never folded. Its rows that duplicate a category (Export as Markdown, Share link, Copy to clipboard, Move to Folder) move into that category, marked “this page”.",
               own,
             )}
             {block(

@@ -76,6 +76,33 @@ describe("regroup — nothing is lost silently", () => {
     expect(audit.rows.find((r) => r.id === "cm:open")?.proposed?.kind).toBe("page-first");
   });
 
+  it("a page's own row that duplicates a category moves into it and merges with its twin", () => {
+    const note = { id: "cm-extra-note", label: "Note", kind: "target" } as Action["section"];
+    const NOTE: ResolvedAction[] = [
+      action("cm:copy", "Copy", "clipboard", { verb: "copy" }),
+      action("save-as-file", "Download as Markdown", "save"),
+      action("download-pdf", "Download as PDF", "export"),
+      action("cm:share", "Share", "share"),
+      action("cm:attach", "Attach To", "share"),
+      action("cm:x:duplicate", "Duplicate", "edit", { section: note }),
+      action("cm:x:export", "Export as Markdown", "edit", { section: note }),
+      action("cm:x:share-link", "Share link…", "edit", { section: note }),
+      action("cm:x:share-clipboard", "Copy to clipboard", "edit", { section: note }),
+      action("cm:x:convert-artifacts", "Convert blocks to artifacts", "edit", { section: note }),
+      action("cm:x:move", "Move to Folder", "edit", { section: note, expand: async () => [] }),
+      action("cm:x:delete", "Move to Trash", "edit", { section: note }),
+    ];
+    const audit = auditRegroup(target, NOTE, PROPOSED_MENU_GROUPING, { mergeSameName: true }, "command");
+    expect(audit.lost).toEqual([]);
+    const where = Object.fromEntries(audit.rows.map((r) => [r.id, r.proposedPlace]));
+    expect(where["cm:x:export"]).toBe("Download ▸ Download as Markdown");
+    expect(where["cm:x:share-clipboard"]).toBe("Top level · Copy");
+    expect(where["cm:x:share-link"]).toBe("Top level · Share");
+    expect(where["cm:x:move"]).toBe("Organize ▸");
+    expect(audit.rows.find((r) => r.id === "cm:x:duplicate")?.proposed?.kind).toBe("page-first");
+    expect(audit.rows.find((r) => r.id === "cm:x:delete")?.proposed?.kind).toBe("page-first");
+  });
+
   it("a merge is a record, never a drop: turning merging off keeps both rows", () => {
     const merged = regroupResolved(target, ROW, PROPOSED_MENU_GROUPING, { mergeSameName: true });
     expect(merged.members.get("listen")?.map((r) => r.action.id)).not.toContain("tts-play-2");
