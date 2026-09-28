@@ -327,6 +327,7 @@ export default function GenerateShellClient() {
       <section className="flex flex-col gap-3 min-h-0">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <ImageIcon className="h-3.5 w-3.5" />
+          {/* read-gate-exempt: images generated in this session; results is set only when a generate call returned */}
           {results.length === 0
             ? "Results will appear here."
             : `${results.length} result${results.length === 1 ? "" : "s"}`}

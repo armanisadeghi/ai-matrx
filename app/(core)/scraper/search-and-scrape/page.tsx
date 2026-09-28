@@ -236,6 +236,7 @@ export default function ScraperSearchAndScrapePage() {
             <div className="w-56 border-r border-border flex-shrink-0 flex flex-col overflow-hidden bg-white/30 dark:bg-gray-900/30">
               <div className="px-3 py-2 border-b border-border bg-muted/50">
                 <span className="text-xs text-muted-foreground font-medium">
+                  {/* read-gate-exempt: pages returned by the search-and-scrape the person just ran; set only when that run returned results */}
                   {allResults.length} pages
                 </span>
               </div>

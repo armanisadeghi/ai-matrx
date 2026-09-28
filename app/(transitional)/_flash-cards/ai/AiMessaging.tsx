@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { toast } from "@/lib/toast";
 
 export default function FlashcardChat() {
     // State to hold the conversation history
@@ -51,6 +52,9 @@ export default function FlashcardChat() {
             setConversation((prevConversation) => [...prevConversation, aiResponse]);
         } catch (error) {
             console.error('Error fetching AI response:', error);
+            toast.error("The assistant couldn't answer", {
+                description: error instanceof Error ? error.message : String(error),
+            });
         } finally {
             setLoading(false);
             setInputMessage(''); // Clear input after sending

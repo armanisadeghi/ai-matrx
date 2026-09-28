@@ -243,7 +243,7 @@ export default function DocumentsLandingPage() {
             the content takes header clearance — otherwise it sits under the
             glass header and collides with the title and the New button. */}
         <div className="w-full space-y-4 p-1.5 pt-[var(--shell-header-h)]">
-          {showToolbar ? (
+          {!error && showToolbar ? (
             <>
               <DocumentsHubToolbar
                 query={query}
