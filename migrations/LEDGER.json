@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-28T19:38:38.982Z",
+  "generated_at": "2026-09-28T19:48:13.129Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3871,6 +3871,12 @@
       "filename": "redsuites_the_store_door_is_reachable.sql",
       "checksum": "75643d869e8958c82b23042809002783f3926868c03f3236157558dfb667234e",
       "applied_at": "2026-09-21 14:29:42.685017+00"
+    },
+    "migrations/campaign/refcarry_a_many_reference_to_one_scope_type_holds_many.sql": {
+      "source": "matrx-frontend",
+      "filename": "refcarry_a_many_reference_to_one_scope_type_holds_many.sql",
+      "checksum": "015e3fae3a65cc03dfadac79ad2f19e742eeda3af7d46b44db183e463777b77e",
+      "applied_at": "2026-09-28 19:48:12.140359+00"
     },
     "migrations/campaign/refcarry_a_person_can_search_what_a_reference_may_point_at.sql": {
       "source": "matrx-frontend",
