@@ -170,9 +170,9 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
         p_filters: filters,
       });
       if (cancelled) return;
-      if (e || counts.error) {
+      if (e) {
         setFacets(null);
-        setFacetsError(message(e ?? counts.error, "The filter counts"));
+        setFacetsError(message(e, "The filter counts"));
         return;
       }
       const out: NonNullable<TranscriptListState["facets"]> = {};
@@ -182,14 +182,16 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
         if (!facet) continue;
         (out[facet] ??= []).push({ value: row.value, count: Number(row.total ?? 0) });
       }
-      // Scope: "orgs" is the sum over my organizations (every org I belong to), the rest as they come.
+      // Scope: its counts when the server answered them (a deep text search can outrun the
+      // count's time budget) — otherwise the three scopes without a number, never a wrong one.
       const scopeTotals = new Map<string, number>();
-      for (const r of (counts.data ?? []) as { scope: string; total: number }[])
+      for (const r of counts.error ? [] : ((counts.data ?? []) as { scope: string; total: number }[]))
         scopeTotals.set(r.scope, (scopeTotals.get(r.scope) ?? 0) + Number(r.total ?? 0));
       out.scope = (["mine", "shared", "public"] as const)
-        .filter((s) => scopeTotals.has(s))
-        .map((s) => ({ value: s, count: scopeTotals.get(s) ?? 0 }));
-      for (const values of Object.values(out)) values?.sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+        .filter((s) => counts.error || scopeTotals.has(s))
+        .map((s) => ({ value: s, count: counts.error ? -1 : (scopeTotals.get(s) ?? 0) }));
+      for (const [f, values] of Object.entries(out))
+        if (f !== "scope") values?.sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
       setFacets(out);
       setFacetsError(null);
     })();

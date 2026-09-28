@@ -105,7 +105,7 @@ export function TranscriptFacetBar({
                       className="text-xs"
                     >
                       <span className="min-w-0 flex-1 truncate">{facetValueLabel(f, value)}</span>
-                      <span className="ml-2 tabular-nums text-muted-foreground">{count}</span>
+                      {count >= 0 ? <span className="ml-2 tabular-nums text-muted-foreground">{count}</span> : null}
                     </DropdownMenuCheckboxItem>
                   ))
                 ) : (
