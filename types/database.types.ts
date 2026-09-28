@@ -106475,7 +106475,7 @@ export type Database = {
           oauth_client_id: string | null
           oauth_scopes_granted: string[] | null
           oauth_token_endpoint: string | null
-          organization_id: string | null
+          organization_id: string
           provider: string
           server_id: string | null
           status: Database["public"]["Enums"]["mcp_connection_status"]
@@ -106509,7 +106509,7 @@ export type Database = {
           oauth_client_id?: string | null
           oauth_scopes_granted?: string[] | null
           oauth_token_endpoint?: string | null
-          organization_id?: string | null
+          organization_id: string
           provider?: string
           server_id?: string | null
           status?: Database["public"]["Enums"]["mcp_connection_status"]
@@ -106543,7 +106543,7 @@ export type Database = {
           oauth_client_id?: string | null
           oauth_scopes_granted?: string[] | null
           oauth_token_endpoint?: string | null
-          organization_id?: string | null
+          organization_id?: string
           provider?: string
           server_id?: string | null
           status?: Database["public"]["Enums"]["mcp_connection_status"]
