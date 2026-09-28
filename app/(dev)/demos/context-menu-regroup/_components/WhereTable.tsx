@@ -11,7 +11,8 @@ function proposedCell(row: AuditRow) {
   if (home?.kind === "merged") {
     return (
       <span className="text-amber-700 dark:text-amber-400">
-        Merged into “{home.intoLabel}”{home.groupLabel ? ` in ${home.groupLabel} ▸` : " (top level)"} — same action
+        Merged into “{home.intoLabel}”{home.groupLabel ? ` in ${home.groupLabel} ▸` : " (top level)"}
+        {home.pageActionKept ? " — page action kept" : " — same action"}
       </span>
     );
   }

@@ -85,7 +85,7 @@ export function CategoriesTable({
         const list = key ? (byGroup.get(key) ?? []) : [];
         if (key && !list.some((i) => i.id === row.id)) byGroup.set(key, [...list, item]);
       } else if (home?.kind === "merged") {
-        const merged = { id: row.id, label: `${row.label} (this page — merged into ${home.intoLabel})` };
+        const merged = { id: row.id, label: `${row.label} (this page — merged into ${home.intoLabel}${home.pageActionKept ? ", page action kept" : ""})` };
         const key = home.groupLabel ? groupKeyByLabel.get(home.groupLabel) : undefined;
         if (key) byGroup.set(key, [...(byGroup.get(key) ?? []).filter((i) => i.id !== row.id), merged]);
         else if (!top.some((i) => i.id === row.id)) top.push(merged);

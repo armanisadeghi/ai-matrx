@@ -17,7 +17,7 @@ jest.mock("@/components/icons/domain-icons", () => ({ AGENT_ICON: () => null }))
 
 import { createClickTarget, type Action, type ActionCategory, type ResolvedAction } from "@ai-matrx/alchemy/actions";
 import { isContainerWord } from "@ai-matrx/alchemy/menu";
-import { auditRegroup, regroupResolved, REGROUP_ID_PREFIX } from "../grouping";
+import { actionLabel, auditRegroup, regroupResolved, REGROUP_ID_PREFIX } from "../grouping";
 import { PROPOSED_MENU_GROUPING } from "../proposed-grouping";
 
 const target = createClickTarget({ readOnly: true });
@@ -101,6 +101,31 @@ describe("regroup — nothing is lost silently", () => {
     expect(where["cm:x:move"]).toBe("Organize ▸");
     expect(audit.rows.find((r) => r.id === "cm:x:duplicate")?.proposed?.kind).toBe("page-first");
     expect(audit.rows.find((r) => r.id === "cm:x:delete")?.proposed?.kind).toBe("page-first");
+  });
+
+  it("page action kept: a merged row runs the PAGE's handler under the twin's label and place", async () => {
+    const note = { id: "cm-extra-note", label: "Note", kind: "target" } as Action["section"];
+    const ran: string[] = [];
+    const general = action("save-as-file", "Download as Markdown", "save", { run: () => void ran.push("general") });
+    const page = action("cm:x:export", "Export as Markdown", "edit", { section: note, run: () => void ran.push("page") });
+    const pdf = action("download-pdf", "Download as PDF", "export");
+    const result = regroupResolved(target, [general, page, pdf], PROPOSED_MENU_GROUPING, { mergeSameName: true });
+    const home = result.home.get("cm:x:export");
+    expect(home).toMatchObject({ kind: "merged", intoId: "save-as-file", pageActionKept: true });
+    const merged = result.members.get("download")?.find((r) => r.action.id === "save-as-file");
+    expect(merged && actionLabel(merged.action, target)).toBe("Download as Markdown");
+    expect(result.members.get("download")?.some((r) => r.action.id === "cm:x:export")).toBe(false);
+    // Running the row the person sees runs the page's version, never the general one.
+    const submenu = result.resolved.find((r) => r.action.id === "regroup:download");
+    const children = submenu?.action.expand ? await submenu.action.expand(target, new AbortController().signal) : [];
+    const row = children.find((a) => a.id === "save-as-file");
+    await row?.run(target, {} as never);
+    expect(ran).toEqual(["page"]);
+    // With no page version the general handler runs.
+    ran.length = 0;
+    const alone = regroupResolved(target, [general, pdf], PROPOSED_MENU_GROUPING, { mergeSameName: true });
+    await alone.members.get("download")?.find((r) => r.action.id === "save-as-file")?.action.run(target, {} as never);
+    expect(ran).toEqual(["general"]);
   });
 
   it("a merge is a record, never a drop: turning merging off keeps both rows", () => {

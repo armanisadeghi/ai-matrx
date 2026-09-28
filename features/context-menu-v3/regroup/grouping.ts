@@ -90,7 +90,14 @@ export type ProposedHome =
   | { kind: "page-first" }
   | { kind: "top"; note?: string }
   | { kind: "group"; key: string; label: string }
-  | { kind: "merged"; intoId: string; intoLabel: string; groupLabel: string };
+  | {
+      kind: "merged";
+      intoId: string;
+      intoLabel: string;
+      groupLabel: string;
+      /** The merged row runs THIS page's handler under the twin's label and place. */
+      pageActionKept?: boolean;
+    };
 
 export interface RegroupResult {
   /** What the proposed menu resolves: top-level actions plus one submenu action per group. */
@@ -199,14 +206,35 @@ export function regroupResolved(
     }
     return null;
   };
+  // THE PAGE'S VERSION WINS (Arman: "I'm not willing to lose important
+  // features"): a merged row keeps the twin's label and place, but runs the
+  // PAGE's handler; the general one runs only where the page has none. A page
+  // row that opens a submenu is never merged (it moves as itself).
   const mergedInto = new Map<string, ResolvedAction>();
-
+  const pageVersionOf = new Map<string, ResolvedAction>();
   for (const r of resolved) {
+    if (r.action.expand) continue;
     const twin = twinOf(r);
-    if (twin) {
-      mergedInto.set(r.action.id, twin);
-      continue;
-    }
+    if (!twin || pageVersionOf.has(twin.action.id)) continue;
+    mergedInto.set(r.action.id, twin);
+    pageVersionOf.set(twin.action.id, r);
+  }
+  const withPageHandler = (r: ResolvedAction): ResolvedAction => {
+    const page = pageVersionOf.get(r.action.id);
+    if (!page) return r;
+    const { href: _generalHref, ...general } = r.action;
+    void _generalHref;
+    const action: Action = {
+      ...general,
+      run: page.action.run,
+      ...(page.action.href !== undefined ? { href: page.action.href } : {}),
+    };
+    return { ...r, action };
+  };
+
+  for (const original of resolved) {
+    if (mergedInto.has(original.action.id)) continue;
+    const r = withPageHandler(original);
     const to = destinationFor(grouping, r.action, target);
     if (to.kind === "group" && groupDef.has(to.key)) {
       if (r.eligibility.status !== "available") {
@@ -288,6 +316,7 @@ export function regroupResolved(
       intoId: twin.action.id,
       intoLabel: actionLabel(twin.action, target),
       groupLabel: at?.kind === "group" ? at.label : at?.kind === "merged" ? at.groupLabel : "",
+      pageActionKept: true,
     });
   }
 
