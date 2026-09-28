@@ -19,6 +19,11 @@
 --   B4  switching back writes the copy's words back to the current screens, and a type whose copy
 --       says nothing keeps its own description
 
+-- SUPERSEDED 2026-09-28 by scopeshomes_every_column_has_a_home_red_green.sql (lane SCOPES-STORE-HOMES):
+-- the words this suite looks for in metadata.moved_from.carried now live in the Table's and the Field's
+-- own documents, and that suite proves B1–B4 there (H1, H3, H4, H5). Run it instead; this one stops.
+\echo 'SUPERSEDED: run scripts/campaign-tests/scopeshomes_every_column_has_a_home_red_green.sql'
+\quit
 \set ON_ERROR_STOP on
 \timing off
 \set suite 'scopestails_the_copy_carries_own_words_red_green.sql'

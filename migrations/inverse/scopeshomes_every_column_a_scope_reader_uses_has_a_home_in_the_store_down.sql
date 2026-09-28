@@ -1,6 +1,12 @@
 -- INVERSE of migrations/campaign/scopeshomes_every_column_a_scope_reader_uses_has_a_home_in_the_store.sql (lane SCOPES-STORE-HOMES).
 -- chair-step: puts back the seven bodies it replaced, byte for byte as production held them (own words kept in metadata.moved_from.carried, the store halves without the scope's slug and sort order Fields, custom._ctx_upsert_doc without the exact list compare, own_words_copied and Switch back over the SCOPES-TAILS words only), then drops the two functions it added. Keys already written into Tables', Fields' and Records' documents stay (the slug and sort order Fields stay declared; harmless, and the next copy under the old bodies leaves them).
--- BASED-ON-PLACEHOLDER
+-- based-on: custom._ctx_own_words(text, jsonb) 4b7784a7b3753c5dbf68e2aeb70668f62215cc6cf5b0adc85eaea0aa9e6eb746
+-- based-on: platform.cutover_scope_own_words(uuid) fae490e119d124dd6ecd2f5f57054ae0f53d2ecca11eb4a18e0c795add6a3cf4
+-- based-on: platform._cutover_scope_own_words_back(uuid) 1b1e8fb54ad1401f72d527ccd413dd9357c666c8f6b84c38947e18420162c576
+-- based-on: custom._ctx_upsert_doc(uuid, uuid, uuid, text, jsonb, jsonb, timestamp with time zone, uuid) 4305aac925f1f57cbb20b71eae8424eb782c88c4f4cd287150b8375230368039
+-- based-on: custom._ctx_store_type(uuid, uuid, jsonb) 8d7d1d0ae47bcbab2cdafb8dd5ce15bc16815ef84ebe20802f513afbfaf8a889
+-- based-on: custom._ctx_store_item(uuid, uuid, uuid, jsonb) 4fbd5b0c5c2988af733315d0dac1ea393037e89d681d682d408019bdb81aa94d
+-- based-on: custom._ctx_store_scope(uuid, uuid, uuid, jsonb) 08b5825e5e7eabe5066972620b5206ad6df24c6f0240f76c0021be6cc7c47025
 
 CREATE OR REPLACE FUNCTION custom._ctx_own_words(p_kind text, p_spec jsonb)
  RETURNS jsonb

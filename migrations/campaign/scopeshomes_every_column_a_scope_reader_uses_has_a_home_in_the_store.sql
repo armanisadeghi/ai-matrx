@@ -1,4 +1,3 @@
--- draft: SCOPES-STORE-HOMES building; not rehearsed yet
 -- chair-step: lane SCOPES-STORE-HOMES (L2 of SCOPES-CUTOVER-PLAN, step 0.2). Every column the old scope readers use gets a home in the record store: a scope type's description, sort order, max_assignments_per_entity and default_variable_keys become declared keys of its Table's own document; a context item's description, status, status note, category, tags, max_items, custom_component, reference_source and allowed_* become declared keys of its Field's document (no longer words carried in metadata); a scope's slug and sort order become two declared Fields of every scope Table (slug unique among the Table's live Records, as ctx_scopes_type_slug_uniq keeps it; sort order the Table's default sort, then name). custom._ctx_own_words (twin of scopes.own_words) says all of it; the store halves write it; custom._ctx_upsert_doc takes a cleared word off and compares lists exactly; the scopes switch's own_words_copied check compares every column; Switch back carries every word the copy has back, naming any the old table would refuse. Writes no scope data at apply.
 -- based-on: custom._ctx_own_words(text, jsonb) 83e56de0b64a36c560583deb37a4d9eff556d52e72fb71aa81d2401d5f648f57
 -- based-on: custom._ctx_store_type(uuid, uuid, jsonb) ec8b1609623a85e763843f979953e7d3802e724f885675287da8121b82688dab
@@ -183,8 +182,8 @@ begin
   select coalesce(jsonb_agg(x), '[]'::jsonb) into v_skipped from (
     select format('scope type %s: %s', t.id, string_agg(w, ', ')) as x
       from context.scope_types t join custom.record r on r.organization_id = p_org and r.id = t.id,
-           lateral (select 'sort_order' w where r.data ? 'sort_order' and (jsonb_typeof(r.data -> 'sort_order') <> 'number' or abs((r.data ->> 'sort_order')::numeric) > 32767)
-                    union all select 'max_assignments_per_entity' where r.data ? 'max_assignments_per_entity' and (jsonb_typeof(r.data -> 'max_assignments_per_entity') <> 'number' or abs((r.data ->> 'max_assignments_per_entity')::numeric) > 32767)) b
+           lateral (select 'sort_order' w where r.data ? 'sort_order' and case when jsonb_typeof(r.data -> 'sort_order') = 'number' then abs((r.data ->> 'sort_order')::numeric) > 32767 else true end
+                    union all select 'max_assignments_per_entity' where r.data ? 'max_assignments_per_entity' and case when jsonb_typeof(r.data -> 'max_assignments_per_entity') = 'number' then abs((r.data ->> 'max_assignments_per_entity')::numeric) > 32767 else true end) b
      where t.organization_id = p_org group by t.id
     union all
     select format('context field %s: %s', i.id, string_agg(w, ', '))
@@ -192,7 +191,7 @@ begin
       join custom.record r on r.organization_id = p_org and r.id = i.id,
            lateral (select 'description' w where char_length(r.data ->> 'description') > 500
                     union all select 'status' where r.data ? 'status' and not (r.data ->> 'status' = any (c_statuses))
-                    union all select 'max_items' where r.data ? 'max_items' and (jsonb_typeof(r.data -> 'max_items') <> 'number' or (r.data ->> 'max_items')::numeric < 1)
+                    union all select 'max_items' where r.data ? 'max_items' and case when jsonb_typeof(r.data -> 'max_items') = 'number' then (r.data ->> 'max_items')::numeric not between 1 and 2147483647 else true end
                     union all select 'allowed_scope_type_ids' where r.data ? 'allowed_scope_type_ids' and exists (
                         select 1 from jsonb_array_elements_text(r.data -> 'allowed_scope_type_ids') a
                          where a !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')) b
@@ -201,7 +200,7 @@ begin
     select format('scope %s: %s', s.id, string_agg(w, ', '))
       from context.scopes s join custom.record r on r.organization_id = p_org and r.id = s.id,
            lateral (select 'slug' w where r.data ? 'slug' and coalesce(r.data ->> 'slug', '') !~ '^[a-z0-9]+(-[a-z0-9]+)*$'
-                    union all select 'sort_order' where r.data ? 'sort_order' and (jsonb_typeof(r.data -> 'sort_order') <> 'number' or abs((r.data ->> 'sort_order')::numeric) > 32767)) b
+                    union all select 'sort_order' where r.data ? 'sort_order' and case when jsonb_typeof(r.data -> 'sort_order') = 'number' then abs((r.data ->> 'sort_order')::numeric) > 32767 else true end) b
      where s.organization_id = p_org group by s.id
   ) z;
 
@@ -215,8 +214,10 @@ begin
   ), want as (
     select k.id,
            case when k.c ? 'description' then k.c ->> 'description' end as description,
-           case when k.c ? 'sort_order' then (k.c ->> 'sort_order')::smallint end as sort_order,
-           case when k.c ? 'max_assignments_per_entity' then (k.c ->> 'max_assignments_per_entity')::smallint end as max_a,
+           case when jsonb_typeof(k.c -> 'sort_order') = 'number' and abs((k.c ->> 'sort_order')::numeric) <= 32767
+                then (k.c ->> 'sort_order')::numeric::smallint end as sort_order,
+           case when jsonb_typeof(k.c -> 'max_assignments_per_entity') = 'number' and abs((k.c ->> 'max_assignments_per_entity')::numeric) <= 32767
+                then (k.c ->> 'max_assignments_per_entity')::numeric::smallint end as max_a,
            case when k.c ? 'default_variable_keys' then array(select jsonb_array_elements_text(k.c -> 'default_variable_keys')) end as dvk,
            k.c
       from kept k
@@ -245,12 +246,17 @@ begin
   ), want as (
     select k.id, k.c,
            k.c ->> 'description' as description,
-           (k.c ->> 'status')::public.context_item_status as status,
+           -- Every cast is guarded as well as filtered: the planner may compute a column before it
+           -- applies the filter that named the row (a status not among the fifteen would abort the press).
+           case when k.c ->> 'status' = any (c_statuses) then (k.c ->> 'status')::public.context_item_status end as status,
            k.c ->> 'status_note' as status_note,
            k.c ->> 'category' as category,
            case when k.c ? 'tags' then array(select jsonb_array_elements_text(k.c -> 'tags')) end as tags,
-           (k.c ->> 'max_items')::int as max_items,
-           case when k.c ? 'allowed_scope_type_ids' then array(select (jsonb_array_elements_text(k.c -> 'allowed_scope_type_ids'))::uuid) end as ast,
+           case when jsonb_typeof(k.c -> 'max_items') = 'number' and (k.c ->> 'max_items')::numeric between 1 and 2147483647
+                then (k.c ->> 'max_items')::numeric::int end as max_items,
+           case when k.c ? 'allowed_scope_type_ids' then array(
+             select (case when a ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then a end)::uuid
+               from jsonb_array_elements_text(k.c -> 'allowed_scope_type_ids') a) end as ast,
            case when k.c ? 'allowed_reference_types' then array(select jsonb_array_elements_text(k.c -> 'allowed_reference_types')) end as art
       from kept k
   )
@@ -287,13 +293,19 @@ begin
        and r.data ?| array['slug', 'sort_order']
        and not exists (select 1 from jsonb_array_elements_text(v_skipped) x where x like 'scope ' || s.id::text || ':%')
   )
+  , want as (
+    select k.id, k.c, k.c ->> 'slug' as slug,
+           case when jsonb_typeof(k.c -> 'sort_order') = 'number' and abs((k.c ->> 'sort_order')::numeric) <= 32767
+                then (k.c ->> 'sort_order')::numeric::smallint end as sort_order
+      from kept k
+  )
   update context.scopes s
-     set slug       = case when k.c ? 'slug' then k.c ->> 'slug' else s.slug end,
-         sort_order = case when k.c ? 'sort_order' then (k.c ->> 'sort_order')::smallint else s.sort_order end
-    from kept k
-   where s.id = k.id
-     and ((k.c ? 'slug' and s.slug is distinct from k.c ->> 'slug')
-       or (k.c ? 'sort_order' and s.sort_order is distinct from (k.c ->> 'sort_order')::smallint));
+     set slug       = case when w.c ? 'slug' then w.slug else s.slug end,
+         sort_order = case when w.c ? 'sort_order' then w.sort_order else s.sort_order end
+    from want w
+   where s.id = w.id
+     and ((w.c ? 'slug' and s.slug is distinct from w.slug)
+       or (w.c ? 'sort_order' and s.sort_order is distinct from w.sort_order));
   get diagnostics v_scopes = row_count;
 
   perform custom._ctx_mark(v_was);
