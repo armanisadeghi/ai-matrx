@@ -60141,6 +60141,7 @@ export type Database = {
           ag: boolean
           created_at: string
           custom_fields: Json
+          deleted_at: string | null
           digit: number | null
           formula: string | null
           id: string
@@ -60161,6 +60162,7 @@ export type Database = {
           ag?: boolean
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           digit?: number | null
           formula?: string | null
           id?: string
@@ -60181,6 +60183,7 @@ export type Database = {
           ag?: boolean
           created_at?: string
           custom_fields?: Json
+          deleted_at?: string | null
           digit?: number | null
           formula?: string | null
           id?: string
