@@ -159,19 +159,19 @@ export function ScopeEditView({
   async function handleDelete() {
     if (!scope || !scopeType) return;
     const ok = await confirm({
-      title: `Delete ${scope.name}?`,
-      description: `This archives “${scope.name}” and its child scopes. Stored context values are retained for recovery.`,
-      confirmLabel: "Delete",
+      title: `Move ${scope.name} to Trash?`,
+      description: `“${scope.name}” and its child scopes move to Trash with their stored values. Restore it from Trash to bring all of it back.`,
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
     setDeleting(true);
     try {
       await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapScopesRpc);
-      toast.success(`Deleted “${scope.name}”`);
+      toast.success(`Moved “${scope.name}” to Trash`);
       router.push(scopeTypeHref(orgSlugOrId, scopeType));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      toast.error(err instanceof Error ? err.message : "Could not move it to Trash");
       setDeleting(false);
     }
   }
@@ -288,10 +288,10 @@ export function ScopeEditView({
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Delete this {scopeType.label_singular.toLowerCase()}
+                  Move this {scopeType.label_singular.toLowerCase()} to Trash
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Permanently removes it and all its values.
+                  It and its values go to Trash, where you can restore them.
                 </p>
               </div>
               <Button
@@ -306,7 +306,7 @@ export function ScopeEditView({
                 ) : (
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                 )}
-                Delete
+                Move to Trash
               </Button>
             </div>
           </Card>
