@@ -80484,6 +80484,7 @@ export type Database = {
           rls_variant: string
           schema_name: string
           service_only_history: boolean
+          source_input_pickable: boolean
           suppress_platform_admin_lane: boolean
           table_name: string
           table_ref: unknown
@@ -80554,6 +80555,7 @@ export type Database = {
           rls_variant?: string
           schema_name: string
           service_only_history?: boolean
+          source_input_pickable?: boolean
           suppress_platform_admin_lane?: boolean
           table_name: string
           table_ref?: unknown
@@ -80624,6 +80626,7 @@ export type Database = {
           rls_variant?: string
           schema_name?: string
           service_only_history?: boolean
+          source_input_pickable?: boolean
           suppress_platform_admin_lane?: boolean
           table_name?: string
           table_ref?: unknown
@@ -85675,6 +85678,80 @@ export type Database = {
         Args: { p_schemas: string[] }
         Returns: undefined
       }
+      _drill_agg_sql: {
+        Args: {
+          p_col: string
+          p_filter?: string
+          p_flag: string
+          p_measure: Json
+        }
+        Returns: string
+      }
+      _drill_assert_values: {
+        Args: { p_label: string; p_type: string; p_values: Json }
+        Returns: undefined
+      }
+      _drill_column: {
+        Args: { p_column: string; p_schema: string; p_table: string }
+        Returns: Json
+      }
+      _drill_compile: {
+        Args: {
+          p_def: Json
+          p_kind: string
+          p_organization_id: string
+          p_question: Json
+        }
+        Returns: Json
+      }
+      _drill_fk: {
+        Args: {
+          p_column: string
+          p_schema: string
+          p_table: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      _drill_label_sql: { Args: { p_ts: string }; Returns: string }
+      _drill_local_sql: {
+        Args: { p_ref: string; p_type: string }
+        Returns: string
+      }
+      _drill_moment_sql: {
+        Args: { p_ref: string; p_type: string }
+        Returns: string
+      }
+      _drill_ordinal_sql: {
+        Args: { p_anchor: string; p_grain: string; p_ps: string }
+        Returns: string
+      }
+      _drill_period_sql: {
+        Args: { p_grain: string; p_local: string; p_shift: number }
+        Returns: string
+      }
+      _drill_plan: {
+        Args: {
+          p_kind: string
+          p_organization_id: string
+          p_question: Json
+          p_source: Json
+        }
+        Returns: Json
+      }
+      _drill_resolve: {
+        Args: { p_organization_id: string; p_token: string }
+        Returns: Json
+      }
+      _drill_run_declared: {
+        Args: {
+          p_key: string
+          p_kind: string
+          p_organization_id: string
+          p_question: Json
+        }
+        Returns: Json
+      }
       _drop_custom_field_index: {
         Args: { p_definition_id: string }
         Returns: boolean
@@ -85732,6 +85809,22 @@ export type Database = {
         Returns: Json
       }
       _final_switch_scopes_code: { Args: never; Returns: string }
+      _inventory_filter: {
+        Args: {
+          p_by_ids?: boolean
+          p_mine?: boolean
+          p_organization_id?: string
+          p_token: string
+          p_uid: string
+        }
+        Returns: {
+          recent_column: string
+          schema_name: string
+          table_name: string
+          title_column: string
+          where_sql: string
+        }[]
+      }
       _is_store_pick_list: { Args: { p_metadata: Json }; Returns: boolean }
       _knob_override_write: {
         Args: {
@@ -86844,6 +86937,35 @@ export type Database = {
       doors_only_cutover_pending: {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
+      }
+      drill_ask: {
+        Args: { p_organization_id: string; p_question?: Json; p_source: Json }
+        Returns: {
+          compare: Json
+          delta: Json
+          distinct_groups: number
+          groups: Json
+          kind: string
+          labels: Json
+          measures: Json
+          prior_groups: Json
+          prior_measures: Json
+          prior_row_count: number
+          row_count: number
+          says: string
+        }[]
+      }
+      drill_declared: { Args: { p_key: string }; Returns: Json }
+      drill_declared_all: { Args: never; Returns: Json }
+      drill_def__agents_by_model: { Args: never; Returns: Json }
+      drill_definition_problems: { Args: { p_def: Json }; Returns: string[] }
+      drill_describe: {
+        Args: { p_organization_id: string; p_source: Json }
+        Returns: Json
+      }
+      drill_rows: {
+        Args: { p_organization_id: string; p_question?: Json; p_source: Json }
+        Returns: Json
       }
       edge_structural_labels: { Args: never; Returns: Json }
       edge_structural_metadata_keys: { Args: never; Returns: string[] }
@@ -94922,6 +95044,17 @@ export type Database = {
           table_name: string
         }[]
       }
+      entity_kind_counts: {
+        Args: {
+          p_mine?: boolean
+          p_organization_id?: string
+          p_tokens?: string[]
+        }
+        Returns: {
+          n: number
+          token: string
+        }[]
+      }
       entity_row_create: {
         Args: { p_organization_id: string; p_title: string; p_token: string }
         Returns: Json
@@ -99121,12 +99254,17 @@ export type Database = {
         Args: {
           p_ids?: string[]
           p_limit?: number
+          p_mine?: boolean
+          p_offset?: number
+          p_order?: string
+          p_organization_id?: string
           p_search?: string
           p_token: string
         }
         Returns: {
           id: string
           title: string
+          updated_at: string
         }[]
       }
       rename_file: {
