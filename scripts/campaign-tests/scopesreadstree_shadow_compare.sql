@@ -34,6 +34,8 @@
 --      plain member only what is shared with her; the old scope ACL ignored the knob. Counted as
 --      `org_shared_only` when the new answer is the old one less rows (or a refusal).
 --   N10 a current value row whose every value column is empty is no value (old listed it).
+--   `clone_lag`: organizations still on the old writer on THIS clone only, rows the in-transaction
+--      catch-up could not carry or settings keys it cannot erase (both 0 on production).
 --   `store_newer`: the store holds a later version of a value than the old image (a store write
 --      the image never received); counted, named, never fixed here (no row reconciliation).
 --   N8 a date or datetime value is compared as its one value, whichever of value_text / value_date /
@@ -366,11 +368,24 @@ begin
                               (select coalesce(jsonb_agg(g order by g ->> 'scope_id'), '[]'::jsonb) from jsonb_array_elements(p -> 'scope_tags') g))
                               order by pord), '[]'::jsonb)
                             from jsonb_array_elements(o -> 'projects') with ordinality pp(p, pord)))
-             order by oord), '[]'::jsonb))
+             order by o ->> 'id'), '[]'::jsonb))
       into v from jsonb_array_elements(v -> 'organizations') with ordinality oo(o, oord);
   end if;
   return v;
 end
+$f$;
+
+-- What differs between two answers that are lists of rows: the ids on one side only, and the
+-- keys that differ on rows both sides hold.
+create or replace function pg_temp.l6_diff(p_o jsonb, p_n jsonb) returns jsonb language sql immutable as $f$
+  with o as (select coalesce(e ->> 'id', e ->> 'item_id') as id, e from jsonb_array_elements(p_o) e),
+       n as (select coalesce(e ->> 'id', e ->> 'item_id') as id, e from jsonb_array_elements(p_n) e)
+  select jsonb_build_object(
+    'only_old', coalesce((select jsonb_agg(o.id) from o where not exists (select 1 from n where n.id = o.id)), '[]'),
+    'only_new', coalesce((select jsonb_agg(n.id) from n where not exists (select 1 from o where o.id = n.id)), '[]'),
+    'rows', coalesce((select jsonb_agg(o.id) from o join n on n.id = o.id where o.e <> n.e), '[]'),
+    'keys', coalesce((select jsonb_agg(distinct k) from o join n on n.id = o.id, jsonb_object_keys(o.e || n.e) k
+                       where (o.e -> k) is distinct from (n.e -> k)), '[]'))
 $f$;
 
 create temp table l6_judged on commit drop as
@@ -402,32 +417,33 @@ create temp table l6_verdict on commit drop as
                join custom.record r on r.id = v.scope_id
               where v.scope_id = j.arg::uuid and v.is_current
                 and coalesce((r.data -> '_values' -> (f.data ->> 'key') ->> 'ver')::int, 1) > v.version) then 'store_newer'
+      -- THE CLONE LAG (see the catch-up above): only for the organizations still on the old writer
+      -- here, only rows the catch-up could not carry (a concurrent clone user's lock) or settings
+      -- keys the old side dropped and the store's halves never erase. Both measured 0 on
+      -- production (the lane's PROGRESS doc).
+      when j.organization_id in (select organization_id from l6_catchup)
+           and jsonb_typeof(j.o) = 'array' and jsonb_typeof(j.n) = 'array'
+           and (select bool_and(x #>> '{}' in (select row_id::text from l6_catchup where not ok))
+                  from jsonb_array_elements(d.d -> 'only_old') x) is not false
+           and (select bool_and(x #>> '{}' in (select row_id::text from l6_catchup where not ok))
+                  from jsonb_array_elements(d.d -> 'only_new') x) is not false
+           and ((d.d -> 'keys') <@ '["settings"]'::jsonb
+                or (select bool_and(x #>> '{}' in (select row_id::text from l6_catchup where not ok))
+                      from jsonb_array_elements(d.d -> 'rows') x)) then 'clone_lag'
+      when j.fn = 'get_user_full_context' and j.o ? 'organizations' and j.n ? 'organizations'
+           and (j.o -> 'organizations') is not null
+           and (select bool_and(case when (oo.o - 'scopes') <> (nn.o - 'scopes') then false
+                                     when (oo.o -> 'scopes') = (nn.o -> 'scopes') then true
+                                     else not iam.member_lane_open((oo.o ->> 'id')::uuid)
+                                          and (oo.o -> 'scopes') @> (nn.o -> 'scopes') end)
+                  from jsonb_array_elements(j.o -> 'organizations') with ordinality oo(o, i)
+                  join jsonb_array_elements(j.n -> 'organizations') with ordinality nn(o, i2) on nn.o ->> 'id' = oo.o ->> 'id')
+           and jsonb_array_length(j.o -> 'organizations') = jsonb_array_length(j.n -> 'organizations') then 'org_shared_only'
       else 'MISMATCH' end as verdict
-    from l6_judged j;
+    from l6_judged j
+    cross join lateral (select case when jsonb_typeof(j.o) = 'array' and jsonb_typeof(j.n) = 'array'
+                                    then pg_temp.l6_diff(j.o, j.n) end as d) d;
 
-\echo
-\echo ==== VERDICTS (function x verdict)
-select fn, verdict, count(*) from l6_verdict group by 1, 2 order by 1, 2;
-\echo ==== SEATS
-select why, count(distinct coalesce(user_id::text, 'service') || organization_id::text) as seats, count(*) as answers from l6_verdict group by 1 order by 1;
-\echo ==== DD-112: the planted share must be listed by the new tree and refused by the old one
-select fn, verdict, jsonb_array_length(case when jsonb_typeof(n) = 'array' then n else '[]' end) as listed
-  from l6_verdict where why = 'planted share (DD-112)' and fn like 'get_scope_tree%' order by fn limit 5;
-\echo ==== DD-112, the store's own door for the same seat: the list must agree with the record
-select set_config('request.jwt.claims', jsonb_build_object('sub', '4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'role', 'authenticated')::text, true) is not null as as_test;
-set local role authenticated;
-select p.scope_id,
-       pg_temp.l6_call(format('select custom.read_record(%L::uuid, %L::uuid, false)', p.organization_id, p.scope_id)) ? '__error' as read_record_refuses,
-       (pg_temp.l6_call(format('select public.get_scope_tree(%L::uuid)', p.organization_id)) ? '__error') as tree_refuses
-  from l6_plant p;
-reset role;
-\echo ==== order_only: the ties behind each (old order key equal on both neighbours)
-select fn, why, organization_id, arg from l6_verdict where verdict = 'order_only';
-\echo ==== MISMATCHES (first 12, both sides)
-select fn, why, user_id, organization_id, arg, left(o::text, 700) as old, left(n::text, 700) as new
-  from l6_verdict where verdict = 'MISMATCH' order by fn, organization_id, arg limit 12;
-\echo ==== MISMATCH COUNT
-select count(*) as mismatches from l6_verdict where verdict = 'MISMATCH';
 \if :{?dump}
 \pset tuples_only on
 \pset format unaligned
@@ -437,6 +453,31 @@ select jsonb_build_object('fn', fn, 'why', why, 'user_id', user_id, 'org', organ
 \pset tuples_only off
 \pset format aligned
 \endif
+\echo
+\echo ==== VERDICTS (function x verdict)
+select fn, verdict, count(*) from l6_verdict group by 1, 2 order by 1, 2;
+\echo ==== SEATS
+select why, count(distinct coalesce(user_id::text, 'service') || organization_id::text) as seats, count(*) as answers from l6_verdict group by 1 order by 1;
+\echo ==== DD-112: the planted share must be listed by the new tree and refused by the old one
+select fn, verdict, jsonb_array_length(case when jsonb_typeof(n) = 'array' then n else '[]' end) as listed
+  from l6_verdict where why = 'planted share (DD-112)' and fn like 'get_scope_tree%' order by fn limit 5;
+create temp table l6_plant_copy on commit drop as select * from l6_plant;
+grant select on l6_plant_copy to authenticated;
+\echo ==== DD-112, the store door for the same seat: the list must agree with the record
+select set_config('request.jwt.claims', jsonb_build_object('sub', '4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'role', 'authenticated')::text, true) is not null as as_test;
+set local role authenticated;
+select p.scope_id,
+       pg_temp.l6_call(format('select custom.read_record(%L::uuid, %L::uuid, false)', p.organization_id, p.scope_id)) ? '__error' as read_record_refuses,
+       (pg_temp.l6_call(format('select public.get_scope_tree(%L::uuid)', p.organization_id)) ? '__error') as tree_refuses
+  from (select * from l6_plant_copy) p;
+reset role;
+\echo ==== order_only: the ties behind each (old order key equal on both neighbours)
+select fn, why, organization_id, arg from l6_verdict where verdict = 'order_only';
+\echo ==== MISMATCHES (first 12, both sides)
+select fn, why, user_id, organization_id, arg, left(o::text, 700) as old, left(n::text, 700) as new
+  from l6_verdict where verdict = 'MISMATCH' order by fn, organization_id, arg limit 12;
+\echo ==== MISMATCH COUNT
+select count(*) as mismatches from l6_verdict where verdict = 'MISMATCH';
 \echo ==== CHECKS: the membrane guard with the new bodies
 select check_key, ok from public.__scope_access_membrane_conformance()
  where check_key in ('membraned_doors_carry_a_real_call', 'list_doors_filter_the_readable_set', 'value_doors_are_membraned');

@@ -31,6 +31,8 @@
 --   H6  the Slug Field carries the store's unique rule, so a writer that is not the scope door — the
 --       generic record_write, as a signed-in person, once the copy fence is open — is refused a second
 --       live Matter with the same slug in a plain sentence (lane SCOPES-STORE-HOMES, third file)
+--   H7  a copied type, field and scope whose store copy lost its author gets back the author its old
+--       row names when copied again (L8's trash census, 2026-09-29)
 
 \set ON_ERROR_STOP on
 \timing off
@@ -212,6 +214,19 @@ begin
   end if;
 
   raise notice 'GREEN H6: record_write is refused a duplicate slug: %', v_refused;
+
+  -- ══ H7: a copied type, field and scope keep the author the old row names ══
+  -- The store lost the author (the owner fallback or nobody), as L8's census found on production;
+  -- copying again (the store halves) gives each back the old row's author.
+  update custom.record set created_by = null where organization_id = v_org and id in (v_type, v_item, v_scope);
+  perform custom._ctx_store_type(v_org, t.id, to_jsonb(t)) from context.scope_types t where t.id = v_type;
+  perform custom._ctx_store_item(v_org, i.scope_type_id, i.id, to_jsonb(i)) from context.context_items i where i.id = v_item;
+  perform custom._ctx_store_scope(v_org, s.scope_type_id, s.id, to_jsonb(s)) from context.scopes s where s.id = v_scope;
+  if (select count(*) from custom.record r where r.organization_id = v_org and r.id in (v_type, v_item, v_scope)
+        and r.created_by = c_admin) <> 3 then
+    raise exception 'H7 RED: a copied type, field or scope did not get back the author its old row names: %',
+      (select jsonb_object_agg(r.id, r.created_by) from custom.record r where r.organization_id = v_org and r.id in (v_type, v_item, v_scope));
+  end if;
   raise notice 'GREEN H1–H5: a scope type''s, a context field''s and a scope''s own words live in the Table''s, the Field''s and the Record''s own documents, the slug stays unique among a type''s live scopes, a cleared word and a shortened list reach the copy, the switch names a copy that disagrees and copying again clears it, and switching back carries every word back, erasing nothing and naming what the old table would refuse.';
 end
 $t$;

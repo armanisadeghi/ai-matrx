@@ -6,6 +6,8 @@
 --   B. "Visit Status" (Scheduled, Completed, No-show) changed to Text and back to a choice column with
 --      only "Completed" sent: the SAME list comes back, all three options, and the cell is Completed;
 --   C. the table archived: both its pick lists are archived with it; brought back: both are back.
+--   D. "Referring Provider" (text) changed to a Relation naming the Providers table: it lands, pointing there;
+--   E. the columns added one at a time sort in the order they were added.
 -- RUN IT (clone; always rolled back):
 --   psql-17 "<clone DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/databasics2_a_choice_column_keeps_its_list.sql
 -- ITS RED: before the campaign file it fails at A (the change is refused: "holds many values").
@@ -49,6 +51,20 @@ begin
   -- B
   perform custom.field_update(c_ws, v_s, '{"type":"text"}');
   perform custom.field_update(c_ws, v_s, '{"parity_type":"select","options":["Completed"]}');
+  -- D
+  declare v_prov uuid; v_ref uuid;
+  begin
+    v_prov := custom.table_declare(c_ws, jsonb_build_object(
+      'name', 'Referring providers', 'slug', 'referring_providers_databasics2', 'type', 'entity',
+      'label_singular', 'Provider', 'label_plural', 'Providers', 'display', 'list', 'weight', 'light',
+      'ordered', false, 'row_order', 'manual', 'title_field', 'name', 'retention_days', 365,
+      'agent_writable', true, 'default_sort', jsonb_build_array(jsonb_build_object('field', 'name', 'direction', 'asc')),
+      'fields', jsonb_build_array(jsonb_build_object('name', 'name')), 'parent_id', v_home::text));
+    perform custom.field_declare(c_ws, v_prov, '{"key":"name","label":"Name","type":"text"}');
+    v_ref := custom.field_declare(c_ws, c_tbl, '{"key":"referring_provider","label":"Referring Provider","type":"text"}');
+    perform custom.field_update(c_ws, v_ref, jsonb_build_object('type', 'relation', 'relation_target', v_prov::text));
+    perform set_config('dv2b2.ref', jsonb_build_object('ref', v_ref, 'prov', v_prov)::text, true);
+  end;
 end
 $t$;
 
@@ -67,6 +83,14 @@ begin
   select count(*) into n from custom.record o where o.table_id = v_opts and o.deleted_at is null;
   if n <> 3 then raise exception 'B: Visit Status has % live choices after coming back (wanted 3, No-show included)', n; end if;
   if d -> 'visit_status' is distinct from '"completed"'::jsonb then raise exception 'B: the cell holds %', d -> 'visit_status'; end if;
+  if not ((select (data ->> 'sort')::numeric from custom.record where id = (s ->> 'b')::uuid)
+          < (select (data ->> 'sort')::numeric from custom.record where id = (s ->> 's')::uuid)) then
+    raise exception 'E: Body Areas (added first) does not sort before Visit Status';
+  end if;
+  select data into f from custom.record where id = (current_setting('dv2b2.ref')::jsonb ->> 'ref')::uuid;
+  if f ->> 'type' <> 'relation' or f ->> 'relation_target' is distinct from current_setting('dv2b2.ref')::jsonb ->> 'prov' then
+    raise exception 'D: Referring Provider is % pointing at %', f ->> 'type', f ->> 'relation_target';
+  end if;
   perform set_config('dv2b2.l2', (s || jsonb_build_object('status_list', v_opts, 'body_list', (select data -> 'config' ->> 'list_kept' from custom.record where id = (s ->> 'b')::uuid)))::text, true);
 end
 $a$;
@@ -104,7 +128,7 @@ declare s jsonb := current_setting('dv2b2.l2')::jsonb; n integer;
 begin
   select count(*) into n from custom.record where id in ((s ->> 'status_list')::uuid, (s ->> 'body_list')::uuid) and deleted_at is null;
   if n <> 2 then raise exception 'C: bringing the table back brought % of its 2 pick lists back', n; end if;
-  raise notice 'GREEN: A–C';
+  raise notice 'GREEN: A–E';
 end
 $f$;
 

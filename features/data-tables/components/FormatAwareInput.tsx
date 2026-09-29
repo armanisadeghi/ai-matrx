@@ -16,6 +16,7 @@ import { AttachmentInput } from "./AttachmentInput";
 import { Input } from "@ai-matrx/design-system";
 
 import { ChoiceInput } from "./ChoiceInput";
+import { RatingInput } from "./RatingInput";
 
 import { parseFieldInput } from "@ai-matrx/design-system/field-formats";
 import { getFieldFormat } from "@ai-matrx/design-system/field-formats";
@@ -31,6 +32,8 @@ const OWNED_EDITORS = new Set([
   "color",
   "textarea",
   "rating",
+  "date",
+  "datetime",
   "select",
   "multiselect",
 ]);
@@ -159,15 +162,26 @@ export function FormatAwareInput({
       );
 
     case "rating":
+      // STARS, AS THE GRID DRAWS THEM (BREAKER-2 B2-26): the row form showed an empty number box.
+      return (
+        <RatingInput
+          value={value}
+          max={format?.options?.ratingMax ?? 5}
+          onChange={(next) => onChange(next)}
+        />
+      );
+
+    case "date":
+    case "datetime":
+      // A DATE LOOK ON A COLUMN THAT KEEPS WORDS STILL PICKS A DATE (B2-26): the form's own date input is
+      // drawn by what the column stores, so a Date look over Text got a plain text box.
+      if (dataType === "date" || dataType === "datetime") return null;
       return (
         <Input
           id={id}
-          type="number"
-          min={0}
-          max={format?.options?.ratingMax ?? 5}
-          step={1}
+          type={def.editor === "date" ? "date" : "datetime-local"}
           value={text}
-          onChange={(e) => commit(e.target.value)}
+          onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
         />
       );
 

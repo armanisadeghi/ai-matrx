@@ -24,8 +24,11 @@
 --   custom._table_dimensions_infer / _build / _check, custom.drill_resolve   invoker helpers.
 --
 -- WHAT IT REPLACES (same signatures, so no grant moves):
---   custom.agg_sql            a measure may carry `as`, the name its answer is keyed by. Absent,
---                             every label is byte-for-byte what it was.
+--   custom.agg_sql            a measure may carry `as`, the name its answer is keyed by (absent,
+--                             every label is what it was); and it GROUPS BY THE EXPRESSIONS, not
+--                             by position — `group by 1, 2` named the aggregate `measures` column,
+--                             so two groups, or a group and a date period, always failed
+--                             ("aggregate functions are not allowed in GROUP BY", measured live).
 --   custom.record_aggregate   resolves the contract's names (a Dimension key, `<date>:<grain>`,
 --                             a Measure key) through custom.drill_resolve for the reader asking,
 --                             right after its own two access questions. Field keys and
@@ -187,9 +190,12 @@ begin
     -- S2-PRIME FILTER-GROUPS: the one fragment, in either shape (flat map or Rule expression).
     custom.record_filter_sql(p_organization_id, p_table_id, p_filter),
     v_window_sql,
+    -- DRILL-CUSTOM-PARITY: GROUP BY THE EXPRESSIONS, never by position. The select list has ONE
+    -- `groups` column, so `group by 1, 2` named `groups` and then `measures` — an aggregate — and
+    -- every question with two groups, or a group and a date period, died with "aggregate
+    -- functions are not allowed in GROUP BY" (measured on the main database 2026-09-29).
     case when cardinality(v_group_sel) = 0 then ''
-         else 'group by ' || (select string_agg(i::text, ', ')
-                                from generate_subscripts(v_group_sel, 1) i) end,
+         else 'group by ' || array_to_string(v_group_sel, ', ') end,
     custom.page_size(p_organization_id, 'custom.record_aggregate', p_limit, 200));
 
   return v_sql;
@@ -984,3 +990,6 @@ values ('custom', 'table_dimensions_set',
               'verified', '2026-09-29 lane DRILL-CUSTOM-PARITY — written with this body'))))
 on conflict do nothing;
 
+
+-- The grant is a consequence of the two rows above, never a decision of its own.
+select custom.reopen_declared_doors();

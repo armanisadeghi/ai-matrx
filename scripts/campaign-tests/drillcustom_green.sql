@@ -17,7 +17,10 @@
 -- WHAT MAKES IT FAIL (RED before drillcustom_a_table_says_its_own_dimensions_and_measures.sql):
 -- custom.table_dimensions does not exist, and custom.record_aggregate refuses a Dimension at a
 -- grain ("appointment_date:month") and a Measure named by its key ("sum_duration_minutes") —
--- a caller had to know Field keys and the {op, key} grammar. Measured RED on the clone
+-- a caller had to know Field keys and the {op, key} grammar — and worse, a Measure named by its
+-- key was silently answered as a COUNT ({"count": 17} for "sum_duration_minutes"). Two groups, or
+-- a group and a date period, failed outright in every grammar ("aggregate functions are not
+-- allowed in GROUP BY"). Measured RED on the clone and on the main database
 -- 2026-09-29 (see PROGRESS-DRILL-CUSTOM-PARITY.md).
 
 \set ON_ERROR_STOP on
@@ -30,7 +33,7 @@
 \endif
 
 begin;
-set local lock_timeout = '10s';
+set local lock_timeout = '60s';
 set local statement_timeout = '180s';
 
 create temp table dc (k text primary key, v uuid) on commit drop;
@@ -176,6 +179,19 @@ begin
     from custom.record_aggregate(c_cr_org, c_visits, '["appointment_date:month"]'::jsonb, '["count"]'::jsonb);
   if v_rows is distinct from v_rows2 or v_n = 0 then
     raise exception 'INF-10: "appointment_date:month" answered % visits in % month groups (want % visits)', v_rows, v_n, v_rows2;
+  end if;
+  -- Two groups, and a group with a date period, answer (they died on "aggregate functions are
+  -- not allowed in GROUP BY" before this file — in the Field-key grammar too).
+  select sum(row_count) into v_rows
+    from custom.record_aggregate(c_cr_org, c_visits, '["status", "visit_type"]'::jsonb, '[{"op": "count"}]'::jsonb);
+  if v_rows is distinct from v_rows2 then
+    raise exception 'INF-12: status x visit type answered % visits (want %)', v_rows, v_rows2;
+  end if;
+  select sum(row_count) into v_rows
+    from custom.record_aggregate(c_cr_org, c_visits, '["status"]'::jsonb, '[{"op": "count"}]'::jsonb,
+                                 '{"key": "appointment_date", "by": "month"}'::jsonb);
+  if v_rows is distinct from v_rows2 then
+    raise exception 'INF-13: status by month (Field-key grammar) answered % visits (want %)', v_rows, v_rows2;
   end if;
   begin
     perform 1 from custom.record_aggregate(c_cr_org, c_visits, '["appointment_date:fortnight"]'::jsonb, '["count"]'::jsonb);

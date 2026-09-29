@@ -45,7 +45,7 @@
 -- the transaction's first query saw, for the OLD run and the NEW run alike.
 begin isolation level repeatable read;
 set local statement_timeout = 0;
-set local lock_timeout = '30s';
+set local lock_timeout = '180s';
 set local work_mem = '64MB';
 
 -- ════════════════════════════════════════════════════════════════════ the world under test
@@ -84,6 +84,8 @@ create temp table l7_probe (
 -- An answer is kept as the md5 of its canonical JSON text (equal jsonb, equal text) plus its first words.
 create temp table l7_ans (probe int not null, side text not null, h text, preview text, err boolean, primary key (probe, side)) on commit drop;
 
+create temp table l7_unmeasured (probe int, side text, code text) on commit drop;
+
 create function pg_temp.l7_call(p_seat uuid, p_role text, p_claims_role text, p_sql text, p_snap text, p_seed float8)
  returns jsonb language plpgsql as $f$
 declare v jsonb; v_snap jsonb;
@@ -118,6 +120,9 @@ begin
             order by id loop
     v := pg_temp.l7_call(p.seat, p.seat_role, p.claims_role, p.sql, p.snap, 0.42);
     insert into l7_ans values (p.id, p_side, md5(v::text), left(v::text, 400), v ? 'err');
+    if v ->> 'err' in ('55P03', '40001', '40P01') then
+      insert into l7_unmeasured values (p.id, p_side, v ->> 'err');
+    end if;
     n := n + 1;
   end loop;
   return n;
@@ -407,6 +412,9 @@ rollback;
 \quit
 \endif
 
+-- A probe that waits on another lane's row lock is UNMEASURED (55P03), never an answer: it waits 20 s at most.
+set local lock_timeout = '20s';
+
 -- ════════════════════════════════════════════════════════════════════ OLD
 \echo '── OLD bodies'
 select clock_timestamp() as old_start, pg_temp.l7_run('old') as probes_run, clock_timestamp() as old_end;
@@ -505,6 +513,7 @@ select p.kind, count(*) as probes, count(*) filter (where o.h is distinct from n
        count(*) filter (where o.err) as refusals, count(*) filter (where not o.err) as allows
   from l7_probe p join l7_ans o on o.probe = p.id and o.side = 'old' join l7_ans n on n.probe = p.id and n.side = 'new'
  group by p.kind order by p.kind;
+select count(distinct probe) as unmeasured_probes from l7_unmeasured;
 \echo '── the first mismatches, if any'
 select p.kind, p.class_id, p.seat, p.seat_role, o.preview as old, n.preview as new
   from l7_probe p join l7_ans o on o.probe = p.id and o.side = 'old' join l7_ans n on n.probe = p.id and n.side = 'new'
@@ -519,7 +528,12 @@ do $green$
 declare v_mm int; v_co int; v_sh int; v_n int;
 begin
   select count(*), count(*) filter (where o.h is distinct from n.h) into v_n, v_mm
-    from l7_probe p join l7_ans o on o.probe = p.id and o.side = 'old' join l7_ans n on n.probe = p.id and n.side = 'new';
+    from l7_probe p join l7_ans o on o.probe = p.id and o.side = 'old' join l7_ans n on n.probe = p.id and n.side = 'new'
+   where p.id not in (select probe from l7_unmeasured);
+  if exists (select 1 from l7_unmeasured) then
+    raise exception 'UNMEASURED: % probes waited on another lane''s lock (%); % of the rest differ. Run again when the clone is quiet.',
+      (select count(distinct probe) from l7_unmeasured), (select string_agg(distinct code, ', ') from l7_unmeasured), v_mm;
+  end if;
   select count(*) filter (where o.v is distinct from n.v) into v_co from l7_checkout_old o join l7_checkout_new n on n.id = o.id;
   select count(*) into v_sh from l7_shape_old o full join l7_shape_new n on n.fn = o.fn where o.v is distinct from n.v;
   if v_mm > 0 or v_co > 0 or v_sh > 0 then

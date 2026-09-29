@@ -1,4 +1,4 @@
--- chair-step: it REPLACES the bodies of iam.api_key_identity_must_be_minted() (the CRITICAL-1 trigger) and iam.api_key_revoke(uuid), adds three iam doors, one restrictive SELECT policy on iam.api_keys and four platform.feature_knob rows. No table is created or altered and no existing key changes: the three live keys are revoked service keys and stay exactly as they are.
+-- chair-step: it REPLACES the bodies of iam.api_key_identity_must_be_minted() (the CRITICAL-1 trigger) and iam.api_key_revoke(uuid), adds three iam doors and one server-only iam function, one restrictive SELECT policy on iam.api_keys and four platform.feature_knob rows. No table is created or altered and no existing key changes: the three live keys are revoked service keys and stay exactly as they are.
 -- lane: TABLE-API-1
 -- based-on: iam.api_key_identity_must_be_minted() c7899d3160c2799b2d3a1471e83d0f9bbd53a7ae5a3e56c2c5ddfe2a0c571c07
 -- based-on: iam.api_key_revoke(uuid) bec1b212d638fcce4a1b0005003c181df430d8c868d97c0990a6cc8a0aec45c3
@@ -358,6 +358,27 @@ values
    'migrations/campaign/tableapi1_a_person_can_hold_a_key_that_is_them.sql (lane TABLE-API-1)',
    'The signed-in person revokes one of their own personal keys; touches no membership.',
    false, true);
+
+-- ── 5b. is this OAuth client one that registered itself? (server lane only) ───────────────
+-- The AI Matrx MCP and the table API refuse sign-ins held by self-registered apps when the
+-- knob mcp/oauth_dynamic_clients_enabled is off; this is how they tell one from an app we
+-- registered ourselves. Read on the server's own pool; no client may call it.
+create function iam.oauth_client_is_dynamic(p_client_id uuid)
+ returns boolean
+ language sql
+ stable
+ security definer
+ set search_path to 'pg_catalog'
+as $function$
+  select exists (
+    select 1 from auth.oauth_clients c
+     where c.id = p_client_id
+       and c.registration_type::text = 'dynamic'
+  );
+$function$;
+
+revoke all on function iam.oauth_client_is_dynamic(uuid) from public, anon, authenticated;
+grant execute on function iam.oauth_client_is_dynamic(uuid) to service_role;
 
 -- ── 5. a personal key's row is its person's alone ────────────────────────────────────────
 create policy api_keys_personal_rows_are_their_owners on iam.api_keys
