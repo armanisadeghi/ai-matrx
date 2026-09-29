@@ -80,6 +80,7 @@ import { AddMembersDialog } from "./AddMembersDialog";
 import { OutcomesPanel } from "../../outcomes/OutcomesPanel";
 import { CampaignPerformancePanel } from "../../analytics/CampaignPerformancePanel";
 import { SingleSendDialog } from "./SingleSendDialog";
+import { ActivateOutreachListDialog } from "@/features/crm/pitch-advisories/ActivateOutreachListDialog";
 import { listSendingIdentities } from "../../sending-identities/service";
 import type { SendingIdentityView } from "../../sending-identities/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -116,6 +117,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
   const [headerError, setHeaderError] = useState<unknown>(null);
   const [headerLoading, setHeaderLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [activating, setActivating] = useState<OutreachListRow | null>(null);
   const [singleSendMember, setSingleSendMember] =
     useState<OutreachListMemberWithParty | null>(null);
   const [sendingIdentities, setSendingIdentities] = useState<
@@ -256,14 +258,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
           size="sm"
           variant="outline"
           className="h-7 gap-1 px-2 text-xs"
-          onClick={async () => {
-            try {
-              await setOutreachListStatus(list, "active");
-              refreshAll();
-            } catch (e) {
-              toast.error(e instanceof Error ? e.message : "Update failed");
-            }
-          }}
+          onClick={() => setActivating(list)}
         >
           <Play className="h-3.5 w-3.5" />
           {list.status === "draft" ? "Start outreach list" : "Resume"}
@@ -965,6 +960,14 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
           </NonEditableContextMenu>
         </div>
       )}
+
+      <ActivateOutreachListDialog
+        list={activating}
+        onOpenChange={(open) => {
+          if (!open) setActivating(null);
+        }}
+        onActivated={() => refreshAll()}
+      />
 
       {list && ctx && (
         <AddMembersDialog

@@ -163,8 +163,35 @@ export async function updateOutreachList(
   if (error) throw pgError(error);
 }
 
-/** Status transitions stamp the lifecycle timestamps they imply. */
+/**
+ * Status transitions stamp the lifecycle timestamps they imply.
+ *
+ * NEVER "active": activating starts the cadence (every member gets the first step),
+ * so it is a send of the whole list and goes through `activateOutreachList`, whose one
+ * caller is `ActivateOutreachListDialog` — the pitch advisory shows first, always.
+ * Guard: `features/crm/pitch-advisories/__tests__/every-activation-shows-the-advisory.test.ts`.
+ */
 export async function setOutreachListStatus(
+  list: OutreachListRow,
+  status: Exclude<OutreachListStatus, "active">,
+): Promise<void> {
+  if ((status as OutreachListStatus) === "active") {
+    throw new Error(
+      "Activating an outreach list goes through ActivateOutreachListDialog so the pitch advisory shows first.",
+    );
+  }
+  await writeOutreachListStatus(list, status);
+}
+
+/**
+ * Start (or resume) a list's cadence. Call ONLY from `ActivateOutreachListDialog`,
+ * after the person has seen the pitch advisory for this list.
+ */
+export async function activateOutreachList(list: OutreachListRow): Promise<void> {
+  await writeOutreachListStatus(list, "active");
+}
+
+async function writeOutreachListStatus(
   list: OutreachListRow,
   status: OutreachListStatus,
 ): Promise<void> {

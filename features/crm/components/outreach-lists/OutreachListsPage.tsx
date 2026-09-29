@@ -50,7 +50,7 @@ import { LoadingSurface } from "@/features/marketing/components/shared/Marketing
 import { useRead } from "@/components/read-state/useRead";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-import { PitchAdvisoryConfirmDialog } from "@/features/crm/pitch-advisories/PitchAdvisoryConfirmDialog";
+import { ActivateOutreachListDialog } from "@/features/crm/pitch-advisories/ActivateOutreachListDialog";
 import { MediaResearchDialog } from "@/features/crm/media-research/MediaResearchDialog";
 
 function memberCount(row: OutreachListWithCount): number {
@@ -475,42 +475,19 @@ export function OutreachListsPage() {
           </div>
         )}
 
-        {activating && (
-          <PitchAdvisoryConfirmDialog
-            open
-            onOpenChange={(open) => {
-              if (!open) setActivating(null);
-            }}
-            organizationId={activating.organization_id}
-            request={{
-              surface: "list_send",
-              outreach_list_id: activating.id,
-              attachment_count: 0,
-              is_exclusive: false,
-            }}
-            title={`Activate ${activating.name}?`}
-            description="Activating starts the cadence: every member gets the first step. Here is what your PR settings say about this list."
-            confirmLabel="Activate"
-            entityType="crm_outreach_list"
-            entityId={activating.id}
-            onConfirm={async () => {
-              try {
-                await setOutreachListStatus(activating, "active");
-                load();
-                recordToast.success(
-                  {
-                    type: "crm-outreach-list",
-                    id: activating.id,
-                    title: activating.name,
-                  },
-                  `${activating.name} → active`,
-                );
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Update failed");
-              }
-            }}
-          />
-        )}
+        <ActivateOutreachListDialog
+          list={activating}
+          onOpenChange={(open) => {
+            if (!open) setActivating(null);
+          }}
+          onActivated={(list) => {
+            load();
+            recordToast.success(
+              { type: "crm-outreach-list", id: list.id, title: list.name },
+              `${list.name} → active`,
+            );
+          }}
+        />
 
         {researching && (
           <MediaResearchDialog
