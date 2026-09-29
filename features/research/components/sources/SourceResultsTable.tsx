@@ -89,9 +89,10 @@ function videoSummary(video: YouTubeVideoIdentity): string {
 /**
  * Shared source-result table for the keyword preview and the Content view.
  *
- * The read-only keyword preview deliberately hides the toolbar, copy controls,
- * and pagination: its caller supplies a short pre-ranked subset beneath a fade,
- * so query chrome would promise controls over an intentionally partial list.
+ * The read-only keyword preview deliberately hides the toolbar and copy controls:
+ * its caller supplies a short pre-ranked subset beneath a fade. Its canonical
+ * footer remains visible with only the all-loaded receipt and labels only rows
+ * shown, never the complete source set.
  * Content mounts its existing source-aware controls as canonical toolbar
  * facets; this table owns all column sort/filter controls.
  */
@@ -480,7 +481,20 @@ export function SourceResultsTable({
         : {})}
       hideToolbar={!interactive}
       {...(!interactive
-        ? { hidePagination: true, pageSize: 0, copy: false, zebra: false }
+        ? {
+            pageSize: 0,
+            // The preview is a caller-owned ranked subset, so its receipt
+            // keeps the shared footer but offers no alternate page size.
+            pageSizeOptions: [],
+            copy: false,
+            zebra: false,
+            paginationLabelFormat: (start: number, end: number, total: number) => {
+              const shown = end - start + 1;
+              return total === 0
+                ? "No sources shown"
+                : `${shown} ${shown === 1 ? "source" : "sources"} shown`;
+            },
+          }
         : {})}
       tableClassName="text-left"
     />

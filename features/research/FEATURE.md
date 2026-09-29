@@ -106,6 +106,10 @@ via `<Cost>`/`useCostDisplay` (`components/cost/`, points for everyone); never `
 - **The Experts surface owns responsive interaction density.** Its root uses
   `matrx-touch-targets`, and its Radix checkboxes retain the 14px visual while an invisible 44px
   `CHECKBOX_TAP_AREA` owns the tablet/mobile hit target.
+- **Keyword source previews keep the canonical footer.** `SourceResultsTable`
+  labels only the ranked rows shown, keeps inactive page controls visible, and
+  leaves Show all/less with the keyword page. The collapsed-row fade stops above
+  the footer; source titles and rightmost doors stay usable.
 
 - **Topic navigation is the shell's route menu — never a page-local sidebar or dock.**
   `components/shell/ResearchTopicSidebarMenu.tsx` renders `RESEARCH_NAV_ITEMS` inside the app
@@ -116,6 +120,8 @@ via `<Cost>`/`useCostDisplay` (`components/cost/`, points for everyone); never `
 `pnpm type-check` is the only type gate; the build ignores type errors.
 
 ## Change log
+
+- 2026-09-29 — Keyword source previews show a stable canonical loaded-row receipt; their fade clears the footer while Show all/less and source doors remain unchanged.
 
 - 2026-09-28 — The topic's agent surface is one host, `components/shell/ResearchTopicSurfaceHost.tsx`
   (scope + `ResearchTopicWriteTargets`), mounted by the topic workspace route

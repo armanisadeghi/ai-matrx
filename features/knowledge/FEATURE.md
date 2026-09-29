@@ -41,6 +41,10 @@ keep working until H6 and link to the hub.
   candidate reader; libraries read `media.source_library` directly — no title column).
 - `features/knowledge/hub/components/` — page, sidebar, search box, filter menu (`f`), results
   (sections / list / table / board / gallery), peek, File-under dialog.
+  The table keeps the canonical footer over all loaded rows. Browse mode uses
+  counted item sections for its source total; text search leaves the total
+  unknown because passage matches can add deduplicated source rows. Section
+  cursors stay with the hub's Load more control.
 - `features/knowledge/components/KnowledgeShowcasePage.tsx` — the `/knowledge/about` page.
 - `features/knowledge/components/KnowledgePipelineDiagram.tsx` — `"use client"` interactive,
   theme-aware rebuild of the source SVG (tap a phase to focus it).
@@ -109,6 +113,8 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
   it there first, then mirror the labels here.
 
 ## Change log
+
+- **2026-09-29** — Knowledge table layout retains the canonical footer and source-coverage notice; browse totals exclude passage counts, while text search never invents a distinct-item total. The existing Load more advances section cursors.
 
 - **2026-09-27** — H6b lists: container groups (`view=group:<token>`, filters as `g.*`; `containerGroups/`) —
   Data stores (member counts, New data store), Libraries (paste box, four lanes with counts, adapter filter,

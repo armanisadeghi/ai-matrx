@@ -58,7 +58,7 @@ describe("SourceResultsTable", () => {
     host.remove();
   });
 
-  it("keeps the preview pre-ranked and removes every query control", () => {
+  it("keeps the preview pre-ranked with a canonical all-loaded footer", () => {
     act(() => {
       root.render(
         <SourceResultsTable
@@ -71,7 +71,17 @@ describe("SourceResultsTable", () => {
     if (!tableProps) throw new Error("Source table did not render");
 
     expect(tableProps.hideToolbar).toBe(true);
-    expect(tableProps.hidePagination).toBe(true);
+    expect(tableProps.hidePagination).toBeUndefined();
+    expect(tableProps.pageSize).toBe(0);
+    expect(tableProps.pageSizeOptions).toEqual([]);
+    expect(tableProps.paginationLabelFormat?.(1, 1, 1)).toBe(
+      "1 source shown",
+    );
+    // The preview receives a caller-selected subset, so its receipt must not
+    // imply that the local total is the topic's complete source count.
+    expect(tableProps.paginationLabelFormat?.(1, 3, 3)).toBe(
+      "3 sources shown",
+    );
     expect(tableProps.copy).toBe(false);
     expect(
       tableProps.columns.every(

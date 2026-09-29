@@ -265,7 +265,9 @@ export function KeywordDetailView({
                   rankFor={(s) => rankFor(s.id)}
                 />
                 {!resultsExpanded && hiddenSrc > 0 && (
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent to-background rounded-b-lg" />
+                  // The table owns its persistent source receipt in the final
+                  // 32px; fade only the teaser rows above it.
+                  <div className="pointer-events-none absolute inset-x-0 bottom-8 h-14 bg-gradient-to-b from-transparent to-background rounded-b-lg" />
                 )}
               </div>
               {srcList.length > INLINE_RESULTS && (

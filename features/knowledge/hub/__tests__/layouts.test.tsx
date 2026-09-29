@@ -9,12 +9,12 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { BrowseResults, browseHits } from "@/features/knowledge/hub/components/HubResults";
+import { BrowseResults, browseHits, searchHitsByItem } from "@/features/knowledge/hub/components/HubResults";
 import { createFixtureRunner } from "@/features/knowledge/api/knowledgeSearchFixture";
 import type { SectionState } from "@/features/knowledge/hub/hooks/useKnowledgeResults";
 import type { ResultHandlers } from "@/features/knowledge/hub/components/HubResultRow";
 import type { HubLayout } from "@/features/knowledge/hub/hubState";
-import type { KnowledgeSection } from "@/features/knowledge/api/knowledgeSearch";
+import type { KnowledgeHit, KnowledgeSection } from "@/features/knowledge/api/knowledgeSearch";
 
 function toStates(sections: KnowledgeSection[]): SectionState[] {
   return sections.map((s) => ({
@@ -85,6 +85,98 @@ it("board groups by kind with counts", async () => {
   const headings = [...host.querySelectorAll("section h3")].map((h) => h.textContent);
   expect(headings.some((t) => t?.startsWith("Note"))).toBe(true);
   expect(headings.some((t) => t?.startsWith("Document") || t?.startsWith("Web page"))).toBe(true);
+});
+
+it("keeps the canonical table footer and distinguishes a loaded source window from its total", async () => {
+  const onShowMore = jest.fn();
+  const sections = toStates(await createFixtureRunner()({ mode: "find", types: ["note", "processed_document"] }));
+  const cursorSection = sections.find((section) => section.section?.items.length);
+  if (!cursorSection?.section) throw new Error("Fixture did not provide a result section.");
+  cursorSection.section = {
+    ...cursorSection.section,
+    count: (cursorSection.section.count ?? 0) + 100,
+    next_cursor: "next-window",
+  };
+  const hits = browseHits(sections);
+  const sourceTotal = sections
+    .filter((section) => section.key !== "top_hit" && section.key !== "segments")
+    .reduce((total, section) => total + (section.section?.count ?? 0), 0);
+
+  await act(async () => {
+    root.render(
+      <div style={{ height: 800 }}>
+        <BrowseResults
+          layout="table"
+          sections={sections}
+          hits={hits}
+          handlers={handlers}
+          emptySentence="Nothing here."
+          onShowMore={onShowMore}
+          onRetry={jest.fn()}
+        />
+      </div>,
+    );
+  });
+
+  expect(host.querySelector("[data-matrx-table-footer]")).not.toBeNull();
+  expect(host.querySelector('[data-matrx-table-coverage-scope="all"]')?.textContent).toContain("Partial");
+  expect(host.textContent).toContain(`Showing the ${hits.length} items loaded so far out of ${sourceTotal} items in this table.`);
+  expect(host.querySelector("[data-matrx-table-footer]")?.textContent).toContain(`${hits.length} / ${sourceTotal} loaded`);
+  const loadMore = [...host.querySelectorAll("button")].find((button) => button.textContent === "Load more");
+  expect(loadMore).toBeDefined();
+  await act(async () => loadMore?.click());
+  expect(onShowMore).toHaveBeenCalledWith(cursorSection.key);
+});
+
+it("keeps a passage-only search result's total unknown", async () => {
+  const segment =
+    ({
+      entity: "segment",
+      id: "segment-1",
+      title: "Forklift safety",
+      snippet: "forklift inspection",
+      segment: { source_id: "passage-only-source", source_title: "Forklift safety" },
+    }) as KnowledgeHit;
+  const sections: SectionState[] = [
+    {
+      key: "sources",
+      status: "ready",
+      section: { key: "sources", label: "Sources", count: 100, items: [], next_cursor: null },
+      loadingMore: false,
+      moreError: null,
+    },
+    {
+      key: "segments",
+      status: "ready",
+      section: { key: "segments", label: "Passages", count: 1, items: [segment], next_cursor: "passage-next" },
+      loadingMore: false,
+      moreError: null,
+    },
+  ];
+  const hits = searchHitsByItem(sections);
+  expect(hits).toHaveLength(1);
+
+  await act(async () => {
+    root.render(
+      <div style={{ height: 800 }}>
+        <BrowseResults
+          layout="table"
+          highlight="forklift"
+          sections={sections}
+          hits={hits}
+          handlers={handlers}
+          emptySentence="Nothing here."
+          onShowMore={jest.fn()}
+          onRetry={jest.fn()}
+        />
+      </div>,
+    );
+  });
+
+  expect(host.querySelector('[data-matrx-table-coverage-scope="all"]')?.textContent).toContain("Unknown total");
+  expect(host.textContent).toContain("The total number of items in this table is not known.");
+  expect(host.textContent).not.toContain("out of 100 items in this table.");
+  expect(host.querySelector("[data-matrx-table-footer]")?.textContent).not.toContain(" / 100 loaded");
 });
 
 it("a failed lane says so with a retry, and the other lanes still render", async () => {
