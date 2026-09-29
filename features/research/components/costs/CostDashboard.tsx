@@ -563,7 +563,6 @@ export default function CostDashboard() {
           getRowId={(phase) => phase.phase}
           density="condensed"
           pageSize={0}
-          hidePagination
           viewTabs={false}
           copy={false}
           detail={{ enabled: false }}
@@ -607,7 +606,6 @@ export default function CostDashboard() {
           getRowId={(model) => model.model}
           density="condensed"
           pageSize={0}
-          hidePagination
           viewTabs={false}
           copy={false}
           detail={{ enabled: false }}
@@ -630,7 +628,6 @@ export default function CostDashboard() {
         getRowId={(entry) => entry.id}
         density="condensed"
         pageSize={0}
-        hidePagination
         viewTabs={false}
         copy={false}
         detail={{ enabled: false }}
