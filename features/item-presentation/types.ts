@@ -53,7 +53,7 @@ export type KnownItemType =
   | "google_document"
   // One owned Google Calendar event inside the agenda window, mirrored into
   // `communication.calendar_event` (aidream migration 0766). Read-only toward
-  // Google: `visibility personal` by default (ruling R1), because a person's
+  // Google: a Private record of its owner (ruling R1), because a person's
   // agenda is theirs.
   | "calendar_event"
   // A Marketing SITE — `web.site`, the module's central identity (every Search

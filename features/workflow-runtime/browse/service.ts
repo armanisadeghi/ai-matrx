@@ -229,7 +229,7 @@ export async function deleteWorkflow(workflowId: string): Promise<void> {
  *
  * This REPLACED a client-side read-then-insert, which could not implement the
  * ruling and was wrong in two ways: it copied the SOURCE's `organization_id`
- * and `visibility` onto the copy — handing an outsider's row your org id, and
+ * and row controls onto the copy — handing an outsider's row your org id, and
  * silently re-publishing the original's reach. The copy is homed in the
  * organization the duplicator is working in (named here — the database refuses
  * to pick one) and starts private. Per no-legacy, the old path is

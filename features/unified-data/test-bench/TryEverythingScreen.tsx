@@ -905,7 +905,7 @@ function StatusStrip({
     const [serverProblem, setServerProblem] = useState<string | null>(null);
     const [nonce, setNonce] = useState(0);
 
-    const visibility = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
+    const membershipShows = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
     const visibilityChoices = useKnobChoices(organizationId, MEMBER_VISIBILITY, userId);
 
     // HOW MANY THINGS ARE WAITING ON THIS PERSON — the store's own queue, asked
@@ -991,9 +991,9 @@ function StatusStrip({
     // answers, never blurred: the sentence, "still reading" (`undefined`), and
     // a problem. A stored token is never pasted into any of them — a value the
     // registry does not list is a fact about the SETTING, said as one.
-    const visibilitySettled = visibility !== undefined && !visibilityChoices.loading;
+    const visibilitySettled = membershipShows !== undefined && !visibilityChoices.loading;
     const visibilityLabel = visibilityChoices.knob
-        ? knobChoiceLabel(visibilityChoices.knob, visibility)
+        ? knobChoiceLabel(visibilityChoices.knob, membershipShows)
         : null;
     const visibilityWord = visibilitySettled ? (visibilityLabel ?? undefined) : undefined;
     const visibilityProblem =
@@ -1326,7 +1326,7 @@ function MemberVisibilityControl({
     if (doorProblem) {
         return (
             <Refusal>
-                This organization’s visibility setting could not be read — {doorProblem}
+                This organization’s “Membership alone shows” setting could not be read — {doorProblem}
               <ErrorAlchemyMenu />
             </Refusal>
         );
@@ -1352,7 +1352,7 @@ function MemberVisibilityControl({
                     <label key={choice.value} className="flex cursor-pointer items-start gap-2 text-sm">
                         <input
                             type="radio"
-                            name="member-visibility"
+                            name="membership-alone-shows"
                             className="mt-0.5"
                             checked={current === choice.value}
                             disabled={busy || current === undefined}

@@ -76,7 +76,7 @@ function RunControlsWindowInner({
   };
 
   // The mobile presentation deliberately substitutes a bottom sheet for
-  // WindowPanel. Tell the shared visibility watchdog that this registered
+  // WindowPanel. Tell the shared on-screen watchdog that this registered
   // window-kind overlay mounted its alternate surface, then remove the ack as
   // soon as the sheet unmounts or the viewport returns to desktop.
   useOverlaySurfaceRenderAck(OVERLAY_ID, isMobile);

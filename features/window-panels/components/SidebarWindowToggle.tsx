@@ -84,7 +84,7 @@ export default function SidebarWindowToggle() {
 
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "visibility" | "layout" | "tools" | "admin" | "creator" | "dupes"
+    "shown" | "layout" | "tools" | "admin" | "creator" | "dupes"
   >("tools");
   const [layoutDirX, setLayoutDirX] = useState<"ltr" | "rtl">("rtl");
   const [layoutDirY, setLayoutDirY] = useState<"ttb" | "btt">("ttb");
@@ -288,11 +288,11 @@ export default function SidebarWindowToggle() {
                 type="button"
                 className={cn(
                   "px-2 py-1 text-[11px] font-medium uppercase tracking-wider rounded-md transition-colors",
-                  activeTab === "visibility"
+                  activeTab === "shown"
                     ? "bg-accent/80 text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/40",
                 )}
-                onClick={() => setActiveTab("visibility")}
+                onClick={() => setActiveTab("shown")}
               >
                 Visibility
               </button>
@@ -356,7 +356,7 @@ export default function SidebarWindowToggle() {
             </div>
 
             {/* ── Tab Content: Visibility ──────────────────────────────────── */}
-            {activeTab === "visibility" && (
+            {activeTab === "shown" && (
               <div className="flex-1 flex flex-col">
                 <MenuItem
                   icon={

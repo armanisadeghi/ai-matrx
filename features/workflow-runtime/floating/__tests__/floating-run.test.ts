@@ -57,7 +57,7 @@ describe("the handoff hook", () => {
 
   it("opens the float from the CLEANUP, not from a render", () => {
     // The page is the thing being navigated away from — its last act has to be
-    // handing the run on. An open during render would fight the visibility
+    // handing the run on. An open during render would fight the show/hide
     // gate and stack a float over the page that already shows the run.
     expect(source).toMatch(/return\s*\(\)\s*=>\s*\{[\s\S]*openWorkflowRunWindowAction/);
   });

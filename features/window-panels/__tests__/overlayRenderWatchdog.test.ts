@@ -1,5 +1,5 @@
 /**
- * overlayRenderWatchdog.test.ts — pure visibility diagnosis used by the
+ * overlayRenderWatchdog.test.ts — pure on-screen diagnosis used by the
  * silent-render watchdog. No store/DOM/timers.
  */
 import {

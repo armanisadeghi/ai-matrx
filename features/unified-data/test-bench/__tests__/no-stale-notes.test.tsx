@@ -102,7 +102,7 @@ jest.mock("@/utils/supabase/client", () => {
     };
     return { createClient: () => client };
 });
-// The visibility section reads the setting's CHOICES from the registry now
+// The "Membership alone shows" section reads the setting's CHOICES from the registry now
 // (lane FRONT-DOOR, 2026-09-21 — `useKnobChoices` → `fetchKnobDefinition`),
 // instead of carrying its own typed-in copy of them. A partial mock of this
 // module that declares only the two write-door functions makes

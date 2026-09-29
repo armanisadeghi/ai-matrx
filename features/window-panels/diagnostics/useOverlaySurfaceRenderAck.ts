@@ -9,7 +9,7 @@ import {
 /**
  * Acknowledge a visible presentation that intentionally replaces WindowPanel.
  *
- * Registered singleton window overlays normally prove visibility by mounting a
+ * Registered singleton window overlays normally prove they are on screen by mounting a
  * WindowPanel and registering geometry. Mobile drawers, sheets, and full-screen
  * viewers have no window-manager geometry, so their composition root must use
  * this hook while that alternate surface is active.

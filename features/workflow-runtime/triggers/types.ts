@@ -3,7 +3,7 @@
  * run WITHOUT a person present (a schedule, or an inbound webhook).
  *
  * 🚨 Not to be confused with `features/workflow-runtime/trigger-points.ts`:
- * that is a named MOMENT INSIDE a run that UI binds visibility to (ruling R2).
+ * that is a named MOMENT INSIDE a run that UI binds showing and hiding to (ruling R2).
  * This file is about what STARTS a run. Same word, unrelated systems.
  *
  * The server's `TriggerRecord` is `extra="allow"`, so the generated type is a

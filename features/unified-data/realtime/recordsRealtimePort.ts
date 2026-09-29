@@ -17,7 +17,7 @@
 // WHAT COMES DOWN THE WIRE IS NOT DATA. `{table_id, kind, op, record_ids, fields_changed, at}`
 // — ids and nothing else, never a value, never a title. That is not squeamishness: ONE topic
 // serves a whole Table, and two people admitted to the same Table do not necessarily see the
-// same rows in it. Per-record visibility is decided by the ladder at READ time, so anything
+// same rows in it. Who may read each record is decided by the ladder at READ time, so anything
 // riding this wire would travel past that decision. The notice is a nudge; the hook re-reads
 // the affected records through `custom.read_records`, which applies the ladder, and a record
 // the reader may not see simply does not come back.

@@ -187,10 +187,15 @@ describe("N5 — the curated dossier", () => {
         expect(shown.map((f) => f.label)).not.toContain(banned);
       }
       // `internal`, `person` and `organization` are Postgres labels, not
-      // English. ("Everyone in this ORGANIZATION can see it" is the sentence
-      // that replaced `Visibility=internal`, so that field is read separately.)
+      // English. The row controls ("Shown to", "Published to the web") are
+      // read separately below.
       const plainText = shown
-        .filter((f) => !f.ref && f.label !== "Who can see this")
+        .filter(
+          (f) =>
+            !f.ref &&
+            f.label !== "Shown to" &&
+            f.label !== "Published to the web",
+        )
         .map((f) => f.text)
         .join(" | ");
       expect(plainText).not.toMatch(/\binternal\b/);
@@ -199,10 +204,10 @@ describe("N5 — the curated dossier", () => {
     }
   });
 
-  it("says who can see the record in plain English", () => {
+  it("says the record's row controls in the access ladder's words", () => {
     const fields = partyType().fields(REAL_PERSON);
-    const visibility = fields.find((f) => f.label === "Who can see this");
-    expect(visibility?.text).toBe("Everyone in this organization can see it");
+    expect(fields.find((f) => f.label === "Shown to")?.text).toBe("Everyone");
+    expect(fields.find((f) => f.label === "Published to the web")?.text).toBe("No");
   });
 
   it("says so honestly when a record has no email or phone", () => {

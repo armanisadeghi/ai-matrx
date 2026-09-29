@@ -83,7 +83,8 @@ jest.mock("@/utils/supabase/client", () => {
         description: "The coaching practice's public site.",
         status: "active",
         brand_id: "9b1f1c2d-4a5e-4f6a-8b7c-0d1e2f3a4b5c",
-        visibility: "internal",
+        shown_to: null,
+        published_to_web: false,
         gsc_synced_at: "2026-09-17T09:15:00Z",
         created_at: "2026-04-02T12:00:00Z",
         updated_at: "2026-09-17T09:15:00Z",
@@ -154,7 +155,7 @@ describe("the Site registration (the door F-86's marketing answer needed)", () =
       previous_slugs: ["titanium"],
     });
     const keys = fields.map((f) => f.key);
-    expect(keys).toEqual(["root_url", "domain", "status", "brand_id"]);
+    expect(keys).toEqual(["root_url", "domain", "status", "brand_id", "shown_to", "published_to_web"]);
     // The owning marketing account is a DOOR, on the token that names it — the
     // generic column→token rule would derive "brand", which names nothing.
     expect(fields.find((f) => f.key === "brand_id")?.ref).toEqual({

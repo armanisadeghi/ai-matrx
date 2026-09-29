@@ -12,7 +12,7 @@
 //      store's facts, and an empty filter says why in one sentence;
 //   3. choosing a filter is a navigation (router.push), so the browser's Back returns.
 //
-// RED on the hub before the lane: the filter row was Everything + the four visibility lanes, the
+// RED on the hub before the lane: the filter row was Everything + the four lanes, the
 // Tables listing was the active organization's only (Harbor Dental's tables absent, Mine empty),
 // and "All my organizations" rewrote the address in place (no push, no way back).
 import { act } from "react";

@@ -15,7 +15,7 @@
  * content decides the rest, so a step that is writing gets room to be read.
  *
  * Zero page shift: the flow only ever GROWS. A readout that has rendered is
- * never unmounted because data arrived — visibility depends ONLY on trigger
+ * never unmounted because data arrived — showing depends ONLY on trigger
  * points (which fire monotonically within a run) and author config.
  *
  * Mobile is a single column ordered by mobileOrder ?? (y, x) — never a
@@ -358,21 +358,21 @@ export function RunSurfaceView({
       const pageId = readout.pageId ?? firstPageId;
       if (pageId !== activePageId) continue;
     }
-    const visibility = readout.visibility;
+    const shownWhen = readout.visibility;
     if (
-      visibility?.hideOn &&
-      hasTriggerFired(visibility.hideOn, definition, triggerState)
+      shownWhen?.hideOn &&
+      hasTriggerFired(shownWhen.hideOn, definition, triggerState)
     ) {
       continue;
     }
     if (
-      visibility?.appearOn &&
-      !hasTriggerFired(visibility.appearOn, definition, triggerState)
+      shownWhen?.appearOn &&
+      !hasTriggerFired(shownWhen.appearOn, definition, triggerState)
     ) {
       // Absent `empty` means "placeholder" (config.ts default) — the builder
       // encodes the placeholder choice by OMITTING the key, so only an
       // explicit "hidden" may collapse the box (zero page shift).
-      if (visibility.empty !== "hidden") {
+      if (shownWhen.empty !== "hidden") {
         rendered.push({ readout, mode: "placeholder" });
       }
       continue;

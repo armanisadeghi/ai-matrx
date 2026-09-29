@@ -137,7 +137,7 @@ function acknowledgedWindowId(overlayId: string, fallback: string): string {
   return ack?.kind === "window" ? ack.windowId : fallback;
 }
 
-// ── Pure visibility diagnosis ───────────────────────────────────────────────
+// ── Pure on-screen diagnosis ───────────────────────────────────────────────
 
 export type RenderFailureReason =
   | "no-window-registered"
@@ -184,7 +184,7 @@ export function diagnoseOverlayRender(args: {
   } = args;
   // Alternate mobile surfaces (for example a purpose-built settings drawer)
   // do not join the window manager. Their mount acknowledgement is the
-  // visibility proof; applying window geometry to them is a category error.
+  // on-screen proof; applying window geometry to them is a category error.
   if (surfaceAcknowledged) return { ok: true, reason: null };
   if (!entry) return { ok: false, reason: "no-window-registered" };
   // Popped-out windows live in a separate OS-managed browser window; the
@@ -398,7 +398,7 @@ function scream(store: WMApi, watch: Watch, res: Evaluation): void {
     },
   });
 
-  // Post-scream watcher: for the toast's lifetime, re-check visibility and
+  // Post-scream watcher: for the toast's lifetime, re-check it is on screen and
   // withdraw the toast the moment the panel is actually on screen (or the
   // overlay was closed — nothing left to heal either way).
   let elapsed = 0;
@@ -461,7 +461,7 @@ export const overlayRenderWatchdogMiddleware: Middleware<object, WMState> =
         ? payload.instanceId
         : undefined;
 
-    // Only singleton windows participate in the geometry/visibility model;
+    // Only singleton windows participate in the geometry/on-screen model;
     // multi-instance windows use per-instance ids we don't track here.
     const meta = getStaticEntryByOverlayId(overlayId);
     if (!meta || !watchdogTracksOpen(meta, instanceIdRaw ?? DEFAULT_INSTANCE_ID)) {

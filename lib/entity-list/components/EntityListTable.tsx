@@ -347,7 +347,7 @@ export function EntityListTable<TRow>({
   // config's entity token. A column that declares its own `href` keeps it.
   const doorColumn = entityListDoorColumnId(config);
 
-  // The phone card's layout is derived from the SAME visibility inputs the
+  // The phone card's layout is derived from the SAME shown-column inputs the
   // grid uses, so a column the user turned off stays off on both widths.
   const phoneLayout = resolvePhoneCardLayout(config.columns, {
     doorColumn,

@@ -85,7 +85,7 @@ export interface ViewportDims {
  * initial rect from that turns "90vw" into width 0 — the window registers a
  * 0×0 rect, renders as nothing, and stays invisible until something
  * re-clamps it (the "window opens invisible" class, watchdog reason:
- * zero-size). Judging visibility against a 0×0 viewport is just as wrong:
+ * zero-size). Judging on-screen position against a 0×0 viewport is just as wrong:
  * every on-screen rect reads as off-screen. A degenerate measurement is never
  * a real screen — fall back to sane dimensions, warn once, and tell the
  * caller so writers can stand down (`degenerate`).

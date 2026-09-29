@@ -373,7 +373,7 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
  *      OPTIONAL hook for extra work — it is no longer load-bearing.
  *
  *   2. Inline-managed:  caller passes `onClose`. The WindowPanel lives directly
- *      on a page (not via overlay slice) and the parent controls visibility
+ *      on a page (not via overlay slice) and the parent controls whether it is shown
  *      via local state. `onClose` is REQUIRED here because nothing else will
  *      close the window.
  *
