@@ -79,11 +79,17 @@ export interface MeetHostProps {
   children: ReactNode;
 }
 
-export function MeetHost({ children }: MeetHostProps) {
+/**
+ * The signed-in person's Meet identity and chrome — everything a member-lane
+ * `<MeetProvider>` needs EXCEPT the organization. Shared by the app-wide mount
+ * below and the meeting-scoped member mount on `/meet/[slug]`
+ * (features/meet/components/MeetingSurface.tsx), which scopes a join to the
+ * MEETING's organization when the person has no active one.
+ */
+export function useMeetMemberIdentity() {
   const store = useAppStore();
   const displayName = useAppSelector(selectDisplayName);
   const avatarUrl = useAppSelector(selectActiveUserAvatarUrl);
-  const organizationId = useAppSelector(selectActiveOrganizationId);
 
   const accessToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -110,16 +116,22 @@ export function MeetHost({ children }: MeetHostProps) {
     else console.info(line);
   }, []);
 
+  return {
+    client: supabase,
+    baseUrl: meetBaseUrl(store.getState()),
+    displayName,
+    avatarUrl,
+    accessToken,
+    onDiagnostic,
+  };
+}
+
+export function MeetHost({ children }: MeetHostProps) {
+  const identity = useMeetMemberIdentity();
+  const organizationId = useAppSelector(selectActiveOrganizationId);
+
   return (
-    <MeetProvider
-      client={supabase}
-      baseUrl={meetBaseUrl(store.getState())}
-      organizationId={organizationId}
-      displayName={displayName}
-      avatarUrl={avatarUrl}
-      accessToken={accessToken}
-      onDiagnostic={onDiagnostic}
-    >
+    <MeetProvider {...identity} organizationId={organizationId}>
       {/* Mount ONCE, high in the tree — a call rings on every surface. Mounted
           DIRECTLY: since @ai-matrx/meet 0.2.1 it renders nothing on its own
           while this provider is inert (which is every server render and every

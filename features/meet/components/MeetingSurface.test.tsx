@@ -10,6 +10,8 @@ import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
 import { MeetingSurface } from "./MeetingSurface";
 
 let mockMeetHost: object | null = { participant: { identity: "member-1" } };
+let mockActiveOrganizationId: string | null = null;
+let mockOrganizations: Record<string, object> = {};
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/features/meet/lib/meetBaseUrl", () => ({
@@ -22,6 +24,7 @@ jest.mock("@ai-matrx/meet/react", () => ({
       roomName: "room-1",
       slug: "meeting-1",
       title: "Weekly review",
+      organizationId: "org-meeting",
       endedAt: "2026-09-12T00:00:00.000Z",
     }),
   }),
@@ -34,6 +37,15 @@ jest.mock("@ai-matrx/meet/react", () => ({
 }));
 jest.mock("@/features/meet/components/board/MeetingBoard", () => ({
   MeetingBoard: () => <div data-testid="meeting-board" />,
+}));
+jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
+  selectActiveOrganizationId: () => mockActiveOrganizationId,
+}));
+jest.mock("@/features/scopes/redux/selectors/tree", () => ({
+  selectOrganizations: () => mockOrganizations,
+}));
+jest.mock("@/providers/MeetHost", () => ({
+  useMeetMemberIdentity: () => ({}),
 }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({
   OrganizationRequiredNotice: () => <div data-testid="organization-recovery" />,
@@ -89,6 +101,25 @@ async function renderSurface(serverAuthenticated: boolean, auth = guestAuth) {
 describe("MeetingSurface authentication hydration", () => {
   beforeEach(() => {
     mockMeetHost = { participant: { identity: "member-1" } };
+    mockActiveOrganizationId = null;
+    mockOrganizations = {};
+  });
+
+  it("🚨 a signed-in member of the meeting's organization with NO active organization walks straight in — scoped to the meeting's organization, never asked to choose", async () => {
+    mockMeetHost = null;
+    mockOrganizations = { "org-meeting": { id: "org-meeting" } };
+    const surface = await renderSurface(true, {
+      ...guestAuth,
+      id: "member-1",
+      authReady: true,
+    });
+
+    expect(surface.container.querySelector('[data-testid="organization-recovery"]')).toBeNull();
+    // The meeting-scoped provider wraps the room (the mock renders it as a div).
+    const scoped = surface.container.querySelector('[data-testid="guest-provider"]');
+    expect(scoped).not.toBeNull();
+    expect(surface.container.textContent).not.toContain("Preparing your meeting");
+    surface.unmount();
   });
 
   it("keeps the server guest lane while browser authentication is unresolved, then replaces it when Redux resolves a member", async () => {
@@ -118,7 +149,7 @@ describe("MeetingSurface authentication hydration", () => {
     surface.unmount();
   });
 
-  it("keeps the meeting open with the canonical organization picker when a signed-in host has no active organization", async () => {
+  it("a person OUTSIDE the meeting's organization with no active organization still gets the canonical picker (server admission needs one of theirs)", async () => {
     jest.useFakeTimers();
     mockMeetHost = null;
     const surface = await renderSurface(true, {

@@ -39,6 +39,9 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { MeetingLayout } from "@/features/meet/components/MeetingLayout";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { selectOrganizations } from "@/features/scopes/redux/selectors/tree";
+import { useMeetMemberIdentity } from "@/providers/MeetHost";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { MEET_PLACES } from "@/features/meet/intelligence-places";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -151,6 +154,20 @@ export function MeetingSurface({
  */
 function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
   const host = useMeetHost();
+  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
+  const organizations = useAppSelector(selectOrganizations);
+  const memberOfMeetingOrg = organizations[meeting.organizationId] !== undefined;
+  // 🚨 A MEETING LINK NEVER ASKS FOR AN ORGANIZATION (verifier, 2026-09-27).
+  // The app-wide `<MeetHost>` is scoped to the ACTIVE organization and stays
+  // inert without one — so a person with no active organization was stopped
+  // by "An organization is needed" at the door. The meeting names its own
+  // organization; when the person belongs to it, the room is scoped to it.
+  // Latched: once chosen, a later org switch never rebuilds a live call.
+  const [scoped, setScoped] = useState(false);
+  useEffect(() => {
+    if (!scoped && host === null && activeOrganizationId === null && memberOfMeetingOrg)
+      setScoped(true);
+  }, [scoped, host, activeOrganizationId, memberOfMeetingOrg]);
   const [gaveUp, setGaveUp] = useState(false);
 
   useEffect(() => {
@@ -158,6 +175,8 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
     const timer = setTimeout(() => setGaveUp(true), 8000);
     return () => clearTimeout(timer);
   }, [host]);
+
+  if (scoped) return <MeetingScopedMemberRoom meeting={meeting} />;
 
   if (host === null) {
     if (!gaveUp) {
@@ -181,6 +200,25 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
     );
   }
 
+  return <MemberRoomBody meeting={meeting} />;
+}
+
+/**
+ * The signed-in lane scoped to the MEETING's organization — a member-lane
+ * `<MeetProvider>` (the person's own session, never a guest) whose
+ * organization is the meeting's. Used only while the app-wide host is inert,
+ * so there is never a second call center beside it.
+ */
+function MeetingScopedMemberRoom({ meeting }: { meeting: MeetingRecord }) {
+  const identity = useMeetMemberIdentity();
+  return (
+    <MeetProvider {...identity} organizationId={meeting.organizationId}>
+      <MemberRoomBody meeting={meeting} />
+    </MeetProvider>
+  );
+}
+
+function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
   return (
     <div className="h-dvh w-full">
       {/* NO CONSENT BANNER HERE. `<MeetingRoom>` renders the package's own
