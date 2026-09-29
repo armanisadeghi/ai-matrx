@@ -86,7 +86,7 @@ importers:
         version: 0.58.100(react@19.3.0)
       '@ai-matrx/records-ui':
         specifier: latest
-        version: 0.93.69(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+        version: 0.93.70(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/tap-target':
         specifier: latest
         version: 0.2.14(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1160,8 +1160,8 @@ packages:
       react-native:
         optional: true
 
-  '@ai-matrx/records-ui@0.93.69':
-    resolution: {integrity: sha512-OsTC3WmAlupDuXzrH3sRooDA7WgdoNmRjgN44Ye3RH3rfrWwbgor19dxQ1kzgwEe2xrV4nG3RnfGIH3lHVnSbg==}
+  '@ai-matrx/records-ui@0.93.70':
+    resolution: {integrity: sha512-qMnl6ICppqDPv276c28agyCRsST1jb4k2ce1/RXKWW5nuB2sPkggq0693cre0ofxGGXUnNrhSFcwXg18YVRqsA==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -1170,6 +1170,15 @@ packages:
 
   '@ai-matrx/records@0.58.100':
     resolution: {integrity: sha512-uVYTs0InkSk6xFzpGJE3RFFs/fcql1tBsPhFoN8wM0JWBrBP4zoY4m5tDvjSfoQxbjy/cK8a/rfcutzS3qGPxA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: '>=18.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+
+  '@ai-matrx/records@0.58.101':
+    resolution: {integrity: sha512-umPXw53k2xhqapy6wi2U3hucuWrnQ+8bLPOtQ04DuKpc3+9c9gzAfshAVBHgUFtgU6x0IjH0ps5txsYa6TUl5Q==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -11944,13 +11953,13 @@ snapshots:
     optionalDependencies:
       react: 19.3.0
 
-  '@ai-matrx/records-ui@0.93.69(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
+  '@ai-matrx/records-ui@0.93.70(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
       '@ai-matrx/alchemy': 0.8.33(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/content-ir': 0.19.21
       '@ai-matrx/design-system': 0.49.32(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/print': 0.8.29(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/records': 0.58.100(react@19.3.0)
+      '@ai-matrx/records': 0.58.101(react@19.3.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       recharts: 3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1)
@@ -11960,6 +11969,10 @@ snapshots:
       - supports-color
 
   '@ai-matrx/records@0.58.100(react@19.3.0)':
+    optionalDependencies:
+      react: 19.3.0
+
+  '@ai-matrx/records@0.58.101(react@19.3.0)':
     optionalDependencies:
       react: 19.3.0
 
