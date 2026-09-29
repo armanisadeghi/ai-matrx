@@ -72,9 +72,30 @@ function mockQuery(table: string) {
   return builder;
 }
 
+// ai.endpoint's credential pointers are client-excluded (access ladder T-35c); the admin screen
+// reads them through the admin-lane door ai.endpoint_credential_refs, answered here from the
+// same fixture rows.
+function mockRpc(fn: string) {
+  if (fn !== "endpoint_credential_refs") {
+    return Promise.resolve({ data: null, error: { message: `unexpected rpc ${fn}` } });
+  }
+  const rows = (mockTransport.pagesByTable.get("endpoint") ?? []) as Array<{
+    id: string;
+    byok_secret_key: string | null;
+    auth_ref: unknown;
+  }>;
+  return Promise.resolve({
+    data: rows.map(({ id, byok_secret_key, auth_ref }) => ({ id, byok_secret_key, auth_ref })),
+    error: null,
+  });
+}
+
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
-    schema: () => ({ from: (table: string) => mockQuery(table) }),
+    schema: () => ({
+      from: (table: string) => mockQuery(table),
+      rpc: (fn: string) => mockRpc(fn),
+    }),
   },
 }));
 
@@ -104,6 +125,7 @@ function endpointRow(index: number): EndpointRow {
     version: 1,
     visibility: "internal",
     shown_to: null,
+    custom_fields: {},
   };
 }
 
@@ -128,6 +150,7 @@ function apiRow(index: number): ApiRow {
     version: 1,
     visibility: "internal",
     shown_to: null,
+    custom_fields: {},
   };
 }
 
@@ -158,6 +181,7 @@ function offeringRow(index: number): OfferingRow {
     version: 1,
     visibility: "internal",
     shown_to: null,
+    custom_fields: {},
   };
 }
 
@@ -175,7 +199,13 @@ function expectCompleteReadContract(
   ]);
   for (const call of mockTransport.calls) {
     expect(call.table).toBe(table);
-    expect(call.select).toEqual(["*", { count: "exact" }]);
+    expect(call.select[1]).toEqual({ count: "exact" });
+    if (table === "endpoint") {
+      // The two credential pointers never ride a client table read.
+      expect(String(call.select[0])).not.toMatch(/byok_secret_key|auth_ref/);
+    } else {
+      expect(call.select[0]).toBe("*");
+    }
     expect(call.predicates).toEqual([["deleted_at", null]]);
     expect(call.orders).toEqual(orders);
   }

@@ -892,10 +892,12 @@ export function SurfaceRuntimeProvider({
   const stableGetScope = useCallback(() => getScopeRef.current(), []);
   // What every reader sees — the provider's scope plus descendant
   // contributions — so an Alchemy transfer carries the same values an agent does.
-  const mergedGetScope = useCallback(
-    () => withScopeContributions(surfaceName, () => getScopeRef.current())(),
-    [surfaceName],
-  );
+  const mergedGetScope = useCallback(() => {
+    const transferRegistry = capture ?? live;
+    return transferRegistry
+      ? transferRegistry.withScopeContributions(surfaceName, () => getScopeRef.current())()
+      : getScopeRef.current();
+  }, [capture, live, surfaceName]);
   const beforeExecuteRef = useRef(beforeExecute);
   const getWriteHandlersRef = useRef(getWriteHandlers);
   const ownConversationIdRef = useRef(ownConversationId);

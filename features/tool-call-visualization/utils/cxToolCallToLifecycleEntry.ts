@@ -11,7 +11,10 @@
  */
 
 import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type {
+  ToolCallParkedOn,
+  ToolLifecycleEntry,
+} from "@/features/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 
 function parseOutput(raw: string | null): unknown {
@@ -33,6 +36,27 @@ function deriveStatus(record: CxToolCallRecord): ToolLifecycleEntry["status"] {
   if (record.status === "completed") return "completed";
   if (record.status === "running") return "progress";
   return "started";
+}
+
+/**
+ * The server's park marker, read only while the call is still `delegated`.
+ * aidream writes `metadata.parked_on = {kind: "action_request",
+ * action_request_id}` when a tool parks its own call on a person
+ * (`action_requests/ledger.py`) and leaves it on the row after the answer, so
+ * the status decides whether the call is waiting — the marker only says on what.
+ */
+export function readParkedOn(
+  status: string,
+  metadata: unknown,
+): ToolCallParkedOn | null {
+  if (status !== "delegated") return null;
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
+  const parked = (metadata as Record<string, unknown>).parked_on;
+  if (!parked || typeof parked !== "object" || Array.isArray(parked)) return null;
+  const { kind, action_request_id } = parked as Record<string, unknown>;
+  if (kind !== "action_request") return null;
+  if (typeof action_request_id !== "string" || !action_request_id) return null;
+  return { kind: "action_request", actionRequestId: action_request_id };
 }
 
 function isPopulatedObject(v: unknown): v is Record<string, unknown> {
@@ -72,6 +96,7 @@ export function cxToolCallToLifecycleEntry(
     errorType: record.errorType,
     errorMessage: record.errorMessage,
     isDelegated: false,
+    parkedOn: readParkedOn(record.status, record.metadata),
     events,
   };
 

@@ -140,15 +140,10 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
     error: string | null;
   } | null>(null);
   // The run's durable record decides whether it is still going — never the
-  // stream closing (the run continues server-side after the stream ends).
-  const progress = useRunProgress(live?.runId ?? null, live ? 3000 : false);
-  const runStatus = progress.data?.status ?? null;
-  const running = Boolean(
-    live && !live.error && (!live.runId || !isTerminalRunStatus(runStatus)),
-  );
-
-  const tracker = useTracker(trackerId, running ? 5000 : false);
-  const runs = useMonitorRuns(trackerId, running ? 4000 : false);
+  // stream closing (the run continues server-side after the stream ends) and
+  // never this component's memory (a reload or a navigation keeps the truth).
+  const starting = Boolean(live && !live.runId && !live.error);
+  const runs = useMonitorRuns(trackerId, starting);
   const selectedRunId =
     runParam ??
     live?.runId ??
@@ -157,6 +152,13 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
       : null) ??
     runs.data?.[0]?.id ??
     null;
+  const progress = useRunProgress(selectedRunId);
+  const runStatus = progress.data?.status ?? null;
+  const selectedActive = Boolean(
+    selectedRunId && runStatus && !isTerminalRunStatus(runStatus),
+  );
+  const running = starting || selectedActive;
+  const tracker = useTracker(trackerId, running ? 5000 : false);
   const parts = useRunParts(selectedRunId, running ? 4000 : false);
   const stories = useTrackerStories(trackerId);
 
@@ -169,10 +171,14 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
 
   // When the run it started settles, read everything it wrote once more.
   // (`invalidate` is memoised by the compiler, so this fires once per settled run.)
-  const settledRun = live?.runId && isTerminalRunStatus(runStatus) ? live.runId : null;
+  const [watching, setWatching] = useState<string | null>(null);
   useEffect(() => {
-    if (settledRun) void invalidate();
-  }, [settledRun, invalidate]);
+    if (selectedActive && selectedRunId) setWatching(selectedRunId);
+    else if (watching && watching === selectedRunId && isTerminalRunStatus(runStatus)) {
+      setWatching(null);
+      void invalidate();
+    }
+  }, [selectedActive, selectedRunId, runStatus, watching, invalidate]);
 
   const [schedule, setSchedule] = useState<ScheduleView | null>(null);
   const [setup, setSetup] = useState<SetupFacts | null>(null);
@@ -349,11 +355,11 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
             }}
           />
 
-          {live ? (
+          {live || selectedActive ? (
             <section className="rounded-md border border-border bg-card p-3" data-surface-value="news_run_live">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-sm font-semibold text-foreground">
-                  {live.error
+                  {live?.error
                     ? "The run could not start"
                     : running
                       ? "Running now"
@@ -361,23 +367,25 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                         ? "Run finished"
                         : `The run ended: ${runStatus ?? "unknown"}`}
                 </h2>
-                {live.runId ? (
-                  <Link href={`/workflows/runs/${live.runId}`} className="text-xs text-primary">
+                {selectedRunId ? (
+                  <Link href={`/workflows/runs/${selectedRunId}`} className="text-xs text-primary">
                     Open the run step by step
                   </Link>
                 ) : null}
               </div>
-              {live.error ? <p className="text-xs text-destructive">{live.error}</p> : null}
+              {live?.error ? <p className="text-xs text-destructive">{live.error}</p> : null}
               <ol className="mt-1 grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-4">
                 {STEP_ORDER.map((id, index) => {
+                  const streamed =
+                    live && live.runId === selectedRunId ? live.steps : {};
                   const settled = progress.data?.settled[id];
                   const firstOpen = STEP_ORDER.findIndex(
-                    (step) => !progress.data?.settled[step] && !live.steps[step],
+                    (step) => !progress.data?.settled[step] && !streamed[step],
                   );
                   const state: StepState | undefined =
                     settled ??
-                    live.steps[id] ??
-                    (running && index === firstOpen && live.runId ? "running" : undefined);
+                    streamed[id] ??
+                    (selectedActive && index === firstOpen ? "running" : undefined);
                   return (
                     <li key={id} className="flex items-center gap-1.5 text-xs" data-step={id} data-step-state={state ?? "waiting"}>
                       {state === "running" ? (

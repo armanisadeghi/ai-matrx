@@ -528,6 +528,44 @@ function parseProvider(row: AiProviderRow): AiProvider {
   };
 }
 
+// ── ai.endpoint credential pointers (client-excluded; admin-lane doors) ──
+const ENDPOINT_PUBLIC_COLUMNS =
+  "id,organization_id,is_system,visibility,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,vendor,internal_name,display_name,base_url,priority,is_active,notes,doc_sources,shown_to,custom_fields";
+
+type EndpointPublicRow = Omit<AiEndpointRow, "byok_secret_key" | "auth_ref">;
+type EndpointCredentialRefs = { byok_secret_key: string | null; auth_ref: AiEndpointRow["auth_ref"] };
+
+async function fetchEndpointCredentialRefs(): Promise<Map<string, EndpointCredentialRefs>> {
+  const { data, error } = await supabase.schema("ai").rpc("endpoint_credential_refs");
+  if (error) throw error;
+  const out = new Map<string, EndpointCredentialRefs>();
+  for (const r of (data ?? []) as Array<{ id: string } & EndpointCredentialRefs>) {
+    out.set(r.id, { byok_secret_key: r.byok_secret_key, auth_ref: r.auth_ref });
+  }
+  return out;
+}
+
+async function setEndpointCredentialRefs(
+  id: string,
+  byokSecretKey: string | null,
+  authRef: AiEndpointRow["auth_ref"],
+): Promise<void> {
+  const { error } = await supabase.schema("ai").rpc("set_endpoint_credential_refs", {
+    p_id: id,
+    p_byok_secret_key: byokSecretKey ?? "",
+    p_auth_ref: authRef ?? {},
+  });
+  if (error) throw error;
+}
+
+function withCredentialRefs(
+  row: EndpointPublicRow,
+  refs: Map<string, EndpointCredentialRefs>,
+): AiEndpointRow {
+  const r = refs.get(row.id);
+  return { ...row, byok_secret_key: r?.byok_secret_key ?? null, auth_ref: r?.auth_ref ?? {} } as AiEndpointRow;
+}
+
 function parseEndpoint(row: AiEndpointRow): AiEndpoint {
   return {
     ...row,
@@ -846,46 +884,65 @@ export const aiModelService = {
 
   // ── Endpoint CRUD (ai.endpoint — one row per serving vendor) ──
 
+  // ai.endpoint's two credential pointers (byok_secret_key, auth_ref) are client-excluded
+  // (access ladder T-35c): a table read never returns them. The admin screen reads and writes
+  // them through two admin-lane doors, ai.endpoint_credential_refs / set_endpoint_credential_refs,
+  // which refuse outside the admin apps.
   async fetchEndpoints(): Promise<AiEndpoint[]> {
-    const rows = await readAllRows<AiEndpointRow>(
+    const rows = await readAllRows<EndpointPublicRow>(
       ({ from, to }) =>
         supabase
           .schema("ai")
           .from("endpoint")
-          .select("*", { count: "exact" })
+          .select(ENDPOINT_PUBLIC_COLUMNS, { count: "exact" })
           .is("deleted_at", null)
           .order("display_name", { ascending: true })
           .order("id", { ascending: true })
           .range(from, to),
       { label: "ai.endpoint" },
     );
-    return rows.map(parseEndpoint);
+    const refs = await fetchEndpointCredentialRefs();
+    return rows.map((row) => parseEndpoint(withCredentialRefs(row, refs)));
   },
 
   async createEndpoint(payload: AiEndpointInsert): Promise<AiEndpoint> {
+    const { byok_secret_key, auth_ref, ...rest } = payload;
     const { data, error } = await supabase
       .schema("ai")
       .from("endpoint")
-      .insert(payload)
-      .select()
+      .insert(rest)
+      .select(ENDPOINT_PUBLIC_COLUMNS)
       .single();
     if (error) throw error;
-    return parseEndpoint(data);
+    const row = data as unknown as EndpointPublicRow;
+    await setEndpointCredentialRefs(row.id, byok_secret_key ?? null, auth_ref ?? {});
+    const refs = await fetchEndpointCredentialRefs();
+    return parseEndpoint(withCredentialRefs(row, refs));
   },
 
   async updateEndpoint(
     id: string,
     payload: AiEndpointUpdate,
   ): Promise<AiEndpoint> {
+    const { byok_secret_key, auth_ref, ...rest } = payload;
+    if (byok_secret_key !== undefined || auth_ref !== undefined) {
+      const current = (await fetchEndpointCredentialRefs()).get(id);
+      await setEndpointCredentialRefs(
+        id,
+        byok_secret_key !== undefined ? byok_secret_key : (current?.byok_secret_key ?? null),
+        auth_ref !== undefined ? auth_ref : (current?.auth_ref ?? {}),
+      );
+    }
     const { data, error } = await supabase
       .schema("ai")
       .from("endpoint")
-      .update(payload)
+      .update(rest)
       .eq("id", id)
-      .select()
+      .select(ENDPOINT_PUBLIC_COLUMNS)
       .single();
     if (error) throw error;
-    return parseEndpoint(data);
+    const refs = await fetchEndpointCredentialRefs();
+    return parseEndpoint(withCredentialRefs(data as unknown as EndpointPublicRow, refs));
   },
 
   async deleteEndpoint(id: string): Promise<void> {

@@ -34,7 +34,9 @@ export async function logTranscriptionError(entry: TranscriptionErrorLog): Promi
   try {
     const supabase = createAdminClient();
 
-    await supabase.schema('ops').from('system_error').insert({
+    await supabase.schema('ops')// ops.system_error has ONE write door (access ladder T-35f/g): it owns the row by the
+      // system organization and keeps organization_id as where the error happened.
+      .rpc('record_system_error', { p_error: {
       // org-fallback-deliberate: ops.system_error is the platform's own error
       //   ledger — a transcription failure belongs to the platform, and the row
       //   carries no tenant work
@@ -51,7 +53,7 @@ export async function logTranscriptionError(entry: TranscriptionErrorLog): Promi
         attempt_number: entry.attemptNumber,
         ...(entry.metadata ?? {}),
       },
-    });
+    } });
   } catch (err) {
     console.error('[audioErrorLogger] Failed to log transcription error:', err);
   }

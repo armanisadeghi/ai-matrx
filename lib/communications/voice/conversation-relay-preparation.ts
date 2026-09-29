@@ -131,8 +131,9 @@ export async function recordConversationRelayPreparationFailure(
       : new ConversationRelayPreparationFailure("transport_failure");
   const { error: insertError } = await createAdminClient()
     .schema("ops")
-    .from("system_error")
-    .insert({
+    // ops.system_error has ONE write door (access ladder T-35f/g): it owns the row by the
+      // system organization and keeps organization_id as where the error happened.
+      .rpc("record_system_error", { p_error: {
       kind: "voice:conversation-relay-preparation",
       error_text:
         "ConversationRelay session preparation failed after consented recording began.",
@@ -147,7 +148,7 @@ export async function recordConversationRelayPreparationFailure(
       organization_id: organizationId,
       route: "/api/webhooks/twilio/voice",
       source_app: "matrx-frontend",
-    });
+    } });
   if (insertError) {
     throw new Error(
       `Failed to capture ConversationRelay preparation failure: ${insertError.message}`,

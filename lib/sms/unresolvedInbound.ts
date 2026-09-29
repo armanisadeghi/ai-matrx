@@ -164,8 +164,9 @@ export async function reportUnresolvedInboundSms(args: {
 
     const { error: insertError } = await supabase
       .schema("ops")
-      .from("system_error")
-      .insert({
+      // ops.system_error has ONE write door (access ladder T-35f/g): it owns the row by the
+      // system organization and keeps organization_id as where the error happened.
+      .rpc("record_system_error", { p_error: {
         kind: SMS_INBOUND_UNRESOLVED_KIND,
         organization_id: destination.organization_id,
         source_app: "matrx-frontend",
@@ -193,7 +194,7 @@ export async function reportUnresolvedInboundSms(args: {
           destination_is_active: destination.is_active,
           destination_assistant_enabled: destination.assistant_enabled,
         },
-      });
+      } });
 
     if (insertError) {
       console.error(

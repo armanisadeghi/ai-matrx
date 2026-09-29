@@ -2138,6 +2138,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          custom_fields: Json
           deleted_at: string | null
           description: string | null
           display_name: string
@@ -2159,6 +2160,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           description?: string | null
           display_name: string
@@ -2180,6 +2182,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           description?: string | null
           display_name?: string
@@ -2207,6 +2210,7 @@ export type Database = {
           byok_secret_key: string | null
           created_at: string
           created_by: string | null
+          custom_fields: Json
           deleted_at: string | null
           display_name: string
           doc_sources: Json
@@ -2231,6 +2235,7 @@ export type Database = {
           byok_secret_key?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           display_name: string
           doc_sources?: Json
@@ -2255,6 +2260,7 @@ export type Database = {
           byok_secret_key?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           display_name?: string
           doc_sources?: Json
@@ -2589,6 +2595,7 @@ export type Database = {
           capabilities_override: Json
           created_at: string
           created_by: string | null
+          custom_fields: Json
           deleted_at: string | null
           endpoint_id: string
           id: string
@@ -2616,6 +2623,7 @@ export type Database = {
           capabilities_override?: Json
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           endpoint_id: string
           id?: string
@@ -2643,6 +2651,7 @@ export type Database = {
           capabilities_override?: Json
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           endpoint_id?: string
           id?: string
@@ -3471,6 +3480,14 @@ export type Database = {
           resolved_enum: Json
         }[]
       }
+      endpoint_credential_refs: {
+        Args: never
+        Returns: {
+          auth_ref: Json
+          byok_secret_key: string
+          id: string
+        }[]
+      }
       jsonb_num: { Args: { n: number }; Returns: Json }
       model_message_flag_profile: {
         Args: { p_model_id: string }
@@ -3488,6 +3505,10 @@ export type Database = {
         }[]
       }
       resolve_model_config: { Args: { p_model_id: string }; Returns: Json }
+      set_endpoint_credential_refs: {
+        Args: { p_auth_ref: Json; p_byok_secret_key: string; p_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -29959,6 +29980,7 @@ export type Database = {
           p_by?: string
           p_level: Database["public"]["Enums"]["permission_level"]
           p_organization_id: string
+          p_restore_removed?: boolean
           p_subject_id: string
           p_user_id: string
         }
@@ -40255,7 +40277,7 @@ export type Database = {
           data?: Json
           deleted_at?: string | null
           domain: string
-          id: string
+          id?: string
           is_deleted?: boolean
           kind: string
           metadata?: Json
@@ -67374,6 +67396,7 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_variant?: string }
         Returns: undefined
       }
+      archived_org_ids: { Args: never; Returns: string[] }
       asks_about_caller: {
         Args: { p_function?: string; p_user: string }
         Returns: boolean
@@ -68031,6 +68054,11 @@ export type Database = {
         Args: { p_alias?: string; p_token: string }
         Returns: string
       }
+      org_open_gate_applies: {
+        Args: { p_schema: string; p_table: string }
+        Returns: boolean
+      }
+      org_open_predicate: { Args: never; Returns: string }
       org_readable: {
         Args: { p_org: string; p_token: string }
         Returns: boolean
@@ -68241,6 +68269,14 @@ export type Database = {
         Args: { p_id: string; p_resource_type: string }
         Returns: Record<string, unknown>
       }
+      remove_grant: {
+        Args: {
+          p_actor: string
+          p_by_person?: boolean
+          p_permission_id: string
+        }
+        Returns: Json
+      }
       reserved_namespace: {
         Args: never
         Returns: {
@@ -68325,7 +68361,11 @@ export type Database = {
       share_with_person: {
         Args: {
           p_actor: string
+          p_basis?: string
+          p_exact?: boolean
+          p_expires_at?: string
           p_level: Database["public"]["Enums"]["permission_level"]
+          p_note?: string
           p_resource_id: string
           p_resource_type: string
           p_restore_removed?: boolean
@@ -70490,6 +70530,7 @@ export type Database = {
           caller_identity_hash: string | null
           created_at: string
           created_by: string | null
+          custom_fields: Json
           deleted_at: string | null
           file_path: string | null
           flag: string
@@ -70528,6 +70569,7 @@ export type Database = {
           caller_identity_hash?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           file_path?: string | null
           flag?: string
@@ -70566,6 +70608,7 @@ export type Database = {
           caller_identity_hash?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           file_path?: string | null
           flag?: string
@@ -70638,6 +70681,7 @@ export type Database = {
           coverage: Json
           created_at: string
           created_by: string | null
+          custom_fields: Json
           deleted_at: string | null
           expected_chunk_count: number | null
           finding_counts: Json
@@ -70669,6 +70713,7 @@ export type Database = {
           coverage?: Json
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           expected_chunk_count?: number | null
           finding_counts?: Json
@@ -70700,6 +70745,7 @@ export type Database = {
           coverage?: Json
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           deleted_at?: string | null
           expected_chunk_count?: number | null
           finding_counts?: Json
@@ -73427,6 +73473,7 @@ export type Database = {
           kind: string
           metadata: Json
           occurred_at: string
+          occurred_in_organization_id: string | null
           organization_id: string
           payload: Json | null
           request_id: string | null
@@ -73452,6 +73499,7 @@ export type Database = {
           kind: string
           metadata?: Json
           occurred_at?: string
+          occurred_in_organization_id?: string | null
           organization_id: string
           payload?: Json | null
           request_id?: string | null
@@ -73477,6 +73525,7 @@ export type Database = {
           kind?: string
           metadata?: Json
           occurred_at?: string
+          occurred_in_organization_id?: string | null
           organization_id?: string
           payload?: Json | null
           request_id?: string | null
@@ -73607,6 +73656,10 @@ export type Database = {
         }
         Returns: string
       }
+      check_item_drain_record: {
+        Args: { p_item_id: string; p_record: Json; p_reject_limit: number }
+        Returns: Json
+      }
       check_items_apply_run: {
         Args: {
           p_confirm_mass_fix?: boolean
@@ -73634,6 +73687,7 @@ export type Database = {
         Args: { p_min_age_seconds: number }
         Returns: Json
       }
+      record_system_error: { Args: { p_error: Json }; Returns: string }
     }
     Enums: {
       [_ in never]: never
@@ -73746,37 +73800,52 @@ export type Database = {
       pdf_redaction_key_escrow: {
         Row: {
           created_at: string
+          created_by: string | null
           custom_fields: Json
           file_id: string | null
           id: string
+          metadata: Json
           organization_id: string
           owner_id: string
           revoked_at: string | null
           session_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
           wrap_alg: string
           wrapped_key: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           file_id?: string | null
           id?: string
+          metadata?: Json
           organization_id: string
           owner_id: string
           revoked_at?: string | null
           session_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           wrap_alg: string
           wrapped_key: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           custom_fields?: Json
           file_id?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string
           owner_id?: string
           revoked_at?: string | null
           session_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           wrap_alg?: string
           wrapped_key?: string
         }
@@ -74476,36 +74545,7 @@ export type Database = {
           updated_by?: string | null
           version?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "_base_entity_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "_base_entity_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "_base_entity_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "_base_entity_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       _google_calendar_event_create_intent: {
         Row: {
@@ -75389,36 +75429,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
           what_it_needs?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "approach_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "approach_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "approach_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "approach_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       assist_producer_policy: {
         Row: {
@@ -77737,36 +77748,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "egress_device_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_device_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_device_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_device_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       egress_pairing: {
         Row: {
@@ -78591,36 +78573,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "guided_checklist_run_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "guided_checklist_run_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "guided_checklist_run_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "guided_checklist_run_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       judge_verdict: {
         Row: {
@@ -78737,36 +78690,7 @@ export type Database = {
           verdict?: string
           version?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "judge_verdict_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "judge_verdict_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "judge_verdict_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "judge_verdict_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       kernel_fingerprint_record: {
         Row: {
@@ -80418,36 +80342,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "outcome_event_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outcome_event_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outcome_event_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outcome_event_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       output_feedback: {
         Row: {
@@ -85788,6 +85683,10 @@ export type Database = {
         Args: { p_code: string; p_ip?: unknown; p_secret: string }
         Returns: Json
       }
+      seed_shown_to_default_knob: {
+        Args: { p_token: string }
+        Returns: undefined
+      }
       set_org_change_policy: {
         Args: {
           p_change_type_key: string
@@ -85858,6 +85757,13 @@ export type Database = {
       shown_to_default_system: {
         Args: { p_token: string }
         Returns: Database["platform"]["Enums"]["shown_to"]
+      }
+      shown_to_knob_missing: {
+        Args: never
+        Returns: {
+          data_class: string
+          token: string
+        }[]
       }
       shown_to_lists: {
         Args: {
@@ -118371,6 +118277,42 @@ export type Database = {
   }
   users: {
     Tables: {
+      _vault_fill_approvals: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          key_thumbprint: string
+          label: string | null
+          method: string
+          proof_session_id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          key_thumbprint: string
+          label?: string | null
+          method?: string
+          proof_session_id: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          key_thumbprint?: string
+          label?: string | null
+          method?: string
+          proof_session_id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       _vault_fill_devices: {
         Row: {
           extension_origin: string | null
@@ -118418,6 +118360,32 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      _vault_fill_nonces: {
+        Row: {
+          device_id: string
+          expires_at: string
+          nonce: string
+        }
+        Insert: {
+          device_id: string
+          expires_at: string
+          nonce: string
+        }
+        Update: {
+          device_id?: string
+          expires_at?: string
+          nonce?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "_vault_fill_nonces_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "_vault_fill_devices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       credential_attachments: {
         Row: {
@@ -120459,6 +120427,23 @@ export type Database = {
           user_id: string
         }[]
       }
+      vault_fill_approval_claim: {
+        Args: { p_thumbprint: string; p_user: string }
+        Returns: string
+      }
+      vault_fill_end_session: {
+        Args: { p_session: string; p_user: string }
+        Returns: boolean
+      }
+      vault_fill_nonce_claim: {
+        Args: { p_device: string; p_nonce: string; p_ttl_seconds: number }
+        Returns: boolean
+      }
+      vault_fill_session_live: {
+        Args: { p_session: string; p_user: string }
+        Returns: boolean
+      }
+      vault_fill_step_up_methods: { Args: { p_user: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

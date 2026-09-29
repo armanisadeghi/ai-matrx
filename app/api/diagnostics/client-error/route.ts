@@ -53,7 +53,9 @@ export async function POST(request: NextRequest) {
       ? parsed.data.source_feature
       : UNMAPPED_CLIENT_SOURCE_FEATURE;
 
-  const { error } = await admin.schema("ops").from("system_error").insert({
+  const { error } = await admin.schema("ops")// ops.system_error has ONE write door (access ladder T-35f/g): it owns the row by the
+      // system organization and keeps organization_id as where the error happened.
+      .rpc("record_system_error", { p_error: {
     kind: `client:${parsed.data.source}`,
     error_text: parsed.data.message,
     error_type: parsed.data.code,
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest) {
     source_feature: sourceFeature,
     user_id: guest.auth_user_id,
     organization_id: organizationId,
-  });
+  } });
   if (error) {
     return NextResponse.json({ error: "Failed to persist client error" }, { status: 500 });
   }

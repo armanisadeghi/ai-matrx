@@ -118,6 +118,12 @@ export interface ClientMetrics {
 export type ToolLifecycleStatus =
   "started" | "progress" | "step" | "result_preview" | "completed" | "error";
 
+/** What a parked tool call is waiting on (aidream `action_requests/ledger.py`). */
+export interface ToolCallParkedOn {
+  kind: "action_request";
+  actionRequestId: string;
+}
+
 export interface ToolLifecycleEntry {
   callId: string;
   /**
@@ -145,6 +151,16 @@ export interface ToolLifecycleEntry {
   errorType: string | null;
   errorMessage: string | null;
   isDelegated: boolean;
+
+  /**
+   * Set while the call is PARKED ON A PERSON: the server delegated it and is
+   * waiting on an action request (an `approve_spend` ask, an `ask_person`
+   * ask), read from `chat.tool_call.metadata.parked_on`. Absent otherwise —
+   * including after the call is answered, although the marker stays on the
+   * row. A parked call is neither working nor completed; the shell draws it
+   * as waiting, with the ask's own form.
+   */
+  parkedOn?: ToolCallParkedOn | null;
 
   /**
    * Raw event log for this tool call, appended in server emission order.

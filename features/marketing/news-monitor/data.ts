@@ -92,12 +92,17 @@ export async function listMonitorRuns(
   }));
 }
 
-export function useMonitorRuns(trackerId: string | null, pollMs: number | false) {
+/** Polls while a run is starting (`starting`) or any listed run is still going. */
+export function useMonitorRuns(trackerId: string | null, starting: boolean) {
   return useQuery({
     queryKey: newsMonitorKeys.runs(trackerId ?? ""),
     queryFn: ({ signal }) => listMonitorRuns(trackerId ?? "", signal),
     enabled: Boolean(trackerId),
-    refetchInterval: pollMs,
+    refetchInterval: (query) =>
+      starting ||
+      (query.state.data ?? []).some((r) => !isTerminalRunStatus(r.status))
+        ? 4000
+        : false,
   });
 }
 
@@ -338,7 +343,13 @@ export interface RunProgress {
   settled: Record<string, "done" | "failed">;
 }
 
-const TERMINAL_RUN_STATUSES = new Set(["completed", "failed", "cancelled", "canceled"]);
+const TERMINAL_RUN_STATUSES = new Set([
+  "completed",
+  "failed",
+  "errored",
+  "cancelled",
+  "canceled",
+]);
 
 export function isTerminalRunStatus(status: string | null | undefined): boolean {
   return Boolean(status && TERMINAL_RUN_STATUSES.has(status));
@@ -376,11 +387,13 @@ export async function getRunProgress(
   return { status: run.data?.status ?? null, settled };
 }
 
-export function useRunProgress(runId: string | null, pollMs: number | false) {
+/** Polls until the run reaches a terminal status. */
+export function useRunProgress(runId: string | null) {
   return useQuery({
     queryKey: [...newsMonitorKeys.all, "progress", runId ?? ""] as const,
     queryFn: ({ signal }) => getRunProgress(runId ?? "", signal),
     enabled: Boolean(runId),
-    refetchInterval: pollMs,
+    refetchInterval: (query) =>
+      isTerminalRunStatus(query.state.data?.status) ? false : 3000,
   });
 }
