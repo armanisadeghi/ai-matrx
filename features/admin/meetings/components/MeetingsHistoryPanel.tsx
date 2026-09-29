@@ -9,6 +9,7 @@
 // meeting the admin is not invited to.
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CalendarSearch, X } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -51,6 +52,7 @@ const columns: MatrxColumnDef<AdminMeetingRow>[] = [
     accessorFn: (row) => row.title,
     frozen: true,
     width: 260,
+    href: (row) => adminMeetingHref(row.id),
     cell: (row) => (
       <div className="min-w-0">
         <div className="truncate font-medium" title={row.title}>{row.title}</div>
@@ -132,6 +134,7 @@ export function MeetingsHistoryPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  const router = useRouter();
 
   const full: MeetingSearch = { ...search, organizationId };
   const key = JSON.stringify(full);
@@ -257,6 +260,7 @@ export function MeetingsHistoryPanel({
           density="condensed"
           defaultSort={{ id: "when", direction: "desc" }}
           getRowHref={(row) => adminMeetingHref(row.id)}
+          onRowOpen={(row) => router.push(adminMeetingHref(row.id))}
           coverage={{ noun: "meeting", answeredBy: "client", loaded: rows.length, matched: total, cap: HISTORY_PAGE_SIZE }}
           toolbar={{ title: "Meetings", search: true }}
           emptyState={{
