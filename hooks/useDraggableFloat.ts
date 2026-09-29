@@ -42,10 +42,26 @@ interface UseDraggableFloatOptions {
     /** Applied with `left: 50%` style centering when true. */
     centerX?: boolean;
   };
+  /**
+   * Fixed controls a person must still be able to use. A dragged surface is
+   * moved to the nearest clear position when it would cover one of these.
+   * Anchored surfaces keep their CSS-owned placement.
+   */
+  exclusion?: {
+    selector: string;
+    gap?: number;
+  };
 }
 
 /** Smallest gap kept between the surface and the viewport edge. */
 const EDGE_MARGIN_PX = 8;
+
+function overlaps(
+  a: { left: number; top: number; right: number; bottom: number },
+  b: { left: number; top: number; right: number; bottom: number },
+): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
 
 function readStored(storageKey: string): DraggableFloatPosition | null {
   try {
@@ -84,6 +100,54 @@ function clamp(pos: DraggableFloatPosition, el: HTMLElement | null): DraggableFl
   };
 }
 
+/**
+ * Keep an explicitly dragged card off a declared fixed control without
+ * reserving page space. The nearest clear candidate wins, so a safe saved
+ * coordinate remains untouched and an unsafe one moves only as far as needed.
+ */
+function avoidExclusions(
+  pos: DraggableFloatPosition,
+  el: HTMLElement | null,
+  exclusion: UseDraggableFloatOptions["exclusion"],
+): DraggableFloatPosition {
+  const bounded = clamp(pos, el);
+  if (!el || !exclusion || typeof document === "undefined") return bounded;
+
+  const width = el.offsetWidth;
+  const height = el.offsetHeight;
+  const gap = exclusion.gap ?? EDGE_MARGIN_PX;
+  const excluded = [...document.querySelectorAll<HTMLElement>(exclusion.selector)]
+    .map((target) => target.getBoundingClientRect())
+    .filter((rect) => rect.width > 0 && rect.height > 0);
+  const rectFor = (candidate: DraggableFloatPosition) => ({
+    left: candidate.x,
+    top: candidate.y,
+    right: candidate.x + width,
+    bottom: candidate.y + height,
+  });
+  const isClear = (candidate: DraggableFloatPosition) =>
+    !excluded.some((target) => overlaps(rectFor(candidate), target));
+
+  if (isClear(bounded)) return bounded;
+
+  const candidates = excluded
+    .flatMap((target) => [
+      { x: bounded.x, y: target.top - height - gap },
+      { x: bounded.x, y: target.bottom + gap },
+      { x: target.left - width - gap, y: bounded.y },
+      { x: target.right + gap, y: bounded.y },
+    ])
+    .map((candidate) => clamp(candidate, el));
+  const clearCandidates = candidates.filter(isClear);
+  if (clearCandidates.length === 0) return bounded;
+
+  return clearCandidates.reduce((nearest, candidate) => {
+    const nearestDistance = Math.hypot(nearest.x - bounded.x, nearest.y - bounded.y);
+    const candidateDistance = Math.hypot(candidate.x - bounded.x, candidate.y - bounded.y);
+    return candidateDistance < nearestDistance ? candidate : nearest;
+  });
+}
+
 function samePosition(a: DraggableFloatPosition, b: DraggableFloatPosition): boolean {
   return a.x === b.x && a.y === b.y;
 }
@@ -92,25 +156,36 @@ export function useDraggableFloat({
   storageKey,
   element,
   anchor,
+  exclusion,
 }: UseDraggableFloatOptions) {
   const [position, setPosition] = useState<DraggableFloatPosition | null>(null);
   const [dragging, setDragging] = useState(false);
   const grabRef = useRef<{ dx: number; dy: number } | null>(null);
+  /** The person's chosen coordinate, before any temporary collision adjustment. */
+  const preferredPositionRef = useRef<DraggableFloatPosition | null>(null);
+  const draggedRef = useRef(false);
   const restoredRef = useRef(false);
+  const geometryFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (restoredRef.current) return;
+    // Wait for the conditional surface itself. Resolving against a null element
+    // loses its dimensions and delays an otherwise deterministic restoration.
+    if (!element) return;
     const stored = readStored(storageKey);
     if (!stored) {
       restoredRef.current = true;
       return;
     }
-    const frame = window.requestAnimationFrame(() => {
+    // Defer the first paint update so restoration does not create a cascading
+    // render from the effect that reads browser storage.
+    const restoreTimer = window.setTimeout(() => {
       restoredRef.current = true;
-      setPosition(clamp(stored, element));
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [storageKey, element]);
+      preferredPositionRef.current = stored;
+      setPosition(avoidExclusions(stored, element, exclusion));
+    }, 0);
+    return () => window.clearTimeout(restoreTimer);
+  }, [storageKey, element, exclusion]);
 
   /**
    * A remembered position can be read before this conditional surface mounts,
@@ -121,36 +196,50 @@ export function useDraggableFloat({
   useLayoutEffect(() => {
     if (!element) return undefined;
 
-    const keepInViewport = () => {
-      const box = element.getBoundingClientRect();
-      const escaped =
-        box.left < EDGE_MARGIN_PX ||
-        box.top < EDGE_MARGIN_PX ||
-        box.right > window.innerWidth - EDGE_MARGIN_PX ||
-        box.bottom > window.innerHeight - EDGE_MARGIN_PX;
-      setPosition((current) => {
-        if (current) {
-          const next = clamp(current, element);
-          return samePosition(current, next) ? current : next;
-        }
-        return escaped ? clamp({ x: box.left, y: box.top }, element) : current;
+    const reconcilePosition = () => {
+      const preferred = preferredPositionRef.current;
+      if (!preferred) return;
+      const next = avoidExclusions(preferred, element, exclusion);
+      setPosition((current) => (current && samePosition(current, next) ? current : next));
+    };
+    const scheduleReconcile = () => {
+      if (geometryFrameRef.current !== null) return;
+      geometryFrameRef.current = window.requestAnimationFrame(() => {
+        geometryFrameRef.current = null;
+        reconcilePosition();
       });
     };
 
-    keepInViewport();
+    reconcilePosition();
     const observer =
-      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(keepInViewport);
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleReconcile);
     observer?.observe(element);
-    return () => observer?.disconnect();
-  }, [element]);
-
-  // A shrinking window can never strand the surface off-screen.
-  useEffect(() => {
-    const onResize = () =>
-      setPosition((current) => (current ? clamp(current, element) : current));
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [element]);
+    const observeExclusions = () => {
+      if (!exclusion) return;
+      document
+        .querySelectorAll<HTMLElement>(exclusion.selector)
+        .forEach((target) => observer?.observe(target));
+    };
+    observeExclusions();
+    const mutations =
+      exclusion && typeof MutationObserver !== "undefined"
+        ? new MutationObserver(() => {
+            observeExclusions();
+            scheduleReconcile();
+          })
+        : null;
+    mutations?.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("resize", scheduleReconcile);
+    window.addEventListener("scroll", scheduleReconcile, true);
+    return () => {
+      observer?.disconnect();
+      mutations?.disconnect();
+      window.removeEventListener("resize", scheduleReconcile);
+      window.removeEventListener("scroll", scheduleReconcile, true);
+      if (geometryFrameRef.current !== null) window.cancelAnimationFrame(geometryFrameRef.current);
+      geometryFrameRef.current = null;
+    };
+  }, [element, exclusion]);
 
   const onPointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
     if (event.button !== 0) return;
@@ -158,29 +247,26 @@ export function useDraggableFloat({
     if (!el) return;
     const rect = el.getBoundingClientRect();
     grabRef.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top };
-    // Dragging starts from wherever it currently IS, anchored or not.
-    setPosition(clamp({ x: rect.left, y: rect.top }, el));
+    draggedRef.current = false;
     setDragging(true);
     event.currentTarget.setPointerCapture?.(event.pointerId);
     event.preventDefault();
-  }, [element]);
+  }, [element, exclusion]);
 
   useEffect(() => {
     if (!dragging) return;
     const onMove = (event: PointerEvent) => {
       const grab = grabRef.current;
       if (!grab) return;
-      setPosition(
-        clamp({ x: event.clientX - grab.dx, y: event.clientY - grab.dy }, element),
-      );
+      const preferred = { x: event.clientX - grab.dx, y: event.clientY - grab.dy };
+      preferredPositionRef.current = preferred;
+      draggedRef.current = true;
+      setPosition(avoidExclusions(preferred, element, exclusion));
     };
     const onUp = () => {
       setDragging(false);
       grabRef.current = null;
-      setPosition((current) => {
-        writeStored(storageKey, current);
-        return current;
-      });
+      if (draggedRef.current) writeStored(storageKey, preferredPositionRef.current);
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -190,9 +276,10 @@ export function useDraggableFloat({
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
-  }, [dragging, storageKey, element]);
+  }, [dragging, storageKey, element, exclusion]);
 
   const reset = useCallback(() => {
+    preferredPositionRef.current = null;
     setPosition(null);
     writeStored(storageKey, null);
   }, [storageKey]);

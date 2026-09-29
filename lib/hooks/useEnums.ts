@@ -24,6 +24,78 @@ export interface UseEnumsProps {
   defaultSort?: EnumSort;
 }
 
+function filterAndSortEnums(
+  enums: DatabaseEnum[],
+  filter: EnumFilter,
+  sort: EnumSort,
+): DatabaseEnum[] {
+  let result = [...enums];
+
+  if (filter.name) {
+    const nameFilter = filter.name.toLowerCase();
+    result = result.filter((enumType) =>
+      enumType.name.toLowerCase().includes(nameFilter),
+    );
+  }
+
+  if (filter.schema) {
+    const schemaFilter = filter.schema.toLowerCase();
+    result = result.filter((enumType) =>
+      enumType.schema.toLowerCase().includes(schemaFilter),
+    );
+  }
+
+  if (filter.hasValue) {
+    const hasValueFilter = filter.hasValue.toLowerCase();
+    result = result.filter((enumType) =>
+      enumType.values.some((value) =>
+        value.toLowerCase().includes(hasValueFilter),
+      ),
+    );
+  }
+
+  result.sort((a, b) => {
+    let fieldA: string | number;
+    let fieldB: string | number;
+
+    switch (sort.field) {
+      case "name":
+        fieldA = a.name;
+        fieldB = b.name;
+        break;
+      case "schema":
+        fieldA = a.schema;
+        fieldB = b.schema;
+        break;
+      case "values_count":
+        fieldA = a.values.length;
+        fieldB = b.values.length;
+        break;
+      case "usage_count":
+        fieldA = a.usage_count || 0;
+        fieldB = b.usage_count || 0;
+        break;
+      default:
+        fieldA = a.name;
+        fieldB = b.name;
+    }
+
+    if (typeof fieldA === "string" && typeof fieldB === "string") {
+      return sort.direction === "asc"
+        ? fieldA.localeCompare(fieldB)
+        : fieldB.localeCompare(fieldA);
+    }
+
+    if (typeof fieldA === "number" && typeof fieldB === "number") {
+      return sort.direction === "asc" ? fieldA - fieldB : fieldB - fieldA;
+    }
+
+    return 0;
+  });
+
+  return result;
+}
+
 export function useEnums({
   initialData,
   defaultFilter,
@@ -31,7 +103,6 @@ export function useEnums({
 }: UseEnumsProps = {}) {
   // State
   const [enums, setEnums] = useState<DatabaseEnum[]>(initialData ?? []);
-  const [filteredEnums, setFilteredEnums] = useState<DatabaseEnum[]>(enums);
   const [loading, setLoading] = useState<boolean>(!initialData);
   const [error, setError] = useState<Error | null>(null);
   /** The list read's own failure (fetch/search) — never a create/update/delete refusal (RC-B12 r13). */
@@ -200,76 +271,7 @@ export function useEnums({
     [],
   );
 
-  // Filter and sort enums
-  const applyFilterAndSort = useCallback(() => {
-    let result = [...enums];
-
-    // Apply filters
-    if (filter.name) {
-      const nameFilter = filter.name.toLowerCase();
-      result = result.filter((enumType) =>
-        enumType.name.toLowerCase().includes(nameFilter),
-      );
-    }
-
-    if (filter.schema) {
-      const schemaFilter = filter.schema.toLowerCase();
-      result = result.filter((enumType) =>
-        enumType.schema.toLowerCase().includes(schemaFilter),
-      );
-    }
-
-    if (filter.hasValue) {
-      const hasValueFilter = filter.hasValue.toLowerCase();
-      result = result.filter((enumType) =>
-        enumType.values.some((value) =>
-          value.toLowerCase().includes(hasValueFilter),
-        ),
-      );
-    }
-
-    // Apply sorting
-    result.sort((a, b) => {
-      let fieldA: string | number;
-      let fieldB: string | number;
-
-      switch (sort.field) {
-        case "name":
-          fieldA = a.name;
-          fieldB = b.name;
-          break;
-        case "schema":
-          fieldA = a.schema;
-          fieldB = b.schema;
-          break;
-        case "values_count":
-          fieldA = a.values.length;
-          fieldB = b.values.length;
-          break;
-        case "usage_count":
-          fieldA = a.usage_count || 0;
-          fieldB = b.usage_count || 0;
-          break;
-        default:
-          fieldA = a.name;
-          fieldB = b.name;
-      }
-
-      if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sort.direction === "asc"
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
-      }
-
-      if (typeof fieldA === "number" && typeof fieldB === "number") {
-        return sort.direction === "asc" ? fieldA - fieldB : fieldB - fieldA;
-      }
-
-      return 0;
-    });
-
-    setFilteredEnums(result);
-  }, [enums, filter, sort]);
+  const filteredEnums = filterAndSortEnums(enums, filter, sort);
 
   // Select enum
   const selectEnum = useCallback((enumType: DatabaseEnum | null) => {
@@ -304,11 +306,6 @@ export function useEnums({
       fetchEnums(false);
     }
   }, [fetchEnums, initialData]);
-
-  // Apply filter and sort when enums, filter, or sort change
-  useEffect(() => {
-    applyFilterAndSort();
-  }, [enums, filter, sort, applyFilterAndSort]);
 
   return {
     // Data

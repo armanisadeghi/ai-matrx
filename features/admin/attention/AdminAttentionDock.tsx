@@ -94,6 +94,7 @@ import { asClause } from "@/lib/text/asClause";
 export const ATTENTION_QUERY_PREFIX = ["admin-attention"] as const;
 const POSITION_KEY = "matrx.admin-attention.position";
 const LEGACY_COLLAPSED_KEY = "matrx.admin-attention.collapsed";
+const TABLE_FOOTER_EXCLUSION = { selector: "[data-matrx-table-footer]" } as const;
 
 /**
  * A fresh page is always compact. Remembering an expanded operational notice
@@ -143,6 +144,10 @@ export default function AdminAttentionDock() {
     // Bottom-right by default: out of the way of every page's own header and
     // primary controls.
     anchor: { bottom: "var(--admin-attention-anchor-bottom, 1rem)", right: "1rem" },
+    // A person's safe drag location stays put. A saved location that lands on
+    // a canonical table's footer is lifted just enough to leave its controls
+    // reachable, without reserving or shifting any page layout.
+    exclusion: TABLE_FOOTER_EXCLUSION,
   });
 
   useEffect(() => {
