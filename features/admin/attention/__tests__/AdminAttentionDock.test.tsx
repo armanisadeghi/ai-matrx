@@ -290,13 +290,33 @@ afterEach(async () => {
 });
 
 describe("AdminAttentionDock", () => {
-  it("waits for an explicit organization before polling either source", async () => {
+  it("waits for an explicit organization before polling organization-scoped sources", async () => {
     selectedOrganizationId = null;
     await mount();
 
     expect(fetchSystemScheduleAlarms).not.toHaveBeenCalled();
     expect(fetchOpenOutages).not.toHaveBeenCalled();
+    expect(fetchDatedChanges).toHaveBeenCalledWith(false);
     expect(container.innerHTML).toBe("");
+  });
+
+  it("shows a refused dated change to a super admin without an active organization", async () => {
+    selectedOrganizationId = null;
+    fetchDatedChanges.mockResolvedValue([{
+      id: "refused-no-org", organizationId: "o", target: "ai.offering.pricing", targetRowId: "r",
+      targetLabel: "gemini-3.8-flash", expected: [{ input_price: 0.75 }],
+      newValue: [{ input_price: 1.5 }], currentValue: [{ input_price: 0.9 }],
+      projectedExpected: [{ input_price: 0.9 }], drift: false,
+      effectiveLocal: "2027-01-01T00:00:00", timeZone: "UTC", effectiveAt: "2027-01-01T00:00:00Z",
+      effectiveNote: null, status: "refused", outcome: {}, appliedAt: null,
+      reason: "Intro price ends.", sourceUrl: null, createdAt: "2026-09-28T00:00:00Z",
+      resolvedAt: null, resolutionNote: null, attention: "refused", mutable: false,
+    }]);
+    await mount();
+
+    expect(fetchSystemScheduleAlarms).not.toHaveBeenCalled();
+    expect(fetchOpenOutages).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("1 thing needs a person");
   });
 
   it("is one card for every source: three rows, two sections, one title", async () => {

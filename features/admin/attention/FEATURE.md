@@ -5,9 +5,10 @@ person responsible for the platform — with a way out. Mounted once in
 `app/DeferredSingletonCore.tsx`; super-admin only; absent when nothing needs
 a person.
 
-The dock waits for auth and an explicit active organization before it polls.
-The transport is deliberately fail-closed without that scope, so this prevents
-a shell-startup request from becoming a false Error Inspector incident.
+The dock waits for auth before it polls. Schedule and provider sources also
+wait for an explicit active organization because their transport fails closed
+without that scope. Dated changes are a super-admin database read and remain
+visible when no organization is selected.
 
 **Why it exists (Arman, 2026-09-14).** Two floating notices had grown side by
 side — the schedule alarm (bottom-right) and the provider outage notice
@@ -116,6 +117,10 @@ request, loud vs silent failure, never an all-clear, expired mute ignored).
 
 ## Change log
 
+- **2026-09-28** — Future changes with an unstated time zone stay on the Dated
+  Changes page without a global alert. Removed the duplicate permanent toast;
+  the dock continues to show actionable dated changes even without an active
+  organization.
 - **2026-09-14** — Built. Replaces `features/scheduling/components/alarm/SystemScheduleAlarmBanner.tsx`,
   `features/scheduling/lib/{system-schedule-alarm-notice,alarm-snooze}.ts` and
   `features/admin/system-errors/{PlatformOutageBanner.tsx,outage-mute.ts}` (deleted, no shims).

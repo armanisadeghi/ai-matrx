@@ -132,6 +132,7 @@ export default function DatedChangesPage() {
         {changes.map((change) => {
           const words = describeDatedChange(change, now);
           const critical = words.severity === "critical" && change.attention !== null;
+          const needsAttention = change.attention !== null && change.attention !== "zone_unconfirmed";
           const Icon =
             change.status === "applied"
               ? CheckCircle2
@@ -139,7 +140,7 @@ export default function DatedChangesPage() {
                 ? XCircle
                 : critical
                   ? AlertOctagon
-                  : change.attention
+                  : needsAttention
                     ? AlertTriangle
                     : CalendarClock;
           return (
@@ -156,7 +157,7 @@ export default function DatedChangesPage() {
                 <Icon
                   className={cn(
                     "h-4 w-4 shrink-0",
-                    critical ? "text-destructive" : change.attention ? "text-warning" : "text-muted-foreground",
+                    critical ? "text-destructive" : needsAttention ? "text-warning" : "text-muted-foreground",
                   )}
                   aria-hidden
                 />

@@ -62,7 +62,7 @@ function source(items: ReturnType<typeof datedChangeItems>): AttentionSourceStat
 }
 
 describe("dated change attention items", () => {
-  it.each(["refused", "failed", "overdue", "drift", "zone_unconfirmed"] as const)(
+  it.each(["refused", "failed", "overdue", "drift"] as const)(
     "%s has no mute and a local mute cannot hide it",
     (attention) => {
       const [item] = datedChangeItems([change({ attention, mutable: false, status: attention === "refused" || attention === "failed" ? attention : "scheduled" })], deps());
@@ -72,6 +72,10 @@ describe("dated change attention items", () => {
       expect(muted).toHaveLength(0);
     },
   );
+
+  it("keeps an unconfirmed future time zone off the global attention dock", () => {
+    expect(datedChangeItems([change({ attention: "zone_unconfirmed", timeZone: null, mutable: false })], deps())).toEqual([]);
+  });
 
   it("a scheduled change can be muted locally, and the mute hides it", async () => {
     const d = deps();

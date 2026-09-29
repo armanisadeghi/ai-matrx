@@ -14,28 +14,10 @@ import {
   parseCredentialMaintenanceMap,
   WEB_APP_CONFIG_SLUG,
 } from "@/features/admin/applications/config/credential-maintenance";
-import { fetchDatedChanges } from "@/features/admin/dated-changes/service";
-import {
-  DATED_CHANGES_PAGE_HREF,
-  describeDatedChange,
-} from "@/features/admin/dated-changes/describe";
 
 const DISMISS_KEY_PREFIX = "credential-expiry-dismissed-";
 const CONFIG_ERROR_TOAST_ID = "credential-maintenance-config-error";
-const DATED_DISMISS_KEY_PREFIX = "dated-change-dismissed-";
-const DATED_READ_ERROR_TOAST_ID = "dated-changes-read-error";
-
-/**
- * SECOND SOURCE (2026-09-28): dated changes — a database change stored now and applied on a set
- * date (first use: a model price a provider announced for later). The same mechanics as the
- * credential half — super-admin only, `duration: Infinity`, a Manage door — made more serious:
- * a refused, failed or overdue change, one that will be refused (drift), and one whose time zone
- * the source never stated have NO Dismiss and cannot be swiped away; they stay until resolved.
- * Scheduled, upcoming and applied notices may be dismissed (per browser, per change and state).
- * The database decides which is which (`platform.dated_changes_for_attention`); the attention
- * dock shows the same items on every page and polls, so a refusal at midnight shows without a
- * reload. Design: common-docs/projects/checks-run-in-the-app/DATED-CHANGES-DESIGN.md.
- */
+/** A dismissal applies only to the credential expiry reminder in this browser. */
 function readDismissed(key: string): boolean {
   try {
     return localStorage.getItem(key) !== null;
@@ -178,58 +160,7 @@ export default function CredentialExpiryNotifier() {
       }
     };
 
-    const loadDatedChanges = async () => {
-      let changes;
-      try {
-        changes = await fetchDatedChanges(false);
-      } catch (error) {
-        if (cancelled) return;
-        // A read that failed is not "nothing scheduled": say so, briefly (the dock repeats the
-        // read on its own poll and keeps the failure on screen while it lasts).
-        const failure = describeFailure(error, {
-          action: "checking scheduled price changes",
-          retrySafe: true,
-          fallback: "The scheduled-changes read failed.",
-        });
-        toast.error("Couldn't check scheduled price changes just now", {
-          id: DATED_READ_ERROR_TOAST_ID,
-          description: `${failure.sentence} ${failure.remedy}`.trim(),
-          duration: 8000,
-        });
-        activeToastIds.push(DATED_READ_ERROR_TOAST_ID);
-        return;
-      }
-      if (cancelled) return;
-      for (const change of changes) {
-        if (!change.attention) continue;
-        const words = describeDatedChange(change);
-        const dismissKey = `${DATED_DISMISS_KEY_PREFIX}${change.id}-${change.attention}`;
-        if (words.dismissible && readDismissed(dismissKey)) continue;
-        const toastId = `dated-change-${change.id}-${change.attention}`;
-        activeToastIds.push(toastId);
-        toast(words.headline, {
-          id: toastId,
-          description: words.sentence,
-          duration: Infinity,
-          dismissible: words.dismissible,
-          action: {
-            label: "Manage",
-            onClick: () => window.location.assign(`${DATED_CHANGES_PAGE_HREF}#${change.id}`),
-          },
-          ...(words.dismissible
-            ? {
-                cancel: {
-                  label: "Dismiss",
-                  onClick: () => writeDismissed(dismissKey),
-                },
-              }
-            : {}),
-        });
-      }
-    };
-
     void loadCredentialMaintenance();
-    void loadDatedChanges();
 
     return () => {
       cancelled = true;
