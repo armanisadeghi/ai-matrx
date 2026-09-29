@@ -531,7 +531,7 @@ export default function TableConfigModal({
             // Validate the sanitized field name
             if (!validateFieldName(sanitizedFieldName)) {
               throw new Error(
-                `Invalid field name: "${field.field_name}". Field names must start with a lowercase letter and contain only lowercase letters, numbers, and underscores.`,
+                `"${field.display_name}" could not be saved under that name. Try a name with at least one letter in it.`,
               );
             }
 
@@ -964,9 +964,6 @@ export default function TableConfigModal({
                             className="h-8 text-sm"
                           />
                         </div>
-                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                          #{field.field_order} • {field.field_name}
-                        </p>
                       </div>
 
                       {/* Two adjacent selects that can both read "Text" are

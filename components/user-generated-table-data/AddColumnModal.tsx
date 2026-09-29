@@ -210,9 +210,6 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
                 {nameTaken}
               </p>
             ) : null}
-            <p className="text-xs text-muted-foreground">
-              Internal field name: <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-xs">{fieldName || 'auto-generated'}</code>
-            </p>
           </div>
           
           <div className="space-y-2">

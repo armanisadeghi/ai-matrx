@@ -30,6 +30,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectIsAdmin } from '@/lib/redux/selectors/userSelectors';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storageTypeLabel } from '@/features/data-tables/column-storage-types';
 
 interface CreateTemplateModalProps {
   isOpen: boolean;
@@ -342,7 +343,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess }: Crea
                           <div className="overflow-hidden">
                             <div className="font-medium truncate">{field.display_name || '(Unnamed Field)'}</div>
                             <div className="text-xs text-muted-foreground truncate">
-                              {field.field_name || '(no-name)'} • {field.data_type} {field.is_required && '• required'}
+                              {storageTypeLabel(field.data_type)}{field.is_required ? ' • required' : ''}
                             </div>
                           </div>
                           <div className="flex items-center space-x-1">
@@ -405,9 +406,6 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess }: Crea
                             placeholder="e.g. Total Revenue"
                             required
                           />
-                          <p className="text-xs text-muted-foreground">
-                            Internal field name: <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-xs">{fields[currentField].field_name || 'auto-generated'}</code>
-                          </p>
                         </div>
                         
                         <div className="space-y-2">

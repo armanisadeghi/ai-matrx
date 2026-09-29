@@ -345,12 +345,6 @@ export default function CreateTableModal({
                             placeholder="e.g. Total Revenue"
                             required
                           />
-                          <p className="text-xs text-muted-foreground">
-                            Internal field name:{" "}
-                            <code className="bg-muted px-1 py-0.5 rounded font-mono text-xs">
-                              {field.field_name || "auto-generated"}
-                            </code>
-                          </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">

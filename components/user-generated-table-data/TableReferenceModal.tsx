@@ -224,9 +224,6 @@ export default function TableReferenceModal({
                     <span className="text-sm font-medium">
                       {field.display_name}
                     </span>
-                    <span className="text-xs text-gray-500 ml-2">
-                      ({field.field_name})
-                    </span>
                   </div>
                   <Button
                     variant="outline"
