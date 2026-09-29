@@ -82,6 +82,32 @@ try {
     step("grid text", { t: (await text()).slice(0, 600) });
   }
 
+  if (PHASE === "tidy") {
+    // The empty row left by the first probe of "New record": archived through the grid's own Delete.
+    await page.goto(`${ORIGIN}/data-v2/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await until("the grid", async () => (await text()).includes("Dana Whitcomb"), 120000);
+    await sleep(3000);
+    const rows = page.locator("tbody tr[data-row-id]");
+    const n = await rows.count();
+    let empty = null;
+    for (let i = 0; i < n; i += 1) {
+      const t = (await rows.nth(i).innerText()).replace(/\s+/g, " ").trim();
+      if (!/Dana|Luis|Priya/.test(t)) empty = rows.nth(i);
+    }
+    step("empty row found", { found: Boolean(empty), rows: n });
+    if (empty) {
+      await empty.getByRole("button", { name: "Delete" }).first().click();
+      await sleep(2500);
+      const confirm = page.getByRole("button", { name: /^(Delete|Archive)/ }).filter({ hasNotText: "column" });
+      if ((await page.getByRole("alertdialog").count()) > 0) await page.getByRole("alertdialog").getByRole("button", { name: /Delete|Archive/ }).first().click();
+      await sleep(3000);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await until("the grid", async () => (await text()).includes("Dana Whitcomb"), 120000);
+      await sleep(3000);
+      step("after archive", { rows: await page.locator("tbody tr[data-row-id]").count(), notice: (await text()).includes("archived") });
+    }
+  }
+
   if (PHASE === "views") {
     const open = async (view) => {
       await page.goto(`${ORIGIN}/data-v2/${table}?view=${view}`, { waitUntil: "domcontentloaded", timeout: 180000 });
