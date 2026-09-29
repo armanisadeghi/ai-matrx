@@ -28,14 +28,10 @@
 -- Nothing else in the function names a table. custom.record keeps its dedicated branch because it
 -- is the custom data system's own door, not an exclusion.
 
-set local lock_timeout = '5s';
-
 alter table platform.entity_types
   add column if not exists ownership_handover text not null default 'work',
   add column if not exists ownership_handover_reason text;
 
-alter table platform.entity_types
-  drop constraint if exists entity_types_ownership_handover_check;
 alter table platform.entity_types
   add constraint entity_types_ownership_handover_check
   check (ownership_handover in ('work', 'person', 'system')

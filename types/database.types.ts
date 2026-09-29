@@ -78158,6 +78158,8 @@ export type Database = {
           lifecycle_hot_days: number | null
           notes: string | null
           origin: string
+          ownership_handover: string
+          ownership_handover_reason: string | null
           projects_token: string | null
           reference_candidate_predicates: Json
           reference_category: string | null
@@ -78226,6 +78228,8 @@ export type Database = {
           lifecycle_hot_days?: number | null
           notes?: string | null
           origin?: string
+          ownership_handover?: string
+          ownership_handover_reason?: string | null
           projects_token?: string | null
           reference_candidate_predicates?: Json
           reference_category?: string | null
@@ -78294,6 +78298,8 @@ export type Database = {
           lifecycle_hot_days?: number | null
           notes?: string | null
           origin?: string
+          ownership_handover?: string
+          ownership_handover_reason?: string | null
           projects_token?: string | null
           reference_candidate_predicates?: Json
           reference_category?: string | null
@@ -83451,6 +83457,19 @@ export type Database = {
       _store_pick_list_document: {
         Args: { p_list_id: string; p_shape?: string; p_viewer: string }
         Returns: Json
+      }
+      _t13_allowlist: { Args: { p_which: string }; Returns: string[] }
+      _t13_made_in_this_transaction: {
+        Args: { p_xmin: unknown }
+        Returns: boolean
+      }
+      _t13_new_row_access_columns: {
+        Args: { p_rel: unknown }
+        Returns: string[]
+      }
+      _t13_refuse_row_access_columns: {
+        Args: { p_offenders: string[]; p_where: string }
+        Returns: undefined
       }
       _take_lock_nowait: {
         Args: { p_for: string; p_mode: string; p_rels: unknown[] }
