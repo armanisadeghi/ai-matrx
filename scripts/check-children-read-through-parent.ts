@@ -16,15 +16,23 @@
  *
  * ZERO ROWS OR IT FAILED. UNMEASURED IS NOT PASSED.
  *
- * THE SELF-TEST plants each violation for real inside a transaction that is always rolled back
- * (2 s lock timeout) and requires the named check to go red, then requires the database to be green.
+ * THE SELF-TEST runs on the CLONE (policy DDL on production is refused by the production guard): it
+ * plants each violation for real inside a transaction that is always rolled back (2 s lock timeout),
+ * requires the named finding to APPEAR (absent from the clone's baseline, present after the plant),
+ * and requires the rolled-back clone to answer its baseline again.
  *
  *   pnpm check:children-read-through-parent
  *   pnpm check:children-read-through-parent:self-test
  */
 
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import pg from "pg";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { cloneRefOverride, loadCloneDbEnv, loadCloneRef } from "./lib/migration-target";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const GUARD = `select check_name, token, table_name, policy_name from iam.children_with_own_read_arms()`;
 
@@ -37,24 +45,25 @@ interface Row {
 
 const PLANTS: ReadonlyArray<{ name: string; expect: string; sql: string }> = [
   {
-    name: "a child's std_select reads its own visibility column",
-    expect: "own_arm_in_std_select:seo_gsc_dig_rule",
-    sql: `alter policy std_select on seo.gsc_dig_rule using (visibility = 'public'::platform.visibility)`,
+    name: "a child's std_select reads its own organization column",
+    expect: "own_arm_in_std_select:agent_definition_version",
+    sql: `alter policy std_select on agent.definition_version
+            using ((organization_id is not null and organization_id in (select iam.my_orgs())) or agent_id is not null)`,
   },
   {
     name: "a child's std_select loses its parent arm",
-    expect: "no_parent_arm:seo_gsc_dig_rule",
-    sql: `alter policy std_select on seo.gsc_dig_rule using ((select public.is_platform_admin()))`,
+    expect: "no_parent_arm:agent_definition_version",
+    sql: `alter policy std_select on agent.definition_version using ((select public.is_platform_admin()))`,
   },
   {
     name: "a child gains an anonymous read that does not ask its parent",
-    expect: "anon_read_not_via_parent:seo_gsc_dig_rule",
-    sql: `create policy pub_read on seo.gsc_dig_rule for select to anon using (true)`,
+    expect: "anon_read_not_via_parent:agent_definition_version",
+    sql: `create policy pub_read on agent.definition_version for select to anon using (true)`,
   },
   {
     name: "a child gains a hand-written organization read",
-    expect: "bespoke_read_policy:seo_gsc_dig_rule",
-    sql: `create policy t13_plant_org_read on seo.gsc_dig_rule for select to authenticated
+    expect: "bespoke_read_policy:agent_definition_version",
+    sql: `create policy t13_plant_org_read on agent.definition_version for select to authenticated
             using (organization_id in (select iam.my_orgs()))`,
   },
   {
@@ -71,23 +80,36 @@ function fail(message: string): never {
 
 async function main(): Promise<void> {
   const selfTest = process.argv.includes("--self-test");
-  const env = loadDbEnv();
-  if (!("host" in env)) {
-    fail("UNMEASURED: no database credentials. A guard that cannot measure has not passed.");
+  let client: pg.Client;
+  if (selfTest) {
+    const env = loadCloneDbEnv(ROOT, loadCloneRef(ROOT, cloneRefOverride(process.argv)));
+    client = new pg.Client({ host: env.host, port: env.port, user: env.user, password: env.password,
+      database: env.database, ssl: { rejectUnauthorized: false }, application_name: "check:children-read-through-parent (self-test)" });
+    await client.connect().catch((error: unknown) => fail(`UNMEASURED: could not reach the clone — ${String(error)}`));
+  } else {
+    const env = loadDbEnv();
+    if (!("host" in env)) {
+      fail("UNMEASURED: no database credentials. A guard that cannot measure has not passed.");
+    }
+    client = await connectDirect(env, "check-children-read-through-parent").catch((error: unknown) => {
+      fail(`UNMEASURED: could not reach the database — ${String(error)}`);
+    });
   }
-  const client = await connectDirect(env, "check-children-read-through-parent").catch((error: unknown) => {
-    fail(`UNMEASURED: could not reach the database — ${String(error)}`);
-  });
 
   try {
     if (selfTest) {
+      const key = (r: Row) => `${r.check_name}:${r.token}`;
+      const baseline = (await client.query<Row>(GUARD)).rows.map(key).sort();
       for (const plant of PLANTS) {
+        if (baseline.includes(plant.expect)) {
+          fail(`SELF-TEST UNMEASURED — ${plant.expect} is already in the clone's baseline, so its plant proves nothing.`);
+        }
         await client.query("begin");
         try {
           await client.query("set local lock_timeout = '2s'");
           await client.query(plant.sql);
           const rows = (await client.query<Row>(GUARD)).rows;
-          const keys = rows.map((r) => `${r.check_name}:${r.token}`);
+          const keys = rows.map(key);
           if (!keys.includes(plant.expect)) {
             fail(
               `SELF-TEST FAILED — planted "${plant.name}" and the guard did not report ${plant.expect} ` +
@@ -99,11 +121,11 @@ async function main(): Promise<void> {
           await client.query("rollback");
         }
       }
-      const clean = (await client.query<Row>(GUARD)).rows;
-      if (clean.length > 0) {
-        fail(`SELF-TEST FAILED — after every rollback the live database is not green: ${clean.map((r) => `${r.check_name}:${r.token}`).join(", ")}`);
+      const after = (await client.query<Row>(GUARD)).rows.map(key).sort();
+      if (after.join("|") !== baseline.join("|")) {
+        fail(`SELF-TEST FAILED — after every rollback the clone does not answer its baseline (${baseline.length} vs ${after.length} findings).`);
       }
-      console.log(`[ OK ] self-test — ${PLANTS.length} planted violations each went RED for their named reason; the rolled-back database is GREEN.`);
+      console.log(`[ OK ] self-test (clone) — ${PLANTS.length} planted violations each went RED for their named reason; the rolled-back clone answers its baseline (${baseline.length} findings) again.`);
       return;
     }
 
