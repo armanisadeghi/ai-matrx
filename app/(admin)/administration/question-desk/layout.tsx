@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Newsreader } from "next/font/google";
 
 import { createRouteMetadata } from "@/utils/route-metadata";
 import "@/features/question-desk/question-desk.css";
@@ -9,23 +8,18 @@ import "@/features/question-desk/question-desk.css";
  *
  * The Question Desk is the one screen in the platform whose job is to be READ
  * — one long question at a time, in prose, by a person deciding something
- * irreversible. Newsreader is loaded here, in this feature's own route layout,
- * self-hosted at build time by `next/font/google` (no runtime CDN, no layout
- * shift), and exposed as `--font-editorial`, which only
- * `features/question-desk/question-desk.css`'s `.qd-editorial` consumes.
+ * irreversible. Its own stylesheet keeps the editorial serif scoped to
+ * `.qd-editorial`; it intentionally uses the browser's local serif stack.
+ *
+ * `next/font/google` is not used here: current Turbopack's Google-font asset
+ * replacer can fail this whole admin build while resolving Newsreader's
+ * multi-file font CSS. A local system stack keeps this route independent of
+ * that build-time virtual import and avoids a runtime font request.
  *
  * It is deliberately NOT a design-system token yet: promoting an editorial face
  * into `@ai-matrx/design-system` is a package wave, and this is the smallest
  * honest step. Cost if that ruling is wrong: one font move.
  */
-const editorial = Newsreader({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
-  display: "swap",
-  variable: "--font-editorial",
-});
-
 export const metadata = createRouteMetadata("/administration", {
   title: "Question Desk",
   description:
@@ -38,5 +32,5 @@ export default function QuestionDeskLayout({
 }: {
   children: ReactNode;
 }) {
-  return <div className={editorial.variable}>{children}</div>;
+  return children;
 }
