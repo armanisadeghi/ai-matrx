@@ -93,6 +93,17 @@ export async function renamePersonalTableView(actor: TableViewActor, tableId: st
   return decode(data as unknown as ViewRow);
 }
 
+/** Soft-delete one personal table view through the version-guarded archive door. */
+export async function archivePersonalTableView(actor: TableViewActor, tableId: string, view: PersonalTableView, signal: AbortSignal): Promise<void> {
+  const { data, error } = await supabase.rpc("saved_view_archive", {
+    p_surface_key: surfaceKey(tableId), p_id: view.id, p_expected_version: view.version,
+  }).abortSignal(signal).setHeader("Authorization", `Bearer ${actor.accessToken}`);
+  if (error) throw error;
+  // The archive door returns NULL for both a stale version and an absent row so it never
+  // discloses another person's row. Either result needs the same safe recovery: reload.
+  if (!data) throw new Error("This view changed elsewhere or is already gone. Reload views.");
+}
+
 // ─── ANY LIST SURFACE (not only package tables) ─────────────────────────────
 //
 // The same `platform.saved_view` store and the same two doors

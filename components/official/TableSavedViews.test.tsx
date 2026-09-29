@@ -9,6 +9,7 @@ const mockList = jest.fn();
 const mockCreate = jest.fn();
 const mockUpdate = jest.fn();
 const mockRename = jest.fn();
+const mockArchive = jest.fn();
 
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "user-a",
@@ -21,20 +22,25 @@ jest.mock("./table-saved-views-service", () => ({
   createPersonalTableView: (...args: unknown[]) => mockCreate(...args),
   updatePersonalTableView: (...args: unknown[]) => mockUpdate(...args),
   renamePersonalTableView: (...args: unknown[]) => mockRename(...args),
+  archivePersonalTableView: (...args: unknown[]) => mockArchive(...args),
 }));
 jest.mock("@ai-matrx/design-system/data-table", () => ({
-  SavedViewsControl: ({ views, activeId, onSelect, onSaveNew, onUpdate }: {
+  SavedViewsControl: ({ views, activeId, error, onSelect, onSaveNew, onUpdate, onRemove }: {
     views: Array<{ id: string; name: string }>;
     activeId: string | null;
+    error?: string | null;
     onSelect: (id: string | null) => void;
     onSaveNew: (name: string) => Promise<void>;
     onUpdate?: () => Promise<void>;
+    onRemove?: (id: string) => Promise<void>;
   }) => <div>
     <div data-testid="views">{views.map((view) => view.name).join(",")}</div>
     <div data-testid="active">{activeId ?? "default"}</div>
+    <div data-testid="error">{error}</div>
     <button onClick={() => void onSaveNew("New view")}>Create</button>
     <button onClick={() => void onUpdate?.()}>Update</button>
     {views.map((view) => <button key={view.id} onClick={() => onSelect(view.id)}>Select {view.name}</button>)}
+    <button onClick={() => { if (onRemove) void onRemove(views[0]?.id ?? "").catch(() => {}); }}>Delete first</button>
   </div>,
 }));
 
@@ -100,5 +106,40 @@ describe("durable table view adapter", () => {
     await act(async () => { update.resolve(view("a", "A", 2)); });
     expect(host.querySelector('[data-testid="active"]')?.textContent).toBe("b");
     expect(onApply).toHaveBeenLastCalledWith(snapshot);
+  });
+
+  it("removes the exact durable view through the host archive adapter", async () => {
+    mockList.mockResolvedValueOnce([view("a", "A")]).mockResolvedValueOnce([]);
+    mockArchive.mockResolvedValue(undefined);
+    await act(async () => { root.render(<TableSavedViews tableId="checks" snapshot={snapshot} defaultSnapshot={snapshot} onApply={jest.fn()} />); });
+    await act(async () => { clickButton(host, 3); });
+    expect(mockArchive).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "user-a", accessToken: "token-a", organizationId: "org-a" }),
+      "checks", view("a", "A"), expect.any(AbortSignal),
+    );
+    await act(async () => {});
+    expect(host.querySelector('[data-testid="views"]')?.textContent).toBe("");
+  });
+
+  it("records deletion and offers recovery if returning to Default fails after archive", async () => {
+    mockList.mockResolvedValueOnce([view("a", "A"), view("b", "B")])
+      .mockRejectedValueOnce(new Error("Could not refresh views"))
+      .mockResolvedValueOnce([]);
+    mockArchive.mockResolvedValue(undefined);
+    const onApply = jest.fn((next: TableViewSnapshot) => {
+      if (next === otherSnapshot) throw new Error("Could not apply Default");
+    });
+    await act(async () => { root.render(<TableSavedViews tableId="checks" snapshot={snapshot} defaultSnapshot={otherSnapshot} onApply={onApply} />); });
+    await act(async () => { clickButton(host, 2); });
+    await act(async () => { clickButton(host, 4); });
+    expect(mockArchive).toHaveBeenCalledTimes(1);
+    expect(host.querySelector('[data-testid="active"]')?.textContent).toBe("default");
+    expect(host.querySelector('[data-testid="views"]')?.textContent).toBe("B");
+    expect(host.querySelector('[data-testid="error"]')?.textContent).toContain("Save the current layout as a new view or reload this page");
+    expect(host.querySelector('[data-testid="error"]')?.textContent).toContain("Could not refresh views");
+    await act(async () => { clickButton(host, 3); });
+    expect(mockArchive).toHaveBeenCalledTimes(2);
+    expect(host.querySelector('[data-testid="views"]')?.textContent).toBe("");
+    expect(host.querySelector('[data-testid="error"]')?.textContent).toContain("Save the current layout as a new view or reload this page");
   });
 });

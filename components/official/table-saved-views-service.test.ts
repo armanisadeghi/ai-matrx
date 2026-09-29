@@ -85,6 +85,7 @@ jest.mock("@/utils/supabase/client", () => {
 });
 
 import {
+  archivePersonalTableView,
   createPersonalTableView,
   listPersonalTableViews,
   renamePersonalTableView,
@@ -341,6 +342,29 @@ describe("table saved view transport contract", () => {
       p_expected_version: 2, p_name: "Checks",
     }));
     expect(request.body).not.toHaveProperty("p_definition");
+  });
+
+  it("archives a personal table view through the scoped version-guarded door", async () => {
+    responses.push({ body: true });
+    await expect(archivePersonalTableView(actor, tableId,
+      { id: "view-a", name: "Old", version: 2, snapshot },
+      new AbortController().signal)).resolves.toBeUndefined();
+    expect(requests).toHaveLength(1);
+    const request = requests[0];
+    if (!request) throw new Error("Missing recorded archive request");
+    expect(request.method).toBe("POST");
+    expect(request.url.pathname).toBe("/rest/v1/rpc/saved_view_archive");
+    expectCapturedIdentity(request, "public");
+    expect(request.body).toEqual({
+      p_surface_key: "matrx/table/sandboxes/active", p_id: "view-a", p_expected_version: 2,
+    });
+  });
+
+  it("does not claim a stale personal view was deleted", async () => {
+    responses.push({ body: null });
+    await expect(archivePersonalTableView(actor, tableId,
+      { id: "view-a", name: "Old", version: 2, snapshot },
+      new AbortController().signal)).rejects.toThrow("changed elsewhere or is already gone");
   });
 
   it("binds the supplied abort signal before the terminal create request", async () => {

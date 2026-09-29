@@ -6,7 +6,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  createPersonalTableView, listPersonalTableViews, renamePersonalTableView, updatePersonalTableView,
+  archivePersonalTableView, createPersonalTableView, listPersonalTableViews, renamePersonalTableView, updatePersonalTableView,
   type PersonalTableView, type TableViewActor,
 } from "./table-saved-views-service";
 
@@ -26,6 +26,7 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentati
   const activeRef = useRef<PersonalTableView | null>(null);
   const selectionRevision = useRef(0);
   const [error, setError] = useState<string | null>(null);
+  const [archiveWarning, setArchiveWarning] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const requestKey = `${actor.accessToken}:${reloadKey}`;
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
@@ -64,6 +65,7 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentati
       setViews((previous) => [...previous.filter((view) => view.id !== saved.id), saved]);
       if (startedAtSelection === selectionRevision.current) { activeRef.current = saved; setActive(saved); }
       setError(null);
+      setArchiveWarning(null);
       setReloadKey((key) => key + 1);
     } catch (cause) {
       if (!request.signal.aborted) setError(cause instanceof Error ? cause.message : "Could not save this view. Your layout is unchanged.");
@@ -88,12 +90,38 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentati
       throw cause;
     } finally { pendingWrites.current.delete(request); }
   };
+  const remove = async (id: string) => {
+    const baseline = views.find((view) => view.id === id);
+    if (!baseline) throw new Error("This view is no longer available. Reload views before deleting it.");
+    const request = new AbortController();
+    pendingWrites.current.add(request);
+    try {
+      await archivePersonalTableView(actor, tableId, baseline, request.signal);
+      if (request.signal.aborted) throw new Error("The delete was interrupted. Reload views before trying again.");
+      completedWriteRevision.current += 1;
+      const removingActiveView = activeRef.current?.id === id;
+      let resetFailed = false;
+      if (removingActiveView) {
+        try { onApply(defaultSnapshot); }
+        catch { resetFailed = true; }
+      }
+      setViews((previous) => previous.filter((view) => view.id !== id));
+      if (removingActiveView) { activeRef.current = null; setActive(null); }
+      setError(null);
+      if (resetFailed) setArchiveWarning("The saved view was deleted, but the table could not return to Default. Save the current layout as a new view or reload this page.");
+      else if (removingActiveView) setArchiveWarning(null);
+      setReloadKey((key) => key + 1);
+    } catch (cause) {
+      if (!request.signal.aborted) setError(cause instanceof Error ? cause.message : "Could not delete this view.");
+      throw cause;
+    } finally { pendingWrites.current.delete(request); }
+  };
   return <SavedViewsControl
     views={views}
     activeId={active?.id ?? null}
     dirty={JSON.stringify(active?.snapshot ?? defaultSnapshot) !== JSON.stringify(snapshot)}
     loading={loading}
-    error={error}
+    error={[error, archiveWarning].filter(Boolean).join(" ") || null}
     onReload={() => setReloadKey((key) => key + 1)}
     onSelect={(id) => {
       try {
@@ -104,10 +132,12 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentati
         activeRef.current = selected;
         setActive(selected);
         setError(null);
+        setArchiveWarning(null);
       } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not apply this view. Your layout is unchanged."); }
     }}
     onSaveNew={(name) => save(name)}
     onRename={rename}
+    onRemove={remove}
     related={related}
     {...(presentation ? { presentation } : {})}
     {...(active ? { onUpdate: () => save() } : {})}
