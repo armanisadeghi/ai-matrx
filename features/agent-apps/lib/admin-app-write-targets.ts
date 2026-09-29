@@ -17,7 +17,7 @@
  *   fields keep their current value; an empty string CLEARS `tagline` /
  *   `description` (→ null). `name` may never be blanked — the row requires it.
  *   Unknown keys throw: `slug`, `status`, `is_featured`, `is_verified`,
- *   `visibility`, the rate limits and `component_code` are NOT authored copy and
+ *   `published_to_web`, `shown_to`, the rate limits and `component_code` are NOT authored copy and
  *   are deliberately unreachable from here.
  * - `app_category` is ONE system category name from `platform.categories`
  *   (`dimension = 'app'`), matched case-insensitively and resolved to that

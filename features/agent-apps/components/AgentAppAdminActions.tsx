@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  isPubliclyVisible,
-  visibilityLabelShort,
-} from "@/lib/visibility/labels";
+import { publishedToWebLabel } from "@/lib/row-access";
 import {
   Archive,
   Ban,
@@ -49,7 +46,7 @@ import type { AgentAppAdminView } from "@/lib/services/agent-apps-admin-service"
 export type AgentAppAdminActionPatch = {
   is_featured?: boolean;
   is_verified?: boolean;
-  visibility?: string;
+  published_to_web?: boolean;
   status?: "draft" | "published" | "archived" | "suspended";
   rate_limit_per_ip?: number;
   rate_limit_window_hours?: number;
@@ -97,7 +94,7 @@ export function AgentAppAdminActions({
   const handleTogglePublic = () =>
     withBusy("public", () =>
       onUpdate({
-        visibility: isPubliclyVisible(app.visibility) ? "internal" : "public",
+        published_to_web: !app.published_to_web,
       }),
     );
 
@@ -208,19 +205,19 @@ export function AgentAppAdminActions({
       </Button>
 
       <Button
-        variant={isPubliclyVisible(app.visibility) ? "default" : "outline"}
+        variant={app.published_to_web ? "default" : "outline"}
         size="sm"
         onClick={handleTogglePublic}
         disabled={busy !== null}
       >
         {busy === "public" ? (
           <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-        ) : isPubliclyVisible(app.visibility) ? (
+        ) : app.published_to_web ? (
           <CheckCircle className="w-3.5 h-3.5 mr-1" />
         ) : (
           <Ban className="w-3.5 h-3.5 mr-1" />
         )}
-        {visibilityLabelShort(app.visibility)}
+        {publishedToWebLabel(app.published_to_web)}
       </Button>
 
       <DropdownMenu>

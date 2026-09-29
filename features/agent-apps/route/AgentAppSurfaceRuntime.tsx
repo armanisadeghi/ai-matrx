@@ -48,6 +48,7 @@ import { requestFailure } from "@/features/agent-apps/tracking/run-outcome";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
+import { publishedToWebLabel } from "@/lib/row-access";
 
 type ActiveView =
   | "overview"
@@ -164,7 +165,8 @@ export function buildAgentAppsWorkspaceScope(
     app_status: app.status,
     app_category: app.category ?? undefined,
     app_tags: app.tags,
-    app_visibility: app.visibility,
+    // Surface key keeps its manifest name; the value is the row word.
+    app_visibility: publishedToWebLabel(app.published_to_web),
     agent_id: app.agent_id,
     app_version: app.version,
     pinned_version: app.pinned_version ?? undefined,
@@ -177,7 +179,7 @@ export function buildAgentAppsWorkspaceScope(
       status: app.status,
       category: app.category,
       tags: app.tags,
-      visibility: app.visibility,
+      published_to_web: app.published_to_web,
       agent_id: app.agent_id,
       version: app.version,
       pinned_version: app.pinned_version,

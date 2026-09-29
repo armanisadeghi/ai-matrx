@@ -24,10 +24,7 @@ import {
 } from "@/components/official/stale-data/UntrustedCount";
 import { useState } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import {
-  isPubliclyVisible,
-  visibilityLabelShort,
-} from "@/lib/visibility/labels";
+import { publishedToWebLabel } from "@/lib/row-access";
 import Link from "next/link";
 import {
   AppWindow,
@@ -227,8 +224,8 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
 
   const statusLabel =
     app.status.charAt(0).toUpperCase() + app.status.slice(1);
-  const visibilityLabel = visibilityLabelShort(app.visibility);
-  const isPublic = isPubliclyVisible(app.visibility);
+  const webLabel = publishedToWebLabel(app.published_to_web);
+  const isPublic = app.published_to_web === true;
 
   return (
     <div
@@ -302,7 +299,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
             {statusLabel}
           </LabeledPill>
           <LabeledPill
-            label="Visibility"
+            label="Web"
             icon={isPublic ? Globe : Lock}
             accent={
               isPublic
@@ -310,7 +307,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                 : "text-muted-foreground"
             }
           >
-            {visibilityLabel}
+            {webLabel}
           </LabeledPill>
           {agent ? (
             <button
@@ -416,7 +413,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                 `${app.name} (${app.slug})`,
                 app.tagline,
                 app.description,
-                `Status: ${statusLabel} · ${visibilityLabel}`,
+                `Status: ${statusLabel} · ${webLabel}`,
                 app.category ? `Category: ${app.category}` : null,
                 `Agent: ${agent?.name ?? runAgentId ?? "unresolved"}`,
                 `Runs: ${formatNumber(app.total_executions)} · ${successPct} success`,

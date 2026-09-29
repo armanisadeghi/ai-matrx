@@ -65,9 +65,9 @@ export interface AgentAppCardModel {
   agent_version_id: string | null;
   use_latest: boolean;
 
-  // Status & visibility
+  // Status & web state
   status: AgentApp["status"];
-  visibility: AgentApp["visibility"];
+  published_to_web: AgentApp["published_to_web"];
   is_featured: boolean | null;
   is_verified: boolean | null;
 
@@ -202,8 +202,8 @@ const matchesArchive: FilterPredicate = (app, { consumer }) => {
 
 const matchesVisibility: FilterPredicate = (app, { consumer }) => {
   if (consumer.visibilityFilter === "all") return true;
-  if (consumer.visibilityFilter === "public") return app.visibility === "public";
-  if (consumer.visibilityFilter === "personal") return app.visibility !== "public";
+  if (consumer.visibilityFilter === "public") return app.published_to_web;
+  if (consumer.visibilityFilter === "personal") return !app.published_to_web;
   return true;
 };
 
@@ -293,7 +293,7 @@ export const selectAllAppCardModels = createSelector(
         agent_version_id: r.agent_version_id,
         use_latest: r.use_latest,
         status: r.status,
-        visibility: r.visibility,
+        published_to_web: r.published_to_web,
         is_featured: r.is_featured,
         is_verified: r.is_verified,
         total_executions: r.total_executions,

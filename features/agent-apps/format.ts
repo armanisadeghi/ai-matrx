@@ -15,7 +15,7 @@
 // hand-rolling its own formatter or summary string.
 
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
-import { visibilityLabelShort } from "@/lib/visibility/labels";
+import { publishedToWebLabel } from "@/lib/row-access";
 import {
   formatCount,
   formatPercentFromFraction,
@@ -64,7 +64,7 @@ export interface AppSummaryLike {
   description?: string | null;
   category?: string | null;
   status?: string;
-  visibility?: string | null;
+  published_to_web?: boolean | null;
   is_featured?: boolean | null;
   is_verified?: boolean | null;
   total_executions?: number | null;
@@ -79,7 +79,9 @@ export function humanAgentApp(app: AppSummaryLike): string {
     app.tagline || null,
     [
       app.status ? `Status: ${app.status}` : null,
-      app.visibility ? visibilityLabelShort(app.visibility) : null,
+      app.published_to_web != null
+        ? publishedToWebLabel(app.published_to_web)
+        : null,
       app.is_featured ? "Featured" : null,
       app.is_verified ? "Verified" : null,
     ]
@@ -131,7 +133,7 @@ export function appBrief(app: AppSummaryLike): string {
 /** Fields the KPI builders read. Every app row/view satisfies it structurally. */
 export interface AgentAppKpiLike {
   status?: string;
-  visibility?: string | null;
+  published_to_web?: boolean | null;
   total_executions?: number | null;
   unique_users_count?: number | null;
   success_rate?: number | null;
@@ -164,7 +166,9 @@ export function agentAppKpis(
     kpis.cost = formatCost(app.total_cost, { unit });
   }
   if (app.status) kpis.status = app.status;
-  if (app.visibility) kpis.visibility = app.visibility;
+  if (app.published_to_web != null) {
+    kpis.published_to_web = publishedToWebLabel(app.published_to_web);
+  }
   return kpis;
 }
 
@@ -253,7 +257,7 @@ function draftData(drafts: AgentAppFieldDraft[]) {
  * inputs (Name / Tagline / Description / the three rate limits) that show a
  * Save button when dirty; `committed` are the controls that write straight
  * through on change (category, tags, agent binding, shell, branding, status,
- * visibility, hierarchy) so their rendered value IS the saved value.
+ * published to the web, hierarchy) so their rendered value IS the saved value.
  */
 export interface AgentAppSettingsView {
   app: AppSummaryLike & AgentAppKpiLike;
@@ -342,7 +346,7 @@ export function agentAppSettingsAgentPayload(
         name: view.app.name,
         slug: view.app.slug,
         status: view.app.status,
-        visibility: view.app.visibility,
+        published_to_web: view.app.published_to_web ?? null,
       },
       // The page's leading metrics, carried verbatim per the page-KPI rule.
       page_kpis: kpis,
@@ -438,7 +442,7 @@ export function agentAppAdminEditAgentPayload(
         name: view.app.name,
         slug: view.app.slug,
         status: view.app.status,
-        visibility: view.app.visibility,
+        published_to_web: view.app.published_to_web ?? null,
       },
       // The Analytics card, verbatim — this page's leading metric strip.
       page_kpis: kpis,

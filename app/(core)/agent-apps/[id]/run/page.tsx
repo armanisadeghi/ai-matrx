@@ -25,7 +25,7 @@ export default async function AgentAppRunPage({ params }: RunPageProps) {
         appName={app.name}
         agentId={app.agent_id}
         initialStatus={app.status}
-        initialVisibility={app.visibility}
+        initialPublishedToWeb={app.published_to_web}
         active="run"
       />
       <AgentAppRunWithHistory app={app} slug={app.slug} />

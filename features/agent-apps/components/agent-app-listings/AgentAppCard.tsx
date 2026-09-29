@@ -13,10 +13,7 @@
  * transitions, and confirmation dialogs centrally.
  */
 
-import {
-  isPubliclyVisible,
-  visibilityLabelShort,
-} from "@/lib/visibility/labels";
+import { publishedToWebLabel } from "@/lib/row-access";
 import {
   AppWindow,
   Copy,
@@ -132,9 +129,9 @@ export function AgentAppCard({
         </span>
         <span
           className="inline-flex items-center justify-center w-5 h-5 rounded text-muted-foreground"
-          title={visibilityLabelShort(app.visibility)}
+          title={publishedToWebLabel(app.published_to_web)}
         >
-          {isPubliclyVisible(app.visibility) ? (
+          {app.published_to_web ? (
             <Globe className="h-3 w-3" />
           ) : (
             <Lock className="h-3 w-3" />

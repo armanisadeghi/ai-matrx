@@ -9,11 +9,10 @@ import type { Database, Json } from "@/types/database.types";
 
 export type AppStatus = "draft" | "published" | "archived" | "suspended";
 
-/** Canonical platform visibility enum — the single owner of "who can see this".
- *  Replaced the legacy `is_public` boolean when app.definition was certified
- *  (2026-08-13). An app IS the public face of an agent, so 'public' is a normal,
- *  expected value here (unlike agent.definition, which bans it). */
-export type AppVisibility = Database["platform"]["Enums"]["visibility"];
+/** The row's "Shown to" (lists only). "Published to the web" is the boolean
+ *  `published_to_web` — an app IS the public face of an agent, so publishing it
+ *  to the web is a normal, expected state here. */
+export type AppShownTo = Database["platform"]["Enums"]["shown_to"];
 
 export type AppDisplayMode =
   "form" | "form-to-chat" | "chat" | "centered-input" | "chat-with-history";
@@ -242,7 +241,8 @@ export interface AgentAppRecord {
   favicon_url: string | null;
 
   status: AppStatus;
-  visibility: AppVisibility;
+  published_to_web: boolean;
+  shown_to: AppShownTo | null;
   is_featured: boolean | null;
   is_verified: boolean | null;
 
@@ -302,7 +302,8 @@ export type PublicAgentApp = Omit<
   | "avg_execution_time_ms"
   | "last_execution_at"
   | "status"
-  | "visibility"
+  | "published_to_web"
+  | "shown_to"
 > & {
   /**
    * The mandate columns the public RPC carries so an ANONYMOUS visitor never
@@ -565,7 +566,7 @@ export type AgentAppSummary = Pick<
   | "preview_image_url"
   | "favicon_url"
   | "status"
-  | "visibility"
+  | "published_to_web"
   | "is_featured"
   | "total_executions"
   | "last_execution_at"

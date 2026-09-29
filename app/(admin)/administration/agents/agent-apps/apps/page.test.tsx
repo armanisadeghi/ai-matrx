@@ -26,7 +26,7 @@ describe("Agent Apps canonical table contract", () => {
       name: "Test",
       tags: [],
       status: "draft",
-      visibility: "private",
+      published_to_web: false,
       is_verified: false,
       is_featured: false,
       rate_limit_per_ip: null,
@@ -94,7 +94,7 @@ describe("Agent Apps canonical table contract", () => {
       "updated",
       "description",
       "tags",
-      "visibility",
+      "published_to_web",
     ])
       expect(column(id).filter).not.toBe(false);
     expect(column("description").hidden).toBe(true);
@@ -138,7 +138,7 @@ describe("Agent Apps canonical table contract", () => {
     const app: AgentAppAdminView = {
       id: "app-test", created_by: null, agent_id: "agent-test",
       mandate_id: null, mandate_key: null, slug: "test", name: "Test",
-      tags: [], status: "draft", visibility: "private",
+      tags: [], status: "draft", published_to_web: false,
       is_verified: false, is_featured: false, rate_limit_per_ip: null,
       rate_limit_window_hours: null, rate_limit_authenticated: null,
       total_executions: null, unique_users_count: null, success_rate: null,

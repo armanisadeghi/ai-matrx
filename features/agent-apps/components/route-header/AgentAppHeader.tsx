@@ -25,7 +25,7 @@ import { toast } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import type { AppStatus, AppVisibility } from "@/features/agent-apps/types";
+import type { AppStatus } from "@/features/agent-apps/types";
 
 export type AgentAppHeaderTab =
   "overview" | "run" | "code" | "versions" | "settings";
@@ -35,7 +35,7 @@ interface AgentAppHeaderProps {
   appName: string;
   agentId: string;
   initialStatus: AppStatus;
-  initialVisibility: AppVisibility;
+  initialPublishedToWeb: boolean;
   active: AgentAppHeaderTab;
   /** Defaults to `/agent-apps`. Admin/org variants pass their own root. */
   basePath?: string;
@@ -55,7 +55,7 @@ export function AgentAppHeader({
   appName,
   agentId,
   initialStatus,
-  initialVisibility,
+  initialPublishedToWeb,
   active,
   basePath = "/agent-apps",
   backHref = "/agent-apps",
@@ -66,8 +66,8 @@ export function AgentAppHeader({
   const [publicationBusy, setPublicationBusy] = useState(false);
 
   const status = app?.status ?? initialStatus;
-  const visibility = app?.visibility ?? initialVisibility;
-  const isPublished = status === "published" && visibility === "public";
+  const publishedToWeb = app?.published_to_web ?? initialPublishedToWeb;
+  const isPublished = status === "published" && publishedToWeb;
 
   const modes: RouteNavItem[] = [
     { name: "Overview", href: `${basePath}/${appId}`, icon: AppWindow },

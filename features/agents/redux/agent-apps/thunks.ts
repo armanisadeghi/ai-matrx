@@ -275,7 +275,7 @@ export const saveAppField = createAsyncThunk<
 
 /**
  * Publish/unpublish as one transition. The public resolver requires both
- * `status='published'` and `visibility='public'`; independent field writes can
+ * `status='published'` and `published_to_web`; independent field writes can
  * create a URL the UI advertises but the public route refuses.
  */
 export const setAgentAppPublication = createAsyncThunk<

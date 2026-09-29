@@ -9,9 +9,10 @@
  * app counts are still small; reintroduce later when needed.
  *
  * Filter dimensions: tab (mine/shared/all), sort, search, categories,
- * tags, agents (by id; name shown in UI), archive, visibility.
+ * tags, agents (by id; name shown in UI), archive, published to the web.
  */
 
+import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import {
   useCallback,
   useEffect,
@@ -115,8 +116,8 @@ const VISIBILITY_OPTIONS: {
   label: string;
 }[] = [
   { value: "all", label: "All" },
-  { value: "public", label: "Public only" },
-  { value: "personal", label: "Personal only" },
+  { value: "public", label: "Published to the web" },
+  { value: "personal", label: "Not published" },
 ];
 
 interface AgentAppsGridProps {
@@ -184,7 +185,7 @@ export function AgentAppsGrid({
   const allAgents = useAppSelector(selectAllAppAgents);
 
   // Counts for tab pills — recomputed off the (already filtered for status,
-  // visibility, search, etc) result is misleading; instead we apply only
+  // web state, search, etc) result is misleading; instead we apply only
   // the non-tab filters here. Cheap to compute; same array length as
   // filteredApps in the common path.
   const tabCounts = useMemo(() => {
@@ -382,7 +383,7 @@ export function AgentAppsGrid({
                     onChange={setArchFilter}
                   />
                   <FilterSection
-                    label="Visibility"
+                    label={PUBLISHED_TO_WEB_LABEL}
                     value={visibilityFilter}
                     options={VISIBILITY_OPTIONS}
                     onChange={setVisibilityFilter}

@@ -28,7 +28,7 @@ export interface AgentAppBundleSource {
   tagline?: string | null;
   description?: string | null;
   status?: string | null;
-  visibility?: string | null;
+  published_to_web?: boolean | null;
   category?: string | null;
   tags?: string[] | null;
   version?: number | null;
@@ -72,9 +72,9 @@ export function buildAgentAppBundle(
       id: app.id,
       name: app.name,
       slug: app.slug,
-      public_url: app.visibility === "public" ? `/p/${app.slug}` : null,
+      public_url: app.published_to_web ? `/p/${app.slug}` : null,
       status: app.status,
-      visibility: app.visibility,
+      published_to_web: app.published_to_web,
       category: app.category,
       tags: app.tags?.length ? app.tags.join(", ") : null,
       version: app.version,

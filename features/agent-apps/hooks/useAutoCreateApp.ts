@@ -230,7 +230,7 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
   onSuccessRef.current = options.onSuccess;
   onErrorRef.current = options.onError;
 
-  // Monitor tab visibility during creation
+  // Watch whether the tab is shown during creation
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden" && isCreatingRef.current) {

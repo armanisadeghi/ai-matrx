@@ -17,7 +17,7 @@ export default async function AgentAppCodePage({ params }: CodePageProps) {
         appName={app.name}
         agentId={app.agent_id}
         initialStatus={app.status}
-        initialVisibility={app.visibility}
+        initialPublishedToWeb={app.published_to_web}
         active="code"
       />
       {/* Whole-surface editor (activity bar, file tabs, chat) is static

@@ -20,7 +20,7 @@ export default async function AgentAppVersionsPage({
         appName={app.name}
         agentId={app.agent_id}
         initialStatus={app.status}
-        initialVisibility={app.visibility}
+        initialPublishedToWeb={app.published_to_web}
         active="versions"
       />
       <AgentAppVersionsContent

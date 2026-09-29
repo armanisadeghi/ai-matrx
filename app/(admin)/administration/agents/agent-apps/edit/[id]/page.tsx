@@ -346,7 +346,7 @@ export default function AdminEditAgentAppPage({
     },
     moderation: {
       status: app.status,
-      visibility: app.visibility,
+      published_to_web: app.published_to_web,
       is_featured: app.is_featured,
       is_verified: app.is_verified,
       rate_limit_per_ip: app.rate_limit_per_ip,

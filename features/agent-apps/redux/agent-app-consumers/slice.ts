@@ -43,7 +43,8 @@ export type AgentAppTab = "mine" | "shared" | "all";
 /** Maps onto AgentApp.status. "active" = anything not archived/suspended. */
 export type AgentAppArchFilter = "active" | "archived" | "both";
 
-/** Public-vs-personal visibility filter. Independent of status. */
+/** Published-to-the-web filter ("public" = published, "personal" = not
+ *  published; the values are the persisted URL/state keys). Independent of status. */
 export type AgentAppVisibilityFilter = "all" | "public" | "personal";
 
 /** Sentinel meaning "include uncategorized / untagged" items. */

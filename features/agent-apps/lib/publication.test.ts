@@ -1,19 +1,26 @@
 import { agentAppPublicationPatch } from "./publication";
 
 describe("agentAppPublicationPatch", () => {
-  it("publishes status, visibility, and timestamp as one transition", () => {
-    expect(agentAppPublicationPatch(true, "2026-08-15T00:00:00.000Z")).toEqual({
+  it("publishes status, the web switch, and timestamp as one transition", () => {
+    expect(
+      agentAppPublicationPatch(true, "2026-08-15T00:00:00.000Z", "user-1"),
+    ).toEqual({
       status: "published",
-      visibility: "public",
+      published_to_web: true,
+      published_to_web_at: "2026-08-15T00:00:00.000Z",
+      published_to_web_by: "user-1",
       published_at: "2026-08-15T00:00:00.000Z",
     });
   });
 
-  it("unpublishes to the owning organization and clears the timestamp", () => {
-    expect(agentAppPublicationPatch(false)).toEqual({
+  it("stops publishing to the web and clears the timestamp", () => {
+    const patch = agentAppPublicationPatch(false);
+    expect(patch).toMatchObject({
       status: "draft",
-      visibility: "internal",
+      published_to_web: false,
+      published_to_web_by: null,
       published_at: null,
     });
+    expect(typeof patch.published_to_web_at).toBe("string");
   });
 });

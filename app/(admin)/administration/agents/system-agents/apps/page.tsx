@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import {
-  isPubliclyVisible,
-  visibilityLabelShort,
-} from "@/lib/visibility/labels";
+import { PUBLISHED_TO_WEB_LABEL, publishedToWebLabel } from "@/lib/row-access";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import {
@@ -81,7 +78,7 @@ function agentAppAdminSummary(a: AgentAppAdminView): string {
   return [
     `${a.name} (/${a.slug})`,
     `[${a.status}]`,
-    visibilityLabelShort(a.visibility).toLowerCase(),
+    publishedToWebLabel(a.published_to_web).toLowerCase(),
     a.category ? `category:${a.category}` : null,
     `runs:${a.total_executions ?? 0}`,
   ]
@@ -271,10 +268,9 @@ export default function AdminSystemAppsListPage() {
       },
     },
     {
-      id: "visibility",
-      header: "Public",
-      accessorFn: (app) =>
-        isPubliclyVisible(app.visibility) ? "Public" : "Internal",
+      id: "published_to_web",
+      header: PUBLISHED_TO_WEB_LABEL,
+      accessorFn: (app) => publishedToWebLabel(app.published_to_web),
       filter: "select",
       width: 75,
       cell: (app) => {
@@ -282,19 +278,19 @@ export default function AdminSystemAppsListPage() {
         return (
           <div className="flex justify-center">
             <Switch
-              checked={isPubliclyVisible(app.visibility)}
+              checked={app.published_to_web === true}
               disabled={isBusy}
               onCheckedChange={(checked) =>
                 void patchRow(
                   app.id,
-                  { visibility: checked ? "public" : "internal" },
-                  "Visibility",
+                  { published_to_web: checked },
+                  PUBLISHED_TO_WEB_LABEL,
                 )
               }
               aria-label={
-                isPubliclyVisible(app.visibility)
-                  ? "Make internal"
-                  : "Make public"
+                app.published_to_web
+                  ? "Stop publishing to the web"
+                  : "Publish to the web"
               }
             />
           </div>

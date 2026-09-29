@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useState, useTransition } from "react";
 import AppLink from "@/components/navigation/AppLink";
+import { PUBLISHED_TO_WEB_LABEL, publishedToWebLabel } from "@/lib/row-access";
 import { useRouter } from "next/navigation";
 import { Ban, CheckCircle, Clock, Archive } from "lucide-react";
 import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
@@ -303,9 +304,9 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
     hidden: true,
   },
   {
-    id: "visibility",
-    header: "Visibility",
-    accessorKey: "visibility",
+    id: "published_to_web",
+    header: PUBLISHED_TO_WEB_LABEL,
+    accessorFn: (app) => publishedToWebLabel(app.published_to_web),
     filter: "select",
     hidden: true,
   },

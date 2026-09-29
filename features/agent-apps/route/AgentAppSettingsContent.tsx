@@ -9,6 +9,7 @@
  * explanations of what an agent or version is.
  */
 
+import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Loader2, Save, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -379,8 +380,7 @@ export function AgentAppSettingsContent({
         favicon_url: app.favicon_url,
         preview_image_url: app.preview_image_url,
         status: app.status,
-        public: app.visibility === "public",
-        visibility: app.visibility,
+        published_to_web: app.published_to_web,
         organization_id: app.organization_id,
         project_id: app.project_id,
         task_id: app.task_id,
@@ -584,18 +584,16 @@ export function AgentAppSettingsContent({
 
           {/* ── Sharing (publication + URL + scope + limits) ─────────── */}
           <TabsContent value="sharing" className="space-y-5">
-            <Row label="Published">
+            <Row label={PUBLISHED_TO_WEB_LABEL}>
               <Switch
-                checked={
-                  app.status === "published" && app.visibility === "public"
-                }
+                checked={app.status === "published" && app.published_to_web}
                 onCheckedChange={handlePublicationChange}
                 disabled={savingField === "publication"}
               />
             </Row>
             <Row label="Public URL">
               <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
-                {app.status === "published" && app.visibility === "public" ? (
+                {app.status === "published" && app.published_to_web ? (
                   <>
                     <a
                       href={publicUrl}

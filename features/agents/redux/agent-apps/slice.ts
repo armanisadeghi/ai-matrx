@@ -60,7 +60,8 @@ function makeEmptyRecord(id: string): AgentAppRecord {
     favicon_url: null,
 
     status: "draft",
-    visibility: "public",
+    published_to_web: false,
+    shown_to: null,
     is_featured: false,
     is_verified: false,
 

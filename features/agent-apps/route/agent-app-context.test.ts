@@ -6,7 +6,7 @@ const base = {
   name: "Fact Checker",
   tagline: "Deconstruct claims & uncover the truth.",
   status: "published",
-  visibility: "public",
+  published_to_web: true,
   tags: [],
   version: 3,
   shell_kind: "fully_custom",
@@ -32,7 +32,7 @@ it("packs the open app as one escaped XML element within the page budget", () =>
 });
 
 it("omits parts the app does not have instead of rendering blanks", () => {
-  const xml = buildAgentAppBundle({ ...base, visibility: "personal", component_code: "" });
+  const xml = buildAgentAppBundle({ ...base, published_to_web: false, component_code: "" });
   expect(xml).not.toContain("public_url");
   expect(xml).not.toContain("<component_code");
   expect(xml).not.toContain("<description");
