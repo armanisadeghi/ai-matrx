@@ -299,6 +299,11 @@ function readField<K extends keyof InstanceUIState>(
 // Slice
 // =============================================================================
 
+/** Order-insensitive equality of two string lists. */
+function sameStringSet(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((value) => b.includes(value));
+}
+
 const instanceUIStateSlice = createSlice({
   name: "instanceUIState",
   initialState,
@@ -1040,11 +1045,27 @@ const instanceUIStateSlice = createSlice({
       // Carry them forward unless THIS creation explicitly states its own.
       const prior = state.byConversationId[conversationId]?.builderAdvancedSettings;
       const incoming = uiState?.builderAdvancedSettings;
+      // The composer's Output picks (`outputKinds`, and `outputTypes` once it
+      // differs from the Text-only default) are deliberate picks too.
       const carried = (
-        ["addedTools", "addedMcpServers", "addedSkills"] as const
+        [
+          "addedTools",
+          "addedMcpServers",
+          "addedSkills",
+          "outputKinds",
+          "outputTypes",
+        ] as const
       ).filter(
         (key) =>
-          (prior?.[key]?.length ?? 0) > 0 && incoming?.[key] === undefined,
+          (prior?.[key]?.length ?? 0) > 0 &&
+          incoming?.[key] === undefined &&
+          !(
+            key === "outputTypes" &&
+            sameStringSet(
+              prior?.outputTypes ?? [],
+              DEFAULT_BUILDER_ADVANCED_SETTINGS.outputTypes ?? [],
+            )
+          ),
       );
 
       instanceUIStateSlice.caseReducers.initInstanceUIState(

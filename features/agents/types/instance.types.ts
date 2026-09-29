@@ -709,6 +709,24 @@ export interface BuilderAdvancedSettings {
   addedSkills?: string[];
 
   /**
+   * The composer's Output → types the person asked for in THIS conversation
+   * (`text`, `image`, `audio`, `video`, `voice`, `music`, `document`, …; ids
+   * from `composer/output-selection.ts` OUTPUT_TYPES). Multi-select, Text on
+   * by default. NOT SENT: no request field carries requested output types
+   * today, so this is saved for the chat and shown — the panel says so.
+   */
+  outputTypes?: string[];
+
+  /**
+   * The composer's Output → Shapes: every content_ir kind slug picked for
+   * THIS conversation. A kind whose render_block skill exists ALSO has that
+   * skill in `addedSkills` (that is what reaches the run, via
+   * `skill_config.included`); a kind without one is recorded here only and
+   * labelled as not sent.
+   */
+  outputKinds?: string[];
+
+  /**
    * Creator/admin-only, THIS conversation only: override the backend route the
    * Builder's manual execution POSTs to. Normally the Builder always hits
    * `/ai/manual` (the live-definition execution path). Set this to test the
@@ -760,6 +778,8 @@ export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
   addedTools: [],
   addedMcpServers: [],
   addedSkills: [],
+  outputTypes: ["text"],
+  outputKinds: [],
   manualEndpointOverride: null,
   agentFs: false,
   requestOverrides: null,
