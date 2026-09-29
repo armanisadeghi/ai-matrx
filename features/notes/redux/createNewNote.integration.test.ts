@@ -193,7 +193,7 @@ describe("createNewNote empty-note reuse integration", () => {
       label: "Incident handoff",
       metadata: { source: "war-room" },
       position: 7,
-      visibility: "link",
+      published_to_web: false,
     };
     const update = query({ data: updated, error: null });
     update.select.mockReturnValue(update);
@@ -230,7 +230,7 @@ describe("createNewNote empty-note reuse integration", () => {
       label: "Incident handoff",
       metadata: { source: "war-room" },
       position: 7,
-      visibility: "link",
+      published_to_web: false,
       project_id: projectId,
       task_id: taskId,
     }));
@@ -242,7 +242,7 @@ describe("createNewNote empty-note reuse integration", () => {
       label: "Incident handoff",
       metadata: { source: "war-room" },
       position: 7,
-      visibility: "link",
+      published_to_web: false,
     });
     expect(setTargets).toHaveBeenNthCalledWith(1, {
       sourceType: "note",
@@ -262,7 +262,7 @@ describe("createNewNote empty-note reuse integration", () => {
       label: "Incident handoff",
       metadata: { source: "war-room" },
       position: 7,
-      visibility: "link",
+      published_to_web: false,
       project_id: projectId,
       task_id: taskId,
       _fetchStatus: "full",

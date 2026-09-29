@@ -25,9 +25,20 @@ export interface NoteContextLinks {
 // generated column, audit N-24): the server writes it, a client never does, and
 // a full row read carries it while a locally minted record does not — so it is
 // optional on the app-side shape.
-export type Note = Omit<NoteRow, "content_preview"> & {
+// The retiring row column (access ladder T-13) is not part of the client model: a note's row
+// controls are `shown_to` (which lists show it — never a lock) and `published_to_web`. Who stamped
+// the publish, and when, is server-set, so a locally minted record may lack them.
+/** The stored row as the client models it — any full DB row satisfies it. */
+export type NoteStoredRow = Omit<
+  NoteRow,
+  "content_preview" | "visibility" | "published_to_web_at" | "published_to_web_by"
+> & {
   content_preview?: string | null;
-} & NoteContextLinks;
+  published_to_web_at?: string | null;
+  published_to_web_by?: string | null;
+};
+
+export type Note = NoteStoredRow & NoteContextLinks;
 
 // ── Narrowed shapes for JSON columns ────────────────────────────────────────
 // `metadata` is a Json column — the generated type is `unknown`. Consumers use
@@ -60,7 +71,8 @@ export type NoteListItem = Pick<
   | "updated_at"
   | "position"
   | "organization_id"
-  | "visibility"
+  | "shown_to"
+  | "published_to_web"
   | "version"
 > &
   NoteContextLinks;
@@ -95,7 +107,8 @@ export type CreateNoteInput = Pick<
   | "metadata"
   | "custom_fields"
   | "position"
-  | "visibility"
+  | "shown_to"
+  | "published_to_web"
 > & {
   /** Captured at the initiating edge. The note writer never resolves it. */
   organization_id: string;
@@ -162,7 +175,8 @@ export type NoteContentUpdate = Pick<
   | "metadata"
   | "custom_fields"
   | "position"
-  | "visibility"
+  | "shown_to"
+  | "published_to_web"
 > &
   Partial<NoteContextLinks>;
 

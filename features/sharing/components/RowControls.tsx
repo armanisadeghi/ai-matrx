@@ -46,6 +46,8 @@ export interface RowControlsProps {
   shownTo: ShownTo | null | undefined;
   /** `useSharing().isPublic` — published to the web. */
   isPublic: boolean;
+  /** `useSharing().childRecord` — a child follows its parent: nothing is drawn. */
+  childRecord?: boolean;
   onSetShownTo: (next: ShownTo | null) => Promise<ShareActionResult>;
   onPublish: () => Promise<ShareActionResult>;
   onStopPublishing: () => Promise<ShareActionResult>;
@@ -57,6 +59,7 @@ export function RowControls({
   canChange,
   shownTo,
   isPublic,
+  childRecord = false,
   onSetShownTo,
   onPublish,
   onStopPublishing,
@@ -98,7 +101,7 @@ export function RowControls({
       </p>
     );
   }
-  if (!caps) return null;
+  if (!caps || childRecord) return null;
 
   const showShownTo = caps.shownToOffered && shownTo !== undefined;
   const showPublish = caps.publishLane !== null;
@@ -188,7 +191,7 @@ export function RowControls({
                   value={v}
                   aria-label={SHOWN_TO_WORDS[v].label}
                   title={SHOWN_TO_WORDS[v].says}
-                  className="h-7 px-2 text-xs"
+                  className="h-7 px-2 text-xs data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
                 >
                   {SHOWN_TO_WORDS[v].label}
                 </ToggleGroupItem>
@@ -205,8 +208,8 @@ export function RowControls({
         <p className="text-xs text-muted-foreground">
           {shownTo
             ? SHOWN_TO_WORDS[shownTo].says
-            : "Not set — the default for this type decides which lists show it."}{" "}
-          Which lists show it, never who may open it.
+            : "Not set — the default for this type applies."}{" "}
+          A list setting, never who may open it.
           {busy === "shown" && <Loader2 className="ml-1 inline h-3 w-3 animate-spin" />}
         </p>
       )}
@@ -221,6 +224,9 @@ export function RowControls({
                 resourceId={resourceId}
                 publishedHint={isPublic}
               />
+              {busy === "publish" && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              )}
               {canChange ? (
                 <Switch
                   checked={isPublic}
@@ -233,7 +239,9 @@ export function RowControls({
               )}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">{publishSays}</p>
+          <p className="text-xs text-muted-foreground">
+            {isPublic ? publishSays : `When on: ${publishSays}`}
+          </p>
           {isPublic && publicUrl && (
             <div className="flex items-center gap-1.5 rounded-md border bg-background p-1.5">
               <span className="min-w-0 flex-1 truncate px-1 font-mono text-xs">{publicUrl}</span>

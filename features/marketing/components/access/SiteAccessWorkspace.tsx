@@ -73,6 +73,7 @@ export function SiteAccessWorkspace({
     whoCanSee,
     setWhoCanSee,
     shownTo,
+    childRecord,
     setShownTo,
     organizationDefault,
   } = useSharing(
@@ -341,6 +342,7 @@ export function SiteAccessWorkspace({
                       resourceId: site.id,
                       shownTo,
                       isPublic: resourceIsPublic,
+                      childRecord,
                       onSetShownTo: setShownTo,
                       onPublish: () => makePublic(),
                       onStopPublishing: () => revokeAccess({ isPublic: true }),

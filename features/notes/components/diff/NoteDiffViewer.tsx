@@ -45,7 +45,8 @@ function buildNoteAdapterRegistry() {
   registry.register("folder_name", { ...TextFieldAdapter, label: "Folder" });
   registry.register("folder_id", { ...TextFieldAdapter, label: "Folder ID" });
   registry.register("tags", { ...TagsFieldAdapter, label: "Tags" });
-  registry.register("visibility", { ...TextFieldAdapter, label: "Visibility" });
+  registry.register("shown_to", { ...TextFieldAdapter, label: "Shown to" });
+  registry.register("published_to_web", { ...TextFieldAdapter, label: "Published to the web" });
   registry.register("metadata", { ...JsonObjectAdapter, label: "Metadata" });
   registry.register("organization_id", {
     ...TextFieldAdapter,

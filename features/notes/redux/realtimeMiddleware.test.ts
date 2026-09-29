@@ -249,7 +249,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
         table: "workbench.notes",
         id: "note-1",
         updatedAt: "2026-09-07T00:00:01.000Z",
-        fingerprint: JSON.stringify(["Ideas", "hello world", "Draft", null, [], null]),
+        fingerprint: JSON.stringify(["Ideas", "hello world", "Draft", null, [], null, null]),
         updatedBy: "user-1",
       };
       expect(stub.ledger.classify(echo).origin).toBe("remote");
@@ -323,7 +323,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
       };
       const h = (opened = harness(state));
       h.handle(fetchNotesList.fulfilled(undefined, "request-1", undefined));
-      const fingerprint = JSON.stringify(["The Best Chicken Alfredo", "the recipe", "Draft", null, [], null]);
+      const fingerprint = JSON.stringify(["The Best Chicken Alfredo", "the recipe", "Draft", null, [], null, null]);
 
       // The save opens a ticket for the number it will produce (1 → 2)…
       h.handle({ type: "notes/markNoteSaving", payload: "note-1" });
@@ -354,7 +354,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
       const binding = notesBinding(stub.spec());
       const row = {
         id: "note-1", organization_id: "org-1", version: 2, content: "the recipe", label: "L",
-        folder_name: "Draft", folder_id: "folder-1", tags: [], metadata: {}, visibility: "personal",
+        folder_name: "Draft", folder_id: "folder-1", tags: [], metadata: {}, shown_to: null, published_to_web: false,
         position: 0, project_id: null, task_id: null, created_at: "2026-09-14T05:55:17.534Z",
         created_by: "user-1", updated_at: "2026-09-14T05:55:18.435Z", updated_by: "user-1",
         deleted_at: null, content_hash: null, file_path: "/Notes/x.md", last_device_id: "dev-1",
@@ -370,7 +370,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
       ) as { payload: { note: Record<string, unknown>; fetchStatus: string } };
       expect(upsert.payload.fetchStatus).toBe("full");
       expect(upsert.payload.note.folder_id).toBe("folder-1");
-      expect(upsert.payload.note.visibility).toBe("personal");
+      expect(upsert.payload.note.published_to_web).toBe(false);
       expect(upsert.payload.note.file_path).toBe("/Notes/x.md");
       expect(upsert.payload.note.version).toBe(2);
       expect("search_tsv" in upsert.payload.note).toBe(false);
@@ -403,7 +403,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
           table: "workbench.notes",
           id: "note-2",
           updatedAt: "2026-09-07T00:00:08.000Z",
-          fingerprint: JSON.stringify(["L", "c", null, null, [], null]),
+          fingerprint: JSON.stringify(["L", "c", null, null, [], null, null]),
         }).origin,
       ).toBe("stale");
     });

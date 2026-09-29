@@ -14,7 +14,7 @@
  * - Notes is many small/medium plaintext-markdown resources with live editor
  *   state. Persisted note CONTENT is represented once by `current_note` (a
  *   resource_ref the server resolves on demand); the note's lightweight
- *   metadata (title, folder, tags, visibility, timestamps) is emitted inline
+ *   metadata (title, folder, tags, shown to, published to the web, timestamps) is emitted inline
  *   because the page already holds it.
  *
  * Curated groups (band 0-899):
@@ -141,7 +141,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "note_bundle",
     label: "Note and workspace",
     description:
-      "One XML bundle of what an agent needs up front: <note> with the open note's title, folder, tags, visibility, last update, word count and unsaved/shared flags, its <body> (the live editor text, up to 7,000 characters — marked clipped=\"true\" total_chars=\"N\" when cut; resolve `current_note` for the rest), and its <scopes>; then the other <open_tabs> and the person's <folders>. Absent when no note is open.",
+      "One XML bundle of what an agent needs up front: <note> with the open note's title, folder, tags, Shown to, Published to the web, last update, word count and unsaved/shared flags, its <body> (the live editor text, up to 7,000 characters — marked clipped=\"true\" total_chars=\"N\" when cut; resolve `current_note` for the rest), and its <scopes>; then the other <open_tabs> and the person's <folders>. Absent when no note is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 7500,
@@ -204,14 +204,25 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "note_identity",
   },
   {
-    name: "current_note_visibility",
-    label: "Visibility",
+    name: "current_note_shown_to",
+    label: "Shown to",
     description:
-      "Visibility of the active note (personal / internal / public). Empty when no note is open.",
+      "Which lists show the active note to people who can already open it (only_me / my_team / everyone / everyone_on_ai_matrx). Empty when unset (the type's default applies) or no note is open. Never a lock.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
     sortOrder: 325,
+    group: "note_identity",
+  },
+  {
+    name: "current_note_published_to_web",
+    label: "Published to the web",
+    description:
+      "True when the active note is published to the web — anyone, signed in or not, can open it at its address. Absent when no note is open.",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    sortOrder: 326,
     group: "note_identity",
   },
   {
@@ -251,7 +262,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_note_summary",
     label: "Active note summary",
     description:
-      "Composite of the active note's metadata as one object: { id, title, folder, tags, visibility, word_count, updated_at, is_dirty }. Mirrors the individual note-identity values (completeness law). Absent when no note is open.",
+      "Composite of the active note's metadata as one object: { id, title, folder, tags, shown_to, published_to_web, word_count, updated_at, is_dirty }. Mirrors the individual note-identity values (completeness law). Absent when no note is open.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 300,
@@ -406,7 +417,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * four things an agent can plausibly author better than a blank cursor (the
  * body, an appended block, the title, the tags) plus filing it into a folder
  * that ALREADY exists. Everything else on this surface stays human — ids,
- * ownership, sharing/permissions, visibility, version history, and every
+ * ownership, sharing/permissions, web publishing, version history, and every
  * destructive action (delete, empty trash, permanent delete).
  *
  * Modes follow where the write actually lands:
@@ -621,7 +632,8 @@ export function createNotesScope(values: {
   current_note_title?: string;
   current_note_folder?: string;
   current_note_tags?: string[];
-  current_note_visibility?: string;
+  current_note_shown_to?: string;
+  current_note_published_to_web?: boolean;
   current_note_word_count?: number;
   current_note_updated_at?: string;
   current_note_is_dirty?: boolean;
@@ -630,7 +642,8 @@ export function createNotesScope(values: {
     title: string;
     folder: string;
     tags: string[];
-    visibility: string;
+    shown_to: string | null;
+    published_to_web: boolean;
     word_count: number;
     updated_at: string;
     is_dirty: boolean;

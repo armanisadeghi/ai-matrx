@@ -147,7 +147,8 @@ export function useNotesSurfaceScope(
             label: record.label,
             folder_name: record.folder_name,
             tags: record.tags,
-            visibility: record.visibility,
+            shown_to: record.shown_to,
+            published_to_web: record.published_to_web,
             updated_at: record.updated_at,
           }
         : null,

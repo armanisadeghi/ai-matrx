@@ -41,7 +41,7 @@ function seed(count: number): SliceState {
       tags: [],
       updated_at: `2026-09-1${i % 5}T00:00:00Z`,
       position: i,
-      visibility: "personal" as const,
+      published_to_web: false,
       version: 1,
     },
     fetchStatus: "list" as const,

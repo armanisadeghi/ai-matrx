@@ -102,7 +102,7 @@ function getUserId(getState: () => unknown): string {
   return userId;
 }
 
-type WritablePhysicalKey = "content" | "label" | "folder_id" | "tags" | "visibility";
+type WritablePhysicalKey = "content" | "label" | "folder_id" | "tags" | "shown_to" | "published_to_web";
 type ContextKey = "project_id" | "task_id";
 type ReviewedFieldKey = WritablePhysicalKey | ContextKey | "folder_name";
 export type NoteReviewedSavePermit = object;
@@ -124,7 +124,7 @@ interface ReviewedPermitState {
 }
 
 const reviewedSavePermits = new WeakMap<object, ReviewedPermitState>();
-const writablePhysicalKeys: readonly WritablePhysicalKey[] = ["content", "label", "folder_id", "tags", "visibility"];
+const writablePhysicalKeys: readonly WritablePhysicalKey[] = ["content", "label", "folder_id", "tags", "shown_to", "published_to_web"];
 const contextKeys: readonly ContextKey[] = ["project_id", "task_id"];
 
 function reviewedFields(source: NoteEditableContentSource): readonly ReviewedFieldKey[] | null {
@@ -243,7 +243,8 @@ type NoteListRow = Pick<
   | "updated_at"
   | "position"
   | "organization_id"
-  | "visibility"
+  | "shown_to"
+  | "published_to_web"
   | "version"
 >;
 
@@ -278,7 +279,7 @@ export const fetchNotesList = createAsyncThunk<void, void>(
                 // fetchNoteContent (audit N-24 — every route entry and every
                 // refresh used to download the full text of every note).
                 .select(
-                  "id, created_by, label, content_preview, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
+                  "id, created_by, label, content_preview, folder_name, folder_id, tags, updated_at, position, organization_id, shown_to, published_to_web, version",
                   { count: "exact" },
                 )
                 .is("deleted_at", null);
@@ -789,8 +790,10 @@ const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: 
         updates.folder_id = record.folder_id;
       } else if (field === "tags") {
         updates.tags = record.tags;
-      } else if (field === "visibility") {
-        updates.visibility = record.visibility;
+      } else if (field === "shown_to") {
+        updates.shown_to = record.shown_to;
+      } else if (field === "published_to_web") {
+        updates.published_to_web = record.published_to_web;
       } else if (field === "folder_name") {
         if (hasPairedFolderId) {
           // folder_name is display projection. The admitted folder ID is the
@@ -1408,9 +1411,10 @@ export const copyNote = createAsyncThunk<
       tags: record.tags ?? [],
       metadata: {},
       position: 0,
-      // A duplicate is private by default — don't inherit a shared
-      // visibility, and don't fall through to the DB 'internal' default.
-      visibility: "personal",
+      // A duplicate is listed for its maker alone and never inherits a publish
+      // (access ladder: "Shown to" is a list filter; publishing is chosen, never copied).
+      shown_to: "only_me",
+      published_to_web: false,
       organization_id: copyOrganizationId,
     })
     .select()
@@ -1683,7 +1687,7 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
       .schema("workbench")
       .from("notes")
       .select(
-        "id, created_by, label, folder_name, folder_id, tags, content_preview, updated_at, position, organization_id, visibility, deleted_at, version",
+        "id, created_by, label, folder_name, folder_id, tags, content_preview, updated_at, position, organization_id, shown_to, published_to_web, deleted_at, version",
       )
       .not("deleted_at", "is", null);
     trashQuery = listScope.apply(trashQuery);
@@ -1786,7 +1790,6 @@ export const fetchSharedNotesList = createAsyncThunk<void, void>(
             organization_id: row.organization_id,
             project_id: row.project_id,
             task_id: row.task_id,
-            visibility: (row.visibility ?? "personal") as Note["visibility"],
             version: row.version,
             created_by: row.created_by,
           },

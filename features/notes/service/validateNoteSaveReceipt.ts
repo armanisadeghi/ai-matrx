@@ -2,7 +2,7 @@ import type { Note } from "../types";
 import type { NoteContextField, NoteSaveReceipt } from "./noteSaveErrors";
 import { equalNoteSnapshotValue } from "../noteSnapshotEquality";
 
-type Physical = Pick<Note, "content" | "label" | "folder_id" | "tags" | "visibility">;
+type Physical = Pick<Note, "content" | "label" | "folder_id" | "tags" | "shown_to" | "published_to_web">;
 const contexts: readonly NoteContextField[] = ["project_id", "task_id"];
 function dense(value: unknown): value is NoteContextField[] {
   if (!Array.isArray(value) || Object.getOwnPropertySymbols(value).length > 0) return false;

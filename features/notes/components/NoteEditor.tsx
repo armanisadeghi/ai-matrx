@@ -235,7 +235,8 @@ export function NoteEditor({
           label: localLabel || note.label,
           folder_name: localFolder,
           tags: localTags,
-          visibility: note.visibility,
+          shown_to: note.shown_to,
+          published_to_web: note.published_to_web,
           updated_at: note.updated_at,
         }
       : null,

@@ -96,6 +96,26 @@ describe("the row controls are the Words table's, and only where they mean somet
     expect(host.textContent).toBe("");
   });
 
+  it("a child record (a file attached to a chat) draws nothing, whatever its type", async () => {
+    caps = ORG_CAPS;
+    await act(async () => {
+      root.render(
+        <RowControls
+          resourceType={"file" as never}
+          resourceId="6a1d0c2b-3e4f-4a5b-9c6d-7e8f9a0b1c2d"
+          canChange
+          shownTo={undefined}
+          isPublic={false}
+          childRecord
+          onSetShownTo={noop}
+          onPublish={noop}
+          onStopPublishing={noop}
+        />,
+      );
+    });
+    expect(host.querySelector("[data-row-controls]")).toBeNull();
+  });
+
   it("someone who cannot change sharing reads the state as text, never buttons", async () => {
     caps = ORG_CAPS;
     await draw("everyone", false, false);

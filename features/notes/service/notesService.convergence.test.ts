@@ -11,7 +11,7 @@ jest.mock("@/features/scopes/host/associationsStore", () => ({
   getAssociationsStore: () => ({ invalidate }),
 }));
 
-import type { NoteRow } from "../types";
+import type { Note } from "../types";
 import {
   NoteContextPartialSaveError,
   NoteUpdateConflictError,
@@ -24,7 +24,7 @@ const NOTE_ID = "33333333-3333-4333-8333-333333333333";
 const PROJECT_ID = "44444444-4444-4444-8444-444444444444";
 const TASK_ID = "55555555-5555-4555-8555-555555555555";
 
-function noteRow(overrides: Partial<NoteRow> = {}): NoteRow {
+function noteRow(overrides: Partial<Note> = {}): Note {
   return {
     id: NOTE_ID,
     content: "before",
@@ -49,7 +49,9 @@ function noteRow(overrides: Partial<NoteRow> = {}): NoteRow {
     updated_at: "2026-09-12T00:00:00.000Z",
     updated_by: null,
     version: 7,
-    visibility: "personal",
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
     ...overrides,
   };
 }

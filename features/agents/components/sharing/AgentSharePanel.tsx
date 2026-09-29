@@ -41,6 +41,7 @@ export function AgentSharePanel({
     whoCanSee,
     setWhoCanSee,
     shownTo,
+    childRecord,
     setShownTo,
     organizationDefault,
   } = useSharing("agent", agentId, true);
@@ -128,6 +129,7 @@ export function AgentSharePanel({
                   resourceId: agentId,
                   shownTo,
                   isPublic: resourceIsPublic,
+                  childRecord,
                   onSetShownTo: setShownTo,
                   onPublish: () => makePublic(),
                   onStopPublishing: () => revokeAccess({ isPublic: true }),

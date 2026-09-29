@@ -5,9 +5,10 @@
  * sharing-related affordance the app has for cld_files-backed records in
  * one scannable view so the user never has to hunt through dialogs:
  *
- *   STATUS         Ownership badge, visibility chip, active-link count.
- *   VISIBILITY     Three-way toggle: Private · Shared · Public.
- *                  Wires the existing `useFileActions().setVisibility`.
+ *   STATUS         Ownership badge, active-link count.
+ *   SHOWN TO / PUBLISHED  The access ladder's row controls (`RowControls`, the same control
+ *                  the Share dialog draws): "Shown to" and "Published to the web". Absent on a
+ *                  file that is a child of another record (T-13 phase 5).
  *   QUICK SHARE    One-click "Copy public link" — reuses an existing
  *                  read-only share token or creates one on demand.
  *   SHARE LINKS    Embeds <ShareLinkDialogBody/> — create / list /
@@ -30,9 +31,6 @@ import { useCallback, useState } from "react";
 import {
   Building2,
   Check,
-  Copy,
-  Globe,
-  Lock,
   Link2,
   Loader2,
   Users,
@@ -48,7 +46,8 @@ import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { ShareLinkDialogBody } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { PermissionsDialogBody } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
-import type { Visibility } from "@/features/files/types";
+import { useSharing } from "@/utils/permissions/hooks";
+import { RowControls } from "@/features/sharing/components/RowControls";
 
 export interface FileShareTabProps {
   fileId: string;
@@ -63,23 +62,14 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
     selectActiveShareLinksForResource(s, fileId),
   );
   const actions = useFileActions(fileId);
+  const sharing = useSharing(
+    "file",
+    fileId,
+    Boolean(file) && file?.source.kind !== "virtual",
+  );
 
-  const [busyVisibility, setBusyVisibility] = useState<Visibility | null>(null);
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  const handleSetVisibility = useCallback(
-    async (next: Visibility) => {
-      if (!file || file.visibility === next || busyVisibility) return;
-      setBusyVisibility(next);
-      try {
-        await actions.setVisibility(next);
-      } finally {
-        setBusyVisibility(null);
-      }
-    },
-    [actions, busyVisibility, file],
-  );
 
   const handleCopy = useCallback(async () => {
     if (copying) return;
@@ -156,10 +146,6 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
             }
           />
           <Row
-            label="Visibility"
-            value={<VisibilityChip visibility={file.visibility} />}
-          />
-          <Row
             label="Active links"
             value={
               activeLinkCount === 0
@@ -169,55 +155,18 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
           />
         </Section>
 
-        {/* ─── Visibility toggle ───────────────────────────────────── */}
-        <Section
-          title="Visibility"
-          description="Who can find this file by default. Share links and explicit grantees below still work regardless of this setting."
-        >
-          <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-4">
-            <VisibilityOption
-              icon={<Lock className="h-3.5 w-3.5" />}
-              label="Private"
-              description="Only you and explicit grantees"
-              active={file.visibility === "personal"}
-              busy={busyVisibility === "personal"}
-              disabled={!isOwner || busyVisibility !== null}
-              onClick={() => void handleSetVisibility("personal")}
-            />
-            <VisibilityOption
-              icon={<Building2 className="h-3.5 w-3.5" />}
-              label="Organization"
-              description="Everyone in the owning org"
-              active={file.visibility === "internal"}
-              busy={busyVisibility === "internal"}
-              disabled={!isOwner || busyVisibility !== null}
-              onClick={() => void handleSetVisibility("internal")}
-            />
-            <VisibilityOption
-              icon={<Link2 className="h-3.5 w-3.5" />}
-              label="Link"
-              description="Anyone holding a share link"
-              active={file.visibility === "link"}
-              busy={busyVisibility === "link"}
-              disabled={!isOwner || busyVisibility !== null}
-              onClick={() => void handleSetVisibility("link")}
-            />
-            <VisibilityOption
-              icon={<Globe className="h-3.5 w-3.5" />}
-              label="Published to the web"
-              description="Anyone can open it at its address"
-              active={file.visibility === "public"}
-              busy={busyVisibility === "public"}
-              disabled={!isOwner || busyVisibility !== null}
-              onClick={() => void handleSetVisibility("public")}
-            />
-          </div>
-          {!isOwner ? (
-            <div className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
-              Only the owner can change visibility.
-            </div>
-          ) : null}
-        </Section>
+        {/* ─── Shown to / Published to the web (the access ladder's row controls) ── */}
+        <RowControls
+          resourceType="file"
+          resourceId={fileId}
+          canChange={isOwner}
+          shownTo={sharing.shownTo}
+          isPublic={sharing.isPublic}
+          childRecord={sharing.childRecord}
+          onSetShownTo={sharing.setShownTo}
+          onPublish={() => sharing.makePublic()}
+          onStopPublishing={() => sharing.revokeAccess({ isPublic: true })}
+        />
 
         {/* ─── Quick share ─────────────────────────────────────────── */}
         <Section
@@ -353,82 +302,5 @@ function OwnerBadge() {
     <span className="inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
       You
     </span>
-  );
-}
-
-function VisibilityChip({ visibility }: { visibility: Visibility }) {
-  if (visibility === "public") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-        <Globe className="h-3 w-3" />
-        Published to the web
-      </span>
-    );
-  }
-  if (visibility === "link") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-        <Users className="h-3 w-3" />
-        Anyone with the link
-      </span>
-    );
-  }
-  if (visibility === "internal") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-400">
-        <Building2 className="h-3 w-3" />
-        Organization — everyone in the owning org
-      </span>
-    );
-  }
-  return (
-    // NOT "only you" — containers can still convey access. The Info tab's
-    // access summary is the authority on who can actually reach this.
-    <span className="inline-flex items-center gap-1.5 rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/80">
-      <Lock className="h-3 w-3" />
-      Personal — not published or directly shared
-    </span>
-  );
-}
-
-function VisibilityOption({
-  icon,
-  label,
-  description,
-  active,
-  busy,
-  disabled,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  description: string;
-  active: boolean;
-  busy: boolean;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={active}
-      className={cn(
-        "flex flex-col items-start gap-1 rounded-md border p-2 text-left transition-colors",
-        active
-          ? "border-primary bg-primary/5 text-foreground"
-          : "border-border bg-background text-foreground hover:bg-accent",
-        "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-background",
-      )}
-    >
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : icon}
-        {label}
-      </span>
-      <span className="text-[10px] leading-snug text-muted-foreground">
-        {description}
-      </span>
-    </button>
   );
 }

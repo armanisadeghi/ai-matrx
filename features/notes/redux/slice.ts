@@ -264,7 +264,8 @@ function conflictPhysicalSnapshot(note: Note): NoteConflictPhysicalSnapshot {
     folder_id: note.folder_id,
     tags: note.tags,
     metadata: note.metadata,
-    visibility: note.visibility,
+    shown_to: note.shown_to,
+    published_to_web: note.published_to_web,
     position: note.position,
     organization_id: note.organization_id,
   };
@@ -948,7 +949,7 @@ const notesSlice = createSlice({
         // from the locked local package, never from stale pre-conflict flags.
         // Context links remain independently dirty and are intentionally not
         // adopted or cleared by a physical conflict choice.
-        for (const field of ["content", "label", "folder_name", "folder_id", "tags", "visibility", "project_id", "task_id"] as const) {
+        for (const field of ["content", "label", "folder_name", "folder_id", "tags", "shown_to", "published_to_web", "project_id", "task_id"] as const) {
           if (JSON.stringify(record[field]) === JSON.stringify(remote[field])) {
             record._dirtyFields.delete(field);
             delete record._fieldHistory[field];
@@ -976,7 +977,8 @@ const notesSlice = createSlice({
         "folder_id",
         "tags",
         "metadata",
-        "visibility",
+        "shown_to",
+        "published_to_web",
         "position",
         "organization_id",
         "updated_at",
@@ -998,7 +1000,8 @@ const notesSlice = createSlice({
         "folder_name",
         "folder_id",
         "tags",
-        "visibility",
+        "shown_to",
+        "published_to_web",
         "organization_id",
       ] as const) {
         record._dirtyFields.delete(field);

@@ -39,7 +39,7 @@ function note(overrides: Partial<Note> = {}): Note {
     updated_at: "2026-09-12T00:00:00.000Z",
     updated_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     version: 0,
-    visibility: "personal",
+    published_to_web: false,
     ...overrides,
   };
 }

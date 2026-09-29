@@ -1,11 +1,11 @@
 import { validateNoteSaveReceipt } from "./validateNoteSaveReceipt";
 
 const base = { noteId: "n", organizationId: "o", version: 7 };
-const receipt = (overrides: Record<string, unknown> = {}) => ({ databaseWrite: "saved", note: { id: "n", organization_id: "o", version: 8, content: "body", label: "label", folder_id: null, tags: ["a"], visibility: "personal" }, succeededFields: [], failedFields: [], safeCauses: {}, ...overrides });
+const receipt = (overrides: Record<string, unknown> = {}) => ({ databaseWrite: "saved", note: { id: "n", organization_id: "o", version: 8, content: "body", label: "label", folder_id: null, tags: ["a"], published_to_web: false }, succeededFields: [], failedFields: [], safeCauses: {}, ...overrides });
 
 describe("validateNoteSaveReceipt", () => {
   it("binds every submitted physical field", () => {
-    expect(validateNoteSaveReceipt({ base, receipt: receipt({ note: { ...receipt().note, tags: ["a", "b"] } }), submittedPhysical: { content: "body", label: "label", folder_id: null, tags: ["a", "b"], visibility: "personal" }, requirePhysicalWrite: true }).databaseWrite).toBe("saved");
+    expect(validateNoteSaveReceipt({ base, receipt: receipt({ note: { ...receipt().note, tags: ["a", "b"] } }), submittedPhysical: { content: "body", label: "label", folder_id: null, tags: ["a", "b"], published_to_web: false }, requirePhysicalWrite: true }).databaseWrite).toBe("saved");
     expect(() => validateNoteSaveReceipt({ base, receipt: receipt({ note: { ...receipt().note, content: "wrong" } }), submittedPhysical: { content: "body" } })).toThrow(/does not match/i);
   });
   it("requires an exact requested context partition", () => {

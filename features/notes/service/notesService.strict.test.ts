@@ -9,14 +9,14 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: { listForSources, setTargets },
 }));
 
-import type { NoteRow } from "../types";
+import type { Note } from "../types";
 import { updateNote } from "./notesService";
 
 const ORGANIZATION_ID = "11111111-1111-4111-8111-111111111111";
 const NOTE_ID = "22222222-2222-4222-8222-222222222222";
 const FOLDER_ID = "33333333-3333-4333-8333-333333333333";
 
-function noteRow(overrides: Partial<NoteRow> = {}): NoteRow {
+function noteRow(overrides: Partial<Note> = {}): Note {
   return {
     id: NOTE_ID,
     content: "",
@@ -41,7 +41,9 @@ function noteRow(overrides: Partial<NoteRow> = {}): NoteRow {
     updated_at: "2026-09-12T00:00:00.000Z",
     updated_by: null,
     version: 1,
-    visibility: "personal",
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
     ...overrides,
   };
 }

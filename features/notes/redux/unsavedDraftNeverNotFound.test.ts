@@ -90,7 +90,7 @@ function savedStaffRota(): Note {
     updated_at: "2026-09-20T15:00:00.000Z",
     updated_by: null,
     version: 3,
-    visibility: "personal",
+    published_to_web: false,
   };
 }
 

@@ -166,6 +166,11 @@ export interface ResourceVisibility {
    */
   shownTo?: ShownTo | null;
   /**
+   * This record is a CHILD of another (a file attached to a chat): it follows its parent and carries
+   * no row control of its own, whatever its type.
+   */
+  childRecord?: boolean;
+  /**
    * WHEN MEMBERSHIP ALONE REACHES IT (SHARE-TAILS, chair ruling 2026-09-25). A record-store thing
    * with no sharing choice is the organization's default — every member reaches it at the member
    * default level — and the lane door says so. Absent/null when membership reaches nothing (the
@@ -405,6 +410,7 @@ export async function getResourceVisibility(
     publishColumn,
     capabilities.shownToOffered ? "shown_to" : null,
     capabilities.organizationColumn,
+    capabilities.rowChildColumn,
   ].filter((c): c is string => c !== null);
   if (columns.length === 0) {
     return { isPublic: false, homeOrganizationId: null };
@@ -424,6 +430,16 @@ export async function getResourceVisibility(
     ? data[capabilities.organizationColumn]
     : null;
   const published = publishColumn ? data[publishColumn] : null;
+  const childRecord = capabilities.rowChildColumn
+    ? data[capabilities.rowChildColumn] != null
+    : false;
+  if (childRecord) {
+    return {
+      isPublic: false,
+      childRecord: true,
+      homeOrganizationId: typeof home === "string" ? home : null,
+    };
+  }
   return {
     // The card lane is the card's own "Published to the web" (owner-session ruling 2026-09-28).
     isPublic: published === true || published === "public",

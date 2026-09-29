@@ -109,7 +109,7 @@ function note(overrides: Partial<Note> = {}): Note {
     updated_at: "2026-09-12T00:00:00.000Z",
     updated_by: null,
     version: 7,
-    visibility: "personal",
+    published_to_web: false,
     ...overrides,
   };
 }
@@ -434,7 +434,7 @@ describe("fetchSharedNotesList", () => {
     organization_id: ORG,
     project_id: null,
     task_id: null,
-    visibility: "personal",
+    published_to_web: false,
     version: 3,
     created_by: "user-2",
     permission_level: "editor",

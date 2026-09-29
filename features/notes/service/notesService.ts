@@ -85,7 +85,7 @@ export async function fetchNoteListItems(
     .schema("workbench")
     .from("notes")
     .select(
-      "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
+      "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, shown_to, published_to_web, version",
     )
     .is("deleted_at", null);
   query = listScope.apply(query);
@@ -178,7 +178,8 @@ export function emptyNoteReuseUpdates(
   if (input.custom_fields !== undefined)
     updates.custom_fields = input.custom_fields;
   if (input.position !== undefined) updates.position = input.position;
-  if (input.visibility !== undefined) updates.visibility = input.visibility;
+  if (input.shown_to !== undefined) updates.shown_to = input.shown_to;
+  if (input.published_to_web !== undefined) updates.published_to_web = input.published_to_web;
   if (input.project_id !== undefined) updates.project_id = input.project_id;
   if (input.task_id !== undefined) updates.task_id = input.task_id;
   return updates;
@@ -237,7 +238,8 @@ export async function materializeNote(input: Note): Promise<Note> {
       tags: input.tags,
       metadata: input.metadata,
       position: input.position,
-      visibility: input.visibility,
+      shown_to: input.shown_to,
+      published_to_web: input.published_to_web,
     })
     .select()
     .single();
@@ -433,9 +435,10 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
       metadata: input.metadata || {},
       custom_fields: input.custom_fields || {},
       position: input.position || 0,
-      // Private by default — the `notes.visibility` enum DB default is
-      // 'internal' (org-visible), so set it explicitly on create.
-      visibility: input.visibility ?? "personal",
+      // Listed for its maker alone by default ("Shown to" is a list filter, never a lock —
+      // access ladder); never published unless chosen.
+      shown_to: input.shown_to ?? "only_me",
+      published_to_web: input.published_to_web ?? false,
       organization_id: organizationId,
     })
     .select()

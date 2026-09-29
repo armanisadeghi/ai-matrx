@@ -41,7 +41,8 @@ export interface NotesEditorNoteRecord {
   label?: string | null;
   folder_name?: string | null;
   tags?: string[] | null;
-  visibility?: string | null;
+  shown_to?: string | null;
+  published_to_web?: boolean | null;
   updated_at?: string | null;
 }
 
@@ -186,7 +187,8 @@ export function buildNotesEditorContextData(
           title: noteRecord.label ?? "",
           folder: noteRecord.folder_name ?? "",
           tags: noteRecord.tags ?? [],
-          visibility: noteRecord.visibility ?? "personal",
+          shown_to: noteRecord.shown_to ?? null,
+          published_to_web: noteRecord.published_to_web ?? false,
           word_count: wordCount ?? 0,
           updated_at: noteRecord.updated_at ?? "",
           is_dirty: isDirty,
@@ -209,7 +211,8 @@ export function buildNotesEditorContextData(
               title: noteRecord?.label ?? null,
               folder: noteRecord?.folder_name ?? null,
               tags: noteRecord?.tags?.length ? noteRecord.tags.join(", ") : null,
-              visibility: noteRecord?.visibility ?? null,
+              shown_to: noteRecord?.shown_to ?? null,
+              published_to_web: noteRecord ? Boolean(noteRecord.published_to_web) : null,
               updated: noteRecord?.updated_at?.slice(0, 16) ?? null,
               words: wordCount ?? 0,
               unsaved: isDirty ? true : null,
@@ -270,7 +273,8 @@ export function buildNotesEditorContextData(
     current_note_folder: noteRecord?.folder_name || undefined,
     // Loaded and empty is [] — never omitted (the agent must see "no tags").
     current_note_tags: noteRecord ? (noteRecord.tags ?? []) : undefined,
-    current_note_visibility: noteRecord?.visibility || undefined,
+    current_note_shown_to: noteRecord?.shown_to || undefined,
+    current_note_published_to_web: noteRecord ? Boolean(noteRecord.published_to_web) : undefined,
     current_note_word_count: wordCount,
     current_note_updated_at: noteRecord?.updated_at || undefined,
     current_note_is_dirty: noteOpen ? isDirty : undefined,

@@ -88,6 +88,11 @@ export interface ShareCapabilities {
    * workflow — the body is never published), or a legacy boolean. Null: never published.
    */
   publishLane: PublishLane | null;
+  /**
+   * The column that marks ONE row as a child of another record (`parent_record_type` on files),
+   * when the table has one. A child record carries no row control; read it per record.
+   */
+  rowChildColumn: string | null;
 }
 
 /**
@@ -129,6 +134,8 @@ export async function getShareCapabilities(
     rowControls: data.row_controls === true,
     shownToOffered: data.shown_to_offered === true,
     publishLane,
+    rowChildColumn:
+      typeof data.row_child_column === "string" ? data.row_child_column : null,
   };
 }
 

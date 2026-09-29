@@ -354,7 +354,8 @@ export function useNoteConflictChoreography({
             { label: "Folder", yours: `${record?.folder_name ?? "Uncategorized"} (${record?.folder_id ?? "no folder"})`, saved: `${conflictDecision.currentRow.folder_name ?? "Uncategorized"} (${conflictDecision.currentRow.folder_id ?? "no folder"})` },
             { label: "Organization", yours: record?.organization_id ?? "Unavailable", saved: conflictDecision.currentRow.organization_id ?? "Unavailable" },
             { label: "Tags", yours: record?.tags?.join(", ") || "None", saved: conflictDecision.currentRow.tags?.join(", ") || "None" },
-            { label: "Visibility", yours: record?.visibility ?? "", saved: conflictDecision.currentRow.visibility },
+            { label: "Shown to", yours: record?.shown_to ?? "Default", saved: conflictDecision.currentRow.shown_to ?? "Default" },
+            { label: "Published to the web", yours: record?.published_to_web ? "Yes" : "No", saved: conflictDecision.currentRow.published_to_web ? "Yes" : "No" },
             { label: "Position", yours: String(record?.position ?? "Unset"), saved: String(conflictDecision.currentRow.position ?? "Unset") },
             {
               label: "Metadata",

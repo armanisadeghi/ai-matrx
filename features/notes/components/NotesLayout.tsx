@@ -257,7 +257,8 @@ export function NotesLayout({
             tags: updates.tags,
             metadata: updates.metadata,
             position: updates.position,
-            visibility: updates.visibility,
+            shown_to: updates.shown_to,
+            published_to_web: updates.published_to_web,
             project_id: updates.project_id,
             task_id: updates.task_id,
           };
@@ -283,7 +284,8 @@ export function NotesLayout({
         tags: updates.tags,
         metadata: updates.metadata,
         position: updates.position,
-        visibility: updates.visibility,
+        shown_to: updates.shown_to,
+            published_to_web: updates.published_to_web,
         project_id: updates.project_id,
         task_id: updates.task_id,
       };

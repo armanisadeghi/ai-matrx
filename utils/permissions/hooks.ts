@@ -555,6 +555,8 @@ export function useSharing(
      * table without the column); null when the type's default applies.
      */
     shownTo: rowState.shownTo,
+    /** A child record (a file attached to a chat): no row control of its own. */
+    childRecord: rowState.childRecord === true,
     /** Membership alone reaches it — said under Current Access. The record store's door names it. */
     organizationDefault: rowState.organizationDefault ?? null,
     whoCanSee,

@@ -196,7 +196,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
   const stats = useMemo(() => computeNoteStats(content), [content]);
 
   const folder = note?.folder_name ?? "Draft";
-  const isPublic = note?.visibility === "public";
+  const isPublic = note?.published_to_web === true;
 
   const handleFolderChange = useCallback(
     (f: FolderReference) => {
@@ -232,7 +232,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
         {/*
          * Public is the only claim this chip can prove from one column.
          * Non-public notes get the truthful reasons in the Sharing section
-         * below instead of a "Private" label that ignores org visibility,
+         * below instead of a "Private" label that ignores its organization's reach,
          * direct grants, and container reachability.
          */}
         {isPublic && (

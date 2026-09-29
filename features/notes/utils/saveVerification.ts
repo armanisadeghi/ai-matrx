@@ -31,7 +31,8 @@ export const NOTE_EDITED_FIELDS = [
   "folder_id",
   "folder_name",
   "tags",
-  "visibility",
+  "shown_to",
+  "published_to_web",
 ] as const satisfies readonly NoteUndoableField[];
 
 export type NoteEditedField = (typeof NOTE_EDITED_FIELDS)[number];
@@ -94,7 +95,8 @@ export function noteEditBaseOf(note: NoteEditBase): NoteEditBase {
     folder_id: note.folder_id,
     folder_name: note.folder_name,
     tags: note.tags === null ? null : [...note.tags],
-    visibility: note.visibility,
+    shown_to: note.shown_to,
+    published_to_web: note.published_to_web,
   };
 }
 

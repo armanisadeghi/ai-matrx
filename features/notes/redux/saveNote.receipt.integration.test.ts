@@ -53,7 +53,7 @@ function note(overrides: Partial<Note> = {}): Note {
     file_path: null, folder_id: null, folder_name: null, label: "Original", last_device_id: null,
     metadata: {}, organization_id: ORG, position: 0, project_id: null, custom_fields: {}, sync_version: 0, search_engine_indexed: null, shown_to: null,
     tags: [], task_id: null, updated_at: "2026-09-12T00:00:00.000Z", updated_by: null,
-    version: 7, visibility: "personal", ...overrides,
+    version: 7, published_to_web: false, ...overrides,
   };
 }
 

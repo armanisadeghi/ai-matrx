@@ -113,7 +113,8 @@ function installSignOutHook(): void {
     }
   });
 }
-installSignOutHook();
+// Installed on the first cache write, never at import: an import-time subscription runs in every
+// module that merely imports this file (tests mocking the client without `auth` included).
 
 // ─── Shapes ─────────────────────────────────────────────────────────
 
@@ -341,6 +342,7 @@ export const membershipsService = {
         const rows = (Array.isArray(data) ? data : []) as MbrForUserRow[];
         const result = ok({ memberships: rows.map(toUserMembership) });
         // Only cache successes — a failed read must not poison retries.
+        installSignOutHook();
         forUserCache.set(key, {
           value: result,
           expiresAt: Date.now() + READ_CACHE_TTL_MS,
@@ -428,6 +430,7 @@ export const membershipsService = {
             memberCount: Number(r.member_count),
           })),
         });
+        installSignOutHook();
         countsCache.set(key, {
           value: result,
           expiresAt: Date.now() + READ_CACHE_TTL_MS,

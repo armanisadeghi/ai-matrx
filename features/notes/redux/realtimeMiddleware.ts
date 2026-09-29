@@ -96,7 +96,7 @@ function isCompleteNotePayload(row: Record<string, unknown>): boolean {
  * client models and nothing else (a table can carry search vectors and
  * embeddings the client never stores). Passing the WHOLE row, not a
  * hand-picked subset, is what lets the reducer (a) compare every user-edited
- * field against the edit base — `folder_id` and `visibility` were missing
+ * field against the edit base — `folder_id` and the row controls were missing
  * from the old subset, so no realtime row could ever match a base — and (b)
  * advance the base itself when the row is complete.
  */
@@ -121,8 +121,8 @@ let subscribedUserId: string | null = null;
  * every field the autosave path writes and nothing volatile.
  */
 function noteFingerprint(row: Record<string, unknown>): string {
-  // Every user-edited field (NOTE_EDITED_FIELDS). folder_id and visibility
-  // were missing: a collaborator changing only those matched our pending
+  // Every user-edited field (NOTE_EDITED_FIELDS). folder_id and the row controls
+  // were once missing: a collaborator changing only those matched our pending
   // write's fingerprint and was dropped as our echo (review, 2026-09-13).
   return JSON.stringify([
     row.label ?? null,
@@ -130,7 +130,8 @@ function noteFingerprint(row: Record<string, unknown>): string {
     row.folder_name ?? null,
     row.folder_id ?? null,
     row.tags ?? null,
-    row.visibility ?? null,
+    row.shown_to ?? null,
+    row.published_to_web ?? null,
   ]);
 }
 

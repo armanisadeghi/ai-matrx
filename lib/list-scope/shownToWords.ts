@@ -7,7 +7,7 @@ import type { ShownTo } from "./shownTo";
  * published to the web (a database CHECK refuses it otherwise).
  */
 export const SHOWN_TO_WORDS: Record<ShownTo, { label: string; says: string }> = {
-  only_me: { label: "Only me", says: "Listed for you alone. Anyone who can open it still can by its address." },
+  only_me: { label: "Only me", says: "Listed for you alone." },
   my_team: { label: "My team", says: "Listed for you and your teammates." },
   everyone: { label: "Everyone", says: "Listed for everyone in its organization." },
   everyone_on_ai_matrx: {

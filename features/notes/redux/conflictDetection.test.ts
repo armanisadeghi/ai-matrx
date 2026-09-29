@@ -144,7 +144,7 @@ function fullRow(overrides: Partial<Note> = {}): Note {
   const row: Note = {
     id: NOTE_ID, organization_id: ORG_ID, version: 1, content: "the recipe",
     label: "The Best Chicken Alfredo", folder_name: "Draft", folder_id: null, tags: [],
-    metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null,
+    metadata: {}, published_to_web: false, position: 0, project_id: null, task_id: null,
     created_at: "2026-09-14T05:55:17.534Z", created_by: "user-1",
     updated_at: "2026-09-14T05:55:17.534Z", updated_by: "user-1", deleted_at: null,
     content_hash: null, file_path: null, last_device_id: null, custom_fields: {}, sync_version: 1, search_engine_indexed: null, shown_to: null,
@@ -215,7 +215,7 @@ describe("phantom version bump while editing", () => {
 });
 
 describe("noteEditedFieldsEqual", () => {
-  const base = { content: "c", label: "l", folder_id: null, folder_name: "Draft", tags: ["a"], visibility: "personal" as const };
+  const base = { content: "c", label: "l", folder_id: null, folder_name: "Draft", tags: ["a"], shown_to: null, published_to_web: false };
   it("ignores bookkeeping columns", () => {
     expect(noteEditedFieldsEqual({ ...base, file_path: "/x.md", version: 9 } as never, base)).toBe(true);
   });
@@ -229,7 +229,7 @@ describe("noteEditedFieldsEqual", () => {
     expect(noteEditedFieldsEqual(missing, { ...base, folder_id: "f1" })).toBe(false);
   });
   it("catches every edited field", () => {
-    for (const field of ["content", "label", "folder_id", "folder_name", "visibility"] as const) {
+    for (const field of ["content", "label", "folder_id", "folder_name", "shown_to", "published_to_web"] as const) {
       expect(noteEditedFieldsEqual({ ...base, [field]: "changed" }, base)).toBe(false);
     }
   });

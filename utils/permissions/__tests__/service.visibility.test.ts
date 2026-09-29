@@ -214,6 +214,35 @@ describe("getResourceVisibility", () => {
   });
 });
 
+describe("a child record carries no row control", () => {
+  it("a file attached to a chat reads as a child, with no Shown to and never published", async () => {
+    mockReplies.push(
+      ok({ ...NOTE_CAPS, row_child_column: "parent_record_type" }),
+      ok([{ published_to_web: false, shown_to: "only_me", organization_id: ORG, parent_record_type: "conversation" }]),
+    );
+    await expect(getResourceVisibility("file", NOTE_ID)).resolves.toEqual({
+      isPublic: false,
+      childRecord: true,
+      homeOrganizationId: ORG,
+    });
+    expect(mockRequests[1]?.path).toBe(
+      `/rest/v1/files?select=published_to_web,shown_to,organization_id,parent_record_type&id=eq.${NOTE_ID}`,
+    );
+  });
+
+  it("a standalone file keeps its row controls", async () => {
+    mockReplies.push(
+      ok({ ...NOTE_CAPS, row_child_column: "parent_record_type" }),
+      ok([{ published_to_web: true, shown_to: null, organization_id: ORG, parent_record_type: null }]),
+    );
+    await expect(getResourceVisibility("file", NOTE_ID)).resolves.toEqual({
+      isPublic: true,
+      shownTo: null,
+      homeOrganizationId: ORG,
+    });
+  });
+});
+
 describe("makePublic / makePrivate", () => {
   it("publishes exactly this row through published_to_web", async () => {
     mockReplies.push(ok(NOTE_CAPS), ok([{ id: NOTE_ID }]));

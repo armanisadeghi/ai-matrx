@@ -1,4 +1,4 @@
-import type { Note, NoteRow } from "../types";
+import type { Note, NoteStoredRow } from "../types";
 
 export type NoteContextField = "project_id" | "task_id";
 
@@ -14,11 +14,11 @@ export interface NoteSaveReceipt {
 export class NoteUpdateConflictError extends Error {
   readonly expectedVersion: number;
   readonly currentVersion: number;
-  readonly actualStoredNote: NoteRow;
+  readonly actualStoredNote: NoteStoredRow;
 
   constructor(args: {
     expectedVersion: number;
-    actualStoredNote: NoteRow;
+    actualStoredNote: NoteStoredRow;
   }) {
     super("This note changed elsewhere. Refresh it before saving your changes.");
     this.name = "NoteUpdateConflictError";
