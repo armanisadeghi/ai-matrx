@@ -217,6 +217,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             : r,
         ),
       );
+      setSelected(new Set());
     },
   });
   const [renaming, setRenaming] = useState(false);
@@ -251,6 +252,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     try {
       const rows = await listResults({ jobId, runId: selectedRunId });
       setResults(rows);
+      setSelected(new Set());
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load results");
@@ -712,6 +714,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             : r,
         ),
       );
+      setSelected(new Set());
     },
     [job, results, orderedColumns],
   );
@@ -802,6 +805,11 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     try {
       await deleteResultRows([id]);
       setResults((rs) => rs.filter((r) => r.id !== id));
+      setSelected((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
       toast.success("Row moved to Trash");
     } catch (e) {
       toast.error("Could not move the row to Trash", {
