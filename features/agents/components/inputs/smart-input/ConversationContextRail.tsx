@@ -508,7 +508,7 @@ export function ConversationContextRail({
           id: `artifact:${e.key}`,
           icon: Code2,
           label,
-          word: label.split(/\s+/)[0] ?? "Code",
+          word: label || "Code",
           detail: `v${e.value.source.base_version}`,
           hint: "Click: open in canvas · X: unpin from context",
           tone: "primary",
@@ -551,7 +551,9 @@ export function ConversationContextRail({
         id: `ctx:${e.key}`,
         icon: Icon,
         label,
-        word: label.split(/\s+/)[0] ?? label,
+        // THE WHOLE LABEL, TRUNCATED BY WIDTH (lane HANDOVER, 2026-09-29): its first word made
+        // "Table ID", "Table Name" and "Table Columns" three chips that all read "Table".
+        word: label,
         hint: "Click: view details · X: remove from context",
         active: detailOpen && activeEntry?.key === e.key,
         onOpen: () => toggleEntry(e.key, e.value),

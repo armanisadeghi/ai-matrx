@@ -173,7 +173,9 @@ describe("the composer's raw context chips are gated too", () => {
     const source = read(
       "features/agents/components/inputs/smart-input/ConversationContextRail.tsx",
     );
-    const fallbackAt = source.indexOf("const label = e.label?.trim() || e.key;");
+    // The raw-entry branch names its chip through contextEntryLabel since lane HANDOVER
+    // (2026-09-28); the gate this guards is unchanged — the branch still sits behind it.
+    const fallbackAt = source.indexOf("const label = contextEntryLabel(e);");
     expect(fallbackAt).toBeGreaterThan(-1);
     const branch = source.slice(Math.max(0, fallbackAt - 900), fallbackAt);
     expect(branch).toContain("if (!machineFramesVisible) continue;");

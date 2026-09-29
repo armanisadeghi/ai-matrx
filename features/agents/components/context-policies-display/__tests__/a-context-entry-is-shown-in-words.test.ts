@@ -52,3 +52,9 @@ it("no agents surface names a context entry by its raw key", () => {
   const offenders = [...files(root)].filter((f) => fallback.test(readFileSync(f, "utf8")));
   expect(offenders.map((f) => f.slice(root.length + 1))).toEqual([]);
 });
+
+it("a chip shows its whole label, never its first word", () => {
+  // "Table ID", "Table Name" and "Table Columns" were three chips that all read "Table".
+  const rail = process.env.CONTEXT_RAIL_UNDER_TEST ?? join(__dirname, "..", "..", "inputs", "smart-input", "ConversationContextRail.tsx");
+  expect(readFileSync(rail, "utf8")).not.toMatch(/word:\s*label\.split\(/);
+});
