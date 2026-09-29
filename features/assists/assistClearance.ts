@@ -126,12 +126,31 @@ const LIFT_STEP_PX = 8;
 const LIFT_MAX_PX = 320;
 /** The highest a lifted dock may rest: below the shell header. */
 const LIFT_TOP_FLOOR_PX = 64;
+const ATTENTION_DOCK_SELECTOR =
+  '[data-surface-value="admin_attention_dock_collapsed"], [data-surface-value="admin_attention_dock_expanded"], [data-surface-value="admin_attention_dock"]';
+// These controls must stay clickable even when a disabled child is wrapped by
+// a tooltip: hit-testing sees the wrapper first, so they also participate by
+// their visible geometry.
+const GEOMETRY_AVOIDANCE_SELECTOR =
+  `[data-matrx-table-footer], ${ATTENTION_DOCK_SELECTOR}`;
 
 export interface DockRect {
   top: number;
   bottom: number;
   left: number;
   right: number;
+}
+
+function overlaps(a: DockRect, b: DockRect): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+function overlapsGeometryAvoidance(r: DockRect): boolean {
+  for (const el of document.querySelectorAll<HTMLElement>(GEOMETRY_AVOIDANCE_SELECTOR)) {
+    const target = el.getBoundingClientRect();
+    if (target.width > 0 && target.height > 0 && overlaps(r, target)) return true;
+  }
+  return false;
 }
 
 /**
@@ -150,6 +169,7 @@ export function liftFor(base: DockRect, isCovered: (r: DockRect) => boolean): nu
 }
 
 function coveredInDocument(r: DockRect): boolean {
+  if (overlapsGeometryAvoidance(r)) return true;
   const xs = [r.left + 2, (r.left + r.right) / 2, r.right - 2];
   const ys = [r.top + 2, (r.top + r.bottom) / 2, r.bottom - 2];
   for (const x of xs) {
@@ -205,8 +225,28 @@ export function useAssistClearance(active: boolean): void {
     window.addEventListener("resize", schedule);
     // Any scroller moving changes what lies under the dock (capture: scroll does not bubble).
     document.addEventListener("scroll", schedule, true);
-    const mo = new MutationObserver(schedule);
-    mo.observe(document.body, { childList: true, subtree: true });
+    const mo = new MutationObserver((mutations) => {
+      // A dragged attention dock changes only its inline position. Watch that
+      // style specifically, while ignoring clearance's own padding writes so
+      // the next pass cannot schedule itself forever.
+      if (
+        mutations.some(
+          (mutation) =>
+            mutation.type === "childList" ||
+            (mutation.type === "attributes" &&
+              mutation.target instanceof Element &&
+              mutation.target.matches(ATTENTION_DOCK_SELECTOR)),
+        )
+      ) {
+        schedule();
+      }
+    });
+    mo.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style"],
+    });
     return () => {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("resize", schedule);

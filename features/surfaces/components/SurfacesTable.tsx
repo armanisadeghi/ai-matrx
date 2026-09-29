@@ -90,7 +90,7 @@ interface Props {
   onAdd: () => void | Promise<void>;
   /** Peek side panel is open (desktop): keep only the columns that fit whole. */
   peeking?: boolean;
-  /** Phone: the registry total shown on the toolbar row. */
+  /** Registry-wide total; the footer keeps it visible when filters narrow rows. */
   totalCount?: number;
   /** Phone: the registry actions, listed in the toolbar's one "…" menu. */
   registryActions?: RegistryAction[];
@@ -443,6 +443,23 @@ export function SurfacesTable({
       isLoading={isLoading}
       read={read}
       defaultSort={{ id: "sort_order", direction: "asc" }}
+      paginationLabelFormat={
+        totalCount === undefined
+          ? undefined
+          : (start, end, total) => {
+              if (total === 0) {
+                return totalCount === 0
+                  ? "0 surfaces"
+                  : `0 matching · ${totalCount} surfaces`;
+              }
+              if (total === totalCount) {
+                return isMobile
+                  ? `${start}-${end} of ${total}`
+                  : `Showing ${start} to ${end} of ${total} entries`;
+              }
+              return `${start}–${end} of ${total} matching · ${totalCount} surfaces`;
+            }
+      }
       selectedId={selectedName}
       onRowOpen={onSelect}
       detail={{ enabled: false }}
@@ -468,11 +485,9 @@ export function SurfacesTable({
         ],
         ...(isMobile
           ? {
-              // Phone: ONE row — count, saved view, Filters, one "…" holding
-              // the table's tools and the registry actions; search below.
-              ...(totalCount !== undefined
-                ? { titleCount: { value: totalCount, label: "surfaces" } }
-                : {}),
+              // Phone: ONE row — saved view, Filters, one "…" holding the
+              // table's tools and registry actions; search below. The footer
+              // owns the registry count.
               columns: false,
               overflow: {
                 mode: "menu" as const,

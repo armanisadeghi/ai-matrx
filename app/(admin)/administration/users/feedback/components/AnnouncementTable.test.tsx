@@ -80,7 +80,14 @@ describe("AnnouncementTable read lifecycle", () => {
     expect(tableProps?.isLoading).toBe(false);
     expect(tableProps?.read).toMatchObject({ status: "ready" });
     expect(tableProps?.emptyState).toMatchObject({ title: "No announcements created yet" });
-    expect(tableProps?.toolbar?.titleCount).toEqual({ value: 0, label: "announcements" });
+    expect(tableProps?.toolbar?.titleCount).toBeUndefined();
+    expect(tableProps?.toolbar).toMatchObject({
+      title: "Announcements",
+      search: true,
+      searchPlaceholder: "Search announcements…",
+      refresh: { label: "Refresh announcements" },
+    });
+    expect(tableProps?.toolbar?.actions).toBeDefined();
   });
 
   it("keeps earlier rows and reports a failed refresh through the table read state", async () => {

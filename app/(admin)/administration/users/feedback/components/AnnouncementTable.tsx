@@ -200,7 +200,6 @@ export default function AnnouncementTable() {
                     }}
                     toolbar={{
                         title: 'Announcements',
-                        titleCount: { value: announcements.length, label: 'announcements' },
                         search: true,
                         searchPlaceholder: 'Search announcements…',
                         refresh: { onRefresh: () => loadAnnouncements(), label: 'Refresh announcements' },
