@@ -21,7 +21,14 @@
  *    workable without the mouse.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   ChevronDown,
   CircleDot,
@@ -187,6 +194,7 @@ function AngleRow({
   onHoldEvidence,
   shareHref,
   rationale,
+  extraAction,
 }: {
   angle: StoryAngle;
   rank: number;
@@ -200,6 +208,8 @@ function AngleRow({
   shareHref: string;
   /** Why this row is at this position. Never rank without saying why. */
   rationale: string[];
+  /** A host-supplied action beside the rulings (the media desk's Headlines). */
+  extraAction?: ReactNode;
 }) {
   const ref = useRef<HTMLLIElement>(null);
   const endowment = ENDOWMENT_COPY[angle.endowment];
@@ -421,6 +431,7 @@ function AngleRow({
                     Dismiss
                   </Button>
                 ) : null}
+                {extraAction}
                 <CopyButtons
                   size="icon"
                   label={`Angle: ${angle.headline}`}
@@ -596,6 +607,7 @@ export function StoryAngleQueue({
   onRuleAngle,
   onHoldEvidence,
   angleHref,
+  renderAngleAction,
 }: {
   angles: readonly StoryAngle[];
   requests: readonly SourceRequest[];
@@ -623,6 +635,8 @@ export function StoryAngleQueue({
   onRuleAngle: (angleId: string, status: string) => void;
   onHoldEvidence: (angleId: string, proofKey: string) => void;
   angleHref: (angleId: string) => string;
+  /** Extra per-angle action, rendered in the open row beside the rulings. */
+  renderAngleAction?: (angle: StoryAngle) => ReactNode;
 }) {
   const [search, setSearch] = useState("");
 
@@ -867,6 +881,7 @@ export function StoryAngleQueue({
               onRule={(status) => onRuleAngle(angle.id, status)}
               onHoldEvidence={(key) => onHoldEvidence(angle.id, key)}
               shareHref={angleHref(angle.id)}
+              extraAction={renderAngleAction?.(angle)}
               rationale={rankRationale(angle, {
                 sort,
                 linkedRequests: (requestsByAngle.get(angle.id) ?? []).length,

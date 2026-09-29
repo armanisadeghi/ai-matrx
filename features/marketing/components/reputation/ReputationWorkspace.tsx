@@ -69,6 +69,7 @@ import { useReputationAnalysis } from "./useReputationAnalysis";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
 import { usePitchAdvisories } from "@/features/crm/pitch-advisories/usePitchAdvisories";
+import { CrisisHoldingDialog } from "./crisis/CrisisHoldingDialog";
 
 const SURFACE = "matrx-user/marketing-reputation";
 
@@ -785,6 +786,11 @@ export function ReputationWorkspace({
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <CrisisHoldingDialog
+                siteId={site.id}
+                brandId={brandId}
+                organizationId={site.organization_id}
+              />
               <Button
                 variant="outline"
                 size="sm"

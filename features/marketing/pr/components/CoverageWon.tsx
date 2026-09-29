@@ -16,6 +16,7 @@
  * carrying its own "add to CRM" fix (THE DOOR LAW).
  */
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ExternalLink, Link2, Link2Off } from "lucide-react";
 
@@ -36,12 +37,15 @@ export function CoverageWon({
   angles,
   onOpenAngle,
   focusedId,
+  renderMentionAction,
 }: {
   coverage: readonly CoverageMention[];
   angles: readonly StoryAngle[];
   onOpenAngle: (angleId: string) => void;
   /** The coverage row named in the URL, so a deep link lands somewhere visible. */
   focusedId: string | null;
+  /** A host action per piece (the media desk's Make clip). */
+  renderMentionAction?: (mention: CoverageMention) => ReactNode;
 }) {
   const angleById = new Map(angles.map((angle) => [angle.id, angle]));
 
@@ -168,6 +172,7 @@ export function CoverageWon({
                       {mention.prominence}
                     </Badge>
                   ) : null}
+                  {renderMentionAction?.(mention)}
                 </span>
               </li>
             );
