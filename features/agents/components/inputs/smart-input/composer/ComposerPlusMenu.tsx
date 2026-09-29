@@ -31,6 +31,7 @@ import {
   Cloud,
   Eye,
   CornerDownLeft,
+  Cpu,
   FileText,
   FolderOpen,
   Globe,
@@ -102,6 +103,10 @@ import {
 import { ComposerOutputPanel } from "./ComposerOutput";
 import { composerShows, metaRowHoldsScopeAndOutput } from "./composer-mode-visibility";
 import type { ComposerMode, ComposerSize } from "./composer-types";
+import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
+import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
+import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
+import { RunInputCapabilities } from "@/features/agents/components/run-controls/RunInputCapabilities";
 
 /** Picker cascades need a definite height for their internal scroll chains. */
 const PICKER_PANEL = "w-[380px] h-[min(70dvh,520px)] p-0";
@@ -127,6 +132,7 @@ export function ComposerPlusMenu({
   onRequestInputExpand,
 }: ComposerPlusMenuProps) {
   const dispatch = useAppDispatch();
+  const touchOnly = useTouchOnlyDevice();
   const [open, setOpen] = useState(false);
   const counts = useRunControlCounts(conversationId);
   const attachmentCapabilities = useAppSelector(selectAttachmentCapabilities(conversationId));
@@ -299,6 +305,21 @@ export function ComposerPlusMenu({
             />
           </ComposerSubmenu>
         ) : null}
+        {shows("plus.model") ? (
+          // The model is secondary to the agent (an agent is built with one) —
+          // here, beside the per-run overrides, in every mode.
+          <ComposerSubmenu row={{ icon: Cpu, label: "Model and overrides" }} panelClassName="w-[360px] h-[min(70dvh,520px)] p-0">
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="shrink-0 p-1.5">
+                <QuickRunModelSelect conversationId={conversationId} className="h-8 w-full" />
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <RunConfigOverrides conversationId={conversationId} />
+                <RunInputCapabilities conversationId={conversationId} />
+              </div>
+            </div>
+          </ComposerSubmenu>
+        ) : null}
 
         <ComposerMenuDivider />
         {shows("plus.previewContext") ? (
@@ -340,7 +361,7 @@ export function ComposerPlusMenu({
             else dispatch(requestMemoryToggle({ conversationId, enabled: next }));
           }}
         />
-        {shows("plus.enterSends") ? (
+        {shows("plus.enterSends") && !touchOnly ? (
           <ComposerMenuSwitchRow
             icon={CornerDownLeft}
             label="Enter sends"

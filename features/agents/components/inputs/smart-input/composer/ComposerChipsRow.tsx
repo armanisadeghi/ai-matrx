@@ -24,7 +24,7 @@ import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpe
 import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
 import { useComputeTargetActions } from "../use-compute-target-actions";
 import { ComposerEnvironmentPanel } from "./ComposerPlusMenu";
-import { COMPOSER_CHIP_CLASS } from "./composer-chip";
+import { COMPOSER_CHIP_CLASS, COMPOSER_ROW_CLASS } from "./composer-chip";
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerMode } from "./composer-types";
 
@@ -47,7 +47,7 @@ export function ComposerChipsRow({
   const EnvIcon = boundName ? Server : Cloud;
 
   return (
-    <div className={cn("flex min-w-0 flex-wrap items-center gap-1.5 px-1", className)}>
+    <div className={cn(COMPOSER_ROW_CLASS, "gap-1 px-1", className)}>
       <Popover open={envOpen} onOpenChange={setEnvOpen} modal={false}>
         <PopoverTrigger asChild>
           <button

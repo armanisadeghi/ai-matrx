@@ -23,6 +23,7 @@ import { InboxQueueStrip } from "./InboxQueueStrip";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 import type { AttachedContextRailItem } from "./ConversationContextRail";
 import type { ComposerPresentation } from "./composer/composer-types";
+import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
 
 export interface SmartAgentInputSurfaceValueAnchors {
   variables?: string;
@@ -99,6 +100,7 @@ export function SmartAgentInput({
   composer,
 }: SmartAgentInputProps) {
   const isAmbient = presentation === "ambient";
+  const touchOnly = useTouchOnlyDevice();
   // Queued-while-running message cards render above EITHER variant, so every
   // surface that mounts a composer also sees / edits / withdraws its queue
   // (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md). Renders null when the queue is empty.
@@ -143,7 +145,7 @@ export function SmartAgentInput({
         conversationId={conversationId}
         presentation={presentation}
         sendButtonVariant={sendButtonVariant}
-        showSubmitOnEnterToggle={showSubmitOnEnterToggle}
+        showSubmitOnEnterToggle={showSubmitOnEnterToggle && !touchOnly}
         uploadRoot={uploadRoot}
         uploadPath={uploadPath}
         enablePasteImages={enablePasteImages}

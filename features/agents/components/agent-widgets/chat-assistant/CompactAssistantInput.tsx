@@ -48,6 +48,7 @@ import { SmartInputFileDropTarget } from "../../inputs/smart-input/SmartInputFil
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 
 import { toast } from "@/lib/toast";
+import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,
   intentTakesTheKey,
@@ -61,6 +62,7 @@ export function CompactAssistantInput({
   conversationId,
 }: CompactAssistantInputProps) {
   const dispatch = useAppDispatch();
+  const touchOnly = useTouchOnlyDevice();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingVoiceSubmitRef = useRef(false);
 
@@ -242,8 +244,8 @@ export function CompactAssistantInput({
 
         {/* Right: toggles + send */}
         <div className="flex items-center gap-0">
-          {/* Submit on Enter toggle */}
-          <ToolbarButton
+          {/* Submit on Enter toggle — absent on a phone, where Enter never sends */}
+          {touchOnly ? null : <ToolbarButton
             icon={CornerDownLeft}
             tooltip={
               submitOnEnter
@@ -256,7 +258,7 @@ export function CompactAssistantInput({
               )
             }
             active={submitOnEnter}
-          />
+          />}
 
           {/* Stop button — only while a run streams */}
           {isExecuting && (
