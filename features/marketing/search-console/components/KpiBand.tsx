@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The four GSC metric tiles — each one is ALSO the visibility toggle for its
+ * The four GSC metric tiles — each one is ALSO the show/hide toggle for its
  * chart series (GSC parity: click a tile to show/hide the line). Compare
  * deltas render under each value when a compare period is active. The band
  * carries its own CopyButtons (human summary / JSON / Copy-for-AI).

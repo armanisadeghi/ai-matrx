@@ -250,9 +250,9 @@ export function countDescendants(
   return counts;
 }
 
-// ─── Shared visibility projections (tree + site map) ───────────────────────
+// ─── Shared display projections (tree + site map) ───────────────────────
 
-/** Minimal row shape the visibility helpers need. */
+/** Minimal row shape the display helpers need. */
 export interface PlanishRow {
   id: string;
   parent_id: string | null;

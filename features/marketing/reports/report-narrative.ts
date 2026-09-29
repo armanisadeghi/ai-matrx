@@ -82,7 +82,7 @@ export function buildReportFindings(
             : "neutral",
     },
     {
-      id: "visibility",
+      id: "search_presence",
       finding: visibilityFinding,
       evidence: `${formatCtr(summary.ctr)} click-through rate · ${reportPlacementSentence(summary.avg_position)}`,
       tone:

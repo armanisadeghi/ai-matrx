@@ -3,7 +3,7 @@ const GOOGLE_OAUTH_INTERNAL_TEST_REVIEWER_EMAILS = new Set([
   "oauth-review@aimatrx.com",
 ]);
 
-/** This controls visibility only; aidream independently authorizes every call. */
+/** This only decides whether the control is shown; aidream independently authorizes every call. */
 export function canUseGoogleOAuthInternalTest(
   isSuperAdmin: boolean,
   email: string | null,

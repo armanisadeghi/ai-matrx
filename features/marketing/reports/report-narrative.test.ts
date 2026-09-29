@@ -46,9 +46,9 @@ describe("buildReportFindings", () => {
       impressions: 0,
     } satisfies ReportSummaryRow;
 
-    const visibility = buildReportFindings(summary, [])[2];
-    expect(visibility?.finding).toContain("without enough click-through data");
-    expect(visibility?.evidence).toBe(
+    const searchPresence = buildReportFindings(summary, [])[2];
+    expect(searchPresence?.finding).toContain("without enough click-through data");
+    expect(searchPresence?.evidence).toBe(
       "— click-through rate · placement unavailable",
     );
   });

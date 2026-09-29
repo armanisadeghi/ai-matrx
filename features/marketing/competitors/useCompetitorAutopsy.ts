@@ -44,7 +44,7 @@ const STAGES: Record<string, string> = {
   "seo.competitor_backlinks_started": "Comparing who links to them",
   "seo.competitor_backlinks_completed": "Link comparison complete",
   "seo.competitor_backlinks_limited": "Limited link data — continuing without it",
-  "seo.relevant_pages_started": "Finding the pages responsible for their visibility",
+  "seo.relevant_pages_started": "Finding the pages responsible for their rankings",
   "seo.relevant_pages_completed": "Winning pages identified",
   "seo.relevant_pages_limited": "Limited page data — continuing with what we have",
   "seo.competitor_page_crawl_started": "Reading a competitor page",

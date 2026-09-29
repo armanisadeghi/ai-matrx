@@ -6,7 +6,7 @@
  *     (`web.youtube_video`, `web.channel_analytics_daily`), never through the
  *     Python server, which is not a DB gateway. Both tables are live and
  *     RLS-certified (aidream migration 0767): the video is
- *     `visibility personal` / `default_list_scope mine`, the analytics day is a
+ *     Shown to "Only me" / `default_list_scope mine`, the analytics day is a
  *     `ledger` with `default_list_scope organization`. THE VIEW LAW: each list
  *     declares its own scope below; RLS is the ceiling above that, never the
  *     view.
@@ -69,7 +69,7 @@ export const MAX_REFRESH_WINDOW_DAYS = 90;
 /**
  * This brand's channel videos, newest first.
  *
- * Scope: `mine`. `web.youtube_video` was certified `visibility personal` /
+ * Scope: `mine`. `web.youtube_video` was certified Shown to "Only me" /
  * `default_list_scope mine` (0767), and the refresh writes the rows under the
  * person who pressed it (`acting_as_user`), so the declared scope is the one
  * the table was built with. A shared-channel story is a later, deliberate

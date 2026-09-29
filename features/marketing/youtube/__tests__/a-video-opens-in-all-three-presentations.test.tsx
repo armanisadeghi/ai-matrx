@@ -7,7 +7,7 @@
  * strip that could only speak about the account. So a person who opened
  * `/detail/web_youtube_video/<id>` got the raw column dump of a fully stored
  * record: the `stats` jsonb with its `__kind` marker printed as content, the
- * audit columns, `version`, `visibility`, and nothing YouTube-shaped at all.
+ * audit columns, `version`, the row-access columns, and nothing YouTube-shaped at all.
  *
  * This suite mounts the window, the docked panel and the page through the REAL
  * type map and the REAL refinement, and asserts what PLAN §4.11 promises on

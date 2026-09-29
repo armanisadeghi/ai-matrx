@@ -229,7 +229,7 @@ export const contentPlanSetupChecklist = registerChecklist<ContentPlanSetupConte
             reason: "We couldn't read your website's design, so we haven't judged it.",
           };
         }
-        // Per-piece truth in ONE line — the visibility four separate steps
+        // Per-piece truth in ONE line — the insight four separate steps
         // would have bought, without printing one action four times.
         const detail = declared
           .map(

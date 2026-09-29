@@ -154,7 +154,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 // section titles and field labels below render these byte-identically.
 const L = surfaceValueLabels(marketingPageManifest);
 
-/** Studio lane rules: one outer disclosure owns nested card visibility/height. */
+/** Studio lane rules: one outer disclosure owns nested card display/height. */
 const STUDIO_LANE_CARD_CLASSES =
   "h-full content-stretch [&_[data-section-card-shell]]:h-full [&_[data-section-card-shell]]:self-stretch [&_[data-section-card]]:flex [&_[data-section-card]]:h-full [&_[data-section-card]]:min-h-0 [&_[data-section-card]]:flex-col [&_[data-section-card]]:self-stretch [&_[data-section-card-content]]:flex [&_[data-section-card-content]]:min-h-0 [&_[data-section-card-content]]:flex-1 [&_[data-section-card-content]]:flex-col [&_[data-section-card-content][data-state=closed]]:flex [&_[data-section-card-content]>*]:min-h-0 [&_[data-section-card-content]>*]:flex-1 [&_[data-section-card-toggle]]:hidden";
 

@@ -285,7 +285,7 @@ function count(value: number | null, absent: string): string {
 /**
  * 🚨 A CURATED FIELD LIST, NEVER A COLUMN DUMP. The generic `fieldsFromRow`
  * would print the `stats` jsonb (marker and all), `version`, `metadata`,
- * `visibility` and both audit columns, and would lose what PLAN §4.11 names:
+ * the row-access columns and both audit columns, and would lose what PLAN §4.11 names:
  * when it went up, how it is doing, how long it is, and where it lives on
  * YouTube.
  */
