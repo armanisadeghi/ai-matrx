@@ -564,6 +564,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
     extraSections: tabExtraSections,
     heading: { label: "Note", text: label || "Untitled note" },
   });
+  // eslint-disable-next-line react-hooks/refs -- external menu registry needs current rows during this render.
   recordRows.current = {
     entity: { type: "note" as const, id: noteId, title: label, resourceType: "note" as const },
     extraSections: tabExtraSections,
