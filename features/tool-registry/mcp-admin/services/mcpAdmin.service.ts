@@ -60,7 +60,7 @@ export function requiresUnrestrictedToolAllowlistConfirmation(
 /**
  * Surgical metadata merge for the only editable existing-server field. It
  * preserves every unrelated key and deliberately removes, rather than stores,
- * an empty allowlist because empty and absent both mean unrestricted.
+ * an empty allowlist: absence permits all tools, while stored [] denies discovery.
  */
 export function mergeMcpToolAllowlist(
   metadata: unknown,
