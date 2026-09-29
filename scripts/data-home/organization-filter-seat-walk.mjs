@@ -42,6 +42,10 @@ const browser = await chromium.launch({ headless: true });
 async function session() {
   const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const page = await context.newPage();
+  page.on("request", (r) => {
+    const m = r.url().match(/\/rpc\/(data_home[a-z_]*)/);
+    if (m) doorHits.push(m[1]);
+  });
   const who = await signIn(page, ORIGIN, EMAIL, PASSWORD, SEAT);
   pass("seat", who === EMAIL, `/api/whoami answered ${who}`);
   // A fresh session may be working in no organization yet; a person picks one in the header.
@@ -74,6 +78,9 @@ async function openHome(page, query = "") {
   );
   return read.v;
 }
+
+/** Every data home door the page called (DATA-HOME-2: exactly one, custom.data_home). */
+const doorHits = [];
 
 const shot = (page, name) => page.screenshot({ path: `${SHOTS}/${SEAT}-${name}.png`, fullPage: false });
 
@@ -127,6 +134,8 @@ try {
     });
     pass("starts on All Orgs", start?.value === "all" && start?.label === "All Orgs", JSON.stringify(start));
     const everything = await tableFacts(page);
+    const calls = [...doorHits];
+    pass("the page asks one door", calls.length > 0 && calls.every((c) => c === "data_home"), `data home doors called: ${calls.join(", ") || "none"}`);
     const barText = await page.evaluate(() => document.querySelector("[data-hub-scope]")?.innerText ?? "");
     pass("no single-organization sentence on the bar", !/Forms and pages/.test(barText), JSON.stringify(barText.replace(/\n/g, " · ").slice(-60)));
     // EVERY OTHER LISTING, the same way (DATA-HOME-2, finish the class): no heading says one
