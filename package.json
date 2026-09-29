@@ -719,6 +719,8 @@
     "check:defaults-are-organization:self-test": "tsx scripts/check-defaults-are-organization.ts --self-test",
     "check:private-files-have-parents": "tsx scripts/check-private-files-have-parents.ts",
     "check:private-files-have-parents:self-test": "tsx scripts/check-private-files-have-parents.ts --self-test",
+    "check:children-read-through-parent": "tsx scripts/check-children-read-through-parent.ts",
+    "check:children-read-through-parent:self-test": "tsx scripts/check-children-read-through-parent.ts --self-test",
     "check:people-lists-stay-in-your-organizations": "tsx scripts/check-people-lists-stay-in-your-organizations.ts",
     "check:people-lists-stay-in-your-organizations:self-test": "tsx scripts/check-people-lists-stay-in-your-organizations.ts --self-test",
     "check:fields-stay-masked:self-test": "tsx scripts/check-fields-stay-masked.ts --self-test",
