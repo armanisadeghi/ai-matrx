@@ -19,6 +19,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
+  type MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
 import { computeVariableWindow } from "@ai-matrx/design-system/data-table/virtual-window";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
@@ -513,6 +514,8 @@ function TableLayout({
   error,
   onRetry,
   stage,
+  sourceTotal,
+  sourceMayHaveMore,
 }: {
   hits: KnowledgeHit[];
   handlers: ResultHandlers;
@@ -520,8 +523,26 @@ function TableLayout({
   error: string | null;
   onRetry: () => void;
   stage?: HubStageColumn;
+  /** Exact item total reported by every source section, when available. */
+  sourceTotal?: number;
+  /** A source section still has unread rows, or has not answered yet. */
+  sourceMayHaveMore: boolean;
 }) {
   const columns = hubTableColumns(stage, handlers, hits);
+  const [tableQuery, setTableQuery] = useState<MatrxDataTableQueryState>({
+    page: 1,
+    pageSize: 0,
+    search: "",
+    anyOf: "",
+    columnFilters: [],
+    sort: null,
+  });
+  const coverage =
+    typeof sourceTotal === "number" && sourceTotal > hits.length
+      ? { loaded: hits.length, total: sourceTotal, answeredBy: "source" as const, noun: "item" }
+      : sourceMayHaveMore
+        ? { loaded: hits.length, answeredBy: "source" as const, noun: "item" }
+        : undefined;
   return (
     <div className="min-h-0 flex-1 overflow-hidden">
       <MatrxDataTable<KnowledgeHit>
@@ -534,8 +555,21 @@ function TableLayout({
         hideToolbar
         facets={{ enabled: true, totalRows: hits.length }}
         searchText={(h) => `${h.title} ${h.snippet ?? ""}`}
+        // This table keeps its local header filters and sort, while the source
+        // total changes the canonical footer from "1–N of N" to an honest
+        // loaded-window label. The cursor remains owned by the hub below.
+        query={{
+          mode: "controlled-local",
+          state: tableQuery,
+          onStateChange: setTableQuery,
+          ...(typeof sourceTotal === "number" ? { sourceProcessing: { sourceTotal } } : {}),
+        }}
         read={{ status: loading ? "loading" : error ? "error" : "ready", error, onRetry, what: "your knowledge" }}
         emptyState={{ title: "Nothing here yet", description: "Nothing in this view matches its filters." }}
+        // The table filters and sorts the rows currently in hand. The source's
+        // section counts can prove this is only a loaded window even before it
+        // exposes a continuation cursor, so pass that honest coverage through.
+        coverage={coverage}
         selection={{
           selectedIds: [...handlers.selected],
           onSelectedIdsChange: (ids) => {
@@ -554,9 +588,9 @@ function TableLayout({
         }}
         onRowOpen={(h) => handlers.onOpen(h)}
         detail={{ enabled: false }}
-        // The hub pages its own rows (one pager: the list's infinite read); the table shows every loaded row.
+        // Keep all loaded rows in this table. Cursor continuation stays with the hub's
+        // one button below, which can advance every section that still has a cursor.
         pageSize={0}
-        hidePagination
         // The row's own menu (Open, Keep, Archive, Tag, File to, Copy, Trash) in the Actions column.
         copy={false}
         rowActions={handlers.rowMenu ? (h) => handlers.rowMenu?.(h) : undefined}
@@ -720,6 +754,21 @@ export function BrowseResults({
   const failed = relevant.filter((s) => s.status === "error" && s.section?.error);
   const more = relevant.filter((s) => s.section?.next_cursor);
   const loadingMore = relevant.some((s) => s.loadingMore);
+  // This is the same source-wide total the page can display above the browse
+  // layouts. Text search can turn a passage whose source was not returned into
+  // a new item row, so Sources and Passages counts cannot prove a distinct
+  // union there. Until the backend reports that union, search totals stay unknown.
+  const countedSections = sections.filter((s) => s.key !== "top_hit" && s.key !== "segments");
+  const sourceTotal =
+    !searching && countedSections.length > 0 && countedSections.every((s) => s.status === "ready" && typeof s.section?.count === "number")
+      ? countedSections.reduce((total, s) => total + (s.section?.count ?? 0), 0)
+      : undefined;
+  // A loaded window is incomplete when the source total exceeds it, even if a
+  // source has not supplied a cursor. Cursors, loading, and failure remain
+  // partial states when the source cannot state that total.
+  const sourceMayHaveMore =
+    (typeof sourceTotal === "number" && sourceTotal > hits.length) ||
+    relevant.some((s) => s.status !== "ready" || Boolean(s.section?.next_cursor));
 
   const failures = failed.length ? (
     <div className="space-y-1.5 pb-2">
@@ -769,6 +818,8 @@ export function BrowseResults({
           error={failed.length && !hits.length ? failed.map((s) => s.section?.error?.message).join(" ") : null}
           onRetry={() => failed.forEach((s) => onRetry(s.key))}
           stage={stage}
+          sourceTotal={sourceTotal}
+          sourceMayHaveMore={sourceMayHaveMore}
         />
         {footer}
       </div>
