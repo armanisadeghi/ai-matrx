@@ -211,7 +211,6 @@ export async function uploadResponseClip(
       { kind: "blob", blob: clip, fileName: `${namePrefix}.${ext}`, mime },
       {
         folderPath: opts.folderPath,
-        visibility: "personal",
         metadata: opts.metadata ?? {},
       },
     );

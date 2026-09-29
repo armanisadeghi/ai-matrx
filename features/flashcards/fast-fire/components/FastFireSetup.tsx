@@ -787,7 +787,7 @@ export function FastFireSetup() {
             ? "Type each answer and press Enter before the timer runs out."
             : "One microphone prompt for the whole session. Answer each card aloud before the timer runs out."}
         </p>
-        {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
+        {/* Respectful paywall — opens only on a real cap; decides for itself when it shows. */}
         <liveGrade.Paywall />
         <enrichGuard.Paywall />
 

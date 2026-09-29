@@ -24,6 +24,11 @@ import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { EDGE_ROLE } from "./types";
+import {
+  currentUserIdOrNull,
+  rowAccessColumns,
+  type RowAccessChange,
+} from "@/lib/row-access/columns";
 import type {
   FcResult,
   FcSetRow,
@@ -193,7 +198,33 @@ export const fcService = {
     }
   },
 
-  /** Phase 1A — flip a set's share visibility (personal/internal/link/public). */
+  /**
+   * Save a set's row controls — "Shown to" and "Published to the web" — from the RowAccessControl
+   * menu (access ladder Words table). The one writer for a deck's row controls.
+   */
+  async updateSetRowAccess(
+    setId: string,
+    change: RowAccessChange,
+  ): Promise<FcResult<FcSetRow>> {
+    try {
+      const cols = rowAccessColumns(change, await currentUserIdOrNull());
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .update(cols)
+        .eq("id", setId)
+        .select("*")
+        .single();
+      if (error) return fail("updateSetRowAccess", error);
+      return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
+    } catch (e) {
+      return fail("updateSetRowAccess", e);
+    }
+  },
+
+  /**
+   * The agent write target's path (update_decks, whose contract still names the old row column
+   * until its surface manifest converts). Screens use updateSetRowAccess.
+   */
   async updateSetVisibility(
     setId: string,
     visibility: FcSetRow["visibility"],
@@ -316,8 +347,8 @@ export const fcService = {
   /**
    * Sets owned by or shared with the current user (RLS-filtered), recent first.
    *
-   * VIEW LAW: this is a DELIBERATE blended view (mine + org-visible +
-   * public `visibility`), not an accidental bare list — RLS still bounds
+   * VIEW LAW: this is a DELIBERATE blended view (mine + org-shown +
+   * published to the web), not an accidental bare list — RLS still bounds
    * it, but the union is intentional for the flashcards home page. Splitting
    * into explicit Mine/Org/Shared tabs is a UX change, not a bug fix; when
    * that lands, wire `applyListScope` here instead of this comment.

@@ -2,7 +2,7 @@
 //
 // The flashcard set AUTHORING surface (the view↔edit split, ROUTING.md §2). This
 // is the real edit page, not a placeholder: rename the set + edit its details,
-// set its share visibility + folders/tags, edit each card's front/back inline
+// set its Shown to / Published to the web + folders/tags, edit each card's front/back inline
 // (dirty-tracked, per-card save, markdown/LaTeX preview toggle, delete,
 // up/down reorder), and add a new card. Writes go through fcService
 // (RLS-gated — you can only edit sets you own); the VIEW-vs-EDIT permission
@@ -71,7 +71,7 @@ import type {
   SetWithCards,
   CardWithDetails,
 } from "../../data/types";
-import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
+import { DeckRowAccess } from "../sharing/DeckRowAccess";
 import { FolderTagPicker } from "../organize/FolderTagPicker";
 import {
   asCardKind,
@@ -719,17 +719,15 @@ export function EditSetView({ setId }: { setId: string }) {
                     <Share2 className="h-3.5 w-3.5" />
                     Sharing
                   </label>
-                  <SetVisibilityControl
-                    setId={setId}
-                    visibility={data.set.visibility}
-                    onChange={(v) =>
-                      setData((prev) =>
-                        prev
-                          ? { ...prev, set: { ...prev.set, visibility: v } }
-                          : prev,
-                      )
-                    }
-                  />
+                  <DeckRowAccess
+                        setId={setId}
+                        value={data.set}
+                        onChange={(v) =>
+                          setData((prev) =>
+                            prev ? { ...prev, set: { ...prev.set, ...v } } : prev,
+                          )
+                        }
+                      />
                 </div>
 
                 {/* Folders / tags */}

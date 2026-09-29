@@ -521,7 +521,7 @@ export function EnhanceSetDialog({
           )}
         </div>
       </ScrollArea>
-      {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
+      {/* Respectful paywall — opens only on a real cap; decides for itself when it shows. */}
       <enrichGuard.Paywall />
     </>
   );

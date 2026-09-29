@@ -92,7 +92,7 @@ import {
   safeFilename,
   type DeckExportFormat,
 } from "../../utils/exportDeck";
-import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
+import { DeckRowAccess } from "../sharing/DeckRowAccess";
 import {
   AudioOverviewSection,
   deckAudioCoverage,
@@ -526,7 +526,7 @@ export function SetDetailView({
 
   // View-vs-edit gate (P7). Owner/editor get the full authoring surface; a
   // view-only sharee (shared read-only, or a public deck they don't own) gets a
-  // "Make a copy" offer instead of Edit / visibility controls that would fail.
+  // "Make a copy" offer instead of Edit / row controls that would fail.
   const access = useAccess("fc_set", setId);
   const canEdit = access.isOwner || canEditAccess(access.level);
   const viewOnly = !access.loading && !canEdit;
@@ -876,14 +876,12 @@ export function SetDetailView({
                   {canEdit && (
                     // Who can see it + its class: one row, not two stacked.
                     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                      <SetVisibilityControl
+                      <DeckRowAccess
                         setId={setId}
-                        visibility={data.set.visibility}
+                        value={data.set}
                         onChange={(v) =>
                           setData((prev) =>
-                            prev
-                              ? { ...prev, set: { ...prev.set, visibility: v } }
-                              : prev,
+                            prev ? { ...prev, set: { ...prev.set, ...v } } : prev,
                           )
                         }
                       />
@@ -897,7 +895,7 @@ export function SetDetailView({
                       your own progress.
                     </div>
                   )}
-                  {data.set.visibility === "public" && (
+                  {data.set.published_to_web && (
                     <div className="mt-2">
                       <a
                         href={`/p/e/fc_set/${setId}`}

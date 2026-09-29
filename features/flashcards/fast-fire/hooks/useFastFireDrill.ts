@@ -416,7 +416,6 @@ export function useFastFireDrill(): UseFastFireDrillResult {
             },
             {
               folderPath: CloudFolders.SYSTEM_FASTFIRE_SESSIONS,
-              visibility: "personal",
               metadata: { origin: "fastfire", session_id: sessionId ?? null },
             },
           );

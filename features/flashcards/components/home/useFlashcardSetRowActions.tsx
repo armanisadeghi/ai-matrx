@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import {
   Archive,
   ArchiveRestore,
-  Check,
   Copy,
   ExternalLink,
   Eye,
@@ -34,12 +33,11 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { FolderTagPicker } from "../organize/FolderTagPicker";
-import { DECK_VISIBILITY_CHOICES } from "../sharing/SetVisibilityControl";
+import { DeckRowAccessById } from "../sharing/DeckRowAccess";
+import { SHOWN_TO_LABEL } from "@/lib/row-access";
 import {
   duplicateDeck,
   renameDeck,
-  setDeckVisibility,
-  type DeckVisibilityValue,
 } from "../../data/deckOperations";
 import { copyName } from "./deckAgentWrites";
 import { toast } from "@/lib/toast";
@@ -72,7 +70,6 @@ export function useFlashcardSetRowActions(
   const [renaming, setRenaming] = useState<FlashcardSetListRow | null>(null);
   const [filing, setFiling] = useState<FlashcardSetListRow | null>(null);
   const [sharing, setSharing] = useState<FlashcardSetListRow | null>(null);
-  const [savingVisibility, setSavingVisibility] = useState(false);
 
   const duplicate = async (row: FlashcardSetListRow) => {
     const taken = new Set(
@@ -118,30 +115,6 @@ export function useFlashcardSetRowActions(
     }
   };
 
-  const chooseVisibility = async (
-    row: FlashcardSetListRow,
-    next: DeckVisibilityValue,
-  ) => {
-    if (next === row.visibility) {
-      setSharing(null);
-      return;
-    }
-    setSavingVisibility(true);
-    try {
-      const saved = await setDeckVisibility(row.id, next);
-      list.patchRow(row.id, { visibility: saved.visibility });
-      toast.success(
-        `"${row.name}": ${DECK_VISIBILITY_CHOICES.find((c) => c.value === saved.visibility)?.label ?? saved.visibility}`,
-      );
-      setSharing(null);
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Who can see this deck was not changed.",
-      );
-    } finally {
-      setSavingVisibility(false);
-    }
-  };
 
   const restore = async (row: FlashcardSetListRow) => {
     try {
@@ -228,8 +201,8 @@ export function useFlashcardSetRowActions(
         onSelect: () => setFiling(row),
       },
       {
-        id: "visibility",
-        label: "Who can see it",
+        id: "row-access",
+        label: "Shown to",
         icon: Users,
         disabled: !own || row.archived,
         disabledReason: offLimits,
@@ -324,36 +297,9 @@ export function useFlashcardSetRowActions(
     >
       <DialogContent className="matrx-touch-targets sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Who can see &ldquo;{sharing?.name}&rdquo;</DialogTitle>
+          <DialogTitle>{SHOWN_TO_LABEL}: &ldquo;{sharing?.name}&rdquo;</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-1" role="radiogroup" aria-label="Who can see it">
-          {DECK_VISIBILITY_CHOICES.map((choice) => {
-            const Icon = choice.icon;
-            const selected = sharing?.visibility === choice.value;
-            return (
-              <Button
-                key={choice.value}
-                variant="ghost"
-                role="radio"
-                aria-checked={selected}
-                disabled={savingVisibility}
-                className="h-auto justify-start gap-3 whitespace-normal px-3 py-2 text-left"
-                onClick={() => {
-                  if (sharing) void chooseVisibility(sharing, choice.value);
-                }}
-              >
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">{choice.label}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {choice.description}
-                  </span>
-                </span>
-                {selected ? <Check className="h-4 w-4 shrink-0 text-primary" /> : null}
-              </Button>
-            );
-          })}
-        </div>
+        {sharing ? <DeckRowAccessById setId={sharing.id} /> : null}
       </DialogContent>
     </Dialog>
     <ConfirmDialog
