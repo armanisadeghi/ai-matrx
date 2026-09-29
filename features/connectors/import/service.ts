@@ -29,6 +29,24 @@ const TASK_IMPORT_PATH = "/google-import/tasks/import";
 const OTHER_CONTACTS_PREVIEW_PATH = "/google-integrations/other-contacts/preview";
 const OTHER_CONTACTS_REVIEW_PATH = "/google-integrations/other-contacts/review";
 const OTHER_CONTACTS_IMPORT_PATH = "/google-integrations/other-contacts/import";
+const OTHER_CONTACTS_ADMISSION_PATH = "/google-integrations/other-contacts/admission";
+
+export interface OtherContactsAdmissionPending {
+  eligible: boolean;
+  admission_error: string | null;
+  message: string;
+}
+
+/** Server-derived gate for the unlinked, non-consent Other Contacts reviewer. */
+export async function getOtherContactsAdmission(
+  signal?: AbortSignal,
+): Promise<OtherContactsAdmissionPending> {
+  const { data } = await getJson<OtherContactsAdmissionPending>(
+    OTHER_CONTACTS_ADMISSION_PATH,
+    { signal },
+  );
+  return data;
+}
 
 export interface OtherContactPreviewPending {
   resource_name: string;

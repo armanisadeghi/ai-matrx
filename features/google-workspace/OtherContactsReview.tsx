@@ -3,6 +3,7 @@
 /** Internal reviewer surface for the separately-authorized Google Other Contacts corpus. */
 
 import { useCallback, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronRight, CircleAlert, Loader2, RefreshCw, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +15,7 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
-import {
-  useGoogleCapabilities,
-  useGoogleConnectionInventory,
-} from "@/features/marketing/google/hooks";
+import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { getUserMessage } from "@/lib/api/errors";
 import { toast } from "@/lib/toast";
@@ -33,6 +31,7 @@ import type {
   ContactFieldPlanPending,
 } from "@/features/connectors/import/types";
 import {
+  getOtherContactsAdmission,
   importOtherContact,
   previewOtherContacts,
   reviewOtherContact,
@@ -69,13 +68,18 @@ function importOutcomeSentence(result: ContactImportResultPending): string {
 }
 
 /**
- * The screen is unlinked and server-reported capability metadata gates the UI.
+ * The screen is unlinked and a dedicated server admission result gates the UI.
  * Aidream independently authorizes every preview, review, and import; this
  * component never offers consent or creates a connection.
  */
 export function OtherContactsReview() {
   const organization = useOrganizationRequired();
-  const capabilities = useGoogleCapabilities();
+  const admission = useQuery({
+    queryKey: ["google", "other-contacts", "admission"],
+    queryFn: ({ signal }) => getOtherContactsAdmission(signal),
+    enabled: organization.organizationState === "ready",
+    staleTime: 30_000,
+  });
   const inventory = useGoogleConnectionInventory();
   const connections = useMemo(
     () =>
@@ -196,15 +200,14 @@ export function OtherContactsReview() {
     return <OrganizationContextNotice state={organization.organizationState} what="Other Contacts import" />;
   }
 
-  const capability = capabilities.data?.find((item) => item.key === "other_contacts");
-  if (capabilities.isLoading) {
+  if (admission.isLoading) {
     return <main className="mx-auto max-w-5xl p-6 text-sm text-muted-foreground">Checking internal-test eligibility…</main>;
   }
-  if (capabilities.isError) {
-    return <main className="mx-auto max-w-5xl space-y-3 p-6"><ErrorNotice size="inline" message="We could not check whether this account may review Google Other Contacts." /><Button variant="outline" onClick={() => void capabilities.refetch()}>Try again</Button></main>;
+  if (admission.isError) {
+    return <main className="mx-auto max-w-5xl space-y-3 p-6"><ErrorNotice size="inline" message="We could not check whether this account may review Google Other Contacts." /><Button variant="outline" onClick={() => void admission.refetch()}>Try again</Button></main>;
   }
-  if (!capability?.eligible) {
-    return <main className="mx-auto max-w-5xl p-6"><Card><CardHeader><CardTitle>Internal review access required</CardTitle></CardHeader><CardContent className="text-sm text-muted-foreground">{capability?.admission_error ?? "This Google Other Contacts review is limited to approved internal testers."}</CardContent></Card></main>;
+  if (!admission.data?.eligible) {
+    return <main className="mx-auto max-w-5xl p-6"><Card><CardHeader><CardTitle>Internal review access required</CardTitle></CardHeader><CardContent className="text-sm text-muted-foreground">{admission.data?.message ?? "This Google Other Contacts review is limited to approved internal testers."}</CardContent></Card></main>;
   }
 
   return (
