@@ -30,6 +30,11 @@ export type AiModelAliasUpdate =
   Database["ai"]["Tables"]["model_alias"]["Update"];
 
 export type AiOfferingRow = Database["ai"]["Tables"]["offering"]["Row"];
+/** The retiring row column (access ladder T-13): the catalog screens read the row words
+ *  (`shown_to`, `published_to_web`) and never select it. */
+export type RetiredRowColumn = "visibility";
+export type AiEndpointReadRow = Omit<AiEndpointRow, RetiredRowColumn>;
+export type AiOfferingReadRow = Omit<AiOfferingRow, RetiredRowColumn>;
 export type AiOfferingInsert = Database["ai"]["Tables"]["offering"]["Insert"];
 export type AiOfferingUpdate = Database["ai"]["Tables"]["offering"]["Update"];
 
@@ -271,7 +276,7 @@ export type AiProvider = Omit<AiProviderRow, "provider_models_cache"> & {
 
 /** `ai.endpoint` — ONE row per serving vendor (admin-only surface; users never
  *  see vendors). Json fields narrowed to their stored shapes. */
-export type AiEndpoint = Omit<AiEndpointRow, "auth_ref" | "metadata"> & {
+export type AiEndpoint = Omit<AiEndpointReadRow, "auth_ref" | "metadata"> & {
   auth_ref: Record<string, unknown>;
   metadata: Record<string, unknown>;
 };
@@ -288,7 +293,7 @@ export type AiApi = Omit<
 };
 
 export type AiOffering = Omit<
-  AiOfferingRow,
+  AiOfferingReadRow,
   "pricing" | "capabilities_override" | "override" | "metadata"
 > & {
   pricing: PricingTier[];
@@ -371,7 +376,6 @@ export type AiOfferingFormData = {
     constraints: unknown[];
   };
   notes: string;
-  visibility: string;
 };
 
 /** Form-editable shape of an `ai.setting` row (canonical settings vocabulary).
@@ -388,7 +392,8 @@ export type AiSettingFormData = {
   default_value: unknown;
   ui: Record<string, unknown>;
   description: string;
-  visibility: AiSetting["visibility"];
+  shown_to: AiSetting["shown_to"];
+  published_to_web: boolean;
 };
 
 // =============================================================================

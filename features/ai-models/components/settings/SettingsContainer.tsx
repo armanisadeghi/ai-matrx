@@ -39,6 +39,8 @@ import type {
   AiSettingUpdate,
 } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { getUserId } from "@/utils/auth/getUserId";
+import { rowWordsWrite } from "../RowWordsFields";
 
 function rowToFormData(row: AiSetting): AiSettingFormData {
   return {
@@ -52,7 +54,8 @@ function rowToFormData(row: AiSetting): AiSettingFormData {
     default_value: row.default_value ?? null,
     ui: row.ui ?? {},
     description: row.description ?? "",
-    visibility: row.visibility ?? "public",
+    shown_to: row.shown_to,
+    published_to_web: row.published_to_web,
   };
 }
 
@@ -65,7 +68,8 @@ const EMPTY_FORM: AiSettingFormData = {
   default_value: null,
   ui: {},
   description: "",
-  visibility: "public",
+  shown_to: null,
+  published_to_web: false,
 };
 
 function parseNumericField(value: string): number | null {
@@ -149,8 +153,7 @@ function SettingDetailPanel({
     default_value: AiSettingInsert["default_value"];
     ui: AiSettingInsert["ui"];
     description: string | null;
-    visibility: AiSettingFormData["visibility"];
-  };
+  } & ReturnType<typeof rowWordsWrite>;
 
   const buildPayload = (): SettingFieldsPayload => ({
     key: formData.key.trim(),
@@ -165,7 +168,7 @@ function SettingDetailPanel({
       null) as AiSettingInsert["default_value"],
     ui: formData.ui as AiSettingInsert["ui"],
     description: formData.description.trim() || null,
-    visibility: formData.visibility,
+    ...rowWordsWrite(formData, isNew || !setting ? null : setting, getUserId()),
   });
 
   const handleSave = async (): Promise<AiSetting | null> => {

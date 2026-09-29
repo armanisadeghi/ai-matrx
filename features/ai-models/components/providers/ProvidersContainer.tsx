@@ -44,6 +44,8 @@ import type {
 import { AI_PROVIDER_DEEP_LINK_PARAM } from "../../doors";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { getUserId } from "@/utils/auth/getUserId";
+import { rowWordsWrite } from "../RowWordsFields";
 
 function rowToFormData(row: AiProvider): ProviderFormData {
   return {
@@ -54,7 +56,8 @@ function rowToFormData(row: AiProvider): ProviderFormData {
     models_link: row.models_link ?? "",
     website_url: row.website_url ?? "",
     logo_url: row.logo_url ?? "",
-    visibility: row.visibility,
+    shown_to: row.shown_to,
+    published_to_web: row.published_to_web,
     doc_sources: Array.isArray(row.doc_sources)
       ? (row.doc_sources as unknown as ProviderFormData["doc_sources"])
       : [],
@@ -158,7 +161,7 @@ function ProviderDetailPanel({
     models_link: formData.models_link.trim() || null,
     website_url: formData.website_url.trim() || null,
     logo_url: formData.logo_url.trim() || null,
-    visibility: formData.visibility,
+    ...rowWordsWrite(formData, isNew || !provider ? null : provider, getUserId()),
     // Drop rows with an empty URL — a doc source without a page is noise.
     doc_sources: formData.doc_sources.filter((s) => s.url.trim() !== ""),
   });

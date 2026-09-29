@@ -190,7 +190,7 @@ export function isDecisionModelCapability(
  *              knob): a conversational model would answer in prose.
  *   admin    — catalog editing; every contract stays selectable.
  *
- * Catalog visibility never changes the execution contract of a picker.
+ * Whether a model is listed in the catalog never changes the execution contract of a picker.
  */
 export type ModelSelectionPurpose = "chat" | "agent" | "decision" | "admin";
 

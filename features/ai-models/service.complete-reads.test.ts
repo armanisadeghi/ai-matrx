@@ -129,6 +129,9 @@ function endpointRow(index: number): EndpointRow {
     version: 1,
     visibility: "internal",
     shown_to: null,
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
     custom_fields: {},
   };
 }
@@ -154,6 +157,9 @@ function apiRow(index: number): ApiRow {
     version: 1,
     visibility: "internal",
     shown_to: null,
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
     custom_fields: {},
   };
 }
@@ -185,6 +191,9 @@ function offeringRow(index: number): OfferingRow {
     version: 1,
     visibility: "internal",
     shown_to: null,
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
     custom_fields: {},
   };
 }

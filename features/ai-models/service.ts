@@ -19,6 +19,9 @@ import type {
   AiModelOfferingView,
   AiOffering,
   AiOfferingRow,
+  AiOfferingReadRow,
+  AiEndpointReadRow,
+  RetiredRowColumn,
   AiOfferingInsert,
   AiOfferingUpdate,
   AiProvider,
@@ -534,14 +537,15 @@ function parseProvider(row: AiProviderRow): AiProvider {
 // screens read and write them through admin-lane doors that refuse outside the admin apps;
 // everyone else sees prices in credits (ai.model_public / ai.model_offering).
 const ENDPOINT_PUBLIC_COLUMNS =
-  "id,organization_id,is_system,visibility,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,vendor,internal_name,display_name,priority,is_active,notes,doc_sources,shown_to,custom_fields";
+  "id,organization_id,is_system,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,vendor,internal_name,display_name,priority,is_active,notes,doc_sources,shown_to,published_to_web,published_to_web_at,published_to_web_by,custom_fields";
 const OFFERING_PUBLIC_COLUMNS =
-  "id,organization_id,is_system,model_id,provider_model_id,priority,is_available,usage_basis,capabilities_override,override,notes,visibility,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,token_billed,endpoint_id,api_id,pricing_verified_at,shown_to,custom_fields";
+  "id,organization_id,is_system,model_id,provider_model_id,priority,is_available,usage_basis,capabilities_override,override,notes,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,token_billed,endpoint_id,api_id,pricing_verified_at,shown_to,published_to_web,published_to_web_at,published_to_web_by,custom_fields";
 
 type EndpointAdminKey = "byok_secret_key" | "auth_ref" | "base_url";
-type EndpointPublicRow = Omit<AiEndpointRow, EndpointAdminKey>;
+// The retiring row column is never read; the row words are (access ladder T-13).
+type EndpointPublicRow = Omit<AiEndpointRow, EndpointAdminKey | RetiredRowColumn>;
 type EndpointAdminColumns = Pick<AiEndpointRow, EndpointAdminKey>;
-type OfferingPublicRow = Omit<AiOfferingRow, "pricing">;
+type OfferingPublicRow = Omit<AiOfferingRow, "pricing" | RetiredRowColumn>;
 
 async function fetchEndpointAdminColumns(): Promise<Map<string, EndpointAdminColumns>> {
   const { data, error } = await supabase.schema("ai").rpc("endpoint_admin_columns");
@@ -564,14 +568,14 @@ async function setEndpointAdminColumns(id: string, values: Partial<EndpointAdmin
 function withEndpointAdminColumns(
   row: EndpointPublicRow,
   cols: Map<string, EndpointAdminColumns>,
-): AiEndpointRow {
+): AiEndpointReadRow {
   const c = cols.get(row.id);
   return {
     ...row,
     byok_secret_key: c?.byok_secret_key ?? null,
     auth_ref: c?.auth_ref ?? {},
     base_url: c?.base_url ?? null,
-  } as AiEndpointRow;
+  };
 }
 
 async function fetchOfferingPricing(): Promise<Map<string, AiOfferingRow["pricing"]>> {
@@ -594,8 +598,8 @@ async function setOfferingPricing(id: string, pricing: AiOfferingRow["pricing"])
 function withOfferingPricing(
   row: OfferingPublicRow,
   pricing: Map<string, AiOfferingRow["pricing"]>,
-): AiOfferingRow {
-  return { ...row, pricing: pricing.get(row.id) ?? [] } as AiOfferingRow;
+): AiOfferingReadRow {
+  return { ...row, pricing: pricing.get(row.id) ?? [] };
 }
 
 function pickDefined<T extends object, K extends keyof T>(obj: T, keys: readonly K[]): Partial<Pick<T, K>> {
@@ -604,7 +608,7 @@ function pickDefined<T extends object, K extends keyof T>(obj: T, keys: readonly
   return out;
 }
 
-function parseEndpoint(row: AiEndpointRow): AiEndpoint {
+function parseEndpoint(row: AiEndpointReadRow): AiEndpoint {
   return {
     ...row,
     auth_ref: requireJsonObject(row.auth_ref, `ai.endpoint.${row.id}.auth_ref`),
@@ -624,7 +628,7 @@ function parseApi(row: AiApiRow): AiApi {
   };
 }
 
-function parseOffering(row: AiOfferingRow): AiOffering {
+function parseOffering(row: AiOfferingReadRow): AiOffering {
   return {
     ...row,
     pricing: parsePricing(row.pricing, `ai.offering.${row.id}.pricing`),
@@ -863,7 +867,7 @@ export const aiModelService = {
   // ── Provider CRUD (identity fields — separate from the cache-only helpers above) ──
 
   /** Full-column provider fetch for the Provider CRUD screen (all fields,
-   *  including slug/website_url/logo_url/visibility/is_system/organization_id).
+   *  including slug/website_url/logo_url/published_to_web/is_system/organization_id).
    *  `fetchProviders()` above shares this complete generated row contract;
    *  its read-only consumers simply use fewer fields. */
   async fetchAllProviders(): Promise<AiProvider[]> {

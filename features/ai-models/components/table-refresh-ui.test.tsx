@@ -50,6 +50,9 @@ const provider = {
   version: 1,
   visibility: "personal",
   shown_to: null,
+  published_to_web: false,
+  published_to_web_at: null,
+  published_to_web_by: null,
   website_url: "https://anthropic.com",
 } satisfies AiProvider;
 
@@ -74,6 +77,9 @@ const setting = {
   version: 1,
   visibility: "personal",
   shown_to: null,
+  published_to_web: false,
+  published_to_web_at: null,
+  published_to_web_by: null,
 } satisfies AiSetting;
 
 type TableCase = {

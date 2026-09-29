@@ -20,13 +20,6 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ai-matrx/design-system";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -46,6 +39,8 @@ import { reloadAiCatalog } from "../../catalogReload";
 import { aiModelService } from "../../service";
 import type { AiApi, AiEndpoint } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { getUserId } from "@/utils/auth/getUserId";
+import { RowWordsFields, rowWordsWrite } from "../RowWordsFields";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
@@ -76,31 +71,6 @@ function FormField({
   );
 }
 
-const VISIBILITIES = ["personal", "internal", "link", "public"] as const;
-
-function VisibilitySelect({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-8 text-sm">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {VISIBILITIES.map((v) => (
-          <SelectItem key={v} value={v}>
-            {v.charAt(0).toUpperCase() + v.slice(1)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
 // ─── Endpoint form ───────────────────────────────────────────────────────────
 
 type EndpointFormData = {
@@ -113,7 +83,8 @@ type EndpointFormData = {
   priority: string;
   is_active: boolean;
   notes: string;
-  visibility: AiEndpoint["visibility"];
+  shown_to: AiEndpoint["shown_to"];
+  published_to_web: boolean;
 };
 
 const EMPTY_ENDPOINT_FORM: EndpointFormData = {
@@ -126,7 +97,8 @@ const EMPTY_ENDPOINT_FORM: EndpointFormData = {
   priority: "100",
   is_active: true,
   notes: "",
-  visibility: "internal",
+  shown_to: null,
+  published_to_web: false,
 };
 
 function endpointToForm(row: AiEndpoint): EndpointFormData {
@@ -140,7 +112,8 @@ function endpointToForm(row: AiEndpoint): EndpointFormData {
     priority: row.priority != null ? String(row.priority) : "100",
     is_active: row.is_active ?? true,
     notes: row.notes ?? "",
-    visibility: row.visibility,
+    shown_to: row.shown_to,
+    published_to_web: row.published_to_web,
   };
 }
 
@@ -254,17 +227,10 @@ function EndpointFormFields({
           className="text-sm min-h-[72px] resize-none"
         />
       </FormField>
-      <FormField label="Visibility">
-        <VisibilitySelect
-          value={data.visibility}
-          onChange={(v) =>
-            onChange({
-              ...data,
-              visibility: v as EndpointFormData["visibility"],
-            })
-          }
-        />
-      </FormField>
+      <RowWordsFields
+        value={{ shown_to: data.shown_to, published_to_web: data.published_to_web }}
+        onChange={(words) => onChange({ ...data, ...words })}
+      />
     </div>
   );
 }
@@ -279,7 +245,8 @@ type ApiFormData = {
   rules: Record<string, unknown>;
   request_defaults: Record<string, unknown>;
   description: string;
-  visibility: AiApi["visibility"];
+  shown_to: AiApi["shown_to"];
+  published_to_web: boolean;
 };
 
 const EMPTY_API_FORM: ApiFormData = {
@@ -290,7 +257,8 @@ const EMPTY_API_FORM: ApiFormData = {
   rules: { params: {}, constraints: [] },
   request_defaults: {},
   description: "",
-  visibility: "internal",
+  shown_to: null,
+  published_to_web: false,
 };
 
 function apiToForm(row: AiApi): ApiFormData {
@@ -302,7 +270,8 @@ function apiToForm(row: AiApi): ApiFormData {
     rules: row.rules ?? { params: {}, constraints: [] },
     request_defaults: row.request_defaults ?? {},
     description: row.description ?? "",
-    visibility: row.visibility,
+    shown_to: row.shown_to,
+    published_to_web: row.published_to_web,
   };
 }
 
@@ -402,14 +371,10 @@ function ApiFormFields({
           className="text-sm min-h-[72px] resize-none"
         />
       </FormField>
-      <FormField label="Visibility">
-        <VisibilitySelect
-          value={data.visibility}
-          onChange={(v) =>
-            onChange({ ...data, visibility: v as ApiFormData["visibility"] })
-          }
-        />
-      </FormField>
+      <RowWordsFields
+        value={{ shown_to: data.shown_to, published_to_web: data.published_to_web }}
+        onChange={(words) => onChange({ ...data, ...words })}
+      />
     </div>
   );
 }
@@ -738,7 +703,11 @@ export default function EndpointsApisContainer() {
         priority: parseInt(endpointForm.priority, 10) || 100,
         is_active: endpointForm.is_active,
         notes: endpointForm.notes.trim() || null,
-        visibility: endpointForm.visibility,
+        ...rowWordsWrite(
+          endpointForm,
+          endpointIsNew || !selectedEndpoint ? null : selectedEndpoint,
+          getUserId(),
+        ),
       };
       let saved: AiEndpoint;
       if (endpointIsNew) {
@@ -804,7 +773,11 @@ export default function EndpointsApisContainer() {
         rules: apiForm.rules,
         request_defaults: apiForm.request_defaults,
         description: apiForm.description.trim() || null,
-        visibility: apiForm.visibility,
+        ...rowWordsWrite(
+          apiForm,
+          apiIsNew || !selectedApi ? null : selectedApi,
+          getUserId(),
+        ),
       };
       let saved: AiApi;
       if (apiIsNew) {

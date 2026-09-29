@@ -6,13 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ai-matrx/design-system";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -27,16 +20,7 @@ import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonE
 import { Lock, Trash2 } from "lucide-react";
 import type { AiSettingFormData } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
-
-const VISIBILITY_OPTIONS: Array<{
-  value: AiSettingFormData["visibility"];
-  label: string;
-}> = [
-  { value: "personal", label: "Personal" },
-  { value: "internal", label: "Internal" },
-  { value: "link", label: "Link" },
-  { value: "public", label: "Public" },
-];
+import { RowWordsFields } from "../RowWordsFields";
 
 interface SettingFormProps {
   data: AiSettingFormData;
@@ -192,29 +176,11 @@ export default function SettingForm({
         </FormField>
       </div>
 
+      <RowWordsFields
+        value={{ shown_to: data.shown_to, published_to_web: data.published_to_web }}
+        onChange={(words) => onChange({ ...data, ...words })}
+      />
       <div className="grid grid-cols-2 gap-3">
-        <FormField label="Visibility">
-          <Select
-            value={data.visibility}
-            onValueChange={(v) =>
-              onChange({
-                ...data,
-                visibility: v as AiSettingFormData["visibility"],
-              })
-            }
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="Select visibility…" />
-            </SelectTrigger>
-            <SelectContent>
-              {VISIBILITY_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
         <div className="space-y-1">
           <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Origin

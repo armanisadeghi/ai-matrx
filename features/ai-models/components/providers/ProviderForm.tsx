@@ -15,6 +15,7 @@ import { Lock, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AiProviderRow, DocSource } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { RowWordsFields } from "../RowWordsFields";
 
 // ─── Form data shape ────────────────────────────────────────────────────────
 // Mirrors ai.provider's editable identity fields as plain strings (like
@@ -29,7 +30,8 @@ export type ProviderFormData = {
   models_link: string;
   website_url: string;
   logo_url: string;
-  visibility: AiProviderRow["visibility"];
+  shown_to: AiProviderRow["shown_to"];
+  published_to_web: boolean;
   /** Curated "ideal doc pages" the sync agent reads first — ai.provider.doc_sources. */
   doc_sources: DocSource[];
 };
@@ -42,7 +44,8 @@ export const EMPTY_PROVIDER_FORM: ProviderFormData = {
   models_link: "",
   website_url: "",
   logo_url: "",
-  visibility: "public",
+  shown_to: null,
+  published_to_web: false,
   doc_sources: [],
 };
 
@@ -249,24 +252,10 @@ export default function ProviderForm({
       </FormField>
 
       <div className="grid grid-cols-2 gap-3 items-start">
-        <FormField label="Visibility">
-          <Select
-            value={data.visibility}
-            onValueChange={(v) =>
-              onChange({ ...data, visibility: v as ProviderFormData["visibility"] })
-            }
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="personal">Personal</SelectItem>
-              <SelectItem value="internal">Internal</SelectItem>
-              <SelectItem value="link">Link</SelectItem>
-              <SelectItem value="public">Public</SelectItem>
-            </SelectContent>
-          </Select>
-        </FormField>
+        <RowWordsFields
+          value={{ shown_to: data.shown_to, published_to_web: data.published_to_web }}
+          onChange={(words) => onChange({ ...data, ...words })}
+        />
 
         <FormField label="System">
           {isSystem ? (

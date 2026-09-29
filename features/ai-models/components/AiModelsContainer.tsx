@@ -1,5 +1,6 @@
 "use client";
 
+import { publishedToWebLabel } from "@/lib/row-access";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { readOf } from "@/components/read-state/ReadGate";
@@ -291,7 +292,10 @@ export default function AiModelsContainer() {
       model_is_deprecated: selectedModel?.is_deprecated ?? undefined,
       model_is_primary: selectedModel?.is_primary ?? undefined,
       model_is_premium: selectedModel?.is_premium ?? undefined,
-      model_visibility: selectedModel?.visibility ?? undefined,
+      // Surface key keeps its manifest name; the value is the row word.
+      model_visibility: selectedModel
+        ? publishedToWebLabel(selectedModel.published_to_web)
+        : undefined,
       model_fallback_ids: selectedModel
         ? {
             mid_fallback_id: selectedModel.mid_fallback_id ?? null,

@@ -50,7 +50,6 @@ const EMPTY_FORM: AiOfferingFormData = {
   capabilities_override: {},
   override: { params: {}, constraints: [] },
   notes: "",
-  visibility: "internal",
 };
 
 function rowToFormData(row: AiOffering): AiOfferingFormData {
@@ -71,7 +70,6 @@ function rowToFormData(row: AiOffering): AiOfferingFormData {
       constraints: row.override?.constraints ?? [],
     },
     notes: row.notes ?? "",
-    visibility: row.visibility ?? "internal",
   };
 }
 
@@ -204,7 +202,6 @@ export default function OfferingsContainer() {
         // Always write the full envelope (params edited, constraints preserved).
         override: formData.override,
         notes: formData.notes.trim() || null,
-        visibility: formData.visibility,
       };
 
       let saved: AiOffering;

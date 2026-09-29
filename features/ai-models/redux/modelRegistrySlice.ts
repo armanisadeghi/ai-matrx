@@ -563,6 +563,9 @@ function emptyModelRecord(): Omit<AIModelRecord, "_fetchType"> {
     successor_id: null,
     visibility: "personal",
     shown_to: null,
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
     // Canonical base columns (2026-07-02 AI-catalog reshape)
     is_system: false,
     created_at: "",
