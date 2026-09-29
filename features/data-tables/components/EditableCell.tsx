@@ -40,7 +40,7 @@ import {
 } from "react";
 import { Loader2 } from "lucide-react";
 
-import { readTypedNumber, readTypedTime, type RecordsError } from "@ai-matrx/records";
+import { readTypedTime, type RecordsError } from "@ai-matrx/records";
 import { RefusalNotice } from "@ai-matrx/records-ui";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -60,6 +60,7 @@ import { DateCellEditor } from "./DateCellEditor";
 import { isDirectClickEditor, type GridMove } from "@ai-matrx/design-system/data-table/grid-selection";
 import { readChoiceNudge, upsertCell, upsertCellAddingChoice } from "../service";
 import { decideTypedChoice } from "../choice-option-nudge";
+import { readCellWord } from "../cell-word";
 import { ChoiceNudgeAsk, type PendingChoiceAsk } from "./ChoiceNudgeAsk";
 import { validateCellValue, type ValidationRules } from "../validation";
 import { columnRuleRefusal, type ColumnRuleRefusal } from "../validation-refusal";
@@ -323,18 +324,22 @@ export function EditableCell({
     // guess is written — the editor stays open holding the words, with the way to write them.
     if (typeof source === "string" && source.trim() !== "") {
       const kind = typedReaderKind(format, dataType);
-      const read = kind === "time" ? readTypedTime(source) : kind === "number" ? readTypedNumber(source) : null;
-      if (read && !read.ok) {
+      // A NUMBER IS READ BY THE ONE READER OF A WORD (cell-word.ts; BREAKER-2 B2-13): "7.5" in a Whole
+      // number column was kept as 7 without a word, and "12abc" as 12.
+      const numberRead = kind === "number" ? readCellWord(source, { display_name: fieldDisplayName, data_type: dataType, metadata: format ? { format } : null }) : null;
+      const read = kind === "time" ? readTypedTime(source) : null;
+      if ((read && !read.ok) || (numberRead && !numberRead.ok)) {
         setRuleRefusal(
           columnRuleRefusal({
             fieldDisplayName,
-            reason: `${fieldDisplayName} holds ${kind === "time" ? "a time of day" : "a number"}, and ${read.why}`,
+            reason: numberRead && !numberRead.ok ? numberRead.why : `${fieldDisplayName} holds a time of day, and ${read && !read.ok ? read.why : ""}`,
           }),
         );
         requestAnimationFrame(() => inputRef.current?.focus());
         return;
       }
-      if (read) source = read.value;
+      if (read && read.ok) source = read.value;
+      if (numberRead && numberRead.ok) source = numberRead.value;
     }
 
     // A declared format owns the coercion (currency strips "$", tags split on
