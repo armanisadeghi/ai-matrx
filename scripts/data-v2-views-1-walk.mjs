@@ -108,6 +108,33 @@ try {
     }
   }
 
+  if (PHASE === "askdiag") {
+    const bad = [];
+    page.on("response", async (r) => {
+      if (r.status() >= 400 && !/_next|favicon|\.png/.test(r.url())) {
+        let body = "";
+        try { body = (await r.text()).slice(0, 1500); } catch {}
+        bad.push({ status: r.status(), url: r.url().slice(0, 200), body });
+      }
+    });
+    await page.goto(`${ORIGIN}/data-v2/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await until("the empty state", async () => (await text()).includes("Make it work"), 120000);
+    await sleep(2000);
+    await page.getByRole("button", { name: "Ask AI" }).first().click();
+    const box = page.getByPlaceholder("Type your message...").last();
+    await box.waitFor({ timeout: 60000 });
+    await sleep(2000);
+    await box.click();
+    await page.keyboard.type("Add a Status choice column to this table with the choices To do, In progress and Done, then group the Kanban board by it.");
+    await page.keyboard.press("Enter");
+    await sleep(30000);
+    const details = page.getByRole("button", { name: "Details" }).last();
+    if (await details.count()) { await details.click(); await sleep(1500); }
+    await shot("d1-details");
+    step("refusal", { dialog: (await page.locator("body").innerText()).replace(/\s+/g, " ").match(/could not be sent.{0,1500}/)?.[0] ?? null });
+    step("bad responses", { bad });
+  }
+
   if (PHASE === "askai") {
     // ASK AI, END TO END: the board's empty state → the assistant → the ask sent → the agent's
     // column held for approval → approved → the board draws by it.
