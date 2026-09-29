@@ -74,8 +74,6 @@ export interface CxConversationBundle {
  * NOTE the generated types are stricter than the old hand-written mirrors:
  *   - `conversation.organization_id` / `message.organization_id` are NON-null
  *     `string` (retrofit backfilled + NOT NULL), not `string | null`.
- *   - `conversation.visibility` is `platform.Enums["visibility"]`, not a
- *     hand-rolled union.
  */
 export type CxConversationRow =
   Database["chat"]["Tables"]["conversation"]["Row"];
@@ -223,7 +221,7 @@ export async function fetchConversationBundle(
 
   // Fallback. Runs when the RPC isn't deployed or errors transiently.
   // Shape mirrors the RPC contract so downstream code is uniform.
-  // Mirror the RPC's visibility filter: only user-visible messages reach the
+  // Mirror the RPC's shown-to-user filter: only user-visible messages reach the
   // client. Without this, the fallback path (RPC unavailable) would leak
   // hidden rows (e.g. condensation summaries, secret agent_template scaffolding
   // flagged is_visible_to_user=false) that the RPC correctly excludes.

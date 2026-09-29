@@ -23,7 +23,6 @@ import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { Json } from "@/types/database.types";
-import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
 import {
   sourceAppFromStorage,
   sourceFeatureFromStorage,
@@ -66,7 +65,6 @@ interface ForkBundle {
     forked_at_position: number | null;
     organization_id: string | null;
     task_id: string | null;
-    visibility: ConversationVisibility;
     is_ephemeral: boolean;
     source_app: string;
     source_feature: string;
@@ -173,7 +171,6 @@ export const forkConversation = createAsyncThunk<
         organizationId: conv.organization_id,
         taskId: conv.task_id,
         isEphemeral: conv.is_ephemeral,
-        visibility: conv.visibility,
         title: conv.title,
         description: conv.description,
         keywords: conv.keywords,

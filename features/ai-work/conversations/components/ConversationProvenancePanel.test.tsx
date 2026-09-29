@@ -139,7 +139,6 @@ function conversation(): ProviderConversation {
     source_app: "code-plugin",
     source_feature: "claude-code",
     is_favorite: false,
-    visibility: "private",
     message_count: 42,
     exclude_from_kg: false,
     task_id: null,

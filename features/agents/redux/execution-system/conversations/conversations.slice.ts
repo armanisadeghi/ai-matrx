@@ -32,7 +32,6 @@ import {
 import { generateConversationId } from "../utils/ids";
 import type { AgentType } from "@/features/agents/types/agent-definition.types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
-import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
 import { createInstanceFull } from "../create-instance-full";
 
 // =============================================================================
@@ -97,8 +96,6 @@ interface CreateInstanceArgs {
   /** Durable entity this run belongs to — goes out as `context_anchor`. */
   contextAnchor?: ContextAnchor | null;
   isEphemeral?: boolean;
-  /** Canonical access-control dimension — `cx_conversation.visibility`. */
-  visibility?: ConversationVisibility;
   /** iterate ⇒ splittable; continuous/undefined ⇒ durable, never orphaned. */
   conversationLifecycle?: ConversationLifecycle;
   apiEndpointMode?: ApiEndpointMode;
@@ -132,7 +129,6 @@ function applyCreateInstance(
     taskId,
     contextAnchor,
     isEphemeral,
-    visibility,
     conversationLifecycle,
     apiEndpointMode,
     reuseConversationId,
@@ -172,7 +168,6 @@ function applyCreateInstance(
     ...(taskId !== undefined ? { taskId } : {}),
     ...(contextAnchor !== undefined ? { contextAnchor } : {}),
     ...(isEphemeral !== undefined ? { isEphemeral } : {}),
-    ...(visibility !== undefined ? { visibility } : {}),
     ...(conversationLifecycle !== undefined ? { conversationLifecycle } : {}),
     ...(apiEndpointMode !== undefined ? { apiEndpointMode } : {}),
     ...(reuseConversationId !== undefined ? { reuseConversationId } : {}),

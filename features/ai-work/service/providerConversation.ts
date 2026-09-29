@@ -29,7 +29,6 @@ export type ProviderConversationRow = Pick<
   // derived this" and "Claude Code reported this" look identical.
   | "conversation_type"
   | "origin_class"
-  | "visibility"
   | "created_by"
   | "organization_id"
   | "task_id"
@@ -51,7 +50,7 @@ export type ProviderConversation = ProviderConversationRow & {
 // One literal, not a concatenation: supabase-js infers the row type from the
 // select STRING, and a `+`-built value degrades it to GenericStringError.
 const CONVERSATION_COLUMNS =
-  "id, title, description, source_app, source_feature, status, message_count, initial_agent_id, exclude_from_kg, created_at, updated_at, conversation_type, origin_class, visibility, created_by, organization_id, task_id" as const;
+  "id, title, description, source_app, source_feature, status, message_count, initial_agent_id, exclude_from_kg, created_at, updated_at, conversation_type, origin_class, created_by, organization_id, task_id" as const;
 
 export type { ProviderConversationMessage };
 

@@ -622,7 +622,6 @@ export function ConversationProvenancePanel({
           )}
         </Fact>
         <Fact label="Favorite">{conversation.is_favorite ? "Yes" : "No"}</Fact>
-        <Fact label="Visibility">{formatText(conversation.visibility)}</Fact>
         <Fact label="Messages stored">{conversation.message_count}</Fact>
         <Fact label="Knowledge graph">
           {conversation.exclude_from_kg ? "Excluded by you" : "Included"}

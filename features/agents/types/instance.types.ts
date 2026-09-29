@@ -27,7 +27,6 @@ import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { components } from "@/types/python-generated/api-types";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
-import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
 import type { ServerOperationState } from "@/features/agents/runtime-reconnect/types";
 
 import {
@@ -314,12 +313,6 @@ export interface ExecutionInstance {
    *             Client sends the full accumulated history from `messages/`.
    */
   isEphemeral?: boolean;
-  /**
-   * Canonical sharing/access-control dimension — `cx_conversation.visibility`.
-   * RLS enforces this via `iam.has_access`. `'public'` ⇒ shared with anyone.
-   */
-  visibility?: ConversationVisibility;
-
   /**
    * Whether this conversation may be split (auto-clear "iterate") or must stay
    * a single durable thread. Stamped once at creation from
@@ -824,8 +817,8 @@ export interface InstanceUIState {
    */
   preExecutionSatisfied: boolean;
 
-  // ── Variable & definition visibility (fine-grained) ──────────────────────
-  /** Whether the variable input panel is visible. Independent of message visibility. */
+  // ── Variable & definition display (fine-grained) ──────────────────────
+  /** Whether the variable input panel is visible. Independent of message display. */
   showVariablePanel: boolean;
 
   /**
@@ -854,7 +847,7 @@ export interface InstanceUIState {
    * Fetched from `agx_get_defined_data` RPC at instance creation time.
    *
    * ⚠️ TEMPORARY: This is a stopgap until the backend streams per-message
-   * visibility flags (is_visible_to_user / is_visible_to_model).
+   * shown-to flags (is_visible_to_user / is_visible_to_model).
    */
   hiddenMessageCount: number;
 
@@ -925,7 +918,7 @@ export interface InstanceUIState {
    */
   builderAdvancedSettings: BuilderAdvancedSettings;
 
-  // ── Content visibility ────────────────────────────────────────────────────
+  // ── Content display ────────────────────────────────────────────────────
   /** When true, reasoning/thinking blocks are not shown in the message list. */
   hideReasoning: boolean;
 
@@ -1421,7 +1414,7 @@ export const AGENT_EXECUTION_DEFAULTS = {
 
   /**
    * Whether to show the auto-clear toggle control in the UI. Independent of
-   * autoClearConversation itself — this governs visibility of the toggle.
+   * autoClearConversation itself — this governs display of the toggle.
    */
   showAutoClearToggle: false,
 

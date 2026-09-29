@@ -94,7 +94,6 @@ function bundleFor(
       forked_at_position: null,
       task_id: null,
       is_ephemeral: false,
-      visibility: "private",
       title: "Scout interview",
       description: null,
       keywords: null,

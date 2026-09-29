@@ -13,7 +13,7 @@ export type ConversationBrowseRow =
   Database["public"]["Functions"]["cvx_list_scoped"]["Returns"][number];
 
 /**
- * Conversations are `visibility='personal'` in practice, so a Public tab would
+ * Conversations live on a Private table (never published to the web), so a Public tab would
  * be a permanently empty promise. Three scopes, and Industry has no corpus
  * here — the shell renders exactly what is declared (lib/entity-list rule 6).
  */

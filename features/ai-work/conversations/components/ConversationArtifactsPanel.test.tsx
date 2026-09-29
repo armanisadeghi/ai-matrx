@@ -38,7 +38,6 @@ function row(relativePath: string, mime: string, size: number) {
     mime_type: mime,
     size_bytes: size,
     checksum: null,
-    visibility: "private",
     current_version: 1,
     parent_folder_id: null,
     metadata: {

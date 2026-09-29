@@ -333,7 +333,6 @@ export const loadConversation = createAsyncThunk<
         organizationId: conv.organization_id,
         taskId: conv.task_id,
         isEphemeral: conv.is_ephemeral,
-        visibility: conv.visibility,
         title: conv.title,
         description: conv.description,
         keywords: conv.keywords,

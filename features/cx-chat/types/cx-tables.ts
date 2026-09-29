@@ -23,34 +23,6 @@ export type CxConversationUpdate =
 /** Common status values (DB column is unconstrained string) */
 export type CxConversationStatus = "active" | "completed" | "archived";
 
-/**
- * Canonical access-control dimension for a conversation — the `platform.visibility`
- * enum that `cx_conversation.visibility` (and every other Base-retrofit table) uses.
- * RLS reads this column via `iam.has_access`. The old `is_public`/`user_id`
- * columns were dropped from `cx_conversation` (ownership is now `created_by`).
- * Ordering is `personal < internal < link < public`.
- *
- * Derived from the generated row of a table that already carries the enum literal,
- * so it tracks `types/database.types.ts` without a hand-rolled union. (The
- * generated `cx_conversation` block is regenerated separately via `pnpm db-types`.)
- */
-export type ConversationVisibility =
-  ChatSchema["Tables"]["conversation"]["Row"]["visibility"];
-
-/** True when the conversation is reachable by anyone other than its owner. */
-export function isConversationShared(
-  visibility: ConversationVisibility,
-): boolean {
-  return visibility !== "personal";
-}
-
-/** True when the conversation is fully public (anyone, including anonymous). */
-export function isConversationPublic(
-  visibility: ConversationVisibility,
-): boolean {
-  return visibility === "public";
-}
-
 // ============================================================================
 // cx_message - Individual messages within a conversation
 // ============================================================================

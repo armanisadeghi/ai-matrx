@@ -21,7 +21,7 @@
  *
  * THE BEHAVIOUR MOVED FIRST. `iam.has_access_for_base` now refuses both containment walks (the
  * `platform.reachability` conveyance and the composition/containment parent walk) for a row whose
- * own visibility is `personal`, `iam.accessible_entity_ids` refuses it in the set form, and
+ * own row state is `personal`, `iam.accessible_entity_ids` refuses it in the set form, and
  * `iam.entity_read_expr` emits the parent-FK arm walled at `internal`. Proven in the same
  * transaction that shipped it: for every personal conversation inside a shared war room that an
  * organization member CAN open, that member reads the room and 0 of the conversations
@@ -117,7 +117,7 @@ export function ConversationRoomNotice({ conversationId }: { conversationId?: st
       title={
         `This chat is personal, and it also sits inside ${where ?? "a shared room"}. ` +
         `Being in that room does not share it: only you can open it. ` +
-        `Change its visibility to Internal if you want the room's members to read it.`
+        `Share it with the room's members if you want them to read it.`
       }
     >
       <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
