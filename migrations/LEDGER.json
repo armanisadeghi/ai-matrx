@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-29T20:10:22.652Z",
+  "generated_at": "2026-09-29T20:42:59.192Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2143,6 +2143,12 @@
       "filename": "filtergroups_the_rule_guard_checks_every_depth.sql",
       "checksum": "8fe6823ed451e2cbf07049746660928636ea3a1be852960dc311fdfd1e398edb",
       "applied_at": "2026-09-25 00:47:00.159063+00"
+    },
+    "migrations/campaign/finalswitch2_copy_again_names_itself_when_it_archives_what_the_older_side_archived.sql": {
+      "source": "matrx-frontend",
+      "filename": "finalswitch2_copy_again_names_itself_when_it_archives_what_the_older_side_archived.sql",
+      "checksum": "6ce99bcf28f1a7f62caa7b1052c8bf58b4792b384b8d5fe1e2e1c339ca920a3d",
+      "applied_at": "2026-09-29 20:42:57.943483+00"
     },
     "migrations/campaign/finalswitch_b_the_press_resolves_orgless_lists_and_copy_again_is_its_own_step.sql": {
       "source": "matrx-frontend",
