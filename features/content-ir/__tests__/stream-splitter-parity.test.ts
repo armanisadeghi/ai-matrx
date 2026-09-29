@@ -14,6 +14,7 @@ import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { normalizeJsonRegion, isCanonicalBlockIR } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
+import { canonicalizeCompletedLegacyQuizEnvelope } from "../registry/legacy-quiz-envelope";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 
@@ -188,9 +189,10 @@ describe("stream ↔ splitter envelope parity", () => {
   it.each(LEGACY_SURFACE_CASES)(
     "legacy %s names its registered kind on BOTH hosts",
     (_label, payload, expectedKind) => {
-      const oneShot = normalizeJsonRegion(payload, {
-        schemas: kindRegistry.snapshotSchemas(),
-      });
+      const oneShot = canonicalizeCompletedLegacyQuizEnvelope(
+        normalizeJsonRegion(payload, { schemas: kindRegistry.snapshotSchemas() }),
+        payload,
+      );
       const notices = JSON.stringify(oneShot.root);
 
       expect(notices).toContain(expectedKind);

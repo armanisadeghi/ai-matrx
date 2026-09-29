@@ -26,6 +26,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { kindRegistry } from "./kind-registry";
 import { componentRegistry } from "./component-registry";
 import { KIND_CORRECTIONS_KEY, correctKindRegionSource } from "./kind-correctors";
+import { canonicalizeCompletedLegacyQuizEnvelope } from "./legacy-quiz-envelope";
 
 const memo = new Map<string, CanonicalBlockIR>();
 const MEMO_CAP = 200;
@@ -153,10 +154,14 @@ export function memoizedRegionEnvelope(
     correctionsBySource.set(source, corrected.corrections);
   }
   const parseSource = corrected?.source ?? source;
-  const envelope = normalizeJsonRegion(parseSource, {
+  const parsedEnvelope = normalizeJsonRegion(parseSource, {
     schemas: kindRegistry.resolver(),
     existing: seededEnvelopeFor(parseSource),
   });
+  const envelope = canonicalizeCompletedLegacyQuizEnvelope(
+    parsedEnvelope,
+    parseSource,
+  );
   if (!completeJson && !envelope.root.kind) return null;
 
   // 🚨 THE ZERO-PREFETCH LAW (Arman, 2026-08-31): the warm tiers are kicked

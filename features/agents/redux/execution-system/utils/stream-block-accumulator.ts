@@ -59,7 +59,10 @@ import { disposeParseSession, openParseSession } from "@ai-matrx/content-ir";
 import type { ParseSession } from "@ai-matrx/content-ir";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
-import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
+import {
+  IR_ENVELOPE_KEY,
+  type CanonicalBlockIR,
+} from "@ai-matrx/content-ir";
 import { envelopeMatchesParsedSource } from "@/features/content-ir/redux/render-block-envelope";
 import {
   envelopeForCompletedFenceRegion,
@@ -67,6 +70,7 @@ import {
 } from "@/features/content-ir/surfaces/xml-finalize";
 import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embedded-kind-json";
 import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
+import { canonicalizeCompletedLegacyQuizEnvelope } from "@/features/content-ir/registry/legacy-quiz-envelope";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 // ============================================================================
@@ -1698,8 +1702,12 @@ export class StreamBlockAccumulator {
 
     session.end();
     session.flushNotify();
-    this.irEnvelope = session.buildEnvelope();
-    this.irParityCheck(this.irEnvelope);
+    const parsedEnvelope = session.buildEnvelope();
+    this.irEnvelope = canonicalizeCompletedLegacyQuizEnvelope(
+      parsedEnvelope,
+      this.currentBlockContent,
+    );
+    this.irParityCheck(this.irEnvelope, parsedEnvelope !== this.irEnvelope);
   }
 
   /**
@@ -1743,11 +1751,20 @@ export class StreamBlockAccumulator {
     this.irWriteLinePart(part, isLineComplete);
   }
 
-  private irParityCheck(envelope: CanonicalBlockIR): void {
+  private irParityCheck(
+    envelope: CanonicalBlockIR,
+    usesLegacySourceAdapter = false,
+  ): void {
     // An attr-XML body region's block content is tag chrome + body, so the
     // parity comparison (envelope vs JSON.parse(content)) can only ever fail.
     if (this.irRegionIsXmlBody) return;
     if (envelope.root.status !== "complete") return;
+    // Legacy root-key JSON deliberately has two vocabularies: the source's
+    // `quiz_title` / `multiple_choice` and the canonical envelope's `title` /
+    // `questions`. Comparing those byte-for-byte would report the adapter as
+    // corruption. The focused stream regression instead asserts both source
+    // bytes and the resulting canonical value.
+    if (usesLegacySourceAdapter) return;
 
     let parsed: unknown;
     try {
