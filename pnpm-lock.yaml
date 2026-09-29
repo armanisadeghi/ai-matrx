@@ -83,7 +83,7 @@ importers:
         version: 0.8.7(react@19.3.0)
       '@ai-matrx/records':
         specifier: latest
-        version: 0.58.100(react@19.3.0)
+        version: 0.58.102(react@19.3.0)
       '@ai-matrx/records-ui':
         specifier: latest
         version: 0.93.70(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -1168,17 +1168,8 @@ packages:
       react-dom: '>=18.0.0'
       recharts: '>=3.0.0'
 
-  '@ai-matrx/records@0.58.100':
-    resolution: {integrity: sha512-uVYTs0InkSk6xFzpGJE3RFFs/fcql1tBsPhFoN8wM0JWBrBP4zoY4m5tDvjSfoQxbjy/cK8a/rfcutzS3qGPxA==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      react: '>=18.0.0'
-    peerDependenciesMeta:
-      react:
-        optional: true
-
-  '@ai-matrx/records@0.58.101':
-    resolution: {integrity: sha512-umPXw53k2xhqapy6wi2U3hucuWrnQ+8bLPOtQ04DuKpc3+9c9gzAfshAVBHgUFtgU6x0IjH0ps5txsYa6TUl5Q==}
+  '@ai-matrx/records@0.58.102':
+    resolution: {integrity: sha512-DSy46NRW8X8NCtQE6vrRgL79caqEbYPhMCIx9UjkqYUXrbhCr9lamdRjfzMPbm/xspHkQH8/C+CfUjCmagG+8Q==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -11959,7 +11950,7 @@ snapshots:
       '@ai-matrx/content-ir': 0.19.21
       '@ai-matrx/design-system': 0.49.32(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/print': 0.8.29(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/records': 0.58.101(react@19.3.0)
+      '@ai-matrx/records': 0.58.102(react@19.3.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       recharts: 3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1)
@@ -11968,11 +11959,7 @@ snapshots:
       - '@types/react-dom'
       - supports-color
 
-  '@ai-matrx/records@0.58.100(react@19.3.0)':
-    optionalDependencies:
-      react: 19.3.0
-
-  '@ai-matrx/records@0.58.101(react@19.3.0)':
+  '@ai-matrx/records@0.58.102(react@19.3.0)':
     optionalDependencies:
       react: 19.3.0
 
