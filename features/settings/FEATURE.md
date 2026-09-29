@@ -87,6 +87,7 @@ Registry rows compose one primary control with a labelled options popover for so
 
 - `platform.lifecycle_user_notice()` — everything of the caller's pending permanent deletion or already archived. The SAME function the weekly digest reads (aidream `services/data_lifecycle/digest.py`), so the page can never contradict the email.
 - `platform.lifecycle_user_keep(p_entity_token, p_ids?)` — clears `deleted_at` on the caller's own rows. NULL ids keeps every pending row of that entity; that is what one **Keep** button means.
+- `iam.personal_api_key_list()` / `iam.personal_api_key_create(p_name, p_organization_id)` / `iam.personal_api_key_revoke(p_id)` — **Connectors → API keys** (`tabs/ApiKeysTab.tsx`, service `personalApiKeysService.ts`): a key that IS the person, full access, no scopes; the server applies the organization's maximum age; the secret is shown once and dropped when the reveal closes. Contract: `migrations/campaign/tableapi1_a_person_can_hold_a_key_that_is_them.sql`. The organization API-keys page lists service keys only.
 
 **Key types**
 
@@ -268,6 +269,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 ---
 
 ## Change log
+
+- **2026-09-29 — Personal API keys.** New leaf `integrations.apiKeys` (route `/user-settings/integrations/api-keys`, search: api key, token, developer, personal key): list, create (name + organization, sole organization preselected), one-time reveal with copy, base URL and header, revoke through `ConfirmDialog` stating the consequence.
 
 - **2026-09-27 — Connectors is reachable.** The registry marks its existing catalog page as a navigable folder, and the shared flat navigation plus mobile route and drawer menus expose it beside Microsoft, Google Workspace, and Chrome extension. Catalog OAuth buttons read “Connect” while their accessible names identify the service.
 
