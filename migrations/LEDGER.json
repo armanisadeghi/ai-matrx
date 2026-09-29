@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-29T09:15:36.244Z",
+  "generated_at": "2026-09-29T19:56:45.285Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2618,6 +2618,12 @@
       "checksum": "94d3d0c41f11db359e03067a12eaf46036def0a596762cef273c471316dd8d01",
       "applied_at": "2026-09-19 14:47:44.046798+00"
     },
+    "migrations/campaign/handover_a_change_the_store_would_refuse_is_never_filed.sql": {
+      "source": "matrx-frontend",
+      "filename": "handover_a_change_the_store_would_refuse_is_never_filed.sql",
+      "checksum": "46d4f5a3fba33c885b5b4f6006ed2cd86a7105e5c35ef7ce44baa7808a5eba2c",
+      "applied_at": "2026-09-29 19:56:43.356734+00"
+    },
     "migrations/campaign/handover_a_checklist_says_who_is_missing_in_words.sql": {
       "source": "matrx-frontend",
       "filename": "handover_a_checklist_says_who_is_missing_in_words.sql",
@@ -3931,6 +3937,12 @@
       "filename": "refcarry_a_person_can_search_what_a_reference_may_point_at.sql",
       "checksum": "9858f4d77d84a2c85d0f882fdd0600cfa437b9fc4ffbb8357ce7cf1675077da1",
       "applied_at": "2026-09-28 19:38:37.444772+00"
+    },
+    "migrations/campaign/refcarry_the_search_finds_platform_catalogue_things.sql": {
+      "source": "matrx-frontend",
+      "filename": "refcarry_the_search_finds_platform_catalogue_things.sql",
+      "checksum": "e1a8daf463f46fca8a1e72f7afbc5f2aeb47907e8b7b3f7a4b4681c1fbcddd87",
+      "applied_at": "2026-09-29 19:54:25.428499+00"
     },
     "migrations/campaign/registrykernel_a_level_move_bumps_the_kernel_fixture_in_its_own_transaction.sql": {
       "source": "matrx-frontend",
