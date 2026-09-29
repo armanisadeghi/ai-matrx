@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-29T22:46:21.929Z",
+  "generated_at": "2026-09-29T23:09:55.467Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1867,6 +1867,12 @@
       "filename": "drill_the_switch_that_opens_the_filtered_door.sql",
       "checksum": "42aed9f7498ce6eed841a8f910a468388e49fa8cecf686f4d6e9b3998c75f954",
       "applied_at": "2026-09-22 01:56:10.530044+00"
+    },
+    "migrations/campaign/drillstd_one_door_answers_every_table.sql": {
+      "source": "matrx-frontend",
+      "filename": "drillstd_one_door_answers_every_table.sql",
+      "checksum": "a0c35ab7ba1d4947daf1799bcb50cbf5bf3f092e71346d396340e24e590a08ce",
+      "applied_at": "2026-09-29 23:09:39.77926+00"
     },
     "migrations/campaign/enrich_a_field_a_model_owns.sql": {
       "source": "matrx-frontend",
