@@ -66,6 +66,20 @@ def is_compiler_command(command):
     return any(COMPILER_EXECUTABLE.search(part) for part in parts[:2])
 
 
+def kill_compiler_group(group):
+    """macOS may return EPERM for an already exited group; never hide a live one."""
+    try:
+        os.killpg(group, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    except PermissionError:
+        rows = subprocess.check_output(['ps', '-axo', 'pgid=,stat='], text=True)
+        members = [line.split() for line in rows.splitlines()]
+        if any(int(parts[0]) == group and not parts[1].startswith('Z')
+               for parts in members if len(parts) == 2):
+            raise
+
+
 def try_lock(path):
     fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
     try:
@@ -335,12 +349,12 @@ class Queue:
                     peak = max(peak, rss)
                     if rss > rss_gb * 1048576:
                         error = f'KILLED: compiler exceeded its {rss_gb} GB RSS ceiling'
-                        os.killpg(child.pid, signal.SIGKILL)
+                        kill_compiler_group(child.pid)
                         status = 137
                         break
                     if out.tell() + err.tell() > MAX_LOG_BYTES:
                         error = 'KILLED: compiler output exceeded 128 MiB; result is incomplete'
-                        os.killpg(child.pid, signal.SIGKILL)
+                        kill_compiler_group(child.pid)
                         status = 70
                         break
                     time.sleep(POLL_SECONDS)
@@ -348,7 +362,7 @@ class Queue:
                 os.close(guard_write)
                 # A killed guard may leave the compiler alive. The monitor
                 # always clears its isolated group before releasing capacity.
-                try: os.killpg(child.pid, signal.SIGKILL)
+                try: kill_compiler_group(child.pid)
                 except ProcessLookupError: pass
                 if error is None:
                     status = code if code >= 0 else 128 - code
@@ -357,7 +371,7 @@ class Queue:
         except BaseException as failure:
             error = f'check execution failed: {failure}'
             if child is not None and child.poll() is None:
-                try: os.killpg(child.pid, signal.SIGKILL)
+                try: kill_compiler_group(child.pid)
                 except ProcessLookupError: pass
                 child.wait()
         try:
