@@ -106,6 +106,22 @@ function topOriginLabel(row: AdminUserUsageRow): string {
   return top ? originClassLabel(top.origin_class) : "—";
 }
 
+function originTotalsFor(rows: readonly AdminUserUsageRow[]) {
+  const acc = new Map<string, { requests: number; cost: number }>();
+  for (const row of rows) {
+    for (const origin of row.by_origin) {
+      const current = acc.get(origin.origin_class) ?? { requests: 0, cost: 0 };
+      current.requests += origin.requests;
+      current.cost += origin.total_cost;
+      acc.set(origin.origin_class, current);
+    }
+  }
+  return sortByOriginOrder(
+    [...acc.entries()].map(([origin_class, values]) => ({ origin_class, ...values })),
+    (origin) => origin.origin_class,
+  );
+}
+
 export function UsageTableClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -116,6 +132,7 @@ export function UsageTableClient() {
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>("all");
   const [clickedRow, setClickedRow] = useState<AdminUserUsageRow | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const load = useCallback(async (tf: Timeframe) => {
     setLoading(true);
@@ -132,7 +149,10 @@ export function UsageTableClient() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to load usage");
-      setRows(json.rows as AdminUserUsageRow[]);
+      const nextRows = json.rows as AdminUserUsageRow[];
+      setRows(nextRows);
+      const available = new Set(nextRows.map((row) => row.user_id));
+      setSelectedUserIds((current) => current.filter((id) => available.has(id)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -163,21 +183,7 @@ export function UsageTableClient() {
 
   // Origin split across every visible row — the same question as the per-user
   // bar, asked of the whole view.
-  const originTotals = useMemo(() => {
-    const acc = new Map<string, { requests: number; cost: number }>();
-    for (const r of focused) {
-      for (const o of r.by_origin) {
-        const cur = acc.get(o.origin_class) ?? { requests: 0, cost: 0 };
-        cur.requests += o.requests;
-        cur.cost += o.total_cost;
-        acc.set(o.origin_class, cur);
-      }
-    }
-    return sortByOriginOrder(
-      [...acc.entries()].map(([origin_class, v]) => ({ origin_class, ...v })),
-      (o) => o.origin_class,
-    );
-  }, [focused]);
+  const originTotals = useMemo(() => originTotalsFor(focused), [focused]);
 
   const columns = useMemo((): MatrxColumnDef<AdminUserUsageRow>[] => {
     return [
@@ -417,6 +423,11 @@ export function UsageTableClient() {
           data={focused}
           columns={columns}
           getRowId={(r) => r.user_id}
+          selection={{
+            selectedIds: selectedUserIds.filter((id) => focused.some((row) => row.user_id === id)),
+            onSelectedIdsChange: setSelectedUserIds,
+            noun: "user",
+          }}
           isLoading={loading}
           pageSize={50}
           read={readOf({ loading, error }, { what: "usage", onRetry: () => void load(timeframe) })}
@@ -439,7 +450,10 @@ export function UsageTableClient() {
                   { value: "7d", label: "7d" },
                   { value: "24h", label: "24h" },
                 ],
-                onChange: (v) => setTimeframe(v as Timeframe),
+                onChange: (v) => {
+                  setSelectedUserIds([]);
+                  setTimeframe(v as Timeframe);
+                },
               },
             ],
           }}
@@ -469,7 +483,7 @@ export function UsageTableClient() {
             listAttributes: (visible) => ({
               users: visible.length,
               timeframe,
-              by_origin: originTotals
+              by_origin: originTotalsFor(visible)
                 .map(
                   (o) =>
                     `${originClassLabel(o.origin_class)} ${fmtCost(o.cost)}/${formatCount(o.requests)}`,
