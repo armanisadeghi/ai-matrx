@@ -53,5 +53,9 @@ colours: `constants.ts` (`AGENT_ORG_EDGE_KINDS`).
 
 ## Change log
 
+- 2026-09-28 — Separate trees wrap into rows to fit the screen; phone layout fixed (the chart layer opts
+  out of the phone `max-width: 100%` default that collapsed cards); canvas teams reuse the shared stacked
+  layout with one trunk line; independent review findings fixed (safe moves, whole reads past the
+  1000-row cap, loop check read fresh from the server, failed Orchestras say so).
 - 2026-09-27 — Created (Claude Opus 5.5, with Arman): automatic + manual links, one UI, nested
   Orchestras on the builder canvas.
