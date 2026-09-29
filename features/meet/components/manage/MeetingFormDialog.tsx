@@ -446,7 +446,7 @@ export function MeetingFormDialog({
         onOpenChange={(next) => (!saving ? onOpenChange(next) : undefined)}
       >
         <DialogContent className="flex max-h-[92dvh] max-w-2xl flex-col gap-0 p-0">
-          <DialogHeader className="flex-row items-center gap-2 space-y-0 border-b border-border px-5 py-3">
+          <DialogHeader className="flex-row items-center gap-2 space-y-0 border-b border-border py-3 pl-5 pr-12">
             <DialogTitle className="text-base">{title}</DialogTitle>
             {!editing && !reschedule && templates.templates.length > 0 ? (
               <Select value={templateId} onValueChange={chooseTemplate}>
