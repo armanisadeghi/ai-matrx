@@ -36,6 +36,10 @@ Of ~16 sub-pickers:
 
 **The real (narrow) duplication** is the per-picker search/list *data path* (Redux slices, `get_user_tables`, `listAccessibleDocuments`, own Supabase queries). Unifying only that onto `useUniversalEntitySearch` is possible for the record types but is a **behavior change** (folder grouping and scoping differ from a title-only ilike RPC), not a free win — so it is deferred, not done, and would be its own scoped task with live UX verification, never a blind swap.
 
+## Certified canonical: what the Files picker must always do
+
+- **Search and Recents reach the whole library, never only what Redux happens to hold.** The tree in state is a lazy, 20-second-bounded, 100k-row-capped projection (`loadUserFileTree`), so a picker that filters `selectAllFilesArray` silently shows a partial library the moment the tree is late, errored, or large. Search must query the server (`search_files` RPC / RLS `files` read); Recents must page the server too. Filtering state is only an instant first paint. Broke 2026-07-19 (`7269f63a3e`), found 2026-09-29. Test: a file that is not loaded into state must be findable by search.
+
 ## Change Log
 
 - 2026-09-27 — The main menu opens with **Search your knowledge… ⌘K**: the search steps hand off

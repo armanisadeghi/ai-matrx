@@ -126,6 +126,7 @@ in the same change.
     `Overwrite` targets the existing path, `Skip` writes nothing, and `Make a copy` sends
     `force_new_copy` plus its reason. A renamed optimistic row backed by the original id is never a
     copy.
+25. **Any picker or list that offers "your files" must search the server, not Redux (2026-09-29).** `selectAllFilesArray` is whatever `loadUserFileTree` finished loading (20 s bound, 5000 x 20 pages cap, all-or-nothing on timeout). Filtering it for search or Recents is a partial answer presented as the whole library — the canonical `FilesResourcePicker` did this from 2026-07-19 and hid most of a large library. Search = `search_files` RPC or a `files` read under RLS; see `resource-manager/resource-picker/FEATURE.md`.
 
 ## Local commands
 
