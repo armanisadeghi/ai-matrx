@@ -472,7 +472,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     relation: "agent.message_template",
     columns: [
       "id", "label", "content", "role", "created_at", "updated_at",
-      "tags", "visibility",
+      "tags", "visibility", "published_to_web",
     ],
     why:
 "The indexable public viewer /p/e/message_template reads a public template's display columns "
@@ -487,7 +487,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     columns: [
       "id", "name", "common_name", "context_window", "max_tokens", "capabilities",
       "provider_id", "is_deprecated", "is_primary", "is_premium", "mid_fallback_id", "guest_fallback_id",
-      "visibility", "deleted_at", "created_at", "updated_at", "release_date", "description",
+      "visibility", "published_to_web", "deleted_at", "created_at", "updated_at", "release_date", "description",
       "cost_rating", "speed_rating", "retry_fallback_id", "retry_max_attempts", "retired_at", "successor_id",
     ],
     why:
@@ -540,7 +540,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "is_verified", "rate_limit_per_ip", "rate_limit_window_hours", "rate_limit_authenticated", "pinned_version", "total_executions",
       "total_tokens_used", "total_cost", "unique_users_count", "success_rate", "avg_execution_time_ms", "last_execution_at",
       "created_at", "updated_at", "published_at", "search_tsv", "shell_kind", "shell_config",
-      "slot_overrides", "slot_code", "visibility", "deleted_at", "mandate_id",
+      "slot_overrides", "slot_code", "visibility", "published_to_web", "deleted_at", "mandate_id",
     ],
     why:
 "The public app page /p/[slug] renders a signed-out visitor's app: name, tagline, description, preview_image_url, favicon_url.",
@@ -602,7 +602,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "is_archived", "tags", "session_id", "source_message_id", "task_id", "is_public",
       "created_at", "updated_at", "last_accessed_at", "content_hash", "project_id", "conversation_id",
       "artifact_index", "version", "parent_canvas_id", "source_type", "external_system", "external_id",
-      "deleted_at", "visibility", "source_system", "source_id",
+      "deleted_at", "visibility", "published_to_web", "source_system", "source_id",
     ],
     why:
 "Anon-readable by the policy `pub_read`. `version` is deliberately IN this list and is the one "
@@ -621,7 +621,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "id", "title", "description", "canvas_type", "canvas_data", "thumbnail_url",
       "creator_username", "creator_display_name", "original_id", "forked_from", "version_number", "fork_count",
       "view_count", "like_count", "share_count", "comment_count", "play_count", "completion_rate",
-      "has_scoring", "high_score", "high_score_user", "average_score", "total_attempts", "visibility",
+      "has_scoring", "high_score", "high_score_user", "average_score", "total_attempts", "visibility", "published_to_web",
       "allow_remixes", "require_attribution", "featured", "tags", "categories", "created_at",
       "updated_at", "published_at", "last_played_at", "trending_score", "search_vector", "deleted_at",
     ],
@@ -648,7 +648,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     relation: "content_ir.kind_definition",
     columns: [
       "id", "kind", "label", "data", "sample_data", "emitted_json_schema",
-      "is_active", "created_at", "updated_at", "deleted_at", "visibility",
+      "is_active", "created_at", "updated_at", "deleted_at", "visibility", "published_to_web",
     ],
     why:
       "The Shape System registry — features/content-ir/registry/schema-source-kind-tables.ts and "
@@ -698,7 +698,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
   {
     relation: "education.learn_doc",
     columns: [
-      "id", "created_at", "updated_at", "deleted_at", "visibility", "slug",
+      "id", "created_at", "updated_at", "deleted_at", "visibility", "published_to_web", "slug",
       "title", "summary", "subject", "letter", "keywords", "sections",
       "related", "content_updated_at", "published_at",
     ],
@@ -729,7 +729,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     columns: [
       "id", "dimension", "name", "slug", "parent_id", "color",
       "icon", "position", "created_at", "updated_at", "deleted_at", "placement_type",
-      "visibility",
+      "visibility", "published_to_web",
     ],
     why:
       "lib/services/agent-apps-admin-service.ts, which builds its client with "
@@ -757,7 +757,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     columns: [
       "id", "show_id", "episode_id", "kind", "slug", "title",
       "content_markdown", "og_image_url", "canonical_url", "status", "created_at", "updated_at",
-      "deleted_at", "visibility",
+      "deleted_at", "visibility", "published_to_web",
     ],
     why:
       "/podcast/[slug] and /podcast/[slug]/blog — the public show-notes and blog renderers; "
@@ -769,7 +769,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "id", "slug", "show_id", "title", "description", "audio_url",
       "image_url", "video_url", "display_mode", "episode_number", "duration_seconds", "is_published",
       "created_at", "updated_at", "og_image_url", "thumbnail_url", "host_count", "speakers",
-      "script", "chapters", "deleted_at", "visibility",
+      "script", "chapters", "deleted_at", "visibility", "published_to_web",
     ],
     why:
       "The same public routes plus /podcast/[slug]/chapters.json; PC_EPISODE_PUBLIC_SELECT. Broken "
@@ -789,7 +789,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     columns: [
       "id", "slug", "title", "description", "image_url", "author",
       "is_published", "created_at", "updated_at", "og_image_url", "thumbnail_url", "rss_settings",
-      "deleted_at", "visibility",
+      "deleted_at", "visibility", "published_to_web",
     ],
     why:
       "/podcast, /podcast/[slug] and /podcast/[slug]/feed.xml — a podcast client fetches the feed "
@@ -805,7 +805,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     relation: "public.app_config",
     columns: [
       "app", "schema_version", "min_supported_app_version", "config", "updated_at", "id",
-      "created_at", "visibility",
+      "created_at", "visibility", "published_to_web",
     ],
     why:
 "matrx-local reads this pre-login for its remote config (app/services/app_config/client.py), naming these five columns; aidream's public /api/app-config/{app} is the fallback path.",
@@ -858,7 +858,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     relation: "workbench.heatmap_saves",
     columns: [
       "id", "title", "description", "data", "view_settings", "created_at",
-      "updated_at", "deleted_at", "visibility",
+      "updated_at", "deleted_at", "visibility", "published_to_web",
     ],
     why:
       "/free/zip-code-heatmap/[id] — an app/(public) route that reads this table with the browser "
@@ -878,7 +878,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     columns: [
       "id", "label", "content", "folder_name", "tags", "position",
       "created_at", "updated_at", "folder_id", "file_path", "content_hash", "sync_version",
-      "last_device_id", "project_id", "task_id", "visibility", "deleted_at",
+      "last_device_id", "project_id", "task_id", "visibility", "published_to_web", "deleted_at",
     ],
     why:
 "The indexable public viewer /p/e/note reads a public note's display columns (utils/permissions/publicLane.ts#PUBLIC_LANE_COLUMNS).",
