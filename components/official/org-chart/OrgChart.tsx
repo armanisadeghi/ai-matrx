@@ -387,9 +387,9 @@ export function OrgChart<T>({
                     }
                     if (e.key === "Escape") setQuery("");
                   }}
-                  placeholder="Find in chart"
+                  placeholder="Find"
                   aria-label="Find in chart"
-                  className="w-32 bg-transparent text-base outline-none placeholder:text-muted-foreground sm:w-40 sm:text-sm"
+                  className="w-20 bg-transparent text-base outline-none placeholder:text-muted-foreground sm:w-40 sm:text-sm"
                 />
                 {query && (
                   <>
@@ -415,7 +415,7 @@ export function OrgChart<T>({
             <ControlButton label="Zoom out" onClick={() => zoomBy(1 / 1.2)}>
               <Minus className="h-4 w-4" />
             </ControlButton>
-            <span className="w-11 text-center text-[11px] tabular-nums text-muted-foreground">
+            <span className="hidden w-11 text-center text-[11px] tabular-nums text-muted-foreground sm:inline">
               {Math.round(view.zoom * 100)}%
             </span>
             <ControlButton label="Zoom in" onClick={() => zoomBy(1.2)}>
@@ -434,9 +434,11 @@ export function OrgChart<T>({
             >
               <ChevronsDownUp className="h-4 w-4" />
             </ControlButton>
-            <ControlButton label="Minimap" active={showMinimap} onClick={() => setShowMinimap((v) => !v)}>
-              <MapIcon className="h-3.5 w-3.5" />
-            </ControlButton>
+            <span className="hidden sm:contents">
+              <ControlButton label="Minimap" active={showMinimap} onClick={() => setShowMinimap((v) => !v)}>
+                <MapIcon className="h-3.5 w-3.5" />
+              </ControlButton>
+            </span>
           </div>
         </div>
 

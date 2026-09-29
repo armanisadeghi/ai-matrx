@@ -106,9 +106,16 @@ export function AgentOrgChartView({
   }
 
   const addButton = (
-    <Button size="sm" variant="outline" className="h-9 bg-card/95 shadow-sm" onClick={() => setPick({ kind: "new-root" })}>
-      <Plus className="mr-1 h-3.5 w-3.5" />
-      Place an agent
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-9 bg-card/95 px-2.5 shadow-sm"
+      aria-label="Place an agent"
+      title="Place an agent"
+      onClick={() => setPick({ kind: "new-root" })}
+    >
+      <Plus className="h-3.5 w-3.5 sm:mr-1" />
+      <span className="hidden sm:inline">Place an agent</span>
     </Button>
   );
 
