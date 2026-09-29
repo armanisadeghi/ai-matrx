@@ -12,30 +12,32 @@
  * blocks) and let the model's chain-of-thought leak into the panel as literal
  * `<reasoning>` tags. See CLAUDE.md § "Streaming/AI surfaces".
  *
- * The section tabs (Summary, Observations, …) are a POST-PROCESSING product
- * feature over the SETTLED answer text — never over the live stream. While the
- * run is in flight every tab shows the live output instead of a spinner
- * (THE FLOATING LAW: a spinner is never the answer while AI works).
+ * The sub-tabs (Summary, Claims, Warning) are a POST-PROCESSING product
+ * feature over the SETTLED answer text — never over the live stream. The
+ * agent answers in three sections plus one `fact_check_report` kind block
+ * (contract: `fact-check-parsing-util.ts`). The Claims tab renders that kind
+ * through the canonical pipeline (`MarkdownStream` → kind registry → its
+ * registered component) — never a bespoke table (THE CANONICAL COMPONENT
+ * LAW). While the run is in flight every tab shows the live output instead of
+ * a spinner (THE FLOATING LAW: a spinner is never the answer while AI works).
  *
  * The mandate wiring is unchanged: the tab gates on `useMandate` and never
  * names an agent id.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { AlertTriangle, ClipboardList, FileText, ShieldAlert } from "lucide-react";
 import {
-  AlertTriangle,
-  Search,
-  ClipboardList,
-  AlertCircle,
-  ListChecks,
-  Table,
-  FileText,
-} from "lucide-react";
-import { parseFactCheck } from "./fact-check-parsing-util";
-import { parseMarkdownTable } from "@/components/mardown-display/markdown-classification/processors/bock-processors/parse-markdown-table";
+  FACT_CHECK_STATUSES,
+  STATUS_LABEL,
+  VERDICT_LABEL,
+  parseFactCheck,
+  reportAsKindBlock,
+  type FactCheckVerdict,
+} from "./fact-check-parsing-util";
 import { PageTemplate, Card } from "@/components/official/PageTemplate";
-import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
-import MarkdownTable from "@/components/mardown-display/tables/MarkdownTable";
+import MarkdownStream from "@/components/MarkdownStream";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import {
@@ -63,7 +65,14 @@ interface FactCheckerPageProps {
 }
 
 const MANDATE_KEY = SCRAPER_ANALYSIS_MANDATES.factChecker;
+
 const SURFACE_KEY = "scraper:fact-check";
+
+const VERDICT_BADGE: Record<FactCheckVerdict, NonNullable<BadgeProps["variant"]>> = {
+  safe: "success",
+  risky: "warning",
+  blocked_by_claims: "destructive",
+};
 
 const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   value,
@@ -133,12 +142,8 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     };
   }, [mandateReady, value]);
 
-  const parsedContent = useMemo(
-    () => (answerText ? parseFactCheck(answerText) : null),
-    [answerText],
-  );
-
-  const rating = parsedContent?.ratingValue || 0;
+  // React Compiler memoizes this; a settled answer is parsed once per text.
+  const parsed = answerText ? parseFactCheck(answerText) : null;
 
   /** The live output — what every tab shows while the agent is still writing. */
   const liveOutput = (label: string) => (
@@ -185,86 +190,78 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     return null;
   };
 
-  const section = (
-    label: string,
-    title: string,
-    body: string | undefined,
-    emptyMessage: string,
-  ) => {
-    const pre = preSection(label);
-    if (pre) return pre;
+  /** Settled markdown through THE ONE PIPELINE (kind blocks route to their component). */
+  const markdown = (content: string) => (
+    <MarkdownStream imagePolicy="ai" content={content} isStreamActive={false} />
+  );
 
-    return (
-      <Card title={title}>
-        {body ? (
-          <MarkdownRenderer
-            content={body}
-            type="message"
-            fontSize={18}
-            role="assistant"
-            className="bg-muted rounded-lg p-4 border border-border"
-          />
-        ) : (
-          <p className="text-muted-foreground text-center py-8 text-sm">
-            {emptyMessage}
-          </p>
-        )}
-      </Card>
-    );
-  };
+  const empty = (message: string) => (
+    <p className="text-muted-foreground text-center py-8 text-sm">{message}</p>
+  );
 
   const renderSummary = () => {
-    const pre = preSection("Generating Summary");
+    const pre = preSection("Generating verdict");
     if (pre) return pre;
 
     return (
-      <Card title="Fact Check Summary">
-        <div className="p-4">
-          {parsedContent?.summary ? (
-            <MarkdownRenderer
-              content={parsedContent.summary}
-              type="message"
-              fontSize={18}
-              role="assistant"
-              className="bg-muted rounded-lg p-4 mb-6 border border-border"
-            />
-          ) : (
-            <p className="text-muted-foreground text-center py-8 text-sm">
-              No summary found in this analysis.
-            </p>
-          )}
-
-          {parsedContent?.overallRating && (
-            <MarkdownRenderer
-              content={parsedContent.overallRating}
-              type="message"
-              fontSize={18}
-              role="assistant"
-              className="bg-muted rounded-lg p-4 border border-border"
-            />
-          )}
+      <Card title="Fact-check verdict">
+        <div className="space-y-4 p-4">
+          {parsed?.verdict ? (
+            <Badge variant={VERDICT_BADGE[parsed.verdict]} className="text-sm">
+              {VERDICT_LABEL[parsed.verdict]}
+            </Badge>
+          ) : null}
+          {parsed?.summary
+            ? markdown(parsed.summary)
+            : empty(
+                "This answer has no \"Fact-check verdict\" section. The Full Report tab shows everything the agent wrote.",
+              )}
         </div>
       </Card>
     );
   };
 
-  const renderClaimsTable = () => {
-    const pre = preSection("Generating Claims Table");
+  const renderClaims = () => {
+    const pre = preSection("Checking claims");
     if (pre) return pre;
 
-    const tableData = parsedContent?.factCheckTable
-      ? parseMarkdownTable(parsedContent.factCheckTable)
-      : null;
+    if (parsed?.report) {
+      return <Card title="Claims">{markdown(reportAsKindBlock(parsed.report))}</Card>;
+    }
 
     return (
-      <Card title="Claims Assessment Table">
-        {tableData?.markdown ? (
-          <MarkdownTable data={tableData.markdown} />
-        ) : (
-          <p className="text-muted-foreground text-center py-8 text-sm">
-            No table data found in the analysis.
-          </p>
-        )}
+      <Card title="Claims">
+        <div className="space-y-4 p-4">
+          <div className="flex items-start gap-2 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              The agent did not include its structured claims report in this
+              answer, so the per-claim table cannot be drawn. Showing the
+              written &ldquo;Facts &amp; Citations&rdquo; section instead.
+            </span>
+          </div>
+          {parsed?.factsAndCitations
+            ? markdown(parsed.factsAndCitations)
+            : empty(
+                "This answer has no \"Facts & Citations\" section either. The Full Report tab shows everything the agent wrote.",
+              )}
+        </div>
+      </Card>
+    );
+  };
+
+  const renderWarning = () => {
+    const pre = preSection("Writing warning");
+    if (pre) return pre;
+
+    const warning = parsed?.warning || parsed?.report?.warning || "";
+    return (
+      <Card title="Warning">
+        <div className="p-4">
+          {warning
+            ? markdown(warning)
+            : empty("The agent raised no warning for this page.")}
+        </div>
       </Card>
     );
   };
@@ -293,85 +290,30 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     return liveOutput("Fact check");
   };
 
-  // The band words describe the rescaled 0-5 value; the agent's OWN number and
-  // scale ride alongside so the stat never restates its verdict on a scale it
-  // did not use (the bound agent answers out of 10).
-  const getRatingText = (ratingValue: number): string => {
-    if (ratingValue <= 0) return "Pending";
-    if (ratingValue === 1) return "Very Low";
-    if (ratingValue === 2) return "Low";
-    if (ratingValue === 3) return "Moderate";
-    if (ratingValue === 4) return "High";
-    return "Very High";
-  };
-
-  const trustworthiness = parsedContent?.rating
-    ? `${getRatingText(rating)} (${parsedContent.rating.value}/${parsedContent.rating.outOf})`
-    : getRatingText(rating);
-
+  const counts = parsed?.statusCounts;
   const statsItems = [
     { label: "Content Source", value: overview?.website || "Unknown" },
     { label: "Character Count", value: characterCount || "N/A" },
-    { label: "Trustworthiness", value: trustworthiness },
+    {
+      label: "Verdict",
+      value: parsed?.verdict
+        ? VERDICT_LABEL[parsed.verdict]
+        : answerText
+          ? "Not stated"
+          : "Checking…",
+    },
+    ...(counts
+      ? FACT_CHECK_STATUSES.map((status) => ({
+          label: STATUS_LABEL[status],
+          value: counts[status],
+        }))
+      : []),
   ];
 
   const tabs = [
-    {
-      id: "summary",
-      label: "Summary",
-      icon: AlertTriangle,
-      content: renderSummary(),
-    },
-    {
-      id: "observations",
-      label: "Observations",
-      icon: Search,
-      content: section(
-        "Analyzing Content",
-        "General Observations",
-        parsedContent?.generalObservations,
-        "No general observations found.",
-      ),
-    },
-    {
-      id: "claims",
-      label: "Claims Analysis",
-      icon: ClipboardList,
-      content: section(
-        "Analyzing Claims",
-        "Specific Claims Analysis",
-        parsedContent?.specificClaimsAnalysis,
-        "No claims analysis found.",
-      ),
-    },
-    {
-      id: "concerns",
-      label: "Concerns",
-      icon: AlertCircle,
-      content: section(
-        "Identifying Concerns",
-        "Potential Concerns",
-        parsedContent?.potentialConcerns,
-        "No concerns identified.",
-      ),
-    },
-    {
-      id: "recommendations",
-      label: "Recommendations",
-      icon: ListChecks,
-      content: section(
-        "Generating Recommendations",
-        "Recommendations",
-        parsedContent?.recommendations,
-        "No recommendations found.",
-      ),
-    },
-    {
-      id: "table",
-      label: "Claims Table",
-      icon: Table,
-      content: renderClaimsTable(),
-    },
+    { id: "summary", label: "Summary", icon: ShieldAlert, content: renderSummary() },
+    { id: "claims", label: "Claims", icon: ClipboardList, content: renderClaims() },
+    { id: "warning", label: "Warning", icon: AlertTriangle, content: renderWarning() },
     {
       id: "full-report",
       label: "Full Report",

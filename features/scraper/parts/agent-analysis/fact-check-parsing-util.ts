@@ -1,201 +1,170 @@
 /**
- * Revised parsing functions for Claude-generated fact check responses
- * This focuses on capturing content between known headings rather than specific sections.
+ * Reads the `scraper.fact_check` agent's answer into the Fact Check tab's parts.
+ *
+ * THE CONTRACT (agent rebuilt 2026-09): exactly three Markdown sections —
+ *   `## Fact-check verdict`  → the Summary tab
+ *   `## Facts & Citations`   → the Claims tab's fallback (see below)
+ *   `## Warning`             → the Warning tab
+ * plus ONE fenced ```json block holding a `fact_check_report` kind
+ * ({ __kind, verdict, summary, claims[], warning }). The kind is the
+ * structured truth: the Claims tab renders it through its registered kind
+ * component, and the stat row counts its claims per status.
+ *
+ * The retired agent's headings (FACT CHECK SUMMARY … OVERALL RATING n/10) are
+ * gone from this file on purpose — no second format is read.
  */
 
-// Define all the possible section headers we expect
-const KNOWN_HEADERS = [
-    'FACT CHECK SUMMARY',
-    'GENERAL OBSERVATIONS',
-    'SPECIFIC CLAIMS ANALYSIS',
-    'POTENTIAL CONCERNS',
-    'RECOMMENDATIONS',
-    'FACT CHECK TABLE',
-    'OVERALL RATING'
-  ];
-  
-  /**
-   * Extract content from one heading to the next known heading
-   */
-  export function extractSection(content: string, startHeader: string): string {
-    // Normalize content - ensure consistent newlines and spacing
-    const normalizedContent = content.replace(/\r\n/g, '\n').trim();
-    
-    // Create pattern for the starting header (case insensitive, flexible whitespace)
-    const startPattern = new RegExp(`##\\s*${startHeader.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\n]*`, 'i');
-    
-    // Find the starting position
-    const startMatch = normalizedContent.match(startPattern);
-    if (!startMatch) {
-      return ''; // Starting header not found
-    }
-    
-    const startPos = startMatch.index! + startMatch[0].length;
-    
-    // Look for the next known header
-    let endPos = normalizedContent.length;
-    
-    // Create a pattern to find any of the known headers that might come after this one
-    const headersPattern = KNOWN_HEADERS.map(h => `##\\s*${h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\n]*`).join('|');
-    const nextHeaderPattern = new RegExp(`(${headersPattern})`, 'i');
-    
-    // Find all matches of headers
-    const allHeaderMatches = [...normalizedContent.matchAll(new RegExp(nextHeaderPattern, 'gi'))];
-    
-    // Find the next header after our start position
-    for (const match of allHeaderMatches) {
-      if (match.index! > startPos) {
-        endPos = match.index!;
-        break;
-      }
-    }
-    
-    // Extract the content between start and end
-    return normalizedContent.substring(startPos, endPos).trim();
-  }
-  
-  /**
-   * Extract the fact check summary section
-   */
-  export function extractFactCheckSummary(content: string): string {
-    return extractSection(content, 'FACT CHECK SUMMARY');
-  }
-  
-  /**
-   * Extract the general observations section
-   */
-  export function extractGeneralObservations(content: string): string {
-    const observations = extractSection(content, 'GENERAL OBSERVATIONS');
-    return observations ? `### General Observations\n\n${observations}` : "";
-  }
-  
-  /**
-   * Extract the specific claims analysis section
-   */
-  export function extractSpecificClaimsAnalysis(content: string): string {
-    const claims = extractSection(content, 'SPECIFIC CLAIMS ANALYSIS');
-    return claims ? `### Specific Claims Analysis\n\n${claims}` : "";
-  }
-  
-  /**
-   * Extract the potential concerns section
-   */
-  export function extractPotentialConcerns(content: string): string {
-    const concerns = extractSection(content, 'POTENTIAL CONCERNS');
-    return concerns ? `### Potential Concerns\n\n${concerns}` : "";
-  }
-  
-  /**
-   * Extract the recommendations section
-   */
-  export function extractRecommendations(content: string): string {
-    const recommendations = extractSection(content, 'RECOMMENDATIONS');
-    return recommendations ? `## RECOMMENDATIONS\n\n${recommendations}` : "";
-  }
-  
-  /**
-   * Extract the fact check table section
-   * This uses a more specific approach to handle tables better
-   */
-  export function extractFactCheckTable(content: string): string {
-    // First look for the header
-    const headerPattern = /##\s*FACT CHECK TABLE/i;
-    const headerMatch = content.match(headerPattern);
-    
-    if (!headerMatch) {
-      return "";
-    }
-    
-    const tableSection = extractSection(content, 'FACT CHECK TABLE');
-    
-    // Make sure we have an actual table (at least one pipe character)
-    return tableSection.includes('|') ? tableSection : "";
-  }
-  
-  /**
-   * Extract the overall rating section
-   */
-  export function extractOverallRating(content: string): string {
-    const rating = extractSection(content, 'OVERALL RATING');
-    return rating ? `## OVERALL RATING\n\n${rating}` : "";
-  }
-  
-  /**
-   * The trustworthiness rating the fact-check answer actually carries, on its
-   * OWN scale.
-   *
-   * 🚨 Why this looks for the rating anywhere and on any scale: the bound agent
-   * ("Fact Checker V2") writes `**Trustworthiness Rating: 8/10**` — it is not
-   * under an `## OVERALL RATING` heading, and it is out of TEN. This function
-   * used to search only inside `extractOverallRating(...)` and only match
-   * `/5`, so it returned 0 on every real answer and the tab's Trustworthiness
-   * stat read "Unknown" for as long as the tab has existed (found 2026-08-22).
-   * Scale is REPORTED, never assumed: a 4 out of 5 and a 4 out of 10 are not
-   * the same claim, and silently rescaling one into the other would be the
-   * tab inventing a verdict the agent never gave.
-   */
-  export function extractRating(content: string): { value: number; outOf: number } | null {
-    const searched = [extractOverallRating(content), content];
-    for (const haystack of searched) {
-      if (!haystack) continue;
-      // `Rating: 8/10`, `**Trustworthiness Rating: 8/10**`, `rating — 4 / 5`.
-      const labelled = haystack.match(/rating[^0-9\n]{0,20}(\d{1,2})\s*\/\s*(\d{1,2})/i);
-      if (labelled) {
-        return { value: parseInt(labelled[1], 10), outOf: parseInt(labelled[2], 10) };
-      }
-      // A bare `8/10` (or `4/5`) with no "rating" word nearby.
-      const bare = haystack.match(/\b(\d{1,2})\s*\/\s*(5|10)\b/);
-      if (bare) {
-        return { value: parseInt(bare[1], 10), outOf: parseInt(bare[2], 10) };
-      }
-    }
-    return null;
-  }
+import type { FactCheckReport } from "@/features/content-ir/kinds/generated/kinds.generated";
 
-  /**
-   * Back-compat numeric accessor — the rating normalized to the 0-5 band the
-   * old callers assumed. Prefer `extractRating`, which keeps the scale.
-   */
-  export function extractRatingValue(content: string): number {
-    const rating = extractRating(content);
-    if (!rating || rating.outOf <= 0) return 0;
-    return Math.round((rating.value / rating.outOf) * 5);
+export type FactCheckVerdict = FactCheckReport["verdict"];
+export type FactCheckClaimStatus = FactCheckReport["claims"][number]["status"];
+
+export const FACT_CHECK_VERDICTS: readonly FactCheckVerdict[] = [
+  "safe",
+  "risky",
+  "blocked_by_claims",
+];
+
+export const FACT_CHECK_STATUSES: readonly FactCheckClaimStatus[] = [
+  "verified",
+  "disputed",
+  "unverifiable",
+  "missing_source",
+];
+
+export type FactCheckStatusCounts = Record<FactCheckClaimStatus, number>;
+
+export interface ParsedFactCheck {
+  /** Body of `## Fact-check verdict`. */
+  summary: string;
+  /** Body of `## Facts & Citations`. */
+  factsAndCitations: string;
+  /** Body of `## Warning`, with the trailing JSON block removed. */
+  warning: string;
+  /** The `fact_check_report` kind, `__kind` intact — null when the block is absent or unreadable. */
+  report: FactCheckReport | null;
+  /** From the kind; else from the `Verdict:` line of the verdict section; else null. */
+  verdict: FactCheckVerdict | null;
+  /** Claims per status, from the kind — null when the kind is absent. */
+  statusCounts: FactCheckStatusCounts | null;
+}
+
+const FENCED_JSON = /```json[^\n]*\n([\s\S]*?)```/gi;
+
+/** Heading text → comparison key ("Facts & Citations" → "factscitations"). */
+function headingKey(heading: string): string {
+  return heading.toLowerCase().replace(/[^a-z]/g, "");
+}
+
+const SECTION_KEYS = {
+  verdict: "factcheckverdict",
+  facts: "factscitations",
+  warning: "warning",
+} as const;
+
+/** Every `## ` section of the answer, keyed by its normalized heading. */
+function splitSections(content: string): Map<string, string> {
+  const sections = new Map<string, string>();
+  const text = content.replace(/\r\n/g, "\n");
+  const headings = [...text.matchAll(/^##[ \t]+(.+?)[ \t]*$/gm)];
+  headings.forEach((match, i) => {
+    const start = (match.index ?? 0) + match[0].length;
+    const end = headings[i + 1]?.index ?? text.length;
+    const key = headingKey(match[1]);
+    if (!sections.has(key)) sections.set(key, text.slice(start, end));
+  });
+  return sections;
+}
+
+/** Trim, and drop the `---` rules the agent puts between sections. */
+function cleanSection(body: string | undefined): string {
+  if (!body) return "";
+  return body
+    .trim()
+    .replace(/^(?:-{3,}\s*)+/, "")
+    .replace(/(?:\s*-{3,})+$/, "")
+    .trim();
+}
+
+function isReport(value: unknown): value is FactCheckReport {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    v.__kind === "fact_check_report" &&
+    typeof v.verdict === "string" &&
+    (FACT_CHECK_VERDICTS as readonly string[]).includes(v.verdict) &&
+    Array.isArray(v.claims)
+  );
+}
+
+/** The first fenced JSON block that parses to a `fact_check_report`. */
+export function extractFactCheckReport(content: string): FactCheckReport | null {
+  for (const match of content.matchAll(FENCED_JSON)) {
+    try {
+      const parsed: unknown = JSON.parse(match[1]);
+      if (isReport(parsed)) return parsed;
+    } catch {
+      // A block that does not parse is not the report; keep looking.
+    }
   }
-  
-  /**
-   * Get everything (for full display)
-   */
-  export function getFullFactCheck(content: string): string {
-    return content.trim();
+  return null;
+}
+
+/** `**Verdict: BLOCKED BY CLAIMS**` → "blocked_by_claims". */
+function verdictFromLine(summary: string): FactCheckVerdict | null {
+  const line = summary.match(/verdict\s*[:\-–—]\s*\**\s*([a-z _-]+)/i);
+  if (!line) return null;
+  const key = line[1].trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return (FACT_CHECK_VERDICTS as readonly string[]).includes(key)
+    ? (key as FactCheckVerdict)
+    : null;
+}
+
+function countStatuses(report: FactCheckReport): FactCheckStatusCounts {
+  const counts: FactCheckStatusCounts = {
+    verified: 0,
+    disputed: 0,
+    unverifiable: 0,
+    missing_source: 0,
+  };
+  for (const claim of report.claims) {
+    if (claim && claim.status in counts) counts[claim.status] += 1;
   }
-  
-  /**
-   * Extract all sections at once and return an object
-   */
-  export function parseFactCheck(content: string): {
-    summary: string;
-    generalObservations: string;
-    specificClaimsAnalysis: string;
-    potentialConcerns: string;
-    recommendations: string;
-    factCheckTable: string;
-    overallRating: string;
-    /** The rating rescaled to 0-5 (0 when the answer carried none). */
-    ratingValue: number;
-    /** The rating AS GIVEN, with its own scale — null when absent. */
-    rating: { value: number; outOf: number } | null;
-    fullContent: string;
-  } {
-    return {
-      summary: extractFactCheckSummary(content),
-      generalObservations: extractGeneralObservations(content),
-      specificClaimsAnalysis: extractSpecificClaimsAnalysis(content),
-      potentialConcerns: extractPotentialConcerns(content),
-      recommendations: extractRecommendations(content),
-      factCheckTable: extractFactCheckTable(content),
-      overallRating: extractOverallRating(content),
-      ratingValue: extractRatingValue(content),
-      rating: extractRating(content),
-      fullContent: getFullFactCheck(content)
-    };
-  }
+  return counts;
+}
+
+export function parseFactCheck(content: string): ParsedFactCheck {
+  const sections = splitSections(content);
+  const report = extractFactCheckReport(content);
+  const summary = cleanSection(sections.get(SECTION_KEYS.verdict));
+  const warning = cleanSection(
+    sections.get(SECTION_KEYS.warning)?.replace(FENCED_JSON, ""),
+  );
+  return {
+    summary,
+    factsAndCitations: cleanSection(sections.get(SECTION_KEYS.facts)),
+    warning,
+    report,
+    verdict: report?.verdict ?? verdictFromLine(summary),
+    statusCounts: report ? countStatuses(report) : null,
+  };
+}
+
+/** Words a person reads — never the snake_case wire value. */
+export const VERDICT_LABEL: Record<FactCheckVerdict, string> = {
+  safe: "Safe",
+  risky: "Risky",
+  blocked_by_claims: "Blocked by claims",
+};
+
+export const STATUS_LABEL: Record<FactCheckClaimStatus, string> = {
+  verified: "Verified",
+  disputed: "Disputed",
+  unverifiable: "Unverifiable",
+  missing_source: "Missing source",
+};
+
+/** The fenced block the canonical markdown pipeline routes to the kind component. */
+export function reportAsKindBlock(report: FactCheckReport): string {
+  return "```json\n" + JSON.stringify(report, null, 2) + "\n```";
+}
