@@ -90,7 +90,15 @@ export interface TranscriptListState {
   showMore: () => void;
   retry: () => void;
   refresh: () => void;
+  /**
+   * Every row the current filters match — the list's "Select all matching this filter"
+   * for Export. Pages the same server function to the end; a failure throws its reason.
+   */
+  readAll: () => Promise<TranscriptListRow[]>;
 }
+
+/** Rows per page when reading the whole matching set (Export all). */
+export const TRANSCRIPT_READ_ALL_PAGE = 500;
 
 interface Args {
   enabled: boolean;
@@ -257,5 +265,20 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
     showMore,
     retry: () => setNonce((n) => n + 1),
     refresh: () => setNonce((n) => n + 1),
+    readAll: async () => {
+      const out: TranscriptListRow[] = [];
+      const seen = new Set<string>();
+      for (let offset = 0; ; offset += TRANSCRIPT_READ_ALL_PAGE) {
+        const { data, error: e } = await call(offset, TRANSCRIPT_READ_ALL_PAGE);
+        if (e) throw new Error(message(e, "The matching transcripts"));
+        const page = (data ?? []) as TranscriptListRow[];
+        for (const r of page) {
+          const k = `${r.kind}:${r.id}`;
+          if (!seen.has(k)) (seen.add(k), out.push(r));
+        }
+        const whole = page.length ? Number(page[0].total_count) : out.length;
+        if (page.length < TRANSCRIPT_READ_ALL_PAGE || out.length >= whole) return out;
+      }
+    },
   };
 }

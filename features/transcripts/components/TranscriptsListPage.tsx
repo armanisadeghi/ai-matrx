@@ -11,16 +11,31 @@
 // list with a `kind` column, paged/filtered/sorted/counted server-side.
 
 import Link from "next/link";
-import { Library, Plus } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowRight, Library, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { transcriptListConfig } from "../browse/listConfig";
 import { TranscriptsListHeader } from "./TranscriptsListHeader";
 import { TranscriptsSurfaceGuide } from "./TranscriptsSurfaceGuide";
-import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { HUB_LIBRARIES_HREF, transcriptsToHubHref } from "@/features/knowledge/hub/legacyRoutes";
 
 export function TranscriptsListPage() {
+  // SIDE BY SIDE (Arman, 2026-09-29): the Knowledge hub's Transcripts view is
+  // the replacement for this page, and he compares the two before this one is
+  // replaced — so this page links to the new view on the SAME search, scope and
+  // filters, and the new view links back ("Back to the old page").
+  const searchParams = useSearchParams();
+  const newViewHref = transcriptsToHubHref(Object.fromEntries(searchParams.entries()));
+  const tryNewButton = (
+    <Button asChild size="sm" variant="ghost" className="h-11 lg:h-7">
+      <Link href={newViewHref} aria-label="Try the new Transcripts view in Knowledge">
+        <ArrowRight className="h-4 w-4" />
+        <span className="max-sm:sr-only">Try the new Transcripts</span>
+      </Link>
+    </Button>
+  );
   const newButton = (
     <Button asChild size="sm" className="h-11 lg:h-7">
       <Link href="/transcripts/new" aria-label="New transcript">
@@ -54,6 +69,7 @@ export function TranscriptsListPage() {
 
   const headerActions = (
     <div className="flex items-center gap-2">
+      {tryNewButton}
       {wholeChannelButton}
       {newButton}
     </div>

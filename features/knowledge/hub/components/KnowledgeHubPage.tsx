@@ -115,6 +115,7 @@ import {
   tokenLabel,
 } from "@/features/knowledge/hub/hubPresentation";
 import { useTranscriptList } from "@/features/knowledge/hub/transcripts/useTranscriptList";
+import { hubToTranscriptsHref } from "@/features/knowledge/hub/legacyRoutes";
 import { listRestoreKey, useListRestore } from "@/features/knowledge/hub/hooks/useListRestore";
 import {
   HUB_PRESETS,
@@ -776,7 +777,7 @@ export function KnowledgeHubPage({
     write({ peek: null }, { replace: true });
   };
   const openFull = (hit: KnowledgeHit) => {
-    const href = openFullHref(hit);
+    const href = fullHrefFor(hit);
     if (!href) {
       toast.info(`${tokenLabel(hit.entity)} has no page of its own yet; the peek shows everything the hub knows about it.`);
       return;
@@ -796,6 +797,16 @@ export function KnowledgeHubPage({
 
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
   const sourceHref = (id: string) => tryGetEntityInfo("processed_document")?.hrefFor?.(id) ?? null;
+  /**
+   * Where "Open" (⌘↵, the peek's Open full, Copy link) goes. A transcript row opens its own
+   * record page by what it is — a cleanup session in Cleanup, a recording session in Studio,
+   * unsorted recordings in their pool — exactly as the Transcripts list's rows did; the
+   * registry has one address per type and would send a cleanup session to Studio.
+   */
+  function fullHrefFor(hit: KnowledgeHit): string | null {
+    const fact = isTranscriptHit(hit) ? factFor(hit) : undefined;
+    return fact ? transcriptRowHref(fact, sourceHref) : openFullHref(hit);
+  }
   const transcriptKindLabel = (row: TranscriptListRow) =>
     TRANSCRIPT_KIND_LABEL[row.kind as HubTranscriptKind] ?? row.kind;
   const transcriptLink = (row: TranscriptListRow) => transcriptRowHref(row, sourceHref);
@@ -873,7 +884,7 @@ export function KnowledgeHubPage({
     const transcript = isTranscriptHit(hit);
     const entries = transcript ? transcriptMenu(hit, factFor(hit), sourceHref) : [];
     const opens = entries.filter((e) => e.section === "open" && e.href);
-    const open = openFullHref(hit);
+    const open = fullHrefFor(hit);
     const ref = entries.length ? (a: TranscriptMenuAction) => entries.some((e) => e.action === a) : () => false;
     const groups: HubMenuGroup[] = [
       {
@@ -916,7 +927,8 @@ export function KnowledgeHubPage({
             icon: Link2,
             onSelect: () => void copyText(absolute(open ?? `/knowledge?peek=${hit.entity}:${encodeURIComponent(hit.id)}`), "Link copied"),
           },
-          {
+          // An unsorted recording is not a record of its own (the list offered no reference either).
+          ...(transcript && !ref("copy-reference") ? [] : [{
             id: "copy-reference",
             label: "Copy reference",
             icon: ClipboardCopy,
@@ -925,7 +937,7 @@ export function KnowledgeHubPage({
                 buildRecordReferenceFence({ type: transcriptReferenceType(hit), id: hit.id, label: hit.title }),
                 "Reference copied",
               ),
-          },
+          }]),
         ],
       },
       { id: "trash", items: [{ id: "trash", label: "Move to Trash", icon: Trash2, destructive: true, onSelect: () => void doTrash([hit]) }] },
@@ -937,6 +949,24 @@ export function KnowledgeHubPage({
     .map((h) => factFor(h))
     .filter((r): r is TranscriptListRow => Boolean(r));
   const selectedTranscriptHits = selectedHits.filter(isTranscriptHit).length;
+
+  /** Export every row the view's filters match (the list's "Select all matching this filter"). */
+  const doTranscriptExportAll = async () => {
+    const whole = transcriptList.total ?? 0;
+    const copy = transcriptExportConfirm(whole, whole);
+    const ok = await confirm({ title: copy.title.replace("selected", "matching"), description: copy.description, confirmLabel: copy.confirmLabel });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const rows = await transcriptList.readAll();
+      const out = exportTranscriptRows(rows, { linkFor: (r) => absolute(transcriptLink(r)), kindLabel: transcriptKindLabel });
+      toast.success(out.message ?? "Exported.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nothing was exported.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const doTranscriptExport = async () => {
     const copy = transcriptExportConfirm(selectedTranscriptRows.length, selectedTranscriptHits);
@@ -1514,6 +1544,18 @@ export function KnowledgeHubPage({
           >
             <Download className="h-3.5 w-3.5" /> Export
           </Button>
+          {serverTranscripts && (transcriptList.total ?? 0) > selectedHits.length ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 text-xs"
+              disabled={busy}
+              onClick={() => void doTranscriptExportAll()}
+              title="Download a CSV of every transcript these filters match, not only the selected ones"
+            >
+              <Download className="h-3.5 w-3.5" /> Export all {(transcriptList.total ?? 0).toLocaleString()} matching
+            </Button>
+          ) : null}
           {selectedTranscriptRows.length ? (
             <CopyButtons
               label="Transcripts"
@@ -1522,7 +1564,25 @@ export function KnowledgeHubPage({
                 selectedTranscriptRows.map((r) => transcriptCopyHuman(r, transcriptKindLabel(r))).join("\n")
               }
               agent={() => transcriptAgentPayload(selectedTranscriptRows)}
-              hide={["export"]}
+              json={() => selectedTranscriptRows.map((r) => transcriptCopyAgent(r, absolute(transcriptLink(r))))}
+              export={{
+                items: [
+                  { id: "csv", label: "CSV", onSelect: () => doTranscriptExport() },
+                  {
+                    id: "json",
+                    label: "JSON",
+                    build: () => ({
+                      content: JSON.stringify(
+                        selectedTranscriptRows.map((r) => transcriptCopyAgent(r, absolute(transcriptLink(r)))),
+                        null,
+                        2,
+                      ),
+                      extension: "json",
+                      mime: "application/json",
+                    }),
+                  },
+                ],
+              }}
             />
           ) : null}
         </>
@@ -1709,6 +1769,17 @@ export function KnowledgeHubPage({
               title="Save these filters and layout to this view"
             >
               <Save className="h-3.5 w-3.5" /> Save changes
+            </Button>
+          ) : null}
+          {transcriptsView ? (
+            // Side by side (Arman, 2026-09-29): the old list stays live until he has compared
+            // the two; this opens it on the same search, scope and filters.
+            <Button asChild size="sm" variant="ghost" className="h-8 gap-1 px-2.5">
+              <Link href={hubToTranscriptsHref(state)} title="Open the old Transcripts page on the same search and filters">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden @3xl:inline">Back to the old page</span>
+                <span className="@3xl:hidden">Old page</span>
+              </Link>
             </Button>
           ) : null}
           {transcriptsView ? (

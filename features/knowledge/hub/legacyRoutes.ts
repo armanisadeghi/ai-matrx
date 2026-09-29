@@ -200,13 +200,36 @@ export function transcriptsToHubHref(params: LegacySearchParams): string {
   const query: KnowledgeQuery = {
     mode: "find",
     ...(text ? { text } : {}),
-    ...(scopeKind === "mine" ? { captured_by: "me" as const } : {}),
     ...(scopeKind === "orgs" && scopeOrg ? { organizations: [scopeOrg] } : {}),
     ...(sort === "title" ? { sort: "title" as const } : {}),
   };
   const group: Record<string, string> = transcriptFacetsFromFilters(first(params, "filters"));
-  if (scopeKind === "shared" || scopeKind === "public") group.scope = scopeKind;
+  // The view's Scope facet IS the list's scope (the same `trx_list_scoped` p_scope).
+  if (scopeKind === "mine" || scopeKind === "shared" || scopeKind === "public") group.scope = scopeKind;
   return hubHref({ ...DEFAULT_HUB_STATE, view: { kind: "preset", key: "transcripts" }, query, group });
+}
+
+/**
+ * The reverse: the hub's Transcripts view → the old `/transcripts` list on the
+ * same search, scope, sort and filters — Arman compares the two side by side
+ * before the old page is replaced (2026-09-29), so each links to the other.
+ */
+export function hubToTranscriptsHref(state: Pick<HubState, "query" | "group">): string {
+  const qs = new URLSearchParams();
+  const text = state.query.text?.trim();
+  if (text) qs.set("q", text);
+  const scope = state.group.scope?.split(",")[0];
+  if (scope === "mine" || scope === "shared" || scope === "public") qs.set("scope", scope);
+  else if (state.query.organizations?.length === 1) qs.set("scope", `orgs:${state.query.organizations[0]}`);
+  const filters: Record<string, { kind: "select"; values: string[] }> = {};
+  for (const [key, facet] of Object.entries(TRANSCRIPT_FILTER_TO_FACET)) {
+    const values = state.group[facet]?.split(",").map((v) => v.trim()).filter(Boolean);
+    if (values?.length) filters[key] = { kind: "select", values };
+  }
+  if (Object.keys(filters).length) qs.set("filters", JSON.stringify(filters));
+  if (state.query.sort === "title") qs.set("sort", "title");
+  const out = qs.toString();
+  return out ? `/transcripts?${out}` : "/transcripts";
 }
 
 /** Where the Transcripts list lives now — the link every retired "/transcripts" pointer uses. */
