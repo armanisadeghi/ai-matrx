@@ -18,6 +18,7 @@
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useViewerTimeZone } from "@/hooks/useViewerTimeZone";
 import {
   CalendarDays,
   Check,
@@ -41,7 +42,6 @@ import { supabase } from "@/utils/supabase/client";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
 import { describeRecurrence } from "@/features/meet/lib/recurrence";
 import {
-  browserTimeZone,
   formatLongDate,
   formatTimeRange,
   zoneLabel,
@@ -126,7 +126,8 @@ export function RsvpLanding({
   const [saved, setSaved] = useState<RsvpAnswer | null>(null);
   const [note, setNote] = useState("");
   const [noteOpen, setNoteOpen] = useState(false);
-  const [zone] = useState(browserTimeZone);
+  // Hydration-safe (React #418): never read the browser zone during render.
+  const zone = useViewerTimeZone();
   const autoSent = useRef(false);
 
   const answer = async (choice: RsvpAnswer, withNote: string | null = null) => {

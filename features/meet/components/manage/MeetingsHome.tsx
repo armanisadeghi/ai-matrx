@@ -20,6 +20,7 @@
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState, useTransition } from "react";
+import { useViewerTimeZone } from "@/hooks/useViewerTimeZone";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Archive,
@@ -97,7 +98,6 @@ import {
 } from "@/features/meet/lib/agenda";
 import { describeRecurrence } from "@/features/meet/lib/recurrence";
 import {
-  browserTimeZone,
   formatClock,
   formatLongDate,
   formatTimeRange,
@@ -180,7 +180,8 @@ export function MeetingsHome() {
   );
   const openItem = useOpenItemPresentation();
   const [starting, setStarting] = useState(false);
-  const [zone] = useState(browserTimeZone);
+  // Hydration-safe (React #418): never read the browser zone during render.
+  const zone = useViewerTimeZone();
   const [now, setNow] = useState(() => new Date());
   const [, startTransition] = useTransition();
 

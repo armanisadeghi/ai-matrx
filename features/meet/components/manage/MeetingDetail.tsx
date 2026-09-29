@@ -22,6 +22,7 @@ import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState, useTransition } from "react";
+import { useViewerTimeZone } from "@/hooks/useViewerTimeZone";
 import { useRouter } from "next/navigation";
 import {
   Archive,
@@ -102,7 +103,6 @@ import {
 import { RECORDING_POLICY_LABELS } from "@/features/meet/lib/meeting-draft";
 import { describeRecurrence } from "@/features/meet/lib/recurrence";
 import {
-  browserTimeZone,
   formatLongDate,
   formatTimeRange,
   zoneLabel,
@@ -178,7 +178,8 @@ export function MeetingDetail({
   const [nonce, setNonce] = useState(0);
   const [moving, setMoving] = useState<OccurrenceRef | null>(null);
   const [, startTransition] = useTransition();
-  const [viewerZone] = useState(browserTimeZone);
+  // Hydration-safe (React #418): never read the browser zone during render.
+  const viewerZone = useViewerTimeZone();
   const reload = () => setNonce((n) => n + 1);
   const { run, dialogs } = useMeetingActionHost({ onChanged: reload });
   // An invitee's RSVP lands here live, from any lane (link, app, pre-join).
