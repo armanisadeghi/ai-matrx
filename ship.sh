@@ -50,13 +50,17 @@ fi
 # morning build for ten hours with every deploy cancelled by the ignored build
 # step. A ship is a ship of the whole app: default to --target all unless the
 # caller named a target.
-TARGET_FLAG=()
-case " $* " in
-    *" --target "*) ;;
-    *) TARGET_FLAG=(--target all) ;;
-esac
 echo ""
-"$ROOT/scripts/release.sh" --message "$NOTE" "${TARGET_FLAG[@]}" "$@"
+case " $* " in
+    # macOS's Bash with `set -u` treats an empty array expansion as unbound.
+    # Keep the explicit-target path free of an optional array altogether.
+    *" --target "*)
+        "$ROOT/scripts/release.sh" --message "$NOTE" "$@"
+        ;;
+    *)
+        "$ROOT/scripts/release.sh" --message "$NOTE" --target all "$@"
+        ;;
+esac
 RELEASE_RC=$?
 
 # ── 3. open items ────────────────────────────────────────────────────────────
