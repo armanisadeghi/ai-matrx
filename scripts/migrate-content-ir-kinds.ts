@@ -175,12 +175,12 @@ async function main() {
           organization_id: org,
           // System kind SCHEMAS are non-sensitive structural definitions every
           // surface (authed, anon, public share pages) must read to render —
-          // so they are 'public'. This is what makes the registry readable
-          // post-cutover (std_select/pub_read grant on visibility='public');
+          // so they are published to the web. This is what makes the registry
+          // readable post-cutover (the std_select/pub_read lane for published rows);
           // the source flexible_data 'private' + global_readable-org path did
           // NOT grant authed reads (verified), which would have silently
           // starved the registry.
-          visibility: "public" as never,
+          published_to_web: true,
         },
         { onConflict: "organization_id,kind" },
       )

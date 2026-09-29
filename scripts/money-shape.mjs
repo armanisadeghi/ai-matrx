@@ -295,7 +295,7 @@ export function moneyShapeIn(source) {
 export function selfTestMoneyShape() {
   // ── LEG 1: the live `Intl.NumberFormat` money module. Byte-for-byte from
   // matrx-frontend features/admin/spend/format.ts on origin/main — the file
-  // whose `usdPrecise` promised sub-cent visibility in its own doc comment and
+  // whose `usdPrecise` promised sub-cent precision in its own doc comment and
   // rendered 0.000004 as "$0.0000".
   const liveIntl = [
     'const USD = new Intl.NumberFormat("en-US", {',

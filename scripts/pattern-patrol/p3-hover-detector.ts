@@ -311,10 +311,10 @@ function safeReason(
       return "hover-capable hiding begins at a responsive breakpoint, leaving mobile visible";
     }
     if (hasTouchVisibleToken(tokens)) {
-      return "coarse-pointer or hover-none visibility fallback is explicit";
+      return "coarse-pointer or hover-none shown-state fallback is explicit";
     }
     if (hasBelowBreakpointVisibleToken(tokens)) {
-      return "below-breakpoint visibility override keeps mobile visible";
+      return "below-breakpoint shown-state override keeps mobile visible";
     }
     // Hover capability does not imply a desktop viewport. An IAB or hybrid
     // device can satisfy hover:hover at 375px, so focus fallback alone cannot
@@ -322,7 +322,7 @@ function safeReason(
     return undefined;
   }
   if (hasTouchVisibleToken(tokens)) {
-    return "coarse-pointer or hover-none visibility fallback is explicit";
+    return "coarse-pointer or hover-none shown-state fallback is explicit";
   }
   if (hasFocusReveal(tokens, interaction)) {
     return "focus-visible/focus-within reveal accompanies hover reveal";

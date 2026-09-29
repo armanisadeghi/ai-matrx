@@ -218,8 +218,8 @@ async function main() {
         }
         if (row.organization_id !== organizationId)
           failures.push(`${label} ${key}: organization_id is not system`);
-        if (row.visibility !== "public")
-          failures.push(`${label} ${key}: visibility is not public`);
+        if (row.published_to_web !== true)
+          failures.push(`${label} ${key}: not published to the web`);
       }
     });
     // Surface guides: the platform skill must exist and carry this guide's text.
@@ -398,16 +398,16 @@ async function runSelfTest() {
         if (
           !row ||
           row.organization_id !== organizationId ||
-          row.visibility !== "public"
+          row.published_to_web !== true
         )
           throw new Error(
-            `SELF-TEST failed: ${table} ${key} was not persisted with system/public ownership`,
+            `SELF-TEST failed: ${table} ${key} was not persisted as system-owned and published to the web`,
           );
       }
     }
     await client.query("ROLLBACK");
     console.log(
-      "SELF-TEST PASS: legacy child-only SQL failed; new emitted SQL registered the surface, persisted every mirror key system/public twice idempotently, preserved DB-authored optional metadata, created no ui_client rows, and rolled back.",
+      "SELF-TEST PASS: legacy child-only SQL failed; new emitted SQL registered the surface, persisted every mirror key system-owned and published to the web twice idempotently, preserved DB-authored optional metadata, created no ui_client rows, and rolled back.",
     );
   } catch (error) {
     try {

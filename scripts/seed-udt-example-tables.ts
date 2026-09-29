@@ -20,8 +20,8 @@
  * EVERY WRITE GOES THROUGH THE PRODUCT'S OWN PATH — the same RPCs the /data UI
  * calls (`create_user_table_with_fields`, `udt_set_field_format`,
  * `udt_bulk_write`, `udt_set_table_style`, `create_user_list`) and, for the
- * shared pick list's visibility, the same direct column write
- * `utils/permissions/service.ts` → `setVisibilityColumn` performs. No direct
+ * shared pick list's "Publish to the web", the same direct column write
+ * `@/lib/row-access` → `publishedToWebPatch` gives every surface. No direct
  * row inserts, so anything the platform would refuse a user is refused here too
  * and the refusal is printed verbatim.
  *
@@ -29,8 +29,8 @@
  * (`@ai-matrx/design-system/field-formats` types) narrows a column's options to the group its
  * controlling cell names, and groups live on a structured list's items — so the
  * script first creates ONE list, "Example: Teams by Department", and binds both
- * Team columns to it. The list is made `visibility = 'public'` because
- * `get_structured_list_for_selection` gates on exactly that; a private list would
+ * Team columns to it. The list is published to the web because
+ * `get_structured_list_for_selection` opens exactly that; an unpublished list would
  * leave every non-owner staring at an unavailable column.
  *
  * IDEMPOTENT. A table whose name already exists is skipped; `--reset` deletes and
@@ -48,6 +48,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createClient } from "@supabase/supabase-js";
+
+import { publishedToWebPatch } from "@/lib/row-access";
 
 import type {
   FieldChoice,
@@ -1145,7 +1147,7 @@ async function ensureTeamList(client: Client, userId: string): Promise<string> {
   const { data, error } = await client
     .schema("workbench")
     .from("udt_structured_lists")
-    .select("id,list_name,visibility")
+    .select("id,list_name,published_to_web")
     .eq("list_name", SHARED_LIST_NAME)
     .is("deleted_at", null)
     .limit(1);
@@ -1178,16 +1180,16 @@ async function ensureTeamList(client: Client, userId: string): Promise<string> {
 }
 
 /**
- * `get_structured_list_for_selection` gates on `visibility = 'public'` (or
- * ownership, or a grant), so an example list left private would render every
- * Team column "unavailable" for everyone but the seeding admin. This is the
- * same column write the share dialog performs (`setVisibilityColumn`).
+ * `get_structured_list_for_selection` opens a list that is published to the web
+ * (or owned, or granted), so an example list left unpublished would render every
+ * Team column "unavailable" for everyone but the seeding admin. This is the same
+ * "Publish to the web" write every surface performs (`publishedToWebPatch`).
  */
 async function makeListReadableByEveryone(client: Client, listId: string): Promise<void> {
   const { data, error } = await client
     .schema("workbench")
     .from("udt_structured_lists")
-    .update({ visibility: "public" })
+    .update(publishedToWebPatch(true, null))
     .eq("id", listId)
     .select("id");
   if (error) {
@@ -1198,7 +1200,7 @@ async function makeListReadableByEveryone(client: Client, listId: string): Promi
   }
   if (!Array.isArray(data) || data.length === 0) {
     die(
-      `The shared pick list ${listId} accepted no visibility change — it may have been deleted.`,
+      `The shared pick list ${listId} could not be published to the web — it may have been deleted.`,
     );
   }
 }

@@ -111,7 +111,7 @@ describe("surface agent hints in the emitted SQL", () => {
     expect(update.slice(0, update.indexOf("WHERE name ="))).toContain(pointer);
   });
 
-  it("upserts the guide as a public system reference skill, governance insert-only", () => {
+  it("upserts the guide as a published-to-the-web system reference skill, governance insert-only", () => {
     const text = sql();
     const update = text.slice(text.indexOf("UPDATE skill.definition SET"));
     const updateStmt = update.slice(0, update.indexOf(";\n"));
@@ -120,12 +120,12 @@ describe("surface agent hints in the emitted SQL", () => {
     );
     expect(updateStmt).toContain("WHERE skill_id = 'surface-guide-education-classes'");
     expect(updateStmt).not.toMatch(/organization_id\s*=\s*'[^']*',/);
-    expect(updateStmt).not.toMatch(/visibility\s*=/);
+    expect(updateStmt).not.toMatch(/published_to_web\s*=/);
     const insert = text.slice(text.indexOf("INSERT INTO skill.definition"));
     expect(insert).toContain(
       `'reference', '# My Classes — how to work on this page`,
     );
-    expect(insert).toContain(`true, true, '${SYSTEM_ORG}', 'public'`);
+    expect(insert).toContain(`true, true, '${SYSTEM_ORG}', true,`);
     expect(insert).toContain(
       "WHERE NOT EXISTS (SELECT 1 FROM skill.definition WHERE skill_id = 'surface-guide-education-classes'",
     );

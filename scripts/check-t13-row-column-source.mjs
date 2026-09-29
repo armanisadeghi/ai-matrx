@@ -44,6 +44,9 @@ const WORD = "visi" + "bility";
 const ROW = new RegExp(`(?<![A-Za-z0-9_\\-])${WORD}(?![A-Za-z0-9_\\-])`);
 const NOISE = [
   new RegExp(`${WORD}\\s*[:=]\\s*["'\`]?(hidden|visible|collapse|inherit|initial|unset|revert)\\b`),
+  // A CSS computed-style comparison (`getComputedStyle(el).<word> === "hidden"`): the row column's values
+  // are personal / internal / link / public, never a CSS keyword, so this is never a reader.
+  new RegExp(`${WORD}\\s*[!=]==?\\s*["'\`](hidden|visible|collapse)\\b`),
   new RegExp(`style(\\.|\\[["'])${WORD}`),
   new RegExp(`${WORD}\\s*:\\s*\\$\\{`),
   new RegExp(`transition[^;\\n]*${WORD}`),
@@ -166,9 +169,14 @@ function selfTest() {
     ["one more reference in a baselined file", { [someFile]: `${real}\nrow.${WORD} = "public";\n` }, true],
     [
       "planted CSS/DOM lines only (must not fire)",
-      { [plantNew]: `el.style.${WORD} = "hidden";\nconst css = "${WORD}: hidden;";\nconst ai_${WORD}_panel = 1;\n` },
+      {
+        [plantNew]:
+          `el.style.${WORD} = "hidden";\nconst css = "${WORD}: hidden;";\nconst ai_${WORD}_panel = 1;\n` +
+          `if (getComputedStyle(el).${WORD} === "hidden") {}\nif (s.${WORD} !== "hidden") {}\n`,
+      },
       false,
     ],
+    ["planted row-value comparison (must fire)", { [plantNew]: `if (row.${WORD} === "public") {}\n` }, true],
   ];
   let ok = true;
   const splitPlant = "scripts/__t13_selftest_split__.ts";

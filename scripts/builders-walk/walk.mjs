@@ -323,7 +323,7 @@ async function useOrganization(page, target) {
       // picker draws one.
       const chosen = rows[rows.findIndex((b) => spansOf(b).includes(name))];
       // 🚨 STAMP THE ELEMENT, DO NOT COUNT IT. An index computed here and then
-      // spent as `locator(":visible").nth(i)` is two different visibility
+      // spent as `locator(":visible").nth(i)` is two different "is it shown"
       // definitions (`getClientRects()` vs Playwright's) over a list that is in
       // the DOM twice — so the right row was found and a DIFFERENT row, or
       // none, was clicked. Marking the exact element removes the translation.

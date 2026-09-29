@@ -4,8 +4,8 @@
  * ALC-14 — ONE SYNC PATH: the rows come from `@ai-matrx/alchemy/checks`
  * `planSurfaceSync` (via `features/surfaces/declare/surface-declare.ts`
  * `planManifestSync`) and the SQL from `renderSurfaceSyncSql`. This file builds
- * no rows of its own. Governance columns (`organization_id`, `visibility`) are
- * INSERT-ONLY: a conflict never rewrites them (chair ruling N5).
+ * no rows of its own. Governance columns (`organization_id` and the row's web
+ * state) are INSERT-ONLY: a conflict never rewrites them (chair ruling N5).
  *
  * Prints, to stdout (all manifests by default, or only repeated
  * `--surface <name>` selections), one transaction body:
@@ -59,10 +59,10 @@ export function readSurfaceGuide(repoPath: string): string {
 /**
  * Upsert a surface's guide markdown as a normal platform skill — the same row
  * shape as the other system reference skills (`skill_type` reference,
- * `is_system`, the system org, `public` so the in-app `skill` tool can `get`
- * and `search` it). `skill.definition` has no unique key on `skill_id`, so it
- * is an UPDATE of the live row plus an INSERT … WHERE NOT EXISTS. Governance
- * columns (`organization_id`, `visibility`) are insert-only, as for the mirror.
+ * `is_system`, the system org, published to the web so the in-app `skill` tool
+ * can `get` and `search` it). `skill.definition` has no unique key on `skill_id`,
+ * so it is an UPDATE of the live row plus an INSERT … WHERE NOT EXISTS. Governance
+ * columns (`organization_id`, `published_to_web`) are insert-only, as for the mirror.
  */
 export function renderSurfaceGuideSkillSql(
   manifest: Pick<SurfaceManifest, "surfaceName" | "label" | "urlPattern" | "guide">,
@@ -100,8 +100,8 @@ export function renderSurfaceGuideSkillSql(
   return `-- Surface guide ${manifest.guide} → platform skill ${skillId}
 UPDATE skill.definition SET label = ${L(label)}, description = ${L(description)}, skill_type = 'reference', body = ${L(body)}, icon_name = 'BookOpen', trigger_patterns = ${J(triggers)}, platform_targets = '["web"]'::jsonb, is_active = true, is_system = true, metadata = ${J(metadata)}, config = ${J(config)}, updated_at = now() WHERE ${live};
 
-INSERT INTO skill.definition (skill_id, label, description, skill_type, body, icon_name, trigger_patterns, platform_targets, is_active, is_system, organization_id, visibility, metadata, config)
-SELECT ${L(skillId)}, ${L(label)}, ${L(description)}, 'reference', ${L(body)}, 'BookOpen', ${J(triggers)}, '["web"]'::jsonb, true, true, ${L(organizationId)}, 'public', ${J(metadata)}, ${J(config)}
+INSERT INTO skill.definition (skill_id, label, description, skill_type, body, icon_name, trigger_patterns, platform_targets, is_active, is_system, organization_id, published_to_web, metadata, config)
+SELECT ${L(skillId)}, ${L(label)}, ${L(description)}, 'reference', ${L(body)}, 'BookOpen', ${J(triggers)}, '["web"]'::jsonb, true, true, ${L(organizationId)}, true, ${J(metadata)}, ${J(config)}
 WHERE NOT EXISTS (SELECT 1 FROM skill.definition WHERE ${live});`;
 }
 

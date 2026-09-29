@@ -338,8 +338,8 @@ async function lanesTellTheTruth(page, label, { expectSharedOnly }) {
     say(`${label}: the lane filters are absent (the store's table facts are not live yet) — lane clauses have nothing to press`);
     return;
   }
-  // MINE OVERLAPS (chair ruling 2026-09-23: Mine = tables I made, whatever their
-  // visibility), so the lanes do not add up to Everything. What must hold is that
+  // MINE OVERLAPS (chair ruling 2026-09-23: Mine = tables I made, whoever they are
+  // shown to), so the lanes do not add up to Everything. What must hold is that
   // no table falls through: every table under Everything is in at least one lane.
   const tableHrefs = () =>
     page.evaluate(() =>
@@ -430,7 +430,7 @@ async function walk(context, label, { email, password, organization, slug, shots
   } else {
     const expected = ["Everything", "Mine", "My organization", "Community", "World"];
     clause(
-      `${label} · the lane strip is Everything plus the four visibility lanes`,
+      `${label} · the lane strip is Everything plus the four list lanes`,
       JSON.stringify(hub.lanes) === JSON.stringify(expected),
       hub.lanes.join(" · "),
     );

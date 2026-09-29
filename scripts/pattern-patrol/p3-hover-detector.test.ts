@@ -71,7 +71,7 @@ describe("P3 hover-only interaction detector", () => {
 
   it.each([
     [
-      "responsive mobile visibility",
+      "responsive mobile shown state",
       `<Button className="md:opacity-0 md:group-hover:opacity-100" />`,
       "responsive breakpoint",
     ],
@@ -91,7 +91,7 @@ describe("P3 hover-only interaction detector", () => {
       "focus-visible",
     ],
     [
-      "below-breakpoint visibility override",
+      "below-breakpoint shown-state override",
       `<Button className="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 max-sm:opacity-100" />`,
       "below-breakpoint",
     ],

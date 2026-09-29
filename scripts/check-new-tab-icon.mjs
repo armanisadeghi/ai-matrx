@@ -35,7 +35,7 @@
  * features/organizations/peek/**, features/mandates/peek/**,
  * features/mandates/member-list/MandateMemberPeek.tsx) are SCANNED and their
  * violations are REPORTED but never fail the guard — they are that agent's
- * cleanup, tracked separately so this guard doesn't silently lose visibility
+ * cleanup, tracked separately so this guard doesn't silently lose sight
  * of them once adopted into CI.
  *
  * Usage:

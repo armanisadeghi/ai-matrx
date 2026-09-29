@@ -137,7 +137,7 @@ try {
       groups: Object.fromEntries(Object.entries(detail.data?.items_grouped ?? {}).map(([g, items]) => [g, items.map((i) => i.label)])),
     });
     const olderList = await client.schema("workbench").from("udt_structured_lists").insert({
-      list_name: "Operatory Rooms", organization_id: ORG, user_id: me.id, created_by: me.id, visibility: "personal",
+      list_name: "Operatory Rooms", organization_id: ORG, user_id: me.id, created_by: me.id, shown_to: "only_me",
     });
     step("direct older list insert in the switched org", { refused: !!olderList.error, says: olderList.error?.message ?? null });
     const olderTable = await client.rpc("create_user_table_with_fields", {
