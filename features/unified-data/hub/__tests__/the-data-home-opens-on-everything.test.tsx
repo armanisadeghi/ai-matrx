@@ -367,14 +367,10 @@ afterEach(async () => {
 });
 
 describe("the data home · default is everything", () => {
-  it("opens on All — every organization's tables and every kind, most recently updated first, under organization headers", async () => {
+  it("opens on All — every organization's tables and every kind, one flat list, most recently updated first", async () => {
     await mount();
     expect(container.querySelector('[data-hub-scope-choice="all"]')?.getAttribute("aria-selected")).toBe("true");
-    // Rincon changed last (Status choices 15:41, Service calls 15:40), then Harbor (26 Sep), then Ojai (25 Sep).
-    const groups = [...container.querySelectorAll('[data-hub-listing="tables"] [data-hub-organization-group]')].map(
-      (g) => g.getAttribute("data-hub-organization-group"),
-    );
-    expect(groups).toEqual(["Rincon Plumbing Co", "Harbor Dental Group", "Ojai Valley Home Services"]);
+    // Status choices 15:41, Service calls 15:40 (27 Sep), Patient recall list (26 Sep), Backflow (25 Sep).
     expect(tableRows()).toEqual([
       { title: "Status choices", organization: "Rincon Plumbing Co", kind: "List" },
       { title: "Service calls", organization: "Rincon Plumbing Co", kind: "Table" },
@@ -383,24 +379,10 @@ describe("the data home · default is everything", () => {
     ]);
   });
 
-  it("collapses an organization from its header, like a group on the table page", async () => {
-    await mount();
-    const toggle = container.querySelector(
-      '[data-hub-organization-group="Rincon Plumbing Co"] [data-matrx-table-group-row] button',
-    ) as HTMLButtonElement;
-    await act(async () => toggle.click());
-    expect(tableRows().map((r) => r.title)).toEqual(["Patient recall list", "Backflow test schedule"]);
-  });
-
   it("orders A to Z when the order knob says name", async () => {
     defaultOrderKnob = "name";
     await mount("scope=orgs");
     expect(tableRows().map((r) => r.title)).toEqual(["Patient recall list", "Service calls", "Status choices"]);
-  });
-
-  it("does not group under a filter other than All", async () => {
-    await mount("scope=orgs");
-    expect(container.querySelector("[data-hub-organization-group]")).toBeNull();
   });
 
   it("opens on the filter the knob names when the address names none", async () => {
@@ -643,5 +625,30 @@ describe("the data home · one door for the whole page", () => {
     await mount("", { filter: HARBOR });
     expect(doorCalls).toEqual(["data_home"]);
     expect(doorAskedFor).toEqual([HARBOR]);
+  });
+});
+
+// ── ARMAN, 2026-09-29: the data home never separates or groups anything by organization, filter or
+// no filter. RED on the tail-5 hub: under All Orgs the Tables listing sat under organization
+// headers (collapsible, with a count), and each row wore its organization as a bordered badge.
+describe("the data home · one flat list, never grouped by organization", () => {
+  it.each(["", "scope=mine", "scope=orgs", "kind=table"])("no organization group header under All Orgs (%s)", async (query) => {
+    await mount(query, { filter: "all" });
+    await openListing("forms");
+    await openListing("dashboards");
+    expect(container.querySelector("[data-hub-organization-group]")).toBeNull();
+    expect(container.querySelector("[data-hub-grouped-by='organization']")).toBeNull();
+    expect(container.querySelector("[data-matrx-table-group-row]")).toBeNull();
+  });
+
+  it("a row from one organization looks like a row from another: the name in muted text, no badge", async () => {
+    await mount("", { filter: "all" });
+    const marks = [...container.querySelectorAll('[data-hub-listing="tables"] [data-hub-row-organization]')];
+    expect(marks.length).toBeGreaterThan(1);
+    for (const mark of marks) {
+      expect(mark.className).not.toMatch(/\bborder\b|\brounded\b/);
+    }
+    const shapes = new Set(marks.map((m) => m.className));
+    expect(shapes.size).toBe(1);
   });
 });

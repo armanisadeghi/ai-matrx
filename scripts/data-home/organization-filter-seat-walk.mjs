@@ -134,6 +134,10 @@ try {
     });
     pass("starts on All Orgs", start?.value === "all" && start?.label === "All Orgs", JSON.stringify(start));
     const everything = await tableFacts(page);
+    const groupHeaders = await page.evaluate(
+      () => document.querySelectorAll("[data-hub-organization-group], [data-hub-grouped-by='organization']").length,
+    );
+    pass("one flat list, no organization group headers under All Orgs", groupHeaders === 0, `${groupHeaders} group headers`);
     const calls = [...doorHits];
     pass("the page asks one door", calls.length > 0 && calls.every((c) => c === "data_home"), `data home doors called: ${calls.join(", ") || "none"}`);
     const barText = await page.evaluate(() => document.querySelector("[data-hub-scope]")?.innerText ?? "");

@@ -299,13 +299,12 @@ export function dataHomeKindHref(pathname: string, current: URLSearchParams, kin
   return `${pathname}?${next.toString()}`;
 }
 
-// ── THE ORDER, AND THE ORGANIZATION GROUPS (chair ruling 2026-09-27) ───────────────────────────
+// ── THE ORDER (chair ruling 2026-09-27; Arman 2026-09-29) ──────────────────────────────────────
 //
-// A flat list of 444 tables is not a home. Rows come most recently updated first (Notion, Airtable,
-// Google Drive open this way) — or A to Z — per the Feature Knob `custom.data_home_default_order`;
-// and under All, when the list spans more than one organization, rows sit under organization
-// headers (the table page's own grouping, `@ai-matrx/design-system/data-table/grouping`), the
-// organization with the latest change first.
+// Rows come most recently updated first (Notion, Airtable, Google Drive open this way) — or A to Z —
+// per the Feature Knob `custom.data_home_default_order`, in ONE flat list. Nothing on the home is
+// grouped or sectioned by organization (Arman, 2026-09-29): the organization is a filter on the bar,
+// and a row names its organization the way the agents and workflows lists do.
 
 export const DATA_HOME_ORDERS = ["updated", "name"] as const;
 export type DataHomeOrder = (typeof DATA_HOME_ORDERS)[number];
