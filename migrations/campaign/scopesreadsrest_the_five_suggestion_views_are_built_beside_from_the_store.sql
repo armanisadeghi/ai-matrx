@@ -120,9 +120,6 @@ begin
 end;
 $function$;
 
-revoke all on function public._ctx_scope_type_facts(uuid) from public, anon;
-revoke all on function public._ctx_scope_facts(uuid) from public, anon;
-revoke all on function public._ctx_item_facts(uuid) from public, anon;
 grant execute on function public._ctx_scope_type_facts(uuid) to service_role;
 grant execute on function public._ctx_scope_facts(uuid) to service_role;
 grant execute on function public._ctx_item_facts(uuid) to service_role;
