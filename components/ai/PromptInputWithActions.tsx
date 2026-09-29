@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { BasicTextarea } from "@/components/ui/textarea";
 import { ArrowUp, Paperclip, Mic, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 interface PromptInputWithActionsProps {
   onSend: (message: string) => void;
@@ -74,7 +75,7 @@ const PromptInputWithActions: React.FC<PromptInputWithActionsProps> = ({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey && enterSendsHere(true)) {
                   e.preventDefault();
                   handleSend();
                 }

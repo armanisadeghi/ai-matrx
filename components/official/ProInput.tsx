@@ -106,7 +106,6 @@ import type { SessionContextItem } from "@/features/transcript-studio/types";
 import { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ProTextAgentActionPopoverBody } from "./ProTextAgentActionPopoverBody";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 /** Real HTMLInputElement with optional expando methods set by ProInput. */
 export interface ProInputElement extends HTMLInputElement {
   requestClose?: () => void;
@@ -481,7 +480,9 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
           return;
         }
 
-        if (enterSendsHere(submitOnEnter) && !e.shiftKey && !withCmd) {
+        // A single-line field: Enter can never be a new line, so the phone's
+        // Go key submits it (the touch rule is for multi-line composers).
+        if (submitOnEnter && !e.shiftKey && !withCmd) {
           e.preventDefault();
           triggerSubmit();
         }

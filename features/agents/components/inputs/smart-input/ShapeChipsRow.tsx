@@ -115,7 +115,7 @@ export function ShapeChipsRow({
                   : `Add the ${chip.label} skill to this run`
               }
               className={cn(
-                "inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] font-medium transition-colors",
+                "inline-flex h-6 items-center gap-1 rounded-md border px-2 text-xs font-medium transition-colors",
                 selected
                   ? "border-primary/50 bg-primary/10 text-primary"
                   : "border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground",

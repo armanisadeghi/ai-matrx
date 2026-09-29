@@ -44,6 +44,11 @@ describe("THE ONE TABLE — what each mode shows (A1, amended 2026-09-27)", () =
     // A1 ruling: repos are Advanced-only.
     expect(composerShows("work", "chips.repos")).toBe(false);
     expect(composerShows("advanced", "chips.repos")).toBe(true);
+    // Agents first (2026-09-28): only Chat names the model and lists chat agents;
+    // Work and Advanced open the agent picker straight from the pill.
+    expect(composerShows("work", "agent.presets")).toBe(false);
+    expect(composerShows("advanced", "agent.presets")).toBe(false);
+    expect(composerShows("advanced", "agent.panel")).toBe(true);
   });
 
   it("at compact width Scope and Output leave the meta row for the + menu (A5)", () => {

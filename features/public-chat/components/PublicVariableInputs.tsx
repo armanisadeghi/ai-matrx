@@ -12,6 +12,7 @@ import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 // ============================================================================
 // TYPES
@@ -95,7 +96,7 @@ export function PublicVariableInputs({
         }
 
         // Last variable: submit if submitOnEnter, else focus text input
-        if (submitOnEnter && onSubmit) {
+        if (enterSendsHere(submitOnEnter) && onSubmit) {
           onSubmit("", undefined);
         } else if (textInputRef?.current) {
           textInputRef.current.focus();

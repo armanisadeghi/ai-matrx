@@ -42,6 +42,20 @@ function makeState(entry: {
 const api = (s: RootState) => selectSettingsOverridesForApi("c1")(s);
 const chatApi = (s: RootState) => selectSettingsForChatApi("c1")(s);
 
+describe("THE AUTO RULE — 'auto' effort is the absence of an override (Arman, 2026-09-28)", () => {
+  it("never sends reasoning_effort 'auto', whichever panel wrote it", () => {
+    expect(
+      api(makeState({ baseSettings: { reasoning_effort: "high" }, overrides: { reasoning_effort: "auto" } })),
+    ).toBeUndefined();
+  });
+
+  it("sends any other effort exactly as chosen", () => {
+    expect(
+      api(makeState({ baseSettings: { reasoning_effort: "high" }, overrides: { reasoning_effort: "low" } })),
+    ).toEqual({ reasoning_effort: "low" });
+  });
+});
+
 describe("selectSettingsOverridesForApi — genuine-delta guard", () => {
   it("drops an override whose value equals the base (no defaults-as-override)", () => {
     expect(

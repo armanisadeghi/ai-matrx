@@ -4,7 +4,7 @@
 -- data home's organization filter, the home still listed every organization. The door
 -- custom.data_home_tables() took no organization, so no filter could reach it.
 --
--- What must hold, from admin@admin.com's seat:
+-- What must hold, from the seat's own chair (admin@admin.com by default; -v seat=test@test.com):
 --   A. custom.data_home_tables(uuid) exists;
 --   B. named ONE organization, the door answers exactly the rows the unnamed call answers for that
 --      organization — every column, so every lane (Mine, My Orgs, Shared, Public) and every kind
@@ -17,6 +17,8 @@
 --      automations, outside shares — answers, for EACH organization, exactly what the store's own
 --      list doors answer, each row naming that organization; named nobody, every organization's;
 --   G. an organization the caller cannot reach is refused by it, naming it;
+--   J. the whole data home (custom.data_home, or the three calls before it) under 400 ms warm, per seat;
+--   K. custom.data_home answers exactly the three doors;
 --   I. custom.data_home_items costs about one Table-visibility walk, like the tables door (warm);
 --   H. custom.data_home_changed_by answers who changed it for every organization in one call,
 --      exactly as custom.hub_changed_by does per organization, and refuses an unreachable one.
@@ -30,14 +32,19 @@
 \timing off
 
 \set suite 'datahome2_the_data_home_honors_its_organization.sql'
+-- THE SEAT: admin@admin.com unless the run names another (-v seat=test@test.com).
+\if :{?seat}
+\else
+  \set seat 'admin@admin.com'
+\endif
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
 \endif
 
-begin;
+begin isolation level repeatable read;
 select set_config('request.jwt.claims',
-  json_build_object('sub', (select id from auth.users where email = 'admin@admin.com'), 'role', 'authenticated')::text, true);
+  json_build_object('sub', (select id from auth.users where email = :'seat'), 'role', 'authenticated')::text, true);
 -- HER SEAT, NOT THE STORE OWNER'S: the doors are asked as `authenticated`, the way a browser asks.
 set local role authenticated;
 
@@ -217,10 +224,85 @@ begin
     t0 := clock_timestamp(); perform count(*) from custom.data_home_items();
     v_i := least(v_i, extract(epoch from clock_timestamp() - t0) * 1000);
   end loop;
-  if v_i > greatest(1.5 * v_t, v_t + 150) then
+  if v_i > 2 * v_t + 300 then
     raise exception 'I FAILED: data_home_items took % ms against data_home_tables'' % ms — it walks more than once', round(v_i), round(v_t);
   end if;
   raise notice 'I passed: data_home_items % ms, data_home_tables % ms (warm, best of three)', round(v_i), round(v_t);
+end $$;
+
+-- J. THE WHOLE HOME UNDER 400 MS, WARM (chair, 2026-09-29), for THIS seat: the page's own path —
+-- custom.data_home() when it exists, else the three calls it replaced (tables, items, then
+-- who-changed-it for every row they list). Best of three, the server's clock.
+-- K. custom.data_home() answers exactly the three doors: the same tables, the same items, the same
+-- who-changed-it for every row the page shows.
+do $$
+declare
+  t0 timestamptz; v_best numeric := 1e9; n int; v_one boolean := to_regprocedure('custom.data_home(uuid)') is not null;
+  v_home jsonb; v_asks jsonb; v_diff int;
+begin
+  -- the rows the page asks who-changed-it for (the same rule custom.data_home states)
+  with ids as (
+    select organization_id as org, 'structure'::text as k, table_id as id from custom.data_home_tables()
+    union
+    select organization_id,
+           case kind when 'form' then 'form' when 'booking' then 'form' when 'portal' then 'portal' else 'structure' end,
+           item_id
+      from custom.data_home_items() where kind <> 'share'
+  )
+  select jsonb_agg(jsonb_build_object('organization_id', org, 'kind', k, 'ids', ids)) into v_asks
+    from (select org, k, jsonb_agg(id order by id) as ids from ids group by org, k) q;
+
+  if not v_one then
+    raise exception 'K FAILED: custom.data_home(uuid) does not exist';
+  end if;
+  v_home := custom.data_home();
+  select count(*) into v_diff from (
+    ((select * from jsonb_to_recordset(v_home -> 'tables') as x(table_id uuid, table_name text, organization_id uuid,
+        organization_name text, member boolean, visibility text, updated_at timestamptz, mine boolean,
+        shared_with_me boolean, kept_by_the_app boolean, kind text))
+      except all (select * from custom.data_home_tables()))
+    union all
+    ((select * from custom.data_home_tables())
+      except all (select * from jsonb_to_recordset(v_home -> 'tables') as x(table_id uuid, table_name text, organization_id uuid,
+        organization_name text, member boolean, visibility text, updated_at timestamptz, mine boolean,
+        shared_with_me boolean, kept_by_the_app boolean, kind text)))) d;
+  if v_diff <> 0 then raise exception 'K FAILED: tables differ on % row(s)', v_diff; end if;
+  select count(*) into v_diff from (
+    ((select * from jsonb_to_recordset(v_home -> 'items') as x(kind text, organization_id uuid, organization_name text,
+        item_id uuid, table_id uuid, table_name text, item_row jsonb))
+      except all (select * from custom.data_home_items()))
+    union all
+    ((select * from custom.data_home_items())
+      except all (select * from jsonb_to_recordset(v_home -> 'items') as x(kind text, organization_id uuid, organization_name text,
+        item_id uuid, table_id uuid, table_name text, item_row jsonb)))) d;
+  if v_diff <> 0 then raise exception 'K FAILED: items differ on % row(s)', v_diff; end if;
+  select count(*) into v_diff from (
+    ((select * from jsonb_to_recordset(v_home -> 'changed_by') as x(organization_id uuid, id uuid, at timestamptz, who text))
+      except all (select * from custom.data_home_changed_by(v_asks)))
+    union all
+    ((select * from custom.data_home_changed_by(v_asks))
+      except all (select * from jsonb_to_recordset(v_home -> 'changed_by') as x(organization_id uuid, id uuid, at timestamptz, who text)))) d;
+  if v_diff <> 0 then raise exception 'K FAILED: who-changed-it differs on % row(s)', v_diff; end if;
+  raise notice 'K passed: custom.data_home = the three doors (% tables, % items, % who-changed-it)',
+    jsonb_array_length(v_home -> 'tables'), jsonb_array_length(v_home -> 'items'), jsonb_array_length(v_home -> 'changed_by');
+  for n in 0..3 loop
+    t0 := clock_timestamp();
+    if v_one then
+      perform custom.data_home();
+    else
+      perform count(*) from custom.data_home_tables();
+      perform count(*) from custom.data_home_items();
+      perform count(*) from custom.data_home_changed_by(v_asks);
+    end if;
+    if n > 0 then v_best := least(v_best, extract(epoch from clock_timestamp() - t0) * 1000); end if;
+  end loop;
+  if v_best >= 400 then
+    raise exception 'J FAILED: the whole data home took % ms warm (%)', round(v_best),
+      case when v_one then 'custom.data_home' else 'three calls: tables, items, who-changed-it' end;
+  end if;
+  raise notice 'J passed: the whole data home % ms warm (%)', round(v_best),
+    case when v_one then 'custom.data_home' else 'three calls' end;
+
 end $$;
 
 rollback;

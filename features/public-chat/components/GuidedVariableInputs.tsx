@@ -10,6 +10,7 @@ import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
 import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 // ============================================================================
 // TYPES
@@ -625,7 +626,7 @@ function GuidedVariableInputsBody({
           e.preventDefault();
           if (activeIndex < total - 1) {
             goNext();
-          } else if (submitOnEnter && onSubmit) {
+          } else if (enterSendsHere(submitOnEnter) && onSubmit) {
             onSubmit("", undefined);
           } else {
             textInputRef?.current?.focus();

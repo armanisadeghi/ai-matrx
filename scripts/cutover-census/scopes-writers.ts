@@ -55,12 +55,65 @@ export const WRITER_PATTERN = new RegExp(
 /** The generated ORM models of the context tables, writing — case-sensitive (Google's OAuth `scopes.update` is not one). */
 export const ORM_WRITER_PATTERN = /\b(ScopeTypes|Scopes|ContextItems|ContextItemValues)\.(create|update|delete|bulk_create|get_or_create)\b/g;
 export const READER_PATTERN = new RegExp(
-  `from\\(\\s*["'\`](scope_types|scopes|context_items|context_item_values|templates|template_scope_types|template_context_items|scope_dataset_instances|context_value_refs)["'\`]\\s*\\)|` +
-    `\\bcontextDb\\(|\\bcontext\\.(scope_types|scopes|context_items|context_item_values|templates)\\b|` +
-    `["'\`](get_scope_tree|list_scope_types|list_scopes|search_scopes|get_scope_context|get_entity_scopes|list_entities_by_scopes|resolve_full_context|get_user_full_context|list_templates|get_value_history|list_context_value_refs)["'\`]|` +
+  // The six tables that LEAVE (SCOPES-CUTOVER-PLAN decision 3: templates, template_*, System context,
+  // user_active_context, context_access_log and scope_door_registry are platform reference data that
+  // STAY, so reading them is not a reader of the image — lane SCOPES-READS-SERVER, 2026-09-29).
+  `from\\(\\s*["'\`](scope_types|scopes|context_items|context_item_values|scope_dataset_instances|context_value_refs)["'\`]\\s*\\)|` +
+    `\\bcontextDb\\(|\\bcontext\\.(scope_types|scopes|context_items|context_item_values|context_value_refs|scope_dataset_instances)\\b|` +
     `source\\s*=\\s*["'\`]context\\.`,
   "gi",
 );
+/** The contract RPCs whose bodies lanes L6–L8 rewrite over the store with the same arguments and
+ * the same answer (SCOPES-CUTOVER-PLAN 2.2). A call of one is a reader of whatever its body reads:
+ * counted apart ("through a contract RPC") and judged against the catalogue, never as a direct
+ * reader of context.* — and never silently dropped either. */
+export const CONTRACT_RPCS =
+  "get_scope_tree|list_scope_types|list_scopes|search_scopes|get_scope_context|get_entity_scopes|list_entities_by_scopes|" +
+  "resolve_full_context|get_user_full_context|list_templates|get_value_history|list_context_value_refs|list_scope_type_items|scope_system_inspect";
+export const RPC_READER_PATTERN = new RegExp(`["'\`](${CONTRACT_RPCS})["'\`]`, "gi");
+/** The six scope tables that leave, as the generated ORM names them (lane SCOPES-READS-SERVER). */
+const LEAVING_MODELS = "ScopeTypes|Scopes|ContextItems|ContextItemValues|ContextValueRefs|ScopeDatasetInstances";
+const LEAVING_TABLES = "scope_types|scopes|context_items|context_item_values|context_value_refs|scope_dataset_instances";
+/**
+ * THE ORM READERS THE TEXT PATTERN COULD NOT SEE (attack A3 of SCOPES-CUTOVER-PLAN): a model of a
+ * leaving table used (`Scopes.filter(…)`, `ContextItems.get_or_none(…)`), imported (`from
+ * db.models.context import Scopes`, one per line of a parenthesised import too), loaded by name
+ * (`get_db_model("Scopes")`), or reached through its generated manager (`db.managers.context.scopes`,
+ * `scopes_manager_instance`). Case-sensitive, so Google's OAuth `scopes` and a "New Scopes" label are
+ * not readers; comments are stripped before it runs.
+ */
+export const ORM_READER_PATTERN = new RegExp(
+  `\\b(${LEAVING_MODELS})(Manager|DTO)?\\s*\\.\\s*[a-z_]\\w*|` +
+    `\\bimport\\b[^\\n]*\\b(${LEAVING_MODELS})\\b|` +
+    `^[ \\t]+(${LEAVING_MODELS}),?[ \\t]*$|` +
+    `\\bget_db_model\\(\\s*["'](${LEAVING_MODELS})["']|` +
+    `\\bdb\\.managers\\.context\\.(${LEAVING_TABLES})\\b|` +
+    `\\b(${LEAVING_TABLES})_manager_instance\\b`,
+  "gm",
+);
+
+/**
+ * READERS THAT GO WITH THE IMAGE — the copy machinery. They read the old tables BECAUSE their job is
+ * to carry them into the store (the follow, the movers, Copy again) or to compare the two sides (the
+ * parity referee); they leave with the tables at the contract (SCOPES-CUTOVER-PLAN 4.3.3, lane L12),
+ * never before. Claimed here so the count of product readers can reach 0 while they still run; a
+ * product file can never hide here, because a row names its files and says why.
+ */
+export const READERS_WITH_THE_IMAGE: { repo: Repo; claims: string[]; why: string }[] = [
+  {
+    repo: "aidream",
+    claims: [
+      "packages/matrx-records/matrx_records/movers/**",
+      "packages/matrx-records/matrx_records/switch.py",
+    ],
+    why: "the scopes mover, the context follow and Copy again read context.* to carry it into the store (they go with the image at L12)",
+  },
+  {
+    repo: "aidream",
+    claims: ["aidream/services/conversation_context/context_compare.py", "aidream/services/conversation_context/parity_nightly.py"],
+    why: "the parity referee: its old side is the old path by definition (context_parity.py, the inspector)",
+  },
+];
 
 type Status = "proven" | "carried" | "flip_time" | "nothing" | "open";
 interface Row {
@@ -165,8 +218,8 @@ export const WRITERS: Row[] = [
   {
     id: "S11",
     what: "Operator trial scripts that clear a test scope's values",
-    status: "carried",
-    plain: "aidream tests_trials/rag_tests/clear_scope_values.py updates context.context_item_values directly for a trial organization; in an organization whose store is the writer the write-through carries the update. Not a product path.",
+    status: "nothing",
+    plain: "RETIRED 2026-09-29 (lane SCOPES-READS-SERVER): aidream tests_trials/rag_tests/clear_scope_values.py updated context.context_item_values directly — behind the store, which every organization now writes first — so it is deleted; the remaining trial scripts read scopes through matrx_records.store.scopes. Not a product path.",
     claims: { aidream: ["tests_trials/**"] },
   },
   {
@@ -233,8 +286,11 @@ function runtimeFile(repo: Repo, f: string): boolean {
     case "matrx-frontend":
       return /^(app|features|components|lib|utils|hooks|providers)\//.test(f) && /\.(ts|tsx|js|mjs)$/.test(f);
     case "aidream":
+      // Generated from the live schema (models, managers, auto_config relation lists — in the host
+      // and in each package's own db/): they name the 14 outside foreign keys into context.* that the
+      // contract drops (L12), and read nothing themselves; their READERS are what this census counts.
       return /\.(py|ts|tsx)$/.test(f) && !/(^|\/)(scripts|migrations|node_modules|dist|\.venv|_generated)\//.test(f)
-        && !/^db\/(models|managers)\//.test(f) && !/(^|\/)types\/database\.types\.ts$/.test(f);
+        && !/(^|\/)db\/(models|managers|helpers)\//.test(f) && !/(^|\/)types\/database\.types\.ts$/.test(f);
     case "matrx-extend":
       return /^src\//.test(f) && /\.(ts|tsx|js)$/.test(f);
     case "matrx-local":
@@ -309,6 +365,19 @@ const DB_WRITERS_SQL = `
      and p.prosrc ~* '(insert\\s+into|update|delete\\s+from)\\s+(context\\.)?(scope_types|scopes|context_items|context_item_values)\\M'
    group by 1 order by 1`;
 
+/** Which contract RPCs still name a leaving table in their own body (L6–L8 have not rewritten them yet). */
+const RPC_BODIES_ON_OLD_SQL = `
+  select distinct n.nspname || '.' || p.proname as fn
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname in ('public', 'custom', 'context')
+     and p.proname = any($1::text[])
+     and p.prosrc ~* '\\mcontext\\.(scope_types|scopes|context_items|context_item_values|context_value_refs|scope_dataset_instances)\\M'
+   order by 1`;
+
+export function withTheImage(hit: Hit): boolean {
+  return READERS_WITH_THE_IMAGE.some((row) => row.repo === hit.repo && matchesAny(hit.file, row.claims));
+}
+
 // ── main ──────────────────────────────────────────────────────────────────────────────────────
 
 async function main(argv: string[]): Promise<number> {
@@ -326,6 +395,7 @@ async function main(argv: string[]): Promise<number> {
   }
   const writerHits: Hit[] = [];
   const readerHits: Hit[] = [];
+  const rpcHits: Hit[] = [];
   for (const t of trees) {
     for (const f of t.files) {
       if (!runtimeFile(t.repo, f)) continue;
@@ -334,18 +404,22 @@ async function main(argv: string[]): Promise<number> {
       const text = readFileSync(abs, "utf8");
       const w = hitsIn(t.repo, f, text, WRITER_PATTERN, ORM_WRITER_PATTERN);
       if (w) writerHits.push(w);
-      const r = hitsIn(t.repo, f, text, READER_PATTERN);
+      const r = /\.py$/.test(f) ? hitsIn(t.repo, f, text, READER_PATTERN, ORM_READER_PATTERN) : hitsIn(t.repo, f, text, READER_PATTERN);
       if (r) readerHits.push(r);
+      const rpc = hitsIn(t.repo, f, text, RPC_READER_PATTERN);
+      if (rpc) rpcHits.push(rpc);
     }
   }
   const unlistedFiles = writerHits.filter((h) => !claimed(h));
 
   let dbWriters: string[] = [];
+  let rpcBodiesOnOld: string[] = [];
   let dbError: string | null = null;
   let db: pg.Client | null = null;
   try {
     db = await connect(target);
     dbWriters = (await db.query(DB_WRITERS_SQL)).rows.map((r: { fn: string }) => r.fn);
+    rpcBodiesOnOld = (await db.query(RPC_BODIES_ON_OLD_SQL, [CONTRACT_RPCS.split("|")])).rows.map((r: { fn: string }) => r.fn);
   } catch (e) {
     dbError = (e as Error).message;
   }
@@ -367,7 +441,10 @@ async function main(argv: string[]): Promise<number> {
     rows: WRITERS.map(({ id, what, status, plain }) => ({ id, what, status, plain })),
     unlisted,
     db_writers: dbWriters,
-    readers: readerHits.map((h) => ({ repo: h.repo, file: h.file, names: h.names })),
+    readers: readerHits.map((h) => ({ repo: h.repo, file: h.file, names: h.names, with_the_image: withTheImage(h) })),
+    product_readers: readerHits.filter((h) => !withTheImage(h)).map((h) => ({ repo: h.repo, file: h.file, names: h.names })),
+    contract_rpc_callers: rpcHits.map((h) => ({ repo: h.repo, file: h.file, names: h.names })),
+    contract_rpcs_still_reading_context: rpcBodiesOnOld,
   };
 
   console.log(`SCOPES WRITERS CENSUS — catalogue on ${target}; code at ${trees.map((t) => `${t.repo} ${t.sha.slice(0, 10)}`).join(" · ")}`);
@@ -375,8 +452,14 @@ async function main(argv: string[]): Promise<number> {
   console.log(`  database functions writing context.*: ${dbWriters.length} (${unlistedFns.length} unlisted)`);
   for (const u of unlisted) console.log(`  UNLISTED ${u.repo} ${u.where}: ${u.names.join(", ")}`);
   const byRepo = new Map<string, number>();
-  for (const h of readerHits) byRepo.set(h.repo, (byRepo.get(h.repo) ?? 0) + 1);
-  console.log(`  READERS of context.* (not a gate; the final switch repoints them): ${[...byRepo].map(([k, v]) => `${k} ${v}`).join(" · ")}`);
+  const product = readerHits.filter((h) => !withTheImage(h));
+  for (const r of REPOS) byRepo.set(r, 0);
+  for (const h of product) byRepo.set(h.repo, (byRepo.get(h.repo) ?? 0) + 1);
+  console.log(`  READERS of context.* — product code (text, ORM models, imports, managers; not a gate): ${[...byRepo].map(([k, v]) => `${k} ${v}`).join(" · ")}`);
+  for (const h of product) console.log(`    READER ${h.repo} ${h.file}: ${h.names.slice(0, 4).join(", ")}`);
+  console.log(`  READERS that go with the image (copy machinery, parity referee): ${readerHits.length - product.length}`);
+  console.log(`  CALLERS of the contract RPCs (L6–L8 rewrite their bodies, contract kept): ${rpcHits.length} file(s)` +
+    (dbError ? "" : ` — bodies still reading context.*: ${rpcBodiesOnOld.length ? rpcBodiesOnOld.join(", ") : "none"}`));
   if (missing.length) console.log(`  NOT MEASURED: ${missing.join(", ")} not checked out beside this one`);
   if (dbError) console.log(`  NOT MEASURED: database — ${dbError}`);
 
@@ -416,7 +499,42 @@ function selfTest(): number {
     console.error("SELF-TEST RED: a store door call counted as an old writer");
     return 1;
   }
-  console.log("SELF-TEST GREEN — a planted old writer is unlisted, comments are not code, a direct table write is seen, a store door is not an old writer.");
+  // THE READER HALF (lane SCOPES-READS-SERVER): the ORM reads a text search could not see.
+  const ormPlants: [string, string][] = [
+    ["a model read", "rows = await Scopes.filter(id=scope_id).values('id', 'name')"],
+    ["a single-line import", "from db.models.context import ContextItems, Templates"],
+    ["a parenthesised import member", "from db.models import (\n    Memberships,\n    ScopeTypes,\n)"],
+    ["a model loaded by name", "Scopes = get_db_model(\"Scopes\", schema=\"context\")"],
+    ["a generated manager", "from db.managers.context.context_items import context_items_manager_instance"],
+  ];
+  for (const [what, code] of ormPlants) {
+    if (!hitsIn("aidream", "aidream/services/planted.py", code, READER_PATTERN, ORM_READER_PATTERN)) {
+      console.error(`SELF-TEST RED: ${what} was not seen as a reader of context.* (${code})`);
+      return 1;
+    }
+  }
+  const notReaders: [string, string][] = [
+    ["a label", 'label="New Scopes"'],
+    ["OAuth scopes", "creds.scopes.update(granted)"],
+    ["a comment", "# we used to call Scopes.filter( here"],
+    ["a docstring", '"""Reads Scopes.filter(...) no more."""'],
+    ["the store's reader", "from matrx_records.store.scopes import ScopeReader"],
+  ];
+  for (const [what, code] of notReaders) {
+    if (hitsIn("aidream", "aidream/services/planted.py", code, READER_PATTERN, ORM_READER_PATTERN)) {
+      console.error(`SELF-TEST RED: ${what} counted as a reader of context.* (${code})`);
+      return 1;
+    }
+  }
+  if (!hitsIn("aidream", "aidream/services/planted.py", 'await call_function(db, "public", "get_scope_tree", org, None)', RPC_READER_PATTERN)) {
+    console.error("SELF-TEST RED: a contract RPC call was not seen");
+    return 1;
+  }
+  if (withTheImage({ repo: "aidream", file: "aidream/services/planted.py", names: [] })) {
+    console.error("SELF-TEST RED: a product file was claimed as going with the image");
+    return 1;
+  }
+  console.log("SELF-TEST GREEN — a planted old writer is unlisted, comments are not code, a direct table write is seen, a store door is not an old writer; an ORM model read / import / manager of a leaving table is a reader, a label, OAuth scopes and the store's reader are not; a contract RPC call is counted apart.");
   return 0;
 }
 

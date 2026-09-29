@@ -1055,18 +1055,18 @@ const instanceUIStateSlice = createSlice({
           "outputKinds",
           "outputTypes",
         ] as const
-      ).filter(
-        (key) =>
-          (prior?.[key]?.length ?? 0) > 0 &&
-          incoming?.[key] === undefined &&
-          !(
-            key === "outputTypes" &&
-            sameStringSet(
-              prior?.outputTypes ?? [],
-              DEFAULT_BUILDER_ADVANCED_SETTINGS.outputTypes ?? [],
-            )
-          ),
-      );
+      ).filter((key) => {
+        if (incoming?.[key] !== undefined) return false;
+        // Output types: ANY choice other than the default is deliberate —
+        // including unticking everything (an empty list).
+        if (key === "outputTypes") {
+          return (
+            prior?.outputTypes !== undefined &&
+            !sameStringSet(prior.outputTypes, DEFAULT_BUILDER_ADVANCED_SETTINGS.outputTypes ?? [])
+          );
+        }
+        return (prior?.[key]?.length ?? 0) > 0;
+      });
 
       instanceUIStateSlice.caseReducers.initInstanceUIState(
         state,

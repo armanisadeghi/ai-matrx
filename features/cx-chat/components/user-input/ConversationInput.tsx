@@ -70,6 +70,7 @@ import type {
   ResourceBlockType,
 } from "@/features/agents/types/instance.types";
 import type { Resource } from "@/features/agents/resources/types";
+import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,
   intentTakesTheKey,
@@ -181,6 +182,7 @@ export function ConversationInput({
   const dispatch = useAppDispatch();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [submitOnEnter, setSubmitOnEnter] = useState(false);
+  const touchOnly = useTouchOnlyDevice();
   const [previewSheetOpen, setPreviewSheetOpen] = useState(false);
   const [previewResource, setPreviewResource] = useState<Resource | null>(null);
   const openDebugWindow = () =>
@@ -540,8 +542,8 @@ export function ConversationInput({
           </div>
         )}
 
-        {/* Submit-on-enter toggle */}
-        {showSubmitOnEnterToggle && (
+        {/* Submit-on-enter toggle — absent on a phone, where Enter never sends */}
+        {showSubmitOnEnterToggle && !touchOnly && (
           <div className="flex items-center gap-2 px-3">
             <button
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"

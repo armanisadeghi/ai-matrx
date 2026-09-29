@@ -80,6 +80,7 @@ import type { Resource } from "@/features/agents/resources/types";
 import type { ConversationResource } from "@/features/cx-chat/types/conversation";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,
   intentTakesTheKey,
@@ -192,6 +193,7 @@ export function ConversationInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingVoiceSubmitRef = useRef(false);
   const [submitOnEnter, setSubmitOnEnter] = useState(false);
+  const touchOnly = useTouchOnlyDevice();
   const [previewSheetOpen, setPreviewSheetOpen] = useState(false);
   const [previewResource, setPreviewResource] = useState<Resource | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -784,8 +786,8 @@ export function ConversationInput({
           </div>
         )}
 
-        {/* Submit-on-enter toggle */}
-        {showSubmitOnEnterToggle && (
+        {/* Submit-on-enter toggle — absent on a phone, where Enter never sends */}
+        {showSubmitOnEnterToggle && !touchOnly && (
           <div className="flex items-center gap-2 px-3">
             <button
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"

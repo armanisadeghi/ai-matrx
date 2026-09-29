@@ -194,11 +194,15 @@ const instanceModelOverridesSlice = createSlice({
     builder.addCase(createInstanceFull, (state, action) => {
       const { conversationId, overrides } = action.payload;
       if (!overrides) return;
+      // A re-create of the SAME conversation id (the chat launcher does this)
+      // keeps what the person already chose — an effort or model picked before
+      // the first send never silently vanishes.
+      const previous = state.byConversationId[conversationId];
       state.byConversationId[conversationId] = {
         conversationId,
         baseSettings: overrides.baseSettings ?? {},
-        overrides: {},
-        removals: [],
+        overrides: previous?.overrides ?? {},
+        removals: previous?.removals ?? [],
       };
     });
 

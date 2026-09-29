@@ -459,6 +459,32 @@ export async function upsertCellAddingChoice(
   return upsertCell(args);
 }
 
+/**
+ * Words added to a column's choices, nothing else touched (BREAKER-2 B2-02: the paste's one question
+ * answered Add). A record-store column through `custom.field_update`'s `options_add`; an older column
+ * through its inline choices (the one format writer).
+ */
+export async function addChoicesToColumn(args: {
+  tableId: string;
+  fieldId: string;
+  words: string[];
+  format: FieldFormatConfig;
+}): Promise<ServiceResult<{ field_id: string }>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.addChoicesToColumn(home, args);
+  const existing = inlineChoices(args.format.options);
+  const added = await setFieldFormat({
+    tableId: args.tableId,
+    fieldId: args.fieldId,
+    format: {
+      ...args.format,
+      options: { ...(args.format.options ?? {}), choices: [...existing, ...args.words.map((value) => ({ value }))] },
+    },
+  });
+  if (isServiceFailure(added)) return added;
+  return { success: true, data: { field_id: args.fieldId } };
+}
+
 // ─── udt_bulk_write ──────────────────────────────────────────────────────────
 
 export type BulkWriteArgs = {

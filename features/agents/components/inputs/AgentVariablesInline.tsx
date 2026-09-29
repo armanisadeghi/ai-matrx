@@ -45,6 +45,7 @@ import { calculateVisualViewportLift } from "@/lib/dom/visual-viewport-lift";
 import { collapsedRowChoices, collapsedRowKind } from "./collapsed-row";
 import { RowChoicesButton } from "./RowChoicesButton";
 import { isControlVariable } from "@ai-matrx/agents";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 interface AgentVariablesInlineProps {
   conversationId: string;
@@ -140,7 +141,7 @@ export function AgentVariablesInline({
         }
       }
       const moved = focusMainInput();
-      if (!moved && submitOnEnter) onSubmit?.();
+      if (!moved && enterSendsHere(submitOnEnter)) onSubmit?.();
     },
     [visibleDefs.length, focusMainInput, submitOnEnter, onSubmit],
   );
@@ -179,7 +180,7 @@ export function AgentVariablesInline({
       handleExpand(null);
       requestAnimationFrame(() => {
         const moved = focusMainInput();
-        if (!moved && submitOnEnter) onSubmit?.();
+        if (!moved && enterSendsHere(submitOnEnter)) onSubmit?.();
       });
     },
     [visibleDefs, handleExpand, focusMainInput, submitOnEnter, onSubmit],

@@ -31,6 +31,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { COMPOSER_CHIP_CLASS } from "./composer/composer-chip";
 
 /** The attribute `AgentTextarea` stamps on the real composer input. */
 export const AGENT_MAIN_INPUT_ATTR = "data-agent-main-input";
@@ -81,7 +82,8 @@ export function ComposerChip({
         focusAgentComposer();
       }}
       className={cn(
-        "rounded-md border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground",
+        COMPOSER_CHIP_CLASS,
+        "text-muted-foreground hover:border-primary/40 hover:text-foreground",
         className,
       )}
       title={title}

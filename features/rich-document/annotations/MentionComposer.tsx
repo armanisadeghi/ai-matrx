@@ -21,6 +21,7 @@ import { dateMention, parseDateQuery, personMention, recordMention } from "./men
 import { mentionCandidates } from "./service";
 import type { AnnotationSource } from "./types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 type Option =
   | { kind: "person"; key: string; label: string; detail: string | null; insert: string }
@@ -220,7 +221,8 @@ export function MentionComposer({
             else onCancel?.();
             return;
           }
-          if (e.key === "Enter" && !e.shiftKey) {
+          // A phone's keyboard has one key for a new line: Enter never sends there.
+          if (e.key === "Enter" && !e.shiftKey && enterSendsHere(true)) {
             e.preventDefault();
             void submit();
           }

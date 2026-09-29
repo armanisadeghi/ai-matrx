@@ -68,8 +68,11 @@ page.on("request", (req) => {
   if (m && profile === "custom") out.store_doors[m[1]] = (out.store_doors[m[1]] ?? 0) + 1;
 });
 page.on("response", async (res) => {
-  const m = res.url().match(/\/rest\/v1\/rpc\/(context_[a-z_]+)/);
-  if (m && res.status() >= 400) out.console_errors.push({ at: page.url().replace(ORIGIN, ""), text: `${m[1]} answered ${res.status()}` });
+  if (res.url().includes("/rest/v1/") && res.status() >= 400) {
+    let body = "";
+    try { body = (await res.text()).slice(0, 240); } catch {}
+    out.failed_requests = [...(out.failed_requests ?? []), { at: page.url().replace(ORIGIN, ""), status: res.status(), url: res.url().replace(/\?.*$/, ""), body }];
+  }
 });
 const tag = `${SEAT}-${WIDTH}`;
 const shot = (name) => page.screenshot({ path: join(SHOTS, `${tag}-${name}.png`) });
@@ -108,7 +111,8 @@ step("Castellano Matter", {
   drew: matter.v,
   client: /Golden State Indemnity/.test(matterText),
   practiceArea: /Workers.? Compensation/.test(matterText),
-  dateOfInjury: /2023-09-02|Sep(tember)? 2, 2023|9\/2\/2023/.test(matterText),
+  // A date value draws in a date input, whose value is not page text.
+  dateOfInjury: await page.evaluate(() => [...document.querySelectorAll("input")].some((e) => e.value === "2023-09-02")),
   notFound: /not found|404/i.test(matterText),
 });
 await shot("castellano-matter");

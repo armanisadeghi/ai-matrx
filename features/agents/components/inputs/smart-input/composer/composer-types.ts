@@ -34,7 +34,7 @@ export function isComposerMode(value: unknown): value is ComposerMode {
  *  - `splash`  — centered hero on an empty conversation; menus open downward.
  *  - `page`    — docked at the bottom of a conversation; menus open upward.
  *  - `compact` — a 440px chat panel footer or a 340px floating panel; the meta
- *                row collapses to agent + Auto and Scope / Output move into +.
+ *                row keeps agent · effort beside send, and Scope / Output move into +.
  */
 export type ComposerSize = "splash" | "page" | "compact";
 

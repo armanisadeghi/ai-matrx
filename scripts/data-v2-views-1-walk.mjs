@@ -38,6 +38,18 @@ const step = (name, result = {}) => {
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
 const page = await context.newPage();
+// Every navigation passes the walk cap's parked page the way a person would: press Resume, go on.
+const rawGoto = page.goto.bind(page);
+page.goto = async (url, opts) => {
+  const r = await rawGoto(url, opts);
+  if (page.url().includes("__dev-walk")) {
+    await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+    await page.waitForURL((u) => !u.toString().includes("__dev-walk"), { timeout: 120000 }).catch(() => undefined);
+    await sleep(3000);
+    if (!page.url().replace(/[?#].*$/, "").endsWith(new URL(url).pathname)) return rawGoto(url, opts);
+  }
+  return r;
+};
 page.on("console", (m) => m.type() === "error" && out.console_errors.push(m.text().slice(0, 240)));
 const shot = async (name) => {
   await page.screenshot({ path: join(SHOTS, `${name}.png`) });
@@ -48,11 +60,12 @@ const text = async () => (await page.locator("main").innerText().catch(() => "")
 try {
   // A parked preview host says so and offers Resume; press it, as a person would.
   await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 180000 });
-  const resume = page.getByRole("button", { name: "Resume this preview" });
-  if (await resume.count()) {
-    await resume.click();
-    await sleep(8000);
-    step("preview resumed");
+  await page.waitForLoadState("load").catch(() => undefined);
+  if (page.url().includes("__dev-walk")) {
+    await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+    await page.waitForURL((u) => !u.toString().includes("__dev-walk"), { timeout: 120000 }).catch(() => undefined);
+    await sleep(3000);
+    step("preview resumed", { url: page.url() });
   }
   out.signed_in_as = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
   step("signed in", { as: out.signed_in_as });
@@ -114,6 +127,37 @@ try {
       await sleep(3000);
       step("after archive", { rows: await page.locator("tbody tr[data-row-id]").count(), notice: (await text()).includes("archived") });
     }
+  }
+
+  if (PHASE === "attach") {
+    // A PATIENT'S PHOTO, ATTACHED THROUGH THE GRID'S OWN FILE WINDOW, THEN SEEN ON HER GALLERY CARD.
+    await page.goto(`${ORIGIN}/data-v2/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await until("the grid", async () => (await text()).includes("Dana Whitcomb"), 120000);
+    await sleep(3000);
+    const row = page.locator("tbody tr[data-row-id]", { hasText: "Dana Whitcomb" }).first();
+    await row.locator('td[data-matrx-cell-col="photo"]').dblclick();
+    await sleep(2500);
+    const attach = page.getByRole("button", { name: /Attach|Add file|Upload/ }).first();
+    await attach.click();
+    await page.getByRole("button", { name: "Upload File" }).first().waitFor({ timeout: 60000 });
+    const [chooser] = await Promise.all([
+      page.waitForEvent("filechooser", { timeout: 30000 }),
+      page.getByRole("button", { name: "Upload File" }).first().click(),
+    ]);
+    await chooser.setFiles(new URL("../public/default-user-avatar.jpg", import.meta.url).pathname);
+    await sleep(8000);
+    await shot("f3-uploaded");
+    step("after upload", { text: (await page.locator("body").innerText()).replace(/\s+/g, " ").slice(-700) });
+    // If the window asks to confirm the pick, confirm it.
+    const confirm = page.getByRole("button", { name: /^Attach( \d+ files?| file)?$|^Select$|^Done$/ });
+    if (await confirm.count()) { await confirm.last().click(); await sleep(5000); }
+    await shot("f4-cell");
+    step("cell", { text: (await row.innerText()).replace(/\s+/g, " ") });
+    await page.goto(`${ORIGIN}/data-v2/${table}?view=gallery`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await until("the gallery", async () => (await text()).includes("Dana Whitcomb"), 120000);
+    await sleep(8000);
+    await shot("f5-gallery-picture");
+    step("gallery", { imgs: await page.locator("main img").evaluateAll((els) => els.map((e) => ({ src: e.getAttribute("src")?.slice(0, 120), w: e.naturalWidth }))) });
   }
 
   if (PHASE === "attachprobe") {

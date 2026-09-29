@@ -19,6 +19,7 @@ import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import { LiveHelpAnswerBlock } from "@/features/education/tutor/components/LiveHelpAnswerBlock";
 import type { ChatMessage } from "@/types/flashcards.types";
 import { QuickActionButtons } from './prompts-buttons';
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 interface AiChatModalProps {
     isOpen: boolean;
@@ -174,7 +175,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
+                                if (e.key === 'Enter' && !e.shiftKey && enterSendsHere(true)) {
                                     e.preventDefault();
                                     handleSubmit();
                                 }

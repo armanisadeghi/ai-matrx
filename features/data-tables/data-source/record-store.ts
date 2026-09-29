@@ -754,6 +754,23 @@ export async function upsertCellAddingChoice(
   return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, { [args.fieldName]: args.value }) };
 }
 
+/**
+ * WORDS ADDED TO A COLUMN'S CHOICES, NOTHING ELSE TOUCHED (lane DATA-V2-BASICS-2, BREAKER-2 B2-02): the
+ * paste's one question — "Add these words to the choices?" — answered Add. `custom.field_update`'s
+ * `options_add` is the same door a cell's Add uses, without a cell.
+ */
+export async function addChoicesToColumn(
+  home: RecordStoreHome,
+  args: { tableId: string; fieldId: string; words: string[] },
+): Promise<ServiceResult<{ field_id: string }>> {
+  const words = [...new Set(args.words.map((w) => w.trim()).filter(Boolean))];
+  if (words.length === 0) return { success: true, data: { field_id: args.fieldId } };
+  const written = await clientFor(home).fieldUpdate({ field_id: args.fieldId, patch: { options_add: words } as never });
+  invalidateRecordStoreTable(args.tableId);
+  if (!written.ok) return refused(written.error);
+  return { success: true, data: { field_id: args.fieldId } };
+}
+
 /** What a choice cell does with a typed word that is none of its choices (`custom/choice_nudge`). */
 export async function choiceNudgeOf(home: RecordStoreHome): Promise<ChoiceNudge> {
   const cached = nudges.get(home.organizationId);

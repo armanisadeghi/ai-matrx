@@ -92,7 +92,6 @@ Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fix
 - `useCompactInputMaxHeight()` — THE compact input cap: `measureRef` on the panel, `maxInputHeightPx` =
   panel height × `compact_input_max_height_pct` (50% until the knob answers; `undefined` until measured).
 - `useComposerAgent(conversationId)` / `useEffectiveModelId` — agent, effective model, Custom, presets.
-- `useRecentWorkAgents(enabled, excludeIds)` — last three agents from `chat.conversation`.
 
 **Server** — `readComposerModeCookie()` (`composer-mode.server.ts`): the "last mode used" cookie for first paint.
 
@@ -113,7 +112,7 @@ the cookie. Every composer, the top-bar switch and a floating chat read the same
 
 **Agent switch.** The pill never navigates. It calls the host's `onSelectAgent(agentId, via?)`; `via.mandateKey`
 is set for Custom (`chat.default_new_chat`) so the host launches THROUGH the job — only that launch applies
-the person's `agents.model_prefs.chat_default_model`. No `onSelectAgent` = a fixed agent (no presets/Change/Recent).
+the person's `agents.model_prefs.chat_default_model`. No `onSelectAgent` = a fixed agent (a plain label in Work+; Chat shows only the model).
 
 **Custom's model.** Picking a model under Custom writes the user rung of
 `agents.model_prefs.chat_default_model` (`setKnobOverride`) and, when Custom is the current agent, the

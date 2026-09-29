@@ -88,6 +88,10 @@ export const selectSettingsOverridesForApi =
       // order as the base snapshot to compare equal — true today since both
       // originate from the agent definition.
       if (JSON.stringify(value) === JSON.stringify(base[key])) continue;
+      // THE AUTO RULE (Arman, 2026-09-28): "auto" effort means NO override —
+      // the agent's own setting runs. The literal word never reaches the wire,
+      // whichever panel wrote it.
+      if (key === "reasoning_effort" && value === "auto") continue;
       result[key] = value;
     }
 

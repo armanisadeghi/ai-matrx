@@ -741,7 +741,7 @@ function RailPill({ item }: { item: RailItem }) {
             aria-label={item.label}
             className={cn(
               "inline-flex h-6 min-w-0 items-center gap-1 rounded-md border px-2",
-              "text-[11px] font-medium transition-colors",
+              "text-xs font-medium transition-colors",
               item.active
                 ? item.tone === "primary"
                   ? "border-primary bg-primary/15 text-primary ring-1 ring-inset ring-primary/30"
