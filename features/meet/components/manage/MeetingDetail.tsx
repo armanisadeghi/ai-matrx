@@ -78,6 +78,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { meetingOrigin } from "@/features/meet/components/invite/MeetingInviteButton";
 import { MeetingGuests } from "@/features/meet/components/manage/MeetingGuests";
+import { linkSentence, scheduleLabel } from "@/features/meet/lib/meeting-status-copy";
 import { MeetingRecordWorkspace } from "@/features/meet/components/record/MeetingRecordWorkspace";
 import { RsvpControl } from "@/features/meet/components/manage/RsvpControl";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
@@ -782,6 +783,7 @@ function DetailsSection({
 }) {
   const start = next?.occurrenceStart ?? meeting.scheduledFor;
   const duration = next?.durationMinutes ?? meeting.scheduledDurationMinutes;
+  const label = scheduleLabel(meeting, focus);
   return (
     <div className="space-y-5">
       {meeting.cancelledAt ? (
@@ -798,10 +800,8 @@ function DetailsSection({
         {start ? (
           <>
             <div>
-              {meeting.recurrenceRule ? (
-                <span className="text-muted-foreground">
-                  {focus ? "This occurrence: " : "Next: "}
-                </span>
+              {label ? (
+                <span className="text-muted-foreground">{label}</span>
               ) : null}
               {formatLongDate(start, zone)}
             </div>
@@ -845,12 +845,7 @@ function DetailsSection({
           </Button>
         </div>
         <div className="text-xs text-muted-foreground">
-          {meeting.lobbyEnabled
-            ? "Anyone with the link can ask to join; invited people come straight in."
-            : "Anyone with the link can join."}
-          {meeting.recurrenceRule
-            ? " The same link works for every occurrence."
-            : ""}
+          {linkSentence(meeting)}
         </div>
       </Field>
       {mine &&

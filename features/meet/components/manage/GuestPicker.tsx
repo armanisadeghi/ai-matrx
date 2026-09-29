@@ -15,20 +15,14 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { getInitials } from "@ai-matrx/kit/format";
 import { useUserConnections } from "@/features/messaging/hooks/useUserConnections";
 import { isEmail, type DraftInvitee } from "@/features/meet/lib/meeting-draft";
+import { searchUserByEmail } from "@/features/organizations/userSearch";
 
+/** An email reads as its local part ("priya.raman@x" → "PR"); letters only, via the one kit rule. */
 function initials(value: string): string {
-  const words = value
-    .replace(/@.*/, "")
-    .split(/[\s._-]+/)
-    .filter(Boolean);
-  return (
-    words
-      .slice(0, 2)
-      .map((w) => w[0]!.toUpperCase())
-      .join("") || "?"
-  ).slice(0, 2);
+  return getInitials(value.replace(/@.*/, "").replace(/[._-]+/g, " "));
 }
 
 export function guestName(
@@ -60,6 +54,7 @@ export function GuestPicker({
   autoFocus,
 }: GuestPickerProps) {
   const [query, setQuery] = useState("");
+  const [resolving, setResolving] = useState(false);
   const { connections } = useUserConnections(
     organizationId ? { organizationId } : {},
   );
@@ -89,7 +84,7 @@ export function GuestPicker({
     setQuery("");
   };
 
-  const addTyped = () => {
+  const addTyped = async () => {
     const email = query.trim();
     if (suggestions.length > 0 && !isEmail(email)) {
       const first = suggestions[0]!;
@@ -100,15 +95,27 @@ export function GuestPicker({
       });
       return;
     }
-    if (!isEmail(email) || taken.has(email.toLowerCase())) return;
+    if (!isEmail(email) || taken.has(email.toLowerCase()) || resolving) return;
     const known = connections.find(
       (c) => (c.email ?? "").toLowerCase() === email.toLowerCase(),
     );
-    add({
-      userId: known?.user_id ?? null,
-      email,
-      displayName: known?.display_name ?? null,
-    });
+    if (known) {
+      add({ userId: known.user_id, email, displayName: known.display_name ?? null });
+      return;
+    }
+    // An address is an ACCOUNT whenever one exists — not only when the host has
+    // talked to that person before (verifier, 2026-09-29: test@test.com read
+    // "Joins by link as a guest" and was left out of Find a time). A failed
+    // lookup keeps the guest as an address; the server resolves it on save.
+    setResolving(true);
+    const found = await searchUserByEmail(email);
+    setResolving(false);
+    const userId = found.exists && found.id !== hostUserId ? found.id : null;
+    if (userId !== null && taken.has(userId)) {
+      setQuery("");
+      return;
+    }
+    add({ userId, email, displayName: null });
   };
 
   const typedIsNewEmail =
@@ -128,7 +135,7 @@ export function GuestPicker({
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === ",") {
               e.preventDefault();
-              addTyped();
+              void addTyped();
             }
           }}
           placeholder="Add guests by name or email"
@@ -184,13 +191,15 @@ export function GuestPicker({
                   role="option"
                   aria-selected="false"
                   className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm hover:bg-accent"
-                  onClick={addTyped}
+                  onClick={() => void addTyped()}
                 >
                   <Mail
                     className="h-4 w-4 text-muted-foreground"
                     aria-hidden="true"
                   />
-                  <span className="truncate">Invite {query.trim()}</span>
+                  <span className="truncate">
+                    {resolving ? `Checking ${query.trim()}…` : `Invite ${query.trim()}`}
+                  </span>
                 </button>
               </li>
             ) : null}
