@@ -183,10 +183,33 @@ export interface MonitorRunStarted {
 
 /** Run now: the "News monitor run" workflow, streamed (Lane C). The editor
  *  reads what the run found from the monitor itself afterwards. */
+/** One step event the run streamed (node started / finished / skipped / failed). */
+export interface MonitorRunStep {
+  nodeId: string;
+  event: string;
+}
+
+function stepOf(event: TypedStreamEvent): MonitorRunStep | null {
+  const data = (event as { data?: unknown }).data;
+  const record =
+    data && typeof data === "object" ? (data as Record<string, unknown>) : {};
+  const name = String(record.event ?? event.event ?? "");
+  const nodeId = record.node_id;
+  if (typeof nodeId !== "string" || !nodeId || !name.startsWith("node_"))
+    return null;
+  return { nodeId, event: name };
+}
+
 export async function runMonitorNow(
   dispatch: AppDispatch,
   trackerId: string,
   organizationId: string,
+  handlers: {
+    /** The workflow run id, the moment the stream names it. */
+    onRunId?: (runId: string) => void;
+    /** Each step as it starts and settles — the live progress a person watches. */
+    onStep?: (step: MonitorRunStep) => void;
+  } = {},
 ): Promise<MonitorRunStarted> {
   const startedAt = new Date().toISOString();
   let runId: string | null = null;
@@ -203,8 +226,13 @@ export async function runMonitorNow(
         if (!runId && data && typeof data === "object") {
           const record = data as Record<string, unknown>;
           const id = record.run_id ?? record.workflow_run_id;
-          if (typeof id === "string" && id) runId = id;
+          if (typeof id === "string" && id) {
+            runId = id;
+            handlers.onRunId?.(id);
+          }
         }
+        const step = stepOf(event);
+        if (step) handlers.onStep?.(step);
       },
     }),
   );

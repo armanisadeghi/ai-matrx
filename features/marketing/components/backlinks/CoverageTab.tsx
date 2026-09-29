@@ -63,6 +63,8 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { cn } from "@/lib/utils";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { MakeClipDialog } from "@/features/marketing/pr/media-desk/MakeClipDialog";
+import { useBrand } from "@/features/marketing/data/hooks";
 
 /** `?mention=` — the exact row an assist chip is talking about. */
 const MENTION_PARAM = "mention";
@@ -119,7 +121,14 @@ function projectMention(row: CoverageMentionRow) {
 }
 
 /** The opened record: the verdict, the quote, every door. */
-function MentionDetail({ row }: { row: CoverageMentionRow }) {
+function MentionDetail({
+  row,
+  clientName,
+}: {
+  row: CoverageMentionRow;
+  /** The brand's name — who a clip of this piece is for. */
+  clientName: string;
+}) {
   const verdict = coverageVerdict(row);
   const topics = Array.isArray(row.topics) ? (row.topics as string[]) : [];
   return (
@@ -140,6 +149,12 @@ function MentionDetail({ row }: { row: CoverageMentionRow }) {
         >
           Read the article <ExternalLink className="h-3.5 w-3.5" />
         </a>
+        <MakeClipDialog
+          siteId={row.site_id}
+          defaultUrl={row.url}
+          defaultClientName={clientName}
+          coverageMentionId={row.id}
+        />
         {row.outcome_event_id ? (
           <Link
             href={`/crm/outreach-lists?view=outcomes&outcome=${row.outcome_event_id}`}
@@ -169,6 +184,8 @@ function MentionDetail({ row }: { row: CoverageMentionRow }) {
 
 export function CoverageTab({ siteId }: { siteId: string }) {
   const { site, brandId } = useMarketingSite();
+  const brand = useBrand(brandId);
+  const clientName = brand.data?.name ?? "";
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -756,11 +773,11 @@ export function CoverageTab({ siteId }: { siteId: string }) {
               detail={{
                 title: (row) => coverageVerdict(row).headline,
                 description: (row) => coverageVerdict(row).detail,
-                render: (row) => <MentionDetail row={row} />,
+                render: (row) => <MentionDetail row={row} clientName={clientName} />,
               }}
               window={{
                 title: (row) => coverageVerdict(row).headline,
-                renderView: (row) => <MentionDetail row={row} />,
+                renderView: (row) => <MentionDetail row={row} clientName={clientName} />,
                 renderEdit: false,
                 defaultTab: "view",
               }}

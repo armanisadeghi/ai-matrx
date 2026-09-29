@@ -38,7 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MarketingFrontDoorPromise } from "@/features/marketing/front-doors/MarketingDoorBoard";
 import {
   LoadingSurface,
   QueryError,
@@ -51,9 +50,9 @@ import {
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
-import { getComingSoon } from "@/lib/coming-soon/registry";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { DeliveryControls } from "@/features/marketing/news-monitor/DeliveryControls";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -100,7 +99,6 @@ import {
   type MonitorDraft,
 } from "./model";
 
-const DELIVERY_PROMISE_ID = "marketing.monitoring.alerts";
 const NO_PROOF_SENTENCE =
   "Without a spokesperson or proof on file, pitch-ready stories will be marked 'needs a spokesperson'.";
 
@@ -326,6 +324,10 @@ export function MonitorSetupEditor() {
   const [newProof, setNewProof] = useState({ summary: "", url: "" });
   const [factError, setFactError] = useState<string | null>(null);
   const runMentions = useRunMentions(trackerId, runKey);
+  // Who hears about it: an unsaved choice is committed right after the monitor saves.
+  const deliveryCommit = useRef<((trackerId: string) => Promise<void>) | null>(
+    null,
+  );
 
   useEffect(() => {
     let live = true;
@@ -461,7 +463,6 @@ export function MonitorSetupEditor() {
       : [];
   });
   const cost = setup?.cost;
-  const deliveryPromise = getComingSoon(DELIVERY_PROMISE_ID);
   const brandSeg = brandCtx.seg;
 
   const setLens = (lens: "coverage" | "opportunity", on: boolean) => {
@@ -558,6 +559,7 @@ export function MonitorSetupEditor() {
         );
         setSchedule(savedSchedule);
       }
+      if (deliveryCommit.current) await deliveryCommit.current(saved.id);
       if (!andRun) {
         toast.success("Monitor saved.");
         return;
@@ -1289,16 +1291,15 @@ export function MonitorSetupEditor() {
             }
             title="Who hears about it"
           >
-            <p className="text-sm text-foreground">
-              You — the person who saves this monitor — are told, on your own
-              notification preferences.
-            </p>
-            {deliveryPromise ? (
-              <MarketingFrontDoorPromise
-                label={deliveryPromise.label}
-                promise={deliveryPromise.promise}
-              />
-            ) : null}
+            <DeliveryControls
+              organizationId={brandRow.organization_id}
+              trackerId={trackerId}
+              savedRecipients={savedMonitor?.alert_recipient_user_ids ?? []}
+              savedSlackItemId={savedMonitor?.slack_credential_item_id ?? null}
+              registerCommit={(commit) => {
+                deliveryCommit.current = commit;
+              }}
+            />
           </Section>
 
           <Section
@@ -1417,6 +1418,16 @@ export function MonitorSetupEditor() {
                       : "The run finished.")}
                 </p>
               )}
+              {trackerId ? (
+                <Link
+                  href={marketingRoutes.brandMonitorRun(brandCtx.seg, trackerId, {
+                    runId: run.runId,
+                  })}
+                  className="mt-1 mr-3 inline-block text-xs font-medium text-primary"
+                >
+                  Read what it found — the report, watch list and set-aside lists
+                </Link>
+              ) : null}
               {run.runId ? (
                 <Link
                   href={`/workflows/runs/${run.runId}`}

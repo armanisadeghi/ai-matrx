@@ -18,6 +18,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectUser,
@@ -33,6 +34,7 @@ import {
   Home,
   IdCard,
   Loader2,
+  PenLine,
   Phone,
   ShieldAlert,
   Truck,
@@ -259,6 +261,7 @@ export function UserProfilePage({
           formProfile.saveSection(FORM_PROFILE_SECTION_KEYS.emergency)
         }
       />
+      <WritingVoiceSection />
       <AccountInfoSection />
     </div>
   );
@@ -822,6 +825,26 @@ function EmergencySection({
           onField("emergency_contacts", emergency_contacts)
         }
       />
+    </SectionAnchor>
+  );
+}
+
+// ── Section: Writing voice (the page lives at /settings/profile/voice) ─────
+
+function WritingVoiceSection() {
+  return (
+    <SectionAnchor
+      id={PROFILE_SECTION_IDS.voice}
+      title="Writing voice"
+      description="How you actually write, measured from 5 to 20 of your own emails or posts. Pitches and replies written in your name are checked against it and the AI tells are rewritten."
+      icon={PenLine}
+    >
+      <Link
+        href="/settings/profile/voice"
+        className="text-sm font-medium text-primary hover:underline"
+      >
+        Open your writing voice
+      </Link>
     </SectionAnchor>
   );
 }

@@ -13,7 +13,8 @@ Protocol servers the platform provisions tools from. Single page, master/detail:
 a searchable server list on the left, and for the selected server its sync and
 connection-test freshness plus four tabs — Tools (`tool.definition` rows linked
 by `managed_by_server_id`), Configs (`tool.mcp_config`), Connected users
-(`tool.mcp_user_conn`), and a read-only Metadata dump.
+(`tool.mcp_user_conn`), and Metadata. Metadata exposes the server's tool
+allowlist as an exact-name, one-per-line editor alongside the read-only dump.
 
 Connection-test feedback distinguishes probe failures from configuration
 guidance. Missing endpoint discovery and stdio's unsupported network probe use
@@ -33,14 +34,14 @@ the provisioner refuses partial creation by keeping all four inserts atomic.
 
 ## Reads vs writes
 
-Everything about an EXISTING server is **read-only here**. The detail pane
-renders `server.description` as a paragraph and the Metadata tab as a `<pre>`;
-`mcpAdmin.service.ts` has no `updateServer`, and its one row-level mutator,
-`setServerStatus`, is currently called by nothing. The page's real writes are:
-`provisionMcpServer` (create), the `tool.mcp_config` CRUD trio, and the two
-side-effecting buttons — `refreshServer` (aidream catalog refresh) and
-`testMcpServer` (endpoint probe). Editing a registered server's own fields is
-**NOT here yet** — see below.
+Existing server fields are **read-only except `metadata.tool_allowlist`**. The
+Metadata tab saves exact MCP tool names through `mergeJsonColumn`, preserving
+unrelated metadata across concurrent writes. Blank removes the key rather than
+storing `[]`; an absent key permits all tools while a stored empty list denies
+all during catalog discovery, so that widening needs explicit confirmation. The
+page's other writes are `provisionMcpServer`
+(create), the `tool.mcp_config` CRUD trio, and the two side-effecting buttons —
+`refreshServer` (aidream catalog refresh) and `testMcpServer` (endpoint probe).
 
 ## Agent / surface consumption
 
@@ -68,22 +69,27 @@ and a typed one are indistinguishable and the draft survives Escape + reopen.
 Deliberately NOT writable: the slug (it becomes the `mcp.<slug>` executor name
 agent definitions reference), the endpoint URL, transport and auth strategy
 (connection and credential shape), the docs/website URLs, the `is_official`
-badge, provisioning itself, and everything on an existing server — Refresh
-sync, Test connection, and the `tool.mcp_config` rows including their env
-schemas. A refresh, a test or a config save is the admin's own button click and
-an agent must never assume one has run.
+badge, provisioning itself, and every existing-server field except the
+admin's explicit tool-allowlist save — Refresh sync, Test connection, and the
+`tool.mcp_config` rows including their env schemas. A refresh, a test or a
+config save is the admin's own button click and an agent must never assume one
+has run.
 
 ## NOT here yet
 
-- **No editor for a registered server.** Adding a description field plus an
-  `updateServer` service is the obvious next step, and would make an existing
-  server's description / category the natural second write target — the shape
-  the sibling Tool Registry console (`/administration/agents/mcp-tools`)
-  already ships.
+- **No general editor for a registered server.** Description, category,
+  endpoint, transport, authentication, and status remain read-only; the
+  Metadata tab's narrow tool-allowlist editor is the sole exception.
 - Per-user connection detail (auth status, last used, error count) lives on the
   per-user Connections page.
 
 ## Change Log
+
+- **2026-09-28** — Metadata now edits `tool.mcp_server.metadata.tool_allowlist`
+  as trimmed, deduplicated exact names, one per line. `mergeJsonColumn` retains
+  concurrent unrelated metadata; clearing the list removes the key and requires
+  confirmation because an absent key widens discovery beyond a stored empty or
+  restricted list.
 
 - **2026-09-25** — Configs are ARCHIVED, never deleted (`tool.mcp_config.deleted_at`,
   lane B-TOOL): `archiveServerConfig` stamps `deleted_at` and clears `is_default`; every
@@ -92,7 +98,7 @@ an agent must never assume one has run.
   launches and a connection that picked it falls back to the server default.
   `tool.mcp_user_conn` is owned through `created_by` (user_id retired) and a new
   connection is filed in the selected organization (`upsert_mcp_connection(…,
-  p_organization_id)`, checked with `iam.has_org_access`).
+p_organization_id)`, checked with `iam.has_org_access`).
 
 - **2026-08-29** — Routed Refresh sync to server-wide catalog reconciliation; no-auth MCP servers no longer fail on a missing Vault-backed user connection.
 

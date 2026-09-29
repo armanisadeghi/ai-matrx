@@ -26,6 +26,8 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { Link2Off, MessagesSquare, Newspaper, Radar, ShieldAlert } from "lucide-react";
 
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
+import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-context";
+import { BrandNewsMonitors } from "@/features/marketing/news-monitor/BrandNewsMonitors";
 import { getComingSoon } from "@/lib/coming-soon/registry";
 import {
   MarketingDoorBoard,
@@ -52,6 +54,7 @@ export function MonitoringFrontDoor({
   basePath?: string;
 } = {}) {
   const siteState = useFrontDoorSite(brandId);
+  const brandCtx = useMarketingBrandOptional();
   const promise = getComingSoon(ALERTS_PROMISE_ID);
 
   const doors: MarketingDoor[] = [];
@@ -117,6 +120,10 @@ export function MonitoringFrontDoor({
     >
       {siteState.isError ? (
         <QueryError error={siteState.error} />
+      ) : null}
+
+      {brandId ? (
+        <BrandNewsMonitors brandId={brandId} brandSeg={brandCtx?.seg ?? brandId} />
       ) : null}
 
       {doors.length > 0 ? (

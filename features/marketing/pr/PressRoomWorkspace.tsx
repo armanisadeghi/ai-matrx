@@ -92,7 +92,14 @@ import {
 } from "@/features/marketing/pr/components/StoryAngleQueue";
 import { readLadder } from "@/features/marketing/pr/ladder";
 import { deadlineState } from "@/features/marketing/pr/scoring";
-import { isAnswerable, type StoryAngle } from "@/features/marketing/pr/types";
+import {
+  isAnswerable,
+  readFacts,
+  type StoryAngle,
+} from "@/features/marketing/pr/types";
+import { HeadlinesDialog } from "@/features/marketing/pr/media-desk/HeadlinesDialog";
+import { MakeClipDialog } from "@/features/marketing/pr/media-desk/MakeClipDialog";
+import { ClipsGallery } from "@/features/marketing/pr/media-desk/ClipsGallery";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Banner({
@@ -831,6 +838,18 @@ export default function PressRoomWorkspace({
                 angleHref={(angleId) =>
                   href({ view: "all", focus: { kind: "angle", id: angleId } })
                 }
+                renderAngleAction={
+                  snapshot.isSample
+                    ? undefined
+                    : (angle) => (
+                        <HeadlinesDialog
+                          siteId={angle.site_id}
+                          angleId={angle.id}
+                          angleHeadline={angle.headline}
+                          angleFactCount={readFacts(angle.facts).items.length}
+                        />
+                      )
+                }
               />
               <div id="press-requests" className="min-w-0 scroll-mt-4">
                 <SourceRequestRail
@@ -862,6 +881,23 @@ export default function PressRoomWorkspace({
               angles={angles}
               onOpenAngle={openAngle}
               focusedId={focusedCoverageId}
+              renderMentionAction={
+                snapshot.isSample
+                  ? undefined
+                  : (mention) => (
+                      <MakeClipDialog
+                        siteId={mention.site_id}
+                        defaultUrl={mention.url}
+                        defaultClientName={selectedBrand?.name ?? ""}
+                        coverageMentionId={mention.id}
+                      />
+                    )
+              }
+            />
+            <ClipsGallery
+              siteIds={(sites.data ?? []).map((site) => site.id)}
+              activeSiteId={snapshot.isSample ? null : siteId || null}
+              clientName={selectedBrand?.name ?? ""}
             />
 
             <p className="pb-2 text-[11px] leading-4 text-muted-foreground">

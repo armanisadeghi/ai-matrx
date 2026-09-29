@@ -1,6 +1,7 @@
 "use client";
 
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
 import type { Database } from "@/types/database.types";
@@ -14,9 +15,133 @@ export type McpConfigRow = ToolTables["mcp_config"]["Row"];
 
 const sb = () => createClient();
 
+/**
+ * A stored array is displayed as one name per line. A blank editor is NOT a
+ * statement about enforcement: saving it removes the key, while a stored `[]`
+ * remains a deny-all in catalog discovery.
+ */
+export function toolAllowlistFromMetadata(metadata: unknown): string[] {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return [];
+  }
+  const candidate = (metadata as Record<string, unknown>).tool_allowlist;
+  if (!Array.isArray(candidate)) return [];
+
+  const seen = new Set<string>();
+  return candidate.reduce<string[]>((names, value) => {
+    if (typeof value !== "string") return names;
+    const name = value.trim();
+    if (!name || seen.has(name)) return names;
+    seen.add(name);
+    names.push(name);
+    return names;
+  }, []);
+}
+
+/** Normalize the editor's one-tool-per-line input, preserving first order. */
+export function toolAllowlistFromText(text: string): string[] {
+  const seen = new Set<string>();
+  return text.split(/\r?\n/).reduce<string[]>((names, line) => {
+    const name = line.trim();
+    if (!name || seen.has(name)) return names;
+    seen.add(name);
+    names.push(name);
+    return names;
+  }, []);
+}
+
+/** A blank save removes the key and therefore widens the server's tool set. */
+export function requiresUnrestrictedToolAllowlistConfirmation(
+  text: string,
+): boolean {
+  return toolAllowlistFromText(text).length === 0;
+}
+
+/**
+ * Surgical metadata merge for the only editable existing-server field. It
+ * preserves every unrelated key and deliberately removes, rather than stores,
+ * an empty allowlist because empty and absent both mean unrestricted.
+ */
+export function mergeMcpToolAllowlist(
+  metadata: unknown,
+  editorText: string,
+): Record<string, unknown> {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    throw new Error(
+      "This server has invalid metadata and cannot be safely edited.",
+    );
+  }
+  const next = { ...(metadata as Record<string, unknown>) };
+  const toolAllowlist = toolAllowlistFromText(editorText);
+  if (toolAllowlist.length === 0) {
+    delete next.tool_allowlist;
+  } else {
+    next.tool_allowlist = toolAllowlist;
+  }
+  return next;
+}
+
+function requireMcpServerMetadataObject(metadata: unknown): void {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    throw new Error(
+      "This server has invalid metadata and cannot be safely edited.",
+    );
+  }
+}
+
+/**
+ * Save only `metadata.tool_allowlist`. The version predicate makes this a
+ * compare-and-set write, so a concurrent metadata edit is never overwritten.
+ */
+export async function updateServerToolAllowlist(
+  server: Pick<McpServerRow, "id" | "metadata" | "version">,
+  editorText: string,
+): Promise<McpServerRow> {
+  const fetchCurrent = async () => {
+    const current = await sb()
+      .schema("tool")
+      .from("mcp_server")
+      .select("*")
+      .eq("id", server.id)
+      .maybeSingle();
+    if (current.data) requireMcpServerMetadataObject(current.data.metadata);
+    return current;
+  };
+  const result = await mergeJsonColumn<McpServerRow>({
+    fetchCurrent,
+    readColumn: (current) => current.metadata,
+    merge: (current) => mergeMcpToolAllowlist(current, editorText),
+    applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+      sb()
+        .schema("tool")
+        .from("mcp_server")
+        .update({
+          metadata: value as McpServerRow["metadata"],
+          version: nextVersion,
+        })
+        .eq("id", server.id)
+        .eq("version", expectedVersion)
+        .select("*")
+        .maybeSingle(),
+  });
+  if (result.status === "saved") return result.row;
+  if (result.status === "not_found") {
+    throw new Error(
+      "This MCP server is no longer available. Reload and try again.",
+    );
+  }
+  if (result.status === "conflict") {
+    throw new Error(
+      "This MCP server kept changing while saving. Reload and try again.",
+    );
+  }
+  throw result.error;
+}
+
 export async function listServers(): Promise<McpServerRow[]> {
   const { data, error } = await sb()
-    .schema("tool").from("mcp_server")
+    .schema("tool")
+    .from("mcp_server")
     .select("*")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
@@ -24,9 +149,12 @@ export async function listServers(): Promise<McpServerRow[]> {
   return data ?? [];
 }
 
-export async function listServerConfigs(serverId: string): Promise<McpConfigRow[]> {
+export async function listServerConfigs(
+  serverId: string,
+): Promise<McpConfigRow[]> {
   const { data, error } = await sb()
-    .schema("tool").from("mcp_config")
+    .schema("tool")
+    .from("mcp_config")
     .select("*")
     .eq("server_id", serverId)
     // Archived recipes (deleted_at) are gone from the list and never launch.
@@ -44,9 +172,12 @@ export async function listServerConfigs(serverId: string): Promise<McpConfigRow[
  */
 export async function listServerTools(
   serverId: string,
-): Promise<{ id: string; name: string; description: string; is_active: boolean | null }[]> {
+): Promise<
+  { id: string; name: string; description: string; is_active: boolean | null }[]
+> {
   const { data, error } = await sb()
-    .schema("tool").from("definition")
+    .schema("tool")
+    .from("definition")
     .select("id, name, description, is_active")
     .is("deleted_at", null)
     .eq("managed_by_server_id", serverId)
@@ -57,7 +188,8 @@ export async function listServerTools(
 
 export async function countConnectedUsers(serverId: string): Promise<number> {
   const { count, error } = await sb()
-    .schema("tool").from("mcp_user_conn")
+    .schema("tool")
+    .from("mcp_user_conn")
     .select("id", { count: "exact", head: true })
     .eq("server_id", serverId);
   if (error) throw error;
@@ -69,14 +201,20 @@ export async function setServerStatus(
   status: Database["public"]["Enums"]["mcp_server_status"],
 ): Promise<void> {
   await writeOne(
-    sb().schema("tool").from("mcp_server").update({ status }).eq("id", serverId).select("id"),
+    sb()
+      .schema("tool")
+      .from("mcp_server")
+      .update({ status })
+      .eq("id", serverId)
+      .select("id"),
     { action: "update", noun: "MCP server" },
   );
 }
 
 // ─── tool_mcp_config CRUD ────────────────────────────────────────────────────
 
-export type McpConfigUpsert = Database["tool"]["Tables"]["mcp_config"]["Insert"];
+export type McpConfigUpsert =
+  Database["tool"]["Tables"]["mcp_config"]["Insert"];
 
 export async function createServerConfig(args: {
   serverId: string;
@@ -95,14 +233,16 @@ export async function createServerConfig(args: {
   // If this row is being set default, unset the others on the same server first.
   if (args.isDefault) {
     const { error: clearErr } = await sb()
-      .schema("tool").from("mcp_config")
+      .schema("tool")
+      .from("mcp_config")
       .update({ is_default: false })
       .eq("server_id", args.serverId);
     if (clearErr) throw clearErr;
   }
   const client = sb();
   const { data, error } = await client
-    .schema("tool").from("mcp_config")
+    .schema("tool")
+    .from("mcp_config")
     .insert({
       // org-fallback-deliberate: an MCP server registration is platform
       //   infrastructure shared by every organization
@@ -146,20 +286,27 @@ export async function updateServerConfig(
   // If we're setting default, clear the others on the same server first.
   if (patch.is_default) {
     const { data: row, error: lookupErr } = await sb()
-      .schema("tool").from("mcp_config")
+      .schema("tool")
+      .from("mcp_config")
       .select("server_id")
       .eq("id", configId)
       .single();
     if (lookupErr) throw lookupErr;
     const { error: clearErr } = await sb()
-      .schema("tool").from("mcp_config")
+      .schema("tool")
+      .from("mcp_config")
       .update({ is_default: false })
       .eq("server_id", row.server_id)
       .neq("id", configId);
     if (clearErr) throw clearErr;
   }
   await writeOne(
-    sb().schema("tool").from("mcp_config").update(patch).eq("id", configId).select("id"),
+    sb()
+      .schema("tool")
+      .from("mcp_config")
+      .update(patch)
+      .eq("id", configId)
+      .select("id"),
     { action: "update", noun: "server config" },
   );
 }
@@ -172,7 +319,8 @@ export async function updateServerConfig(
 export async function archiveServerConfig(configId: string): Promise<void> {
   await writeOne(
     sb()
-      .schema("tool").from("mcp_config")
+      .schema("tool")
+      .from("mcp_config")
       .update({ deleted_at: new Date().toISOString(), is_default: false })
       .eq("id", configId)
       .is("deleted_at", null)
@@ -182,9 +330,12 @@ export async function archiveServerConfig(configId: string): Promise<void> {
 }
 
 /** Count of user connections referencing a specific config (used in the delete confirm). */
-export async function countConfigUserConnections(configId: string): Promise<number> {
+export async function countConfigUserConnections(
+  configId: string,
+): Promise<number> {
   const { count, error } = await sb()
-    .schema("tool").from("mcp_user_conn")
+    .schema("tool")
+    .from("mcp_user_conn")
     .select("id", { count: "exact", head: true })
     .eq("config_id", configId);
   if (error) throw error;
@@ -262,7 +413,9 @@ export function getMcpTestNotificationLevel(
  * (any HTTP response = reachable; only 5xx / network errors = unhealthy).
  */
 export async function testMcpServer(serverId: string): Promise<McpTestResult> {
-  const res = await fetch(`/api/admin/mcp/${serverId}/test`, { method: "POST" });
+  const res = await fetch(`/api/admin/mcp/${serverId}/test`, {
+    method: "POST",
+  });
   if (!res.ok) {
     let detail = "";
     try {

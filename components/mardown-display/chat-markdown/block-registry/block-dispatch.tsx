@@ -450,6 +450,7 @@ export type FeSynthesizedBlockType =
   | "video_prompt_options"
   | "map_topic_proposal"
   | "pr_play_menu"
+  | "news_monitor_kind"
   | "decision_answers"
   | "list_change_proposal"
   | "keyword_research"
@@ -630,6 +631,7 @@ export type ShapeBlockType =
   | "video_prompt_options"
   | "map_topic_proposal"
   | "pr_play_menu"
+  | "news_monitor_kind"
   | "decision_answers"
   | "list_change_proposal"
   | "keyword_research"
@@ -1869,6 +1871,24 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.MapTopicProposalBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (the news engine's six reader-facing kinds — digest, triage,
+  // angle set, opportunity report, newsworthiness verdict, client context —
+  // one block, routed inside by `__kind`). Complete-only.
+  news_monitor_kind: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.NewsMonitorKindBlock
           key={index}
           serverData={block.serverData}
         />
