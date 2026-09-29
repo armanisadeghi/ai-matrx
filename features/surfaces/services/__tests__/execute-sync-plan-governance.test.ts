@@ -1,6 +1,6 @@
 /**
  * The admin sync's PostgREST transport must never send a governance column
- * (`organization_id`, `visibility`) for a row that already exists — the
+ * (`organization_id`, `published_to_web`) for a row that already exists — the
  * package SQL sets them on INSERT only (CONTRACT §2.7, ruling N5). Re-sending
  * a value read moments earlier would silently revert a concurrent change.
  *
@@ -34,7 +34,7 @@ const REASSIGNED_ORG = "5b1f7c1e-2f0a-4d0e-9d0a-0c6f0a1b2c3d";
 function valueRow(name: string, label: string, organizationId = SYSTEM_ORG): Row {
   return {
     organization_id: organizationId,
-    visibility: "public",
+    published_to_web: true,
     surface_name: SURFACE,
     item_type: "",
     name,
@@ -91,7 +91,7 @@ const plan: SurfaceSyncPlan = {
     {
       table: "ui.ui_surface_value",
       conflict: ["surface_name", "item_type", "name"],
-      insertOnly: ["organization_id", "visibility"],
+      insertOnly: ["organization_id", "published_to_web"],
       rows: [
         valueRow("pickup_address", "Pickup address (new label)"),
         valueRow("pickup_window", "Pickup window"),
@@ -119,7 +119,7 @@ describe("executeSyncPlan governance is insert-only", () => {
       for (const row of rows) {
         if (row.name === "pallet_count") continue; // the one new row
         expect(row).not.toHaveProperty("organization_id");
-        expect(row).not.toHaveProperty("visibility");
+        expect(row).not.toHaveProperty("published_to_web");
       }
     }
 
@@ -127,7 +127,7 @@ describe("executeSyncPlan governance is insert-only", () => {
     expect(inserts).toHaveLength(1);
     expect(inserts[0]!.options).toMatchObject({ ignoreDuplicates: true });
     expect((inserts[0]!.payload as Row[]).map((r) => r.name)).toEqual(["pallet_count"]);
-    expect((inserts[0]!.payload as Row[])[0]).toMatchObject({ organization_id: SYSTEM_ORG, visibility: "public" });
+    expect((inserts[0]!.payload as Row[])[0]).toMatchObject({ organization_id: SYSTEM_ORG, published_to_web: true });
 
     const updates = calls.filter((c) => c.op === "update");
     expect(updates).toHaveLength(1);

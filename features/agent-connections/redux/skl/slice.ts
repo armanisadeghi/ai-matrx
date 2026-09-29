@@ -52,7 +52,7 @@ const sklSlice = createSlice({
      * Merge many PARTIAL definitions WITHOUT clearing the existing set —
      * used by fetchUnifiedMenu (context-menu hydration). Since 2026-08-08
      * agent.context_menu_view emits the full classification
-     * (block_type/skill_id/visibility), so the wire rows are near-complete;
+     * (block_type/skill_id/web state), so the wire rows are near-complete;
      * the merge stays partial-safe as defense — existing rows keep every
      * field a patch doesn't mention.
      */
@@ -74,7 +74,6 @@ const sklSlice = createSlice({
             categoryId: null,
             skillId: null,
             blockType: "markdown",
-            visibility: "public",
             isActive: true,
             isPublic: true,
             sortOrder: 0,

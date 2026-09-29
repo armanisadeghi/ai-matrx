@@ -1,5 +1,6 @@
 "use client";
 
+import { publishedToWebPatch } from "@/lib/row-access";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
@@ -247,7 +248,8 @@ export async function createServerConfig(args: {
       // org-fallback-deliberate: an MCP server registration is platform
       //   infrastructure shared by every organization
       organization_id: await resolveSystemOrgId(client),
-      visibility: "public",
+      // Platform-wide vocabulary: published to the web (the DB stamps who/when).
+      ...publishedToWebPatch(true, null),
       server_id: args.serverId,
       label: args.label,
       config_type: args.configType,

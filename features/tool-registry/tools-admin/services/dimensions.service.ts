@@ -7,6 +7,7 @@
  * Authoritative model: see `common-docs/systems/agents/agent-tools/DECISIONS.md`.
  */
 
+import { publishedToWebPatch } from "@/lib/row-access";
 import { createClient } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
 import type { Database } from "@/types/database.types";
@@ -208,7 +209,8 @@ export async function addToolToSurface(args: {
         // org-fallback-deliberate: a tool dimension is platform-wide tool
         //   vocabulary, identical for every organization
         organization_id: await resolveSystemOrgId(client),
-        visibility: "public",
+        // Platform-wide vocabulary: published to the web (the DB stamps who/when).
+        ...publishedToWebPatch(true, null),
         surface_name: args.surfaceName,
         always_include_tools: [toolName],
       });

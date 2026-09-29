@@ -14,7 +14,7 @@
  *   1. Linked system twin exists → offer it as the primary action.
  *   2. No twin → offer "Linked Agent Sync…" (create a synced system agent /
  *      promote to system) via the existing `agentConvertSystemWindow` overlay.
- *   3. Always: loud visibility note when the agent's card is not public.
+ *   3. Always: loud note when the agent's card is not published to the web.
  *   4. "Continue with this agent" stays available — awareness, not a block.
  *
  * Builtin agents pass through instantly (onProceed fires, no dialog).
@@ -199,11 +199,8 @@ export function GlobalBindAgentGuard({
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  This agent&apos;s visibility is{" "}
-                  <span className="font-mono">
-                    {audit.cardVisibility ?? "unknown"}
-                  </span>{" "}
-                  — people outside its audience will not get it, even though it
+                  This agent&apos;s card is not published to the web — people
+                  outside its audience will not get it, even though it
                   is the Default for everyone.
                 </AlertDescription>
               </Alert>

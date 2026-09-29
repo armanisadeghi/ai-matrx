@@ -264,7 +264,7 @@ export interface IngestReport {
   roots: string[];
 }
 
-/** Per-agent visibility tiering. Stored on `agx_agent.skill_config` JSONB. */
+/** Per-agent skill tiering (included / listed / forbidden). Stored on `agx_agent.skill_config` JSONB. */
 export interface SkillConfig {
   included: string[];
   listed: string[];

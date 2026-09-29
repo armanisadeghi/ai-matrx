@@ -29,7 +29,7 @@ const EDGE = {
   role: "binding:global",
   label: null,
   position: null,
-  metadata: { tier: "global", version: 1, visibility: "internal" },
+  metadata: { tier: "global", version: 1 },
   payload: {
     value_mappings: {
       customer_zip: { mapType: "surface_value", target: "zip_old", required: true },

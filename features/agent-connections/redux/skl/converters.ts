@@ -1,5 +1,6 @@
 import type { Database } from "@/types/database.types";
 import type { SklRenderDefinition, ShortcutCategoryRow } from "./types";
+import { publishedToWebPatch } from "@/lib/row-access";
 
 // NOTE — May 2026: skill-definition + category converters moved to
 // `features/skills/redux/skillsConverters.ts`. Render-blocks continue here.
@@ -49,9 +50,8 @@ export function rowToSklRenderDefinition(
     categoryId: row.category_id,
     skillId: row.skill_id,
     blockType: normalizeBlockType(row.block_type),
-    visibility: row.visibility,
     isActive: row.is_active,
-    isPublic: row.visibility === "public",
+    isPublic: row.published_to_web,
     sortOrder: row.sort_order,
     userId: row.created_by,
     organizationId: row.organization_id,
@@ -75,10 +75,8 @@ export function sklRenderDefinitionToUpdate(
   if (patch.skillId !== undefined) u.skill_id = patch.skillId;
   if (patch.blockType !== undefined) u.block_type = patch.blockType;
   if (patch.isActive !== undefined) u.is_active = patch.isActive;
-  // Explicit visibility wins; isPublic is the legacy boolean sugar.
-  if (patch.visibility !== undefined) u.visibility = patch.visibility;
-  else if (patch.isPublic !== undefined)
-    u.visibility = patch.isPublic ? "public" : "personal";
+  if (patch.isPublic !== undefined)
+    Object.assign(u, publishedToWebPatch(patch.isPublic, patch.userId ?? null));
   if (patch.sortOrder !== undefined) u.sort_order = patch.sortOrder;
   return u;
 }
@@ -97,8 +95,9 @@ export function sklRenderDefinitionToInsert(
     skill_id: def.skillId ?? null,
     ...(def.blockType !== undefined ? { block_type: def.blockType } : {}),
     is_active: def.isActive ?? true,
-    visibility:
-      def.visibility ?? (def.isPublic ? "public" : "personal"),
+    ...(def.isPublic
+      ? publishedToWebPatch(true, def.userId ?? null)
+      : { shown_to: "only_me" as const }),
     sort_order: def.sortOrder ?? 0,
     created_by: def.userId ?? null,
     ...(def.organizationId != null

@@ -321,7 +321,7 @@ function BindingForm({
       toast.error("This scope tier requires an ID");
       return;
     }
-    // Global tier: lineage/visibility awareness gate (auto-passes builtins).
+    // Global tier: lineage/web-state awareness gate (auto-passes builtins).
     if (scope === AGENT_SCOPES.GLOBAL) {
       setGuardOpen(true);
       return;

@@ -16,7 +16,7 @@ import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandat
  * Per-session choices (feature-owned, e.g. studio_session_settings) are NOT
  * resolved here — pages apply them on top of `effective`.
  *
- * RLS is the visibility authority: any returned row with a non-null user_id
+ * RLS is the access authority: any returned row with a non-null user_id
  * IS the caller's own; any org row belongs to a member org. Multiple member
  * orgs defining the same single-role selection: newest `updated_at` wins +
  * one console.warn naming both.
@@ -286,7 +286,7 @@ type SurfaceConfigClient = ReturnType<typeof createClient>;
  *
  *   - MEASURED on the main database, 2026-09-22: `ui.ui_surface_config` (34 rows) and
  *     `ui.ui_surface_agent_pref` (4 rows) hold ZERO rows with `user_id IS NULL AND
- *     organization_id IS NULL`, and every row is `visibility = 'internal'`. `scopeInsertColumns`
+ *     organization_id IS NULL`, and none is published to the web. `scopeInsertColumns`
  *     above is why: EVERY write path stamps an owning `organization_id`, so a global, world-
  *     readable row cannot be created by any code we ship.
  *   - `anon` held a SELECT column grant on both tables and NO SELECT-capable policy reached it —
@@ -303,7 +303,7 @@ type SurfaceConfigClient = ReturnType<typeof createClient>;
  * gone rather than merely tolerated.
  *
  * If a platform-owned, guest-visible surface tier is ever wanted, it is a DECLARED anonymous lane
- * (platform.entity_types.client_anonymous_public_read) on rows marked `visibility = 'public'`,
+ * (platform.entity_types.client_anonymous_public_read) on rows published to the web,
  * plus a writer that can create one — not a read that hopes.
  */
 const GUEST_TIER_IS_EMPTY: never[] = [];

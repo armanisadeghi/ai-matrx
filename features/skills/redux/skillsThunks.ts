@@ -27,6 +27,7 @@ import { callApi } from "@/lib/api/call-api";
 import { operationFailed } from "@/utils/errors";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
+import { publishedToWebPatch } from "@/lib/row-access";
 import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import {
@@ -81,6 +82,14 @@ import type {
   SkillRowWire,
 } from "../types";
 
+/** A new row's web state when nobody asked to publish it: every key present, so the insert's
+ *  type never sees an optional one (exactOptionalPropertyTypes). */
+const NOT_PUBLISHED = {
+  published_to_web: false,
+  published_to_web_at: null,
+  published_to_web_by: null,
+} as const;
+
 // ---------------------------------------------------------------------------
 // Reads
 // ---------------------------------------------------------------------------
@@ -99,7 +108,7 @@ export const fetchSkills = createAsyncThunk<
 >("skills/fetchSkills", async (args, { dispatch }) => {
   dispatch(skillsActions.skillsLoading());
 
-  // Supabase direct — RLS gates visibility (public + system + own + org +
+  // Supabase direct — RLS gates access (published + system + own + org +
   // project + task membership), so this is a plain client-side read. No
   // server round-trip: the Python `/api/skills` GET was a needless hop
   // (and 404'd once `callApi` stripped the `/api` prefix).
@@ -110,7 +119,7 @@ export const fetchSkills = createAsyncThunk<
     .eq("is_active", true);
 
   if (args?.categoryId) query = query.eq("category_id", args.categoryId);
-  if (args?.isPublicOnly) query = query.eq("visibility", "public");
+  if (args?.isPublicOnly) query = query.eq("published_to_web", true);
 
   // Project filter: skills associated with the project via platform.associations
   // (edge skill → project, role "member"). The bespoke skill.project junction retired.
@@ -155,7 +164,7 @@ export const fetchSkillById = createAsyncThunk<
   { state: RootState }
 >("skills/fetchSkillById", async ({ skillRef }, { dispatch }) => {
   // Supabase direct — `skill_ref` is either the row UUID or the `skill_id`
-  // business key. RLS gates visibility, so no server hop is needed.
+  // business key. RLS gates access, so no server hop is needed.
   const { data, error } = await supabase
     .schema("skill")
     .from("definition")
@@ -181,7 +190,7 @@ export const fetchSkillCategories = createAsyncThunk<
 >("skills/fetchCategories", async (_arg, { dispatch }) => {
   dispatch(skillsActions.categoriesLoading());
 
-  // Supabase direct — RLS handles visibility (system + own + org +
+  // Supabase direct — RLS handles access (system + own + org +
   // project + task), and unlike the Python `/api/skills/categories`
   // GET endpoint this preserves `user_id` so the editor can route
   // writes (Supabase direct for owned rows, Python admin for system
@@ -260,15 +269,15 @@ export const createSkill = createAsyncThunk<
     trigger_patterns: wire.trigger_patterns ?? [],
     disable_auto_invocation: wire.disable_auto_invocation,
     platform_targets: wire.platform_targets ?? [],
-    // Canonical columns: product semver → `semver`; public flag → `visibility`;
+    // Canonical columns: product semver → `semver`; public flag → "Published to
+    // the web" (a skill not published is "Shown to: Only me");
     // owner → `created_by`. (`version` is now the base int row-counter.)
     semver: wire.version ?? null,
     config: wire.config ?? {},
     category_id: wire.category_id ?? null,
     parent_skill_id: wire.parent_skill_id ?? null,
-    visibility: (wire.is_public
-      ? "public"
-      : "personal") as Database["platform"]["Enums"]["visibility"],
+    ...(wire.is_public ? publishedToWebPatch(true, userId) : NOT_PUBLISHED),
+    shown_to: wire.is_public ? null : ("only_me" as const),
     created_by: userId,
     // Personal skill → the user's org (skill.definition org is NOT NULL with no
     // inherit trigger). Never insert a null org.
@@ -316,13 +325,13 @@ export const patchSkill = createAsyncThunk<
 
   // Supabase direct. `patch` is snake_case (SkillPatchWire); most keys match
   // skill.definition columns one-for-one, except the canonicalized ones:
-  // is_public → visibility (enum), version → semver.
+  // is_public → published_to_web, version → semver.
   const { is_public, version, ...rest } = patch;
   const dbPatch = {
     ...rest,
   } as Database["skill"]["Tables"]["definition"]["Update"];
   if (is_public !== undefined)
-    dbPatch.visibility = is_public ? "public" : "personal";
+    Object.assign(dbPatch, publishedToWebPatch(is_public, null));
   if (version !== undefined) dbPatch.semver = version;
   const { data, error } = await supabase
     .schema("skill")

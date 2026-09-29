@@ -21,10 +21,11 @@ import type { CategoryTreeNode } from "../../redux/skl/selectors";
 import type { SklRenderDefinition } from "../../redux/skl/types";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { publishedToWebLabel } from "@/lib/row-access";
 
 /**
- * Classification badges — surfaces the block_type / visibility fidelity the
- * 2026-08-08 `agent.context_menu_view` update delivers. Markdown + public is
+ * Classification badges — surfaces the block_type / web-state fidelity the
+ * 2026-08-08 `agent.context_menu_view` update delivers. Markdown + published is
  * the baseline and stays unbadged; anything else is worth a glance.
  */
 function ClassificationBadges({
@@ -35,8 +36,8 @@ function ClassificationBadges({
   always?: boolean;
 }) {
   const showType = always || def.blockType !== "markdown";
-  const showVisibility = always || def.visibility !== "public";
-  if (!showType && !showVisibility) return null;
+  const showWebState = always || !def.isPublic;
+  if (!showType && !showWebState) return null;
   return (
     <>
       {showType && (
@@ -44,9 +45,9 @@ function ClassificationBadges({
           {def.blockType === "render_kind" ? "kind" : def.blockType}
         </span>
       )}
-      {showVisibility && (
+      {showWebState && (
         <span className="text-[10px] px-1 rounded border border-border/60 text-muted-foreground shrink-0">
-          {def.visibility}
+          {publishedToWebLabel(def.isPublic)}
         </span>
       )}
     </>

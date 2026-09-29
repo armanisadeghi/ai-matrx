@@ -63,7 +63,7 @@ export type SklCategoryRow = {
 };
 
 /** Supabase-generated Row shape for skill.definition — reads go direct via
- * the Supabase client (RLS gates visibility to public + system + own +
+ * the Supabase client (RLS gates access to published + system + own +
  * org/project/task membership). Project associations no longer live on the
  * row (the skill.project junction was retired into platform.associations);
  * `projectIds` is loaded separately via `loadSkillProjectIds`. */
@@ -141,7 +141,7 @@ export function supabaseRowToSkillRow(row: SklDefinitionRow): SkillRow {
     parentSkillId: row.parent_skill_id ?? null,
     isActive: Boolean(row.is_active),
     isSystem: Boolean(row.is_system),
-    isPublic: row.visibility === "public",
+    isPublic: row.published_to_web,
     sortOrder: row.sort_order ?? 0,
     userId: row.created_by ?? null,
     organizationId: row.organization_id ?? null,

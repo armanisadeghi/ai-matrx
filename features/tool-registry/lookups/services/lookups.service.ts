@@ -1,5 +1,6 @@
 "use client";
 
+import { publishedToWebPatch } from "@/lib/row-access";
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -79,7 +80,7 @@ export async function dependentSurfaceCount(clientName: string): Promise<number>
 }
 
 export async function upsertUiClient(
-  row: Omit<UiClientUpsert, "organization_id" | "visibility">,
+  row: Omit<UiClientUpsert, "organization_id" | "published_to_web">,
 ): Promise<UiClientRow> {
   const client = sb();
   const { data, error } = await client
@@ -90,7 +91,8 @@ export async function upsertUiClient(
         // org-fallback-deliberate: the tool registry's lookup rows are platform-wide
         //   vocabulary every organization reads
         organization_id: await resolveSystemOrgId(client),
-        visibility: "public",
+        // Platform-wide vocabulary: published to the web (the DB stamps who/when).
+        ...publishedToWebPatch(true, null),
       },
       { onConflict: "name" },
     )
@@ -115,7 +117,7 @@ export async function upsertUiSurface(
 }
 
 export async function upsertToolExecutor(
-  row: Omit<ToolExecutorUpsert, "organization_id" | "visibility">,
+  row: Omit<ToolExecutorUpsert, "organization_id" | "published_to_web">,
 ): Promise<ToolExecutorRow> {
   const client = sb();
   const { data, error } = await client
@@ -126,7 +128,8 @@ export async function upsertToolExecutor(
         // org-fallback-deliberate: the same platform-wide tool-registry vocabulary
         //   as above
         organization_id: await resolveSystemOrgId(client),
-        visibility: "public",
+        // Platform-wide vocabulary: published to the web (the DB stamps who/when).
+        ...publishedToWebPatch(true, null),
       },
       { onConflict: "name" },
     )

@@ -12,6 +12,8 @@
 
 import type { Database } from "@/types/database.types";
 
+/** The retiring row column's enum — still imported by features/agents/redux/agent-shortcuts
+ *  (T-13 phase 5, another lane converts that reader); nothing in this slice uses it. */
 export type RenderDefinitionVisibility =
   Database["platform"]["Enums"]["visibility"];
 
@@ -28,8 +30,8 @@ export interface SklRenderDefinition {
   categoryId: string | null;
   skillId: string | null;
   blockType: RenderDefinitionBlockType;
-  visibility: RenderDefinitionVisibility;
   isActive: boolean;
+  /** "Published to the web" (`published_to_web`). */
   isPublic: boolean;
   sortOrder: number;
   userId: string | null;

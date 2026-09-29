@@ -169,8 +169,8 @@ export function SkillIngestPanel({
               is parsed and upserted into the platform skill registry
               (<span className="font-mono text-foreground/90">skill.definition</span>
               ), flagged <span className="font-mono text-foreground/90">is_system = true</span>{" "}
-              and <span className="font-mono text-foreground/90">visibility = internal</span> —
-              always, on every write, even if a same-id row was previously public. Ingested
+              and <span className="font-medium text-foreground/90">not published to the web</span> —
+              always, on every write, even if a same-id row was previously published. Ingested
               skills are dev/admin tooling, never the same catalog end users get: they show up
               in the <span className="font-medium text-foreground/90">Agent Skills Registry</span>{" "}
               here, but not in any user's agent skill picker or auto-injected context.
@@ -181,7 +181,7 @@ export function SkillIngestPanel({
               <span className="font-mono text-foreground/90">category:</span> slug files it
               under that category; no match leaves it uncategorized. To make a specific
               ingested skill user-facing, promote it deliberately afterward (open it in the
-              registry → set visibility to Public) — that's a separate admin action, never an
+              registry → publish it to the web) — that's a separate admin action, never an
               ingest side effect. Use "Dry run" first to preview with nothing written.
             </p>
           </div>
@@ -393,7 +393,7 @@ function Header({ onBack }: { onBack: () => void }) {
           </div>
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground leading-tight">
             <ShieldCheck className="h-3 w-3" />
-            System skills · platform-wide visibility
+            System skills · platform-wide
           </div>
         </div>
       </div>

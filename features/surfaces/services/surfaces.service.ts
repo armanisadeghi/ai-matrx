@@ -1,5 +1,6 @@
 "use client";
 
+import { publishedToWebPatch } from "@/lib/row-access";
 import { qualifyValueKey } from "@ai-matrx/alchemy/declare";
 import { createClient } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
@@ -349,7 +350,8 @@ export async function createUiClient(args: {
       // org-fallback-deliberate: a ui_client row is part of the platform's own
       //   surface registry, identical for every organization
       organization_id: await resolveSystemOrgId(client),
-      visibility: "public",
+      // Shipped platform metadata: published to the web (the DB stamps who/when).
+      ...publishedToWebPatch(true, null),
       name: args.name,
       description: args.description ?? undefined,
       sort_order: args.sortOrder ?? 100,
@@ -796,7 +798,8 @@ export async function upsertSurfaceToolDefaults(
         // org-fallback-deliberate: the same platform surface registry as above —
         //   shipped platform metadata, no tenant
         organization_id: await resolveSystemOrgId(client),
-        visibility: "public",
+        // Shipped platform metadata: published to the web (the DB stamps who/when).
+        ...publishedToWebPatch(true, null),
       },
       { onConflict: "surface_name" },
     )

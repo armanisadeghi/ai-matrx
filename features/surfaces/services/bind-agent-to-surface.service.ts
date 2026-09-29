@@ -338,15 +338,15 @@ export async function bindAgentToSurface(
     }
   }
 
-  // GLOBAL binding + non-public agent = a broken promise: menu_surface
-  // inner-joins agent.card, so users outside the agent's visibility never
+  // GLOBAL binding + unpublished agent card = a broken promise: menu_surface
+  // inner-joins agent.card, so users the card does not reach never
   // receive the edge — the "global" binding is invisible to exactly the
   // audience it claims. Scream so the binder finds out at bind time, not
   // from a user report.
   if (bindingTier === "global") {
     if (agentCard && agentCard.card_visibility !== "public") {
       console.error(
-        "[bind-agent-to-surface] GLOBAL binding on a non-public agent — other users will NOT see it (agent.card visibility gates the menu_surface join). Make the agent public, or bind at a narrower tier.",
+        "[bind-agent-to-surface] GLOBAL binding on an agent whose card is not published to the web — other users will NOT see it (the card's web state gates the menu_surface join). Publish the agent's card to the web, or bind at a narrower tier.",
         {
           agentId,
           surfaceName,
@@ -415,7 +415,6 @@ export async function bindAgentToSurface(
     user_id: scope.userId ?? null,
     project_id: scope.projectId ?? null,
     task_id: scope.taskId ?? null,
-    visibility: "internal",
     version: 1,
   };
 

@@ -323,7 +323,7 @@ export function SurfaceAgentBindPanel({
       toast.error("This scope tier requires a selection");
       return;
     }
-    // Global tier: run the lineage/visibility awareness gate first. The guard
+    // Global tier: run the lineage/web-state awareness gate first. The guard
     // auto-proceeds for builtin agents and otherwise routes the decision
     // (use system twin / Linked Agent Sync / continue) back through doSave.
     if (scope === AGENT_SCOPES.GLOBAL) {
