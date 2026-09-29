@@ -1052,7 +1052,6 @@
   "scripts/check-staff-door.ts": 2,
   "scripts/check-stale-rowtype-triggers.ts": 1,
   "scripts/check-store-doors-decide.ts": 1,
-  "scripts/check-t13-row-column-source.mjs": 1,
   "scripts/check-trash-doors.ts": 1,
   "scripts/check-udt-history-honesty.ts": 2,
   "scripts/check-udt-label-census.ts": 1,

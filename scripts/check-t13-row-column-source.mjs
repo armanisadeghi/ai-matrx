@@ -11,7 +11,7 @@
  * WHAT IT COUNTS: per file, the lines naming the column as a whole word (lower case — the column,
  * the `platform.<word>` enum, a `.eq("<word>", …)` filter, a type field, a SQL predicate) in tracked
  * and untracked-but-not-ignored code files (py, ts, tsx, js, jsx, mjs, cjs, sql, rs, svelte, vue).
- * NOT counted, because they are a different word: CSS/DOM visibility (`style.<word>`,
+ * NOT counted, because they are a different word: the CSS/DOM property of the same name (`style.<word>`,
  * `<word>: hidden|visible|collapse…`), the SEO `ai_<word>` feature, `document.<word>…`.
  * Skipped paths: migrations (the database guard `t13_no_new_row_column_reader` owns what lands in
  * the database), generated types and build output.
