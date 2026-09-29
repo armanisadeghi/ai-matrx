@@ -402,6 +402,13 @@ select what, target from l7_plant;
 
 select kind, count(*) as probes from l7_probe group by kind order by kind;
 select count(*) as all_probes from l7_probe;
+\if :{?chunks}
+-- ONE CHUNK of the compare (-v chunks=N -v chunk=k): every probe whose id is k modulo N, plus RED's own. Each chunk
+-- is a whole compare — OLD and NEW in its own transaction, over its own snapshot — so N chunks, each GREEN, prove
+-- all probes; one transaction of all 856k sub-blocks is more than the clone's per-connection memory holds.
+delete from l7_probe where id % :chunks <> :chunk and kind not like 'red:%';
+select :chunk as chunk, :chunks as chunks, count(*) as chunk_probes from l7_probe;
+\endif
 \if :{?smoke}
 -- a smoke run keeps one probe in :smoke of every kind (the verdict then speaks only for those)
 delete from l7_probe where id % :smoke <> 0 and kind not like 'red:%';
@@ -513,7 +520,7 @@ select p.kind, count(*) as probes, count(*) filter (where o.h is distinct from n
        count(*) filter (where o.err) as refusals, count(*) filter (where not o.err) as allows
   from l7_probe p join l7_ans o on o.probe = p.id and o.side = 'old' join l7_ans n on n.probe = p.id and n.side = 'new'
  group by p.kind order by p.kind;
-select count(distinct probe) as unmeasured_probes from l7_unmeasured;
+select p.kind, u.side, u.code, count(*) as unmeasured from l7_unmeasured u join l7_probe p on p.id = u.probe group by 1, 2, 3;
 \echo '── the first mismatches, if any'
 select p.kind, p.class_id, p.seat, p.seat_role, o.preview as old, n.preview as new
   from l7_probe p join l7_ans o on o.probe = p.id and o.side = 'old' join l7_ans n on n.probe = p.id and n.side = 'new'

@@ -1,6 +1,9 @@
 -- INVERSE of migrations/campaign/scopeshomes_a_copied_scope_type_field_and_scope_keep_their_author.sql (lane SCOPES-STORE-HOMES).
 -- chair-step: puts back the three bodies as production held them (authors stamped on insert only). Authors already re-stamped stay.
--- BASED-ON-PLACEHOLDER
+-- ground-standing-ok: b — this inverse undoes only the author carry and is meant to run ALONE, newest first: the bodies it restores call custom._ctx_scope_columns, which stays standing until the older sibling scopeshomes_every_column_a_scope_reader_uses_has_a_home_in_the_store_down.sql runs, and that inverse restores a _ctx_store_type that no longer calls it before dropping it.
+-- based-on: custom._ctx_upsert_doc(uuid, uuid, uuid, text, jsonb, jsonb, timestamp with time zone, uuid) 573681e1f91eaadf6ddf6cce40de8f1672372df007356534d1fa505778812fb9
+-- based-on: custom._ctx_store_type(uuid, uuid, jsonb) 13fe3ea5c32a863c412711bb46fd83e06e35cb250c5158320b45f235972d0eec
+-- based-on: custom._ctx_store_scope(uuid, uuid, uuid, jsonb) 852b4a6101e06fcce113a4b85d11edcd233306d2fc2b90e7dc03d4d8f18eedaa
 
 CREATE OR REPLACE FUNCTION custom._ctx_upsert_doc(p_org uuid, p_id uuid, p_kernel uuid, p_class text, p_doc jsonb, p_stamp jsonb, p_deleted timestamp with time zone, p_created_by uuid DEFAULT NULL::uuid)
  RETURNS text

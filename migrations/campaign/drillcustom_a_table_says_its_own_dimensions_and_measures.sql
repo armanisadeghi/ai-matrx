@@ -991,5 +991,5 @@ values ('custom', 'table_dimensions_set',
 on conflict do nothing;
 
 
--- The grant is a consequence of the two rows above, never a decision of its own.
-select custom.reopen_declared_doors();
+-- The EXECUTE grant for the two doors is its own chair step, run right after this file:
+-- drillcustom_the_two_doors_can_be_reached.sql (a GRANT is refused by the additive allow-list).

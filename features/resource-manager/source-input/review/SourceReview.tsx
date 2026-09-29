@@ -21,7 +21,8 @@ import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySl
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { formatChars, formatTokens } from "@/lib/tokens/estimate";
 import { fetchSourceManifest } from "./api";
-import { deliveryPatch } from "../delivery";
+import { deliveryPatch, deliverySwitchedNote, fitDelivery } from "../delivery";
+import { sourceKey } from "../sourceKinds";
 import { reviewDefaultContextTokens } from "./knobs";
 import { planSourceReview, type SourcePlan } from "./plan";
 import { SourceReviewRow } from "./SourceReviewRow";
@@ -62,7 +63,21 @@ export function SourceReview({
   onPlanChange,
 }: SourceReviewProps) {
   const targetModelId = options.targetModelId ?? sourceSet.target_model_id;
-  const [refs, setRefs] = useState<SourceRef[]>(() => [...sourceSet.sources]);
+  // A Source handed in set to a delivery this host cannot use is switched
+  // back here, once, and the screen says so (never a choice that cannot work).
+  const [initial] = useState(() => {
+    const switched: string[] = [];
+    const fitted = sourceSet.sources.map((r) => {
+      const fit = fitDelivery(r, options.deliveries);
+      if (!fit) return r;
+      switched.push(deliverySwitchedNote(fit.to));
+      const next: SourceRef = { ...r, ...fit.patch };
+      if (next.delivery === undefined) delete next.delivery;
+      return next;
+    });
+    return { fitted, switchedNote: switched[0] ?? null, switchedCount: switched.length };
+  });
+  const [refs, setRefs] = useState<SourceRef[]>(() => initial.fitted);
   const [removed, setRemoved] = useState<Set<number>>(() => new Set());
   const [manifest, setManifest] = useState<SourceManifest | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -136,6 +151,8 @@ export function SourceReview({
     );
   };
 
+  const canLookUp = !options.deliveries || options.deliveries.includes("context");
+
   const intro =
     options.reason === "large"
       ? "These Sources are large, so here is exactly what will go in. Change anything below, or use them as they are."
@@ -148,8 +165,19 @@ export function SourceReview({
           {options.purpose ? <span className="text-foreground">For {options.purpose}. </span> : null}
           {intro}
         </p>
+        {initial.switchedNote ? (
+          <p className="text-xs text-amber-700 dark:text-amber-400" role="status">
+            {initial.switchedCount > 1
+              ? `${initial.switchedCount} Sources were switched back: ${initial.switchedNote}`
+              : initial.switchedNote}
+          </p>
+        ) : null}
         {plan ? (
-          <BudgetSummary plan={plan} modelLabel={modelLabel ?? targetModelId ?? null} onLookUpLeftOut={lookUpLeftOut} />
+          <BudgetSummary
+            plan={plan}
+            modelLabel={modelLabel ?? targetModelId ?? null}
+            onLookUpLeftOut={canLookUp ? lookUpLeftOut : null}
+          />
         ) : (
           !error && <Skeleton className="h-16 w-full" />
         )}
@@ -191,6 +219,8 @@ export function SourceReview({
                   key={`${entry.ref.resource_type}:${entry.ref.resource_id}:${index}`}
                   plan={entry}
                   defaultOpen={plan.entries.length === 1}
+                  deliveries={options.deliveries}
+                  describe={options.describe?.[sourceKey(entry.ref)]}
                   onChange={(next) => setRef(index, next)}
                   onFormChange={(representation) =>
                     setRef(index, {
@@ -245,7 +275,8 @@ function BudgetSummary({
 }: {
   plan: SourcePlan;
   modelLabel: string | null;
-  onLookUpLeftOut: () => void;
+  /** Null when the host cannot use "look it up" — the button is not offered. */
+  onLookUpLeftOut: (() => void) | null;
 }) {
   const v = VERDICT[plan.verdict];
   const pct = Math.round(plan.share * 100);
@@ -299,9 +330,13 @@ function BudgetSummary({
           <span className="min-w-0 flex-1">
             Won&apos;t go in: {plan.leftOut.map((e) => e.entry.label).join(", ")}.
           </span>
-          <Button type="button" size="sm" variant="outline" onClick={onLookUpLeftOut}>
-            Let the AI look {plan.leftOut.length === 1 ? "it" : "them"} up instead
-          </Button>
+          {onLookUpLeftOut ? (
+            <Button type="button" size="sm" variant="outline" onClick={onLookUpLeftOut}>
+              Let the AI look {plan.leftOut.length === 1 ? "it" : "them"} up instead
+            </Button>
+          ) : (
+            <span className="text-xs">Open {plan.leftOut.length === 1 ? "it" : "each one"} below to choose parts or set a size limit.</span>
+          )}
         </div>
       )}
     </div>

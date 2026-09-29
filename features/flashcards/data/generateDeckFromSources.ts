@@ -47,6 +47,15 @@ import { fcService } from "./fcService";
 import { FC_MANDATES } from "./mandates";
 import type { NewCardInput } from "./types";
 
+/**
+ * How flashcards can use a Source: its TEXT, handed over up front. The
+ * segmented generator reads the resolved text and nothing else — it cannot
+ * open a Source while it works — so "Let the AI look it up" would reach it as
+ * nothing at all (V2 verifier shots 06/26: "None of the Sources had any text"
+ * for a Source that had plenty). Passed to the Source input as `deliveries`.
+ */
+export const FLASHCARD_SOURCE_DELIVERIES = ["direct"] as const;
+
 const CHUNK_HEADER_RE = /^### Chunk (\S+)(?: \(page (\d+)\))?[ \t]*$/gm;
 
 /** What one grounded chunk id belongs to. */
@@ -281,6 +290,13 @@ export async function generateCardsFromSources({
   ctx,
 }: CardsFromSourcesInput): Promise<CardsFromSourcesOutcome> {
   const sources = resolved.sources.filter((s) => s.text.trim().length > 0);
+  const lookedUp = resolved.sources.filter((s) => s.ref.delivery === "context" && !s.text.trim());
+  if (sources.length === 0 && lookedUp.length > 0) {
+    // Never the false "no text": say what actually happened, with the remedy.
+    throw new Error(
+      `${lookedUp.map((s) => s.label).join(", ")} ${lookedUp.length === 1 ? "is" : "are"} set to "let the AI look it up", which flashcards cannot use — cards are made from the text itself. Open the Source and choose "Include the text".`,
+    );
+  }
   if (sources.length === 0) {
     throw new Error(
       "None of the Sources had any text to make cards from. Check each Source, or add another.",

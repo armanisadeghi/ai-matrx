@@ -36,6 +36,8 @@
 --   N10 a current value row whose every value column is empty is no value (old listed it).
 --   `clone_lag`: organizations still on the old writer on THIS clone only, rows the in-transaction
 --      catch-up could not carry or settings keys it cannot erase (both 0 on production).
+--   `store_switched_off`: an organization whose record store is switched off (its scopes stay on the
+--      old tables by design); named for the chair, never counted as equal.
 --   `store_newer`: the store holds a later version of a value than the old image (a store write
 --      the image never received); counted, named, never fixed here (no row reconciliation).
 --   N8 a date or datetime value is compared as its one value, whichever of value_text / value_date /
@@ -439,6 +441,9 @@ create temp table l6_verdict on commit drop as
                   from jsonb_array_elements(j.o -> 'organizations') with ordinality oo(o, i)
                   join jsonb_array_elements(j.n -> 'organizations') with ordinality nn(o, i2) on nn.o ->> 'id' = oo.o ->> 'id')
            and jsonb_array_length(j.o -> 'organizations') = jsonb_array_length(j.n -> 'organizations') then 'org_shared_only'
+      -- An organization whose record store is switched off keeps its scopes on the old tables by
+      -- design (SCOPES-PRESS-EVERYONE skipped it); the store does not hold it. Named, never a pass.
+      when j.organization_id is not null and not custom.store_is_open(j.organization_id) then 'store_switched_off'
       else 'MISMATCH' end as verdict
     from l6_judged j
     cross join lateral (select case when jsonb_typeof(j.o) = 'array' and jsonb_typeof(j.n) = 'array'
@@ -448,7 +453,7 @@ create temp table l6_verdict on commit drop as
 \pset tuples_only on
 \pset format unaligned
 \o :dump
-select jsonb_build_object('fn', fn, 'why', why, 'user_id', user_id, 'org', organization_id, 'arg', arg, 'o', o, 'n', n) from l6_verdict where verdict in ('MISMATCH', 'order_only', 'store_newer');
+select jsonb_build_object('verdict', verdict, 'fn', fn, 'why', why, 'user_id', user_id, 'org', organization_id, 'arg', arg, 'o', o, 'n', n) from l6_verdict where verdict in ('MISMATCH', 'order_only', 'store_newer');
 \o
 \pset tuples_only off
 \pset format aligned

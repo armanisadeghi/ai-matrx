@@ -59,6 +59,13 @@ import type { SourceDraft, SourceKindId } from "@/features/resource-manager/sour
 import { useFlashcardMandates } from "@/features/flashcards/data/mandate-disclosure";
 import { fcService } from "@/features/flashcards/data/fcService";
 import {
+  readDeckSourceDrafts,
+  saveDeckSourceSet,
+  sourceNamesOf,
+  topUpSeed,
+} from "@/features/flashcards/data/deckSourceSet";
+import {
+  FLASHCARD_SOURCE_DELIVERIES,
   backfillFileIds,
   deckLineageResult,
   generateCardsFromSources,
@@ -170,24 +177,32 @@ function AddMoreCardsDialog({
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Read the deck's own material once and put it in the input, picked.
+  // Read the deck's own material once and put it in the input, picked —
+  // EXACTLY as it was chosen (parts, form, limit) when the deck recorded it
+  // (V2-F #2: a deck made from "Pages 65–68" reopened holding the whole PDF);
+  // a deck made before that falls back to its lineage, whole, and says so.
   const seeded = useRef(false);
-  const seed = useEffectEvent((found: ArtifactOrigin[]) => {
+  const [wholeSourcesOnly, setWholeSourcesOnly] = useState(false);
+  const seed = useEffectEvent((found: ArtifactOrigin[], saved: SourceDraft[] | null) => {
     setOrigins(found);
     if (seeded.current) return;
     seeded.current = true;
-    for (const origin of found) {
-      const draft = originToDraft(origin);
-      if (draft?.ref && !set.hasRef(draft.ref.resource_type, draft.ref.resource_id)) {
+    const lineage = found.map(originToDraft).filter((d): d is SourceDraft => !!d?.ref);
+    const start = topUpSeed(saved, lineage);
+    setWholeSourcesOnly(start.wholeSourcesOnly);
+    for (const draft of start.drafts) {
+      if (draft.ref && !set.hasRef(draft.ref.resource_type, draft.ref.resource_id)) {
         set.addReady(draft);
       }
     }
   });
   useEffect(() => {
     let cancelled = false;
-    void readArtifactOrigins("fc_set", setId).then((found) => {
-      if (!cancelled) seed(found);
-    });
+    void Promise.all([readArtifactOrigins("fc_set", setId), readDeckSourceDrafts(setId)]).then(
+      ([found, saved]) => {
+        if (!cancelled) seed(found, saved);
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -204,6 +219,8 @@ function AddMoreCardsDialog({
     try {
       const orgId = await ensureOrgId(undefined);
       setStatus(`Reading ${ready.length} ${ready.length === 1 ? "source" : "sources"}…`);
+      const chosen = set.toSourceSet();
+      const chosenNames = sourceNamesOf(set.sources);
       const resolved = await backfillFileIds(await set.resolve());
       if (resolved.dropped.length) {
         toast.info(
@@ -253,6 +270,12 @@ function AddMoreCardsDialog({
       await Promise.all(
         made.sources.map((s) => recordSourceLineage(result, lineageSourceOf(s), orgId)),
       );
+      // The next top-up starts from what this one used (V2-F #2).
+      const notRecorded = await saveDeckSourceSet(setId, chosen, chosenNames);
+      if (notRecorded)
+        toast.warning(
+          `The cards were added, but the parts they came from could not be saved with the deck (${notRecorded}).`,
+        );
       await cardGen.commit();
       toast.success(
         `Added ${made.cards.length} new card${made.cards.length === 1 ? "" : "s"}${
@@ -281,8 +304,10 @@ function AddMoreCardsDialog({
   const description =
     origins === null
       ? "Checking which material this deck was made from…"
-      : hasMaterial
-        ? "The material this deck was made from is already picked. Keep it, add more, or remove any — new cards are added to this deck and every card you have is kept."
+      : hasMaterial || set.sources.length > 0
+        ? wholeSourcesOnly
+          ? "The material this deck was made from is already picked — whole, because this deck was made before the parts it used were recorded. Choose parts on a Source to narrow it. New cards are added to this deck and every card you have is kept."
+          : "The material this deck was made from is already picked, with the same parts and settings. Keep it, add more, or remove any — new cards are added to this deck and every card you have is kept."
         : "This deck was not made from any material (it was imported or written by hand). Pick what the new cards should come from — new cards are added to this deck and every card you have is kept.";
 
   const blocked = landing.length
@@ -299,6 +324,7 @@ function AddMoreCardsDialog({
         purpose="the new cards"
         kinds={TOPUP_KINDS}
         required
+        deliveries={FLASHCARD_SOURCE_DELIVERIES}
         attachTo={{ entityType: "fc_set", entityId: setId, label: deckName }}
       />
       <div className="flex flex-col gap-1.5">

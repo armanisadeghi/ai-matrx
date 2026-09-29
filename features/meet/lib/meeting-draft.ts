@@ -257,6 +257,28 @@ export function changesTiming(changes: MeetingChanges): boolean {
   );
 }
 
+/**
+ * True when an edit moves a SERIES itself — its first start, its rule or its
+ * zone — which is when the database re-homes (or archives) every per-date
+ * change. Mirrors `v_series_changed` in `communication.meet_update_meeting`.
+ */
+export function movesSeries(
+  meeting: Pick<MeetingRecord, "recurrenceRule" | "scheduledFor" | "timeZone">,
+  changes: MeetingChanges,
+): boolean {
+  if (!meeting.recurrenceRule) return false;
+  const moved = (a: string | null | undefined, b: string | null | undefined) =>
+    a !== undefined && (a ?? null) !== (b ?? null);
+  return (
+    (changes.scheduledFor !== undefined &&
+      changes.scheduledFor !== null &&
+      meeting.scheduledFor !== null &&
+      Date.parse(changes.scheduledFor) !== Date.parse(meeting.scheduledFor)) ||
+    moved(changes.recurrenceRule, meeting.recurrenceRule) ||
+    moved(changes.timeZone, meeting.timeZone)
+  );
+}
+
 /** Invitee changes: who to add (and as what), who to remove, whose role flips. */
 export function inviteeDiff(
   saved: readonly MeetingInvitee[],

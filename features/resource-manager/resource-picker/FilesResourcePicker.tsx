@@ -44,7 +44,6 @@ import {
   type EnhancedFileDetails,
 } from "@/utils/file-operations/constants";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { useCloudTree } from "@/features/files/hooks/useCloudTree";
 import { useFileMutation } from "@/features/files/hooks/useFileMutation";
 import { fileUrls } from "@/features/files/handler/utils/python-base";
@@ -56,7 +55,6 @@ import { dbRowToCloudFile } from "@/features/files/redux/converters";
 import { truncateFilename } from "@/features/files/utils/format";
 import {
   EMPTY_TREE_CHILDREN,
-  selectAllFilesArray,
   selectAllFilesMap,
   selectAllFoldersMap,
   selectChildrenByFolderId,
@@ -66,7 +64,16 @@ import {
   selectIsFolderFullyLoaded,
 } from "@/features/files/redux/selectors";
 import { loadFolderContents } from "@/features/files/redux/thunks";
-import { isRecentActivityFile } from "@/features/files/utils/user-visible";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  inOrganization,
+  matchesFileFilter,
+  pickerRecentFiles,
+  pickerSearch,
+  sortFiles,
+  type FilesPickerSort,
+  type FilesResourcePickerFilter,
+} from "./filesPickerLists";
 import type {
   CloudFileRecord,
   CloudFolderRecord,
@@ -80,34 +87,14 @@ import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-/** Same cap as `buildRows` recents filter in the files list. */
-/** Two viewports worth of rows; never mount a 100-item thumbnail fan-out. */
-const RECENTS_CAP = 20;
-
 type PickerViewMode = "list" | "grid";
-/** File-type filter used by Stored Files / Cloud Files picker UI. */
-export type FilesResourcePickerFilter =
-  | "all"
-  | "pdf-extractor"
-  | "pdfs"
-  | "text"
-  | "markdown"
-  | "code"
-  | "photos"
-  | "videos"
-  | "audio"
-  | "data"
-  | "other";
+export type { FilesResourcePickerFilter } from "./filesPickerLists";
 
 type FileFilter = FilesResourcePickerFilter;
-type FileSort = "updated" | "name" | "size";
+type FileSort = FilesPickerSort;
 
 const SEARCH_DEBOUNCE_MS = 350;
-const SEARCH_RESULT_LIMIT = 20;
 const PICKER_PAGE_SIZE = 12;
-
-/** Empty set reused when the PDF Extractor filter is inactive. */
-const EMPTY_PROCESSED_FILE_IDS = new Set<string>();
 
 // ---------------------------------------------------------------------------
 // Types (preserve the legacy surface)
@@ -201,69 +188,6 @@ interface FilesResourcePickerProps {
    * upload and stored-file browsing share one surface.
    */
   topSlot?: ReactNode;
-}
-
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
-
-function matchesFileFilter(
-  file: CloudFileRecord,
-  filter: FileFilter,
-  processedFileIds: ReadonlySet<string> = EMPTY_PROCESSED_FILE_IDS,
-) {
-  if (filter === "pdf-extractor") {
-    // Membership in `/tools/pdf-extractor` studio docs — never MIME.
-    return processedFileIds.has(file.id);
-  }
-
-  const { previewKind } = getFilePreviewProfile(
-    file.fileName,
-    file.mimeType,
-    file.fileSize,
-  );
-  switch (filter) {
-    case "pdfs":
-      return previewKind === "pdf";
-    case "text":
-      return previewKind === "text" || previewKind === "html";
-    case "markdown":
-      return previewKind === "markdown";
-    case "code":
-      return previewKind === "code";
-    case "photos":
-      return previewKind === "image" || previewKind === "svg";
-    case "audio":
-      return previewKind === "audio";
-    case "videos":
-      return previewKind === "video";
-    case "data":
-      return previewKind === "data" || previewKind === "spreadsheet";
-    case "other":
-      return ![
-        "pdf",
-        "text",
-        "html",
-        "markdown",
-        "code",
-        "image",
-        "svg",
-        "audio",
-        "video",
-        "data",
-        "spreadsheet",
-      ].includes(previewKind);
-    default:
-      return true;
-  }
-}
-
-function sortFiles(files: CloudFileRecord[], sort: FileSort) {
-  return [...files].sort((a, b) => {
-    if (sort === "name") return a.fileName.localeCompare(b.fileName);
-    if (sort === "size") return (b.fileSize ?? 0) - (a.fileSize ?? 0);
-    return (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "");
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -398,6 +322,11 @@ interface FileListOrGridProps {
   multiple: boolean;
   selectedFileIds: ReadonlySet<string>;
   className?: string;
+  /**
+   * `false` = more rows only on an explicit "Show more" click. Recents uses it
+   * so scrolling through it never auto-grows the list past the Folders below.
+   */
+  autoLoad?: boolean;
 }
 
 function FileListOrGrid({
@@ -407,6 +336,7 @@ function FileListOrGrid({
   multiple,
   selectedFileIds,
   className,
+  autoLoad = true,
 }: FileListOrGridProps) {
   const { visibleCount, hasMore, sentinelRef, loadMore } = useInfiniteWindow({
     total: files.length,
@@ -415,6 +345,8 @@ function FileListOrGrid({
     resetKey: files,
   });
   const visibleFiles = files.slice(0, visibleCount);
+  const moreRef = autoLoad ? sentinelRef : undefined;
+  const moreLabel = `Show more files (${files.length - visibleCount} more)`;
 
   if (files.length === 0) return null;
 
@@ -434,12 +366,12 @@ function FileListOrGrid({
         </div>
         {hasMore ? (
           <button
-            ref={sentinelRef}
+            ref={moreRef}
             type="button"
             onClick={loadMore}
-            className="mt-1.5 w-full rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="mt-1.5 w-full rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground pointer-coarse:min-h-11"
           >
-            Show more files
+            {moreLabel}
           </button>
         ) : null}
       </div>
@@ -459,12 +391,12 @@ function FileListOrGrid({
       ))}
       {hasMore ? (
         <button
-          ref={sentinelRef}
+          ref={moreRef}
           type="button"
           onClick={loadMore}
-          className="w-full rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="w-full rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground pointer-coarse:min-h-11"
         >
-          Show more files
+          {moreLabel}
         </button>
       ) : null}
     </div>
@@ -490,11 +422,6 @@ interface TreeNodeProps {
   defaultOpen?: boolean;
   /** Only this organization's files (see `FilesResourcePickerProps.organizationId`). */
   organizationId?: string | null;
-}
-
-/** A file the window shows under an organization filter (none = every file). */
-function inOrganization(file: CloudFileRecord, organizationId: string | null | undefined): boolean {
-  return !organizationId || file.organizationId === organizationId;
 }
 
 function FolderNode({
@@ -666,15 +593,15 @@ export function FilesResourcePicker({
   headerIcon,
   topSlot,
 }: FilesResourcePickerProps) {
-  const currentUserId = useAppSelector(
-    (s: unknown) => (s as { user?: { id?: string | null } }).user?.id ?? null,
-  );
+  // The picker hydrates the library itself when no one else has (the global
+  // CloudFilesRealtimeProvider normally already has). Until 2026-09-29 this
+  // read `state.user.id`, a slice that no longer exists, so it never fired.
+  const currentUserId = useAppSelector(selectUserId);
   useCloudTree(currentUserId ?? null);
   const treeStatus = useAppSelector(selectTreeStatus);
   const foldersById = useAppSelector(selectAllFoldersMap);
   const filesById = useAppSelector(selectAllFilesMap);
   const rootFolderIds = useAppSelector(selectRootFolderIds);
-  const allFiles = useAppSelector(selectAllFilesArray);
 
   const fileMutation = useFileMutation();
   const searchInputRef = usePickerInputFocus();
@@ -844,24 +771,16 @@ export function FilesResourcePicker({
     studioDocs.loading,
   ]);
 
-  // Recent files — same rules as the files list Recents view.
-  const recentFiles = useMemo(() => {
-    const pool = allFiles.filter(
-      (f) => !f.deletedAt && isRecentActivityFile(f) && inOrganization(f, organizationId),
-    );
-    pool.sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
-    return pool.slice(0, RECENTS_CAP);
-  }, [allFiles, organizationId]);
-
+  // Recents and search: the WHOLE library, never capped (filesPickerLists.ts).
   const visibleRecentFiles = useMemo(
     () =>
-      sortFiles(
-        recentFiles.filter((file) =>
-          matchesFileFilter(file, fileFilter, processedFileIds),
-        ),
-        fileSort,
-      ),
-    [recentFiles, fileFilter, fileSort, processedFileIds],
+      pickerRecentFiles(filesById, {
+        organizationId,
+        filter: fileFilter,
+        sort: fileSort,
+        processedFileIds,
+      }),
+    [filesById, organizationId, fileFilter, fileSort, processedFileIds],
   );
 
   const visibleProcessedFiles = useMemo(() => {
@@ -876,23 +795,26 @@ export function FilesResourcePicker({
     return sortFiles(pool, fileSort);
   }, [resolvedProcessedFiles, searchQuery, fileSort]);
 
-  const visibleSearchResults = useMemo(() => {
-    const query = debouncedSearchQuery.trim().toLowerCase();
-    return sortFiles(
-      allFiles
-        .filter(
-          (file) =>
-            !file.deletedAt &&
-            inOrganization(file, organizationId) &&
-            (file.fileName.toLowerCase().includes(query) ||
-              file.filePath.toLowerCase().includes(query)),
-        )
-        .filter((file) =>
-          matchesFileFilter(file, fileFilter, processedFileIds),
-        ),
+  const searchResults = useMemo(
+    () =>
+      pickerSearch(filesById, foldersById, debouncedSearchQuery, {
+        organizationId,
+        filter: fileFilter,
+        sort: fileSort,
+        processedFileIds,
+      }),
+    [
+      filesById,
+      foldersById,
+      debouncedSearchQuery,
+      organizationId,
+      fileFilter,
       fileSort,
-    ).slice(0, SEARCH_RESULT_LIMIT);
-  }, [allFiles, debouncedSearchQuery, fileFilter, fileSort, processedFileIds, organizationId]);
+      processedFileIds,
+    ],
+  );
+  const visibleSearchResults = searchResults.files;
+  const folderSearchResults = searchResults.folders;
 
   const handleSearchChange = (value: string) => setSearchQuery(value);
 
@@ -1183,22 +1105,50 @@ export function FilesResourcePicker({
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Searching all cloud files…
                 </div>
-              ) : visibleSearchResults.length === 0 ? (
+              ) : visibleSearchResults.length === 0 &&
+                folderSearchResults.length === 0 ? (
                 <div className="text-xs text-muted-foreground text-center py-8">
-                  No files match this search
+                  No files or folders match this search
                 </div>
               ) : (
                 <div className="p-1">
-                  <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
-                    Search results
-                  </div>
-                  <FileListOrGrid
-                    files={visibleSearchResults}
-                    viewMode={viewMode}
-                    onSelect={handleFileSelect}
-                    multiple={selectionMode === "multiple"}
-                    selectedFileIds={selectedFileIds}
-                  />
+                  {folderSearchResults.length > 0 && (
+                    <div className="mb-1">
+                      <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
+                        Folders · {folderSearchResults.length}
+                      </div>
+                      {folderSearchResults.map((folder) => (
+                        <FolderNode
+                          key={folder.id}
+                          folderId={folder.id}
+                          label={folder.folderPath}
+                          level={0}
+                          onFileSelect={handleFileSelect}
+                          viewMode={viewMode}
+                          fileFilter={fileFilter}
+                          fileSort={fileSort}
+                          processedFileIds={processedFileIds}
+                          multiple={selectionMode === "multiple"}
+                          selectedFileIds={selectedFileIds}
+                          organizationId={organizationId}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {visibleSearchResults.length > 0 && (
+                    <>
+                      <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
+                        Files · {visibleSearchResults.length}
+                      </div>
+                      <FileListOrGrid
+                        files={visibleSearchResults}
+                        viewMode={viewMode}
+                        onSelect={handleFileSelect}
+                        multiple={selectionMode === "multiple"}
+                        selectedFileIds={selectedFileIds}
+                      />
+                    </>
+                  )}
                 </div>
               )
             ) : visibleRecentFiles.length === 0 && rootFolders.length === 0 ? (
@@ -1210,9 +1160,10 @@ export function FilesResourcePicker({
                 {visibleRecentFiles.length > 0 && (
                   <div>
                     <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
-                      Recent
+                      Recent · {visibleRecentFiles.length}
                     </div>
                     <FileListOrGrid
+                      autoLoad={false}
                       files={visibleRecentFiles}
                       viewMode={viewMode}
                       onSelect={handleFileSelect}

@@ -18,7 +18,13 @@
 
 import { useEffect, useEffectEvent } from "react";
 import type { UseProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
-import { fileSourcePollDelayMs, nextFileStep, readFileSourceState } from "./fileSource";
+import {
+  fileCardHeldForOrganization,
+  fileSourcePollDelayMs,
+  isWaitingFileCard,
+  nextFileStep,
+  readFileSourceState,
+} from "./fileSource";
 import { RELOADED_RESUMING } from "./interrupted";
 import type { SourceCardModel } from "./types";
 import type { UseSourceIntakeResult } from "./useSourceIntake";
@@ -28,20 +34,12 @@ const resumedCards = new Set<string>();
 const keptFileSources = new Set<string>();
 const startedFileRuns = new Set<string>();
 
-/** A stored file on a card whose Source is not known yet. */
-function isWaitingFileCard(card: SourceCardModel): boolean {
-  return (
-    card.status === "ready" &&
-    card.draft.ref?.resource_type === "file" &&
-    !!card.draft.fileId &&
-    !card.draft.processedDocumentId
-  );
-}
-
 export function useSourceRecovery(
   set: UseSourceSetResult,
   intake: UseSourceIntakeResult,
   runner: UseProcessingRunner,
+  /** The organization the person picked (null = none yet). A file card is only asked about once one is known. */
+  options: { organizationId: string | null | undefined },
 ): void {
   // ── Never lose input: land again what a reload cut off ─────────────────────
   const resumeKey = set.sources
@@ -68,13 +66,17 @@ export function useSourceRecovery(
   // again; nothing reading it → start the one run (once); unreadable → say so.
   // A reload lands here again and re-attaches to whatever the server is doing
   // — it never starts a duplicate run and never loses the file.
+  // Held for an organization (V2-F #3): no organization known = nothing asked.
+  // Picking one changes the key, so the look starts by itself.
+  const askable = (card: SourceCardModel) =>
+    isWaitingFileCard(card) && !fileCardHeldForOrganization(card, options.organizationId);
   const waitingKey = set.sources
-    .filter(isWaitingFileCard)
+    .filter(askable)
     .map((c) => `${c.id}:${c.draft.fileId}`)
     .join(",");
   const lookAtFiles = useEffectEvent(async (signal: AbortSignal): Promise<boolean> => {
     let anyWaiting = false;
-    for (const card of set.sources.filter(isWaitingFileCard)) {
+    for (const card of set.sources.filter(askable)) {
       const fileId = card.draft.fileId as string;
       const guard = `${card.id}:${fileId}`;
       if (keptFileSources.has(guard)) continue;

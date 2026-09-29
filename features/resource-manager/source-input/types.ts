@@ -14,6 +14,7 @@ import type {
   SourceManifestEntry,
   SourceRef,
 } from "@ai-matrx/agents/sources";
+import type { SourceDelivery } from "./delivery";
 
 /** Every tile the input can show. ONE registry: `sourceKinds.ts`. */
 export type SourceKindId =
@@ -46,6 +47,11 @@ export interface SourceDraft {
   origin?: string;
   /** The Source screen id when known (a landed Source) — every card opens. */
   processedDocumentId?: string;
+  /**
+   * How a reused Source was captured (`processed_documents.source_kind`), so
+   * the card and the review say "Transcript" or "Web page" — never "Document".
+   */
+  sourceKind?: string;
   /** The stored file behind it, when it is one (the form chooser reads its family). */
   fileId?: string;
   /** Every stand-in announces itself: a reader fallback, a door notice. */
@@ -113,5 +119,12 @@ export interface SourceInputProps {
   purpose?: string;
   /** The model that will read them — its context window sets the review budget. */
   targetModelId?: string;
+  /**
+   * How the AI may get the Sources on this surface. Omitted = both. A host
+   * whose generator needs the text up front (flashcards) passes `["direct"]`:
+   * the card and the review never offer "Let the AI look it up", and a Source
+   * already set to it is switched back with a note on its card.
+   */
+  deliveries?: readonly SourceDelivery[];
   className?: string;
 }

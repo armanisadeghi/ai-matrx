@@ -36,7 +36,7 @@ function isOverdue(setBy: string, reviewDue: string | null): boolean {
   return setBy === "agent" && reviewDue !== null && new Date(reviewDue) < new Date();
 }
 
-function SystemKnobRows() {
+function SystemKnobRows({ feature }: { feature?: string }) {
   const settings = useUniversalSettings();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -81,13 +81,16 @@ function SystemKnobRows() {
   }, [countRequest, settings.refresh]);
 
   // React Compiler is on — no hand-rolled memo.
-  const matching = settings.knobs.filter((knob) => knobMatchesControlSearch(knob, query));
+  // A host page for ONE feature (the Meetings admin page) narrows the register to
+  // that feature's knobs; the search box still works inside it.
+  const register = feature ? settings.knobs.filter((knob) => knob.feature === feature) : settings.knobs;
+  const matching = register.filter((knob) => knobMatchesControlSearch(knob, query));
 
   // Only the FIRST read blanks the register. A refresh after a write keeps the rows (and an opened
   // key's every-level panel) mounted, so the operator is not thrown back to the top of ~1,900 rows.
   if (settings.isLoading && settings.knobs.length === 0) return <p className="text-sm text-muted-foreground">Loading knobs…</p>;
   if (settings.error) return <SettingsCallout tone="error" title="Knobs could not be read">{settings.error} <ErrorAlchemyMenu error={settings.error} /></SettingsCallout>;
-  const overdue = settings.knobs.filter((knob) => isOverdue(knob.set_by, knob.review_due));
+  const overdue = register.filter((knob) => isOverdue(knob.set_by, knob.review_due));
   const trimmed = query.trim();
 
   const clearSearch = () => {
@@ -121,8 +124,10 @@ function SystemKnobRows() {
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         {trimmed
-          ? `${matching.length} of ${settings.knobs.length} settings match “${trimmed}”.`
-          : `${settings.knobs.length} settings registered. Search a key such as orchestration.loop_guard to narrow the list.`}
+          ? `${matching.length} of ${register.length} settings match “${trimmed}”.`
+          : feature
+            ? `${register.length} ${feature} settings. Open “All levels” on a row to set it for one organization.`
+            : `${register.length} settings registered. Search a key such as orchestration.loop_guard to narrow the list.`}
       </p>
       {trimmed !== "" && matching.length === 0 && (
         <SettingsCallout tone="warning" title="No setting matches that search">
@@ -164,7 +169,10 @@ function SystemKnobRows() {
   );
 }
 
-/** The system destination reuses the same typed rows as user and organization settings. */
-export function FeatureKnobsPanel() {
-  return <UniversalSettingsProvider target="system"><SettingsDesignProvider variant="compact"><SystemKnobRows /></SettingsDesignProvider></UniversalSettingsProvider>;
+/**
+ * The system destination reuses the same typed rows as user and organization settings.
+ * `feature` narrows the register to one feature's knobs (e.g. "meet") for a feature's own admin page.
+ */
+export function FeatureKnobsPanel({ feature }: { feature?: string } = {}) {
+  return <UniversalSettingsProvider target="system"><SettingsDesignProvider variant="compact"><SystemKnobRows feature={feature} /></SettingsDesignProvider></UniversalSettingsProvider>;
 }

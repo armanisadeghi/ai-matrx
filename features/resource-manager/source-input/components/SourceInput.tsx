@@ -23,6 +23,8 @@ import { createSourceRef } from "@ai-matrx/agents/sources";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { knobInt } from "@/lib/knobs/featureKnobs";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { youtubeId } from "@/lib/media/youtube";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
@@ -30,10 +32,12 @@ import type { Resource } from "@/features/agents/resources/types";
 import { openSourceReview } from "@/features/resource-manager/source-input/review/openSourceReview";
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { visibleSourceKinds, type SourceKindDef } from "../sourceKinds";
+import { sourceKey, sourceKindNoun, visibleSourceKinds, type SourceKindDef } from "../sourceKinds";
+import { deliverySwitchedNote, fitDelivery } from "../delivery";
 import { useSourceSet } from "../useSourceSet";
 import { useSourceIntake } from "../useSourceIntake";
 import { useSourceRecovery } from "../useSourceRecovery";
+import { fileCardHeldForOrganization } from "../fileSource";
 import type { SourceInputProps, SourceKindId } from "../types";
 import { SourceCard, formatChars } from "./SourceCard";
 import { YourSources } from "./YourSources";
@@ -52,6 +56,7 @@ export function SourceInput({
   attachTo,
   purpose,
   targetModelId,
+  deliveries,
   className,
 }: SourceInputProps) {
   const tiles = visibleSourceKinds(kinds);
@@ -65,7 +70,8 @@ export function SourceInput({
   const autoOpened = useRef(false);
 
   // Never lose input + file uploads' Sources — UI-free, in the hook.
-  useSourceRecovery(set, intake, runner);
+  const activeOrgId = useAppSelector(selectOrganizationId);
+  useSourceRecovery(set, intake, runner, { organizationId: activeOrgId });
 
   const count = set.sources.length;
   const atMax = max !== undefined && count >= max;
@@ -80,6 +86,25 @@ export function SourceInput({
     const t = setTimeout(measure, MEASURE_DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [refsKey]);
+
+  // ── Only what this host can use (V2-F #1) ─────────────────────────────────
+  // A Source set to a delivery this surface cannot use (picked on another
+  // surface, restored from a draft, handed in by a link) is switched back,
+  // and its card says so. Never a choice that cannot work.
+  const deliveryKey = JSON.stringify([deliveries ?? null, set.sources.map((s) => s.draft.ref?.delivery ?? null)]);
+  const fitDeliveries = useEffectEvent(() => {
+    for (const card of set.sources) {
+      const fit = fitDelivery(card.draft.ref, deliveries);
+      if (!fit) continue;
+      set.updateRef(card.id, fit.patch);
+      const note = deliverySwitchedNote(fit.to);
+      if (!card.draft.notes?.includes(note))
+        set.updateDraft(card.id, { notes: [...(card.draft.notes ?? []), note] });
+    }
+  });
+  useEffect(() => {
+    fitDeliveries();
+  }, [deliveryKey]);
 
   // ── The review threshold is a knob (limits are knobs) ─────────────────────
   useEffect(() => {
@@ -113,6 +138,15 @@ export function SourceInput({
         purpose,
         targetModelId,
         addMoreLabel: "Add more sources",
+        deliveries,
+        // The review names each Source the way its card does (V2-F #5).
+        describe: Object.fromEntries(
+          set.sources.flatMap((s) =>
+            s.draft.ref
+              ? [[sourceKey(s.draft.ref), { kind: sourceKindNoun(s.draft), name: s.draft.label }]]
+              : [],
+          ),
+        ),
       });
       if (outcome.status === "applied" || outcome.status === "add_more") {
         set.applySourceSet(outcome.sourceSet);
@@ -301,6 +335,8 @@ export function SourceInput({
                   ? (runner.jobs.find((j) => j.cldFileId === card.draft.fileId) ?? null)
                   : null
               }
+              deliveries={deliveries}
+              heldForOrganization={fileCardHeldForOrganization(card, activeOrgId)}
               onProcessingSettled={() => void set.manifest()}
               // A retry is a card already in the list — it never counts against `max`.
               onTryAgain={() => void intake.resume(card)}
@@ -392,6 +428,7 @@ function TileArea({
               label: row.name || "Untitled",
               ref: createSourceRef("processed_document", row.id),
               processedDocumentId: row.id,
+              sourceKind: row.source_kind,
             });
           }}
         />

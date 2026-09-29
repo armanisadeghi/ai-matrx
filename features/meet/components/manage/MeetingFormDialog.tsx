@@ -77,6 +77,7 @@ import {
   RECORDING_POLICY_LABELS,
   changedSettings,
   changesTiming,
+  movesSeries,
   draftChanges,
   draftProblem,
   draftSchedule,
@@ -196,6 +197,10 @@ export function MeetingFormDialog({
   const [saving, setSaving] = useState(false);
   const [scopeAsk, setScopeAsk] = useState(false);
   const [scope, setScope] = useState<"occurrence" | "series">("occurrence");
+  const [exceptionsAsk, setExceptionsAsk] = useState<{
+    scope: "occurrence" | "series";
+    count: number;
+  } | null>(null);
   const [touchedSettings, setTouchedSettings] = useState(false);
   const planning = useMeetPlanningKnobs(actions.organizationId, actions.userId);
   const findTime = useFindTime();
@@ -257,23 +262,32 @@ export function MeetingFormDialog({
     onOpenChange(false);
   };
 
-  const saveEdit = async (chosenScope: "occurrence" | "series") => {
-    if (!editing) return;
+  /**
+   * Returns false when it stopped to ask whether the series' per-date changes
+   * come along (nothing has been written yet); true when it saved.
+   */
+  const saveEdit = async (
+    chosenScope: "occurrence" | "series",
+    keepExceptions?: boolean,
+  ): Promise<boolean> => {
+    if (!editing) return true;
     const meeting = editing.meeting;
     let changes = draftChanges(meeting, draft);
     let updated = meeting;
     const occurrence = editing.occurrence ?? null;
+    let moveOccurrence: (() => Promise<unknown>) | null = null;
 
     if (isSeriesOccurrence && occurrence && changesTiming(changes)) {
       const newStart = zonedToUtcIso(draft.date, draft.time, draft.timeZone);
       if (chosenScope === "occurrence") {
-        await actions.setOccurrence({
-          meetingId: meeting.id,
-          originalStart: occurrence.originalStart,
-          action: "move",
-          newStart,
-          newDurationMinutes: draft.durationMinutes,
-        });
+        moveOccurrence = () =>
+          actions.setOccurrence({
+            meetingId: meeting.id,
+            originalStart: occurrence.originalStart,
+            action: "move",
+            newStart,
+            newDurationMinutes: draft.durationMinutes,
+          });
         const {
           scheduledFor: _s,
           scheduledDurationMinutes: _d,
@@ -309,6 +323,23 @@ export function MeetingFormDialog({
       }
     }
 
+    // THE SERIES MOVES → its cancelled and moved dates belonged to the old
+    // schedule. Google Calendar and Outlook warn and let the person choose;
+    // silently archiving them is how a cancelled date came back (verifier,
+    // 2026-09-29). Asked before anything is written.
+    if (movesSeries(meeting, changes)) {
+      if (keepExceptions === undefined) {
+        const changed = await countChangedDates(meeting);
+        if (changed > 0) {
+          setExceptionsAsk({ scope: chosenScope, count: changed });
+          return false;
+        }
+      } else {
+        changes = { ...changes, keepExceptions };
+      }
+    }
+
+    if (moveOccurrence !== null) await moveOccurrence();
     if (Object.keys(changes).length > 0)
       updated = await actions.update(meeting, changes);
     const diff = inviteeDiff(editing.invitees, draft.invitees);
@@ -327,14 +358,27 @@ export function MeetingFormDialog({
         ? "This occurrence was moved."
         : "Meeting saved.",
     );
+    return true;
   };
 
-  const submit = async (chosenScope: "occurrence" | "series" = scope) => {
+  const countChangedDates = async (meeting: MeetingRecord): Promise<number> => {
+    const upcoming = await actions.repository.meetingOccurrences(meeting.id, {
+      from: new Date(Date.now() - 24 * 3_600_000).toISOString(),
+      to: new Date(Date.now() + 400 * 86_400_000).toISOString(),
+      limit: 500,
+    });
+    return upcoming.filter((o) => o.state !== "scheduled").length;
+  };
+
+  const submit = async (
+    chosenScope: "occurrence" | "series" = scope,
+    keepExceptions?: boolean,
+  ) => {
     if (problem !== null || saving) return;
     setSaving(true);
     try {
       if (editing) {
-        await saveEdit(chosenScope);
+        await saveEdit(chosenScope, keepExceptions);
       } else {
         const sent =
           mode.kind === "create"
@@ -839,6 +883,57 @@ export function MeetingFormDialog({
                 {editing ? "Save" : "Schedule"}
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={exceptionsAsk !== null}
+        onOpenChange={(v) => (!saving && !v ? setExceptionsAsk(null) : undefined)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              Keep changes to individual dates?
+            </DialogTitle>
+            <DialogDescription>
+              {exceptionsAsk?.count === 1
+                ? "One date in this series was cancelled or moved on its own."
+                : `${exceptionsAsk?.count ?? 0} dates in this series were cancelled or moved on their own.`}{" "}
+              Keep them on the new schedule, or put every date back on the
+              series? A kept change that no longer lands on a date of the new
+              series is dropped.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              onClick={() => setExceptionsAsk(null)}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              disabled={saving}
+              onClick={() => {
+                const ask = exceptionsAsk;
+                setExceptionsAsk(null);
+                if (ask) void submit(ask.scope, false);
+              }}
+            >
+              Discard them
+            </Button>
+            <Button
+              disabled={saving}
+              onClick={() => {
+                const ask = exceptionsAsk;
+                setExceptionsAsk(null);
+                if (ask) void submit(ask.scope, true);
+              }}
+            >
+              Keep them
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

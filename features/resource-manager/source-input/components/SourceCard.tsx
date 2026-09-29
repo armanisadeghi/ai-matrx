@@ -51,8 +51,14 @@ import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { asClause } from "@/lib/text/asClause";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { sourceKindDef } from "../sourceKinds";
-import { DELIVERY_CHOICES, DELIVERY_WORDS, deliveryPatch, sourceDelivery } from "../delivery";
+import { sourceKindDef, sourceKindNoun } from "../sourceKinds";
+import {
+  DELIVERY_WORDS,
+  deliveryChoicesFor,
+  deliveryPatch,
+  sourceDelivery,
+  type SourceDelivery,
+} from "../delivery";
 import { findParts, isWordQuery, type SourcePart } from "../partsSearch";
 import { useSourcePartsText } from "../useSourcePartsText";
 import { resumableInput } from "../interrupted";
@@ -97,12 +103,16 @@ export function SourceCard({
   card,
   set,
   job,
+  deliveries,
+  heldForOrganization = false,
   onProcessingSettled,
   onTryAgain,
   onChooseFileAgain,
 }: {
   card: SourceCardModel;
   set: UseSourceSetResult;
+  /** The deliveries this host can use — the card offers only these. Omitted = both. */
+  deliveries?: readonly SourceDelivery[];
   /** The processing-runner job reading this file, when this session started one. */
   job: ProcessingJob | null;
   onProcessingSettled: () => void;
@@ -119,6 +129,7 @@ export function SourceCard({
   const entry = card.manifest;
   const chars = cardChars(card);
   const delivery = sourceDelivery(ref);
+  const deliveryChoices = deliveryChoicesFor(deliveries);
   const waitingForOrganization = card.status === "error" && card.error === WAITING_FOR_ORGANIZATION;
   const partsCount = ref?.include_segments?.length ?? 0;
   const segments = entry?.segments ?? [];
@@ -156,7 +167,7 @@ export function SourceCard({
             )}
           </div>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-            <span>{kind.label}</span>
+            <span>{sourceKindNoun(card.draft)}</span>
             {chars !== null ? (
               <span>
                 · {formatChars(chars)}
@@ -169,7 +180,7 @@ export function SourceCard({
                 · {STATE_WORDS[entry.state]}
               </span>
             ) : null}
-            {card.draft.origin && card.draft.origin !== kind.label ? (
+            {card.draft.origin && card.draft.origin !== kind.label && card.draft.origin !== sourceKindNoun(card.draft) ? (
               <span className="truncate">· {card.draft.origin}</span>
             ) : null}
           </p>
@@ -262,6 +273,23 @@ export function SourceCard({
         </p>
       ) : null}
 
+      {heldForOrganization ? (
+        <p role="status" className="flex items-start gap-2 border-t border-border px-3 py-2 text-xs text-warning">
+          <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span className="min-w-0 flex-1">{WAITING_FOR_ORGANIZATION}</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
+            onClick={() => void chooseOrganizationForHeldSources().catch(() => undefined)}
+          >
+            <Building2 className="h-3.5 w-3.5" />
+            Choose organization
+          </Button>
+        </p>
+      ) : null}
+
       {card.draft.notes?.length ? (
         <ul className="space-y-0.5 border-t border-border px-3 py-2 text-xs text-muted-foreground">
           {card.draft.notes.map((n) => (
@@ -321,8 +349,9 @@ export function SourceCard({
           </div>
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-foreground">How the AI gets it</p>
+            {deliveryChoices.length > 1 ? (
             <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="How the AI gets it">
-              {DELIVERY_CHOICES.map((choice) => (
+              {deliveryChoices.map((choice) => (
                 <button
                   key={choice.value}
                   type="button"
@@ -342,6 +371,10 @@ export function SourceCard({
                 </button>
               ))}
             </div>
+            ) : (
+              // The one way this page can use it — said, never a one-option control.
+              <p className="text-xs text-foreground">{DELIVERY_WORDS[delivery].label}</p>
+            )}
             <p className="text-xs text-muted-foreground">{DELIVERY_WORDS[delivery].hint}</p>
           </div>
         </div>

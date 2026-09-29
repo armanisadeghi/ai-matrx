@@ -35,7 +35,11 @@ import {
 } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
-import type { SourceKindId } from "./types";
+import {
+  SOURCE_KIND_LABEL,
+  sourceKindGroup,
+} from "@/features/sources/sourceRows";
+import type { SourceDraft, SourceKindId } from "./types";
 
 export type SourceKindControl =
   | "your_sources"
@@ -60,11 +64,19 @@ export interface SourceKindDef {
   accept?: string;
   /** A kind with no landing door of its own says so — shown under its input. */
   fallbackNote?: string;
+  /**
+   * What a Source added through this tile IS, as a noun ("Web page",
+   * "Transcript") — the card and the review say this, never the tile's
+   * instruction ("A web page") nor the stored type ("Document"). Null = it
+   * depends on the Source (a reused Source says its own kind).
+   */
+  noun: string | null;
 }
 
 export const SOURCE_KINDS: readonly SourceKindDef[] = [
   {
     id: "your_sources",
+    noun: null,
     label: "Your sources",
     helper: "Reuse something you already added — recent first.",
     icon: Library,
@@ -72,6 +84,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "files",
+    noun: "File",
     label: "Your files",
     helper: "Pick a PDF, document or slide deck you already stored.",
     icon: FolderOpen,
@@ -80,6 +93,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "notes",
+    noun: "Note",
     label: "A note",
     helper: "Use one of your notes as it is.",
     icon: StickyNote,
@@ -88,6 +102,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "records",
+    noun: null,
     label: "Documents & tables",
     helper: "A document, table or workbook you keep here.",
     icon: FileStack,
@@ -96,6 +111,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "upload",
+    noun: "File",
     label: "Upload a file",
     helper: "PDFs, Word, slides, text — read and kept for next time.",
     icon: Upload,
@@ -105,6 +121,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "paste",
+    noun: "Pasted text",
     label: "Paste text",
     helper: "Notes, an article, a chapter — anything you can copy.",
     icon: ClipboardType,
@@ -112,6 +129,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "web",
+    noun: "Web page",
     label: "A web page",
     helper: "Paste a link — we read the page and keep a copy.",
     icon: Globe,
@@ -119,6 +137,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "youtube",
+    noun: "YouTube video",
     label: "A YouTube video",
     helper: "Paste a link — we write out what was said.",
     icon: Youtube,
@@ -128,6 +147,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "audio",
+    noun: "Recording",
     label: "A recording",
     helper: "Drop an audio or video file — we write out what was said.",
     icon: FileAudio,
@@ -138,6 +158,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "image",
+    noun: "Image",
     label: "An image",
     helper: "A photo of a page, a slide, a whiteboard.",
     icon: ImageIcon,
@@ -146,6 +167,7 @@ export const SOURCE_KINDS: readonly SourceKindDef[] = [
   },
   {
     id: "topic",
+    noun: "Topic",
     label: "Just a topic",
     helper: "No material — name the subject and we start from it.",
     icon: Lightbulb,
@@ -170,4 +192,35 @@ export function sourceKindDef(id: SourceKindId): SourceKindDef {
   const def = SOURCE_KINDS.find((k) => k.id === id);
   if (!def) throw new Error(`Unknown Source kind "${id}"`);
   return def;
+}
+
+/** The key a Source goes by across screens: "<resource_type>:<resource_id>". */
+export function sourceKey(ref: { resource_type: string; resource_id: string }): string {
+  return `${ref.resource_type}:${ref.resource_id}`;
+}
+
+/** Stored types a picked record may be, in words (records picked from "Documents & tables"). */
+const RECORD_NOUNS: Record<string, string> = {
+  file: "File",
+  cld_file: "File",
+  note: "Note",
+  processed_document: "Document",
+  user_table: "Table",
+  table: "Table",
+  workbook: "Workbook",
+  fc_set: "Flashcard deck",
+};
+
+/**
+ * THE noun for one picked Source — its real kind (V2-F #5: the review called a
+ * YouTube video and pasted text "Document"). A reused Source says the kind it
+ * was captured as (`draft.sourceKind`, the Sources list's own words).
+ */
+export function sourceKindNoun(draft: Pick<SourceDraft, "kind" | "ref" | "sourceKind">): string {
+  if (draft.sourceKind) return SOURCE_KIND_LABEL[sourceKindGroup(draft.sourceKind)];
+  const noun = sourceKindDef(draft.kind).noun;
+  if (noun) return noun;
+  const type = draft.ref?.resource_type;
+  if (type && RECORD_NOUNS[type]) return RECORD_NOUNS[type];
+  return type === "processed_document" || draft.kind === "your_sources" ? "Source" : "Record";
 }

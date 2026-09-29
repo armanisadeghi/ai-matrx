@@ -40,7 +40,13 @@ import { formatChars } from "@/lib/tokens/estimate";
 import type { SourceRef } from "@ai-matrx/agents/sources";
 import { chosenForm, type SourcePlanEntry } from "./plan";
 import { SourcePartsPicker } from "./SourcePartsPicker";
-import { DELIVERY_CHOICES, DELIVERY_WORDS, deliveryPatch, sourceDelivery } from "../delivery";
+import {
+  DELIVERY_WORDS,
+  deliveryChoicesFor,
+  deliveryPatch,
+  sourceDelivery,
+  type SourceDelivery,
+} from "../delivery";
 
 /** Phones: every segment is a 44px target (the package control is 28px at "sm"). */
 const SEGMENTED_TOUCH = "max-w-full flex-wrap max-lg:[&_[role=tab]]:min-h-11!";
@@ -83,6 +89,16 @@ interface SourceReviewRowProps {
   onFormChange: (representation: string) => void;
   onRemove: () => void;
   defaultOpen?: boolean;
+  /** The deliveries the host can use (`SourceInputProps.deliveries`). Omitted = both. */
+  deliveries?: readonly SourceDelivery[];
+  /** How the host names this Source (its real kind and display name) — wins over the manifest's. */
+  describe?: SourceDescription;
+}
+
+/** A Source as the host names it: its real kind ("Transcript") and its display name (the file name). */
+export interface SourceDescription {
+  kind: string;
+  name: string;
 }
 
 export function SourceReviewRow({
@@ -91,6 +107,8 @@ export function SourceReviewRow({
   onFormChange,
   onRemove,
   defaultOpen = false,
+  deliveries,
+  describe,
 }: SourceReviewRowProps) {
   const [open, setOpen] = useState(defaultOpen);
   const { entry, ref } = plan;
@@ -105,6 +123,7 @@ export function SourceReviewRow({
   const form = chosenForm(entry, ref);
   const capOn = ref.max_chars !== undefined;
   const delivery = sourceDelivery(ref);
+  const deliveryChoices = deliveryChoicesFor(deliveries);
 
   const update = (patch: Partial<SourceRef>) => {
     const next: SourceRef = { ...ref, ...patch };
@@ -129,13 +148,13 @@ export function SourceReviewRow({
       >
         <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-foreground">{entry.label}</span>
+          <span className="block truncate text-sm font-medium text-foreground">{describe?.name || entry.label}</span>
           <span
             className="block truncate text-xs text-muted-foreground"
             title={`${plan.sentChars.toLocaleString()} characters go in`}
             data-sent-chars={plan.sentChars}
           >
-            {kind.label}
+            {describe?.kind || kind.label}
             {usable && form ? ` · ${form.label}` : ""}
             {usable ? ` · ${sizeWords}` : ""}
             {plan.partsSent !== null && pickingParts && usable
@@ -173,7 +192,9 @@ export function SourceReviewRow({
           <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
           <span>
             {plan.status === "left_out"
-              ? "There's no room left for this one, so it won't go in. Choose parts, set a size limit, or let the AI look it up when it needs it."
+              ? deliveryChoices.some((c) => c.value === "context")
+                ? "There's no room left for this one, so it won't go in. Choose parts, set a size limit, or let the AI look it up when it needs it."
+                : "There's no room left for this one, so it won't go in. Choose parts or set a size limit so it fits."
               : (entry.state_detail ??
                 (entry.state === "processing"
                   ? "Still being prepared — the raw text is used for now."
@@ -288,13 +309,18 @@ export function SourceReviewRow({
               label="How the AI gets it"
               hint={DELIVERY_WORDS[delivery].hint}
             >
-              <SegmentedControl
-                value={delivery}
-                onValueChange={(v) => update(deliveryPatch(v === "context" ? "context" : "direct"))}
-                data={DELIVERY_CHOICES.map((c) => ({ value: c.value, label: c.label }))}
-                size="sm"
-                className={SEGMENTED_TOUCH}
-              />
+              {deliveryChoices.length > 1 ? (
+                <SegmentedControl
+                  value={delivery}
+                  onValueChange={(v) => update(deliveryPatch(v === "context" ? "context" : "direct"))}
+                  data={deliveryChoices.map((c) => ({ value: c.value, label: c.label }))}
+                  size="sm"
+                  className={SEGMENTED_TOUCH}
+                />
+              ) : (
+                // The one way this host can use it — said, never a one-option control.
+                <p className="text-sm text-foreground">{DELIVERY_WORDS[delivery].label}</p>
+              )}
             </Field>
           )}
 

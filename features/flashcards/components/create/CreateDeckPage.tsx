@@ -84,8 +84,10 @@ import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope
 import { useGenerateCards } from "../../data/useGenerateCards";
 import {
   backfillFileIds,
+  FLASHCARD_SOURCE_DELIVERIES,
   generateDeckFromSources,
 } from "../../data/generateDeckFromSources";
+import { saveDeckSourceSet, sourceNamesOf } from "../../data/deckSourceSet";
 import { useSuppressAmbientAssistant } from "@/features/agents/components/ambient-assistant/ambientAssistantSuppression";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
@@ -308,6 +310,11 @@ export function CreateDeckPage() {
   const runFromSources = async () => {
     setPhase("reading");
     const orgId = await ensureOrgId(undefined);
+    // What the deck is made from, exactly as chosen (parts, form, limit) and as
+    // named on the cards — recorded on the deck so "Add more cards" starts
+    // from the same material (V2-F #2).
+    const chosen = set.toSourceSet();
+    const chosenNames = sourceNamesOf(set.sources);
     // Citations open the real file only through its file id.
     const resolved = await backfillFileIds(await set.resolve());
     const dropped = resolved.dropped.map(
@@ -340,6 +347,11 @@ export function CreateDeckPage() {
       },
     });
     setPhase("saving");
+    const notRecorded = await saveDeckSourceSet(outcome.setId, chosen, chosenNames);
+    if (notRecorded)
+      toast.warning(
+        `The deck was made, but the parts it came from could not be saved with it (${notRecorded}). "Add more cards" will start from the whole Sources — narrow them again there.`,
+      );
     await finish(outcome.setId, outcome.name, outcome.cardCount, outcome.gapNote);
   };
 
@@ -446,6 +458,7 @@ export function CreateDeckPage() {
                   purpose="your flashcard deck"
                   required
                   attachTo={undefined}
+                  deliveries={FLASHCARD_SOURCE_DELIVERIES}
                 />
               </Step>
 

@@ -1,6 +1,6 @@
 -- lock: custom,platform
 -- lane: DRILL-CUSTOM-PARITY
--- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 5862407071b06a11bdd341f2480461acdd1cdd0811f7c824a48ab1b6500ac3b0
+-- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 7ac927d60626834cf65c6ab5825fd1ca69156d252915053d9e92d649cc1e0f82
 -- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 4302620a0e02f8654b54f3acd6dc3ed2a02d4b27a41ba0f5a70c7dff6d027ae0
 -- chair-step: the inverse of drillcustom_a_table_says_its_own_dimensions_and_measures.sql. It DROPS
 -- the six functions that file created, deletes their two platform.client_callable_door rows, and

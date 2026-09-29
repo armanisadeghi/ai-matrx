@@ -13,6 +13,8 @@
  */
 
 import { fetchFileRagStatus, type FileRagStatus } from "@/features/rag/api/rag-jobs";
+import { fileOrganizationId } from "@/features/files/api/fileOrganization";
+import type { SourceCardModel } from "./types";
 
 export type FileSourceStep =
   /** The Source exists: keep it and file it against the thing being made. */
@@ -63,4 +65,31 @@ export function fileSourcePollDelayMs(round: number): number {
   if (round < 5) return 3_000;
   if (round < 20) return 6_000;
   return 15_000;
+}
+
+/** A stored file on a card whose Source is not known yet — the recovery reads its state. */
+export function isWaitingFileCard(card: SourceCardModel): boolean {
+  return (
+    card.status === "ready" &&
+    card.draft.ref?.resource_type === "file" &&
+    !!card.draft.fileId &&
+    !card.draft.processedDocumentId
+  );
+}
+
+/**
+ * True while a waiting file card cannot be asked about yet: `/files/{id}/
+ * rag-status` answers only with an organization (the file's own, when the
+ * file told us, or the one the person picked). Without one every read was a
+ * refused 400 — every ~3 s, piling up as page errors (V2-F #3). So the card
+ * is HELD: it says it is waiting for an organization, offers the one picker,
+ * and nothing is asked until one is known.
+ */
+export function fileCardHeldForOrganization(
+  card: SourceCardModel,
+  activeOrganizationId: string | null | undefined,
+): boolean {
+  if (!isWaitingFileCard(card)) return false;
+  if (activeOrganizationId) return false;
+  return !fileOrganizationId(card.draft.fileId as string);
 }

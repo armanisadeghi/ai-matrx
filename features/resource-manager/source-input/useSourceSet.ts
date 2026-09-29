@@ -115,6 +115,31 @@ function sameRef(a: SourceRef, b: SourceRef): boolean {
   return a.resource_type === b.resource_type && a.resource_id === b.resource_id;
 }
 
+/**
+ * Every generator names a Source the way the person saw it on its card — the
+ * file name, the name they gave pasted text — never the stored document's own
+ * title (V2-F #5: a citation named a PDF "Campbell Biology, 12th Edition" while
+ * its card said "official-ap-biology.pdf"). The server's label stays only for
+ * a Source the input does not hold.
+ */
+export function withDisplayNames(
+  resolved: ResolvedSourceSet,
+  cards: readonly Pick<SourceCardModel, "draft">[],
+): ResolvedSourceSet {
+  const names = new Map<string, string>();
+  for (const c of cards) {
+    const label = c.draft.label?.trim();
+    if (c.draft.ref && label) names.set(`${c.draft.ref.resource_type}:${c.draft.ref.resource_id}`, label);
+  }
+  return {
+    ...resolved,
+    sources: resolved.sources.map((s) => {
+      const name = names.get(`${s.ref.resource_type}:${s.ref.resource_id}`);
+      return name ? { ...s, label: name } : s;
+    }),
+  };
+}
+
 export interface UseSourceSetResult {
   /** Every picked Source, in the order picked. */
   sources: SourceCardModel[];
@@ -505,10 +530,16 @@ export function useSourceSet(
     }
   };
 
-  const resolve: UseSourceSetResult["resolve"] = (resolveOptions = {}) =>
-    resolveSourceSet(toSourceSet(resolveOptions), {
+  const resolve: UseSourceSetResult["resolve"] = async (resolveOptions = {}) => {
+    const resolved = await resolveSourceSet(toSourceSet(resolveOptions), {
       organizationId: options.organizationId,
     });
+    const live = store.getState().instanceResources.byConversationId[key] ?? {};
+    return withDisplayNames(
+      resolved,
+      Object.values(live).map(toCard).filter((c): c is SourceCardModel => !!c),
+    );
+  };
 
   // THE one size rule (the package's `totalChars`): the chosen form, or the
   // picked parts, capped — measured against each card's CURRENT pointer.

@@ -779,6 +779,193 @@ try {
     step("120 records in the grid", { first: shown.slice(0, 3), last: shown.slice(-2), shown: shown.length, footer, asked: asked.slice(0, 6) });
   }
 
+  if (PHASE === "breaker2") {
+    // BREAKER-2's steps, re-run on a fresh "Patient Visit Tracker" built through the page's own UI.
+    const n = String(Date.now()).slice(-4);
+    const name = `Patient Visit Tracker ${n}`;
+    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await unpark();
+    await sleep(6000);
+    if (await page.getByText("An organization is needed").count()) {
+      await page.getByRole("button", { name: "Choose organization" }).last().click();
+      await sleep(1500);
+      await page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first().click();
+      await sleep(6000);
+    }
+    await page.getByRole("button", { name: /^New table/ }).first().click();
+    await sleep(1200);
+    await page.getByPlaceholder("Table name").fill(name);
+    await page.getByRole("button", { name: "Create", exact: true }).click();
+    await until("the new table", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 60000);
+    const tid = page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1];
+    step("made the table", { name, tid });
+    await open(tid, "?view=sheet");
+    if (!(await page.locator("[data-sheet-layout]").count())) {
+      await page.getByRole("button", { name: "Sheet", exact: true }).first().click().catch(() => {});
+      await until("the Sheet", async () => (await page.locator("[data-sheet-layout]").count()) > 0, 60000);
+      await sleep(2500);
+    }
+    const addDialog = async (colName) => {
+      await page.getByRole("button", { name: /^Column$/ }).first().click();
+      const dlg = page.getByRole("dialog").filter({ hasText: "Add New Column" });
+      await dlg.waitFor({ timeout: 20000 });
+      await dlg.getByPlaceholder("e.g. Total Revenue").fill(colName);
+      return dlg;
+    };
+    const showsAs = async (dlg, look) => {
+      await dlg.getByRole("combobox").nth(1).click();
+      await sleep(500);
+      await page.getByRole("option", { name: new RegExp(`^${look}`) }).first().click();
+      await sleep(600);
+    };
+    const addChoices = async (dlg, words) => {
+      for (const w of words) {
+        await dlg.getByPlaceholder("Add an option…").fill(w);
+        await page.keyboard.press("Enter");
+        await sleep(250);
+      }
+    };
+    const said = async (dlg) => ((await dlg.locator("[data-default-problem], .text-destructive").allInnerTexts()).join(" | ")).replace(/\s+/g, " ");
+    const addWith = async (colName, look, extra) => {
+      const dlg = await addDialog(colName);
+      if (look) await showsAs(dlg, look);
+      if (extra) await extra(dlg);
+      await dlg.getByRole("button", { name: "Add Column", exact: true }).click();
+      await sleep(4500);
+      await page.keyboard.press("Escape").catch(() => {});
+    };
+    await addWith("Visit Status", "Choice", (d) => addChoices(d, ["Scheduled", "Checked in", "Completed", "No-show"]));
+    await addWith("Body Areas", "Multi-choice", (d) => addChoices(d, ["Neck", "Shoulder", "Knee"]));
+    await addWith("Copay", "Currency");
+    await addWith("Insurance Verified", "Yes / No");
+    let dtype = null;
+    await addWith("Visit Date", "Date", async (d) => {
+      dtype = (await d.getByRole("combobox").nth(0).innerText()).trim();
+    });
+    step("B2-06 Shows as Date makes a date column", { data_type_became: dtype });
+    if (!/Date/.test(dtype ?? "")) friction(`Shows as Date left the column storing ${dtype}`);
+    // B2-01 / B2-14: a default the column cannot hold is said as it is typed, never sent
+    {
+      const dlg = await addDialog("Sessions Prescribed");
+      await showsAs(dlg, "Whole number");
+      await dlg.locator("#defaultValue").fill("abc");
+      await sleep(400);
+      const problem = await said(dlg);
+      await dlg.getByRole("button", { name: "Add Column", exact: true }).click();
+      await sleep(1500);
+      const stillOpen = await dlg.isVisible();
+      await dlg.locator("#defaultValue").fill("12");
+      await sleep(300);
+      const cleared = await said(dlg);
+      await shot("r01-default-said-as-typed");
+      await dlg.getByRole("button", { name: "Add Column", exact: true }).click();
+      await sleep(4500);
+      step("B2-01 a default the column cannot hold", { problem, stayed_open: stillOpen, after_12: cleared });
+      if (!/cannot|not one|holds/.test(problem) || !stillOpen) friction(`the default "abc" was not refused as it was typed: ${problem}`);
+    }
+    // B2-08 / B2-09 / B2-18: names
+    {
+      const probes = {};
+      for (const bad of ["   ", "Visit  Status", "id", "x".repeat(120)]) {
+        const dlg = await addDialog(bad);
+        await sleep(400);
+        probes[bad.length > 20 ? "120 letters" : JSON.stringify(bad)] = await said(dlg);
+        await page.keyboard.press("Escape");
+        await sleep(500);
+      }
+      step("B2-08/09/17/18 names said as they are typed", probes);
+      for (const [k, v] of Object.entries(probes)) if (!v) friction(`the name ${k} was not refused as it was typed`);
+    }
+    // + Row: Sessions Prescribed starts at 12
+    await page.getByRole("button", { name: /^Row$/ }).first().click();
+    const form = page.getByRole("dialog").filter({ hasText: "Add New Row" });
+    await form.waitFor({ timeout: 20000 });
+    await sleep(1200);
+    await form.locator("#title").fill("Grace Kim");
+    await form.getByRole("button", { name: "Add Row", exact: true }).click();
+    await sleep(4000);
+    const grace = (await rowTexts()).find((r) => r.includes("Grace Kim")) ?? "";
+    step("B2-01 a new row takes the default", { row: grace });
+    if (!/12/.test(grace)) friction(`the new row does not carry the default 12: ${grace}`);
+    // B2-02 / B2-03: paste
+    {
+      await page.getByRole("button", { name: /^Paste$/ }).first().click();
+      const dlg = page.getByRole("dialog").filter({ hasText: /Paste Rows|Confirm Pasted Rows/ });
+      await dlg.waitFor({ timeout: 20000 });
+      const tsv = ["Title\tVisit Status\tBody Areas\tCopay\tInsurance Verified",
+        "Mateo Álvarez\tcompleted\tNeck, Shoulder\t$30\tYes",
+        "Siobhán O'Neill\tScheduled\tKnee, Ankle\t$25.50\tno",
+        "Priya Raman\tRescheduled\tHip\tthirty\tYes"].join("\n");
+      await dlg.locator("#pasteData").fill(tsv);
+      await dlg.getByRole("button", { name: "Parse", exact: true }).click();
+      await sleep(2000);
+      const text = (await dlg.innerText()).replace(/\s+/g, " ");
+      await shot("r02-paste-one-question");
+      step("B2-02/03 the paste reads each cell and asks one question", {
+        unreadable: text.match(/\d+ cells? cannot be read[^]*?(?=\d+ words?|Preview)/)?.[0]?.slice(0, 300) ?? null,
+        question: text.match(/\d+ words? (is|are) not (a )?choices? yet[^]*?(?=Add them|Preview)/)?.[0]?.slice(0, 300) ?? null,
+      });
+      if (!/not (a )?choices? yet/.test(text)) friction("the paste did not ask about its new choice words");
+      await dlg.getByRole("button", { name: /Add (them|it) and paste/ }).click();
+      await sleep(6000);
+      const report = (await dlg.innerText().catch(() => "")).replace(/\s+/g, " ");
+      await shot("r03-paste-report");
+      step("the paste landed", { report: report.match(/Pasted \d+ of \d+[^]{0,200}/)?.[0] ?? report.slice(0, 200) });
+      await page.getByRole("button", { name: /^Done$/ }).first().click().catch(() => page.keyboard.press("Escape"));
+      await sleep(3000);
+      const rows = await rowTexts();
+      step("pasted rows", { rows: rows.filter((r) => /Mateo|Siobh|Priya/.test(r)) });
+      if (rows.filter((r) => /Mateo|Siobh|Priya/.test(r)).length < 3) friction(`not every pasted row landed: ${rows.join(" | ")}`);
+    }
+    // B2-04: several choices, a new word, a click elsewhere
+    {
+      const c = await cellOf("Grace Kim", "Body Areas");
+      await c.click();
+      await sleep(300);
+      await c.dblclick();
+      await sleep(900);
+      await page.keyboard.type("Elbow", { delay: 40 });
+      await page.keyboard.press("Enter");
+      await sleep(500);
+      await (await cellOf("Mateo", "Copay")).click();
+      await sleep(2000);
+      const ask = await page.locator("[data-matrx-choice-nudge]").allInnerTexts();
+      await shot("r04-several-choices-asks");
+      step("B2-04 several choices ask on click-off", { ask: ask.join(" | ").replace(/\s+/g, " ") });
+      if (!ask.some((a) => /Elbow/.test(a))) friction("a new word in a several-choice cell was not asked about on click-off");
+      await page.locator("[data-matrx-choice-nudge] button", { hasText: "Add" }).first().click().catch(() => {});
+      await sleep(2500);
+    }
+    // B2-10: fast typing
+    {
+      const c = await cellOf("Priya", "Title");
+      await c.click();
+      await sleep(300);
+      await page.keyboard.type("Alpha0", { delay: 30 });
+      await page.keyboard.press("Enter");
+      await sleep(3000);
+      const got = (await rowTexts()).find((r) => /Alpha0/.test(r)) ?? null;
+      step("B2-10 typing at 30 ms a key", { row: got });
+      if (!got || !/(^|\s)Alpha0(\s|$)/.test(got)) friction(`fast typing did not land whole: ${got}`);
+    }
+    // B2-05 / B2-15: Visit Status to Text and back keeps its list; Body Areas to Text keeps its words
+    {
+      let d = await columnSettings("Body Areas");
+      await d.getByRole("combobox").nth(0).click();
+      await sleep(400);
+      await page.getByRole("option", { name: "Text", exact: true }).first().click();
+      await sleep(400);
+      await d.getByRole("button", { name: "Save", exact: true }).click();
+      await sleep(1200);
+      await page.getByRole("button", { name: "Change type", exact: true }).click().catch(() => {});
+      await sleep(5000);
+      const body = (await rowTexts()).find((r) => /Mateo/.test(r)) ?? "";
+      step("B2-05 Body Areas to Text", { mateo: body, popups: await popups() });
+      if (!/Neck, Shoulder/.test(body)) friction(`Body Areas as Text reads: ${body}`);
+    }
+    out.breaker2_table = tid;
+  }
+
   if (PHASE === "tidy") {
     // Columns earlier walks added and left on the test table, removed the way a person removes them.
     await open(T.supplies, "?view=sheet");
@@ -885,8 +1072,8 @@ try {
 
   if (PHASE === "toolbar") {
     // The Sheet's toolbar row: no control drawn over another, none cut off, at 1600 and 1280.
-    for (const width of [1600, 1280]) {
-      await open(T.supplies, "?view=sheet", { width });
+    for (const width of [1600, 1280, 390]) {
+      await open(T.supplies, "?view=sheet", { width, height: width === 390 ? 844 : 1000 });
       if (!(await page.locator("[data-sheet-layout]").count())) {
         await page.getByRole("button", { name: "Sheet", exact: true }).first().click();
         await until("the Sheet", async () => (await page.locator("[data-sheet-layout]").count()) > 0, 60000);
@@ -929,6 +1116,12 @@ try {
         return { controls: els.map(({ el, r }) => `${(el.innerText || el.getAttribute("aria-label") || el.tagName).trim().slice(0, 18)}@${Math.round(r.left)}-${Math.round(r.right)}`), overlaps, clipped, nameless };
       });
       await shot(`t01-sheet-toolbar-${width}`);
+      const search = await page.evaluate(() => {
+        const box = [...document.querySelectorAll("input")].find((i) => i.placeholder === "Search rows" || i.placeholder === "Search records");
+        return box ? { width: Math.round(box.getBoundingClientRect().width), fits: box.scrollWidth <= box.clientWidth + 1 } : null;
+      });
+      step(`the search box at ${width}`, { search });
+      if (search && search.width < 110) friction(`${width}: the search box is ${search.width}px wide and cuts its words`);
       step(`the Sheet toolbar at ${width}`, report);
       if (report.overlaps.length) friction(`${width}: toolbar controls drawn over each other: ${JSON.stringify(report.overlaps)}`);
       if (report.clipped.length) friction(`${width}: toolbar controls cut off: ${JSON.stringify(report.clipped)}`);

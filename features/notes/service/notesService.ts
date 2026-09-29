@@ -36,7 +36,13 @@ import {
   type NoteSaveReceipt,
   NoteUpdateConflictError,
 } from "./noteSaveErrors";
-import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
+import {
+  defaultListFilter,
+  resolveListScope,
+  type ListScopeWord,
+} from "@/lib/list-scope";
+import { readAllRows } from "@ai-matrx/data/db";
+import { escapeIlike } from "../hooks/useNoteContentSearch";
 
 /**
  * Fetch the notes this screen should open on (excluding deleted).
@@ -97,6 +103,116 @@ export async function fetchNoteListItems(
   }
 
   return hydrateNoteContextLinks(data ?? []) as Promise<NoteListItem[]>;
+}
+
+// ── Picker reads (resource picker "+" → Notes, Source input "A note") ───────
+// The picker used to download EVERY note with its full body just to open
+// (Arman, 2026-09-29: "it took a long time … fetch the last 10 most active plus
+// some counts"). It now opens on these three bounded reads; the body of a note
+// is read only when that note is picked or its preview is expanded
+// (`fetchNoteById`).
+
+/** One picker row: never the body — the database-maintained 240-char preview. */
+export type NotePickerRow = Pick<
+  NoteRow,
+  "id" | "label" | "folder_name" | "tags" | "updated_at" | "content_preview"
+>;
+
+const NOTE_PICKER_COLUMNS =
+  "id, label, folder_name, tags, updated_at, content_preview";
+
+/** The `limit` most recently changed notes the list opens on. */
+export async function fetchRecentNotePickerRows(
+  limit: number,
+  scope?: ListScopeWord,
+): Promise<NotePickerRow[]> {
+  const userId = requireUserId();
+  const listScope = await defaultListFilter("note", { userId, requested: scope });
+  let query = supabase
+    .schema("workbench")
+    .from("notes")
+    .select(NOTE_PICKER_COLUMNS)
+    .is("deleted_at", null);
+  query = listScope.apply(query);
+  const { data, error } = await query
+    .order("updated_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(limit);
+  if (error) throw operationFailed("load your recent notes", error);
+  return data ?? [];
+}
+
+/** Folder names with their note counts, counted by the database. */
+export async function fetchNoteFolderCounts(
+  scope?: ListScopeWord,
+): Promise<Array<{ folder_name: string; note_count: number }>> {
+  const word = scope ?? (await resolveListScope("note"));
+  const { data, error } = await supabase
+    .schema("workbench")
+    .rpc("note_folder_counts", { p_scope: word });
+  if (error) throw operationFailed("load your note folders", error);
+  return (data ?? []).map((row) => ({
+    folder_name: row.folder_name,
+    note_count: Number(row.note_count),
+  }));
+}
+
+/** Every note in one folder — a list the person treats as complete. */
+export async function fetchNotePickerRowsInFolder(
+  folderName: string,
+  scope?: ListScopeWord,
+): Promise<NotePickerRow[]> {
+  const userId = requireUserId();
+  const listScope = await defaultListFilter("note", { userId, requested: scope });
+  return readAllRows<NotePickerRow>(
+    ({ from, to }) => {
+      let q = supabase
+        .schema("workbench")
+        .from("notes")
+        .select(NOTE_PICKER_COLUMNS, { count: "exact" })
+        .is("deleted_at", null)
+        .eq("folder_name", folderName);
+      q = listScope.apply(q);
+      return q
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to);
+    },
+    { label: "workbench.notes (picker folder)" },
+  );
+}
+
+/**
+ * Search every note the list would show — title, body and folder name — in
+ * the database, newest first. The body half is the same ILIKE the notes
+ * sidebar's body search runs (`useNoteContentSearch`, same escaping).
+ */
+export async function searchNotePickerRows(
+  query: string,
+  limit: number,
+  scope?: ListScopeWord,
+): Promise<NotePickerRow[]> {
+  const userId = requireUserId();
+  const listScope = await defaultListFilter("note", { userId, requested: scope });
+  // PostgREST `or` values are comma/paren-delimited, so the pattern is
+  // double-quoted — and inside quotes PostgREST reads `\\` and `\"` as escapes,
+  // so the ILIKE escapes from `escapeIlike` are escaped once more.
+  const pattern = `"%${escapeIlike(query.trim()).replace(/[\\"]/g, (ch) => `\\${ch}`)}%"`;
+  let q = supabase
+    .schema("workbench")
+    .from("notes")
+    .select(NOTE_PICKER_COLUMNS)
+    .is("deleted_at", null)
+    .or(
+      `label.ilike.${pattern},content.ilike.${pattern},folder_name.ilike.${pattern}`,
+    );
+  q = listScope.apply(q);
+  const { data, error } = await q
+    .order("updated_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(limit);
+  if (error) throw operationFailed("search your notes", error);
+  return data ?? [];
 }
 
 /**

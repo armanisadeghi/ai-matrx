@@ -2,14 +2,22 @@
 
 /**
  * "Your sources" — the input OPENS here (reuse first, Arman 2026-09-27). The
- * person's own Sources, newest first, read through the ONE Sources list read
+ * person's own Sources, newest first — by default only what they KEPT or
+ * uploaded themselves (the Sources list's own Saved filter), so other agents'
+ * research captures no longer bury their material (V2-F #4). A visible "Show"
+ * control widens it to everything they captured, or everything in the
+ * organization — a FILTER, never a permission (RLS stays the ceiling). The
+ * first page's size is the `sources.your_sources_initial_rows` knob. read through the ONE Sources list read
  * (`useSources`, direct Supabase under RLS, server-side search), with their
  * Stage in the Knowledge hub's words. One click adds or removes a Source.
  * "Search everything" hands off to the resource picker, whose search row is
  * the ⌘K Knowledge bar.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { SegmentedControl } from "@ai-matrx/design-system";
+import { knobInt } from "@/lib/knobs/featureKnobs";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { Check, Loader2, Plus, Search } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
@@ -34,6 +42,11 @@ import {
 } from "@/features/sources/sourceRows";
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+
+/** Whose Sources the list shows. A view, never access. */
+type Breadth = "kept" | "captured" | "organization";
+
+const INITIAL_ROWS_KNOB = { feature: "sources", key: "your_sources_initial_rows" } as const;
 
 type StageFilter = "any" | "searchable" | "reading" | "not_searchable";
 
@@ -73,12 +86,42 @@ export function YourSources({
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState<(typeof KIND_FILTERS)[number]>("all");
   const [stage, setStage] = useState<StageFilter>("any");
-  const list = useSources({ kind: "mine" }, userId, 0, {
-    saved: false,
-    search,
-  });
+  const organizationId = useAppSelector(selectOrganizationId);
+  const [breadth, setBreadth] = useState<Breadth>("kept");
+  const [initialRows, setInitialRows] = useState<number | null>(null);
+  const [initialRowsError, setInitialRowsError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    let live = true;
+    knobInt(INITIAL_ROWS_KNOB.feature, INITIAL_ROWS_KNOB.key)
+      .then((n) => live && setInitialRows(n))
+      .catch((err: unknown) => {
+        if (!live) return;
+        setInitialRowsError(
+          `How many Sources to show first could not be read (${err instanceof Error ? err.message : String(err)}), so every loaded one is shown.`,
+        );
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+  // "Everything in the organization" needs one picked; without it the widest view is everything you captured.
+  const effectiveBreadth: Breadth = breadth === "organization" && !organizationId ? "captured" : breadth;
+  const list = useSources(
+    effectiveBreadth === "organization" && organizationId
+      ? { kind: "orgs", organizationId }
+      : { kind: "mine" },
+    userId,
+    0,
+    { saved: effectiveBreadth === "kept", search },
+  );
+  const breadthChoices: { value: Breadth; label: string }[] = [
+    { value: "kept", label: "Kept by you" },
+    { value: "captured", label: "Everything you captured" },
+    ...(organizationId ? [{ value: "organization" as const, label: "Whole organization" }] : []),
+  ];
 
-  const rows = list.rows.filter((row) => {
+  const matching = list.rows.filter((row) => {
     if (kind !== "all" && sourceKindGroup(row.source_kind) !== kind) return false;
     if (stage === "any") return true;
     const facts = list.facts.get(row.id);
@@ -88,6 +131,9 @@ export function YourSources({
     if (stage === "reading") return s === "indexing";
     return s === "not_searchable" || s === "stale";
   });
+  const limit = expanded || initialRows === null ? matching.length : initialRows;
+  const rows = matching.slice(0, limit);
+  const hiddenLoaded = matching.length - rows.length;
 
   return (
     <div className="flex flex-col gap-3">
@@ -115,6 +161,20 @@ export function YourSources({
           </SelectContent>
         </Select>
       </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground">Show</span>
+        <SegmentedControl
+          value={effectiveBreadth}
+          onValueChange={(v) => {
+            setBreadth(v as Breadth);
+            setExpanded(false);
+          }}
+          data={breadthChoices}
+          size="sm"
+          className="max-w-full flex-wrap max-lg:[&_[role=tab]]:min-h-11!"
+        />
+      </div>
+      {initialRowsError ? <p className="text-xs text-warning">{initialRowsError}</p> : null}
       <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Stage">
         {STAGE_FILTERS.map((f) => (
           <button
@@ -157,7 +217,9 @@ export function YourSources({
       ) : rows.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">
           {list.rows.length === 0 && !search
-            ? "You have no sources yet — add something new with the tiles above."
+            ? effectiveBreadth === "kept"
+              ? "Nothing kept yet. Add something new with the tiles above, or choose Everything you captured."
+              : "You have no sources yet — add something new with the tiles above."
             : "Nothing matches. Try other words, or another kind or stage."}
         </p>
       ) : (
@@ -204,11 +266,11 @@ export function YourSources({
               </li>
             );
           })}
-          {list.hasMore ? (
+          {hiddenLoaded > 0 || list.hasMore ? (
             <li>
               <button
                 type="button"
-                onClick={list.loadMore}
+                onClick={() => (hiddenLoaded > 0 ? setExpanded(true) : list.loadMore())}
                 disabled={list.loadingMore}
                 className="flex min-h-11 w-full items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-accent/40"
               >

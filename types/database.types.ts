@@ -17362,10 +17362,12 @@ export type Database = {
       meet_chat_messages: {
         Row: {
           body: string
+          content: Json
           created_at: string
           created_by: string | null
           deleted_at: string | null
           id: string
+          kind: string
           meeting_id: string
           metadata: Json
           organization_id: string
@@ -17378,10 +17380,12 @@ export type Database = {
         }
         Insert: {
           body: string
+          content?: Json
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           id?: string
+          kind?: string
           meeting_id: string
           metadata?: Json
           organization_id: string
@@ -17394,10 +17398,12 @@ export type Database = {
         }
         Update: {
           body?: string
+          content?: Json
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           id?: string
+          kind?: string
           meeting_id?: string
           metadata?: Json
           organization_id?: string
@@ -20138,6 +20144,41 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      meet_admin_meetings: {
+        Args: {
+          p_from?: string
+          p_limit?: number
+          p_offset?: number
+          p_org?: string
+          p_query?: string
+          p_state?: string
+          p_to?: string
+        }
+        Returns: {
+          ai_enabled: boolean
+          duration_minutes: number
+          ended_at: string
+          host_email: string
+          host_name: string
+          host_user_id: string
+          id: string
+          kind: string
+          organization_id: string
+          organization_name: string
+          participants: number
+          recordings: number
+          scheduled_for: string
+          slug: string
+          started_at: string
+          state: string
+          title: string
+          total_count: number
+        }[]
+      }
+      meet_admin_usage: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
       }
       meet_admit_participant: {
         Args: {
@@ -30602,6 +30643,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _field_default_fitted: {
+        Args: { p_doc: Json; p_organization_id: string }
+        Returns: Json
+      }
       _field_document_for: {
         Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
         Returns: Json
@@ -30661,6 +30706,15 @@ export type Database = {
       }
       _fxp_tokens: { Args: { p_src: string }; Returns: Json }
       _fxp_type: { Args: { p_fields: Json; p_node: Json }; Returns: string }
+      _held_change_refusal: {
+        Args: {
+          p_change: Json
+          p_kind: string
+          p_organization_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
       _inbox_items: {
         Args: {
           p_include_decided?: boolean
@@ -30897,6 +30951,7 @@ export type Database = {
         Args: { p_data: Json; p_organization_id: string; p_table_id: string }
         Returns: Json
       }
+      _seen_one: { Args: { p_id: string; p_user_id: string }; Returns: boolean }
       _share_write_person: {
         Args: {
           p_by?: string
@@ -31978,6 +32033,14 @@ export type Database = {
         }[]
       }
       containment_parent: { Args: { p_data: Json }; Returns: string }
+      context_archived_types: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      context_class_for_checkout: {
+        Args: { p_scope_id: string }
+        Returns: Json
+      }
       context_compare_facts: {
         Args: {
           p_cells?: Json
@@ -31993,6 +32056,7 @@ export type Database = {
         Args: { p_item_id: string; p_scope_type_id: string; p_spec: Json }
         Returns: Json
       }
+      context_items: { Args: { p_scope_type_ids: string[] }; Returns: Json }
       context_policy_rank: { Args: { p_policy: string }; Returns: number }
       context_resolve: { Args: { p_bindings: Json }; Returns: Json }
       context_scope_archive: { Args: { p_scope_id: string }; Returns: Json }
@@ -32006,6 +32070,8 @@ export type Database = {
         }
         Returns: Json
       }
+      context_scopes: { Args: { p_scope_ids: string[] }; Returns: Json }
+      context_system_items: { Args: never; Returns: Json }
       context_tag_copy: { Args: { p_organization_id: string }; Returns: Json }
       context_tag_copy_batch: {
         Args: { p_cursor?: Json; p_organization_id: string; p_rows?: number }
@@ -32028,6 +32094,7 @@ export type Database = {
         Returns: Json
       }
       context_templates: { Args: never; Returns: Json[] }
+      context_tree: { Args: { p_organization_ids: string[] }; Returns: Json }
       context_type_archive: { Args: { p_type_id: string }; Returns: Json }
       context_type_restore: { Args: { p_type_id: string }; Returns: Json }
       context_type_write: {
@@ -32035,6 +32102,7 @@ export type Database = {
         Returns: Json
       }
       context_value_write: { Args: { p_payload: Json }; Returns: Json }
+      context_values: { Args: { p_scope_ids: string[] }; Returns: Json }
       context_writer: { Args: { p_organization_id: string }; Returns: string }
       conversation_scope: {
         Args: { p_conversation_id: string; p_organization_id: string }
@@ -32166,6 +32234,7 @@ export type Database = {
           version: number
         }[]
       }
+      data_home: { Args: { p_organization_id?: string }; Returns: Json }
       data_home_changed_by: {
         Args: { p_asks: Json }
         Returns: {
@@ -35795,6 +35864,14 @@ export type Database = {
           table_name: string
           updated_at: string
           visibility: string
+        }[]
+      }
+      tables_seen_once_per_group: {
+        Args: { p_organization_ids: string[]; p_user_id: string }
+        Returns: {
+          id: string
+          organization_id: string
+          seen: boolean
         }[]
       }
       tables_shared_with_me: {
@@ -90292,7 +90369,56 @@ export type Database = {
         }
         Relationships: []
       }
+      v_context_item_suggestions_from_store: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string | null
+          example_source_id: string | null
+          example_source_kind: string | null
+          example_value: string | null
+          id: string | null
+          organization_id: string | null
+          rationale: string | null
+          scope_type_icon: string | null
+          scope_type_id: string | null
+          scope_type_label: string | null
+          scope_type_label_plural: string | null
+          scope_type_slug: string | null
+          status: string | null
+          suggested_key: string | null
+          suppressed_until: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       v_kg_alerts: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          description: string | null
+          evidence: string | null
+          id: string | null
+          kind: string | null
+          organization_id: string | null
+          scope_name: string | null
+          severity: string | null
+          source_id: string | null
+          source_kind: string | null
+          status: string | null
+          suggested_action: string | null
+          target_scope_id: string | null
+          target_slot_key: string | null
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Relationships: []
+      }
+      v_kg_alerts_from_store: {
         Row: {
           confidence: number | null
           created_at: string | null
@@ -90340,6 +90466,32 @@ export type Database = {
         Relationships: []
       }
       v_kg_value_matches: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          current_value_snapshot: string | null
+          evidence_chunk_id: string | null
+          id: string | null
+          item_key: string | null
+          item_label: string | null
+          kg_entity_id: string | null
+          matched_value: string | null
+          mention_count: number | null
+          organization_id: string | null
+          scope_name: string | null
+          scope_slug: string | null
+          scope_type_icon: string | null
+          scope_type_label: string | null
+          source_id: string | null
+          source_kind: string | null
+          target_context_item_id: string | null
+          target_scope_id: string | null
+          target_slot_key: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      v_kg_value_matches_from_store: {
         Row: {
           confidence: number | null
           created_at: string | null
@@ -90488,7 +90640,69 @@ export type Database = {
         }
         Relationships: []
       }
+      v_scope_suggestions_from_store: {
+        Row: {
+          confidence: number | null
+          context_snippet: string | null
+          created_at: string | null
+          current_value_snapshot: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string | null
+          is_starred: boolean | null
+          item_key: string | null
+          item_label: string | null
+          kg_entity_id: string | null
+          match_kind: string | null
+          org_name: string | null
+          org_slug: string | null
+          organization_id: string | null
+          scope_name: string | null
+          scope_slug: string | null
+          scope_type_icon: string | null
+          scope_type_id: string | null
+          scope_type_label: string | null
+          scope_type_slug: string | null
+          source_id: string | null
+          source_kind: string | null
+          stage: string | null
+          status: string | null
+          suggested_value: string | null
+          suppressed_until: string | null
+          target_item_id: string | null
+          target_scope_id: string | null
+          target_slot: string | null
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Relationships: []
+      }
       v_scope_suggestions_new: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          id: string | null
+          organization_id: string | null
+          reasoning: string | null
+          resolved_scope_type_label: string | null
+          scope_type_icon: string | null
+          scope_type_id: string | null
+          scope_type_label: string | null
+          scope_type_slug: string | null
+          source_id: string | null
+          source_kind: string | null
+          status: string | null
+          suggested_name: string | null
+          suggested_slot_values: Json | null
+          suppressed_until: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      v_scope_suggestions_new_from_store: {
         Row: {
           confidence: number | null
           created_at: string | null
@@ -90642,6 +90856,34 @@ export type Database = {
         Returns: Json
       }
       _count_super_admins: { Args: never; Returns: number }
+      _ctx_item_facts: {
+        Args: { p_item_id: string }
+        Returns: {
+          display_name: string
+          key: string
+        }[]
+      }
+      _ctx_scope_facts: {
+        Args: { p_scope_id: string }
+        Returns: {
+          scope_name: string
+          scope_slug: string
+          scope_type_id: string
+          type_icon: string
+          type_label_plural: string
+          type_label_singular: string
+          type_slug: string
+        }[]
+      }
+      _ctx_scope_type_facts: {
+        Args: { p_type_id: string }
+        Returns: {
+          icon: string
+          label_plural: string
+          label_singular: string
+          slug: string
+        }[]
+      }
       _d31_impl_add_data_row_to_user_table: {
         Args: { p_data: Json; p_table_id: string }
         Returns: Json
@@ -90764,6 +91006,20 @@ export type Database = {
         }
         Returns: Json
       }
+      _dict_context_owner_org: {
+        Args: { p_level: string; p_owner_id: string }
+        Returns: string
+      }
+      _dict_context_owners: {
+        Args: { p_ids?: string[]; p_org_ids: string[] }
+        Returns: {
+          level: string
+          name: string
+          organization_id: string
+          owner_id: string
+          scope_type_id: string
+        }[]
+      }
       _edu_access_mode: {
         Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
         Returns: string
@@ -90864,6 +91120,21 @@ export type Database = {
           schema_name: string
           table_name: string
           ts_column: string
+        }[]
+      }
+      _trash_context_rows: {
+        Args: {
+          p_member: string
+          p_org: string
+          p_token: string
+          p_uid: string
+        }
+        Returns: {
+          deleted_at: string
+          id: string
+          organization_id: string
+          owner_id: string
+          title: string
         }[]
       }
       _trash_kind_counts: {
@@ -129530,6 +129801,13 @@ export type Database = {
       dataset_readable_by: {
         Args: { p_dataset_id: string; p_user: string }
         Returns: boolean
+      }
+      note_folder_counts: {
+        Args: { p_scope?: string }
+        Returns: {
+          folder_name: string
+          note_count: number
+        }[]
       }
       note_folder_get_or_create: {
         Args: { p_name: string; p_organization_id: string }

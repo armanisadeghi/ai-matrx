@@ -12,6 +12,8 @@
  */
 
 import type { SourceSet } from "@ai-matrx/agents/sources";
+import type { SourceDelivery } from "../delivery";
+import type { SourceDescription } from "./SourceReviewRow";
 
 /** Why the review opened — it changes the one sentence at the top. */
 export type SourceReviewReason =
@@ -38,6 +40,20 @@ export interface SourceReviewOptions {
    * that cannot add Sources.
    */
   addMoreLabel?: string;
+  /**
+   * The deliveries the host can use. Omitted = both. A host that needs the
+   * text up front passes `["direct"]`: "Let the AI look it up" is never
+   * offered, and a Source handed in set to it is switched back, said on screen.
+   */
+  deliveries?: readonly SourceDelivery[];
+  /**
+   * How the host names each Source, keyed by `sourceKey(ref)`
+   * ("<resource_type>:<resource_id>"): its real kind and display name. The
+   * manifest only knows the stored type ("Document") and a document's own
+   * title; the host knows it was a YouTube video called "Sleep video". Plain
+   * data — it travels through Redux with the window.
+   */
+  describe?: Record<string, SourceDescription>;
 }
 
 export type SourceReviewOutcome =

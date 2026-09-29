@@ -1055,6 +1055,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/users/announcements",
         isNew: true,
       },
+      {
+        title: "Meetings",
+        description:
+          "Every meeting on the platform: usage per organization (meetings, minutes, people, guests, recordings and storage, transcripts, live now), searchable meeting history, the meet settings with per-organization overrides, and the retention rules for recordings and transcripts.",
+        iconName: "Video",
+        link: "/administration/users/meetings",
+        isNew: true,
+      },
     ],
   },
   {
