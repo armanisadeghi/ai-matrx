@@ -398,6 +398,27 @@ function appendTail(tail: string, delta: string): string {
     : next;
 }
 
+/**
+ * THE REASON A LIVE `run_errored` CARRIES (lane HANDOVER, 2026-09-28). The engine's
+ * `RunErroredEvent` has no `error` object: it carries `error_type` (the step's own cause — for a
+ * held write the store refused, `invalid_input`) and `error_message` (the store's sentence) and
+ * `node_id`. Reading only `error` left the run with no reason while it was being watched, so the
+ * page said "it didn't record a reason" until a reload read the row. The same three facts, in
+ * the row's shape. A snake_case `error_type` is the engine's cause word; a class name is not one.
+ */
+function erroredEventFailure(event: unknown): Record<string, unknown> | null {
+  const message = readField(event, "error_message");
+  if (typeof message !== "string" || !message.trim()) return null;
+  const errorType = readField(event, "error_type");
+  const nodeId = readField(event, "node_id");
+  return {
+    message,
+    ...(typeof errorType === "string" && errorType ? { error_type: errorType } : {}),
+    ...(typeof errorType === "string" && /^[a-z][a-z_]*$/.test(errorType) ? { cause: errorType } : {}),
+    ...(typeof nodeId === "string" && nodeId ? { step_id: nodeId } : {}),
+  };
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -811,7 +832,7 @@ function applyEvent(
       break;
     case "run_errored": {
       stampStatus(run, "errored", event.ts);
-      const error = asRecord(readField(event, "error"));
+      const error = asRecord(readField(event, "error")) ?? erroredEventFailure(event);
       if (error) run.error = error;
       break;
     }
