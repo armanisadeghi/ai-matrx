@@ -36,8 +36,9 @@ export interface OrCapable<Self> {
 
 /**
  * The PostgREST `or` expression for "does this row belong in my list of organization X?":
- * mine always; otherwise the row's own Shown to, else a legacy `visibility = personal` read as
- * Only me (until T-13 renames the column), else the organization's default.
+ * mine always; otherwise the row's own Shown to, else the organization's default. (A row the
+ * retiring row column once marked personal carries `shown_to = only_me` — T-13 phase 3 backfilled it
+ * and the dual-write trigger keeps it — so no list reads that column any more.)
  */
 export function shownToFilter(
   ctx: ShownToContext,
@@ -54,9 +55,9 @@ export function shownToFilter(
     `and(shown_to.eq.my_team,${ownerColumn}.in.(${team}))`,
   ];
   if (byDefault === "everyone" || byDefault === "everyone_on_ai_matrx") {
-    arms.push("and(shown_to.is.null,visibility.neq.personal)");
+    arms.push("shown_to.is.null");
   } else if (byDefault === "my_team") {
-    arms.push(`and(shown_to.is.null,visibility.neq.personal,${ownerColumn}.in.(${team}))`);
+    arms.push(`and(shown_to.is.null,${ownerColumn}.in.(${team}))`);
   }
   return arms.join(",");
 }
@@ -95,7 +96,7 @@ export function shownToBlendedFilter(
  * notes). Compact on purpose — one arm per distinct rule, not one per organization — because a
  * person may belong to dozens of organizations and the whole expression rides in a URL:
  *   mine · shown to everyone · my_team rows of my teammates (per organization that has any) ·
- *   unset rows in organizations whose default shows them (visibility personal = Only me) ·
+ *   unset rows in organizations whose default shows them ·
  *   rows outside my organizations (reached by a direct share) or with no organization.
  */
 export function shownToMyOrgsFilter(
@@ -116,7 +117,7 @@ export function shownToMyOrgsFilter(
       arms.push(`and(${orgColumn}.eq.${org},shown_to.eq.my_team,${ownerColumn}.in.(${team}))`);
       if (d === "my_team") {
         arms.push(
-          `and(${orgColumn}.eq.${org},shown_to.is.null,visibility.neq.personal,${ownerColumn}.in.(${team}))`,
+          `and(${orgColumn}.eq.${org},shown_to.is.null,${ownerColumn}.in.(${team}))`,
         );
       }
     }
@@ -124,7 +125,7 @@ export function shownToMyOrgsFilter(
   }
   if (everyoneByDefault.length > 0) {
     arms.push(
-      `and(${orgColumn}.in.(${everyoneByDefault.join(",")}),shown_to.is.null,visibility.neq.personal)`,
+      `and(${orgColumn}.in.(${everyoneByDefault.join(",")}),shown_to.is.null)`,
     );
   }
   arms.push(`${orgColumn}.is.null`, `${orgColumn}.not.in.(${orgs.join(",")})`);

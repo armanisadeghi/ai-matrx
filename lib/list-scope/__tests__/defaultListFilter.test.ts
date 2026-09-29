@@ -50,7 +50,7 @@ describe("shownToMyOrgsFilter", () => {
     expect(f).toContain("shown_to.in.(everyone,everyone_on_ai_matrx)");
     expect(f).toContain(`and(organization_id.eq.${ORG_A},shown_to.eq.my_team,created_by.in.(${MATE}))`);
     // Only ORG_A shows unset rows by default, and never a legacy personal (= Only me) row.
-    expect(f).toContain(`and(organization_id.in.(${ORG_A}),shown_to.is.null,visibility.neq.personal)`);
+    expect(f).toContain(`and(organization_id.in.(${ORG_A}),shown_to.is.null)`);
     expect(f).not.toContain("only_me");
     // Rows outside my organizations reached me by a share and stay.
     expect(f).toContain(`organization_id.not.in.(${ORG_A},${ORG_B})`);
@@ -75,7 +75,8 @@ describe("defaultListFilter", () => {
     expect(rpc).toHaveBeenCalledWith("shown_to_context", { p_token: "note" });
     expect(q.calls).toHaveLength(1);
     expect(q.calls[0][0]).toBe("or");
-    expect(q.calls[0][1]).toContain("visibility.neq.personal");
+    expect(q.calls[0][1]).toContain("shown_to.is.null");
+    expect(q.calls[0][1]).not.toContain("neq.personal");
   });
 
   it("a mine list is the owner filter, with the owner column the caller names", async () => {
