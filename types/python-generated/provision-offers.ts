@@ -211,6 +211,7 @@ export interface ChecksFindingDispositionOffer {
   location: string;
   finding_title: string;
   fix_hint: string;
+  remedy_api: string;
   accept_command: string;
   code_excerpt: string;
   prior_accepts: string;
@@ -227,6 +228,7 @@ export interface ChecksFindingDispositionReviewOffer {
   location: string;
   finding_title: string;
   fix_hint: string;
+  remedy_api: string;
   code_excerpt: string;
   prior_accepts: string;
   worker_verdict: string;
@@ -3702,6 +3704,7 @@ export interface ScraperPageAnalysisOffer {
   scraped_at?: string;
   internal_link_count?: number;
   external_link_count?: number;
+  current_time?: string;
 }
 
 /** Offered shape of provision `scraper.page_capture` (kind `scraper.page_capture.offer`). */
