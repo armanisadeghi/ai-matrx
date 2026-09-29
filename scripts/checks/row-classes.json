@@ -6,7 +6,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 100,
+    "repo-only": 103,
     "live-db": 57,
     "clone-db": 3
   },
@@ -207,6 +207,20 @@
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
+    "no-new-code-reference-to-the-retiring-row-column-access-ladd": {
+      "label": "No new code reference to the retiring row column (access ladder T-13)",
+      "class": "repo-only",
+      "cmd": "pnpm check:t13-row-column",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "and-that-guard-can-still-fail": {
+      "label": "…and that guard can still fail",
+      "class": "repo-only",
+      "cmd": "pnpm check:t13-row-column:self-test",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
     "service-role-writes-to-provenance-governed-tables-the-db-ref": {
       "label": "Service-role writes to provenance-governed tables (the DB refuses them with 23514)",
       "class": "live-db",
@@ -269,7 +283,7 @@
         }
       ]
     },
-    "and-that-guard-can-still-fail": {
+    "and-that-guard-can-still-fail-pnpm-check-unpinned-": {
       "label": "…and that guard can still fail",
       "class": "live-db",
       "cmd": "pnpm check:unpinned-security-columns:self-test",
@@ -1306,7 +1320,7 @@
       "label": "Visibility vocabulary",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-visibility-vocab.ts --strict",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 5 file(s) reached",
       "evidence": []
     },
     "component-ownership-law-no-created-by": {
@@ -1528,7 +1542,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 162 file(s) reached",
+      "reason": "no database access in 165 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -1675,6 +1689,13 @@
       "label": "Reserved icon used outside its domain (BrainCircuit = Intelligence)",
       "class": "repo-only",
       "cmd": "pnpm check:reserved-icons",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "fixed-width-child-in-a-zero-width-layer-phones-squeeze-it-to": {
+      "label": "Fixed-width child in a zero-width layer (phones squeeze it to 0)",
+      "class": "repo-only",
+      "cmd": "pnpm check:zero-width-layers",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },

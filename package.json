@@ -385,6 +385,8 @@
     "check:archived-items-law:self-test": "tsx scripts/check-archived-items-law.ts --self-test",
     "check:canonical-pickers": "tsx scripts/check-canonical-pickers.ts",
     "check:signout-scope": "tsx scripts/check-signout-scope.ts",
+    "check:t13-row-column": "node scripts/check-t13-row-column-source.mjs",
+    "check:t13-row-column:self-test": "node scripts/check-t13-row-column-source.mjs --self-test",
     "check:admin-client-governed-writes": "node scripts/check-admin-client-governed-writes.mjs",
     "check:admin-client-governed-writes:self-test": "node scripts/check-admin-client-governed-writes.mjs --self-test",
     "check:psql": "tsx scripts/lib/psql-path.ts",
