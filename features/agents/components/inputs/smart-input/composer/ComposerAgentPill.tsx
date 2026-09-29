@@ -62,10 +62,10 @@ export function composerPillClass(size: ComposerSize, open: boolean): string {
 }
 
 function pillLabel(info: ComposerAgentInfo, mode: ComposerMode): string {
+  // "Custom" and the model are Chat's words; Work+ names the agent itself.
+  if (!composerShows(mode, "agent.presets")) return info.agentName ?? "Agent";
   const name = info.isCustom ? "Custom" : (info.preset?.name ?? info.agentName ?? "Agent");
-  // Only Chat names the model: there the model is a first-class choice.
-  if (composerShows(mode, "agent.presets") && info.effectiveModelLabel) return `${name} · ${info.effectiveModelLabel}`;
-  return name;
+  return info.effectiveModelLabel ? `${name} · ${info.effectiveModelLabel}` : name;
 }
 
 export function ComposerAgentPill({ conversationId, mode, size, agentControl, menuSide }: ComposerAgentPillProps) {
