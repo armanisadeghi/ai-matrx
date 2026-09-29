@@ -27,7 +27,7 @@ export interface ErrorTierMeta {
   tier: ErrorTier;
   /** Short human label for chips / filters. */
   label: string;
-  /** One line describing the visibility behavior. */
+  /** One line describing the display behavior. */
   description: string;
   /**
    * Rank for "the loudest tier present wins" decisions (badge selection,

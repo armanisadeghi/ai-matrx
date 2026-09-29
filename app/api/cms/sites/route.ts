@@ -1,5 +1,5 @@
 /**
- * CMS Sites API Route — v4 (org-scoped + admin fleet visibility)
+ * CMS Sites API Route — v4 (org-scoped + admin fleet view)
  *
  * Access actions (`list`, `get`, `create`, `update`, `delete`) resolve through
  * `../_lib/cmsAccess` — the owner PLUS the site's organization, per Arman's
@@ -9,7 +9,7 @@
  * `web.site.settings.cms.site_id`) at a CMS site no teammate could open.
  *
  * `admin_*` actions bypass per-user ownership and are gated by `requireSuperAdmin`
- * instead — they back the fleet-wide agent-activity visibility surface at
+ * instead — they back the fleet-wide agent-activity oversight surface at
  * `/administration/knowledge/cms-agents`, which needs to see every site regardless of which
  * user account owns it.
  */

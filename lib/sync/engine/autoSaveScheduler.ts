@@ -56,7 +56,7 @@ interface PendingAutoSave {
 export interface AutoSaveScheduler {
     /** Schedule a per-record save (or reschedule the timer if one exists). */
     schedule(sliceName: string, recordId: string): void;
-    /** Programmatic flush — used by visibility/unmount handlers. */
+    /** Programmatic flush — used by page-hide/unmount handlers. */
     flush(sliceName: string, recordId?: string): Promise<void>;
     /** Flush every pending record across all slices (pagehide). */
     flushAll(): Promise<void>;

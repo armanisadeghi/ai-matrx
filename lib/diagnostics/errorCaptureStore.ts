@@ -17,7 +17,7 @@
  *   - `useSyncExternalStore` gives React components a first-class subscription
  *     to it with correct tearing semantics — see `useCapturedErrors.ts`.
  *
- * Every entry is classified into a visibility TIER (red / orange / yellow) at
+ * Every entry is classified into a display TIER (red / orange / yellow) at
  * capture time via `classifyTier` (lib/diagnostics/errorTierRules.ts). The
  * default is `red`; admins quiet specific errors by adding downgrade rules.
  *
@@ -699,7 +699,7 @@ export function captureError(input: CaptureInput): string {
     tier: "red",
   };
 
-  // Classify into a visibility tier. Never let a bad rule break capture.
+  // Classify into a display tier. Never let a bad rule break capture.
   try {
     const c = classifyTier(entry);
     entry.tier = c.tier;

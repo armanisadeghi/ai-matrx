@@ -5,7 +5,7 @@
  * `entity_type`/`entity_id`, `changes` (jsonb diff summary carrying `actor` +
  * optional `metadata`), `user_id`, `description`. P1's aidream services write
  * the `agent`/`system` side; these FE routes write the `human` side — without
- * both, the P5 visibility feed lies by omission (only agent writes would show).
+ * both, the P5 activity feed lies by omission (only agent writes would show).
  *
  * Never throws into the caller — a logging failure must not fail the mutation
  * it's describing. Screams to the server console instead (loud recovery).

@@ -80,7 +80,7 @@ export const PersistentDOMConnector: React.FC = () => {
       attributeFilter: ['style', 'data-placeholder-for', 'data-component-id', 'class']
     });
     
-    // Also position on visibility changes and DOM content loaded
+    // Also position on page show/hide changes and DOM content loaded
     window.addEventListener('visibilitychange', positionComponents);
     document.addEventListener('DOMContentLoaded', positionComponents);
     

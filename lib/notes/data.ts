@@ -20,7 +20,7 @@ export const getNoteListSeed = cache(async (): Promise<NoteListItem[]> => {
     const { data, error } = await supabase
         .schema("workbench").from("notes")
         .select(
-            "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version",
+            "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, shown_to, published_to_web, version",
         )
         .eq("created_by", user.id)
         .is("deleted_at", null)

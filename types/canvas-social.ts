@@ -1,3 +1,4 @@
+import type { ShownTo } from "@/lib/row-access";
 // Canvas Social System Types
 
 export type CanvasVisibility = "public" | "unlisted" | "personal";
@@ -72,8 +73,9 @@ export interface SharedCanvasItem {
   average_score: number | null;
   total_attempts: number;
 
-  // Settings
-  visibility: CanvasVisibility;
+  // Settings — the row controls (access ladder): the anonymous lane and which lists show it.
+  published_to_web: boolean;
+  shown_to: ShownTo | null;
   allow_remixes: boolean;
   require_attribution: boolean;
   featured: boolean;

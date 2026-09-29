@@ -10,6 +10,7 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName } from "@/lib/redux/slices/userSlice";
 import { createShareLink } from "@/utils/permissions/shareLinks";
+import { publishedToWebPatch } from "@/lib/row-access";
 import { resolveArtifactData } from "@/features/canvas/artifact-types/resolveArtifactData";
 import type {
   CreateShareRequest,
@@ -36,11 +37,10 @@ export function useCanvasShare() {
       const canvasData = await resolveArtifactData(request.canvas_data);
 
       // 1) Publish the snapshot — a content write, not the share itself.
-      // Map legacy "unlisted" to canonical platform.visibility "link".
-      const visibility =
-        request.visibility === "unlisted"
-          ? ("link" as const)
-          : request.visibility || "public";
+      // The sheet's choice in the row words: "public" is published to the web;
+      // "unlisted" is not published (its Anyone link is minted in step 2);
+      // "personal" is not published and shown to its owner only.
+      const choice = request.visibility ?? "public";
 
       const insertData = {
         title: request.title,
@@ -48,7 +48,8 @@ export function useCanvasShare() {
         canvas_type: request.canvas_type,
         canvas_data: canvasData,
         thumbnail_url: request.thumbnail_url ?? null,
-        visibility,
+        ...publishedToWebPatch(choice === "public", userId),
+        ...(choice === "personal" ? { shown_to: "only_me" as const } : {}),
         allow_remixes: request.allow_remixes !== false,
         require_attribution: request.require_attribution !== false,
         has_scoring: request.has_scoring || false,

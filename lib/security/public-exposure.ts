@@ -831,7 +831,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "category", "tags", "icon", "semver", "admin_only", "tier",
       "gating", "dedupe_exempt", "validation_exempt", "source_kind", "managed_by_server_id", "max_client_wait_seconds",
       "tool_group", "is_active", "deactivated_at", "created_at", "updated_at", "visibility",
-      "deleted_at", "updated_by_tier", "updated_by_system", "side_effect_class",
+      "published_to_web", "deleted_at", "updated_by_tier", "updated_by_system", "side_effect_class",
     ],
     why:
 "matrx-extend asks for name+description before login to build its tool descriptions (src/lib/tools/descriptions.ts).",

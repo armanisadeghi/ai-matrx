@@ -29,7 +29,7 @@
 // fifteen sources "after" the failed one were never after it at all — they were
 // running beside it. The sentence was right for the surface it was written
 // against (a Build's ordered milestones) and wrong for every surface that fans
-// a run out over a pile, which is most of them: a dump of files, a visibility
+// a run out over a pile, which is most of them: a dump of files, an AI-visibility
 // report across engines, an illustration pass across cards.
 //
 // So the run's SHAPE is a required input, not a default. A `sequence` is

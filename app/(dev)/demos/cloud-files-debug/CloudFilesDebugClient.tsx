@@ -169,7 +169,7 @@ export function CloudFilesDebugClient() {
     void refreshSession();
   }, [refreshSession]);
 
-  // ─── Core test runner: full visibility into every fetch ──────────────────
+  // ─── Core test runner: full insight into every fetch ──────────────────
 
   const runFetch = useCallback(
     async (

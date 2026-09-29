@@ -13,7 +13,7 @@
  *
  * The FE's SandboxDiagnosticsPanel polls this every few seconds and shows
  * the contents in a code block (or pipes to xterm) so the operator has
- * full live visibility into what the sandbox is doing — no black-box.
+ * full live insight into what the sandbox is doing — no black-box.
  */
 
 import { NextRequest, NextResponse } from "next/server";

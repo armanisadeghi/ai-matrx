@@ -26,7 +26,7 @@ interface SavedHeatmap {
     scalingMethod: ColorScaleOptions['scalingMethod'];
     colorScheme: ColorScaleOptions['colorScheme'];
   };
-  visibility: string;
+  published_to_web: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -61,7 +61,7 @@ export default function SharedHeatmapPage() {
       const { data, error: fetchError } = await supabase
         .schema('workbench').from('heatmap_saves')
         .select(
-          'id,title,description,data,view_settings,created_at,updated_at,deleted_at,visibility',
+          'id,title,description,data,view_settings,created_at,updated_at,deleted_at,published_to_web',
         )
         .is('deleted_at', null)
         .eq('id', heatmapId)
@@ -84,12 +84,12 @@ export default function SharedHeatmapPage() {
       }
 
       // Check if user has access. A non-public row can only have been returned
-      // to a SIGNED-IN caller in the first place (RLS hands `anon` public rows
+      // to a SIGNED-IN caller in the first place (RLS hands `anon` rows published to the web
       // only), and `user_id` is readable to `authenticated` alone — so the owner
       // check asks for it in its own second read rather than putting a column
       // `anon` cannot select into the request above, which would fail the whole
       // request for every signed-out visitor (DD-186).
-      if (data.visibility !== "public") {
+      if (!data.published_to_web) {
         const {
           data: { user },
           error: authError,
@@ -112,7 +112,7 @@ export default function SharedHeatmapPage() {
           .eq('id', heatmapId)
           .maybeSingle();
         if (!owner || user.id !== owner.user_id) {
-          // access-errors: ok — verified denial: the row was read, its visibility is not public, and the signed-in caller is not its owner
+          // access-errors: ok — verified denial: the row was read, it is not published to the web, and the signed-in caller is not its owner
           setError("You don't have access to this heatmap.");
           return;
         }

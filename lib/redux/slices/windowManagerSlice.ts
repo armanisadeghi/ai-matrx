@@ -130,7 +130,7 @@ export interface WindowManagerState {
   trayCount: number;
   /** Last viewport used to place tray cards; enables safe reflow on removal. */
   trayViewport: { width: number; height: number } | null;
-  /** Global visibility toggle — windows stay mounted but are visually hidden */
+  /** Global show/hide toggle — windows stay mounted but are visually hidden */
   windowsHidden: boolean;
   /**
    * The id of the window currently occupying the single Document PiP slot
@@ -697,7 +697,7 @@ const windowManagerSlice = createSlice({
       const win = state.windows[id];
       if (!win) return;
       if (state.windowsHidden) state.windowsHidden = false;
-      if (win.popoutMode !== null) return; // OS frame owns popout visibility
+      if (win.popoutMode !== null) return; // OS frame owns whether the popout shows
       releaseTraySlot(state, win);
       if (win.state === "minimized") {
         if (win.preMinimizedRect) {
@@ -956,7 +956,7 @@ const windowManagerSlice = createSlice({
       state.trayViewport = null;
     },
 
-    /** Toggle global visibility of all windows (they stay mounted). */
+    /** Show or hide all windows (they stay mounted). */
     toggleWindowsHidden(state) {
       state.windowsHidden = !state.windowsHidden;
     },

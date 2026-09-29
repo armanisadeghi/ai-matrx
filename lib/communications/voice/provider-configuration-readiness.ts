@@ -76,7 +76,7 @@ function unavailable(
 
 /**
  * A receipt timestamp as BOTH the stored string and its instant — the
- * comparison needs the number and the visibility result echoes the string.
+ * comparison needs the number and the status result echoes the string.
  *
  * The parsing is `@ai-matrx/kit/format`'s, not a bare `Date.parse`: a
  * zone-less `timestamp without time zone` reaching this door was being read as
@@ -95,7 +95,7 @@ function receiptInstant(
 
 /**
  * Validate a reviewed provider receipt against the exact owner-beta account,
- * region, credential identity, and external-storage target. The visibility
+ * region, credential identity, and external-storage target. The status
  * result deliberately omits all provider and storage identifiers.
  */
 export function evaluateVoiceProviderConfigurationReceipt(

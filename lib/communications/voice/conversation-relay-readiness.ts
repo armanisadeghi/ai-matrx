@@ -51,7 +51,7 @@ const GATE_DEFINITIONS = [
   },
   {
     key: "playback_activity_persistence_ready",
-    label: "Playback lifecycle visibility",
+    label: "Playback lifecycle reporting",
     blockedReason:
       "Playback and session aggregates are not yet durably attached to the canonical CRM interaction and activity ledger.",
     optional: true,

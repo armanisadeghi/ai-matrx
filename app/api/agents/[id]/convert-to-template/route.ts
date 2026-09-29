@@ -86,8 +86,8 @@ export async function POST(
         tool_config: agent.tool_config ?? null,
         context_policies: agent.context_policies ?? [],
         mcp_servers: agent.mcp_servers ?? [],
-        // visibility intentionally omitted → DB default 'internal' (non-public,
-        // same posture as the retired is_public=false)
+        // Row controls intentionally omitted → not published to the web, Shown to
+        // by the type's default (same posture as the retired is_public=false)
         is_featured: false,
         use_count: 0,
         created_by: user.id,

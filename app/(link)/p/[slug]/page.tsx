@@ -39,9 +39,9 @@ async function resolveAgentAppMetadata(
   const isId = isUUID(slug);
   const column = isId ? "id" : "slug";
 
-  // Canonical: app.definition uses visibility enum (not is_public bool).
-  // make_resource_public sets visibility='public'; is_public is a bridge column
-  // that the DB registry no longer populates for the 'app' resource type.
+  // Canonical: an app is anonymous-readable only when published to the web
+  // (`published_to_web`, the one anonymous lane — access ladder); is_public is a
+  // bridge column the DB registry no longer populates for the 'app' resource type.
   const { data } = await supabase
     .schema("app")
     .from("definition")
@@ -49,7 +49,7 @@ async function resolveAgentAppMetadata(
     .is("deleted_at", null)
     .eq(column, slug)
     .eq("status", "published")
-    .eq("visibility", "public")
+    .eq("published_to_web", true)
     .maybeSingle();
 
   return data;

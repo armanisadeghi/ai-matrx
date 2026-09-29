@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "admin_list": {
-        // Fleet-wide visibility for /administration/knowledge/cms-agents — same gate as
+        // Fleet-wide view for /administration/knowledge/cms-agents — same gate as
         // the sibling admin_* actions on /api/cms/sites.
         await requireSuperAdmin(); // throws → caught below as 500 with message
         const { siteId } = params;

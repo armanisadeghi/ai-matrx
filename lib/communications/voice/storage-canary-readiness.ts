@@ -74,7 +74,7 @@ function isHash(value: unknown): value is string {
 /**
  * Validate the latest activity receipt against the exact checked-in storage
  * boundary. Credential identifiers and object paths are deliberately omitted
- * from the returned visibility model.
+ * from the returned status model.
  */
 export function evaluateVoiceStorageCanaryReceipt(
   row: ActivityRow | null,

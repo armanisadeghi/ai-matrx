@@ -19,7 +19,7 @@ import { BrandScopedCompetitors } from "@/features/marketing/competitors/BrandSc
 export const metadata: Metadata = {
   title: "Competitors",
   description:
-    "Find the competitors that truly overlap, read the pages earning their visibility, and turn them into ranked opportunities.",
+    "Find the competitors that truly overlap, read the pages earning their rankings, and turn them into ranked opportunities.",
 };
 
 export default function BrandCompetitorsPage() {

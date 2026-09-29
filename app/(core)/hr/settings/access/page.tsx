@@ -20,7 +20,7 @@ export default function Page() {
       <HrLanePanel
         section="access"
         features={["hr.access"]}
-        promise="Who can see and change what, over which people — assigned over a population rather than person by person, with the blast radius stated in words before it commits (\u201cthis grants pay visibility over 412 people\u201d)."
+        promise="Who can see and change what, over which people — assigned over a population rather than person by person, with the blast radius stated in words before it commits (\u201cthis lets you see pay for 412 people\u201d)."
       />
     </Suspense>
   );

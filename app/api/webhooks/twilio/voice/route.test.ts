@@ -906,7 +906,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
     );
   });
 
-  test("fails relay lifecycle visibility closed when persistence proof is unavailable", async () => {
+  test("fails relay lifecycle reporting closed when persistence proof is unavailable", async () => {
     jest
       .mocked(getVoiceRecordingPersistenceReadiness)
       .mockRejectedValueOnce(new Error("database unavailable"));

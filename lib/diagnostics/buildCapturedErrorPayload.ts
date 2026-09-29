@@ -7,10 +7,10 @@
  *
  * The agent payload carries everything needed to act: the route, the issuing
  * call-site / component, the operation, the table/function/endpoint, the full
- * raw error — AND the current visibility tier plus a ready-to-paste downgrade
+ * raw error — AND the current display tier plus a ready-to-paste downgrade
  * rule. The investigation prompt's job is to make the receiving agent FIX the
  * write path, the class, and every failed safeguard. The downgrade stub is a
- * last-step visibility knob after that work, never the work.
+ * last-step display knob after that work, never the work.
  */
 
 import {
@@ -200,7 +200,7 @@ export function capturedErrorToAgentInput(e: CapturedError): AgentPayloadInput {
   const summary = [
     capturedErrorToAgentHuman(e),
     "",
-    `To change this error's visibility tier, add a rule to ${TIER_RULES_FILE}:`,
+    `To change this error's display tier, add a rule to ${TIER_RULES_FILE}:`,
     stub,
   ].join("\n");
 

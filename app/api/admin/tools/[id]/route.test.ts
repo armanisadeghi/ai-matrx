@@ -53,7 +53,7 @@ describe("tool registry mutation routes", () => {
         deleted_at: "2020-01-01T00:00:00Z",
         source_kind: "mcp_discovered",
         managed_by_server_id: "forged-server",
-        visibility: "public",
+        published_to_web: true,
         admin_only: true,
         gating: ["forged"],
         description: "Safe edit",

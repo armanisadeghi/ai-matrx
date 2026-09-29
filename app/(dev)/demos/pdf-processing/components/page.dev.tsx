@@ -195,7 +195,7 @@ export default function PdfComponentsBenchPage() {
             <AnalysisTab fileId={fileId} />
           </Section>
 
-          <Section title="Share" hint="FileShareTab — visibility, links, people & groups">
+          <Section title="Share" hint="FileShareTab — Shown to, links, people & groups">
             <FileShareTab fileId={fileId} />
           </Section>
 

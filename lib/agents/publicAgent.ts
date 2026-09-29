@@ -7,16 +7,16 @@ import { supabase as browserClient } from "@/utils/supabase/client";
  *
  * 🚨 RUNNING IS NOT A CAPABILITY OF *EVERY* AGENT — it is a capability of every
  * agent you are allowed to SEE, and those are different sets. Until DD-116
- * (2026-09-11) this RPC had no visibility test at all: anyone holding the
+ * (2026-09-11) this RPC had no access test at all: anyone holding the
  * published anon key and an agent UUID read the name, description, launch
  * variables and context policies of any of the 628 `card_visibility='internal'`
  * agents on the platform. The gate now lives in the function body
  * (`migrations/dd116_agent_public_door_visibility_gate.sql`):
  *
  *   - anonymous caller → `card_visibility = 'public'` rows only. (The gate is
- *     `card_visibility`, never `visibility`: `agent.definition` carries
- *     `agent_definition_body_not_public_chk`, so an agent BODY is never public
- *     and a `visibility='public'` filter would match zero rows by construction.
+ *     `card_visibility`, never the body's `published_to_web`: `agent.definition`
+ *     carries `agent_definition_body_not_public_chk`, so an agent BODY is never
+ *     published to the web and a body filter would match zero rows by construction.
  *     The CARD is the public face — db-rules §6a.)
  *   - signed-in caller → the above, plus anything
  *     `iam.has_access('agent', id, 'viewer')` admits.

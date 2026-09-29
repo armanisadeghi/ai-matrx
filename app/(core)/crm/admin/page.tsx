@@ -90,7 +90,7 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
       notes: [
         "RPCs: crm_inbox_list_scoped / _scope_counts / _list_facets / crm_inbox_set_handled (migrations/crm_08_inbox_chasebox.sql).",
-        "Scopes: Mine + My Orgs only — crm.interaction has no visibility axis and CRM still has no grant-reader RPC.",
+        "Scopes: Mine + My Orgs only — crm.interaction has no Shown to column and CRM still has no grant-reader RPC.",
       ],
     },
     {

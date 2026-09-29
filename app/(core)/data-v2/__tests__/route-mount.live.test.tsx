@@ -319,7 +319,7 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
     // satisfies every line of it (proved 2026-09-22 by replacing
     // `recordsDataSource` with one that returns no rows — this test still
     // passed, while the table-route test below correctly failed).
-    // The four visibility lanes (mine · my organization · community · world).
+    // The four list lanes (mine · my organization · community · world).
     for (const lane of ["Mine", "My organization", "Community", "World"]) {
       expect(text).toContain(lane);
     }

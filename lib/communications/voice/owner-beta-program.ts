@@ -231,7 +231,7 @@ export async function authorizeVoiceOwnerBetaCall(
   );
 }
 
-/** Secret-free readiness summary for the live Voice visibility endpoint. */
+/** Secret-free readiness summary for the live Voice status endpoint. */
 export async function inspectVoiceOwnerBetaProgram(): Promise<VoiceOwnerBetaProgramSnapshot> {
   return voiceOwnerBetaProgramSnapshot(await readVoiceOwnerBetaCandidates());
 }

@@ -927,7 +927,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/[brandId]/intelligence/competitors",
       label: "Competitors",
       description:
-        "CompetitorAutopsyWorkspace — overlapping rivals, the pages earning their visibility, and ranked opportunities.",
+        "CompetitorAutopsyWorkspace — overlapping rivals, the pages earning their rankings, and ranked opportunities.",
       filePath:
         "app/(core)/marketing/[brandId]/intelligence/competitors/page.tsx",
       status: "Live",

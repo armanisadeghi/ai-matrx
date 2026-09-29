@@ -28,7 +28,7 @@ import { useState, useCallback } from "react";
 export type CaptureMethod = "tab" | "screen";
 
 export interface ScreenCaptureOptions {
-  /** Elements to hide before capturing (visibility toggled, always restored). */
+  /** Elements to hide before capturing (hidden, always restored). */
   hideElements?: HTMLElement[];
   /** Filename for the returned File. Defaults to screenshot-<timestamp>.png */
   filename?: string;

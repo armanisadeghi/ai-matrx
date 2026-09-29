@@ -7,7 +7,7 @@
  * raw PostgREST detail — code, message, details, hint, status — plus the table
  * / function name, the operation verb, and the route it fired from.
  *
- * This is the ONE place the app gains global Supabase-error visibility. It is
+ * This is the ONE place the app gains global Supabase-error capture. It is
  * applied once, in `utils/supabase/client.ts`, so all ~1,000 call sites inherit
  * capture with zero changes. The proxy is read-only and side-effect-free aside
  * from the capture call: every real method runs on the real client/builder via
@@ -17,7 +17,7 @@
  *
  * Browser-only by construction: it wraps the browser client. The server client
  * is untouched (server errors surface in server logs; this layer is about the
- * user's in-browser, on-page visibility).
+ * user's in-browser, on-page view).
  *
  * IT IS ALSO WHERE THE SESSION BARRIER LIVES (DD-237). Because this is the ONE
  * proxy every browser `.from()` / `.rpc()` / `.schema()` passes through, it is

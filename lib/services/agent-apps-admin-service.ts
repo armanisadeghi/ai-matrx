@@ -61,7 +61,7 @@ export interface AgentAppAdminView {
   category?: string | null;
   tags: string[];
   status: "draft" | "published" | "archived" | "suspended";
-  visibility: string;
+  published_to_web: boolean;
   is_verified: boolean;
   is_featured: boolean;
   rate_limit_per_ip: number | null;
@@ -85,7 +85,7 @@ export interface UpdateAgentAppAdminInput {
   status?: "draft" | "published" | "archived" | "suspended";
   is_verified?: boolean;
   is_featured?: boolean;
-  visibility?: string;
+  published_to_web?: boolean;
   rate_limit_per_ip?: number;
   rate_limit_window_hours?: number;
   rate_limit_authenticated?: number;
@@ -430,9 +430,8 @@ export async function updateAgentAppAdmin(
   if (input.status !== undefined) patch.status = input.status;
   if (input.is_verified !== undefined) patch.is_verified = input.is_verified;
   if (input.is_featured !== undefined) patch.is_featured = input.is_featured;
-  if (input.visibility !== undefined)
-    patch.visibility =
-      input.visibility as Database["app"]["Tables"]["definition"]["Update"]["visibility"];
+  if (input.published_to_web !== undefined)
+    patch.published_to_web = input.published_to_web;
   if (input.rate_limit_per_ip !== undefined)
     patch.rate_limit_per_ip = input.rate_limit_per_ip;
   if (input.rate_limit_window_hours !== undefined)

@@ -5,7 +5,7 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 // Dev-only diagnostic for the agent-shortcuts stack.
 // Returns row counts + samples from every table the context menu depends on,
-// plus the agent.context_menu_view output for the caller's visibility.
+// plus the agent.context_menu_view output for what the caller can open.
 
 export async function GET() {
   try {
@@ -136,7 +136,7 @@ export async function GET() {
         }
         if (notes.length === 0) {
           notes.push(
-            "Data looks healthy. If menu still renders disabled, check RLS visibility for this user.",
+            "Data looks healthy. If menu still renders disabled, check RLS access for this user.",
           );
         }
         return notes;

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Cloud Browser — demo / visibility surface (WS-8).
+ * Cloud Browser — demo / inspection surface (WS-8).
  *
  * Live test bench for the Cloud Browser panel, share dialog, and timeline against
  * fixtures. Everything here works with no backend; real reads swap in at M1/M3.

@@ -10,7 +10,7 @@
  * ---------------
  * Four people in one organization each researched SEO keywords and each of them saw only their own.
  * Every one of those rows was readable by every one of those people — `content_ir.kind_instance`
- * carries both `organization_id` and `visibility`, and the client was discarding both and filtering
+ * carries both `organization_id` and its row controls, and the client was discarding both and filtering
  * on `created_by` instead. Measured across the two repos on 2026-09-12: **27 HIGH call sites** do
  * the same thing to the organization's own data, and 17 more are ambiguous.
  *

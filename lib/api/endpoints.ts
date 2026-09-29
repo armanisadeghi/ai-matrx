@@ -429,7 +429,7 @@ export const ENDPOINTS = {
     upload: "/assets" as const,
     /** GET — read the canonical Asset envelope for an upload's master file. */
     detail: (fileId: string) => `/assets/${fileId}` as const,
-    /** PATCH — change visibility / share / metadata. */
+    /** PATCH — change sharing / metadata. */
     patch: (fileId: string) => `/assets/${fileId}` as const,
     /** POST — render more variants (idempotent). */
     addVariants: (fileId: string) => `/assets/${fileId}/variants` as const,

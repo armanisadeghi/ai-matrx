@@ -64,7 +64,7 @@ export const AUDIO_HELP_MESSAGES: Record<string, AudioHelpMessage> = {
     customizeTable: {
         id: 'customizeTable',
         icon: TableProperties,
-        text: "You can customize this table by dragging columns to reorder them, resizing column widths, and using the column visibility menu to show or hide specific columns. Your layout will be automatically saved for next time.",
+        text: "You can customize this table by dragging columns to reorder them, resizing column widths, and using the column show/hide menu to show or hide specific columns. Your layout will be automatically saved for next time.",
         title: "Table Customization",
         description: "Personalize your data view"
     },

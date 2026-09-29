@@ -1,7 +1,7 @@
 // app/(core)/cms/admin/page.tsx
 //
 // Per-feature admin map for the CMS feature (client sites + standalone HTML
-// pages + the agent-activity visibility surface). Renders via the platform
+// pages + the agent-activity oversight surface). Renders via the platform
 // primitive <FeatureAdminPage>. When you add a cms route / API action /
 // component, add it here in the same change.
 
@@ -12,7 +12,7 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
   name: "CMS",
   slug: "cms",
   description:
-    "Two content systems on one Supabase project (viyklljfdhtidwecakwx, separate from the main app DB): full multi-page client sites (client_* tables, drafts/publish/versions) and standalone quick-publish HTML pages (html_pages). Owner-scoped human UI here; agent tool parity lives in aidream (packages/matrx-content-guard + services/cms). The agent-activity visibility surface lets Arman watch every write, human or agent, in one place.",
+    "Two content systems on one Supabase project (viyklljfdhtidwecakwx, separate from the main app DB): full multi-page client sites (client_* tables, drafts/publish/versions) and standalone quick-publish HTML pages (html_pages). Owner-scoped human UI here; agent tool parity lives in aidream (packages/matrx-content-guard + services/cms). The agent-activity oversight surface lets Arman watch every write, human or agent, in one place.",
   docs: [
     { label: "cms FEATURE.md", href: "/features/cms/FEATURE.md" },
     { label: "html-pages README.md", href: "/features/html-pages/README.md" },
@@ -84,7 +84,7 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/administration/knowledge/cms-agents",
-      label: "CMS Agent Activity (visibility surface)",
+      label: "CMS Agent Activity (oversight surface)",
       description:
         "Super-admin gated. Live activity feed (poll 8s, filter by site/entity/actor, agent rows visually distinct), per-site page tree with preview/live links, agent-write-policy editor (F4), validation-exception approvals queue (F3, degrades gracefully until P1's store table lands).",
       filePath: "app/(admin)/administration/knowledge/cms-agents/page.tsx",
@@ -101,7 +101,7 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
       name: "CmsAgentsAdminClient",
       filePath: "features/cms/components/admin/CmsAgentsAdminClient.tsx",
       description:
-        "Tab shell for the visibility surface — fetches the site list once, composes the four panel tabs.",
+        "Tab shell for the oversight surface — fetches the site list once, composes the four panel tabs.",
       tier: "internal",
     },
     {

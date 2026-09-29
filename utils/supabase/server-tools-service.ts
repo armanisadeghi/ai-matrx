@@ -14,6 +14,7 @@ import { DatabaseTool } from './tools-service';
 export type PublicDatabaseTool = Omit<
   DatabaseTool,
   'created_by' | 'updated_by' | 'organization_id' | 'metadata' | 'version' | 'shown_to'
+  | 'published_to_web_at' | 'published_to_web_by'
 >;
 
 /**
@@ -28,7 +29,7 @@ export type PublicDatabaseTool = Omit<
  * grants by `pnpm check:anon-column-surface` (DD-186).
  */
 const ANON_TOOL_COLUMNS =
-  "id,name,description,parameters,output_schema,annotations,category,tags,icon,semver,admin_only,tier,gating,dedupe_exempt,validation_exempt,source_kind,managed_by_server_id,max_client_wait_seconds,tool_group,is_active,deactivated_at,created_at,updated_at,visibility,deleted_at,updated_by_tier,updated_by_system,side_effect_class";
+  "id,name,description,parameters,output_schema,annotations,category,tags,icon,semver,admin_only,tier,gating,dedupe_exempt,validation_exempt,source_kind,managed_by_server_id,max_client_wait_seconds,tool_group,is_active,deactivated_at,created_at,updated_at,visibility,published_to_web,deleted_at,updated_by_tier,updated_by_system,side_effect_class";
 
 export class ServerToolsService {
   /**

@@ -26,7 +26,7 @@ export async function GET() {
                 // #ANON_COLUMN_SURFACE, kept true to the live grants by
                 // `pnpm check:anon-column-surface` (DD-186).
                 .select(
-                    "id,name,common_name,context_window,max_tokens,capabilities,provider_id,is_deprecated,is_primary,is_premium,mid_fallback_id,guest_fallback_id,visibility,deleted_at,created_at,updated_at,release_date,description,cost_rating,speed_rating,retry_fallback_id,retry_max_attempts,retired_at,successor_id",
+                    "id,name,common_name,context_window,max_tokens,capabilities,provider_id,is_deprecated,is_primary,is_premium,mid_fallback_id,guest_fallback_id,published_to_web,deleted_at,created_at,updated_at,release_date,description,cost_rating,speed_rating,retry_fallback_id,retry_max_attempts,retired_at,successor_id",
                 )
                 .is("deleted_at", null)
                 .eq("is_deprecated", false)

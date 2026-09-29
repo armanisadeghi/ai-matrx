@@ -90,7 +90,7 @@ export const PersistentComponentProvider: React.FC<{
     [scheduleUpdate],
   );
 
-  // Set component visibility
+  // Set whether the component shows
   const setComponentVisibility = useCallback(
     (id: ComponentId, isVisible: boolean) => {
       if (
@@ -99,7 +99,7 @@ export const PersistentComponentProvider: React.FC<{
       ) {
         componentsRef.current[id].isVisible = isVisible;
         scheduleUpdate();
-        console.log(`Set visibility for ${id}: ${isVisible}`);
+        console.log(`Set shown for ${id}: ${isVisible}`);
       }
     },
     [scheduleUpdate],
@@ -173,11 +173,11 @@ export const PersistentComponentPlaceholder: React.FC<{
   // Make component visible when this placeholder is mounted
   useEffect(() => {
     setComponentVisibility(id, true);
-    console.log(`Set visibility for ${id}: true`);
+    console.log(`Set shown for ${id}: true`);
 
     return () => {
       setComponentVisibility(id, false);
-      console.log(`Set visibility for ${id}: false`);
+      console.log(`Set shown for ${id}: false`);
     };
   }, [id, setComponentVisibility]);
 

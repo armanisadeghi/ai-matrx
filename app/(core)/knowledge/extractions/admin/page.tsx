@@ -45,7 +45,7 @@ const PAGE_EXTRACTION_ADMIN_MAP: FeatureAdminMap = {
       url: "/knowledge/extractions/<id>",
       label: "Extraction dataset (grid)",
       description:
-        "Full data grid for one dataset: search, sort, column visibility, pagination, merge duplicates, inline-edit manual columns, per-row + bulk delete, run history/retry/cancel, context tagging, export, push to workbook / data table, jump to source PDF.",
+        "Full data grid for one dataset: search, sort, column show/hide, pagination, merge duplicates, inline-edit manual columns, per-row + bulk delete, run history/retry/cancel, context tagging, export, push to workbook / data table, jump to source PDF.",
       filePath: "app/(core)/knowledge/extractions/[id]/page.tsx",
       status: "Live",
       notes: [

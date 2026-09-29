@@ -101,7 +101,6 @@ export async function PATCH(
           //   before the invitee belongs to any organization; the route is behind
           //   checkIsSuperAdmin
           organization_id: SYSTEM_ORGANIZATION_ID,
-          visibility: "personal",
           expires_at: expiresAt.toISOString(),
           max_uses: 1,
           status: "active",

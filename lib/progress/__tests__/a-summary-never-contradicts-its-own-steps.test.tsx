@@ -137,7 +137,7 @@ describe("every consumer of the canonical renderer inherits the honesty", () => 
     expect(summary).toMatch(/try it again/i);
   });
 
-  it("corrects the visibility report's waiting sentence when an engine fails", () => {
+  it("corrects the AI-visibility report's waiting sentence when an engine fails", () => {
     const report: LiveRunProgressState = {
       title: "Checking AI recommendations",
       // A pile of ENGINES, each asked independently.

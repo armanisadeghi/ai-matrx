@@ -90,7 +90,7 @@ describe("tool registry create route", () => {
           actor_system: "forged-client-value",
           tool_group: "storage",
           side_effect_class: "db_write",
-          visibility: "public",
+          published_to_web: true,
         }),
       );
 
@@ -107,7 +107,7 @@ describe("tool registry create route", () => {
           organization_id: ORG_ID,
           tool_group: "storage",
           side_effect_class: "db_write",
-          visibility: "public",
+          published_to_web: true,
         }),
       ]);
       expect(mockInsert.mock.calls[0][0][0]).not.toHaveProperty("actor_system");

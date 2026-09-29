@@ -53,7 +53,7 @@ export default function SettingsPrimitivesDemoPage() {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [density, setDensity] = useState("default");
-  const [visibility, setVisibility] = useState("private");
+  const [profileAudience, setProfileAudience] = useState("private");
   const [accentColor, setAccentColor] = useState("#3b82f6");
   const [languages, setLanguages] = useState<string[]>(["en"]);
   const [shortcut, setShortcut] = useState<KeybindingValue | null>({
@@ -268,10 +268,10 @@ export default function SettingsPrimitivesDemoPage() {
               commitOnBlur
             />
             <SettingsRadioGroup
-              label="Profile visibility"
+              label="Profile audience"
               description="Who can see your profile?"
-              value={visibility}
-              onValueChange={setVisibility}
+              value={profileAudience}
+              onValueChange={setProfileAudience}
               options={[
                 {
                   value: "private",

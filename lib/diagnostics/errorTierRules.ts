@@ -677,7 +677,7 @@ export interface TierClassification {
 }
 
 /**
- * Classify a captured error into a visibility tier. Walks DOWNGRADE_RULES in
+ * Classify a captured error into a display tier. Walks DOWNGRADE_RULES in
  * order; first match wins; default is `red`. Never throws.
  */
 export function classifyTier(e: CapturedError): TierClassification {

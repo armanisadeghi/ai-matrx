@@ -4,7 +4,7 @@
  * All owner-scoped actions verify the page's site is owned by the authenticated
  * user via a site ownership check before proceeding. `admin_list` bypasses
  * ownership (requireSuperAdmin) — it backs the fleet-wide page-tree view on the
- * agent-activity visibility surface, which needs to see every site's pages.
+ * agent-activity oversight surface, which needs to see every site's pages.
  */
 
 import { NextRequest, NextResponse } from "next/server";

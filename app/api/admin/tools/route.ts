@@ -150,13 +150,12 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const visibilityValues = ["personal", "internal", "link", "public"];
     if (
-      body.visibility !== undefined &&
-      !visibilityValues.includes(body.visibility)
+      body.published_to_web !== undefined &&
+      typeof body.published_to_web !== "boolean"
     ) {
       return NextResponse.json(
-        { error: "Visibility must be personal, internal, link, or public" },
+        { error: "published_to_web must be true or false" },
         { status: 400 },
       );
     }
@@ -185,7 +184,8 @@ export async function POST(request: NextRequest) {
       gating: body.gating ?? [],
       dedupe_exempt: body.dedupe_exempt ?? false,
       validation_exempt: body.validation_exempt ?? false,
-      visibility: body.visibility ?? "public",
+      // Platform tools are published to the web by default (the anonymous catalogue reads them).
+      published_to_web: body.published_to_web ?? true,
       // Admin-authored platform tools are builtin/shipped content with no
       // individual owner — home them in the global system org (tool.definition
       // org is NOT NULL with no inherit trigger).

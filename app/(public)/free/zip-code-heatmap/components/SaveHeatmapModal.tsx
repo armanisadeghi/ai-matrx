@@ -24,6 +24,7 @@ import { ZipCodeData } from '../page';
 import type { ColorScaleOptions } from './ColorScaleSelector';
 import type { ViewMode } from './ViewModeSelector';
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { publishedToWebPatch } from "@/lib/row-access";
 
 interface SaveHeatmapModalProps {
   isOpen: boolean;
@@ -128,7 +129,9 @@ export default function SaveHeatmapModal({
             scalingMethod: viewSettings.colorScaleOptions.scalingMethod,
             colorScheme: viewSettings.colorScaleOptions.colorScheme,
           },
-          visibility: isPublic ? "public" : "personal",
+          ...(isPublic
+            ? publishedToWebPatch(true, user.id)
+            : { shown_to: "only_me" as const }),
         })
         .select('id')
         .single();

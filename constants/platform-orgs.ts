@@ -11,8 +11,8 @@
  * So there is no `organization_id: null` tier and never a `.is("organization_id",
  * null)` filter. Platform-global content is owned by the `matrx-system` org,
  * which `iam.system_orgs` marks `global_readable` — the flag `iam.has_access`
- * reads to serve those rows to every authenticated user (at visibility
- * >= 'internal'; 'public' additionally reaches anon through `pub_read`).
+ * reads to serve those rows to every authenticated user (as Shown to
+ * lists them; a row published to the web additionally reaches anon through `pub_read`).
  *
  * This id is stable and seeded; it is a constant rather than a lookup so that
  * "which org means global" has exactly one answer in the client bundle.

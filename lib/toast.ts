@@ -150,7 +150,7 @@ const recordKey = (record: Pick<ToastRecordRef, "type" | "id">) =>
  * then simply never lands: the wall clock fired, and the toast stayed.
  * Measured live 2026-09-12 — a «Pinned Code» toast outlived a client-side
  * navigation by minutes with `document.hidden === true` and a frame callback
- * that never ran in 3 s. jsdom runs frames regardless of visibility, which is
+ * that never ran in 3 s. jsdom runs frames whether or not the page is shown, which is
  * why no unit test saw it until the double was made faithful.
  *
  * While the document is hidden there is nothing to animate and no batching to

@@ -59,7 +59,7 @@ let nextFrameId = 1;
  * Put the document in the state a real browser puts a background tab or an
  * agent browser pane in: `document.hidden` is true (which freezes every
  * sonner timer) AND `requestAnimationFrame` never fires. jsdom runs animation
- * frames on a timer regardless of visibility, which is a false double: sonner
+ * frames on a timer whether or not the page is shown, which is a false double: sonner
  * 2.0.8 defers every `toast.dismiss()` through TWO animation frames, so in a
  * real hidden document a dismissal is queued and never lands (measured live
  * 2026-09-12: a toast survived a client-side navigation by minutes). A test
