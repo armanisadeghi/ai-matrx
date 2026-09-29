@@ -51,6 +51,7 @@ import { useRead } from "@/components/read-state/useRead";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { PitchAdvisoryConfirmDialog } from "@/features/crm/pitch-advisories/PitchAdvisoryConfirmDialog";
+import { MediaResearchDialog } from "@/features/crm/media-research/MediaResearchDialog";
 
 function memberCount(row: OutreachListWithCount): number {
   return row.members?.[0]?.count ?? 0;
@@ -68,6 +69,10 @@ export function OutreachListsPage() {
   // Activating a campaign IS its send step: the cadence starts mailing. The PR
   // floor's list checks (E1–E5, E10, E17) show first; Activate stays live.
   const [activating, setActivating] = useState<OutreachListWithCount | null>(
+    null,
+  );
+  // Media-list research (Brief 3): preview → Run it → streamed → lands on the list.
+  const [researching, setResearching] = useState<OutreachListWithCount | null>(
     null,
   );
 
@@ -199,6 +204,11 @@ export function OutreachListsPage() {
               kind: "link",
               label: "Open call queue",
               href: `/crm/outreach-lists/${row.id}/dial`,
+            },
+            {
+              id: "find-journalists",
+              label: "Find journalists for this angle",
+              onSelect: () => setResearching(row),
             },
             {
               id: "copy-link",
@@ -498,6 +508,19 @@ export function OutreachListsPage() {
                 toast.error(e instanceof Error ? e.message : "Update failed");
               }
             }}
+          />
+        )}
+
+        {researching && (
+          <MediaResearchDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) setResearching(null);
+            }}
+            listId={researching.id}
+            listName={researching.name}
+            organizationId={researching.organization_id}
+            onLanded={load}
           />
         )}
 

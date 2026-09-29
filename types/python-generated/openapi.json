@@ -20261,6 +20261,154 @@
         }
       }
     },
+    "/google-integrations/other-contacts/preview": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Other Contacts Preview",
+        "description": "Internal-test-only, one-page preview for one named personal account.",
+        "operationId": "google_other_contacts_preview_google_integrations_other_contacts_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtherContactsPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherContactsPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/other-contacts/review": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Other Contacts Review",
+        "description": "Fresh-read one selected contact and return its canonical CRM plan.",
+        "operationId": "google_other_contacts_review_google_integrations_other_contacts_review_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtherContactsReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherContactsReview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/other-contacts/import": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Other Contacts Import",
+        "description": "Import one source-unchanged contact using the review's short-lived receipt.",
+        "operationId": "google_other_contacts_import_google_integrations_other_contacts_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtherContactsImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/other-contacts/admission": {
+      "get": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Other Contacts Admission",
+        "description": "Return the canonical internal-test admission without exposing a consent row.\n\nOther Contacts is intentionally absent from the generic capabilities catalog:\nthat catalog is exclusively for consent-requestable products. This unlinked\nreviewer needs its own safe, server-derived availability result instead.",
+        "operationId": "google_other_contacts_admission_google_integrations_other_contacts_admission_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherContactsAdmission"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-integrations/capabilities": {
       "get": {
         "tags": [
@@ -66811,6 +66959,110 @@
                 "schema": {
                   "$ref": "#/components/schemas/MediaListSearchResult"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/outreach-lists/{list_id}/media-research/preview": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Media Research Preview Door",
+        "description": "Size, brief and maximum cost for one angle. Spends nothing.",
+        "operationId": "media_research_preview_door_crm_outreach_lists__list_id__media_research_preview_post",
+        "parameters": [
+          {
+            "name": "list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaResearchPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaResearchPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/outreach-lists/{list_id}/media-research/run": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Media Research Run Door",
+        "description": "The approved research run, streamed. One campaign = one job (run key).",
+        "operationId": "media_research_run_door_crm_outreach_lists__list_id__media_research_run_post",
+        "parameters": [
+          {
+            "name": "list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaResearchRunBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -214354,6 +214606,540 @@
         "title": "MediaRefreshPolicy",
         "description": "`outreach_list.definition.media_refresh`. Every knob has a safe default."
       },
+      "MediaResearchCost": {
+        "properties": {
+          "searches": {
+            "type": "integer",
+            "title": "Searches"
+          },
+          "article_reads": {
+            "type": "integer",
+            "title": "Article Reads"
+          },
+          "candidates": {
+            "type": "integer",
+            "title": "Candidates"
+          },
+          "contact_lookups": {
+            "type": "integer",
+            "title": "Contact Lookups"
+          },
+          "fit_checks": {
+            "type": "integer",
+            "title": "Fit Checks"
+          },
+          "max_cost_usd": {
+            "type": "number",
+            "title": "Max Cost Usd"
+          },
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "searches",
+          "article_reads",
+          "candidates",
+          "contact_lookups",
+          "fit_checks",
+          "max_cost_usd"
+        ],
+        "title": "MediaResearchCost"
+      },
+      "MediaResearchPreview": {
+        "properties": {
+          "list_id": {
+            "type": "string",
+            "title": "List Id"
+          },
+          "angle": {
+            "type": "string",
+            "title": "Angle"
+          },
+          "wanted_good_fits": {
+            "type": "integer",
+            "title": "Wanted Good Fits"
+          },
+          "multiplier": {
+            "type": "integer",
+            "title": "Multiplier"
+          },
+          "multiplier_reason": {
+            "type": "string",
+            "title": "Multiplier Reason"
+          },
+          "computed_target": {
+            "type": "integer",
+            "title": "Computed Target"
+          },
+          "research_target": {
+            "type": "integer",
+            "title": "Research Target"
+          },
+          "cap": {
+            "type": "integer",
+            "title": "Cap"
+          },
+          "over_cap": {
+            "type": "boolean",
+            "title": "Over Cap"
+          },
+          "advisories": {
+            "items": {
+              "$ref": "#/components/schemas/PitchAdvisory"
+            },
+            "type": "array",
+            "title": "Advisories"
+          },
+          "brief": {
+            "type": "string",
+            "title": "Brief"
+          },
+          "brief_chars": {
+            "type": "integer",
+            "title": "Brief Chars"
+          },
+          "brief_max_chars": {
+            "type": "integer",
+            "title": "Brief Max Chars"
+          },
+          "queries": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Queries"
+          },
+          "first_wave_size": {
+            "type": "integer",
+            "title": "First Wave Size"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/MediaResearchCost"
+          },
+          "run_key": {
+            "type": "string",
+            "title": "Run Key"
+          },
+          "prior_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaResearchPriorRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "says": {
+            "type": "string",
+            "title": "Says"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "list_id",
+          "angle",
+          "wanted_good_fits",
+          "multiplier",
+          "multiplier_reason",
+          "computed_target",
+          "research_target",
+          "cap",
+          "over_cap",
+          "brief",
+          "brief_chars",
+          "brief_max_chars",
+          "queries",
+          "first_wave_size",
+          "cost",
+          "run_key",
+          "says"
+        ],
+        "title": "MediaResearchPreview",
+        "description": "Everything the person sees before anything is spent."
+      },
+      "MediaResearchPreviewRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "request": {
+            "$ref": "#/components/schemas/MediaResearchRequest"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request"
+        ],
+        "title": "MediaResearchPreviewRequest"
+      },
+      "MediaResearchPriorRun": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "says": {
+            "type": "string",
+            "title": "Says",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "MediaResearchPriorRun"
+      },
+      "MediaResearchRequest": {
+        "properties": {
+          "angle": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Angle"
+          },
+          "wanted_good_fits": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Wanted Good Fits"
+          },
+          "narrow_beat": {
+            "type": "boolean",
+            "title": "Narrow Beat",
+            "default": false
+          },
+          "narrow_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Narrow Reason"
+          },
+          "standing": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 600
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standing"
+          },
+          "proof_hook": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proof Hook"
+          },
+          "reporter_shape": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reporter Shape"
+          },
+          "sub_angles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Sub Angles"
+          },
+          "competitors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Competitors"
+          },
+          "regions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Regions"
+          },
+          "exclusions": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclusions"
+          },
+          "research_target_override": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Research Target Override"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "angle",
+          "wanted_good_fits"
+        ],
+        "title": "MediaResearchRequest",
+        "description": "What the person building the list asks for. Every text field is theirs."
+      },
+      "MediaResearchRunBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "run": {
+            "$ref": "#/components/schemas/MediaResearchRunRequest"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run"
+        ],
+        "title": "MediaResearchRunBody"
+      },
+      "MediaResearchRunRequest": {
+        "properties": {
+          "request": {
+            "$ref": "#/components/schemas/MediaResearchRequest"
+          },
+          "run_key": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 4,
+            "title": "Run Key"
+          },
+          "approved_max_cost_usd": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Approved Max Cost Usd"
+          },
+          "confirmed_over_cap": {
+            "type": "boolean",
+            "title": "Confirmed Over Cap",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request",
+          "run_key",
+          "approved_max_cost_usd"
+        ],
+        "title": "MediaResearchRunRequest"
+      },
       "MediaResponse": {
         "properties": {
           "id": {
@@ -219758,6 +220544,7 @@
             "enum": [
               "credential_unavailable",
               "fill_device_required",
+              "fill_device_revoked",
               "invalid_request",
               "item_unavailable",
               "native_session_required",
@@ -227828,6 +228615,257 @@
         ],
         "title": "OsfPublicProject",
         "description": "Safe factual projection of one public OSF project."
+      },
+      "OtherContactPreview": {
+        "properties": {
+          "resource_name": {
+            "type": "string",
+            "title": "Resource Name"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "default": ""
+          },
+          "emails": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Emails"
+          },
+          "phones": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Phones"
+          },
+          "source": {
+            "type": "string",
+            "const": "google_other_contacts",
+            "title": "Source",
+            "default": "google_other_contacts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resource_name"
+        ],
+        "title": "OtherContactPreview"
+      },
+      "OtherContactsAdmission": {
+        "properties": {
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "admission_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admission Error"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "eligible",
+          "message"
+        ],
+        "title": "OtherContactsAdmission",
+        "description": "The verified caller's access to the unlinked Other Contacts reviewer."
+      },
+      "OtherContactsImportRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Organization Id"
+          },
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "resource_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Resource Name"
+          },
+          "review_receipt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Review Receipt"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/ContactFieldChoice"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContactImportTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "connection_id",
+          "resource_name",
+          "review_receipt"
+        ],
+        "title": "OtherContactsImportRequest",
+        "description": "Internal-only selected import; there is intentionally no HTTP route."
+      },
+      "OtherContactsPreview": {
+        "properties": {
+          "contacts": {
+            "items": {
+              "$ref": "#/components/schemas/OtherContactPreview"
+            },
+            "type": "array",
+            "title": "Contacts"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token"
+          },
+          "source": {
+            "type": "string",
+            "const": "google_other_contacts",
+            "title": "Source",
+            "default": "google_other_contacts"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "internal_test_read_only",
+            "title": "Access Mode",
+            "default": "internal_test_read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contacts"
+        ],
+        "title": "OtherContactsPreview"
+      },
+      "OtherContactsPreviewRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "page_token": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Token"
+          },
+          "page_size": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Page Size",
+            "default": 50
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "OtherContactsPreviewRequest",
+        "description": "An exact connection and one bounded page; no organization-owned source."
+      },
+      "OtherContactsReview": {
+        "properties": {
+          "fingerprint": {
+            "type": "string",
+            "title": "Fingerprint"
+          },
+          "target": {
+            "$ref": "#/components/schemas/ContactImportTarget"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ContactImportResult"
+          },
+          "receipt": {
+            "type": "string",
+            "title": "Receipt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fingerprint",
+          "target",
+          "result",
+          "receipt"
+        ],
+        "title": "OtherContactsReview"
+      },
+      "OtherContactsReviewRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Organization Id"
+          },
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "resource_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Resource Name"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/ContactFieldChoice"
+            },
+            "type": "array",
+            "title": "Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "connection_id",
+          "resource_name"
+        ],
+        "title": "OtherContactsReviewRequest",
+        "description": "Inputs for an internal review that creates a short-lived apply receipt."
       },
       "OtterAiStatusResult": {
         "properties": {

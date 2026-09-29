@@ -7930,6 +7930,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-integrations/other-contacts/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Google Other Contacts Preview
+         * @description Internal-test-only, one-page preview for one named personal account.
+         */
+        post: operations["google_other_contacts_preview_google_integrations_other_contacts_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/other-contacts/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Google Other Contacts Review
+         * @description Fresh-read one selected contact and return its canonical CRM plan.
+         */
+        post: operations["google_other_contacts_review_google_integrations_other_contacts_review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/other-contacts/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Google Other Contacts Import
+         * @description Import one source-unchanged contact using the review's short-lived receipt.
+         */
+        post: operations["google_other_contacts_import_google_integrations_other_contacts_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/other-contacts/admission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google Other Contacts Admission
+         * @description Return the canonical internal-test admission without exposing a consent row.
+         *
+         *     Other Contacts is intentionally absent from the generic capabilities catalog:
+         *     that catalog is exclusively for consent-requestable products. This unlinked
+         *     reviewer needs its own safe, server-derived availability result instead.
+         */
+        get: operations["google_other_contacts_admission_google_integrations_other_contacts_admission_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-integrations/capabilities": {
         parameters: {
             query?: never;
@@ -31586,6 +31670,46 @@ export interface paths {
          * @description A news search becomes PROPOSED journalists. Enrollment stays the human act.
          */
         post: operations["media_list_search_door_crm_outreach_lists__list_id__media_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/outreach-lists/{list_id}/media-research/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Media Research Preview Door
+         * @description Size, brief and maximum cost for one angle. Spends nothing.
+         */
+        post: operations["media_research_preview_door_crm_outreach_lists__list_id__media_research_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/outreach-lists/{list_id}/media-research/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Media Research Run Door
+         * @description The approved research run, streamed. One campaign = one job (run key).
+         */
+        post: operations["media_research_run_door_crm_outreach_lists__list_id__media_research_run_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -93599,6 +93723,193 @@ export interface components {
             /** Campaign Context */
             campaign_context?: string | null;
         };
+        /** MediaResearchCost */
+        MediaResearchCost: {
+            /** Searches */
+            searches: number;
+            /** Article Reads */
+            article_reads: number;
+            /** Candidates */
+            candidates: number;
+            /** Contact Lookups */
+            contact_lookups: number;
+            /** Fit Checks */
+            fit_checks: number;
+            /** Max Cost Usd */
+            max_cost_usd: number;
+            /** Lines */
+            lines?: string[];
+        };
+        /**
+         * MediaResearchPreview
+         * @description Everything the person sees before anything is spent.
+         */
+        MediaResearchPreview: {
+            /** List Id */
+            list_id: string;
+            /** Angle */
+            angle: string;
+            /** Wanted Good Fits */
+            wanted_good_fits: number;
+            /** Multiplier */
+            multiplier: number;
+            /** Multiplier Reason */
+            multiplier_reason: string;
+            /** Computed Target */
+            computed_target: number;
+            /** Research Target */
+            research_target: number;
+            /** Cap */
+            cap: number;
+            /** Over Cap */
+            over_cap: boolean;
+            /** Advisories */
+            advisories?: components["schemas"]["PitchAdvisory"][];
+            /** Brief */
+            brief: string;
+            /** Brief Chars */
+            brief_chars: number;
+            /** Brief Max Chars */
+            brief_max_chars: number;
+            /** Queries */
+            queries: string[];
+            /** First Wave Size */
+            first_wave_size: number;
+            cost: components["schemas"]["MediaResearchCost"];
+            /** Run Key */
+            run_key: string;
+            prior_run?: components["schemas"]["MediaResearchPriorRun"] | null;
+            /** Says */
+            says: string;
+        };
+        /** MediaResearchPreviewRequest */
+        MediaResearchPreviewRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            request: components["schemas"]["MediaResearchRequest"];
+        };
+        /** MediaResearchPriorRun */
+        MediaResearchPriorRun: {
+            /** Status */
+            status: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            /**
+             * Says
+             * @default
+             */
+            says?: string;
+        };
+        /**
+         * MediaResearchRequest
+         * @description What the person building the list asks for. Every text field is theirs.
+         */
+        MediaResearchRequest: {
+            /** Angle */
+            angle: string;
+            /** Wanted Good Fits */
+            wanted_good_fits: number;
+            /**
+             * Narrow Beat
+             * @default false
+             */
+            narrow_beat?: boolean;
+            /** Narrow Reason */
+            narrow_reason?: string | null;
+            /** Standing */
+            standing?: string | null;
+            /** Proof Hook */
+            proof_hook?: string | null;
+            /** Reporter Shape */
+            reporter_shape?: string | null;
+            /** Sub Angles */
+            sub_angles?: string[];
+            /** Competitors */
+            competitors?: string[];
+            /** Regions */
+            regions?: string[];
+            /** Exclusions */
+            exclusions?: string | null;
+            /** Research Target Override */
+            research_target_override?: number | null;
+        };
+        /** MediaResearchRunBody */
+        MediaResearchRunBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            run: components["schemas"]["MediaResearchRunRequest"];
+        };
+        /** MediaResearchRunRequest */
+        MediaResearchRunRequest: {
+            request: components["schemas"]["MediaResearchRequest"];
+            /** Run Key */
+            run_key: string;
+            /** Approved Max Cost Usd */
+            approved_max_cost_usd: number;
+            /**
+             * Confirmed Over Cap
+             * @default false
+             */
+            confirmed_over_cap?: boolean;
+        };
         /** MediaResponse */
         MediaResponse: {
             /** Id */
@@ -96194,7 +96505,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "credential_unavailable" | "fill_device_required" | "invalid_request" | "item_unavailable" | "native_session_required" | "native_unavailable" | "organization_required" | "request_too_large";
+            code: "credential_unavailable" | "fill_device_required" | "fill_device_revoked" | "invalid_request" | "item_unavailable" | "native_session_required" | "native_unavailable" | "organization_required" | "request_too_large";
         };
         /** NativeErrorOut */
         NativeErrorOut: {
@@ -99814,6 +100125,112 @@ export interface components {
             created_at: string;
             /** Modified At */
             modified_at: string;
+        };
+        /** OtherContactPreview */
+        OtherContactPreview: {
+            /** Resource Name */
+            resource_name: string;
+            /**
+             * Display Name
+             * @default
+             */
+            display_name?: string;
+            /** Emails */
+            emails?: string[];
+            /** Phones */
+            phones?: string[];
+            /**
+             * Source
+             * @default google_other_contacts
+             * @constant
+             */
+            source?: "google_other_contacts";
+        };
+        /**
+         * OtherContactsAdmission
+         * @description The verified caller's access to the unlinked Other Contacts reviewer.
+         */
+        OtherContactsAdmission: {
+            /** Eligible */
+            eligible: boolean;
+            /** Admission Error */
+            admission_error?: string | null;
+            /** Message */
+            message: string;
+        };
+        /**
+         * OtherContactsImportRequest
+         * @description Internal-only selected import; there is intentionally no HTTP route.
+         */
+        OtherContactsImportRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Resource Name */
+            resource_name: string;
+            /** Review Receipt */
+            review_receipt: string;
+            /** Fields */
+            fields?: components["schemas"]["ContactFieldChoice"][];
+            target?: components["schemas"]["ContactImportTarget"] | null;
+        };
+        /** OtherContactsPreview */
+        OtherContactsPreview: {
+            /** Contacts */
+            contacts: components["schemas"]["OtherContactPreview"][];
+            /** Next Page Token */
+            next_page_token?: string | null;
+            /**
+             * Source
+             * @default google_other_contacts
+             * @constant
+             */
+            source?: "google_other_contacts";
+            /**
+             * Access Mode
+             * @default internal_test_read_only
+             * @constant
+             */
+            access_mode?: "internal_test_read_only";
+        };
+        /**
+         * OtherContactsPreviewRequest
+         * @description An exact connection and one bounded page; no organization-owned source.
+         */
+        OtherContactsPreviewRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Page Token */
+            page_token?: string | null;
+            /**
+             * Page Size
+             * @default 50
+             */
+            page_size?: number;
+        };
+        /** OtherContactsReview */
+        OtherContactsReview: {
+            /** Fingerprint */
+            fingerprint: string;
+            target: components["schemas"]["ContactImportTarget"];
+            result: components["schemas"]["ContactImportResult"];
+            /** Receipt */
+            receipt: string;
+        };
+        /**
+         * OtherContactsReviewRequest
+         * @description Inputs for an internal review that creates a short-lived apply receipt.
+         */
+        OtherContactsReviewRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Resource Name */
+            resource_name: string;
+            /** Fields */
+            fields?: components["schemas"]["ContactFieldChoice"][];
         };
         /**
          * OtterAiStatusResult
@@ -155983,6 +156400,125 @@ export interface operations {
             };
         };
     };
+    google_other_contacts_preview_google_integrations_other_contacts_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtherContactsPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtherContactsPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_other_contacts_review_google_integrations_other_contacts_review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtherContactsReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtherContactsReview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_other_contacts_import_google_integrations_other_contacts_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtherContactsImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactImportResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_other_contacts_admission_google_integrations_other_contacts_admission_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtherContactsAdmission"];
+                };
+            };
+        };
+    };
     google_capabilities_google_integrations_capabilities_get: {
         parameters: {
             query?: never;
@@ -190661,6 +191197,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaListSearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    media_research_preview_door_crm_outreach_lists__list_id__media_research_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaResearchPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaResearchPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    media_research_run_door_crm_outreach_lists__list_id__media_research_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaResearchRunBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
