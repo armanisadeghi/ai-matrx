@@ -122,10 +122,6 @@ export function MonitoringFrontDoor({
         <QueryError error={siteState.error} />
       ) : null}
 
-      {brandId ? (
-        <BrandNewsMonitors brandId={brandId} brandSeg={brandCtx?.seg ?? brandId} />
-      ) : null}
-
       {doors.length > 0 ? (
         <MarketingDoorBoard
           title={siteState.site ? siteState.site.name : "Views"}
@@ -138,6 +134,10 @@ export function MonitoringFrontDoor({
           first crawl.
         </p>
       )}
+
+      {brandId ? (
+        <BrandNewsMonitors brandId={brandId} brandSeg={brandCtx?.seg ?? brandId} />
+      ) : null}
 
       {promise ? (
         <MarketingFrontDoorPromise

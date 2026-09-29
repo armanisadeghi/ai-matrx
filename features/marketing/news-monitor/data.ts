@@ -329,3 +329,58 @@ export async function undoDismiss(
     feedback_note: null,
   });
 }
+
+// ── one run's durable progress ───────────────────────────────────────────
+
+export interface RunProgress {
+  status: string | null;
+  /** Steps with a recorded outcome: node id → "done" | "failed". */
+  settled: Record<string, "done" | "failed">;
+}
+
+const TERMINAL_RUN_STATUSES = new Set(["completed", "failed", "cancelled", "canceled"]);
+
+export function isTerminalRunStatus(status: string | null | undefined): boolean {
+  return Boolean(status && TERMINAL_RUN_STATUSES.has(status));
+}
+
+/**
+ * The run's own record of its progress: its status and every step outcome
+ * written so far. This is the truth a live view follows — the Run now stream
+ * may close before the run does (the run keeps going server-side), so the
+ * view never infers "finished" from the stream ending.
+ */
+export async function getRunProgress(
+  runId: string,
+  signal?: AbortSignal,
+): Promise<RunProgress> {
+  const client = await authed();
+  const abort = signal ?? new AbortController().signal;
+  const [run, outcomes] = await Promise.all([
+    client.schema("workflow").from("run").select("status").eq("id", runId).abortSignal(abort).maybeSingle(),
+    client
+      .schema("workflow")
+      .from("node_outcome")
+      .select("node_id, error")
+      .eq("run_id", runId)
+      .is("deleted_at", null)
+      .abortSignal(abort)
+      .limit(200),
+  ]);
+  if (run.error) fail(run.error, "read this run's status");
+  if (outcomes.error) fail(outcomes.error, "read this run's steps");
+  const settled: Record<string, "done" | "failed"> = {};
+  for (const o of outcomes.data ?? []) {
+    settled[o.node_id] = o.error ? "failed" : "done";
+  }
+  return { status: run.data?.status ?? null, settled };
+}
+
+export function useRunProgress(runId: string | null, pollMs: number | false) {
+  return useQuery({
+    queryKey: [...newsMonitorKeys.all, "progress", runId ?? ""] as const,
+    queryFn: ({ signal }) => getRunProgress(runId ?? "", signal),
+    enabled: Boolean(runId),
+    refetchInterval: pollMs,
+  });
+}

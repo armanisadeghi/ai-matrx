@@ -204,4 +204,29 @@ describe("monitor setup model", () => {
     expect(body.x_trends_woeids).toEqual([1]);
     expect(body.brand_id).toBeNull();
   });
+
+  it("saves a new opportunity-only monitor site-less, even with a site preselected", () => {
+    const draft = { ...base(), coverage: false, opportunity: true, siteId: "site-1" };
+    const body = toDeclareBody(draft, {
+      brandId: "b",
+      brandKey: "all-green",
+      declaredRef: {},
+      xTrendsWoeids: [],
+    });
+    expect(body.site_id).toBeNull();
+    expect(body.brand_id).toBe("b");
+  });
+
+  it("never re-parents a saved opportunity-only monitor that has a website", () => {
+    const draft = { ...base(), coverage: false, opportunity: true, siteId: "site-1" };
+    const body = toDeclareBody(draft, {
+      brandId: "b",
+      brandKey: "all-green",
+      declaredRef: {},
+      xTrendsWoeids: [],
+      savedSiteId: "site-1",
+    });
+    expect(body.site_id).toBe("site-1");
+    expect(body.brand_id).toBeNull();
+  });
 });

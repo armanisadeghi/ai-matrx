@@ -7,6 +7,7 @@
  * monitor found.
  */
 
+import { useState } from "react";
 import Link from "next/link";
 import { Radar } from "lucide-react";
 
@@ -17,8 +18,11 @@ import { useBrandTrackers } from "@/features/marketing/monitor-setup/data";
 import { Pill, formatWhen } from "./kinds/shared";
 import { isRecord, num, str } from "./run-document";
 
+const SHOWN_BY_DEFAULT = 6;
+
 export function BrandNewsMonitors({ brandId, brandSeg }: { brandId: string; brandSeg: string }) {
   const trackers = useBrandTrackers(brandId);
+  const [showAll, setShowAll] = useState(false);
   if (trackers.isError) {
     return <InlineQueryError
         what="this brand's news monitors"
@@ -28,6 +32,8 @@ export function BrandNewsMonitors({ brandId, brandSeg }: { brandId: string; bran
   }
   const rows = trackers.data ?? [];
   if (trackers.isPending || rows.length === 0) return null;
+  // Most recently changed first (the read orders by updated_at); a long list folds.
+  const shown = showAll ? rows : rows.slice(0, SHOWN_BY_DEFAULT);
   return (
     <section className="rounded-md border border-border bg-card p-3" data-surface-value="brand_news_monitors">
       <h2 className="text-sm font-semibold text-foreground">This brand&apos;s news monitors</h2>
@@ -36,7 +42,7 @@ export function BrandNewsMonitors({ brandId, brandSeg }: { brandId: string; bran
         reason, and what was set aside.
       </p>
       <ul className="mt-2 flex flex-col divide-y divide-border">
-        {rows.map((t) => {
+        {shown.map((t) => {
           const summary = isRecord(t.last_run_summary) ? t.last_run_summary : null;
           const counts = summary && isRecord(summary.counts) ? summary.counts : null;
           return (
@@ -62,6 +68,11 @@ export function BrandNewsMonitors({ brandId, brandSeg }: { brandId: string; bran
           );
         })}
       </ul>
+      {rows.length > shown.length ? (
+        <button type="button" className="mt-1 text-xs text-primary" onClick={() => setShowAll(true)}>
+          Show all {rows.length} monitors
+        </button>
+      ) : null}
     </section>
   );
 }

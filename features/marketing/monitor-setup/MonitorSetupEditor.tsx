@@ -534,6 +534,7 @@ export function MonitorSetupEditor() {
                 Record<string, unknown> | undefined) ??
               (draft.coverage ? {} : { surface: "tracker_editor" }),
             xTrendsWoeids: xLocations.map((loc) => loc.woeid),
+            savedSiteId: tracker.data?.site_id ?? null,
           },
         ),
         brandRow.organization_id,

@@ -57,7 +57,9 @@ import { cn } from "@/lib/utils";
 
 import { CostBanner } from "./CostBanner";
 import {
+  isTerminalRunStatus,
   useInvalidateNewsMonitor,
+  useRunProgress,
   useMonitorRuns,
   useRunParts,
   useTrackerStories,
@@ -133,10 +135,17 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
   const [live, setLive] = useState<{
     runId: string | null;
     steps: Record<string, StepState>;
-    done: boolean;
+    /** The Run now request itself has returned (the run may still be going). */
+    requestDone: boolean;
     error: string | null;
   } | null>(null);
-  const running = Boolean(live && !live.done);
+  // The run's durable record decides whether it is still going — never the
+  // stream closing (the run continues server-side after the stream ends).
+  const progress = useRunProgress(live?.runId ?? null, live ? 3000 : false);
+  const runStatus = progress.data?.status ?? null;
+  const running = Boolean(
+    live && !live.error && (!live.runId || !isTerminalRunStatus(runStatus)),
+  );
 
   const tracker = useTracker(trackerId, running ? 5000 : false);
   const runs = useMonitorRuns(trackerId, running ? 4000 : false);
@@ -157,6 +166,13 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
     for (const s of stories.data ?? []) map.set(s.story_key, overrides[s.id] ?? s);
     return map;
   }, [stories.data, overrides]);
+
+  // When the run it started settles, read everything it wrote once more.
+  // (`invalidate` is memoised by the compiler, so this fires once per settled run.)
+  const settledRun = live?.runId && isTerminalRunStatus(runStatus) ? live.runId : null;
+  useEffect(() => {
+    if (settledRun) void invalidate();
+  }, [settledRun, invalidate]);
 
   const [schedule, setSchedule] = useState<ScheduleView | null>(null);
   const [setup, setSetup] = useState<SetupFacts | null>(null);
@@ -189,7 +205,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
   };
 
   const runNow = async () => {
-    setLive({ runId: null, steps: {}, done: false, error: null });
+    setLive({ runId: null, steps: {}, requestDone: false, error: null });
     try {
       const started = await runMonitorNow(dispatch, trackerId, brandCtx.organizationId, {
         onRunId: (runId) => {
@@ -216,11 +232,11 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
               : cur,
           ),
       });
-      setLive((cur) => (cur ? { ...cur, runId: cur.runId ?? started.runId, done: true } : cur));
+      setLive((cur) => (cur ? { ...cur, runId: cur.runId ?? started.runId, requestDone: true } : cur));
       if (started.runId) setParam("run", started.runId);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setLive((cur) => (cur ? { ...cur, done: true, error: message } : cur));
+      setLive((cur) => (cur ? { ...cur, requestDone: true, error: message } : cur));
       toast.error(message);
     } finally {
       void invalidate();
@@ -337,7 +353,13 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
             <section className="rounded-md border border-border bg-card p-3" data-surface-value="news_run_live">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-sm font-semibold text-foreground">
-                  {live.done ? (live.error ? "The run stopped" : "Run finished") : "Running now"}
+                  {live.error
+                    ? "The run could not start"
+                    : running
+                      ? "Running now"
+                      : runStatus === "completed"
+                        ? "Run finished"
+                        : `The run ended: ${runStatus ?? "unknown"}`}
                 </h2>
                 {live.runId ? (
                   <Link href={`/workflows/runs/${live.runId}`} className="text-xs text-primary">
@@ -347,8 +369,15 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
               </div>
               {live.error ? <p className="text-xs text-destructive">{live.error}</p> : null}
               <ol className="mt-1 grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-4">
-                {STEP_ORDER.map((id) => {
-                  const state = live.steps[id];
+                {STEP_ORDER.map((id, index) => {
+                  const settled = progress.data?.settled[id];
+                  const firstOpen = STEP_ORDER.findIndex(
+                    (step) => !progress.data?.settled[step] && !live.steps[step],
+                  );
+                  const state: StepState | undefined =
+                    settled ??
+                    live.steps[id] ??
+                    (running && index === firstOpen && live.runId ? "running" : undefined);
                   return (
                     <li key={id} className="flex items-center gap-1.5 text-xs" data-step={id} data-step-state={state ?? "waiting"}>
                       {state === "running" ? (

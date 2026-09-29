@@ -500,8 +500,14 @@ export function toDeclareBody(
     brandKey: string;
     declaredRef: Record<string, unknown>;
     xTrendsWoeids: number[];
+    /** The saved monitor's website, if it has one — an edit never re-parents it. */
+    savedSiteId?: string | null;
   },
 ): DeclareTrackerBody {
+  // The website picker shows only with the coverage lens. A NEW opportunity-only
+  // monitor is site-less (read through the brand — spec §11 test 7); a hidden
+  // default site must never be saved as a choice the person could not see.
+  const siteId = draft.coverage ? draft.siteId : (input.savedSiteId ?? null);
   const lenses: Array<"coverage" | "opportunity"> = [];
   if (draft.coverage) lenses.push("coverage");
   if (draft.opportunity) lenses.push("opportunity");
@@ -519,8 +525,8 @@ export function toDeclareBody(
   return {
     name: draft.name.trim(),
     lenses,
-    site_id: draft.siteId,
-    brand_id: draft.siteId ? null : input.brandId,
+    site_id: siteId,
+    brand_id: siteId ? null : input.brandId,
     brand_key: draft.coverage ? input.brandKey : null,
     brand_terms: keywords.map((k) => k.keyword.trim()),
     term_meanings: termMeanings,
