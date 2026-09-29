@@ -28,6 +28,10 @@ const DIALOGS = [
   "features/data-tables/components/ColorRulesDialog.tsx",
   "features/data-tables/components/BulkRowActions.tsx",
   "features/sharing/components/ShareButton.tsx",
+  "features/sharing/components/ShareModal.tsx",
+  "features/sharing/components/RecordStoreShareSurface.tsx",
+  "features/sharing/components/ShareLinkPanel.tsx",
+  "features/sharing/components/PermissionsList.tsx",
 ];
 
 /** Lines that draw a key as text: the words, or a `field_name` interpolated between tags. */
