@@ -362,9 +362,11 @@ export function useGridSelection(args: {
   // The latest editing / selected cells, read by an edit ending late (its save landed after the
   // person moved on) — never the values its closure was made with.
   const editingNow = useRef<CellAddress | null>(null);
-  editingNow.current = editing;
   const selectedNow = useRef<CellAddress | null>(null);
-  selectedNow.current = selected;
+  useEffect(() => {
+    editingNow.current = editing;
+    selectedNow.current = selected;
+  });
 
   const endEdit = useCallback(
     (move?: GridMove, from?: CellAddress) => {

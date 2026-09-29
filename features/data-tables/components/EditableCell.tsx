@@ -249,6 +249,7 @@ export function EditableCell({
   // every key that reached it while the editor was mounting; what this editor has not seen yet is
   // appended, so "Alpha0" at 30 ms a key is saved whole.
   const seenSeed = useRef<string | null>(null);
+  const openedWithoutTyping = useRef(false);
   useEffect(() => {
     if (!editing) {
       seenSeed.current = null;
@@ -257,12 +258,21 @@ export function EditableCell({
     if (seedIsTheSearch) return;
     const held = seenSeed.current;
     if (held === null) {
-      seenSeed.current = seed;
+      // The edit's first run: what it opened with. An edit opened by a double-click or Enter holds the
+      // stored value selected, so the first keys that reach it through the grid replace it, as typing
+      // into the selection would.
+      seenSeed.current = seed ?? "";
+      openedWithoutTyping.current = seed === null || seed === "";
       return;
     }
     if (seed && seed.length > held.length && seed.startsWith(held)) {
       const more = seed.slice(held.length);
-      setDraft((d: unknown) => `${d === null || d === undefined ? "" : String(d)}${more}`);
+      if (openedWithoutTyping.current) {
+        openedWithoutTyping.current = false;
+        setDraft(more);
+      } else {
+        setDraft((d: unknown) => `${d === null || d === undefined ? "" : String(d)}${more}`);
+      }
     }
     seenSeed.current = seed;
   }, [editing, seed, seedIsTheSearch]);
@@ -278,7 +288,9 @@ export function EditableCell({
   /** This cell's saves, one after another (B2-10/B2-11). */
   const saveLane = useRef<Promise<void>>(Promise.resolve());
   const latestDraft = useRef<unknown>(draft);
-  latestDraft.current = draft;
+  useEffect(() => {
+    latestDraft.current = draft;
+  });
   const settled = useRef(false);
   useEffect(() => {
     if (editing) settled.current = false;
