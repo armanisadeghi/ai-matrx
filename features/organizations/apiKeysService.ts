@@ -43,6 +43,13 @@ export async function listOrgApiKeys(orgId: string): Promise<OrgApiKey[]> {
       "id, key_id, name, display_prefix, status, last_used_at, expires_at, revoked_at, created_at",
     )
     .eq("organization_id", orgId)
+    // Service keys only: a personal key (Settings → API keys) is its person's,
+    // and its owner must not meet it again on the organization's page.
+    // (A NULL kind is a service key minted before the kind was stamped; a
+    // bare neq would drop it, because NULL <> 'personal_key' is not true.)
+    .or(
+      "metadata->>identity_kind.is.null,metadata->>identity_kind.neq.personal_key",
+    )
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as OrgApiKey[];

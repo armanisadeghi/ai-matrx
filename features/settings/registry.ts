@@ -1,4 +1,5 @@
 import {
+  KeyRound,
   StickyNote,
   Palette,
   Bell,
@@ -84,6 +85,7 @@ import MicrosoftTab from "./tabs/MicrosoftTab";
 import SandboxStorageTab from "./tabs/SandboxStorageTab";
 import FeedbackTab from "./tabs/FeedbackTab";
 import ExtensionTab from "./tabs/ExtensionTab";
+import ApiKeysTab from "./tabs/ApiKeysTab";
 import VoiceMicTab from "./tabs/VoiceMicTab";
 import MemoryTab from "./tabs/MemoryTab";
 import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
@@ -844,6 +846,31 @@ export const settingsRegistry: SettingsTabDef[] = [
     searchKeywords: ["chrome", "browser", "extension", "auth", "code"],
     component: ExtensionTab,
     persistence: "local-only",
+  },
+
+  // ── Personal API keys ─────────────────────────────────────────────────────
+  // A key that IS the person, with their full access (Arman, 2026-09-29,
+  // "case 1, dead simple"). Beside the Chrome extension codes: both hand a
+  // program of yours the right to act as you.
+  {
+    id: "integrations.apiKeys",
+    parentId: "integrations",
+    label: "API keys",
+    icon: KeyRound,
+    description:
+      "Keys that let your own programs use AI Matrx as you.",
+    searchKeywords: [
+      "api key",
+      "api keys",
+      "key",
+      "token",
+      "developer",
+      "personal key",
+      "bearer",
+      "programmatic",
+    ],
+    component: ApiKeysTab,
+    persistence: "server",
   },
 
   // ── Admin (admin-gated) ───────────────────────────────────────────────────
