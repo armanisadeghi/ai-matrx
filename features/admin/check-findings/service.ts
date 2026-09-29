@@ -17,7 +17,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
-import { pendingAcceptFromMetadata, type PendingAccept } from "./model";
+import { drainOutcomeFromMetadata, pendingAcceptFromMetadata, type DrainOutcome, type PendingAccept } from "./model";
 
 type OpsTables = Database["ops"]["Tables"];
 type CheckCatalogRow = OpsTables["proof_check"]["Row"];
@@ -89,8 +89,8 @@ type CheckItemColumns = Pick<
   | "db_accept_reason"
 >;
 
-/** One item, plus the one-click Mark OK marker (`metadata.pending_accept`, model.ts). */
-export type CheckItem = CheckItemColumns & { pending_accept: PendingAccept | null };
+/** One item, plus the one-click Mark OK marker (`metadata.pending_accept`) and the cleanup drain's last outcome (`metadata.drain`), model.ts. */
+export type CheckItem = CheckItemColumns & { pending_accept: PendingAccept | null; drain: DrainOutcome | null };
 
 /** Every `ops.check_item.state` value (CHECK constraint, design §3). */
 export const CHECK_ITEM_STATES = [
@@ -191,6 +191,7 @@ async function loadItems(
   return rows.map(({ metadata, ...item }) => ({
     ...item,
     pending_accept: pendingAcceptFromMetadata(metadata),
+    drain: drainOutcomeFromMetadata(metadata),
   }));
 }
 

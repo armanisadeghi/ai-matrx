@@ -308,3 +308,69 @@ export function hasAccept(info: AcceptInfo | null): boolean {
 export function acceptOutcomeTone(status: string): "success" | "info" {
   return status === "landed" || status === "already_accepted" || status === "already_on_main" ? "success" : "info";
 }
+
+// ── The cleanup drain's outcome (ops.check_item.metadata.drain) ─────────────────────────────────
+
+/**
+ * What the cleanup drain last did with a finding — written only by
+ * `ops.check_item_drain_record` (aidream `aidream/services/platform_checks/drain.py`). The page
+ * shows it beside the state: fixed (with the commit), marked OK (with the reason), rejected or
+ * stuck (with the note, in the reviewer's or worker's own words).
+ */
+export type DrainOutcomeKind =
+  | "committed"
+  | "accepted"
+  | "rejected"
+  | "refused"
+  | "escalated"
+  | "stuck"
+  | "stale"
+  | "error";
+
+const DRAIN_OUTCOMES: readonly DrainOutcomeKind[] = [
+  "committed",
+  "accepted",
+  "rejected",
+  "refused",
+  "escalated",
+  "stuck",
+  "stale",
+  "error",
+];
+
+export interface DrainOutcome {
+  outcome: DrainOutcomeKind;
+  note: string;
+  at: string | null;
+  stuck: boolean;
+  rejects: number;
+  commitSha: string | null;
+  commitUrl: string | null;
+}
+
+export function drainOutcomeFromMetadata(metadata: unknown): DrainOutcome | null {
+  if (!isRecord(metadata) || !isRecord(metadata.drain)) return null;
+  const d = metadata.drain;
+  const outcome = DRAIN_OUTCOMES.find((o) => o === d.outcome);
+  const note = str(d.note);
+  if (!outcome || !note) return null;
+  return {
+    outcome,
+    note,
+    at: str(d.at),
+    stuck: d.stuck === true,
+    rejects: typeof d.rejects === "number" ? d.rejects : 0,
+    commitSha: str(d.commit_sha),
+    commitUrl: str(d.commit_url),
+  };
+}
+
+/** The one label and tone for a drain outcome. A stuck item says "Stuck" whatever step stopped it. */
+export function drainOutcomeLabel(d: DrainOutcome): { label: string; tone: "success" | "warning" | "destructive" | "muted" } {
+  if (d.outcome === "committed") return { label: "Fixed by the drain — landing", tone: "success" };
+  if (d.outcome === "accepted") return { label: "Marked OK by the drain", tone: "success" };
+  if (d.stuck) return { label: "Stuck — needs a person", tone: "warning" };
+  if (d.outcome === "stale") return { label: "No longer reported — closes on the next run", tone: "muted" };
+  if (d.outcome === "error") return { label: "Drain could not finish", tone: "destructive" };
+  return { label: d.outcome === "refused" ? "Drain fix disproved" : "Drain fix rejected", tone: "warning" };
+}

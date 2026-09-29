@@ -3,6 +3,8 @@ import {
   acceptCommand,
   acceptInfoFor,
   acceptOutcomeTone,
+  drainOutcomeFromMetadata,
+  drainOutcomeLabel,
   hasAccept,
   parsePendingAccept,
   pendingAcceptView,
@@ -178,5 +180,30 @@ describe("an answer that is not a success is never toasted as one (MARK-OK-VERIF
     expect(acceptOutcomeTone("in_flight")).toBe("info");
     expect(acceptOutcomeTone("landed")).toBe("success");
     expect(acceptOutcomeTone("already_on_main")).toBe("success");
+  });
+});
+
+describe("the cleanup drain's outcome on a finding", () => {
+  const meta = (drain: Record<string, unknown>) => ({ drain });
+
+  it("reads a fixed outcome with its commit", () => {
+    const d = drainOutcomeFromMetadata(
+      meta({ outcome: "committed", note: "Fixed in abc", commit_sha: "abc123", commit_url: "https://x/abc123", rejects: 0 }),
+    );
+    expect(d).not.toBeNull();
+    expect(d!.commitUrl).toBe("https://x/abc123");
+    expect(drainOutcomeLabel(d!).label).toBe("Fixed by the drain — landing");
+  });
+
+  it("says stuck, with the note, whatever step stopped it", () => {
+    const d = drainOutcomeFromMetadata(meta({ outcome: "rejected", note: "Reviewer rejected: guessed API", stuck: true, rejects: 2 }))!;
+    expect(drainOutcomeLabel(d)).toEqual({ label: "Stuck — needs a person", tone: "warning" });
+    expect(d.note).toContain("guessed API");
+  });
+
+  it("an outcome with no sentence, or an unknown outcome, is not shown", () => {
+    expect(drainOutcomeFromMetadata(meta({ outcome: "committed", note: "" }))).toBeNull();
+    expect(drainOutcomeFromMetadata(meta({ outcome: "fixed-ish", note: "x" }))).toBeNull();
+    expect(drainOutcomeFromMetadata({})).toBeNull();
   });
 });

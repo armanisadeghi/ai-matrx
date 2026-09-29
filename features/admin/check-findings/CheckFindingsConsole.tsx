@@ -86,6 +86,8 @@ import {
   summarizeChecks,
   type AcceptInfo,
   type PendingAcceptView,
+  type DrainOutcome,
+  drainOutcomeLabel,
   type CheckRepo,
   type CheckSummaryRow,
   type StateFilter,
@@ -659,6 +661,7 @@ function CheckDetail({
               {item.state.replace("_", " ")}
             </Badge>
             <PendingAcceptBadge view={view} />
+            <DrainOutcomeBadge drain={item.drain} />
             <ItemDecision item={item} view={view} acceptable={acceptable} onAccept={onAccept} />
           </div>
         );
@@ -1038,6 +1041,33 @@ function unitLabel(unitKey: string): string {
 // ── Mark OK ───────────────────────────────────────────────────────────────────────────────────
 
 /** The one honest line for an item carrying a Mark OK marker (model.ts pendingAcceptView). */
+const DRAIN_TONE = {
+  success: "text-success",
+  warning: "text-warning",
+  destructive: "text-destructive",
+  muted: "text-muted-foreground",
+} as const;
+
+/** The cleanup drain's last word on this finding: fixed (commit link), marked OK, rejected or stuck (the note). */
+function DrainOutcomeBadge({ drain }: { drain: DrainOutcome | null }) {
+  if (!drain) return null;
+  const { label, tone } = drainOutcomeLabel(drain);
+  return (
+    <span className={`text-[10px] ${DRAIN_TONE[tone]}`} title={drain.note}>
+      {label}
+      {drain.commitUrl ? (
+        <>
+          {" · "}
+          <a href={drain.commitUrl} target="_blank" rel="noreferrer" className="underline">
+            {drain.commitSha?.slice(0, 7) ?? "commit"}
+          </a>
+        </>
+      ) : null}
+      <span className="block max-w-[220px] whitespace-normal text-muted-foreground">{drain.note}</span>
+    </span>
+  );
+}
+
 function PendingAcceptBadge({ view }: { view: PendingAcceptView }) {
   switch (view.kind) {
     case "none":
