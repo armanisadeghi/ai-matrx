@@ -107,8 +107,8 @@ const values: SurfaceValue[] = [
   },
   {
     name: "rulebook_visibility",
-    label: "Rulebook visibility",
-    description: "Visibility policy currently stamped on the Rulebook.",
+    label: "Rulebook published to the web",
+    description: "\"Published to the web\" or \"Not published\" — the Rulebook's web state.",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 20,

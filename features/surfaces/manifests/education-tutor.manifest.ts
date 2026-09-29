@@ -363,7 +363,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *     spine. An agent rewriting a student's history is destructive, not
  *     authoring. Derived besides.
  *   • `tutor_agent_id` — which agent teaches is a capability decision.
- *   • Sharing/visibility, the entitlement meter, and the COPPA guardian gate —
+ *   • Sharing/publishing, the entitlement meter, and the COPPA guardian gate —
  *     permission and compliance state; an agent never routes around a gate.
  *   • The trust envelopes — the tutor's own honesty record about its answers.
  *     Letting anything edit them is the one change that would make the whole

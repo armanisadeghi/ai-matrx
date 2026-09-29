@@ -186,7 +186,7 @@ const surfaceSpecific: SurfaceValue[] = [
 /**
  * The WRITE half — the two site-identity fields an agent plausibly authors.
  * Deliberately narrow: logo/favicon/social-image URLs, lifecycle status,
- * visibility, and the brand move are human-mechanical decisions and stay
+ * web publishing, and the brand move are human-mechanical decisions and stay
  * out (the SiteEditorDialog owns them). Both targets persist immediately
  * through the canonical `updateSiteIdentity` service with its version
  * guard, so both default to `ask` — an agent proposing identity copy is

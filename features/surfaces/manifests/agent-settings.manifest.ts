@@ -88,7 +88,7 @@
  *   value mappings. Changing what an agent may REACH is a capability change;
  *   the same rule `agent-builder` and `agent-advanced-editor` state.
  * - **Hierarchy scopes** (`organizationId` / `taskId`) — they exist to RESTRICT
- *   an agent's visibility and context, so they are permissions-shaped for the
+ *   an agent's web publishing and context, so they are permissions-shaped for the
  *   same reason.
  * - **`defaultRagBoost`** — a retrieval-ranking multiplier. Nobody asks an
  *   agent to pick one, and it changes how this agent's content ranks against
@@ -131,7 +131,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Agent status",
     sortOrder: 300,
     description:
-      "Lifecycle and visibility flags, and whether the form has unsaved edits.",
+      "Lifecycle and web-publishing flags, and whether the form has unsaved edits.",
   },
   {
     key: "agent_makeup",

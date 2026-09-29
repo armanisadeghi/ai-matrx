@@ -146,7 +146,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * the review inbox, and a human promotes them there. An ask-dialog confirm
  * is a weaker consent seam than the purpose-built discovery review, so no
  * agent write path lands on `createBusinessFact`. Likewise absent: brand
- * name (identity is human-owned), status/visibility (permissions-adjacent),
+ * name (identity is human-owned), status/web publishing (permissions-adjacent),
  * asset/property/fact deletes (destructive stays human). Handlers:
  * `features/marketing/components/brands/MarketingBrandWriteTargets.tsx`.
  */

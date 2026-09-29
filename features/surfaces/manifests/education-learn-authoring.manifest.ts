@@ -111,7 +111,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "published_count",
     label: "Published count",
     description:
-      "How many of those guides are live on the public web (visibility 'public'), matching the 'N published' header. Always present.",
+      "How many of those guides are published to the web, matching the 'N published' header. Always present.",
     valueType: "number",
     alwaysAvailable: true,
     typicalCharCount: 3,

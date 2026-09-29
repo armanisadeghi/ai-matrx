@@ -4,7 +4,7 @@
  * The PUBLIC READER half of the `/education/learn` prefix: the anonymous,
  * server-rendered study-guide library index (`/education/learn`) and article
  * pages (`/education/learn/[...slug]`), both 100% SSR/ISR marketing/reader
- * content over `education.learn_doc` rows with `visibility='public'`. NOT the
+ * content over `education.learn_doc` rows published to the web. NOT the
  * authoring surface — see `education-learn-authoring.manifest.ts`, whose
  * header documents this exact split and explicitly left this half as future
  * work ("authoring it is real work, and honestly a separate job").

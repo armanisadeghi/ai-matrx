@@ -124,7 +124,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "skills_scope_filter",
     label: "Skills scope filter",
     description:
-      '"all", "system", "public", or "personal" — the browser\'s visibility filter. Present on skills_section=list.',
+      '"all", "system", "public", or "personal" — the browser\'s scope filter. Present on skills_section=list.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,

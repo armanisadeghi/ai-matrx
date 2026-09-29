@@ -392,7 +392,7 @@ You can WRITE here, but only to the authored body: the system instruction
 to add), the output schema, and the catalog profile (description,
 category, tags). Everything that decides what this agent can REACH or who can
 see it — model, tools, MCP servers, skills, variables, context policies,
-visibility, sharing — is human-only, so propose those in your answer instead
+publishing to the web, sharing — is human-only, so propose those in your answer instead
 of trying to apply them. The agent's name is not writable from this window
 either.
 

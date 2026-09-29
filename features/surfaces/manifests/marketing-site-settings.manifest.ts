@@ -13,7 +13,7 @@
  * form state the user's own typing edits — the user still presses Save, and
  * can undo by walking away.
  *
- * Deliberately NOT writable: visibility (an access decision), delete (never an
+ * Deliberately NOT writable: publishing to the web (an access decision), delete (never an
  * agent), and provider credentials (they are not on this surface at all).
  *
  * Runtime emitter: `SiteSettingsWorkspace` mounts a nested

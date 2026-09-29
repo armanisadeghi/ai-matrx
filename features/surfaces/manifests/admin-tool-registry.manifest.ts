@@ -476,9 +476,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "tool_visibility",
-    label: "Visibility",
+    label: "Published to the web",
     description:
-      "Canonical visibility of the open tool row (personal / internal / public). Absent on the catalogue list.",
+      '"published_to_web" or "not_published" — the open tool row\'s web state. Absent on the catalogue list.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
@@ -623,7 +623,7 @@ How to read the values: registry_section tells you where you are — "catalogue"
 
 What you may safely do: read the catalogue and the open tool's definition, sharpen tool descriptions and parameter schemas (the description is what an LLM reads when choosing a tool), audit gating and tiering, and find undocumented or duplicated entries. You never invoke a tool from here.
 
-You can also WRITE, but only on the tool-detail route and only to the authored metadata: tool_description, tool_category, and tool_tags. Those three persist to the registry the moment the admin confirms, so read the current value first — description and tags are FULL replacements, not merges. Everything that decides what a tool may REACH or who may reach it — is_active, admin_only, gating, exemptions, visibility, tier — plus the tool's name, its parameter and output schemas, its annotations, its version, and its MCP provenance are human-only. Propose those in your answer; do not try to apply them.
+You can also WRITE, but only on the tool-detail route and only to the authored metadata: tool_description, tool_category, and tool_tags. Those three persist to the registry the moment the admin confirms, so read the current value first — description and tags are FULL replacements, not merges. Everything that decides what a tool may REACH or who may reach it — is_active, admin_only, gating, exemptions, web publishing, tier — plus the tool's name, its parameter and output schemas, its annotations, its version, and its MCP provenance are human-only. Propose those in your answer; do not try to apply them.
 
 No credentials are present in this scope. MCP server endpoints, auth strategies, OAuth client ids, and vault-backed secrets live on adjacent tables this surface does not read; do not ask for them or infer them.
 </surface_intro>`,

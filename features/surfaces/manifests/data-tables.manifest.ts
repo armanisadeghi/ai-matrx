@@ -316,7 +316,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *    and a page of rows can write it better than a blank field, and it is
  *    metadata — nothing downstream computes on it. It persists to one column
  *    through the RPC that COALESCEs every other field, so it cannot disturb
- *    the table's name or visibility.
+ *    the table's name or its web state.
  *  - `cell_value` is the operation this surface exists for ("clean this
  *    value", "reformat this date", "fill in the category"). It is ONE cell,
  *    identified by an explicit `{row_id, field_name}` pair the agent must have
@@ -372,7 +372,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "table_description",
     label: "Table description",
     description:
-      "Sets the open table's description — the short prose that says what this table holds and what it is for. Value is PLAIN TEXT, not JSON and not JSON-encoded: send the sentence itself, with no surrounding quotes and no escaped newlines. Replaces the existing description in full, so include anything from table_description worth keeping; read that value first. 1-3 sentences is right (hard limit 2000 characters, refused above it) and an empty or whitespace-only value is refused — clearing the description is the user's call, not an agent's. Persists immediately on confirm through the table-metadata RPC, which writes ONLY this column: the table's name and visibility are left untouched. Refused when is_read_only is true.",
+      "Sets the open table's description — the short prose that says what this table holds and what it is for. Value is PLAIN TEXT, not JSON and not JSON-encoded: send the sentence itself, with no surrounding quotes and no escaped newlines. Replaces the existing description in full, so include anything from table_description worth keeping; read that value first. 1-3 sentences is right (hard limit 2000 characters, refused above it) and an empty or whitespace-only value is refused — clearing the description is the user's call, not an agent's. Persists immediately on confirm through the table-metadata RPC, which writes ONLY this column: the table's name and web state are left untouched. Refused when is_read_only is true.",
     valueType: "string",
     updatesValue: "table_description",
     mode: "entity",

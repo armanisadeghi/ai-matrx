@@ -47,7 +47,7 @@
  *     `matrx-user/transcript-studio`'s `cleaned_segment_text` / `concept_item`.
  *     This route renders `ScribeScreen`, whose transcript viewers are read-only.
  *  3. A provider here would be UNREACHABLE. All four Scribe tabs stay mounted
- *     (visibility flips via `hidden`), so `ScribeLiveScreen`'s provider is live
+ *     (showing flips via `hidden`), so `ScribeLiveScreen`'s provider is live
  *     on every tab, and agent launch adopts ONE surface via `getSurfaceRuntime()`
  *     — the DEEPEST runtime. A provider on the `ScribeScreen` ancestor would
  *     never be selected and its targets would be dead code.

@@ -217,7 +217,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "app_bundle",
     label: "Open app",
     description:
-      "The open app condensed as one XML bundle — read this first: <agent_app id name slug public_url status visibility category tags version shell view> with <tagline>, <description>, <variables total> (one <variable name label type required/> each), <usage runs success_rate last_run/> and <component_code language> (clipped at 3,500 chars with clipped=\"true\" total_chars=\"N\"; the full source is component_code) and, once the app has run here, <latest_run status conversation_id> with its <input>, <typed>, <error> and <result> (clipped at 2,500; the full text is run_result). Absent when no app is open or it has not loaded yet.",
+      "The open app condensed as one XML bundle — read this first: <agent_app id name slug public_url status published_to_web category tags version shell view> with <tagline>, <description>, <variables total> (one <variable name label type required/> each), <usage runs success_rate last_run/> and <component_code language> (clipped at 3,500 chars with clipped=\"true\" total_chars=\"N\"; the full source is component_code) and, once the app has run here, <latest_run status conversation_id> with its <input>, <typed>, <error> and <result> (clipped at 2,500; the full text is run_result). Absent when no app is open or it has not loaded yet.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5000,

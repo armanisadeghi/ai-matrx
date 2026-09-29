@@ -295,15 +295,28 @@ const values: SurfaceValue[] = [
     sortOrder: 142,
   },
   {
-    name: "visibility",
-    label: "Visibility",
-    description: "The persisted platform visibility tier on this record.",
+    name: "shown_to",
+    label: "Shown to",
+    description:
+      'Which lists show this record: "only_me", "my_team", "everyone" or "everyone_on_ai_matrx"; empty when the type\'s default decides. Lists only — it never locks the record.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 12,
     autoContext: false,
     group: "record_identity",
     sortOrder: 143,
+  },
+  {
+    name: "published_to_web",
+    label: "Published to the web",
+    description:
+      "True when the record is published to the web (anyone can open it at its address).",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    autoContext: false,
+    group: "record_identity",
+    sortOrder: 144,
   },
   {
     name: "assigned_to",
@@ -442,7 +455,7 @@ const values: SurfaceValue[] = [
     name: "identity",
     label: "Identity",
     description:
-      "Full identity block: first/last name, headline, bio, primary domain, job title, current employer, lifecycle stage and rating ids, expert status, source and source detail, visibility, organization, timestamps.",
+      "Full identity block: first/last name, headline, bio, primary domain, job title, current employer, lifecycle stage and rating ids, expert status, source and source detail, shown to, published to the web, organization, timestamps.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 900,
@@ -1028,7 +1041,8 @@ export function createCrmRecordScope(values: {
   source?: string;
   source_detail?: string;
   organization_id?: string;
-  visibility?: string;
+  shown_to?: string | null;
+  published_to_web?: boolean;
   assigned_to?: string;
   primary_employer?: CrmRecordCategoryScope | null;
   aliases?: string[];

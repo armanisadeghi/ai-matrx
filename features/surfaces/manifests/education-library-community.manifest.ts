@@ -2,7 +2,7 @@
  * Surface manifest — Community Library (`matrx-user/education-library-community`).
  *
  * `/education/library/community`: free public flashcard decks from the
- * community (`edu_public_decks`, visibility = public only), certified first,
+ * community (`edu_public_decks`, published to the web only), certified first,
  * with a search box and a "Certified only" toggle. Each deck card offers View,
  * "Study a copy" (fork into the person's own library), "Suggest edit" (a note
  * to the deck's owner) and — for a super-admin in the admin lane — Certify.

@@ -72,7 +72,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Agent governance",
     sortOrder: 500,
     description:
-      "Lifecycle, visibility, ownership/access, and version lineage of the open agent.",
+      "Lifecycle, web publishing, ownership/access, and version lineage of the open agent.",
   },
   {
     key: "editor_state",
@@ -290,7 +290,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "agent_skill_config",
     label: "Agent skill config",
     description:
-      "Per-agent skill visibility config — `included` / `listed` / `forbidden` skill keys plus a `disabled` flag. Empty lists when the agent uses platform defaults.",
+      "Per-agent skill tiering config — `included` / `listed` / `forbidden` skill keys plus a `disabled` flag. Empty lists when the agent uses platform defaults.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 300,
@@ -704,7 +704,7 @@ lives on the separate Agent Run surface.
 You can also WRITE here, but only to the authored prose: the system
 instruction, description, name, category, and tags. Everything that decides
 what the agent can REACH or who can see it — model, tools, MCP servers,
-skills, variables, output schema, visibility, access — is human-only, so
+skills, variables, output schema, publishing to the web, access — is human-only, so
 propose those in your answer instead of trying to apply them. Every write you
 apply is STAGED in the editor and saved only when the user saves, so a
 rewrite is always reviewable and always reversible. Read the value before you

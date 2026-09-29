@@ -313,7 +313,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *     is destructive, not authoring, and there is no single canonical
  *     "overwrite the grid" gesture to route it through. Agents read the
  *     snapshot and tell the user what to change.
- *   - `workbook_permissions` / `is_public` — permissions and visibility.
+ *   - `workbook_permissions` / `is_public` — permissions and web publishing.
  *   - `workbook_id` / `workbook_source` — identity and provenance.
  *   - deleting a workbook or a sheet, and adding/reordering sheets — the
  *     destructive and structural edits stay human.

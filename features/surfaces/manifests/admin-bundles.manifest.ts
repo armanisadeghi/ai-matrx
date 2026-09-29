@@ -68,7 +68,7 @@
  *  - **The Active toggle** is capability, not copy. `listAgentBundleOptions`
  *    filters `is_active = true`, so flipping it adds or removes the bundle
  *    from what agents can be given.
- *  - **The System bundle switch** is ownership/visibility — platform-wide vs
+ *  - **The System bundle switch** is ownership/reach — platform-wide vs
  *    personal — which is the identity/permissions class the bar excludes.
  *  - **The Metadata JSON** carries dispatch pointers, not prose:
  *    `listAgentBundleOptions` reads `server_slug` out of it to decide whether

@@ -404,9 +404,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "map_visibility",
-    label: "Visibility",
+    label: "Published to the web / Shown to",
     description:
-      "Sharing visibility of the open mind map's row (e.g. private / shared / public). Absent outside the detail view and while loading/unavailable.",
+      '"published_to_web" when the open mind map is published to the web; otherwise its Shown to ("only_me", "my_team", "everyone", "everyone_on_ai_matrx") or "default" when the type\'s default decides. Absent outside the detail view and while loading/unavailable.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 8,

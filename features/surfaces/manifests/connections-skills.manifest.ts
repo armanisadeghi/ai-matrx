@@ -32,7 +32,7 @@
  *   - Deletion — `doDelete` is destructive (soft-deletes and hides the skill
  *     from every agent that included it) and stays behind the human's trash
  *     button plus its confirm dialog.
- *   - `is_system` / `is_public` — visibility and blast radius, not content.
+ *   - `is_system` / `is_public` — reach and blast radius, not content.
  *     `is_system` is an admin-only promotion that publishes a row to every
  *     user on every account; both are governance decisions, not drafting.
  *   - `disable_auto_invocation`, `version`, `model_preference`, `icon_name` —

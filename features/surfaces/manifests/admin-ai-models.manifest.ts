@@ -91,7 +91,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Registry standing",
     sortOrder: 500,
     description:
-      "Where the open model sits in the catalogue: deprecation, primary/premium tiering, fallbacks, and visibility.",
+      "Where the open model sits in the catalogue: deprecation, primary/premium tiering, fallbacks, and web publishing.",
   },
 ];
 
@@ -404,9 +404,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "model_visibility",
-    label: "Visibility",
+    label: "Published to the web",
     description:
-      "Canonical visibility of the open model row (personal / internal / public). Absent when no model is open.",
+      '"Published to the web" or "Not published" — the open model row\'s web state. Absent when no model is open.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
@@ -565,7 +565,7 @@ The admin browses every registered model (schema ai, table model_definition) wit
 
 How to read the values: model_ids / models_summary / provider_names describe the CATALOGUE; active_tab_label, search_query, active_filters and sort_state describe the admin's current cut of it; every model_* value describes the ONE model open in the detail panel and is absent when nothing is selected. Note that models have no is_active column — model_is_deprecated is the activation signal, and model_is_primary / model_is_premium do the tiering.
 
-What you may safely do: read the catalogue and the open model's public facts, audit capability coverage, find stale duplicates or missing deprecations, and propose registry edits. Two fields on the OPEN model you may actually write, each behind a confirm the admin sees: its description and its common (display) name — the authored copy a person reads. Everything else you can only propose. Capabilities, context window, max tokens, ratings, the deprecated/primary/premium flags, visibility and fallback routing all change what the platform DOES with this model for every caller on it, so the admin applies those in the panel. The model's provider-facing name is a dispatch key, not a label — never propose editing it as if it were copy.
+What you may safely do: read the catalogue and the open model's public facts, audit capability coverage, find stale duplicates or missing deprecations, and propose registry edits. Two fields on the OPEN model you may actually write, each behind a confirm the admin sees: its description and its common (display) name — the authored copy a person reads. Everything else you can only propose. Capabilities, context window, max tokens, ratings, the deprecated/primary/premium flags, web publishing and fallback routing all change what the platform DOES with this model for every caller on it, so the admin applies those in the panel. The model's provider-facing name is a dispatch key, not a label — never propose editing it as if it were copy.
 
 Secrecy boundary, and it is strict: serving-vendor identity, endpoint base URLs, auth references, BYOK secret keys, and real-dollar pricing are admin-secret and are NOT present in this scope. Do not ask for them, do not guess them, and never repeat a credential of any kind.
 </surface_intro>`,

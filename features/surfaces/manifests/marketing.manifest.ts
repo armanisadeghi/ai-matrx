@@ -252,7 +252,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *    Two target sets over the same fields is a defect, not coverage. That
  *    surface also declares the brand NAME human-owned identity; contradicting
  *    it from the hub would be worse than declaring nothing. Organization and
- *    visibility are ownership/permissions. The brand cockpit is where brand
+ *    web publishing are ownership/permissions. The brand cockpit is where brand
  *    copy gets written — the hub's brand editor earns nothing.
  *  • `MarketingConnectionsCatalog` (/marketing/connections) — NO handlers.
  *    Its state is provider credentials and Search Console / Bing property

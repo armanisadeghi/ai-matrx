@@ -46,7 +46,7 @@ const groups: SurfaceValueGroup[] = [
     key: "comparison_session",
     label: "Comparison session",
     sortOrder: 400,
-    description: "Saved-set linkage, submit state, and blind-test visibility.",
+    description: "Saved-set linkage, submit state, and blind-test masking.",
   },
 ];
 

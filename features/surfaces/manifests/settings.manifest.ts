@@ -105,7 +105,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Navigation",
     sortOrder: 200,
     description:
-      "Every settings section visible to this user, and the visibility tier.",
+      "Every settings section visible to this user, and the access tier that shows each.",
   },
   {
     key: "sync_state",

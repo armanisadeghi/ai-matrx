@@ -1,7 +1,7 @@
 import { educationCreatorManifest } from "./education-creator.manifest";
 
 describe("Creator profile surface", () => {
-  it("limits agent writes to creator identity and visibility", () => {
+  it("limits agent writes to creator identity and publishing", () => {
     expect(educationCreatorManifest.writeTargets).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: "claim_creator_profile", applyPolicy: "ask" }),

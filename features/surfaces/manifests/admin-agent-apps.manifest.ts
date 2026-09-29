@@ -665,7 +665,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *
  * Deliberately NOT writable on the edit shell: the slug and id (identity),
  * `status` / `is_public` / `is_featured` / `is_verified` (publication and
- * visibility — each one is the admin's own button in `AgentAppAdminActions`),
+ * web state — each one is the admin's own button in `AgentAppAdminActions`),
  * the rate limits, ownership, delete, and `component_code` /
  * `variable_schema` / `allowed_imports` — changing what an app RUNS or may
  * REACH is a capability change, not a copy edit (the `matrx-user/agent-builder`

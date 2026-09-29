@@ -6,7 +6,7 @@
  * it with an inline front/back editor (variant-aware: basic, cloze, matching).
  *
  * Deliberately NOT part of `matrx-user/education-flashcards`. That surface is
- * the LIBRARY LIST (search, visibility facet, folder chips, the whole set
+ * the LIBRARY LIST (search, sharing facet, folder chips, the whole set
  * collection) and its own header says the detail routes are their own surfaces.
  * The two share no vocabulary: this page has no set list, no search, and no
  * folder filter, while the list page has no cards. Mounting the list surface
@@ -40,7 +40,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Set details",
     sortOrder: 100,
     description:
-      "The set's authored header — the name, topic, and description the learner typed, plus its share visibility.",
+      "The set's authored header — the name, topic, and description the learner typed, plus its share setting.",
   },
   {
     key: "cards",
@@ -128,7 +128,7 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "set_visibility",
-    label: "Share visibility",
+    label: "Share setting",
     description:
       "The set's current share setting as shown in the Sharing control (e.g. 'private', 'link', 'public', 'organization'). Absent until `set_loaded` is true. Read-only here — changing who can see a set is a permissions decision that stays with the learner.",
     valueType: "string",
@@ -198,7 +198,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * Deliberately NOT targets:
  *   • deleting a set — managed from the deck library.
  *   • reordering cards — a mechanical nudge nobody asks an agent to perform.
- *   • share visibility / folders — a permissions decision, not authored content.
+ *   • share setting / folders — a permissions decision, not authored content.
  *   • everything in `study_signal` — derived review evidence. Letting an agent
  *     write mastery would be fabricating the learner's history.
  *

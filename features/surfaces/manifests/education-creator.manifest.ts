@@ -85,7 +85,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "set_creator_page_visibility",
-    label: "Set creator page visibility",
+    label: "Publish creator page to the web",
     description: "Publishes or unpublishes the caller's existing creator page immediately after approval. Value is { is_public: boolean }. Unpublishing removes the public landing page but retains the profile and its content; it does not delete anything.",
     valueType: "object",
     mode: "entity",
@@ -102,7 +102,7 @@ export const educationCreatorManifest: SurfaceManifest = {
   executionMode: "python-stream",
   description: "Authenticated creator profile editor at /education/creator.",
   readiness: "partial",
-  readinessNote: "Manifest, route mapping, scope, and canonical create/update/visibility handlers are implemented. Focused mirror sync and live agent interaction proof remain required.",
+  readinessNote: "Manifest, route mapping, scope, and canonical create/update/publish handlers are implemented. Focused mirror sync and live agent interaction proof remain required.",
   label: "Creator profile",
   urlPattern: "/education/creator",
   intro: `<surface_intro>

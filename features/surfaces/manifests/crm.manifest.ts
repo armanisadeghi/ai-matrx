@@ -276,7 +276,7 @@ const values: SurfaceValue[] = [
  * `view_mode`.
  *
  * DELIBERATELY NOT TARGETS:
- *  - `scope_kind` and `selected_organization_id` — the ownership/visibility
+ *  - `scope_kind` and `selected_organization_id` — the ownership/reach
  *    axis (Mine / My Orgs / Public). The judgment bar puts identity and
  *    ownership fields on the NO side, and this pair is that axis: it changes
  *    WHOSE records are in play, not which of the user's records match. Left

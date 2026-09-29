@@ -165,7 +165,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * the shared definition: there is NO draft layer here (every edit is a server
  * action that persists on submit), so every target is `mode: "entity"` and
  * `applyPolicy: "ask"`, with `auto` deliberately absent. Deletes and
- * visibility are NOT declared — destructive and permission-shaped changes stay
+ * sharing are NOT declared — destructive and permission-shaped changes stay
  * human-only by doctrine.
  *
  * Handlers are registered by `ListManagerFloatingWorkspace` on its
