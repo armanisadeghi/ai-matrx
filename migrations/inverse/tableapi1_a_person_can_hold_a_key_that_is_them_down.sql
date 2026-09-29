@@ -1,4 +1,4 @@
--- chair-step: inverse of tableapi1_a_person_can_hold_a_key_that_is_them.sql — puts back the CRITICAL-1 trigger and iam.api_key_revoke exactly as they were, drops the three personal-key doors, their door rows, the restrictive SELECT policy and the four knob rows. A personal key minted in between stays in iam.api_keys but can no longer be listed or revoked by its person; revoke it first.
+-- chair-step: inverse of tableapi1_a_person_can_hold_a_key_that_is_them.sql — puts back the CRITICAL-1 trigger and iam.api_key_revoke exactly as they were, drops the three personal-key doors, their door rows and the four knob rows. A personal key minted in between stays in iam.api_keys but can no longer be listed or revoked by its person; revoke it first.
 --
 -- inverse of tableapi1_a_person_can_hold_a_key_that_is_them.sql
 -- The two bodies below are pg_get_functiondef read from production on 2026-09-29 before the up.
@@ -87,8 +87,6 @@ BEGIN
   RETURN jsonb_build_object('id', v_row.id, 'status', v_row.status, 'revoked_at', v_row.revoked_at);
 END;
 $function$;
-
-drop policy if exists api_keys_personal_rows_are_their_owners on iam.api_keys;
 
 delete from platform.client_callable_door
  where schema_name = 'iam'

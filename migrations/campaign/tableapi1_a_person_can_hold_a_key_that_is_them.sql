@@ -1,4 +1,4 @@
--- chair-step: it REPLACES the bodies of iam.api_key_identity_must_be_minted() (the CRITICAL-1 trigger) and iam.api_key_revoke(uuid), adds three iam doors and one server-only iam function, one restrictive SELECT policy on iam.api_keys and four platform.feature_knob rows. No table is created or altered and no existing key changes: the three live keys are revoked service keys and stay exactly as they are.
+-- chair-step: it REPLACES the bodies of iam.api_key_identity_must_be_minted() (the CRITICAL-1 trigger) and iam.api_key_revoke(uuid), adds three iam doors and one server-only iam function and four platform.feature_knob rows (the restrictive SELECT policy is its own file, tableapi1_a_personal_keys_row_is_its_persons_alone.sql, because CREATE POLICY takes the sign-in freeze). No table is created or altered and no existing key changes: the three live keys are revoked service keys and stay exactly as they are.
 -- lane: TABLE-API-1
 -- based-on: iam.api_key_identity_must_be_minted() c7899d3160c2799b2d3a1471e83d0f9bbd53a7ae5a3e56c2c5ddfe2a0c571c07
 -- based-on: iam.api_key_revoke(uuid) bec1b212d638fcce4a1b0005003c181df430d8c868d97c0990a6cc8a0aec45c3
@@ -35,9 +35,9 @@
 --      soft-deletes every membership of the key's identity, and on a personal key that identity
 --      is the person: an owner revoking it would have removed that person from the
 --      organization (plan-attack BLOCKER, 2026-09-29).
---   5. A RESTRICTIVE SELECT policy: a personal-key row is visible only to the person it is
---      (and to platform admins — our own admin access is never removed). The org-settings
---      screen's plain table read therefore never lists a member's personal key.
+--   5. (The restrictive SELECT policy — a personal-key row visible only to its person — is the
+--      companion file tableapi1_a_personal_keys_row_is_its_persons_alone.sql: a CREATE POLICY
+--      takes the sign-in freeze on auth.users, so it is applied on its own.)
 --   6. Knobs: api_keys/personal_key_max_age_days, table_api/requests_per_minute_per_server,
 --      table_api/bulk_max_rows, mcp/oauth_dynamic_clients_enabled.
 
@@ -379,17 +379,6 @@ $function$;
 
 revoke all on function iam.oauth_client_is_dynamic(uuid) from public, anon, authenticated;
 grant execute on function iam.oauth_client_is_dynamic(uuid) to service_role;
-
--- ── 5. a personal key's row is its person's alone ────────────────────────────────────────
-create policy api_keys_personal_rows_are_their_owners on iam.api_keys
-  as restrictive
-  for select
-  to authenticated
-  using (
-    coalesce(metadata->>'identity_kind', '') <> 'personal_key'
-    or created_by = (select auth.uid())
-    or (select public.is_platform_admin())
-  );
 
 -- ── 6. knobs ─────────────────────────────────────────────────────────────────────────────
 insert into platform.feature_knob
