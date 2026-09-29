@@ -225,6 +225,11 @@ export function useGridSelection(args: {
   onFillDown?: (rows: CellAddress[][]) => void;
   onUndo: () => void;
   onRedo: () => void;
+  /**
+   * A person who may not change this table tried to (a typed letter, Enter, Delete): the grid says
+   * why instead of doing nothing (BREAKER-2 B2-20). Called at most once every four seconds.
+   */
+  onReadOnlyAttempt?: () => void;
 }): GridSelectionApi {
   const {
     rowIds,
@@ -238,7 +243,15 @@ export function useGridSelection(args: {
     onFillDown,
     onUndo,
     onRedo,
+    onReadOnlyAttempt,
   } = args;
+  const saidReadOnlyAt = useRef(0);
+  const sayReadOnly = useCallback(() => {
+    const now = Date.now();
+    if (now - saidReadOnlyAt.current < 4000) return;
+    saidReadOnlyAt.current = now;
+    onReadOnlyAttempt?.();
+  }, [onReadOnlyAttempt]);
 
   const [selected, setSelected] = useState<CellAddress | null>(null);
   const [focus, setFocus] = useState<CellAddress | null>(null);
@@ -727,19 +740,19 @@ export function useGridSelection(args: {
           if (editable) {
             e.preventDefault();
             beginEdit(selected);
-          }
+          } else sayReadOnly();
           break;
         case "editSeeded":
           if (editable) {
             e.preventDefault();
             beginEdit(selected, action.seed);
-          }
+          } else sayReadOnly();
           break;
         case "clearCell":
           if (editable) {
             e.preventDefault();
             onClearCells(selectedCells);
-          }
+          } else sayReadOnly();
           break;
         case "copy":
         case "cut":
@@ -775,6 +788,7 @@ export function useGridSelection(args: {
       onUndo,
       range,
       rowIds,
+      sayReadOnly,
       selectAll,
       selectColumn,
       selectRow,
@@ -799,9 +813,13 @@ export function useGridSelection(args: {
         return;
       }
       if (!selected || editing || text.trim() === "") return;
+      if (!editable) {
+        sayReadOnly();
+        return;
+      }
       beginEdit(selected, text);
     },
-    [beginEdit, editing, selected],
+    [beginEdit, editable, editing, sayReadOnly, selected],
   );
 
   const typeCatcherProps: TypeCatcherProps = {

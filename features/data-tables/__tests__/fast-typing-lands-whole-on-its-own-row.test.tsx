@@ -39,11 +39,13 @@ import { useGridSelection } from "../hooks/useGridSelection";
 const ROWS = ["r-grace", "r-mateo"];
 const FIELDS = ["notes", "phone"];
 
-function Grid() {
+const saidReadOnly = jest.fn();
+function Grid({ editable = true }: { editable?: boolean } = {}) {
   const grid = useGridSelection({
     rowIds: ROWS,
     fieldNames: FIELDS,
-    editable: true,
+    editable,
+    onReadOnlyAttempt: saidReadOnly,
     getCellText: () => "",
     onClearCells: () => {},
     onPasteText: () => {},
@@ -146,4 +148,13 @@ it("a save that lands after the person opened another cell never moves them or e
   expect(writes).toContainEqual(expect.objectContaining({ rowId: "r-grace", fieldName: "phone", value: "555" }));
   expect(writes).toContainEqual(expect.objectContaining({ rowId: "r-mateo", fieldName: "notes", value: "j2@x.co" }));
   expect(writes.filter((w) => w.value === "j2@x.co")).toHaveLength(1);
+});
+
+it("a viewer who types or presses Enter is told why nothing changes (B2-20)", async () => {
+  saidReadOnly.mockReset();
+  act(() => root.render(<Grid editable={false} />));
+  act(() => (container.querySelector('[data-test-cell="r-grace:notes"]') as HTMLElement).click());
+  key("Z");
+  expect(saidReadOnly).toHaveBeenCalledTimes(1);
+  expect(upsertCell).not.toHaveBeenCalled();
 });

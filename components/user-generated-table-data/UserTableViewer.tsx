@@ -939,6 +939,10 @@ const UserTableViewer = ({
         ? "This is a preview. Open the table to change it."
         : isExampleTable
         ? "This is one of the platform's example tables, so it is read-only for everyone. Create a table of your own to try this out."
+        : isRecordStoreTable(tableId)
+        // AN ORGANIZATION'S TABLE IS NOT "A SHARED TABLE TO DUPLICATE" (BREAKER-2 B2-20): it says what the
+        // person can do here and who can change that — the same words the records grid uses.
+        ? "You can look at this table but not change it: it takes Editor to change anything here. Ask somebody who is Admin on it to move you up."
         : "You don't have edit access to this shared table. You would need to duplicate it first to make changes.",
       variant: "default",
     });
@@ -3436,6 +3440,8 @@ const UserTableViewer = ({
     rowIds: rowIdsOnPage,
     fieldNames: fieldNamesInOrder,
     editable: !isReadOnly,
+    // A viewer who types, presses Enter or Delete is told why nothing changes (BREAKER-2 B2-20).
+    onReadOnlyAttempt: () => showReadOnlyToast(),
     // A formula cell is computed — Enter / typing / double-click must not
     // open an editor on it, or the grid would sit in an invisible edit state.
     canEdit: (address) => !isFormulaField(address.fieldName),
