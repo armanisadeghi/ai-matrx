@@ -1,21 +1,14 @@
-import { workItemsCoverage, workItemsSourceNotice } from "./WorkItemsPanel";
+import { workItemsFooterLabel, workItemsSourceNotice } from "./WorkItemsPanel";
 
 describe("WorkItemsPanel source coverage contract", () => {
-  it("keeps a source-filtered page distinct from a client-side cap", () => {
-    expect(workItemsCoverage(100, 248)).toEqual({
-      loaded: 100,
-      matched: 248,
-      answeredBy: "source",
-      noun: "work item",
-    });
+  it("labels the loaded window and exact filtered source count separately", () => {
+    expect(workItemsFooterLabel(100, 248)).toBe("100 loaded · 248 matching source");
   });
 
-  it("states when only the newest source page is rendered", () => {
-    expect(workItemsSourceNotice(200, 418, true)).toBe(
-      "Showing the newest 200 of 418 matching work items. Narrow the filters to inspect the rest.",
+  it("leaves counts to the canonical footer and keeps only the truncation remedy", () => {
+    expect(workItemsSourceNotice(true)).toBe(
+      "Narrow the filters to inspect the rest.",
     );
-    expect(workItemsSourceNotice(1, 1, false)).toBe(
-      "1 matching work item returned by the source.",
-    );
+    expect(workItemsSourceNotice(false)).toBe("");
   });
 });

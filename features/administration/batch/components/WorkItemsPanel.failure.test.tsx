@@ -63,16 +63,19 @@ describe("WorkItemsPanel failed refresh", () => {
     };
 
     await act(async () => root.render(<WorkItemsPanel {...props} refreshTick={0} />));
-    expect(tableProps?.coverage).toEqual(
-      expect.objectContaining({ loaded: 1, matched: 418 }),
+    expect(tableProps?.pageSize).toBe(0);
+    expect(tableProps?.pageSizeOptions).toEqual([]);
+    expect(tableProps?.paginationLabelFormat?.(1, 1, 1)).toBe(
+      "1 loaded · 418 matching source",
     );
-    expect(host.textContent).toContain("newest 1 of 418");
+    expect(tableProps?.hidePagination).toBeUndefined();
+    expect(host.textContent).toContain("Narrow the filters to inspect the rest.");
 
     await act(async () => root.render(<WorkItemsPanel {...props} refreshTick={1} />));
     expect(tableProps?.coverage).toBeUndefined();
-    expect(tableProps?.emptyState).toEqual(
-      expect.objectContaining({ title: "The work items could not be read." }),
+    expect(tableProps?.read).toEqual(
+      expect.objectContaining({ status: "error", what: "the work items" }),
     );
-    expect(host.textContent).not.toContain("418");
+    expect(host.textContent).not.toContain("Narrow the filters to inspect the rest.");
   });
 });

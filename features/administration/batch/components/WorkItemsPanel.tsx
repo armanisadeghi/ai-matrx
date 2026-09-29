@@ -17,7 +17,6 @@ import { Inbox, Search, X } from "lucide-react";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
-  type MatrxDataTableCoverageConfig,
 } from "@ai-matrx/design-system/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -38,7 +37,6 @@ import {
   type WorkItem,
   HANDLER_STATUSES,
   WORK_ITEM_STATUSES,
-  WORK_ITEM_PAGE_SIZE,
 } from "../service/batchAdminService";
 import {
   CostCell,
@@ -56,28 +54,17 @@ import { readOf } from "@/components/read-state/ReadGate";
 
 const ANY = "__any__";
 
-/**
- * `listWorkItems` applies every displayed filter at the source, then returns
- * the newest bounded page plus the exact source-side match count. Do not pass
- * its fetch cap to MatrxDataTable's `cap`: that field means the FILTER searched
- * only a prefix, which is not true here. The source notice below carries the
- * distinct fact that this complete answer is represented by its newest page.
- */
-export function workItemsCoverage(
-  loaded: number,
-  matched: number,
-): MatrxDataTableCoverageConfig {
-  return { loaded, matched, answeredBy: "source", noun: "work item" };
+/** The source returns an exact filtered match count but only its newest window. */
+export function workItemsFooterLabel(loaded: number, matched: number): string {
+  return `${fmtInt(loaded)} loaded · ${fmtInt(matched)} matching source`;
 }
 
 export function workItemsSourceNotice(
-  loaded: number,
-  matched: number,
   truncated: boolean,
 ): string {
   return truncated
-    ? `Showing the newest ${fmtInt(loaded)} of ${fmtInt(matched)} matching work items. Narrow the filters to inspect the rest.`
-    : `${fmtInt(matched)} matching ${matched === 1 ? "work item" : "work items"} returned by the source.`;
+    ? "Narrow the filters to inspect the rest."
+    : "";
 }
 
 export function WorkItemsPanel({
@@ -384,11 +371,7 @@ export function WorkItemsPanel({
     [],
   );
 
-  const sourceNotice = workItemsSourceNotice(
-    rows?.length ?? 0,
-    matched,
-    truncated,
-  );
+  const sourceNotice = workItemsSourceNotice(truncated);
 
   return (
     <MatrxDataTable<WorkItem>
@@ -397,8 +380,13 @@ export function WorkItemsPanel({
       columns={columns}
       getRowId={(row) => row.id}
       isLoading={loading}
-      pageSize={WORK_ITEM_PAGE_SIZE}
-      hidePagination
+      // The source has no offset contract. Show every loaded row and disable
+      // local subset pages until a real source-backed pager exists.
+      pageSize={0}
+      pageSizeOptions={[]}
+      paginationLabelFormat={(_start, _end, loaded) =>
+        workItemsFooterLabel(loaded, matched)
+      }
       detail={{ enabled: false }}
       window={{ enabled: false }}
       expandedDetail={{
@@ -413,7 +401,6 @@ export function WorkItemsPanel({
             "bg-destructive/5",
         )
       }
-      coverage={rows && !loading && !error ? workItemsCoverage(rows.length, matched) : undefined}
       read={readOf({ loading, error }, { what: "the work items" })}
       emptyState={{
         icon: <Inbox className="h-6 w-6 text-muted-foreground" />,
@@ -504,7 +491,7 @@ export function WorkItemsPanel({
                 ))}
               </div>
             ) : null}
-            {!loading && !error ? (
+            {!loading && !error && sourceNotice ? (
               <p className={cn("text-xs", truncated && "text-warning")}>
                 {sourceNotice}
               </p>
