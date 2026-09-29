@@ -201,6 +201,13 @@ begin
                   where b like v_name || ' — %waiting to be copied%' and b like '%The context copy ran at%left them waiting%') then
     raise exception '4e: an edit Step 1''s context copy already left is not a named blocker: %', left((v -> 'blocking')::text, 400);
   end if;
+  -- 4f (lane FINAL-SWITCH-2): a blocking line says its check as not true yet; it never prints the
+  -- check's met-form name ("No scope edit is waiting to be copied") as a claim before the detail
+  -- that contradicts it. RED on the fourth file's readiness, GREEN on finalswitch2_b.
+  if exists (select 1 from jsonb_array_elements_text(v -> 'blocking') b
+              where b like v_name || ' — %' and b not like v_name || ' — %: not yet: %') then
+    raise exception '4f: a blocking line prints its check''s name as a claim: %', left((v -> 'blocking')::text, 400);
+  end if;
   delete from custom.io_outbox where id = v_id;
 
   v_run := gen_random_uuid();
