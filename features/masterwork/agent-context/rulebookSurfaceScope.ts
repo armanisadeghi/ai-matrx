@@ -1,6 +1,7 @@
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 // ONE Rulebook renderer — the surface's `content` and the bound
 // `rulebook_document` variable must never show two different Rulebooks.
+import { publishedToWebLabel } from "@/lib/row-access";
 import { renderRulebookDocument } from "./rulebookDocument";
 import {
   ruleState,
@@ -132,7 +133,7 @@ export function buildRulebookSurfaceScope({
       rulebook_id: rulebook.id,
       rulebook_status: rulebook.status,
       rulebook_version: rulebook.version,
-      rulebook_visibility: rulebook.visibility,
+      rulebook_visibility: publishedToWebLabel(rulebook.published_to_web),
       rulebook_organization_id: rulebook.organization_id,
       can_edit: canEdit,
       workspace_state: workspaceState,
@@ -169,7 +170,7 @@ export function buildRulebookSurfaceScope({
     rulebook_description: rulebook.description ?? "",
     rulebook_status: rulebook.status,
     rulebook_version: rulebook.version,
-    rulebook_visibility: rulebook.visibility,
+    rulebook_visibility: publishedToWebLabel(rulebook.published_to_web),
     rulebook_organization_id: rulebook.organization_id,
     can_edit: canEdit,
     rulebook,

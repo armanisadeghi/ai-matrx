@@ -55,7 +55,7 @@ function row(over: Partial<MasterworkDefinitionRow> = {}): MasterworkDefinitionR
     version: 3,
     created_at: "2026-09-01T00:00:00Z",
     updated_at: "2026-09-02T00:00:00Z",
-    visibility: "personal",
+    published_to_web: false,
     is_archived: false,
     ...over,
   };

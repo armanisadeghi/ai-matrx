@@ -1158,7 +1158,7 @@ export interface RulebookListRow {
   sources: RulebookSourcesRead;
   version: number;
   status: RulebookStatus;
-  visibility: RulebookVisibility;
+  published_to_web: boolean;
   rule_count: number;
   created_by: string;
   organization_id: string;
@@ -1231,7 +1231,7 @@ export interface Masterwork {
   version: number;
   created_at: string;
   updated_at: string;
-  visibility: string;
+  published_to_web: boolean;
 }
 
 export function parseRulebook(row: RulebookRow): Rulebook {

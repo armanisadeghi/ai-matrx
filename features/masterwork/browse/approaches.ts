@@ -3,8 +3,8 @@ import { supabase } from "@/utils/supabase/client";
 /**
  * The Approach registry — the many ways an Expert goes through Distillation.
  *
- * `platform.approach` is a canonical system-variant catalog table (public
- * visibility, seeded rows owned by the Matrx System org). Every surface that
+ * `platform.approach` is a canonical system-variant catalog table (published
+ * to the web, seeded rows owned by the Matrx System org). Every surface that
  * shows Approaches renders one card per ROW — adding a new Approach that
  * reuses an existing lane shape is a ROW, not code
  * (contract: features/masterwork/FEATURE.md § The Approach Registry).

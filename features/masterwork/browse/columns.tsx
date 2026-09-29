@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { PUBLISHED_TO_WEB_LABEL, publishedToWebLabel } from "@/lib/row-access";
 import {
   DATE_FILTER_OPTIONS,
   Muted,
@@ -22,10 +23,9 @@ const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({
   label,
 }));
 
-const VISIBILITY_OPTIONS = [
-  { value: "personal", label: "Personal" },
-  { value: "internal", label: "Organization" },
-  { value: "public", label: "Public" },
+const PUBLISHED_TO_WEB_OPTIONS = [
+  { value: "true", label: publishedToWebLabel(true) },
+  { value: "false", label: publishedToWebLabel(false) },
 ];
 
 function statusBadge(status: RulebookListRow["status"]) {
@@ -166,16 +166,16 @@ export const RULEBOOK_COLUMNS: EntityColumnSpec<RulebookListRow>[] = [
     },
   },
   {
-    id: "visibility",
-    label: "Visibility",
+    id: "published_to_web",
+    label: PUBLISHED_TO_WEB_LABEL,
     defaultHidden: true,
     column: {
-      id: "visibility",
-      accessorKey: "visibility",
-      header: "Visibility",
+      id: "published_to_web",
+      accessorFn: (row) => String(row.published_to_web),
+      header: PUBLISHED_TO_WEB_LABEL,
       filter: "select",
-      filterOptions: VISIBILITY_OPTIONS,
-      cell: (row) => <Muted>{String(row.visibility)}</Muted>,
+      filterOptions: PUBLISHED_TO_WEB_OPTIONS,
+      cell: (row) => <Muted>{publishedToWebLabel(row.published_to_web)}</Muted>,
     },
   },
   {

@@ -137,14 +137,14 @@ function definitionRow(overrides: {
     version: 1,
     created_at: "2026-09-16T00:00:00.000Z",
     updated_at: "2026-09-16T00:00:00.000Z",
-    visibility: "internal",
+    published_to_web: false,
     is_archived: false,
   };
 }
 
 const MINE = `eq:created_by:${USER_ID}`;
 const FROM_ORGS = `in:organization_id:${ORG_ID}`;
-const PUBLIC = "eq:visibility:public";
+const PUBLIC = "eq:published_to_web:true";
 const RELEASE_GATE = "not:metadata->>released_at:is:null";
 
 beforeEach(() => {

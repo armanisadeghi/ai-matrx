@@ -337,7 +337,10 @@ export function rulebookRow(id: string, name: string): RulebookRow {
     updated_by: null,
     version: 1,
     visibility: "personal",
-    shown_to: null,
+    shown_to: "only_me",
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
   } satisfies RulebookRow;
 }
 

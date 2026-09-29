@@ -49,12 +49,12 @@ import {
  */
 
 const SELECT_COLUMNS =
-  "id,name,slug,description,source,rules,version,status,visibility,created_by,organization_id,created_at,updated_at";
+  "id,name,slug,description,source,rules,version,status,published_to_web,created_by,organization_id,created_at,updated_at";
 
 const SORTABLE = new Set([
   "name",
   "status",
-  "visibility",
+  "published_to_web",
   "version",
   "updated_at",
   "created_at",
@@ -101,9 +101,9 @@ async function myOrgs(): Promise<{ ids: string[]; names: Map<string, string> }> 
  * this without erasing to `any` (same approach as lib/list-scope's EqCapable).
  */
 interface RulebookFilterable {
-  eq(column: string, value: string): this;
+  eq(column: string, value: string | boolean): this;
   neq(column: string, value: string): this;
-  in(column: string, values: string[]): this;
+  in(column: string, values: string[] | boolean[]): this;
   or(filters: string): this;
   gte(column: string, value: string): this;
   ilike(column: string, pattern: string): this;
@@ -140,7 +140,7 @@ function applyScope<Q extends RulebookFilterable>(
   teamReach: TeamReachPair[] = [],
   shownTo: ShownToContext = {},
 ): Q | null {
-  if (scope.kind === "public") return q.eq("visibility", "public");
+  if (scope.kind === "public") return q.eq("published_to_web", true);
   // MY TEAM: what I and the people I share a team with made, per organization.
   // It is My Orgs narrowed to teammates, so a teammate's row shows only where
   // its "Shown to" lets it (access ladder T-11) — same rule as My Orgs.
@@ -187,8 +187,13 @@ function applyFilters<Q extends RulebookFilterable>(
   }
   for (const [id, f] of Object.entries(query.filters)) {
     if (f.kind === "select" && f.values.length > 0) {
-      if (id === "status" || id === "visibility") {
+      if (id === "status") {
         q = q.in(id, f.values);
+      } else if (id === "published_to_web") {
+        q = q.in(
+          id,
+          f.values.map((v) => v === "true"),
+        );
       } else if (id === "updated_at" || id === "created_at") {
         // Date filters are relative buckets; multiple selections = widest wins.
         const widest = Math.max(
@@ -294,7 +299,7 @@ function toListRow(
     sources,
     version: Number(row.version),
     status: row.status as RulebookStatus,
-    visibility: row.visibility as RulebookListRow["visibility"],
+    published_to_web: row.published_to_web === true,
     rule_count: Array.isArray(row.rules) ? row.rules.length : 0,
     created_by: String(row.created_by),
     organization_id: String(row.organization_id),
@@ -404,7 +409,7 @@ export async function fetchRulebookCounts(
 }
 
 export async function fetchRulebookFacets(): Promise<EntityFacets> {
-  // Status/visibility filter options are static on the columns; no server
+  // Status / published-to-the-web filter options are static on the columns; no server
   // facet counts needed at this population size.
   return { byKind: {} };
 }

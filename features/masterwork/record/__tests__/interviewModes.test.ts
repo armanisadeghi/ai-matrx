@@ -281,7 +281,7 @@ describe("blank slate withholds the surface's content, every turn", () => {
     description: "ZORBLAXIAN-DESCRIPTION: how we sort incoming pallets",
     status: "draft",
     version: 3,
-    visibility: "private",
+    published_to_web: false,
     organization_id: "org-1",
     source: { title: "QUUXTRON-SOURCE" },
     sections: [{ key: "a", title: "Intake" }],

@@ -914,7 +914,7 @@ export interface MasterworkDefinitionRow {
   version: number;
   created_at: string;
   updated_at: string;
-  visibility: string;
+  published_to_web: boolean | null;
   /**
    * THE ARCHIVED-ITEMS LAW. Every Masterwork read PROJECTS the archive column
    * rather than filtering it server-side: the whole corpus is small (one
@@ -977,12 +977,12 @@ export function parseMasterworkRow(row: MasterworkDefinitionRow): Masterwork {
     version: row.version,
     created_at: row.created_at,
     updated_at: row.updated_at,
-    visibility: String(row.visibility),
+    published_to_web: row.published_to_web === true,
   };
 }
 
 export const MASTERWORK_SELECT_COLUMNS =
-  "id,name,description,metadata,version,created_at,updated_at,visibility,is_archived";
+  "id,name,description,metadata,version,created_at,updated_at,published_to_web,is_archived";
 
 /**
  * THE ARCHIVED-ITEMS LAW, Masterwork half — the ONE split every Masterwork

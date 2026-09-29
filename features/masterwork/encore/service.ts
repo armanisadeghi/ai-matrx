@@ -172,7 +172,7 @@ export async function listEncoreShelves(): Promise<EncoreShelf[]> {
     orgIds.length > 0
       ? releasedBase().in("organization_id", orgIds)
       : Promise.resolve({ data: [], error: null }),
-    releasedBase().eq("visibility", "public"),
+    releasedBase().eq("published_to_web", true),
   ]);
   for (const res of [mineRes, orgsRes, publicRes]) {
     if (res.error) throw res.error;

@@ -64,7 +64,7 @@ function rulebookRow(
     sources,
     version: 15,
     status: "active",
-    visibility: "personal",
+    published_to_web: false,
     rule_count: 51,
     created_by: "87a6e699-3622-4869-8843-d0867456c0dd",
     organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",

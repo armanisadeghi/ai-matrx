@@ -69,7 +69,7 @@ function twin(id: string, createdAt: string): RulebookListRow {
     sources: { state: "read", total: 0, partial: false, groups: [] },
     version: 1,
     status: "draft",
-    visibility: "personal",
+    published_to_web: false,
     rule_count: 0,
     created_by: "expert",
     organization_id: "org",

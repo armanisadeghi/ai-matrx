@@ -163,7 +163,7 @@ function rulebookRow(
     sources,
     version: 12,
     status: "active",
-    visibility: "personal",
+    published_to_web: false,
     rule_count: 49,
     created_by: "87a6e699-3622-4869-8843-d0867456c0dd",
     organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",

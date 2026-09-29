@@ -191,7 +191,7 @@ const rulebook = {
   sections: {},
   source: {},
   status: "draft",
-  visibility: "personal",
+  published_to_web: false,
   version: 1,
   organization_id: "0e3f1c90-3333-4333-8333-333333333333",
   created_by: "7c2b6d41-4444-4444-8444-444444444444",
