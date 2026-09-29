@@ -267,7 +267,7 @@ export function MediaResearchDialog({
                 )}
               </div>
             </div>
-            <details className="rounded-md border border-border p-2" open={Boolean(subAngles) || splitAngles.length > 0}>
+            <details className="rounded-md border border-border p-2">
               <summary className="cursor-pointer text-xs font-medium text-foreground">
                 Sharpen the search (standing, reporter shape, sub-angles, competitors, regions)
               </summary>
