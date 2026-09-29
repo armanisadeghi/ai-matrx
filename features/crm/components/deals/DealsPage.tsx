@@ -623,6 +623,7 @@ export function DealsPage() {
                 }}
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
+                getRowHref={(row) => `/crm/deals/${row.id}`}
                 onRowOpen={(row) => router.push(`/crm/deals/${row.id}`)}
                 rowActions={(row) => (
                   <ItemMenu align="end" config={menuFor(row)}>

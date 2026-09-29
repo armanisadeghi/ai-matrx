@@ -894,6 +894,9 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                 zebra
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
+                getRowHref={(row) =>
+                  row.party ? resolveEntityDoors("party", row.party.id).href ?? undefined : undefined
+                }
                 onRowOpen={(row) => {
                   const href = row.party ? resolveEntityDoors("party", row.party.id).href : null;
                   if (href) router.push(href);

@@ -430,6 +430,7 @@ export function OutreachListsPage() {
                   zebra
                   detail={{ enabled: false }}
                   window={{ enabled: false }}
+                  getRowHref={(row) => `/crm/outreach-lists/${row.id}`}
                   onRowOpen={(row) =>
                     router.push(`/crm/outreach-lists/${row.id}`)
                   }
