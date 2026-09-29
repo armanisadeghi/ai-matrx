@@ -534,7 +534,7 @@ function TableLayout({
     pageSize: 0,
     search: "",
     anyOf: "",
-    columnFilters: [],
+    columnFilters: {},
     sort: null,
   });
   const coverage =
