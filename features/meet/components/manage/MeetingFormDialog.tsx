@@ -509,7 +509,7 @@ export function MeetingFormDialog({
                     <SelectItem key={`${t.scope}:${t.id}`} value={t.id}>
                       {t.name}
                       <span className="ml-1.5 text-xs text-muted-foreground">
-                        {t.scope === "organization" ? "Organization" : "Mine"}
+                        {t.scope === "organization" ? "Organization" : "Personal"}
                       </span>
                     </SelectItem>
                   ))}

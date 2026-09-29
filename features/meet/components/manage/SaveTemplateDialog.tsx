@@ -138,7 +138,7 @@ export function SaveTemplateDialog({
                     >
                       <span className="min-w-0 truncate">{t.name}</span>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {t.scope === "organization" ? "Organization" : "Mine"}
+                        {t.scope === "organization" ? "Organization" : "Personal"}
                       </span>
                       {removable ? (
                         <Button
