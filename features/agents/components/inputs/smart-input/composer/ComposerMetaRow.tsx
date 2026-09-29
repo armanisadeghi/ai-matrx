@@ -2,7 +2,7 @@
 
 /**
  * The meta row UNDER the composer card (brief §2): left Scope · Output, right
- * Agent · Effort (Work+). At compact width only Agent remains and it rides the
+ * Agent · Effort (Work+). At compact width Agent · Effort ride the
  * toolbar row (`ComposerPills`); Scope and Output move into +.
  *
  * The row NEVER wraps (Arman, 2026-09-28): on a narrow screen it scrolls
@@ -31,7 +31,8 @@ export function ComposerPills({
   menuSide: "top" | "bottom";
 }) {
   const effectiveModelId = useEffectiveModelId(conversationId);
-  const showEffort = composer.size !== "compact" && composerShows(composer.mode, "meta.effort");
+  // Every size: the direct way to change effort (Work+) is the point of this pill.
+  const showEffort = composerShows(composer.mode, "meta.effort");
   return (
     // The agent pill is the ONE pill here that shrinks (its label ellipsizes),
     // never below a readable floor; Effort keeps its natural width.

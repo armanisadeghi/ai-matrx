@@ -65,7 +65,7 @@ export function PageContextChip({
           aria-label={on ? `This chat sees ${label} — ${entries.length} values` : `This chat does not see ${label}`}
           title={on ? `Sees ${label}` : `Not seeing ${label} — click to turn it back on`}
           className={cn(
-            "inline-flex h-6 shrink-0 items-center gap-1 rounded-md border text-[11px] font-medium transition-colors",
+            "inline-flex h-6 shrink-0 items-center gap-1 rounded-md border text-xs font-medium transition-colors",
             on
               ? "border-primary/30 bg-primary/5 px-2 text-primary hover:bg-primary/10"
               : "w-6 justify-center border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
