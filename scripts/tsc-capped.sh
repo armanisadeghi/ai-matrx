@@ -24,7 +24,20 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPILER="${1:?usage: tsc-capped.sh <tsc6|tsc> [args...]}"
 shift
-BIN="$REPO_ROOT/node_modules/.bin/$COMPILER"
+# Resolve the original package executable, never the managed .bin shim.
+BIN="$(node - "$REPO_ROOT" "$COMPILER" <<'JS'
+const { createRequire } = require('node:module');
+const { join, dirname, resolve } = require('node:path');
+const [root, compiler] = process.argv.slice(2);
+const packages = { tsc6: 'typescript', tsc: '@typescript/native' };
+if (!Object.hasOwn(packages, compiler)) throw new Error('Supported compilers: tsc6, tsc');
+const req = createRequire(join(root, 'package.json'));
+const manifestPath = req.resolve(packages[compiler] + '/package.json');
+const manifest = req(manifestPath);
+if (!manifest.bin?.[compiler]) throw new Error('Compiler executable missing in package manifest');
+console.log(resolve(dirname(manifestPath), manifest.bin[compiler]));
+JS
+)"
 [[ -x "$BIN" ]] || { echo "[tsc-capped] ERROR: $BIN not found — run pnpm install" >&2; exit 2; }
 # Central machine cap: ~/.config/matrx/tsc-queue.json, {"max_concurrent": 1}.
 # There is intentionally no caller environment override.

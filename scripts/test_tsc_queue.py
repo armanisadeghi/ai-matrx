@@ -234,7 +234,9 @@ sys.exit(int((base / 'exit-code').read_text()))
             os.kill(actual_pid, 0)
 
     def test_actual_typescript_diagnostic_and_success(self):
-        compiler = HERE.parent / 'node_modules/.bin/tsc6'
+        compiler = Path(subprocess.check_output(
+            ['node', '-e', "const p=require.resolve('typescript/package.json'); console.log(require('node:path').resolve(require('node:path').dirname(p),require(p).bin.tsc6))"],
+            cwd=HERE.parent, text=True).strip())
         self.assertTrue(compiler.exists(), 'installed TypeScript compiler is required')
         (self.base / 'sample.ts').write_text('const value: number = "wrong";\n')
         args = ['--noEmit', '--skipLibCheck', '--strict', 'sample.ts']
