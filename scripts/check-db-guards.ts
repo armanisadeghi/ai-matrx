@@ -115,6 +115,14 @@ const EXPECTED: ReadonlyArray<{ name: string; why: string }> = [
     why: "removes undeclared client EXECUTE grants from SECURITY DEFINER functions at creation time",
   },
   {
+    name: "t13_no_new_row_column_reader",
+    why: "access-ladder T-13 2.5b — refuses any new function, procedure, view or policy that reads the retiring row column; the listed readers only shrink (migrations/access_ladder_t13_row_access_guards.sql)",
+  },
+  {
+    name: "t13_no_row_access_column_on_closed_tables",
+    why: "access-ladder T-13 2.5a — refuses a row access column (the retiring one, shown_to, published_to_web) added to a Private, Confidential or child table",
+  },
+  {
     name: "close_new_functions_to_anon",
     why: "DD-202 — closes every new SECURITY INVOKER function in a PostgREST-exposed schema to PUBLIC and anon at creation, because PostgreSQL's hard-wired default makes one callable by a signed-out visitor from the moment it exists and no ALTER DEFAULT PRIVILEGES can take that back",
   },
