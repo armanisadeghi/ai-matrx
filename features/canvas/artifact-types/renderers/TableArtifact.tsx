@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Undo2, ExternalLink, Maximize2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
@@ -14,7 +14,8 @@ import { canvasArtifactService } from "@/features/canvas/services/canvasArtifact
 import { canvasItemsService } from "@/features/canvas/services/canvasItemsService";
 import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 import { createDatasetFromTable } from "@/features/data-tables/create-dataset-from-table";
-import { deriveDatasetNameForChatTable } from "@/features/data-tables/derive-dataset-name";
+import { deriveDatasetNameForChatTable, isPlaceholderTableTitle } from "@/features/data-tables/derive-dataset-name";
+import { readTableDetails } from "@/features/data-tables/service";
 import { useOpenUserTableWindow } from "@/features/overlays/openers/userTableWindow";
 import { StreamingTableRenderer as StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
 // Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
@@ -96,6 +97,19 @@ function TableArtifactMaterialized({
     row?.external_system === UDT_SYSTEM && row?.external_id
       ? row.external_id
       : null;
+
+  // The linked table's own name, for the window's title (see `tableTitle` below).
+  const [linkedName, setLinkedName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!linkedTableId) return;
+    let alive = true;
+    void readTableDetails(linkedTableId).then((answer) => {
+      if (alive && answer.success && answer.table?.name) setLinkedName(answer.table.name);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [linkedTableId]);
 
   // Current markdown from the persisted row (falls back to what the caller
   // passed while the row loads).
@@ -193,7 +207,11 @@ function TableArtifactMaterialized({
   // chat artifact provides the context, so suppress the table's own title header
   // (no double title). A quiet Revert action unlinks it back to the text table.
   if (linkedTableId) {
-    const tableTitle = (typeof row?.title === "string" && row.title) || "Table";
+    // THE WINDOW IS TITLED BY THE TABLE (lane HANDOVER, 2026-09-29): the chat artifact's own title
+    // is the canvas placeholder "Table 1", while the table it became is named for the conversation.
+    const artifactTitle = (typeof row?.title === "string" && row.title) || "";
+    const tableTitle =
+      artifactTitle && !isPlaceholderTableTitle(artifactTitle) ? artifactTitle : linkedName || artifactTitle || "Table";
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
         <LocatedTableViewer
