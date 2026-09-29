@@ -5,11 +5,12 @@
 // 2026-09-29: the page kept saying "Next: …" and "Anyone with the link can ask
 // to join." after cancel) — every sentence describes what the link does NOW.
 
-export interface MeetingCopyInput {
-  readonly cancelledAt: string | null;
-  readonly lobbyEnabled: boolean;
-  readonly recurrenceRule: string | null;
-}
+import type { MeetingRecord } from "@ai-matrx/meet";
+
+export type MeetingCopyInput = Pick<
+  MeetingRecord,
+  "cancelledAt" | "lobbyEnabled" | "recurrenceRule"
+>;
 
 /** The label before the time line of a series, or null for a one-off meeting. */
 export function scheduleLabel(
