@@ -16,7 +16,7 @@
     "check:kind-sandbox-parity": "tsx features/content-ir/sandbox/parity-sweep.ts --check",
     "migrate:kind-sandbox-breakpoints": "tsx features/content-ir/sandbox/apply-breakpoint-migration.ts",
     "build:pdfjs-worker": "tsx scripts/copy-pdfjs-worker.ts",
-    "postinstall": "tsx scripts/copy-pdfjs-worker.ts",
+    "postinstall": "node scripts/install-typecheck-entrypoints.mjs && tsx scripts/copy-pdfjs-worker.ts",
     "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
     "build:types": "ts-node scripts/generate-manifest.ts && bash scripts/fix-encoding.sh && next build",
     "type-check": "bash scripts/tsc-capped.sh tsc6 --noEmit -p tsconfig.typecheck.json",
