@@ -1,7 +1,6 @@
 "use client";
 
 import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
-import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Globe, Lock } from "lucide-react";
@@ -42,7 +41,7 @@ export function TemplateCard({
           : "hover:shadow-md hover:shadow-primary/10 hover:border-primary/30 cursor-pointer hover:scale-[1.01] group"
       }`}
     >
-      {/* Top row: icon + label + visibility */}
+      {/* Top row: icon + label + web state */}
       <div className="flex items-start gap-2 min-w-0">
         <div className="flex-shrink-0 w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center mt-0.5">
           <FileText className="w-3.5 h-3.5 text-primary" />
@@ -75,15 +74,15 @@ export function TemplateCard({
             >
               {template.role}
             </span>
-            {isPubliclyVisible(template.visibility) ? (
+            {template.published_to_web ? (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-green-600 dark:text-green-400">
                 <Globe className="w-2.5 h-2.5" />
-                Public
+                Published to the web
               </span>
             ) : (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
                 <Lock className="w-2.5 h-2.5" />
-                Private
+                Not published
               </span>
             )}
           </div>

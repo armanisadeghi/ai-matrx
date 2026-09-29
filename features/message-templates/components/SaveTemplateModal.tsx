@@ -152,7 +152,7 @@ export function SaveTemplateModal({
                 content: content.trim(),
                 role: role,
                 tags: tags,
-                visibility: isPublic ? "public" : "internal",
+                published_to_web: isPublic,
                 metadata: {}
             });
 
@@ -207,7 +207,7 @@ export function SaveTemplateModal({
                         onCheckedChange={(checked) => setIsPublic(checked as boolean)}
                     />
                     <Label htmlFor="template-public" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
-                        Public
+                        Publish to the web
                     </Label>
                 </div>
             </div>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
-import { isPubliclyVisible } from "@/lib/visibility/labels";
+import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -391,7 +391,7 @@ export function MessageTemplateManager({
           content: selectedTemplate.content,
           role: selectedTemplate.role,
           metadata: selectedTemplate.metadata,
-          visibility: selectedTemplate.visibility,
+          published_to_web: selectedTemplate.published_to_web,
           tags: selectedTemplate.tags,
         });
         setHasUnsavedChanges(false);
@@ -407,7 +407,7 @@ export function MessageTemplateManager({
       content: "",
       role: "user",
       metadata: {},
-      visibility: "internal",
+      published_to_web: false,
       tags: [],
     });
     setIsCreateDialogOpen(true);
@@ -433,7 +433,7 @@ export function MessageTemplateManager({
         metadata: isJsonObject(editData.metadata)
           ? editData.metadata
           : undefined,
-        visibility: editData.visibility,
+        published_to_web: editData.published_to_web,
         tags: editData.tags || [],
       });
 
@@ -478,7 +478,7 @@ export function MessageTemplateManager({
         role: createFormData.role,
         tags: createFormData.tags ?? [],
         metadata: createFormData.metadata,
-        visibility: createFormData.visibility,
+        published_to_web: createFormData.published_to_web,
       };
       await createTemplate(input);
 
@@ -515,7 +515,7 @@ export function MessageTemplateManager({
         content: selectedTemplate.content,
         role: selectedTemplate.role,
         metadata: selectedTemplate.metadata,
-        visibility: selectedTemplate.visibility,
+        published_to_web: selectedTemplate.published_to_web,
         tags: selectedTemplate.tags,
       });
       setHasUnsavedChanges(false);
@@ -559,10 +559,10 @@ export function MessageTemplateManager({
 
   const handleTogglePublic = async (template: MessageTemplateDB) => {
     try {
-      const nextPublic = !isPubliclyVisible(template.visibility);
+      const nextPublic = !template.published_to_web;
       await updateTemplate({
         id: template.id,
-        visibility: nextPublic ? "public" : "internal",
+        published_to_web: nextPublic,
       });
 
       clearTemplateCache();
@@ -570,7 +570,9 @@ export function MessageTemplateManager({
 
       toast({
         title: "Success",
-        description: `Template is now ${nextPublic ? "public" : "internal"}`,
+        description: nextPublic
+          ? "Template is now published to the web"
+          : "Template is no longer published to the web",
         variant: "success",
       });
     } catch (error) {
@@ -759,7 +761,7 @@ export function MessageTemplateManager({
                             </div>
                           )}
                         </div>
-                        {isPubliclyVisible(template.visibility) ? (
+                        {template.published_to_web ? (
                           <Globe className="w-3 h-3 text-green-500" />
                         ) : (
                           <Lock className="w-3 h-3 text-gray-400" />
@@ -777,8 +779,8 @@ export function MessageTemplateManager({
         <div className="p-4 border-t border-border bg-gray-50 dark:bg-gray-800">
           <div className="text-xs text-gray-600 dark:text-gray-400">
             {filteredTemplates.length} templates (
-            {templates.filter((t) => isPubliclyVisible(t.visibility)).length}{" "}
-            public)
+            {templates.filter((t) => t.published_to_web).length}{" "}
+            published to the web)
           </div>
         </div>
       </div>
@@ -827,14 +829,14 @@ export function MessageTemplateManager({
                     size="sm"
                     onClick={() => handleTogglePublic(selectedTemplate)}
                   >
-                    {isPubliclyVisible(selectedTemplate.visibility) ? (
+                    {selectedTemplate.published_to_web ? (
                       <Lock className="w-4 h-4" />
                     ) : (
                       <Globe className="w-4 h-4" />
                     )}
-                    {isPubliclyVisible(selectedTemplate.visibility)
-                      ? "Make Internal"
-                      : "Make Public"}
+                    {selectedTemplate.published_to_web
+                      ? "Stop publishing to the web"
+                      : "Publish to the web"}
                   </Button>
                   <Button
                     variant="destructive"
@@ -893,16 +895,13 @@ export function MessageTemplateManager({
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="edit-is-public"
-                        checked={isPubliclyVisible(editData.visibility)}
+                        checked={editData.published_to_web === true}
                         onCheckedChange={(checked) =>
-                          handleEditChange(
-                            "visibility",
-                            checked ? "public" : "internal",
-                          )
+                          handleEditChange("published_to_web", checked === true)
                         }
                       />
                       <Label htmlFor="edit-is-public">
-                        Public (accessible by all users)
+                        {PUBLISHED_TO_WEB_LABEL}
                       </Label>
                     </div>
                   </CardContent>
@@ -1369,16 +1368,16 @@ export function MessageTemplateManager({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  checked={isPubliclyVisible(createFormData.visibility)}
+                  checked={createFormData.published_to_web === true}
                   onCheckedChange={(checked) =>
                     setCreateFormData({
                       ...createFormData,
-                      visibility: checked ? "public" : "internal",
+                      published_to_web: checked === true,
                     })
                   }
                 />
                 <Label className="text-sm">
-                  Public (accessible by all users)
+                  {PUBLISHED_TO_WEB_LABEL}
                 </Label>
               </div>
 

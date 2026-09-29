@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -167,7 +166,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
   );
   const [role, setRole] = useState<MessageRole>(template?.role ?? "user");
   const [isPublic, setIsPublic] = useState(
-    isPubliclyVisible(template?.visibility),
+    template?.published_to_web === true,
   );
   const [tagsInput, setTagsInput] = useState((template?.tags ?? []).join(", "));
 
@@ -218,7 +217,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
           label: label.trim(),
           content: content.trim(),
           role,
-          visibility: isPublic ? "public" : "internal",
+          published_to_web: isPublic,
           tags,
           metadata,
         };
@@ -230,7 +229,9 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
           label: label.trim(),
           content: content.trim(),
           role,
-          visibility: isPublic ? "public" : "internal",
+          ...(isPublic !== (template.published_to_web === true)
+            ? { published_to_web: isPublic }
+            : {}),
           tags,
           metadata,
         };
@@ -326,16 +327,16 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
             />
             <div className="flex items-center gap-2 h-9 px-2 rounded-md border border-input bg-background flex-shrink-0">
               <Switch
-                id="visibility"
+                id="template-published-to-web"
                 checked={isPublic}
                 onCheckedChange={setIsPublic}
                 className="scale-90"
               />
               <label
-                htmlFor="visibility"
+                htmlFor="template-published-to-web"
                 className="text-xs cursor-pointer select-none text-muted-foreground whitespace-nowrap"
               >
-                {isPublic ? "Public" : "Private"}
+                {isPublic ? "Published to the web" : "Not published"}
               </label>
             </div>
           </div>

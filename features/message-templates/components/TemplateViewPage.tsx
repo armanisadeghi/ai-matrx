@@ -16,7 +16,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Eye, Info, Pencil, Plus, Save, X } from "lucide-react";
-import { isPubliclyVisible } from "@/lib/visibility/labels";
+import { PUBLISH_TO_WEB_ACTION, publishedToWebLabel } from "@/lib/row-access";
 import {
   type MessageRole,
   type MessageTemplateDB,
@@ -112,7 +112,8 @@ function draftFrom(template: MessageTemplateDB): MessageTemplateDraftScope {
     subject_template: templateSubject(template),
     role: template.role ?? null,
     tags: template.tags ?? [],
-    visibility: isPubliclyVisible(template.visibility) ? "public" : "private",
+    // The draft key is the surface manifest's contract; the value reads the row word.
+    visibility: template.published_to_web ? "public" : "private",
   };
 }
 
@@ -286,7 +287,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
   const [content, setContent] = useState(saved.content ?? "");
   const [subject, setSubject] = useState(templateSubject(saved));
   const [role, setRole] = useState<MessageRole | null>(saved.role ?? null);
-  const [isPublic, setIsPublic] = useState(isPubliclyVisible(saved.visibility));
+  const [isPublic, setIsPublic] = useState(saved.published_to_web === true);
   const [tags, setTags] = useState<string[]>(saved.tags ?? []);
   const [show, setShow] = useState<FieldShow>("names");
   const [isSaving, setIsSaving] = useState(false);
@@ -331,7 +332,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
     setContent(saved.content ?? "");
     setSubject(templateSubject(saved));
     setRole(saved.role ?? null);
-    setIsPublic(isPubliclyVisible(saved.visibility));
+    setIsPublic(saved.published_to_web === true);
     setTags(saved.tags ?? []);
     setSaveError(null);
   };
@@ -426,7 +427,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
     if (content !== savedDraft.content) patch.content = content;
     if (role !== savedDraft.role && role) patch.role = role;
     if (draft.visibility !== savedDraft.visibility)
-      patch.visibility = isPublic ? "public" : "internal";
+      patch.published_to_web = isPublic;
     if (JSON.stringify(draft.tags) !== JSON.stringify(savedDraft.tags))
       patch.tags = draft.tags;
     if (draft.subject_template !== savedDraft.subject_template) {
@@ -445,7 +446,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
       setContent(row.content ?? "");
       setSubject(templateSubject(row));
       setRole(row.role ?? null);
-      setIsPublic(isPubliclyVisible(row.visibility));
+      setIsPublic(row.published_to_web === true);
       setTags(row.tags ?? []);
       toast.success("Template saved");
       selectMode(pageHref);
@@ -727,7 +728,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                       </Badge>
                     )}
                     <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
-                      {isPubliclyVisible(saved.visibility) ? "Shared with everyone" : "Only you"}
+                      {publishedToWebLabel(saved.published_to_web)}
                     </Badge>
                     {(saved.tags ?? []).map((tag) => (
                       <Badge key={tag} variant="outline" className="text-xs font-normal">
@@ -904,7 +905,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                   </div>
                   <label className="matrx-tap-area flex h-9 cursor-pointer items-center gap-2 text-sm text-foreground">
                     <Switch checked={isPublic} onCheckedChange={setIsPublic} />
-                    Share with everyone on AI Matrx
+                    {PUBLISH_TO_WEB_ACTION}
                   </label>
                 </div>
 

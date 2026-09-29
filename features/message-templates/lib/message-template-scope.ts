@@ -63,7 +63,8 @@ export function buildMessageTemplateBundle(template: MessageTemplateDB): string 
       id: template.id,
       label: template.label,
       role: template.role,
-      visibility: template.visibility === "public" ? "public" : "private",
+      // Attribute name is the surface manifest's contract; the value reads the row word.
+      visibility: template.published_to_web ? "public" : "private",
       tags: (template.tags ?? []).join(", ") || null,
       version: template.version,
       updated: template.updated_at?.slice(0, 10),

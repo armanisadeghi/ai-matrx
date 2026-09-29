@@ -11,7 +11,8 @@ import { createClient } from "@/utils/supabase/client";
 import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { makeAssertData, operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
-import { requireUserId } from "@/utils/auth/getUserId";
+import { getUserId, requireUserId } from "@/utils/auth/getUserId";
+import { publishedToWebPatch } from "@/lib/row-access";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 
 const assertData = makeAssertData("load your message templates");
@@ -29,10 +30,10 @@ function getClient() {
 
 // Fetch all message templates from database.
 //
-// VIEW LAW: `visibility` decides the branch. Callers that pass `visibility`
-// explicitly are declaring a deliberate public-library browse (org-neutral
+// VIEW LAW: `publishedToWeb` decides the branch. Callers that pass it
+// explicitly are declaring a deliberate web-library browse (org-neutral
 // by design) and keep bare RLS for that shared library. The DEFAULT list
-// (no `visibility` passed) is the caller's personal template list and MUST
+// (no `publishedToWeb` passed) is the caller's personal template list and MUST
 // be mine-scoped — it must not blend in every org's/public templates just
 // because RLS lets them through.
 export async function fetchMessageTemplates(
@@ -51,8 +52,8 @@ export async function fetchMessageTemplates(
     query = query.eq("role", options.role);
   }
 
-  if (options.visibility !== undefined) {
-    query = query.eq("visibility", options.visibility);
+  if (options.publishedToWeb !== undefined) {
+    query = query.eq("published_to_web", options.publishedToWeb);
   } else {
     // VIEW LAW: mine-scoped default list.
     const userId = requireUserId();
@@ -97,7 +98,7 @@ export async function fetchTemplatesByRole(role: MessageRole) {
 
 // Fetch public templates only
 export async function fetchPublicTemplates() {
-  return fetchMessageTemplates({ visibility: "public" });
+  return fetchMessageTemplates({ publishedToWeb: true });
 }
 
 /** Team templates for one real org plus the shared public library. */
@@ -109,7 +110,7 @@ export async function fetchOrganizationMessageTemplates(
     .schema("agent")
     .from("message_template")
     .select("*")
-    .or(`organization_id.eq.${organizationId},visibility.eq.public`)
+    .or(`organization_id.eq.${organizationId},published_to_web.eq.true`)
     .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   return assertData(data, error);
@@ -177,7 +178,9 @@ export async function createTemplate(
         content: input.content,
         role: input.role,
         metadata: input.metadata || null,
-        visibility: input.visibility || "internal",
+        ...(input.published_to_web
+          ? publishedToWebPatch(true, userId)
+          : {}),
         tags: input.tags || null,
         created_by: userId,
         organization_id: input.organization_id,
@@ -201,7 +204,12 @@ export async function updateTemplate(
   if (input.content !== undefined) updateData.content = input.content;
   if (input.role !== undefined) updateData.role = input.role;
   if (input.metadata !== undefined) updateData.metadata = input.metadata;
-  if (input.visibility !== undefined) updateData.visibility = input.visibility;
+  if (input.published_to_web !== undefined) {
+    Object.assign(
+      updateData,
+      publishedToWebPatch(input.published_to_web, getUserId()),
+    );
+  }
   if (input.tags !== undefined) updateData.tags = input.tags;
 
   const { data, error } = await supabase
@@ -244,7 +252,7 @@ export async function toggleTemplatePublic(
   id: string,
   isPublic: boolean,
 ): Promise<MessageTemplateDB> {
-  return updateTemplate({ id, visibility: isPublic ? "public" : "internal" });
+  return updateTemplate({ id, published_to_web: isPublic });
 }
 
 // Get all unique tags across templates

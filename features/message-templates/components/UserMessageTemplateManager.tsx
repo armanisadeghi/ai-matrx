@@ -19,7 +19,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { isPubliclyVisible } from "@/lib/visibility/labels";
+import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -78,8 +78,8 @@ const ROLE_OPTIONS: { value: MessageRole | "all"; label: string }[] = [
 
 const VISIBILITY_OPTIONS: { value: VisibilityFilter; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "public", label: "Public" },
-  { value: "private", label: "Private" },
+  { value: "public", label: "Published to the web" },
+  { value: "private", label: "Not published" },
 ];
 
 interface TopBarProps {
@@ -222,7 +222,7 @@ export function UserMessageTemplateManager() {
   // Bottom sheet drill-down state
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterDetailKey, setFilterDetailKey] = useState<
-    "sort" | "role" | "visibility" | "tags" | null
+    "sort" | "role" | "web" | "tags" | null
   >(null);
 
   // Action state
@@ -277,7 +277,7 @@ export function UserMessageTemplateManager() {
     () =>
       templates.filter(
         (t) =>
-          isPubliclyVisible(t.visibility) && t.created_by !== currentUserId,
+          t.published_to_web && t.created_by !== currentUserId,
       ),
     [templates, currentUserId],
   );
@@ -286,9 +286,9 @@ export function UserMessageTemplateManager() {
   const filteredTemplates = useMemo(() => {
     let list = baseList.filter((t) => {
       if (selectedRole !== "all" && t.role !== selectedRole) return false;
-      if (selectedVisibility === "public" && !isPubliclyVisible(t.visibility))
+      if (selectedVisibility === "public" && !t.published_to_web)
         return false;
-      if (selectedVisibility === "private" && isPubliclyVisible(t.visibility))
+      if (selectedVisibility === "private" && t.published_to_web)
         return false;
       if (
         selectedTags.length > 0 &&
@@ -435,8 +435,8 @@ export function UserMessageTemplateManager() {
       ? "Sort By"
       : filterDetailKey === "role"
         ? "Type"
-        : filterDetailKey === "visibility"
-          ? "Visibility"
+        : filterDetailKey === "web"
+          ? PUBLISHED_TO_WEB_LABEL
           : filterDetailKey === "tags"
             ? "Tags"
             : "Filters & Sort";
@@ -595,8 +595,8 @@ export function UserMessageTemplateManager() {
                 </button>
               ))}
             </>
-          ) : filterDetailKey === "visibility" ? (
-            /* ── Visibility detail ── */
+          ) : filterDetailKey === "web" ? (
+            /* ── Published-to-the-web detail ── */
             <>
               {VISIBILITY_OPTIONS.map((opt, idx) => (
                 <button
@@ -704,13 +704,13 @@ export function UserMessageTemplateManager() {
                 <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
               </button>
 
-              {/* Visibility */}
+              {/* Published to the web */}
               <button
-                onClick={() => setFilterDetailKey("visibility")}
+                onClick={() => setFilterDetailKey("web")}
                 className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
-                  Visibility
+                  {PUBLISHED_TO_WEB_LABEL}
                 </span>
                 <span
                   className={cn(

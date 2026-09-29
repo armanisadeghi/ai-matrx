@@ -117,7 +117,7 @@ export function QuickMessageTemplateSaveCore({
     setLabel(templateDisplayName(template));
     setRole(template.role ?? defaultRole);
     setTagsText((template.tags ?? []).join(", "));
-    setIsPublic(template.visibility === "public");
+    setIsPublic(template.published_to_web === true);
   };
 
   const tags = tagsText
@@ -152,7 +152,7 @@ export function QuickMessageTemplateSaveCore({
           content: refine.workingContent.trim(),
           role,
           tags,
-          visibility: isPublic ? "public" : "internal",
+          published_to_web: isPublic,
           metadata: {},
         });
       } else {
@@ -167,7 +167,9 @@ export function QuickMessageTemplateSaveCore({
           ),
           role,
           tags,
-          visibility: isPublic ? "public" : "internal",
+          ...(isPublic !== (selectedTemplate.published_to_web === true)
+            ? { published_to_web: isPublic }
+            : {}),
           metadata: readMessageTemplateMetadata(selectedTemplate.metadata),
         });
       }

@@ -7,10 +7,9 @@ export type MessageTemplateDB = MessageTemplateTable["Row"];
 export type MessageTemplateUpdate = MessageTemplateTable["Update"];
 export type MessageTemplateEditorSource = Pick<
   MessageTemplateDB,
-  "id" | "label" | "content" | "metadata" | "role" | "tags" | "visibility"
+  "id" | "label" | "content" | "metadata" | "role" | "tags" | "published_to_web"
 >;
 export type MessageRole = NonNullable<MessageTemplateDB["role"]>;
-export type MessageVisibility = MessageTemplateDB["visibility"];
 
 export type CreateMessageTemplateInput = Pick<
   MessageTemplateTable["Insert"],
@@ -20,7 +19,8 @@ export type CreateMessageTemplateInput = Pick<
   content: string;
   role: MessageRole;
   metadata?: JsonObject;
-  visibility?: MessageVisibility;
+  /** "Published to the web" — the row's only anonymous lane. */
+  published_to_web?: boolean;
 };
 
 export type UpdateMessageTemplateInput = Partial<CreateMessageTemplateInput> & {
@@ -29,7 +29,8 @@ export type UpdateMessageTemplateInput = Partial<CreateMessageTemplateInput> & {
 
 export interface MessageTemplateQueryOptions {
   role?: MessageRole;
-  visibility?: MessageVisibility;
+  /** Set = a deliberate library browse filtered by "Published to the web". */
+  publishedToWeb?: boolean;
   search?: string;
   tags?: string[];
   limit?: number;

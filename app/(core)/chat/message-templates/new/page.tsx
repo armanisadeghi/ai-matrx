@@ -35,7 +35,7 @@ export default async function NewTemplatePage({ searchParams }: PageProps) {
         ...data,
         id: "",
         label: `${data.label ?? "Template"} (Copy)`,
-        visibility: "internal",
+        published_to_web: false,
       };
     }
   }

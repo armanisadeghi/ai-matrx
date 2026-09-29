@@ -2,7 +2,6 @@
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useState, useEffect, useMemo } from "react";
-import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { MobileOverlayWrapper } from "@/components/official/MobileOverlayWrapper";
 import {
   Dialog,
@@ -314,15 +313,15 @@ export function TemplateBrowserModal({
                     <Badge variant="secondary" className="text-xs">
                       {selectedTemplate.role}
                     </Badge>
-                    {isPubliclyVisible(selectedTemplate.visibility) ? (
+                    {selectedTemplate.published_to_web ? (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Globe className="w-3 h-3" />
-                        Public
+                        Published to the web
                       </div>
                     ) : (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Lock className="w-3 h-3" />
-                        Private
+                        Not published
                       </div>
                     )}
                   </div>
@@ -438,7 +437,7 @@ export function TemplateBrowserModal({
                           )}
                         </div>
                         <div className="flex-shrink-0">
-                          {isPubliclyVisible(template.visibility) ? (
+                          {template.published_to_web ? (
                             <Globe className="w-4 h-4 text-green-500" />
                           ) : (
                             <Lock className="w-4 h-4 text-muted-foreground" />
