@@ -3,25 +3,31 @@
 /** Internal reviewer surface for the separately-authorized Google Other Contacts corpus. */
 
 import { useCallback, useMemo, useState } from "react";
-import { Check, ChevronRight, Loader2, RefreshCw, UserRound } from "lucide-react";
+import { Check, ChevronRight, CircleAlert, Loader2, RefreshCw, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
-import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
+import {
+  useGoogleCapabilities,
+  useGoogleConnectionInventory,
+} from "@/features/marketing/google/hooks";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { getUserMessage } from "@/lib/api/errors";
 import { toast } from "@/lib/toast";
 import {
   contactFieldChoice,
+  contactRefusalSentence,
   decideContactField,
   narrowContactMatchState,
 } from "@/features/connectors/import/contract";
+import { importFieldLabel } from "@/features/connectors/import/field-labels";
 import type {
   ContactFieldChoicePending,
   ContactFieldPlanPending,
@@ -33,6 +39,7 @@ import {
   type OtherContactPreviewPending,
   type OtherContactsReviewPending,
 } from "@/features/connectors/import/service";
+import type { ContactImportResultPending } from "@/features/connectors/import/types";
 
 function valueText(value: string | string[] | null): string {
   if (value === null) return "No value";
@@ -44,13 +51,31 @@ function targetText(review: OtherContactsReviewPending): string {
   return review.target.person_name ?? "The matched Person";
 }
 
+function importOutcomeSentence(result: ContactImportResultPending): string {
+  const outcome = result.results[0];
+  if (!outcome) return "The import did not return a result. Nothing is confirmed as saved.";
+  if (outcome.target_moved) return outcome.target_moved;
+  if (outcome.choice_required) {
+    return "Nothing was imported because this contact matches more than one Person. Resolve the duplicate in CRM, then review it again.";
+  }
+  const writes = outcome.written_fields.length + outcome.contact_points_added;
+  if (writes === 0) {
+    return outcome.note || "No CRM values were written. Google Other Contacts was not changed.";
+  }
+  if ((outcome.refused_fields?.length ?? 0) > 0) {
+    return `Partially imported: ${writes} CRM value${writes === 1 ? "" : "s"} changed; some reviewed fields were refused.`;
+  }
+  return `${outcome.display_name || "Selected contact"} was imported into AI Matrx. Google Other Contacts was not changed.`;
+}
+
 /**
- * The screen is unlinked and visibility-gated by its page. Aidream independently
- * authorizes every preview, review, and import; this component never offers
- * consent or creates a connection.
+ * The screen is unlinked and server-reported capability metadata gates the UI.
+ * Aidream independently authorizes every preview, review, and import; this
+ * component never offers consent or creates a connection.
  */
 export function OtherContactsReview() {
   const organization = useOrganizationRequired();
+  const capabilities = useGoogleCapabilities();
   const inventory = useGoogleConnectionInventory();
   const connections = useMemo(
     () =>
@@ -72,14 +97,14 @@ export function OtherContactsReview() {
   const [reviewing, setReviewing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
+  const [done, setDone] = useState<ContactImportResultPending | null>(null);
 
   const resetSelection = useCallback(() => {
     setSelected(null);
     setReview(null);
     setOverrides({});
     setReviewedFields([]);
-    setSaved(null);
+    setDone(null);
   }, []);
 
   const load = useCallback(
@@ -120,7 +145,7 @@ export function OtherContactsReview() {
     if (!organization.organizationId || !connectionId || !selected) return;
     setReviewing(true);
     setError(null);
-    setSaved(null);
+    setDone(null);
     try {
       const result = await reviewOtherContact({
         organizationId: organization.organizationId,
@@ -150,13 +175,16 @@ export function OtherContactsReview() {
         receipt: review.receipt,
         target: review.target,
       });
+      setDone(result);
+      const sentence = importOutcomeSentence(result);
       const imported = result.results[0];
-      setSaved(
-        imported
-          ? `${imported.display_name || "Selected contact"} was imported into AI Matrx. Google Other Contacts was not changed.`
-          : "The selected contact was imported into AI Matrx. Google Other Contacts was not changed.",
+      const wrote = Boolean(
+        imported && !imported.target_moved && !imported.choice_required &&
+          (imported.written_fields.length + imported.contact_points_added > 0),
       );
-      toast.success("Selected contact imported");
+      if (wrote) toast.success(sentence);
+      else toast.warning(sentence);
+      result.warnings.forEach((warning) => toast.warning(warning));
     } catch (cause) {
       setError(getUserMessage(cause));
     } finally {
@@ -166,6 +194,17 @@ export function OtherContactsReview() {
 
   if (organization.organizationState !== "ready") {
     return <OrganizationContextNotice state={organization.organizationState} what="Other Contacts import" />;
+  }
+
+  const capability = capabilities.data?.find((item) => item.key === "other_contacts");
+  if (capabilities.isLoading) {
+    return <main className="mx-auto max-w-5xl p-6 text-sm text-muted-foreground">Checking internal-test eligibility…</main>;
+  }
+  if (capabilities.isError) {
+    return <main className="mx-auto max-w-5xl space-y-3 p-6"><ErrorNotice size="inline" message="We could not check whether this account may review Google Other Contacts." /><Button variant="outline" onClick={() => void capabilities.refetch()}>Try again</Button></main>;
+  }
+  if (!capability?.eligible) {
+    return <main className="mx-auto max-w-5xl p-6"><Card><CardHeader><CardTitle>Internal review access required</CardTitle></CardHeader><CardContent className="text-sm text-muted-foreground">{capability?.admission_error ?? "This Google Other Contacts review is limited to approved internal testers."}</CardContent></Card></main>;
   }
 
   return (
@@ -207,7 +246,20 @@ export function OtherContactsReview() {
       </Card>
 
       {error ? <p className="flex items-center gap-1 rounded border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
-      {saved ? <p className="flex items-center gap-2 rounded border border-primary/30 bg-primary/5 p-3 text-sm"><Check className="h-4 w-4" />{saved}</p> : null}
+      {done ? (() => {
+        const outcome = done.results[0];
+        const wrote = Boolean(
+          outcome && !outcome.target_moved && !outcome.choice_required &&
+            (outcome.written_fields.length + outcome.contact_points_added > 0),
+        );
+        const refusal = outcome ? contactRefusalSentence(outcome, done.warnings, importFieldLabel) : null;
+        return <div className={`space-y-2 rounded border p-3 text-sm ${wrote ? "border-primary/30 bg-primary/5" : "border-amber-500/30 bg-amber-500/10"}`}>
+          <p className="flex items-center gap-2">{wrote ? <Check className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}{importOutcomeSentence(done)}</p>
+          {outcome?.note ? <p className="text-xs text-muted-foreground">{outcome.note}</p> : null}
+          {refusal ? <ErrorNotice size="inline" className="text-xs" message={refusal} /> : null}
+          {done.warnings.map((warning) => <p key={warning} className="text-xs text-amber-700 dark:text-amber-300">{warning}</p>)}
+        </div>;
+      })() : null}
 
       {preview.length ? (
         <Card>
@@ -217,7 +269,7 @@ export function OtherContactsReview() {
               <button
                 key={contact.resource_name}
                 type="button"
-                onClick={() => { setSelected(contact); setReview(null); setOverrides({}); setReviewedFields([]); setSaved(null); }}
+                onClick={() => { setSelected(contact); setReview(null); setOverrides({}); setReviewedFields([]); setDone(null); }}
                 className={`flex w-full items-center justify-between gap-3 rounded border p-3 text-left transition-colors ${selected?.resource_name === contact.resource_name ? "border-primary bg-primary/5" : "hover:bg-muted/40"}`}
               >
                 <span className="min-w-0"><span className="flex items-center gap-2 font-medium"><UserRound className="h-4 w-4" />{contact.display_name || "Unnamed contact"}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{[...contact.emails, ...contact.phones].join(" · ") || "No email or phone returned"}</span></span>

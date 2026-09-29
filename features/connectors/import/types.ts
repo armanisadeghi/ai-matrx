@@ -136,6 +136,8 @@ export interface ContactImportOutcomePending {
    * names each one by LABEL with the remedy.
    */
   refused_fields?: string[];
+  /** The reviewed Person changed before apply, so this contact was not written. */
+  target_moved?: string | null;
   contact_points_added: number;
   /** True when this contact matched more than one Person — nothing was written. */
   choice_required?: boolean;
