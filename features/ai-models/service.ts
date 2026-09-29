@@ -5,7 +5,7 @@ import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { toast } from "@/lib/toast";
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
 import { isJsonArray, isJsonObject, type JsonObject } from "@/types/json";
 import type {
@@ -528,42 +528,80 @@ function parseProvider(row: AiProviderRow): AiProvider {
   };
 }
 
-// ── ai.endpoint credential pointers (client-excluded; admin-lane doors) ──
+// ── Admin-only columns (access ladder T-35c/T-35j) ──
+// Real-dollar prices (ai.offering.pricing) and serving infrastructure (ai.endpoint.base_url,
+// byok_secret_key, auth_ref) are client-excluded: a table read never returns them. The admin
+// screens read and write them through admin-lane doors that refuse outside the admin apps;
+// everyone else sees prices in credits (ai.model_public / ai.model_offering).
 const ENDPOINT_PUBLIC_COLUMNS =
-  "id,organization_id,is_system,visibility,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,vendor,internal_name,display_name,base_url,priority,is_active,notes,doc_sources,shown_to,custom_fields";
+  "id,organization_id,is_system,visibility,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,vendor,internal_name,display_name,priority,is_active,notes,doc_sources,shown_to,custom_fields";
+const OFFERING_PUBLIC_COLUMNS =
+  "id,organization_id,is_system,model_id,provider_model_id,priority,is_available,usage_basis,capabilities_override,override,notes,visibility,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,token_billed,endpoint_id,api_id,pricing_verified_at,shown_to,custom_fields";
 
-type EndpointPublicRow = Omit<AiEndpointRow, "byok_secret_key" | "auth_ref">;
-type EndpointCredentialRefs = { byok_secret_key: string | null; auth_ref: AiEndpointRow["auth_ref"] };
+type EndpointAdminKey = "byok_secret_key" | "auth_ref" | "base_url";
+type EndpointPublicRow = Omit<AiEndpointRow, EndpointAdminKey>;
+type EndpointAdminColumns = Pick<AiEndpointRow, EndpointAdminKey>;
+type OfferingPublicRow = Omit<AiOfferingRow, "pricing">;
 
-async function fetchEndpointCredentialRefs(): Promise<Map<string, EndpointCredentialRefs>> {
-  const { data, error } = await supabase.schema("ai").rpc("endpoint_credential_refs");
+async function fetchEndpointAdminColumns(): Promise<Map<string, EndpointAdminColumns>> {
+  const { data, error } = await supabase.schema("ai").rpc("endpoint_admin_columns");
   if (error) throw error;
-  const out = new Map<string, EndpointCredentialRefs>();
-  for (const r of (data ?? []) as Array<{ id: string } & EndpointCredentialRefs>) {
-    out.set(r.id, { byok_secret_key: r.byok_secret_key, auth_ref: r.auth_ref });
+  const out = new Map<string, EndpointAdminColumns>();
+  for (const r of (data ?? []) as Array<{ id: string } & EndpointAdminColumns>) {
+    out.set(r.id, { byok_secret_key: r.byok_secret_key, auth_ref: r.auth_ref, base_url: r.base_url });
   }
   return out;
 }
 
-async function setEndpointCredentialRefs(
-  id: string,
-  byokSecretKey: string | null,
-  authRef: AiEndpointRow["auth_ref"],
-): Promise<void> {
-  const { error } = await supabase.schema("ai").rpc("set_endpoint_credential_refs", {
-    p_id: id,
-    p_byok_secret_key: byokSecretKey ?? "",
-    p_auth_ref: authRef ?? {},
-  });
+async function setEndpointAdminColumns(id: string, values: Partial<EndpointAdminColumns>): Promise<void> {
+  if (Object.keys(values).length === 0) return;
+  const { error } = await supabase
+    .schema("ai")
+    .rpc("set_endpoint_admin_columns", { p_id: id, p_values: values as Json });
   if (error) throw error;
 }
 
-function withCredentialRefs(
+function withEndpointAdminColumns(
   row: EndpointPublicRow,
-  refs: Map<string, EndpointCredentialRefs>,
+  cols: Map<string, EndpointAdminColumns>,
 ): AiEndpointRow {
-  const r = refs.get(row.id);
-  return { ...row, byok_secret_key: r?.byok_secret_key ?? null, auth_ref: r?.auth_ref ?? {} } as AiEndpointRow;
+  const c = cols.get(row.id);
+  return {
+    ...row,
+    byok_secret_key: c?.byok_secret_key ?? null,
+    auth_ref: c?.auth_ref ?? {},
+    base_url: c?.base_url ?? null,
+  } as AiEndpointRow;
+}
+
+async function fetchOfferingPricing(): Promise<Map<string, AiOfferingRow["pricing"]>> {
+  const { data, error } = await supabase.schema("ai").rpc("offering_admin_columns");
+  if (error) throw error;
+  const out = new Map<string, AiOfferingRow["pricing"]>();
+  for (const r of (data ?? []) as Array<{ id: string; pricing: AiOfferingRow["pricing"] }>) {
+    out.set(r.id, r.pricing);
+  }
+  return out;
+}
+
+async function setOfferingPricing(id: string, pricing: AiOfferingRow["pricing"]): Promise<void> {
+  const { error } = await supabase
+    .schema("ai")
+    .rpc("set_offering_admin_columns", { p_id: id, p_values: { pricing } as Json });
+  if (error) throw error;
+}
+
+function withOfferingPricing(
+  row: OfferingPublicRow,
+  pricing: Map<string, AiOfferingRow["pricing"]>,
+): AiOfferingRow {
+  return { ...row, pricing: pricing.get(row.id) ?? [] } as AiOfferingRow;
+}
+
+function pickDefined<T extends object, K extends keyof T>(obj: T, keys: readonly K[]): Partial<Pick<T, K>> {
+  const out: Partial<Pick<T, K>> = {};
+  for (const k of keys) if (obj[k] !== undefined) out[k] = obj[k];
+  return out;
 }
 
 function parseEndpoint(row: AiEndpointRow): AiEndpoint {
@@ -884,10 +922,6 @@ export const aiModelService = {
 
   // ── Endpoint CRUD (ai.endpoint — one row per serving vendor) ──
 
-  // ai.endpoint's two credential pointers (byok_secret_key, auth_ref) are client-excluded
-  // (access ladder T-35c): a table read never returns them. The admin screen reads and writes
-  // them through two admin-lane doors, ai.endpoint_credential_refs / set_endpoint_credential_refs,
-  // which refuse outside the admin apps.
   async fetchEndpoints(): Promise<AiEndpoint[]> {
     const rows = await readAllRows<EndpointPublicRow>(
       ({ from, to }) =>
@@ -901,12 +935,12 @@ export const aiModelService = {
           .range(from, to),
       { label: "ai.endpoint" },
     );
-    const refs = await fetchEndpointCredentialRefs();
-    return rows.map((row) => parseEndpoint(withCredentialRefs(row, refs)));
+    const cols = await fetchEndpointAdminColumns();
+    return rows.map((row) => parseEndpoint(withEndpointAdminColumns(row, cols)));
   },
 
   async createEndpoint(payload: AiEndpointInsert): Promise<AiEndpoint> {
-    const { byok_secret_key, auth_ref, ...rest } = payload;
+    const { byok_secret_key, auth_ref, base_url, ...rest } = payload;
     const { data, error } = await supabase
       .schema("ai")
       .from("endpoint")
@@ -915,24 +949,22 @@ export const aiModelService = {
       .single();
     if (error) throw error;
     const row = data as unknown as EndpointPublicRow;
-    await setEndpointCredentialRefs(row.id, byok_secret_key ?? null, auth_ref ?? {});
-    const refs = await fetchEndpointCredentialRefs();
-    return parseEndpoint(withCredentialRefs(row, refs));
+    await setEndpointAdminColumns(
+      row.id,
+      pickDefined({ byok_secret_key, auth_ref, base_url }, ["byok_secret_key", "auth_ref", "base_url"] as const),
+    );
+    return parseEndpoint(withEndpointAdminColumns(row, await fetchEndpointAdminColumns()));
   },
 
   async updateEndpoint(
     id: string,
     payload: AiEndpointUpdate,
   ): Promise<AiEndpoint> {
-    const { byok_secret_key, auth_ref, ...rest } = payload;
-    if (byok_secret_key !== undefined || auth_ref !== undefined) {
-      const current = (await fetchEndpointCredentialRefs()).get(id);
-      await setEndpointCredentialRefs(
-        id,
-        byok_secret_key !== undefined ? byok_secret_key : (current?.byok_secret_key ?? null),
-        auth_ref !== undefined ? auth_ref : (current?.auth_ref ?? {}),
-      );
-    }
+    const { byok_secret_key, auth_ref, base_url, ...rest } = payload;
+    await setEndpointAdminColumns(
+      id,
+      pickDefined({ byok_secret_key, auth_ref, base_url }, ["byok_secret_key", "auth_ref", "base_url"] as const),
+    );
     const { data, error } = await supabase
       .schema("ai")
       .from("endpoint")
@@ -941,8 +973,9 @@ export const aiModelService = {
       .select(ENDPOINT_PUBLIC_COLUMNS)
       .single();
     if (error) throw error;
-    const refs = await fetchEndpointCredentialRefs();
-    return parseEndpoint(withCredentialRefs(data as unknown as EndpointPublicRow, refs));
+    return parseEndpoint(
+      withEndpointAdminColumns(data as unknown as EndpointPublicRow, await fetchEndpointAdminColumns()),
+    );
   },
 
   async deleteEndpoint(id: string): Promise<void> {
@@ -1013,19 +1046,20 @@ export const aiModelService = {
   // ── Offering CRUD (ai.offering — model × endpoint × api, per-offering pricing/overrides) ──
 
   async fetchOfferings(): Promise<AiOffering[]> {
-    const rows = await readAllRows<AiOfferingRow>(
+    const rows = await readAllRows<OfferingPublicRow>(
       ({ from, to }) =>
         supabase
           .schema("ai")
           .from("offering")
-          .select("*", { count: "exact" })
+          .select(OFFERING_PUBLIC_COLUMNS, { count: "exact" })
           .is("deleted_at", null)
           .order("priority", { ascending: true })
           .order("id", { ascending: true })
           .range(from, to),
       { label: "ai.offering" },
     );
-    return rows.map(parseOffering);
+    const pricing = await fetchOfferingPricing();
+    return rows.map((row) => parseOffering(withOfferingPricing(row, pricing)));
   },
 
   /** The live offerings of one model. `token_billed` — the fact that a media
@@ -1035,38 +1069,48 @@ export const aiModelService = {
     const { data, error } = await supabase
       .schema("ai")
       .from("offering")
-      .select("*")
+      .select(OFFERING_PUBLIC_COLUMNS)
       .eq("model_id", modelId)
       .is("deleted_at", null)
       .order("priority", { ascending: true });
     if (error) throw error;
-    return data.map(parseOffering);
+    const pricing = await fetchOfferingPricing();
+    return (data as unknown as OfferingPublicRow[]).map((row) =>
+      parseOffering(withOfferingPricing(row, pricing)),
+    );
   },
 
   async createOffering(payload: AiOfferingInsert): Promise<AiOffering> {
+    const { pricing, ...rest } = payload;
     const { data, error } = await supabase
       .schema("ai")
       .from("offering")
-      .insert(payload)
-      .select()
+      .insert(rest)
+      .select(OFFERING_PUBLIC_COLUMNS)
       .single();
     if (error) throw error;
-    return parseOffering(data);
+    const row = data as unknown as OfferingPublicRow;
+    if (pricing !== undefined) await setOfferingPricing(row.id, pricing);
+    return parseOffering(withOfferingPricing(row, await fetchOfferingPricing()));
   },
 
   async updateOffering(
     id: string,
     payload: AiOfferingUpdate,
   ): Promise<AiOffering> {
+    const { pricing, ...rest } = payload;
+    if (pricing !== undefined) await setOfferingPricing(id, pricing);
     const { data, error } = await supabase
       .schema("ai")
       .from("offering")
-      .update(payload)
+      .update(rest)
       .eq("id", id)
-      .select()
+      .select(OFFERING_PUBLIC_COLUMNS)
       .single();
     if (error) throw error;
-    return parseOffering(data);
+    return parseOffering(
+      withOfferingPricing(data as unknown as OfferingPublicRow, await fetchOfferingPricing()),
+    );
   },
 
   async deleteOffering(id: string): Promise<void> {

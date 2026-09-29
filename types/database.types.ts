@@ -3480,10 +3480,11 @@ export type Database = {
           resolved_enum: Json
         }[]
       }
-      endpoint_credential_refs: {
+      endpoint_admin_columns: {
         Args: never
         Returns: {
           auth_ref: Json
+          base_url: string
           byok_secret_key: string
           id: string
         }[]
@@ -3492,6 +3493,13 @@ export type Database = {
       model_message_flag_profile: {
         Args: { p_model_id: string }
         Returns: Json
+      }
+      offering_admin_columns: {
+        Args: never
+        Returns: {
+          id: string
+          pricing: Json
+        }[]
       }
       offering_capabilities: {
         Args: { p_model_ids?: string[] }
@@ -3505,8 +3513,12 @@ export type Database = {
         }[]
       }
       resolve_model_config: { Args: { p_model_id: string }; Returns: Json }
-      set_endpoint_credential_refs: {
-        Args: { p_auth_ref: Json; p_byok_secret_key: string; p_id: string }
+      set_endpoint_admin_columns: {
+        Args: { p_id: string; p_values: Json }
+        Returns: undefined
+      }
+      set_offering_admin_columns: {
+        Args: { p_id: string; p_values: Json }
         Returns: undefined
       }
     }

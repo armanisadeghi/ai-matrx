@@ -72,22 +72,26 @@ function mockQuery(table: string) {
   return builder;
 }
 
-// ai.endpoint's credential pointers are client-excluded (access ladder T-35c); the admin screen
-// reads them through the admin-lane door ai.endpoint_credential_refs, answered here from the
-// same fixture rows.
+// Admin-only columns (access ladder T-35c/T-35j) are read through admin-lane doors, answered
+// here from the same fixture rows.
 function mockRpc(fn: string) {
-  if (fn !== "endpoint_credential_refs") {
-    return Promise.resolve({ data: null, error: { message: `unexpected rpc ${fn}` } });
+  if (fn === "endpoint_admin_columns") {
+    const rows = (mockTransport.pagesByTable.get("endpoint") ?? []) as Array<{
+      id: string;
+      byok_secret_key: string | null;
+      auth_ref: unknown;
+      base_url: string | null;
+    }>;
+    return Promise.resolve({
+      data: rows.map(({ id, byok_secret_key, auth_ref, base_url }) => ({ id, byok_secret_key, auth_ref, base_url })),
+      error: null,
+    });
   }
-  const rows = (mockTransport.pagesByTable.get("endpoint") ?? []) as Array<{
-    id: string;
-    byok_secret_key: string | null;
-    auth_ref: unknown;
-  }>;
-  return Promise.resolve({
-    data: rows.map(({ id, byok_secret_key, auth_ref }) => ({ id, byok_secret_key, auth_ref })),
-    error: null,
-  });
+  if (fn === "offering_admin_columns") {
+    const rows = (mockTransport.pagesByTable.get("offering") ?? []) as Array<{ id: string; pricing: unknown }>;
+    return Promise.resolve({ data: rows.map(({ id, pricing }) => ({ id, pricing })), error: null });
+  }
+  return Promise.resolve({ data: null, error: { message: `unexpected rpc ${fn}` } });
 }
 
 jest.mock("@/utils/supabase/client", () => ({
@@ -201,8 +205,11 @@ function expectCompleteReadContract(
     expect(call.table).toBe(table);
     expect(call.select[1]).toEqual({ count: "exact" });
     if (table === "endpoint") {
-      // The two credential pointers never ride a client table read.
-      expect(String(call.select[0])).not.toMatch(/byok_secret_key|auth_ref/);
+      // Credential pointers and the serving address never ride a client table read.
+      expect(String(call.select[0])).not.toMatch(/byok_secret_key|auth_ref|base_url/);
+    } else if (table === "offering") {
+      // Real-dollar pricing never rides a client table read; admins get it through a door.
+      expect(String(call.select[0])).not.toMatch(/(^|,)pricing(,|$)/);
     } else {
       expect(call.select[0]).toBe("*");
     }
