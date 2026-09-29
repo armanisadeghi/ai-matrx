@@ -79,7 +79,7 @@ function Tile({
       ) : null}
       <div
         className={[
-          "truncate font-semibold tabular-nums",
+          "font-semibold tabular-nums",
           size === "hero" ? "text-3xl leading-tight" : "text-lg leading-tight",
           alarm ? "text-destructive" : "text-foreground",
         ].join(" ")}

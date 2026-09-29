@@ -268,10 +268,10 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
   },
   {
     id: "cost",
-    header: "Cost",
+    header: "Cost (USD · points)",
     accessorKey: "total_cost",
     filter: "number",
-    width: 90,
+    width: 190,
     className: "text-right tabular-nums",
     mobileHidden: true,
     cell: (app) => <Cost usd={app.total_cost} />,

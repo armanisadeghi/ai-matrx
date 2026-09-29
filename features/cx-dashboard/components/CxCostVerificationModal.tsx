@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle, Info } from "lucide-react";
-import { formatCost } from "../utils/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type { CxCostVerification } from "../types/cxDashboardTypes";
 
@@ -19,7 +18,7 @@ type Props = {
 };
 
 export function CxCostVerificationModal({ verification, children }: Props) {
-  const { unit } = useCostDisplay();
+  const { format: formatCostDisplay } = useCostDisplay();
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -36,28 +35,28 @@ export function CxCostVerificationModal({ verification, children }: Props) {
               User Request total_cost
             </span>
             <span className="font-mono text-right">
-              {formatCost(verification.user_request_total_cost, unit)}
+              {formatCostDisplay(verification.user_request_total_cost)}
             </span>
 
             <span className="text-muted-foreground">
               Sum of cx_request costs
             </span>
             <span className="font-mono text-right">
-              {formatCost(verification.sum_of_request_costs, unit)}
+              {formatCostDisplay(verification.sum_of_request_costs)}
             </span>
 
             <span className="text-muted-foreground">
               Sum of tool_call costs
             </span>
             <span className="font-mono text-right">
-              {formatCost(verification.sum_of_tool_call_costs, unit)}
+              {formatCostDisplay(verification.sum_of_tool_call_costs)}
             </span>
 
             <span className="text-muted-foreground font-medium">
               Combined total
             </span>
             <span className="font-mono text-right font-medium">
-              {formatCost(verification.combined_total, unit)}
+              {formatCostDisplay(verification.combined_total)}
             </span>
           </div>
 
@@ -70,7 +69,7 @@ export function CxCostVerificationModal({ verification, children }: Props) {
                     Discrepancy detected
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Difference: {formatCost(verification.discrepancy, unit)}
+                    Difference: {formatCostDisplay(verification.discrepancy)}
                   </p>
                 </div>
                 <Badge variant="secondary" className="ml-auto text-xs">

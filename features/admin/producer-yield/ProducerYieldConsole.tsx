@@ -260,9 +260,9 @@ export function ProducerYieldConsole() {
     {
       id: "cost_usd",
       accessorKey: "cost_usd",
-      header: "Spend",
+      header: "Spend (USD · points)",
       filter: "number",
-      width: 120,
+      width: 190,
       cell: (row) => <span className="tabular-nums"><Cost usd={row.cost_usd} /></span>,
     },
     {
@@ -270,7 +270,7 @@ export function ProducerYieldConsole() {
       accessorKey: "cost_per_accepted_usd",
       header: "Per accepted",
       filter: "number",
-      width: 125,
+      width: 190,
       cell: (row) => <span className="tabular-nums"><Cost usd={row.cost_per_accepted_usd} /></span>,
     },
     {
@@ -278,7 +278,7 @@ export function ProducerYieldConsole() {
       accessorKey: "cost_per_produced_usd",
       header: "Per produced",
       filter: "number",
-      width: 125,
+      width: 190,
       cell: (row) => <span className="tabular-nums text-muted-foreground"><Cost usd={row.cost_per_produced_usd} /></span>,
     },
     {

@@ -41,9 +41,9 @@ import { CxKpiCard } from "@/features/cx-dashboard/components/CxKpiCard";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminUsdAxisTick } from "@/components/cost/formatAdminCost";
 import { Cost } from "@/components/cost/Cost";
 import {
-  formatCost,
   formatTokens,
   formatDuration,
 } from "@/features/cx-dashboard/utils/format";
@@ -111,15 +111,15 @@ const toolUsageColumns: MatrxColumnDef<ToolUsageRow>[] = [
   {
     id: "total_cost",
     accessorKey: "total_cost",
-    header: "Cost",
+    header: "Cost (USD · points)",
     align: "right",
-    width: 90,
+    width: 190,
     cell: (r) => <span className="font-mono"><Cost usd={r.total_cost} /></span>,
   },
 ];
 
 export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
-  const { unit, format: formatCostDisplay } = useCostDisplay();
+  const { format: formatCostDisplay } = useCostDisplay();
   const router = useRouter();
   const [clickedTool, setClickedTool] = useState<ToolUsageRow | null>(null);
 
@@ -128,7 +128,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
       `Tool: ${r.tool_name}`,
       `Calls: ${r.count} · Errors: ${r.error_count}`,
       `Avg duration: ${formatDuration(r.avg_duration_ms)}`,
-      `Cost: ${formatCost(r.total_cost, unit)}`,
+      `Cost: ${formatCostDisplay(r.total_cost)}`,
     ].join("\n");
 
   const toolUsageItems: ContextMenuExtraItem[] = [
@@ -200,8 +200,8 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
           />
           <CxKpiCard
             label="Total Cost"
-            value={formatCost(kpis.total_cost, unit)}
-            subValue={`avg ${formatCost(kpis.avg_cost_per_request, unit)}/req`}
+            value={formatCostDisplay(kpis.total_cost)}
+            subValue={`avg ${formatCostDisplay(kpis.avg_cost_per_request)}/req`}
             icon={Gauge}
             onClick={() =>
               pushAppHref(router, "/administration/chat/cx-dashboard/usage")
@@ -292,7 +292,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
                   <YAxis
                     yAxisId="cost"
                     tick={{ fontSize: 10 }}
-                    tickFormatter={(v) => formatCostDisplay(v, { short: true })}
+                    tickFormatter={formatAdminUsdAxisTick}
                   />
                   <YAxis
                     yAxisId="reqs"
@@ -371,7 +371,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
                       <span className="flex-1 truncate">{m.model_name}</span>
                       <span className="text-muted-foreground">{m.count}x</span>
                       <span className="font-mono">
-                        {formatCost(m.total_cost, unit)}
+                        {formatCostDisplay(m.total_cost)}
                       </span>
                     </div>
                   ))}
@@ -440,7 +440,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
                     `Tool: ${r.tool_name}`,
                     `Calls: ${r.count} · Errors: ${r.error_count}`,
                     `Avg duration: ${formatDuration(r.avg_duration_ms)}`,
-                    `Cost: ${formatCost(r.total_cost, unit)}`,
+                    `Cost: ${formatCostDisplay(r.total_cost)}`,
                   ].join("\n"),
                 rowAttributes: (r) => ({ tool: r.tool_name, calls: r.count }),
               }}

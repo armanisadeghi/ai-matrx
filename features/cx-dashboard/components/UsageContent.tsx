@@ -11,8 +11,9 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
-import { formatCost, formatTokens, formatDuration } from "@/features/cx-dashboard/utils/format";
+import { formatTokens, formatDuration } from "@/features/cx-dashboard/utils/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminUsdAxisTick } from "@/components/cost/formatAdminCost";
 import { buildCxSourcePageExportConfig } from "@/features/cx-dashboard/utils/export";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -36,7 +37,7 @@ const COLORS = [
 
 export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
   const router = useRouter();
-  const { unit, format: formatCostDisplay } = useCostDisplay();
+  const { format: formatCostDisplay } = useCostDisplay();
 
   const totalCost = analytics.by_model.reduce((sum, m) => sum + m.total_cost, 0);
   const totalTokens = analytics.by_model.reduce((sum, m) => sum + m.total_tokens, 0);
@@ -82,7 +83,7 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
     { accessorKey: "total_output_tokens", header: "Output tokens", align: "right", width: 120, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_output_tokens)}</span> },
     { accessorKey: "total_cached_tokens", header: "Cached", align: "right", width: 100, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_cached_tokens)}</span> },
     { accessorKey: "total_tokens", header: "Total tokens", align: "right", width: 120, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_tokens)}</span> },
-    { accessorKey: "total_cost", header: "Cost", align: "right", width: 110, className: "whitespace-nowrap", cell: (row) => <span className="font-mono font-medium whitespace-nowrap">{formatCost(row.total_cost, unit)}</span> },
+    { accessorKey: "total_cost", header: "Cost (USD · points)", align: "right", width: 180, className: "whitespace-nowrap", cell: (row) => <span className="font-mono font-medium whitespace-nowrap">{formatCostDisplay(row.total_cost)}</span> },
     { accessorKey: "avg_duration_ms", header: "Avg duration", align: "right", width: 110, className: "whitespace-nowrap", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{formatDuration(row.avg_duration_ms)}</span> },
     {
       id: "cost_share",
@@ -120,7 +121,7 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
         <h2 className="text-sm font-semibold">
           Usage & Cost Analytics
           <span className="text-muted-foreground ml-2 font-normal">
-            {analytics.total_requests} API requests · {formatCost(totalCost, unit)} total · {formatTokens(totalTokens)} tokens
+            {analytics.total_requests} API requests · {formatCostDisplay(totalCost)} total · {formatTokens(totalTokens)} tokens
           </span>
         </h2>
       </div>
@@ -144,7 +145,7 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
                   <AreaChart data={analytics.by_day} margin={{ left: 0, right: 0, top: 5, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(v) => v.slice(5)} />
-                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCostDisplay(v, { short: true })} />
+                    <YAxis tick={{ fontSize: 10 }} tickFormatter={formatAdminUsdAxisTick} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Area type="monotone" dataKey="cost" fill="hsl(215, 70%, 55%)" fillOpacity={0.15} stroke="hsl(215, 70%, 55%)" strokeWidth={2} name="Cost" />
                   </AreaChart>
@@ -188,7 +189,7 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="font-medium flex-1">{p.provider}</span>
                       <span className="text-muted-foreground">{p.count} reqs</span>
-                      <span className="font-mono">{formatCost(p.total_cost, unit)}</span>
+                      <span className="font-mono">{formatCostDisplay(p.total_cost)}</span>
                       <span className="text-muted-foreground">{formatTokens(p.total_tokens)} tok</span>
                     </div>
                   ))}
@@ -216,7 +217,7 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
                       width: `${originCost > 0 ? (o.total_cost / originCost) * 100 : 0}%`,
                       backgroundColor: originClassColor(o.origin_class),
                     }}
-                    title={`${originClassLabel(o.origin_class)}: ${formatCost(o.total_cost, unit)}`}
+                    title={`${originClassLabel(o.origin_class)}: ${formatCostDisplay(o.total_cost)}`}
                   />
                 ))}
               </div>
@@ -235,7 +236,7 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
                       {originClassLabel(o.origin_class)}
                     </span>
                     <span className="text-muted-foreground">{o.count} reqs</span>
-                    <span className="font-mono">{formatCost(o.total_cost, unit)}</span>
+                    <span className="font-mono">{formatCostDisplay(o.total_cost)}</span>
                     <span className="text-muted-foreground w-16 text-right">
                       {formatTokens(o.total_tokens)} tok
                     </span>
@@ -273,7 +274,7 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
                 `Model: ${row.model_name}`,
                 `Provider: ${row.provider}`,
                 `Requests: ${row.count}`,
-                `Cost: ${formatCost(row.total_cost, unit)}`,
+                `Cost: ${formatCostDisplay(row.total_cost)}`,
                 `Tokens: ${formatTokens(row.total_tokens)}`,
               ].join("\n"),
               rowAttributes: (row) => ({

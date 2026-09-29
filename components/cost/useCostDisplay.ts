@@ -4,6 +4,8 @@
  * components/cost/useCostDisplay.ts
  *
  * THE single decision point for how a cost is shown to the person looking.
+ * Administration pages show the stored USD cost together with the points
+ * equivalent; the single-unit preference still applies on other pages.
  *
  * Arman, 2026-09-27: "No one talks cost to a normal user, only api users. For
  * normal users, they use points or credits … Everyone should see
@@ -29,6 +31,7 @@
  */
 
 import { useContext, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { ReactReduxContext } from "react-redux";
 import {
   formatCost,
@@ -37,6 +40,7 @@ import {
 } from "@ai-matrx/kit/format";
 import type { RootState } from "@/lib/redux/store";
 import { selectCanToggleCostUnit, selectCostUnit } from "./costUnit";
+import { formatAdminCost } from "./formatAdminCost";
 
 export { currentCostUnit, selectCostUnit, selectShowCostInUsdPreference } from "./costUnit";
 
@@ -79,10 +83,15 @@ function useCostState(): { unit: CostUnit; canToggle: boolean } {
 
 export function useCostDisplay(): CostDisplay {
   const { unit, canToggle } = useCostState();
+  const pathname = usePathname();
+  const showBoth = pathname?.startsWith("/administration") === true;
   return {
     unit,
     canToggle,
-    format: (usd, options) => formatCost(usd, { ...options, unit }),
+    format: (usd, options) =>
+      showBoth
+        ? formatAdminCost(usd, options)
+        : formatCost(usd, { ...options, unit }),
     toPoints: usdToPoints,
   };
 }

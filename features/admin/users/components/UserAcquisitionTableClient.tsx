@@ -571,10 +571,10 @@ export function UserAcquisitionTableClient() {
       {
         id: "total_cost",
         accessorKey: "total_cost",
-        header: "Cost",
+        header: "Cost (USD · points)",
         filter: "number",
         align: "right",
-        width: 100,
+        width: 190,
         cell: (row) => (
           <span className="font-medium tabular-nums">
             {fmtCost(row.total_cost)}

@@ -22,7 +22,6 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   formatDate,
-  formatCost,
   formatTokens,
   formatDuration,
   statusBadgeVariant,
@@ -41,6 +40,7 @@ import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { Cost } from "@/components/cost/Cost";
 
 type Props = {
@@ -292,13 +292,13 @@ export function RequestsContent({ result }: Props) {
       },
       {
         id: "total_cost",
-        header: "Cost",
-        accessorFn: (r) => Number(r.total_cost ?? 0),
+        header: "Cost (USD · points)",
+        accessorFn: (r) => r.total_cost,
         align: "right",
-        width: 110,
+        width: 190,
         cell: (r) => (
-          <span className="block truncate font-mono">
-            <Cost usd={Number(r.total_cost)} />
+          <span className="block font-mono">
+            <Cost usd={r.total_cost} />
           </span>
         ),
       },
@@ -430,7 +430,7 @@ export function RequestsContent({ result }: Props) {
                   `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
                   `Iterations: ${r.iterations} · Tool calls: ${r.total_tool_calls}`,
                   `Tokens: ${formatTokens(r.total_tokens)} (${formatTokens(r.total_input_tokens)} in / ${formatTokens(r.total_output_tokens)} out)`,
-                  `Cost: ${formatCost(Number(r.total_cost))}`,
+                  `Cost: ${formatAdminCost(r.total_cost)}`,
                   `Duration: ${formatDuration(requestDuration(r))}`,
                   `Created: ${r.created_at}`,
                   ...(r.error ? [`Error: ${r.error}`] : []),

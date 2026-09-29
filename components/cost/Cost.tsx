@@ -4,7 +4,8 @@
  * components/cost/Cost.tsx
  *
  * THE way a cost reaches the screen. Pass the USD figure the server gave you;
- * everyone sees points, a system admin who flipped the switch sees dollars.
+ * administration sees dollars and points; other pages follow the viewer's
+ * selected unit.
  * An unmeasured cost (`null`) renders "—", never a confident zero.
  *
  * Use `<CostBadge>` for the tier-coloured "this will cost you" chip beside an
@@ -40,8 +41,8 @@ export function Cost({
   const { unit, canToggle, format } = useCostDisplay();
   const text = format(usd, { short, unknown });
   const known = typeof usd === "number" && Number.isFinite(usd);
-  // An admin sees the other unit on hover — reconciliation without a toggle
-  // round-trip. Nobody else gets a title that could carry money.
+  // The title remains useful outside administration, where the admin can
+  // still choose a single display unit from the header switch.
   const title =
     canToggle && known
       ? formatCost(usd, { unit: unit === "usd" ? "points" : "usd" })

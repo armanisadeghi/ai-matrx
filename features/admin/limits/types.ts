@@ -6,8 +6,9 @@
 // deploy" half of that rule — without it the rows are just a nicer place to
 // hardcode.
 
-import { formatCost, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
+import { pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
 import { currentCostUnit } from "@/components/cost/costUnit";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 
 /** One operational knob: a ceiling, backstop, cadence or default. */
 export interface FeatureKnob {
@@ -160,7 +161,8 @@ export function pointsToUsdLabel(
   const numeric = typeof points === "string" ? Number(points.trim()) : points;
   if (typeof points === "string" && points.trim() === "") return null;
   if (!Number.isFinite(numeric) || numeric < 0) return null;
-  const money = formatCost(pointsToUsd(numeric), { unit });
+  void unit;
+  const money = formatAdminCost(pointsToUsd(numeric));
   const per = period && period !== "lifetime" ? ` / ${period}` : "";
   return `~${money}${per} of AI`;
 }
@@ -183,8 +185,9 @@ export function limitToHuman(
   unit: CostUnit = currentCostUnit(),
 ): string {
   if (stored === null || stored === undefined) return "unlimited";
+  void unit;
   if (isMicroUsd(capability)) {
-    return formatCost(stored / MICRO_USD_PER_USD, { unit });
+    return formatAdminCost(stored / MICRO_USD_PER_USD);
   }
   return stored.toLocaleString("en-US");
 }

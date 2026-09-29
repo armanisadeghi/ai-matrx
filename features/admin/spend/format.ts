@@ -5,12 +5,13 @@
 //
 // Doc: features/admin/spend/FEATURE.md
 
-import { formatCount, formatCost, formatRelativeTime, type CostUnit } from "@ai-matrx/kit/format";
+import { formatCount, formatRelativeTime, type CostUnit } from "@ai-matrx/kit/format";
 import { currentCostUnit } from "@/components/cost/costUnit";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 
 /**
- * `1,234 points` (or `$144.85` for an admin who flipped to dollars). A null
- * is "not measured" — never rendered as a confident zero.
+ * Admin spend always shows the stored dollars and the points equivalent.
+ * A null is "not measured" — never rendered as a confident zero.
  *
  * A THIN OPTION-BINDING WRAPPER over `@ai-matrx/kit/format`, not a formatter:
  * what it binds is this surface's own word for an unmeasured value ("not
@@ -19,12 +20,12 @@ import { currentCostUnit } from "@/components/cost/costUnit";
  * hand-rolled sub-cent branch that used to live here were found by the money
  * shape lane of `check:package-twins`.
  *
- * `unit` defaults to `"points"` — everyone sees points; pass
- * `useCostDisplay().unit` from the calling component so a system admin who
- * flipped "Show costs in dollars" still sees $.
+ * The unit argument is retained for existing callers; this admin-only surface
+ * always shows both units.
  */
 export function usd(value: number | null | undefined, unit: CostUnit = currentCostUnit()): string {
-  return formatCost(value, { unit, unknown: "not measured" });
+  void unit;
+  return formatAdminCost(value, { unknown: "not measured" });
 }
 
 /**
@@ -37,7 +38,8 @@ export function usd(value: number | null | undefined, unit: CostUnit = currentCo
  * reads "$0.000004". See {@link usd} for the `unit` contract.
  */
 export function usdPrecise(value: number | null | undefined, unit: CostUnit = currentCostUnit()): string {
-  return formatCost(value, { unit, unknown: "not measured" });
+  void unit;
+  return formatAdminCost(value, { unknown: "not measured" });
 }
 
 /** A localized item count, with an honest absence when the ledger is unknown. */

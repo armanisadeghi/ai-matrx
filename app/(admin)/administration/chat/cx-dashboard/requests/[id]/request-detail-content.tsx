@@ -11,7 +11,6 @@ import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxCostVerificationModal } from "@/features/cx-dashboard/components/CxCostVerificationModal";
 import {
   formatDateFull,
-  formatCost,
   formatTokens,
   formatDuration,
   statusBadgeVariant,
@@ -52,6 +51,7 @@ import {
 } from "@/features/cx-dashboard/components/cx-row-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { Cost } from "@/components/cost/Cost";
 
 type Detail = {
@@ -112,12 +112,12 @@ const apiRequestColumns: MatrxColumnDef<CxRequest>[] = [
   },
   {
     id: "cost",
-    header: "Cost",
-    accessorFn: (r) => Number(r.cost ?? 0),
+    header: "Cost (USD · points)",
+    accessorFn: (r) => r.cost,
     align: "right",
-    width: 90,
+    width: 190,
     cell: (r) => (
-      <span className="font-mono"><Cost usd={Number(r.cost)} /></span>
+      <span className="font-mono"><Cost usd={r.cost} /></span>
     ),
   },
   {
@@ -325,7 +325,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
             </span>
             <CxCostVerificationModal verification={cost_verification}>
               <span className="text-sm font-semibold font-mono cursor-pointer hover:text-primary flex items-center gap-1">
-                <Cost usd={Number(ur.total_cost)} />
+                <Cost usd={ur.total_cost} />
                 {cost_verification.has_discrepancy ? (
                   <AlertTriangle className="w-3 h-3 text-amber-500" />
                 ) : (
@@ -448,7 +448,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                       `Iteration: ${r.iteration}`,
                       `Model: ${r.model_name ?? "—"}`,
                       `Tokens: ${formatTokens(r.input_tokens)} in / ${formatTokens(r.output_tokens)} out / ${formatTokens(r.cached_tokens)} cached`,
-                      `Cost: ${formatCost(Number(r.cost))}`,
+                      `Cost: ${formatAdminCost(r.cost)}`,
                       `Duration: ${formatDuration(r.api_duration_ms)}`,
                       `Finish: ${r.finish_reason ?? "intermediate"}`,
                     ].join("\n"),
@@ -509,11 +509,9 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                     {tc.output_tokens ? (
                       <span>{formatTokens(tc.output_tokens)} out</span>
                     ) : null}
-                    {Number(tc.cost_usd) > 0 && (
-                      <span className="font-mono">
-                        <Cost usd={Number(tc.cost_usd)} />
-                      </span>
-                    )}
+                    <span className="font-mono">
+                      <Cost usd={tc.cost_usd} />
+                    </span>
                     {tc.retry_count ? (
                       <span>retries: {tc.retry_count}</span>
                     ) : null}

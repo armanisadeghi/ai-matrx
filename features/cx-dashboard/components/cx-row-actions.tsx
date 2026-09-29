@@ -31,9 +31,9 @@ import {
   type AvailabilityMap,
 } from "@/features/context-menu-v3/utils/availability";
 import {
-  formatCost,
   formatTokens,
 } from "@/features/cx-dashboard/utils/format";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import type {
   CxConversation,
   CxRequest,
@@ -115,7 +115,7 @@ export function cxUserRequestMenuTarget(r: CxUserRequest): CxMenuTarget {
     lines: [
       `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
       `Tokens: ${formatTokens(r.total_tokens)}`,
-      `Cost: ${formatCost(Number(r.total_cost))}`,
+      `Cost: ${formatAdminCost(r.total_cost)}`,
       r.error ? `Error: ${r.error}` : "",
     ],
   };
@@ -145,7 +145,7 @@ export function cxApiRequestMenuTarget(r: CxRequest): CxMenuTarget {
     requestId: r.user_request_id,
     lines: [
       r.ai_model_id ? `Model: ${r.ai_model_id}` : "",
-      `Cost: ${formatCost(Number(r.cost))}`,
+      `Cost: ${formatAdminCost(r.cost)}`,
       r.finish_reason ? `Finish: ${r.finish_reason}` : "",
     ],
   };

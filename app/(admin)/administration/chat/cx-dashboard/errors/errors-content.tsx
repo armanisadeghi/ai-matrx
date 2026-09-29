@@ -22,7 +22,6 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   formatDate,
-  formatCost,
   formatTokens,
   formatDuration,
 } from "@/features/cx-dashboard/utils/format";
@@ -37,6 +36,7 @@ import {
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { Cost } from "@/components/cost/Cost";
 
 type ErrorsData = {
@@ -158,14 +158,14 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
       },
       {
         id: "total_cost",
-        header: "Cost",
-        accessorFn: (r) => Number(r.total_cost ?? 0),
+        header: "Cost (USD · points)",
+        accessorFn: (r) => r.total_cost,
         align: "right",
-        width: 110,
+        width: 190,
         className: "whitespace-nowrap",
         cell: (r) => (
           <span className="font-mono whitespace-nowrap">
-            <Cost usd={Number(r.total_cost)} />
+            <Cost usd={r.total_cost} />
           </span>
         ),
       },
@@ -406,7 +406,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                     `Issue: ${ISSUE_LABELS[requestIssue(r)]}`,
                     `Conversation: ${r.conversation_title ?? "Untitled"}`,
                     `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
-                    `Cost: ${formatCost(Number(r.total_cost))}`,
+                    `Cost: ${formatAdminCost(r.total_cost)}`,
                     `Created: ${r.created_at}`,
                     ...(r.error ? [`Error: ${r.error}`] : []),
                   ].join("\n"),

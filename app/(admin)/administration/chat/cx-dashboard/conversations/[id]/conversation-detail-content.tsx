@@ -245,7 +245,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
                   <span>{ur.iterations} iter</span>
                   <span>{ur.total_tool_calls} tools</span>
                   <span className="font-mono">
-                    <Cost usd={Number(ur.total_cost)} />
+                    <Cost usd={ur.total_cost} />
                   </span>
                   <span className="text-muted-foreground">
                     {formatTokens(ur.total_tokens)} tok
