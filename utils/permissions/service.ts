@@ -2,7 +2,8 @@
  * Permission Service
  *
  * Every write operation routes through a SECURITY DEFINER RPC — no client ever
- * writes to the permissions table or resource visibility columns directly.
+ * writes to the permissions table directly; row controls ("Shown to", "Published to the web")
+ * are written on the resource row under RLS.
  *
  * Full RPC inventory:
  *   share_resource_with_user()    — grant user access (validates ownership)
@@ -18,16 +19,14 @@
  *   get_resource_permissions()    — list all grants with user/org details (owner-only)
  *   is_resource_owner()           — check ownership for any table
  *
- * Public-state storage is resolved by `get_share_capabilities`: it verifies the
- * physical column and classifies it as enum or boolean. Registry
- * `isPublicColumn = null` is deliberately ambiguous — it covers canonical enum
- * tables and types that do not support public visibility at all.
+ * Which row controls a type carries is resolved by `get_share_capabilities`
+ * (`rowControls`, `shownToOffered`, `publishLane`), never guessed from a column name.
  *
- * Visibility model (two tiers only):
- *   - Personal: accessible only to owner + explicit user/org grants + hierarchy members
- *   - Public:  is_public = true on the resource row — readable by anyone including unauthenticated
- *   - is_public lives on the resource row, NOT the permissions table.
- *     Always read it via getResourceVisibility() — never from the permissions table.
+ * Access model (common-docs/policies/access-ladder.md):
+ *   - Who may open a record without a share is its TABLE's level, never a row setting.
+ *   - "Published to the web" (Organization and Public tables) is the only anonymous lane.
+ *   - "Shown to" decides which lists show it — never a lock.
+ *   - Read both with getResourceVisibility() — never from the permissions table.
  *   - The permissions table stores only explicit user/org grants.
  *   - check_resource_access() is the single RLS engine: evaluates all access paths
  *     (owner, assignee, direct grant, project, workspace, org hierarchy) in one query.
@@ -56,6 +55,7 @@ import {
 import { getShareableResource, getResourceTypeLabel } from "./registry";
 import { getShareCapabilities } from "./shareLinks";
 import { operationFailed } from "@/utils/errors";
+import type { ShownTo } from "@/lib/list-scope/shownTo";
 
 /**
  * Minimal query surface used by the dynamic-table helpers below. The registry
@@ -117,7 +117,7 @@ function errMessage(error: unknown): string {
   return "Unknown error";
 }
 
-/** Share / visibility RPCs return `Json` — narrow without assuming shape beyond optional success/error/message. */
+/** Share / publish RPCs return `Json` — narrow without assuming shape beyond optional success/error/message. */
 function parseShareRpcResult(data: Json | null | undefined): {
   success: boolean;
   error?: string;
@@ -142,24 +142,29 @@ function parseShareRpcResult(data: Json | null | undefined): {
 }
 
 // ============================================================================
-// Resource Visibility (is_public lives on the resource row)
+// The record's row controls — "Shown to" and "Published to the web"
 // ============================================================================
-
-/**
- * The canonical visibility enum (platform.visibility). `link` is set by the
- * share-link flow, not by the visibility picker, so the picker offers the three
- * states a person actually chooses between: personal / internal / public.
- */
-export type VisibilityValue = "personal" | "internal" | "link" | "public";
+//
+// THE WORDS TABLE (common-docs/policies/access-ladder.md, access ladder T-13): a record on an
+// Organization or Public table carries two row controls and nothing else —
+//   "Shown to"             only_me · my_team · everyone · everyone_on_ai_matrx (null = the type's
+//                          default). Which LISTS show it to people who can already open it; never a lock.
+//   "Published to the web" on · off. The only way anyone, signed in or not, opens it at its address.
+// A Private, Confidential or child record carries neither; it is still shared by Anyone link, secure
+// link or with people. `get_share_capabilities` names which of them a TYPE carries
+// (`rowControls`, `shownToOffered`, `publishLane`), so no control is ever drawn that could not work.
 
 export interface ResourceVisibility {
+  /**
+   * Published to the web: the row's `published_to_web`, the card's own publish (agent, workflow),
+   * or a legacy boolean. Always false for a type that is never published.
+   */
   isPublic: boolean;
   /**
-   * The row's actual enum value, for types whose public state is the canonical
-   * `visibility` column. Null for legacy boolean-backed types, which genuinely
-   * only have two states — a caller must not invent a third for them.
+   * "Shown to" — present only when the type carries it (`shownToOffered`); null means the type's
+   * "Shown to by default" knob decides.
    */
-  visibility: VisibilityValue | null;
+  shownTo?: ShownTo | null;
   /**
    * WHEN MEMBERSHIP ALONE REACHES IT (SHARE-TAILS, chair ruling 2026-09-25). A record-store thing
    * with no sharing choice is the organization's default — every member reaches it at the member
@@ -186,12 +191,12 @@ export interface ResourceVisibility {
   homeOrganizationId?: string | null;
 }
 
-/** The three lanes the Share dialog's "Who can see this" control offers. */
+/** The three lanes the record store's "Who can see this" control offers. */
 export type LaneChoice = "mine" | "organization" | "world";
 
 export interface WhoCanSee {
-  /** Which door reads and writes it: the record store's lane doors, or the row's visibility column. */
-  source: "store" | "visibility";
+  /** The record store's lane doors — the only kind whose lane is not a row control. */
+  source: "store";
   choice: LaneChoice;
   /** The object's OWN organization (never the active one). Null when the door names none. */
   organizationId: string | null;
@@ -204,18 +209,10 @@ export interface WhoCanSee {
   worldOffered: boolean;
 }
 
-/** Lane → visibility for kinds whose lane IS their row's canonical visibility column. */
-export function laneOfVisibility(v: VisibilityValue | null): LaneChoice | null {
-  if (v === "personal") return "mine";
-  if (v === "internal") return "organization";
-  if (v === "link" || v === "public") return "world";
-  return null;
-}
-
 /**
  * THE ONE WRITER OF THE RECORD STORE'S LANE. `custom.share_lane_set` needs the object's own
  * organization (the lane door names it) and Admin on the thing; it moves the lane and the
- * record's visibility together, and named people are untouched by it.
+ * record's reach together, and named people are untouched by it.
  */
 export async function setStoreLane(
   organizationId: string,
@@ -248,12 +245,12 @@ export async function setStoreLane(
 }
 
 /**
- * Direct write of a verified enum-visibility resource row.
+ * Direct write of a verified row-control column on one resource row.
  *
  * Publishing is an EDIT-level action, deliberately — anyone with edit access or
- * better may change visibility, not just the creator. In real companies the
- * publisher is the approver at the end of the line, not whoever clicked "new"
- * first (Arman, 2026-08-14). Do NOT re-gate this on ownership; see
+ * better may publish, not just the creator. In real companies the publisher is
+ * the approver at the end of the line, not whoever clicked "new" first (Arman,
+ * 2026-08-14). Do NOT re-gate this on ownership; see
  * common-docs/systems/platform/access/SHARE_LEVELS.md.
  *
  * So a zero-row result here does NOT mean "you're not the owner" — under RLS it
@@ -262,11 +259,10 @@ export async function setStoreLane(
  * governance-column guard on a per-type governed field) arrives as a real
  * Postgres error carrying its own user-facing message, handled below.
  */
-async function setVisibilityColumn(
+async function writeRowControl(
   resourceType: ResourceType,
   resourceId: string,
-  column: "visibility" | "card_visibility",
-  visibility: "personal" | "internal" | "link" | "public",
+  patch: Record<string, boolean | string | null>,
 ): Promise<ShareActionResult> {
   const entry = getShareableResource(resourceType);
   if (!entry) {
@@ -277,7 +273,7 @@ async function setVisibilityColumn(
   const scoped = resolveDynamicClient(entry.schemaName);
   const { data, error } = await scoped
     .from(entry.tableName)
-    .update({ [column]: visibility })
+    .update(patch)
     .eq(entry.idColumn, resourceId)
     .select("id");
   if (error) {
@@ -294,13 +290,26 @@ async function setVisibilityColumn(
   return { success: true };
 }
 
+const SHOWN_TO_VALUES: readonly ShownTo[] = [
+  "only_me",
+  "my_team",
+  "everyone",
+  "everyone_on_ai_matrx",
+];
+
+function asShownTo(value: unknown): ShownTo | null {
+  return typeof value === "string" &&
+    (SHOWN_TO_VALUES as readonly string[]).includes(value)
+    ? (value as ShownTo)
+    : null;
+}
+
 /**
- * Fetch the verified public-state column directly from the resource row.
+ * Read a record's row controls ("Shown to", "Published to the web") and its own organization.
  * Single cheap query — safe to call from list-item components like ShareButton.
  *
- * The capability RPC names the actual physical enum/boolean column. Returns
- * `{ isPublic: false }` without a row query when the type does not support
- * public visibility; real capability/query failures remain errors.
+ * Returns `{ isPublic: false }` without a row query when the type carries no row control and no
+ * publish lane; real capability/query failures remain errors.
  */
 export async function getResourceVisibility(
   resourceType: ResourceType,
@@ -313,24 +322,19 @@ export async function getResourceVisibility(
     );
   }
   // A RESOURCE WHOSE TABLE NO CLIENT MAY READ ANSWERS THROUGH ITS DOOR.
-  // `getShareCapabilities` discovers the PHYSICAL column that holds the public state, and for
-  // the record store it finds one — `custom.record.visibility` really exists. But
-  // `authenticated` holds no SELECT on `custom.record` (DOOR-N-1a, permanently), so the direct
-  // read below was refused and the dialog rendered "We couldn't check this item's public
-  // visibility" on every record. The store answers the same question through a door, from
-  // `iam.content_lane` — which is where VIS-N-4's lanes actually live, so this is also the
-  // answer the Access tab beside it gives, rather than a second one off a different column.
+  // `authenticated` holds no SELECT on `custom.record` (DOOR-N-1a, permanently), so the record
+  // store answers through `store_door_lane`, from `iam.content_lane` — the same answer the Access
+  // tab beside it gives. The custom data system owns its conversion (T-13 2.3 handover).
   if (entry.schemaName === "custom") {
     const { data, error } = await supabase.rpc("store_door_lane", {
       p_resource_type: resourceType,
       p_resource_id: resourceId,
     });
-    if (error)
-      throw operationFailed("check this item's public visibility", error);
+    if (error) throw operationFailed("check who can open this item", error);
     const row = (data ?? {}) as Record<string, unknown>;
     if (row.found !== true) {
       throw operationFailed(
-        "check this item's public visibility",
+        "check who can open this item",
         new Error("That record is not here any more."),
       );
     }
@@ -355,11 +359,9 @@ export async function getResourceVisibility(
         : null;
     const laneWord = typeof row.lane === "string" ? row.lane : null;
     const choice: LaneChoice | null =
-      laneWord === "mine" || laneWord === "organization"
+      laneWord === "mine" || laneWord === "organization" || laneWord === "world"
         ? laneWord
-        : laneWord === "world"
-          ? "world"
-          : null;
+        : null;
     const whoCanSee: WhoCanSee | null = choice
       ? {
           source: "store",
@@ -382,7 +384,6 @@ export async function getResourceVisibility(
       : null;
     return {
       isPublic: row.is_public === true,
-      visibility: row.is_public === true ? "public" : null,
       organizationDefault,
       whoCanSee,
       homeOrganizationId:
@@ -391,109 +392,109 @@ export async function getResourceVisibility(
   }
 
   const capabilities = await getShareCapabilities(resourceType);
-  if (!capabilities.publicState) {
-    return { isPublic: false, visibility: null };
+  const publishColumn =
+    capabilities.publishLane === "published_to_web"
+      ? "published_to_web"
+      : capabilities.publishLane === "card"
+        ? "card_visibility"
+        : capabilities.publishLane === "boolean" &&
+            capabilities.publicState?.kind === "boolean"
+          ? capabilities.publicState.column
+          : null;
+  const columns = [
+    publishColumn,
+    capabilities.shownToOffered ? "shown_to" : null,
+    capabilities.organizationColumn,
+  ].filter((c): c is string => c !== null);
+  if (columns.length === 0) {
+    return { isPublic: false, homeOrganizationId: null };
   }
 
   const client = resolveDynamicClient(entry.schemaName);
-  const columns = capabilities.organizationColumn
-    ? `${capabilities.publicState.column},${capabilities.organizationColumn}`
-    : capabilities.publicState.column;
   const { data, error } = await client
     .from(entry.tableName)
-    .select(columns)
+    .select(columns.join(","))
     .eq(entry.idColumn, resourceId)
     .maybeSingle<Record<string, boolean | string | null>>();
 
   if (error || !data) {
-    throw operationFailed("check this item's public visibility", error);
+    throw operationFailed("check who can open this item", error);
   }
   const home = capabilities.organizationColumn
     ? data[capabilities.organizationColumn]
     : null;
-  const homeOrganizationId = typeof home === "string" ? home : null;
-  const value = data[capabilities.publicState.column];
-  if (capabilities.publicState.kind === "enum") {
-    const enumValue = isVisibilityValue(value) ? value : null;
-    // WHO CAN SEE THIS for a kind whose REACH is its row's `visibility` enum (a site, a note):
-    // personal is the owner and the people named, internal is every member of its organization.
-    // A kind whose public state is `card_visibility` (an agent, a workflow) is NOT drawn: that
-    // column says who sees the public card, not who may open the thing (measured 2026-09-25: 516
-    // agents are internal with a public card), so a lane control on it would lie.
-    const choice =
-      capabilities.publicState.column === "visibility"
-        ? laneOfVisibility(enumValue)
-        : null;
-    return {
-      isPublic: value === "public",
-      visibility: enumValue,
-      homeOrganizationId,
-      ...(choice
-        ? {
-            whoCanSee: {
-              source: "visibility" as const,
-              choice,
-              organizationId: null,
-              organizationName: null,
-              memberDefaultLevel: null,
-              membersReachNow: choice === "organization",
-              // "Anyone with the link" is the world lane's own act (iam.publish_to_world), which
-              // only the record store has; for these kinds "Anyone" lives on the Public tab.
-              worldOffered: false,
-            },
-          }
-        : {}),
-    };
-  }
-  return { isPublic: value === true, visibility: null, homeOrganizationId };
-}
-
-const VISIBILITY_VALUES = ["personal", "internal", "link", "public"] as const;
-
-function isVisibilityValue(value: unknown): value is VisibilityValue {
-  return (
-    typeof value === "string" &&
-    (VISIBILITY_VALUES as readonly string[]).includes(value)
-  );
+  const published = publishColumn ? data[publishColumn] : null;
+  return {
+    // The card lane is the card's own "Published to the web" (owner-session ruling 2026-09-28).
+    isPublic: published === true || published === "public",
+    ...(capabilities.shownToOffered
+      ? { shownTo: asShownTo(data.shown_to) }
+      : {}),
+    homeOrganizationId: typeof home === "string" ? home : null,
+  };
 }
 
 /**
- * Set a resource's canonical visibility — the three-state answer to "who can
- * reach this", as opposed to makePublic()'s two-state one.
- *
- * Enum-backed types ONLY. A legacy boolean type has no `internal` to move to,
- * so this refuses rather than silently mapping internal onto "not public" —
- * which would tell the user their team can see something when nobody can.
- *
- * Reuses the same setVisibilityColumn writer makePublic() uses; this is a third
- * caller of one path, never a second path.
+ * "Shown to" — which lists show this record to people who can already open it. Never a lock.
+ * Refuses a type that does not carry it rather than writing a column that is not there.
  */
-export async function setResourceVisibility(
+export async function setResourceShownTo(
   resourceType: ResourceType,
   resourceId: string,
-  visibility: VisibilityValue,
+  shownTo: ShownTo | null,
 ): Promise<ShareActionResult> {
   try {
     const capabilities = await getShareCapabilities(resourceType);
-    if (capabilities.publicState?.kind !== "enum") {
+    if (!capabilities.shownToOffered) {
       return {
         success: false,
-        error:
-          "This item type only supports public or private — it has no organization-level visibility.",
+        error: `A ${getResourceTypeLabel(resourceType).toLowerCase()} has no "Shown to" — it is not listed to anyone it is not shared with.`,
       };
     }
-    return await setVisibilityColumn(
-      resourceType,
-      resourceId,
-      capabilities.publicState.column,
-      visibility,
-    );
+    return await writeRowControl(resourceType, resourceId, { shown_to: shownTo });
   } catch (error: unknown) {
-    console.error("setResourceVisibility error:", error);
+    console.error("setResourceShownTo error:", error);
     return {
       success: false,
-      error: errMessage(error) || "Failed to update visibility",
+      error: errMessage(error) || 'Could not change "Shown to"',
     };
+  }
+}
+
+/**
+ * "Published to the web" on or off, through the lane the type carries: the row's own
+ * `published_to_web`, the card's own publish (agent, workflow), or a legacy boolean's RPC.
+ */
+async function setPublishedToWeb(
+  resourceType: ResourceType,
+  resourceId: string,
+  on: boolean,
+): Promise<ShareActionResult> {
+  const capabilities = await getShareCapabilities(resourceType);
+  switch (capabilities.publishLane) {
+    case "published_to_web":
+      return writeRowControl(resourceType, resourceId, { published_to_web: on });
+    case "card":
+      // The card's own publish: off returns the card to its organization's lists.
+      return writeRowControl(resourceType, resourceId, {
+        card_visibility: on ? "public" : "internal",
+      });
+    case "boolean": {
+      const { data, error } = await supabase.rpc(
+        on ? "make_resource_public" : "make_resource_private",
+        { p_resource_type: resourceType, p_resource_id: resourceId },
+      );
+      if (error) throw error;
+      const parsed = parseShareRpcResult(data);
+      return parsed.success
+        ? { success: true }
+        : { success: false, error: parsed.error || "Please try again" };
+    }
+    default:
+      return {
+        success: false,
+        error: `A ${getResourceTypeLabel(resourceType).toLowerCase()} is never published to the web. Share it with an Anyone link or with people instead.`,
+      };
   }
 }
 
@@ -692,111 +693,45 @@ export async function ensureOrgAvailability(
 }
 
 /**
- * Make a resource readable by unauthenticated users.
- * Sets is_public = true on the resource row. RPC validates ownership.
- * The permissions table is NOT written to — is_public on the resource row is the source of truth.
+ * Publish a resource to the web — the one way anyone, signed in or not, opens it at its address.
+ * Writes the lane the type carries (published_to_web, the card's own publish, or a legacy boolean).
+ * The permissions table is NOT written to.
  */
 export async function makePublic(
   options: MakePublicOptions,
 ): Promise<ShareActionResult> {
   try {
-    const { resourceType, resourceId } = options;
-    const capabilities = await getShareCapabilities(resourceType);
-
-    if (!capabilities.publicState) {
-      return {
-        success: false,
-        error: "Public visibility is not available for this item type.",
-      };
-    }
-
-    // Enum resources write the exact capability-reported column directly.
-    // The boolean RPC only handles a verified legacy boolean public flag.
-    if (capabilities.publicState.kind === "enum") {
-      const res = await setVisibilityColumn(
-        resourceType,
-        resourceId,
-        capabilities.publicState.column,
-        "public",
-      );
-      if (!res.success) {
-        return { success: false, error: res.error || "Failed to make public" };
-      }
-      return { success: true, message: "Resource is now public" };
-    }
-
-    const { data, error } = await supabase.rpc("make_resource_public", {
-      p_resource_type: resourceType,
-      p_resource_id: resourceId,
-    });
-
-    if (error) throw error;
-    const parsed = parseShareRpcResult(data);
-    if (!parsed.success)
-      return { success: false, error: parsed.error || "Failed to make public" };
-
-    return { success: true, message: "Resource is now public" };
+    const res = await setPublishedToWeb(options.resourceType, options.resourceId, true);
+    return res.success
+      ? { success: true, message: "Published to the web" }
+      : { success: false, error: res.error || "Couldn't publish it to the web" };
   } catch (error: unknown) {
     console.error("makePublic error:", error);
     return {
       success: false,
-      error: errMessage(error) || "Failed to make public",
+      error: errMessage(error) || "Couldn't publish it to the web",
     };
   }
 }
 
 /**
- * Restrict a resource to explicit grants only.
- * Sets is_public = false on the resource row. RPC validates ownership.
+ * Stop publishing a resource to the web. Who in its organization can open it is unchanged —
+ * that is its table's level, never a row setting (access ladder).
  */
 export async function makePrivate(
   resourceType: ResourceType,
   resourceId: string,
 ): Promise<ShareActionResult> {
   try {
-    const capabilities = await getShareCapabilities(resourceType);
-    if (!capabilities.publicState) {
-      return {
-        success: false,
-        error: "Public visibility is not available for this item type.",
-      };
-    }
-
-    if (capabilities.publicState.kind === "enum") {
-      const res = await setVisibilityColumn(
-        resourceType,
-        resourceId,
-        capabilities.publicState.column,
-        "personal",
-      );
-      if (!res.success) {
-        return {
-          success: false,
-          error: res.error || "Failed to make personal",
-        };
-      }
-      return { success: true, message: "Resource is now personal" };
-    }
-
-    const { data, error } = await supabase.rpc("make_resource_private", {
-      p_resource_type: resourceType,
-      p_resource_id: resourceId,
-    });
-
-    if (error) throw error;
-    const parsed = parseShareRpcResult(data);
-    if (!parsed.success)
-      return {
-        success: false,
-        error: parsed.error || "Failed to make private",
-      };
-
-    return { success: true, message: "Resource is now private" };
+    const res = await setPublishedToWeb(resourceType, resourceId, false);
+    return res.success
+      ? { success: true, message: "No longer published to the web" }
+      : { success: false, error: res.error || "Couldn't stop publishing it to the web" };
   } catch (error: unknown) {
     console.error("makePrivate error:", error);
     return {
       success: false,
-      error: errMessage(error) || "Failed to make private",
+      error: errMessage(error) || "Couldn't stop publishing it to the web",
     };
   }
 }

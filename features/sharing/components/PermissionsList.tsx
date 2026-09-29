@@ -213,7 +213,7 @@ export function PermissionsList({
           {alsoPending && alsoPending.count > 0 ? NO_GRANTS_YET_HEADLINE : NO_GRANTS_HEADLINE}
         </p>
         {/*
-         * This list only knows about DIRECT grants. It cannot see visibility,
+         * This list only knows about DIRECT grants. It cannot see its table's level, publishing,
          * org membership, or access conveyed through a container — so "only you
          * can access this" would be a claim it has no basis for. State what is
          * actually known: no one has been granted access here.

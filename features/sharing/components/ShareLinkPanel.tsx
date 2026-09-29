@@ -53,7 +53,7 @@ function linkListErrorMessage(error: unknown): string {
  *
  * A share link is an opaque token that lets anyone view the resource with ZERO
  * sign-in (resolved by the anon `resolve_share_token` RPC). This is the canonical
- * link-carries-everything path — distinct from `visibility='public'` (which
+ * link-carries-everything path — distinct from publishing to the web (which
  * needs a public render route). Owner-only.
  */
 export function ShareLinkPanel({

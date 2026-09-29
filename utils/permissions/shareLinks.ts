@@ -56,28 +56,38 @@ export interface ResolvedShareToken {
   children?: Record<string, unknown> | null;
 }
 
+/** What "Publish to the web" writes for a type (access ladder T-13; `get_share_capabilities`). */
+export type PublishLane = "published_to_web" | "card" | "boolean";
+
 export interface ShareCapabilities {
-  /** Whether the resource type can be made public (has a visibility/public column). */
+  /** Whether this type can be published to the web at all (`publishLane` is not null). */
   supportsPublic: boolean;
   /** Whether the resource type offers no-login share links (admin policy). */
   isLinkShareable: boolean;
-  /** Verified physical storage for the public/private state; null means unsupported. */
-  publicState:
-    | {
-        column: "visibility" | "card_visibility";
-        kind: "enum";
-      }
-    | {
-        column: string;
-        kind: "boolean";
-      }
-    | null;
+  /**
+   * The legacy boolean column behind a `boolean` publish lane; null for every other type.
+   */
+  publicState: { column: string; kind: "boolean" } | null;
   /**
    * The column naming the thing's OWN organization (`organization_id`), when its table has one.
    * The Share dialog reads it to tell a thing homed in its owner's own organization — where
    * "My organization" and "Add everyone in …" name nobody — for every kind (2026-09-26).
    */
   organizationColumn: "organization_id" | null;
+  /** The type's level: organization · public · confidential · private; null when unregistered. */
+  tableLevel: string | null;
+  /**
+   * The type carries the Words table's row controls — an Organization or Public table, never a
+   * child. A Private, Confidential or child record has none (common-docs/policies/access-ladder.md).
+   */
+  rowControls: boolean;
+  /** "Shown to" is offered for this type. */
+  shownToOffered: boolean;
+  /**
+   * What "Publish to the web" writes: the row's own switch, the card's own publish (agent,
+   * workflow — the body is never published), or a legacy boolean. Null: never published.
+   */
+  publishLane: PublishLane | null;
 }
 
 /**
@@ -98,21 +108,27 @@ export async function getShareCapabilities(
     throw operationFailed("check this item's sharing options");
   }
 
+  const lane = data.publish_lane;
+  const publishLane: PublishLane | null =
+    lane === "published_to_web" || lane === "card" || lane === "boolean" ? lane : null;
   const column = data.public_state_column;
-  const kind = data.public_state_kind;
   const publicState: ShareCapabilities["publicState"] =
-    kind === "enum" && (column === "visibility" || column === "card_visibility")
-      ? { column, kind }
-      : kind === "boolean" && typeof column === "string"
-        ? { column, kind }
-        : null;
+    publishLane === "boolean" &&
+    data.public_state_kind === "boolean" &&
+    typeof column === "string"
+      ? { column, kind: "boolean" }
+      : null;
 
   return {
-    supportsPublic: data.supports_public === true && publicState !== null,
+    supportsPublic: publishLane !== null,
     isLinkShareable: data.is_link_shareable === true,
     publicState,
     organizationColumn:
       data.organization_column === "organization_id" ? "organization_id" : null,
+    tableLevel: typeof data.table_level === "string" ? data.table_level : null,
+    rowControls: data.row_controls === true,
+    shownToOffered: data.shown_to_offered === true,
+    publishLane,
   };
 }
 
@@ -251,8 +267,8 @@ export interface ForkResult {
  * on the `/s/[token]` link lane. The DB RPCs authorize a link fork solely on a
  * VALID, ACTIVE token for THAT resource (SECURITY FIX — a caller-independent
  * "any active link exists" check previously let a stranger fork a private
- * resource the moment its owner had ever minted one link). Public/link
- * visibility and explicit grants stay forkable token-less; the token is only
+ * resource the moment its owner had ever minted one link). A record published
+ * to the web and explicit grants stay forkable token-less; the token is only
  * needed to authorize a private resource shared purely by no-login link. Returns
  * the path to the copy.
  */

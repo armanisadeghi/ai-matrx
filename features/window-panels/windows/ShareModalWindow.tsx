@@ -133,6 +133,8 @@ export default function ShareModalWindow({
     organizationDefault,
     whoCanSee,
     setWhoCanSee,
+    shownTo,
+    setShownTo,
     loading,
     error,
     shareWithUser,
@@ -275,6 +277,15 @@ export default function ShareModalWindow({
                 whoCanSee={whoCanSee}
                 canChange={isOwner && !ownerLoading}
                 onChoose={setWhoCanSee}
+                row={{
+                  resourceType: resourceType,
+                  resourceId: resourceId,
+                  shownTo,
+                  isPublic: resourceIsPublic,
+                  onSetShownTo: setShownTo,
+                  onPublish: () => makePublic(),
+                  onStopPublishing: () => revokeAccess({ isPublic: true }),
+                }}
               />
               <div>
                 <h3 className="text-sm font-medium mb-2">Current Access</h3>
@@ -306,11 +317,8 @@ export default function ShareModalWindow({
 
             <TabsContent value="public" className="mt-0 pb-4">
               <PublicAccessTab
-                isPublic={resourceIsPublic}
                 publicPermission={publicPermission}
                 isOwner={isOwner && !ownerLoading}
-                onMakePublic={makePublic}
-                onRevokePublic={() => revokeAccess({ isPublic: true })}
                 resourceType={resourceType}
                 resourceId={resourceId}
                 resourceName={resourceName}

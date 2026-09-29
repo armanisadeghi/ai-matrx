@@ -3,7 +3,7 @@ export type SearchEngineIndexedState =
   | { enrolled: false }
   | {
       enrolled: true;
-      /** The record is published to the web (today: visibility = 'public' + its own lifecycle). */
+      /** The record is published to the web (its `published_to_web`, plus its own lifecycle). */
       published_to_web: boolean;
       /** The creator's choice; null = follow the type default. */
       value: boolean | null;

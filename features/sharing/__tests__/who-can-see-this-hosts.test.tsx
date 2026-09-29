@@ -19,7 +19,7 @@ const setWhoCanSee = jest.fn(async () => ({ success: true }));
 const sharing = {
   permissions: [],
   isPublic: false,
-  visibility: null,
+  shownTo: undefined,
   organizationDefault: { level: "viewer", organizationName: "Oak & River", organizationId: ORG },
   whoCanSee: {
     source: "store",
@@ -31,7 +31,7 @@ const sharing = {
     worldOffered: false,
   },
   setWhoCanSee,
-  setVisibility: jest.fn(),
+  setShownTo: jest.fn(),
   loading: false,
   error: null,
   shareWithUser: jest.fn(),
@@ -40,7 +40,7 @@ const sharing = {
   revokeOrgAccess: jest.fn(),
   updateLevel: jest.fn(),
   refresh: jest.fn(),
-  refreshVisibility: jest.fn(),
+  refreshRowState: jest.fn(),
 };
 
 const useSharingCalls: unknown[][] = [];

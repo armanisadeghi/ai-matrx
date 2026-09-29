@@ -41,7 +41,7 @@ export function DuplicateToEditButton({
    * The no-login share-link token, passed ONLY on the `/s/[token]` link lane.
    * It authorizes forking a resource shared purely by no-login link (a private
    * resource with an active link). Omit on public/`/p/e` and in-app view
-   * surfaces — those fork token-less via public/link visibility or a grant.
+   * surfaces — those fork token-less when published to the web, by an Anyone link, or by a grant.
    */
   shareToken?: string;
   /** Override the default per-type verb ("Study these flashcards", …). */

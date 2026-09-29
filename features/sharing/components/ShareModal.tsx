@@ -254,11 +254,11 @@ export function ShareModal({
   const {
     permissions,
     isPublic: resourceIsPublic,
-    visibility: resourceVisibility,
+    shownTo,
+    setShownTo,
     organizationDefault,
     whoCanSee,
     setWhoCanSee,
-    setVisibility,
     loading,
     error,
     shareWithUser,
@@ -440,6 +440,15 @@ export function ShareModal({
                   whoCanSee={whoCanSee}
                   canChange={isOwner}
                   onChoose={setWhoCanSee}
+                  row={{
+                    resourceType,
+                    resourceId,
+                    shownTo,
+                    isPublic: resourceIsPublic,
+                    onSetShownTo: setShownTo,
+                    onPublish: () => makePublic(),
+                    onStopPublishing: () => revokeAccess({ isPublic: true }),
+                  }}
                 />
                 {/* Current user permissions */}
                 <div>
@@ -560,13 +569,8 @@ export function ShareModal({
 
               <TabsContent value="public" className="mt-0">
                 <PublicAccessTab
-                  isPublic={resourceIsPublic}
-                  visibility={resourceVisibility}
-                  onSetVisibility={setVisibility}
                   publicPermission={publicPermission}
                   isOwner={isOwner}
-                  onMakePublic={makePublic}
-                  onRevokePublic={() => revokeAccess({ isPublic: true })}
                   resourceType={resourceType}
                   resourceId={resourceId}
                   resourceName={resourceName}

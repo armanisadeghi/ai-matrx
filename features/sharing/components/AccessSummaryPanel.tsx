@@ -37,7 +37,7 @@ import {
   isPrivateSummary,
   reasonCsvRows,
   sharingLocation,
-  summaryVisibilityLabel,
+  summaryReachLabel,
   ACCESS_SUMMARY_ERROR_HEADLINE,
   NOTHING_ELSE_GRANTS,
   type AccessReasonRow,
@@ -232,19 +232,13 @@ export function AccessSummaryPanel({
 
   return (
     <div className={cn("group space-y-2 px-3 py-2", className)}>
-      {/*
-       * Visibility comes from the summary, NOT from the client-side Visibility
-       * union — `toVisibility()` collapses `internal` into `personal`, so the
-       * client type cannot tell "belongs to one person" from "readable by the
-       * whole org". Rendering the collapsed value next to the true reasons
-       * produced a visible contradiction ("Personal" above "…is internal in
-       * that organization").
-       */}
+      {/* Who can open it comes from the summary the reasons below come from, so the two never
+          contradict each other. */}
       <div className="flex items-center gap-2">
         <p className="text-[12px] text-muted-foreground">
-          Visibility:{" "}
+          Who can open it:{" "}
           <span className="text-foreground">
-            {summaryVisibilityLabel(summary)}
+            {summaryReachLabel(summary)}
           </span>
         </p>
         <span className="ml-auto flex items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
@@ -257,7 +251,7 @@ export function AccessSummaryPanel({
               kind: "access-summary",
               location,
               description:
-                'Every reason this entity is reachable, exactly as rendered: its visibility setting, the one-line headline, and each reason row. This is the complete answer to "who can see this, and why" — direct grants are only one of the reasons listed.',
+                'Every reason this entity is reachable, exactly as rendered: who can open it, the one-line headline, and each reason row. This is the complete answer to "who can see this, and why" — direct grants are only one of the reasons listed.',
               data: { ...view(), kpis: context.kpis },
               summary: panelHuman(),
               attributes: {

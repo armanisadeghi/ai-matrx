@@ -40,6 +40,8 @@ export function AgentSharePanel({
     refresh,
     whoCanSee,
     setWhoCanSee,
+    shownTo,
+    setShownTo,
     organizationDefault,
   } = useSharing("agent", agentId, true);
 
@@ -121,6 +123,15 @@ export function AgentSharePanel({
                 whoCanSee={whoCanSee}
                 canChange={isOwner}
                 onChoose={setWhoCanSee}
+                row={{
+                  resourceType: "agent",
+                  resourceId: agentId,
+                  shownTo,
+                  isPublic: resourceIsPublic,
+                  onSetShownTo: setShownTo,
+                  onPublish: () => makePublic(),
+                  onStopPublishing: () => revokeAccess({ isPublic: true }),
+                }}
               />
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -154,11 +165,8 @@ export function AgentSharePanel({
 
           {activeSubTab === "public" && (
             <PublicAccessTab
-              isPublic={resourceIsPublic}
               publicPermission={publicPermission}
               isOwner={isOwner}
-              onMakePublic={makePublic}
-              onRevokePublic={() => revokeAccess({ isPublic: true })}
               resourceType="agent"
               resourceId={agentId}
               resourceName={agentName}

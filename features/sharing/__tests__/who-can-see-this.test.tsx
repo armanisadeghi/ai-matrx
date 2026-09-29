@@ -98,18 +98,35 @@ describe("1. the lane is read from the store's lane door", () => {
     expect((await getResourceVisibility("record" as never, TABLE)).whoCanSee?.worldOffered).toBe(true);
   });
 
-  it("draws no control on an agent, whose public state is its card, not who may open it", async () => {
-    capsAnswer = { supports_public: true, is_link_shareable: true, public_state_kind: "enum", public_state_column: "card_visibility" };
-    rowAnswer = { card_visibility: "internal" };
+  it("draws no lane control on an agent; its card publish and Shown to are its row controls", async () => {
+    capsAnswer = {
+      supports_public: true, is_link_shareable: true, row_controls: true, shown_to_offered: true,
+      publish_lane: "card", table_level: "organization", organization_column: "organization_id",
+    };
+    rowAnswer = { card_visibility: "public", shown_to: "my_team", organization_id: ORG };
     const v = await getResourceVisibility("agent" as never, TABLE);
+    expect(v.whoCanSee ?? null).toBeNull();
+    expect(v).toMatchObject({ isPublic: true, shownTo: "my_team", homeOrganizationId: ORG });
+  });
+
+  it("a note reads published_to_web and shown_to — never the retiring row column", async () => {
+    capsAnswer = {
+      supports_public: true, is_link_shareable: true, row_controls: true, shown_to_offered: true,
+      publish_lane: "published_to_web", table_level: "organization",
+    };
+    rowAnswer = { published_to_web: false, shown_to: null };
+    const v = await getResourceVisibility("note" as never, TABLE);
+    expect(v).toMatchObject({ isPublic: false, shownTo: null });
     expect(v.whoCanSee ?? null).toBeNull();
   });
 
-  it("a site, whose reach IS its visibility enum, reads personal as mine", async () => {
-    capsAnswer = { supports_public: true, is_link_shareable: true, public_state_kind: "enum", public_state_column: "visibility" };
-    rowAnswer = { visibility: "personal" };
-    const v = await getResourceVisibility("web_site" as never, TABLE);
-    expect(v.whoCanSee).toMatchObject({ source: "visibility", choice: "mine", worldOffered: false });
+  it("a Private AI chat carries no row control and is never published", async () => {
+    capsAnswer = {
+      supports_public: true, is_link_shareable: true, row_controls: false, shown_to_offered: false,
+      publish_lane: null, table_level: "private",
+    };
+    const v = await getResourceVisibility("conversation" as never, TABLE);
+    expect(v).toEqual({ isPublic: false, homeOrganizationId: null });
   });
 });
 

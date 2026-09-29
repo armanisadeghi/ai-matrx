@@ -30,13 +30,13 @@ import {
   updatePermissionLevel,
   getSharedWithMe,
   getResourceVisibility,
-  setResourceVisibility,
+  setResourceShownTo,
   setStoreLane,
   type LaneChoice,
   type ResourceVisibility,
-  type VisibilityValue,
   type WhoCanSee,
 } from "./service";
+import type { ShownTo } from "@/lib/list-scope/shownTo";
 
 // ============================================================================
 // Permission Listing Hooks
@@ -289,9 +289,8 @@ export function useSharing(
 ) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [visibility, setVisibility] = useState<ResourceVisibility>({
+  const [rowState, setRowState] = useState<ResourceVisibility>({
     isPublic: false,
-    visibility: null,
   });
   const { permissions, refresh: refreshPermissions } = usePermissions(
     resourceType,
@@ -299,26 +298,26 @@ export function useSharing(
     enabled,
   );
 
-  const refreshVisibility = useCallback(async () => {
+  const refreshRowState = useCallback(async () => {
     if (!resourceType || !resourceId || !enabled) return;
     try {
       const v = await getResourceVisibility(resourceType, resourceId);
-      setVisibility(v);
+      setRowState(v);
     } catch (err) {
-      console.error("Error fetching resource visibility:", err);
+      console.error("Error fetching the record's row controls:", err);
       setError(extractErrorMessage(err));
     }
   }, [resourceType, resourceId, enabled]);
 
   const refresh = useCallback(async () => {
-    await Promise.all([refreshPermissions(), refreshVisibility()]);
-  }, [refreshPermissions, refreshVisibility]);
+    await Promise.all([refreshPermissions(), refreshRowState()]);
+  }, [refreshPermissions, refreshRowState]);
 
   useEffect(() => {
     if (enabled) {
-      void refreshVisibility();
+      void refreshRowState();
     }
-  }, [enabled, refreshVisibility]);
+  }, [enabled, refreshRowState]);
 
   const handleShareWithUser = useCallback(
     async (userId: string, permissionLevel: PermissionLevel) => {
@@ -477,25 +476,22 @@ export function useSharing(
     [resourceType, resourceId, refresh],
   );
 
-  const handleSetVisibility = useCallback(
-    async (next: VisibilityValue) => {
+  /** "Shown to" — which lists show it; never a lock (access ladder Words table). */
+  const handleSetShownTo = useCallback(
+    async (next: ShownTo | null) => {
       setLoading(true);
       setError(null);
       try {
-        const result = await setResourceVisibility(
-          resourceType,
-          resourceId,
-          next,
-        );
+        const result = await setResourceShownTo(resourceType, resourceId, next);
         if (!result.success) {
-          setError(result.error || "Failed to update visibility");
+          setError(result.error || 'Could not change "Shown to"');
           return result;
         }
         await refresh();
         return result;
       } catch (err) {
         const errorMessage =
-          extractErrorMessage(err) || "Failed to update visibility";
+          extractErrorMessage(err) || 'Could not change "Shown to"';
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -506,17 +502,14 @@ export function useSharing(
   );
 
   /**
-   * WHO CAN SEE THIS (lane SHARE-LANE-CONTROL). The record store's lane door names it; a kind whose
-   * reach IS its row's canonical visibility enum reads it off that same value (the Public tab's
-   * picker writes the same column, so the two can never disagree). Every other kind: null, and
-   * the control is absent.
+   * WHO CAN SEE THIS (lane SHARE-LANE-CONTROL) — the record store's lane door only. Every other
+   * kind: null, and the control is absent; its row controls are "Shown to" and "Published to the
+   * web" instead.
    */
-  const whoCanSee: WhoCanSee | null = visibility.whoCanSee
+  const whoCanSee: WhoCanSee | null = rowState.whoCanSee
     ? {
-        ...visibility.whoCanSee,
-        // A visibility-enum kind's row names no organization through this read; the page that
-        // opened the dialog resolved it from the object.
-        organizationId: visibility.whoCanSee.organizationId ?? organizationId ?? null,
+        ...rowState.whoCanSee,
+        organizationId: rowState.whoCanSee.organizationId ?? organizationId ?? null,
       }
     : null;
 
@@ -525,26 +518,16 @@ export function useSharing(
       if (!whoCanSee) {
         return { success: false, error: "This item has no lane to choose." };
       }
+      if (!whoCanSee.organizationId) {
+        return {
+          success: false,
+          error: "This item's organization could not be read, so its lane cannot be changed.",
+        };
+      }
       setLoading(true);
       setError(null);
       try {
-        let result: ShareActionResult;
-        if (whoCanSee.source === "store") {
-          if (!whoCanSee.organizationId) {
-            result = {
-              success: false,
-              error: "This item's organization could not be read, so its lane cannot be changed.",
-            };
-          } else {
-            result = await setStoreLane(whoCanSee.organizationId, resourceId, choice);
-          }
-        } else {
-          const next: VisibilityValue | null =
-            choice === "mine" ? "personal" : choice === "organization" ? "internal" : null;
-          result = next
-            ? await setResourceVisibility(resourceType, resourceId, next)
-            : { success: false, error: "Use the Public tab to put this out in the world." };
-        }
+        const result = await setStoreLane(whoCanSee.organizationId, resourceId, choice);
         if (!result.success) {
           setError(result.error || "Failed to change who can see this");
           return result;
@@ -560,41 +543,34 @@ export function useSharing(
         setLoading(false);
       }
     },
-    [whoCanSee, resourceType, resourceId, refresh],
+    [whoCanSee, resourceId, refresh],
   );
 
   return {
     permissions,
-    isPublic: visibility.isPublic,
-    /** The canonical enum value, or null for legacy boolean-backed types. */
-    visibility: visibility.visibility,
+    /** Published to the web (or the card's own publish). */
+    isPublic: rowState.isPublic,
     /**
-     * Membership alone reaches it — said under Current Access. The record store's door names it;
-     * a visibility-enum kind set to `internal` reaches every member of its organization too.
+     * "Shown to" — undefined when the type does not carry it (Private, Confidential, child, or a
+     * table without the column); null when the type's default applies.
      */
-    organizationDefault:
-      visibility.organizationDefault ??
-      (whoCanSee?.source === "visibility" && whoCanSee.choice === "organization"
-        ? {
-            level: "",
-            organizationName: "this organization",
-            ...(organizationId ? { organizationId } : {}),
-          }
-        : null),
+    shownTo: rowState.shownTo,
+    /** Membership alone reaches it — said under Current Access. The record store's door names it. */
+    organizationDefault: rowState.organizationDefault ?? null,
     whoCanSee,
     /** The thing's own organization, read off its row; null when unknown. */
-    homeOrganizationId: visibility.homeOrganizationId ?? null,
+    homeOrganizationId: rowState.homeOrganizationId ?? null,
     setWhoCanSee: handleSetWhoCanSee,
     loading,
     error,
     shareWithUser: handleShareWithUser,
     makePublic: handleMakePublic,
-    setVisibility: handleSetVisibility,
+    setShownTo: handleSetShownTo,
     revokeAccess: handleRevokeAccess,
     revokeOrgAccess: handleRevokeOrgAccess,
     updateLevel: handleUpdateLevel,
     refresh,
-    refreshVisibility,
+    refreshRowState,
   };
 }
 
@@ -657,9 +633,8 @@ export function useSharingStatus(
   resourceId: string,
   enabled: boolean = true,
 ) {
-  const [visibility, setVisibility] = useState<ResourceVisibility>({
+  const [rowState, setRowState] = useState<ResourceVisibility>({
     isPublic: false,
-    visibility: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -670,7 +645,7 @@ export function useSharingStatus(
     setError(null);
     try {
       const v = await getResourceVisibility(resourceType, resourceId);
-      setVisibility(v);
+      setRowState(v);
     } catch (err) {
       console.error("Error fetching sharing status:", err);
       setError(extractErrorMessage(err));
@@ -684,7 +659,7 @@ export function useSharingStatus(
   }, [refresh]);
 
   return {
-    isPublic: visibility.isPublic,
+    isPublic: rowState.isPublic,
     loading,
     error,
     refresh,

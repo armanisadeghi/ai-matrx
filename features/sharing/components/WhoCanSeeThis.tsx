@@ -4,7 +4,8 @@
  * features/sharing/components/WhoCanSeeThis.tsx
  *
  * "WHO CAN SEE THIS" — THE LANE CONTROL AT THE TOP OF THE SHARE DIALOG'S PEOPLE TAB
- * (lane SHARE-LANE-CONTROL, VERIFIER-23 item 3).
+ * (lane SHARE-LANE-CONTROL, VERIFIER-23 item 3). Record-store things only; every other kind gets
+ * its row controls ("Shown to", "Published to the web") in the same place through `row`.
  *
  * The record store has had the door since lane SHARE (`custom.share_lane_set`: mine |
  * organization | world), and SHARE-TAILS made "mine" really mean the owner and the people named.
@@ -33,6 +34,7 @@ import type {
   WhoCanSee,
 } from "@/utils/permissions/service";
 import type { ShareActionResult } from "@/utils/permissions/types";
+import { RowControls, type RowControlsProps } from "./RowControls";
 
 const LEVEL_WORD: Record<string, string> = {
   viewer: "Viewer",
@@ -48,6 +50,12 @@ export interface WhoCanSeeThisProps {
   canChange: boolean;
   /** `useSharing().setWhoCanSee`. */
   onChoose: (choice: LaneChoice) => Promise<ShareActionResult>;
+  /**
+   * Every kind outside the record store: its row controls ("Shown to", "Published to the web"),
+   * drawn in this same place. `RowControls` draws nothing for a Private, Confidential or child
+   * record (access ladder T-13 phase 5).
+   */
+  row?: Omit<RowControlsProps, "canChange">;
 }
 
 interface Option {
@@ -61,13 +69,14 @@ export function WhoCanSeeThis({
   whoCanSee,
   canChange,
   onChoose,
+  row,
 }: WhoCanSeeThisProps) {
   const { orgs } = useNavTree();
   const [pending, setPending] = useState<LaneChoice | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [said, setSaid] = useState<{ ok: boolean; text: string } | null>(null);
 
-  if (!whoCanSee) return null;
+  if (!whoCanSee) return row ? <RowControls {...row} canChange={canChange} /> : null;
 
   const orgName =
     whoCanSee.organizationName ??

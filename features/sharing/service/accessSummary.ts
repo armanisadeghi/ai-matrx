@@ -3,9 +3,9 @@
  *
  * THE honest answer to "who can actually see this, and why?" for ONE entity.
  *
- * Every list surface derives its access label from the row's own `visibility`
- * column, which is only one of the SIX ways `iam.has_access_for_base` grants
- * access: owner, visibility+org, direct grant, membership, education
+ * A list surface can only show what a row says about itself, which is only one of
+ * the SIX ways `iam.has_access_for_base` grants
+ * access: owner, level+org, direct grant, membership, education
  * assignment, and — the one that kept being missed — reachability through a
  * CONTAINER (a scope, project, data store…). A file marked `personal` that is
  * attached to an org-internal scope is readable by that whole org, and saying
@@ -44,7 +44,6 @@ export interface AccessContainer {
   /** Highest permission level conveyed through this container. */
   level: string;
   depth: number;
-  visibility: string | null;
   organizationId: string | null;
   organizationName: string | null;
   /** True when everyone in the container's org can read the container. */
@@ -56,7 +55,6 @@ export interface AccessContainer {
 export interface AccessSummary {
   entityType: string;
   entityId: string;
-  visibility: string;
   ownerId: string | null;
   viewerIsOwner: boolean;
   organizationId: string | null;
@@ -64,7 +62,7 @@ export interface AccessSummary {
   /** Caller has admin — only then are grantee identities populated. */
   canManage: boolean;
   isPublic: boolean;
-  /** The entity's OWN visibility makes it org-readable. */
+  /** Every member of its organization can open it (its table's level). */
   orgReadable: boolean;
   directGrantCount: number;
   directGrants: AccessDirectGrant[];
@@ -117,7 +115,6 @@ function parseContainer(raw: unknown): AccessContainer | null {
     label: str(row.label),
     level: str(row.level) ?? "viewer",
     depth: num(row.depth),
-    visibility: str(row.visibility),
     organizationId: str(row.organization_id),
     organizationName: str(row.organization_name),
     orgReadable: bool(row.org_readable),
@@ -135,7 +132,6 @@ function parseSummary(raw: unknown): AccessSummary {
   return {
     entityType: str(row.entity_type) ?? "",
     entityId: str(row.entity_id) ?? "",
-    visibility: str(row.visibility) ?? "personal",
     ownerId: str(row.owner_id),
     viewerIsOwner: bool(row.viewer_is_owner),
     organizationId: str(row.organization_id),

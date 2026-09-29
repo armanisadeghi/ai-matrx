@@ -1,66 +1,26 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
-import { Switch } from "@/components/ui/switch";
+import React, { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
-import {
-  Globe,
-  AlertTriangle,
-  Check,
-  Copy,
-  Lock,
-  Building2,
-} from "lucide-react";
-import { getShareableResource } from "@/utils/permissions/registry";
-import { publicResourceUrl } from "@/utils/permissions/publicLane";
-import type {
-  Permission,
-  ResourceType,
-  ShareActionResult,
-} from "@/utils/permissions/types";
-import type { VisibilityValue } from "@/utils/permissions/service";
-import { PublicBadge } from "../PermissionBadge";
-import { useToast } from "@/components/ui/use-toast";
+import { AlertTriangle } from "lucide-react";
+import type { Permission, ResourceType } from "@/utils/permissions/types";
 import { ShareLinkPanel } from "../ShareLinkPanel";
 import { Skeleton } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
-import {
-  getShareCapabilities,
-  type ShareCapabilities,
-} from "@/utils/permissions/shareLinks";
+import { getShareCapabilities } from "@/utils/permissions/shareLinks";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { SearchEngineIndexedSwitch } from "@/features/sharing/indexed/SearchEngineIndexedSwitch";
-import {
-  humanPublicState,
-  sharingLocation,
-  type PublicAccessView,
-  type SharingCopyContext,
-} from "@/features/sharing/format";
+import { sharingLocation, type SharingCopyContext } from "@/features/sharing/format";
 
 interface PublicAccessTabProps {
-  /** Whether is_public = true on the resource row */
-  isPublic: boolean;
-  /**
-   * The row's canonical `visibility` enum value, or null for a legacy
-   * boolean-backed type that genuinely has only two states.
-   */
-  visibility?: VisibilityValue | null;
-  /** Write the canonical enum. Required for the three-state control to render. */
-  onSetVisibility?: (next: VisibilityValue) => Promise<ShareActionResult>;
-  /** The public permission row from the permissions table, if any */
+  /** The public permission row from the permissions table, if any (kept for hosts' tab dot). */
   publicPermission?: Permission;
   isOwner: boolean;
-  onMakePublic: () => Promise<ShareActionResult>;
-  onRevokePublic: () => Promise<ShareActionResult>;
   resourceType: ResourceType;
   resourceId: string;
   resourceName: string;
   /**
    * Identity + the page's leading KPIs, mirrored into this tab's payloads so a
-   * copied public-state answer is interpretable on its own.
+   * copied answer is interpretable on its own.
    */
   copy?: SharingCopyContext;
 }
@@ -86,570 +46,97 @@ export function anyoneReachWords(
 }
 
 /**
- * The three states a person actually chooses between. `link` is a real enum
- * value but it is set by the share-link flow, not picked here — offering it as
- * a fourth button would give one value two owners.
- */
-const VISIBILITY_CHOICES: {
-  value: VisibilityValue;
-  label: string;
-  icon: typeof Lock;
-  /**
-   * `reach.publicPage`: the type has a signed-out page (`publicResourceUrl`);
-   * `reach.noLoginLink`: it can be handed out through a no-login share link.
-   */
-  describe: (typeLabel: string, reach: { publicPage: boolean; noLoginLink: boolean }) => string;
-}[] = [
-  {
-    value: "personal",
-    label: "Only people I share it with",
-    icon: Lock,
-    describe: (t) => `You and the people you name on the Users tab. Nobody else can open this ${t}.`,
-  },
-  {
-    value: "internal",
-    label: "My organization",
-    icon: Building2,
-    describe: (t) => `Anyone in this ${t}'s organization can open and edit it.`,
-  },
-  {
-    value: "public",
-    label: "Anyone",
-    icon: Globe,
-    describe: anyoneReachWords,
-  },
-];
-
-/**
- * PublicAccessTab — who can reach this item.
+ * PublicAccessTab — "Anyone with the link" (access ladder Words table, Link row).
  *
- * TWO SHAPES, because the platform genuinely has two:
- *  • Canonical enum types (`visibility`): a THREE-state picker — Only me /
- *    My organization / Anyone. "My organization" is the state that was
- *    previously unreachable from the UI: the row already carried an
- *    organization_id, but with only a public on/off switch there was no way to
- *    say "share this with my team".
- *  • Legacy boolean types (`is_public`): the original two-state switch,
- *    unchanged. They have no `internal` to move to, so offering one would
- *    promise a team access nobody would actually get.
- *
- * Enum types render the picker INSTEAD of the switch, never both — the switch
- * is a strict subset of the picker, and two controls for one column is how they
- * drift apart.
+ * An Anyone link opens the record at its permission for whoever holds it, at EVERY level —
+ * Private and Confidential records included — and is never indexed. The row controls ("Shown to",
+ * "Published to the web") are not here: they sit at the top of the people tab
+ * (`RowControls`), and only on Organization and Public records (T-13 phase 5).
  */
 export function PublicAccessTab({
-  isPublic,
-  visibility,
-  onSetVisibility,
   isOwner,
-  onMakePublic,
-  onRevokePublic,
   resourceType,
   resourceId,
   resourceName,
   copy,
 }: PublicAccessTabProps) {
-  const [loading, setLoading] = useState(false);
-  const [caps, setCaps] = useState<ShareCapabilities>({
-    supportsPublic: false,
-    isLinkShareable: false,
-    publicState: null,
-    organizationColumn: null,
-  });
-  const [capabilitiesLoading, setCapabilitiesLoading] = useState(true);
-  const [capabilitiesError, setCapabilitiesError] = useState<string | null>(
-    null,
-  );
-  const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
-
-  /** Human label for the item kind — NEVER render the raw entity token. */
-  const typeLabel =
-    getShareableResource(resourceType)?.displayLabel?.toLowerCase() ?? "item";
-  /** The indexable public page, when this type actually has one. */
-  const publicUrl = publicResourceUrl(resourceType, resourceId);
-
-  const copyPublicUrl = useCallback(async () => {
-    if (!publicUrl) return;
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({ title: "Web address copied" });
-    } catch {
-      toast({ title: "Couldn't copy", variant: "destructive" });
-    }
-  }, [publicUrl, toast]);
+  const [linkShareable, setLinkShareable] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [capabilitiesError, setCapabilitiesError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    setCapabilitiesLoading(true);
+    setLoading(true);
     setCapabilitiesError(null);
     getShareCapabilities(resourceType)
       .then((c) => {
-        if (active) setCaps(c);
+        if (active) setLinkShareable(c.isLinkShareable);
       })
       .catch((error: unknown) => {
         if (active) setCapabilitiesError(extractErrorMessage(error));
       })
       .finally(() => {
-        if (active) setCapabilitiesLoading(false);
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
     };
   }, [resourceType]);
 
-  const handleToggle = async (checked: boolean) => {
-    if (!isOwner) return;
-    setLoading(true);
-    try {
-      const result = checked ? await onMakePublic() : await onRevokePublic();
-      if (result?.success !== false) {
-        toast({
-          title: checked ? "Published to the web" : "No longer published to the web",
-          description: checked
-            ? "Anyone can now open it at its address."
-            : "It is no longer published to the web.",
-        });
-      } else {
-        toast({
-          title: checked
-            ? "Couldn't publish it to the web"
-            : "Couldn't stop publishing it to the web",
-          description: result?.error || "Please try again",
-          variant: "destructive",
-        });
-      }
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Please try again";
-      toast({ title: "Error", description: message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const location = sharingLocation(copy?.surface ?? "Anyone link");
 
-  /**
-   * The three-state control is offered only when all three are true: the
-   * physical column really is the canonical enum, the caller wired a writer,
-   * and we know the row's current value. Anything less and we fall back to the
-   * binary switch rather than render a picker that cannot tell the truth.
-   */
-  const enumPicker =
-    caps.publicState?.kind === "enum" && onSetVisibility && visibility != null;
-
-  const handlePickVisibility = async (next: VisibilityValue) => {
-    if (!isOwner || !onSetVisibility || next === visibility) return;
-    setLoading(true);
-    try {
-      const result = await onSetVisibility(next);
-      const choice = VISIBILITY_CHOICES.find((c) => c.value === next);
-      if (result?.success !== false) {
-        toast({
-          title: `Visibility set to “${choice?.label ?? next}”`,
-          description: choice?.describe(typeLabel, {
-            publicPage: Boolean(publicUrl),
-            noLoginLink: caps.isLinkShareable,
-          }),
-        });
-      } else {
-        toast({
-          title: "Couldn't change visibility",
-          description: result?.error || "Please try again",
-          variant: "destructive",
-        });
-      }
-    } catch (error: unknown) {
-      toast({
-        title: "Couldn't change visibility",
-        description: extractErrorMessage(error) || "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /*
-   * THE RENDERED SENTENCES, declared once and used by BOTH the markup below
-   * and the payload. This tab's entire job is explaining a reachability state
-   * in prose, so the prose IS the data — a payload that paraphrased it would
-   * drop the answer the user is reading.
-   */
-  const UNSUPPORTED_SENTENCE =
-    "This item type can’t be published to the web. Use an Anyone link or invite specific people.";
-  const heading = isPublic ? "Published to the web" : "Publish to the web";
-  const stateSentence = isPublic
-    ? publicUrl
-      ? "Open to everyone — anyone can view the public page below, no sign-in required"
-      : "Marked open to everyone. Use a no-login link above to give someone the actual address."
-    : publicUrl
-      ? "Turn on to publish a public page anyone can open — no sign-in required"
-      : `Turn on to mark this ${typeLabel} open to everyone. It has no public page of its own, so share the address with a no-login link.`;
-  const warningSentence = isPublic
-    ? `Open to everyone: any signed-in person can view this ${typeLabel}${
-        publicUrl
-          ? ", and the public page above opens with no sign-in."
-          : ". It has no public page of its own — people reach it through a no-login link or from inside the app."
-      }`
-    : null;
-  const privateSentence = isPublic
-    ? null
-    : `Only you, people you share with, and members of the organizations you share with can open this ${typeLabel}.`;
-
-  const publicView = (): PublicAccessView => ({
-    supports_public: caps.supportsPublic,
-    is_link_shareable: caps.isLinkShareable,
-    is_public: isPublic,
-    type_label: typeLabel,
-    public_url: publicUrl ?? null,
-    heading,
-    state_sentence: stateSentence,
-    warning_sentence: warningSentence,
-    private_sentence: privateSentence,
-    unsupported_sentence: caps.supportsPublic ? null : UNSUPPORTED_SENTENCE,
-    viewer_can_change: isOwner,
-  });
-
-  const context: SharingCopyContext | undefined = copy;
-  const location = sharingLocation(context?.surface ?? "Public access");
-  const payloadAttributes = {
-    ...(context?.kpis ?? {}),
-    resource_type: resourceType,
-    resource_id: resourceId,
-    resource_name: resourceName,
-  };
-
-  return (
-    <div className="space-y-3">
-      {capabilitiesLoading ? (
-        <Skeleton className="h-20 w-full" />
-      ) : capabilitiesError ? (
-        /*
-         * ERRORS FIRST. When capabilities fail to load, this tab renders no
-         * controls at all — the user sees a red box where the public toggle
-         * should be. That sentence is the highest-value thing here.
-         */
-        <Alert variant="destructive" className="group">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="flex items-start gap-2">
-            <span className="flex-1">{capabilitiesError}</span>
-            <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-              <CopyButtons
-                size="xs"
-                label="Public access error"
-                human={() =>
-                  [
-                    "Public access controls could not load.",
-                    capabilitiesError,
-                    `Resource: ${resourceType}:${resourceId} (${resourceName})`,
-                    "No public toggle or share-link panel is rendered while this fails.",
-                  ].join("\n")
-                }
-                json={() => ({
-                  error: capabilitiesError,
+  if (loading) return <Skeleton className="h-20 w-full" />;
+  if (capabilitiesError) {
+    // ERRORS FIRST: no link panel renders while this fails, so the sentence is the answer.
+    return (
+      <Alert variant="destructive" className="group">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription className="flex items-start gap-2">
+          <span className="flex-1">{capabilitiesError}</span>
+          <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+            <CopyButtons
+              size="xs"
+              label="Anyone link error"
+              human={() =>
+                [
+                  "The Anyone link controls could not load.",
+                  capabilitiesError,
+                  `Resource: ${resourceType}:${resourceId} (${resourceName})`,
+                ].join("\n")
+              }
+              json={() => ({
+                error: capabilitiesError,
+                resource_type: resourceType,
+                resource_id: resourceId,
+              })}
+              agent={() => ({
+                kind: "public-access-error",
+                location,
+                description:
+                  "The share-capabilities lookup failed, so the Anyone link tab renders no controls. This is the error on screen, verbatim.",
+                data: {
+                  rendered_error: capabilitiesError,
                   resource_type: resourceType,
                   resource_id: resourceId,
-                })}
-                agent={() => ({
-                  kind: "public-access-error",
-                  location,
-                  description:
-                    "The share-capabilities lookup failed, so the Public tab renders no controls. This is the error on screen, verbatim.",
-                  data: {
-                    rendered_error: capabilitiesError,
-                    resource_type: resourceType,
-                    resource_id: resourceId,
-                    resource_name: resourceName,
-                    controls_rendered: false,
-                    kpis: context?.kpis ?? null,
-                  },
-                  attributes: { ...payloadAttributes, state: "error" },
-                })}
-              />
-            </span>
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {/* Anyone with the link — no-login token sharing (canonical) */}
-          <ShareLinkPanel
-            resourceType={resourceType}
-            resourceId={resourceId}
-            isOwner={isOwner}
-            enabled={caps.isLinkShareable}
-          />
-
-          {!caps.supportsPublic ? (
-            <div className="group p-3 bg-muted/30 rounded-lg border flex items-center gap-2">
-              <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <p className="text-xs text-muted-foreground flex-1">
-                {UNSUPPORTED_SENTENCE}
-              </p>
-              {/* A "you can't do this here" state is a blocker the user came to
-                  understand — copyable, with the capability flags that caused it. */}
-              <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-                <CopyButtons
-                  size="xs"
-                  label="Public access unavailable"
-                  human={() => humanPublicState(publicView())}
-                  json={publicView}
-                  agent={() => ({
-                    kind: "public-access-state",
-                    location,
-                    description: `This item type does not support public visibility, so the Public tab renders only an explanation. Rendered sentence: "${UNSUPPORTED_SENTENCE}"`,
-                    data: { ...publicView(), kpis: context?.kpis ?? null },
-                    summary: humanPublicState(publicView()),
-                    attributes: {
-                      ...payloadAttributes,
-                      state: "unsupported",
-                      supports_public: false,
-                      is_link_shareable: caps.isLinkShareable,
-                    },
-                  })}
-                />
-              </span>
-            </div>
-          ) : enumPicker ? (
-            <>
-              <div
-                className="space-y-1.5 p-3 bg-muted/30 rounded-lg border"
-                role="radiogroup"
-                aria-label="Who can reach this item"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-medium">Who can reach this</p>
-                  {/* A type with no page of its own here still has its web address elsewhere
-                      (a podcast, an app); its indexed switch rides this line (T-12). */}
-                  {visibility === "public" && !publicUrl && (
-                    <SearchEngineIndexedSwitch
-                      resourceType={resourceType}
-                      resourceId={resourceId}
-                      publishedHint={isPublic}
-                    />
-                  )}
-                </div>
-                <div className="grid gap-1.5">
-                  {VISIBILITY_CHOICES.map((choice) => {
-                    const Icon = choice.icon;
-                    const selected = visibility === choice.value;
-                    return (
-                      <button
-                        key={choice.value}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        disabled={!isOwner || loading}
-                        onClick={() => handlePickVisibility(choice.value)}
-                        className={cn(
-                          "flex w-full items-start gap-2.5 rounded-md border p-2 text-left transition-colors",
-                          selected
-                            ? "border-primary bg-background"
-                            : "border-transparent hover:bg-background/60",
-                          (!isOwner || loading) && "opacity-60",
-                        )}
-                      >
-                        <Icon
-                          className={cn(
-                            "mt-0.5 h-4 w-4 flex-shrink-0",
-                            selected ? "text-primary" : "text-muted-foreground",
-                          )}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1.5 text-sm font-medium">
-                            {choice.label}
-                            {selected && (
-                              <Check className="h-3.5 w-3.5 text-primary" />
-                            )}
-                          </span>
-                          <span className="block text-xs text-muted-foreground">
-                            {choice.describe(typeLabel, {
-                              publicPage: Boolean(publicUrl),
-                              noLoginLink: caps.isLinkShareable,
-                            })}
-                          </span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {!isOwner && (
-                  <p className="text-xs text-muted-foreground">
-                    Only the owner can change who can reach this {typeLabel}.
-                  </p>
-                )}
-              </div>
-
-              {isPublic && publicUrl && (
-                <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border">
-                  {/* "Indexed by search engines" sits on this same line (access ladder T-12). */}
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium">Published to the web</p>
-                    <SearchEngineIndexedSwitch
-                      resourceType={resourceType}
-                      resourceId={resourceId}
-                      publishedHint={isPublic}
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5 rounded-md border bg-background p-1.5">
-                    <Input
-                      readOnly
-                      value={publicUrl}
-                      className="h-7 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2"
-                      onClick={copyPublicUrl}
-                    >
-                      {copied ? (
-                        <Check className="h-3.5 w-3.5" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-            </>
-          ) : (
-            <>
-              <div className="group flex items-start justify-between gap-3 p-3 bg-muted/30 rounded-lg border">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    {isPublic ? (
-                      <>
-                        <Globe className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                        <h3 className="text-sm font-medium">{heading}</h3>
-                        <PublicBadge variant="compact" />
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        <h3 className="text-sm font-medium">{heading}</h3>
-                      </>
-                    )}
-                    {isPublic && !publicUrl && (
-                      <SearchEngineIndexedSwitch
-                        className="ml-auto"
-                        resourceType={resourceType}
-                        resourceId={resourceId}
-                        publishedHint={isPublic}
-                      />
-                    )}
-                    <span className="ml-auto opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-                      <CopyButtons
-                        size="xs"
-                        label="Public access state"
-                        human={() => humanPublicState(publicView())}
-                        json={publicView}
-                        agent={() => ({
-                          kind: "public-access-state",
-                          location,
-                          description:
-                            "Whether this resource is open to everyone, as rendered: the heading, the explanation sentence, the caveat, the public page URL, and what this item type is even capable of.",
-                          data: {
-                            ...publicView(),
-                            kpis: context?.kpis ?? null,
-                          },
-                          summary: humanPublicState(publicView()),
-                          attributes: {
-                            ...payloadAttributes,
-                            state: isPublic ? "public" : "not-public",
-                            has_public_page: Boolean(publicUrl),
-                            is_link_shareable: caps.isLinkShareable,
-                          },
-                        })}
-                      />
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {stateSentence}
-                  </p>
-                </div>
-
-                {isOwner ? (
-                  <Switch
-                    checked={isPublic}
-                    onCheckedChange={handleToggle}
-                    disabled={loading}
-                    className="flex-shrink-0"
-                  />
-                ) : isPublic ? (
-                  <PublicBadge variant="compact" />
-                ) : null}
-              </div>
-
-              {isPublic && publicUrl && (
-                <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border">
-                  {/* "Indexed by search engines" sits on this same line (access ladder T-12). */}
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium">Published to the web</p>
-                    <SearchEngineIndexedSwitch
-                      resourceType={resourceType}
-                      resourceId={resourceId}
-                      publishedHint={isPublic}
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5 rounded-md border bg-background p-1.5">
-                    <Input
-                      readOnly
-                      value={publicUrl}
-                      className="h-8 flex-1 text-xs font-mono"
-                      onFocus={(e) => e.currentTarget.select()}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 flex-shrink-0"
-                      onClick={copyPublicUrl}
-                      title="Copy web address"
-                    >
-                      {copied ? (
-                        <Check className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {isPublic && (
-                <Alert className="border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 py-2">
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                  <AlertDescription className="text-amber-800 dark:text-amber-200 text-xs">
-                    <strong>Open to everyone:</strong> any signed-in person can
-                    view this {typeLabel}
-                    {publicUrl
-                      ? ", and the public page above opens with no sign-in."
-                      : ". It has no public page of its own — people reach it through a no-login link or from inside the app."}
-                    {/* Rendered from the same string the payload carries — see
-                        `warningSentence`; the markup only adds the bolding. */}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {!isPublic && (
-                <div className="p-4 text-center space-y-2 bg-muted/30 rounded-lg border">
-                  <Lock className="w-10 h-10 mx-auto text-muted-foreground opacity-20" />
-                  <div>
-                    <h4 className="text-sm font-medium mb-0.5">
-                      Not open to everyone
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      {privateSentence}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </>
-      )}
+                  resource_name: resourceName,
+                  kpis: copy?.kpis ?? null,
+                },
+                attributes: { resource_type: resourceType, resource_id: resourceId, state: "error" },
+              })}
+            />
+          </span>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <ShareLinkPanel
+        resourceType={resourceType}
+        resourceId={resourceId}
+        isOwner={isOwner}
+        enabled={linkShareable}
+      />
     </div>
   );
 }

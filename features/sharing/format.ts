@@ -30,18 +30,13 @@ export function sharingLocation(surface: string): string {
   return `AI Matrx — Sharing — ${surface}`;
 }
 
-/** `humanLines` renders label: value pairs; booleans need words. */
-function yesNo(value: boolean): string {
-  return value ? "yes" : "no";
-}
-
 // ---------------------------------------------------------------------------
 // The page KPIs
 // ---------------------------------------------------------------------------
 
 /**
  * The numbers an access surface LEADS with — the tab counts, the public dot,
- * and (when the reachability summary is on screen) its visibility and reason
+ * and (when the reachability summary is on screen) who can open it and its reason
  * count. Every payload from such a surface carries these verbatim, in the body
  * AND the envelope attributes, so the agent never recomputes what the user is
  * already looking at.
@@ -57,9 +52,9 @@ export interface AccessKpis {
   is_public: boolean;
   /** null while ownership is loading or failed to resolve. */
   viewer_is_owner: boolean | null;
-  /** The entity's own visibility setting, when the summary is on screen. */
-  visibility: string | null;
-  /** True when the entity's own visibility makes it org-readable. */
+  /** Who can open it without a share, as the summary line reads, when the summary is on screen. */
+  reach: string | null;
+  /** True when every member of its organization can open it. */
   org_readable: boolean | null;
   /** How many distinct REASONS grant access (the summary's reason rows). */
   reachability_reasons: number | null;
@@ -91,7 +86,7 @@ export function accessKpis(input: {
     total_grants: permissions.length,
     is_public: isPublic,
     viewer_is_owner: viewerIsOwner,
-    visibility: summary?.visibility ?? null,
+    reach: summary ? summaryReachLabel(summary) : null,
     org_readable: summary ? summary.orgReadable : null,
     reachability_reasons: summary
       ? accessReasonRows(summary, entityType ?? summary.entityType).length
@@ -237,12 +232,12 @@ export const NO_GRANTS_DETAIL = "No one has been granted access here";
 
 /**
  * A DIRECT-GRANT list can only ever say what was granted HERE. It cannot see
- * visibility, org membership, or access conveyed through a container, so every
+ * its table's level, publishing, org membership, or access conveyed through a container, so every
  * payload it emits says so out loud — otherwise an agent reads "0 grants" as
  * "nobody can see it" and tells the user to grant access they already have.
  */
 export const GRANT_LIST_SCOPE_NOTE =
-  "This list covers DIRECT grants on this resource only. Access can also come from ownership, the resource's visibility setting, organization membership, or a container (scope, project, data store) that conveys it — see the access summary for the complete picture.";
+  "This list covers DIRECT grants on this resource only. Access can also come from ownership, its table's level (every member of an Organization record's organization), publishing to the web, organization membership, or a container (scope, project, data store) that conveys it — see the access summary for the complete picture.";
 
 export function humanGrantList(
   permissions: PermissionWithDetails[],
@@ -275,41 +270,19 @@ export function humanGrantList(
 // The reachability summary — what AccessSummaryPanel renders
 // ---------------------------------------------------------------------------
 
-/** The entity's own visibility SETTING, in the DB's true vocabulary. */
-export function visibilityLabel(visibility: string): string {
-  switch (visibility) {
-    case "public":
-      return "Published to the web — anyone can open it at its address";
-    case "shared":
-      return "Shared — specific grantees and share links";
-    case "internal":
-      return "Internal — readable inside the owning organization";
-    case "personal":
-      return "Personal — belongs to one person";
-    default:
-      return visibility;
-  }
-}
-
 /**
- * 🚨 THE VISIBILITY ROW AND THE HEADLINE ARE ONE TRUTH (lane RECORDS-UI-FIX, guide re-walk
- * 2026-09-23). A new table in admin's Workspace read, on the Access tab, "Visibility:
- * Internal — readable inside the owning organization" and, right under it, "Private — only
- * you". Both came from the store and both were half right: the table's SETTING is internal,
- * but `entity_access_summary` answers `org_readable = false` because that organization shows
- * its members only what is shared with them (`iam.member_lane_open` is false). The row now
- * reads the SETTING and what it actually reaches, from the same summary the headline reads,
- * so the two can never disagree.
+ * 🚨 WHO CAN OPEN IT, AND THE HEADLINE, ARE ONE TRUTH (lane RECORDS-UI-FIX, guide re-walk
+ * 2026-09-23; access ladder T-13). The line reads what the record actually reaches — published to
+ * the web, every member of its organization, or only its owner and the people named — from the same
+ * summary the headline reads, so the two can never disagree. Who may open a record without a share
+ * is its table's level, never a row setting ("Shown to" only decides which lists show it).
  */
-export function summaryVisibilityLabel(summary: AccessSummary): string {
-  const setting = summary.visibility;
-  if ((setting === "internal" || setting === "shared") && !summary.orgReadable && !summary.isPublic) {
-    const where = summary.organizationName ?? "this organization";
-    return setting === "internal"
-      ? `Internal — but ${where} shows its members only what is shared with them, so nobody else in it can read this yet`
-      : visibilityLabel(setting);
+export function summaryReachLabel(summary: AccessSummary): string {
+  if (summary.isPublic) return "Published to the web — anyone can open it at its address";
+  if (summary.orgReadable) {
+    return `Every member of ${summary.organizationName ?? "its organization"} can open it`;
   }
-  return visibilityLabel(setting);
+  return "Only its owner and the people it is shared with";
 }
 
 export function isPrivateSummary(summary: AccessSummary): boolean {
@@ -368,7 +341,7 @@ export function accessReasonRows(
       id: "org-readable",
       kind: "organization",
       title: `Everyone in ${summary.organizationName}`,
-      detail: `This ${entityType.replace(/_/g, " ")} is ${summary.visibility} in that organization`,
+      detail: `Every member of that organization can open this ${entityType.replace(/_/g, " ")}`,
     });
   }
 
@@ -415,7 +388,7 @@ export const ACCESS_SUMMARY_ERROR_HEADLINE = "Couldn’t determine access";
  * nothing is lost.
  */
 export interface AccessSummaryView {
-  visibility_label: string;
+  reach_label: string;
   headline: string;
   reasons: AccessReasonRow[];
   nothing_else_grants: string | null;
@@ -427,7 +400,7 @@ export function accessSummaryView(
   entityType: string,
 ): AccessSummaryView {
   return {
-    visibility_label: summaryVisibilityLabel(summary),
+    reach_label: summaryReachLabel(summary),
     headline: describeAccessSummary(summary),
     reasons: accessReasonRows(summary, entityType),
     nothing_else_grants: isPrivateSummary(summary) ? NOTHING_ELSE_GRANTS : null,
@@ -442,7 +415,7 @@ export function humanAccessSummary(
   const view = accessSummaryView(summary, entityType);
   return [
     `Who can see this, and why:`,
-    `- Visibility: ${view.visibility_label}`,
+    `- Who can open it: ${view.reach_label}`,
     `- ${view.headline}`,
     view.reasons.length
       ? view.reasons
@@ -471,51 +444,6 @@ export function reasonCsvRows(
 // ---------------------------------------------------------------------------
 // Public state — what PublicAccessTab renders
 // ---------------------------------------------------------------------------
-
-/**
- * The public tab as DATA. `state_sentence` / `warning_sentence` are the exact
- * strings on screen — the tab's whole job is explaining a reachability state in
- * prose, so paraphrasing it into the payload would lose the answer.
- */
-export interface PublicAccessView {
-  supports_public: boolean;
-  is_link_shareable: boolean;
-  is_public: boolean;
-  type_label: string;
-  public_url: string | null;
-  heading: string;
-  state_sentence: string;
-  /** The amber "open to everyone" caveat, rendered only while public. */
-  warning_sentence: string | null;
-  /** The "Not open to everyone" explanation, rendered only while private. */
-  private_sentence: string | null;
-  /** Rendered when the type cannot be public at all. */
-  unsupported_sentence: string | null;
-  /** Owners get the toggle; everyone else reads a badge. */
-  viewer_can_change: boolean;
-}
-
-export function humanPublicState(view: PublicAccessView): string {
-  return humanLines([
-    ["Heading", view.heading],
-    [
-      "State",
-      view.is_public ? "Published to the web" : "Not published to the web",
-    ],
-    ["Explanation", view.state_sentence],
-    ["Warning", view.warning_sentence],
-    ["While private", view.private_sentence],
-    ["Unavailable", view.unsupported_sentence],
-    [
-      "Public page URL",
-      view.public_url ?? "none — this type has no public page",
-    ],
-    ["Type supports public visibility", yesNo(view.supports_public)],
-    ["Type supports no-login share links", yesNo(view.is_link_shareable)],
-    ["Viewer can change this", yesNo(view.viewer_can_change)],
-    ["Item type", view.type_label],
-  ]);
-}
 
 // ---------------------------------------------------------------------------
 // The whole access panel
@@ -577,7 +505,7 @@ export function humanAccessPanel(view: AccessPanelView): string {
 function humanAccessSummaryFromView(view: AccessSummaryView): string {
   return [
     `Who can see this, and why:`,
-    `- Visibility: ${view.visibility_label}`,
+    `- Who can open it: ${view.reach_label}`,
     `- ${view.headline}`,
     ...view.reasons.map(
       (r) => `- ${r.title}${r.detail ? ` — ${r.detail}` : ""}`,
