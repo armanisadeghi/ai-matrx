@@ -431,10 +431,13 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/fastfire")).toBe(
       "matrx-user/education-fastfire",
     );
-    // The exact Quizzes LIST is its own surface; one assessment keeps
-    // education-assessment.
+    // The exact Quizzes and practice-tests LISTs are their own surfaces; one
+    // assessment keeps education-assessment.
     expect(surfaceFromPathname("/education/quizzes")).toBe(
       "matrx-user/education-quizzes",
+    );
+    expect(surfaceFromPathname("/education/practice-tests")).toBe(
+      "matrx-user/education-practice-tests",
     );
     expect(surfaceFromPathname(`/education/quizzes/${ID}/results`)).toBe(
       "matrx-user/education-assessment",
