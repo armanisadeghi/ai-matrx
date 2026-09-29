@@ -2,6 +2,6 @@
 --
 -- inverse of tableapi1_a_personal_keys_row_is_its_persons_alone.sql
 
-set local lock_timeout = '10s';
+set local lock_timeout = '3s';
 
 drop policy if exists api_keys_personal_rows_are_their_owners on iam.api_keys;

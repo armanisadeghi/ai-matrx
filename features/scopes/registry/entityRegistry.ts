@@ -351,7 +351,8 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   dataset: {
     Icon: Table,
-    labelPlural: "Datasets",
+    // Plain words (A5-P, 2026-09-29): a person calls these tables (vocabulary: Table; "dataset" is retired).
+    labelPlural: "Tables",
     hrefFor: (id) => `/data/${id}`,
   },
   workbook: {
@@ -374,7 +375,8 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   studio_session: {
     Icon: Mic,
-    labelPlural: "Audio Sessions",
+    // Plain words (A5-P): a person made a recording, not an "audio session".
+    labelPlural: "Recordings",
     hrefFor: (id) => `/transcripts/studio?session=${encodeURIComponent(id)}`,
   },
   // ─── Code (canonical `code.*` entities — attachable to orgs, war rooms, etc.) ─
@@ -419,9 +421,9 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   udt_document: {
     Icon: FileText,
-    // "Cloud documents", not "Documents": content.document (Markdown Studio) is also a document, and
-    // Trash showed two kinds both called Document (VERIFIER-25). The registry label is "Cloud document".
-    labelPlural: "Cloud documents",
+    // "Documents" (A5-P, plain words). content.document (Markdown Studio) stays distinct as
+    // "Markdown documents" (its registry label), which is what VERIFIER-25 needed: no two kinds share a plural.
+    labelPlural: "Documents",
     hrefFor: (id) => `/documents/${id}`,
   },
   working_document: {
@@ -436,7 +438,8 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // names one next.
   processed_document: {
     Icon: FileText,
-    labelPlural: "Processed Documents",
+    // Plain words (A5-P): the text read out of a file or page — never "Processed document".
+    labelPlural: "Document texts",
     hrefFor: (id) => `/knowledge/sources/${encodeURIComponent(id)}`,
   },
   conversation: {
@@ -665,7 +668,8 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   web_page: {
     Icon: Globe,
-    labelPlural: "Canonical Pages",
+    // Plain words (A5-P): a page of one of your marketing sites — never "Canonical Page".
+    labelPlural: "Site pages",
     // hrefFor resolves the nested brand/site route via a tiny server redirect.
     hrefFor: (id) => `/marketing/pages/${id}`,
   },

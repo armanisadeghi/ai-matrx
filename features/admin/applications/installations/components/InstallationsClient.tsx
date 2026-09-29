@@ -29,11 +29,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
+import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { versionStanding } from "@/features/admin/applications/version";
 import type { VersionStanding } from "@/features/admin/applications/version";
@@ -177,21 +177,12 @@ export function InstallationsClient({
         width: 180,
       },
       {
-        // THE DOOR LAW, honestly: there is no `user` entity token and no
-        // `/users/<id>` route to open, so the owning user's id is rendered
-        // copyable beside the email instead of as an unopenable string. When a
-        // user record route lands, this column becomes an EntityRef.
+        // Users & Access owns the verified per-user admin doors. Keep the
+        // readable email while making the named user openable from this table.
         id: "user_email",
         accessorKey: "user_email",
         header: "User",
-        cell: (row) => (
-          <span className="flex min-w-0 items-center gap-1.5">
-            <span className="min-w-0 truncate text-sm" title={row.user_email}>
-              {row.user_email}
-            </span>
-            <MatrxUuidCell value={row.user_id} label="User id" />
-          </span>
-        ),
+        cell: (row) => <AdminUserRef userId={row.user_id} email={row.user_email} />,
         width: 240,
       },
       {

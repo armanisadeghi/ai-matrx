@@ -31,7 +31,6 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
@@ -49,9 +48,12 @@ import {
 import { revokeOrgShare } from "@/utils/permissions/orgModeration";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import {
+  listableTokens,
   resolveEntityToken,
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
+import { useKindItems } from "@/features/scopes/hooks/useKindItems";
+import { useKindCounts } from "@/features/scopes/hooks/useKindCounts";
 import { isEntityTypeToken } from "@ai-matrx/associations";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { OrganizationAccessGate } from "./OrganizationAccessGate";
@@ -84,6 +86,7 @@ export function OrgResourceDetail() {
   } | null>(null);
   const [resolving, setResolving] = React.useState(true);
   const [query, setQuery] = React.useState("");
+  const [sharedQuery, setSharedQuery] = React.useState("");
   const [userMap, setUserMap] = React.useState<Map<string, UserLike>>(
     new Map(),
   );
@@ -143,14 +146,27 @@ export function OrgResourceDetail() {
     };
   }, [orgParam, orgReadAttempt]);
 
-  const shared = useOrgSharedItems(org?.id ?? null, entry);
+  // THE WHOLE SET, NOT THE FIRST 500 (A5-P, 2026-09-29). For every kind the inventory can list,
+  // the organization's own rows come from `useKindItems` — paged, searched on the server, and read
+  // through the same database filter as the tile count, so the badge, the tile and the list agree
+  // and machine files (thumbnails, provider payloads, session artifacts) are hidden on all three.
+  // `useOrgSharedItems` then adds only the member-contributed grants.
+  const listToken = entry?.token ?? null;
+  const listable = listToken !== null && listableTokens().includes(listToken);
+  const orgScope = listable && org ? ({ kind: "organization", organizationId: org.id } as const) : null;
+  const shared = useOrgSharedItems(org?.id ?? null, entry, { includeOwned: !listable });
+  const owned = useKindItems(listable ? listToken : null, orgScope, sharedQuery);
+  const ownedCount = useKindCounts(orgScope, { tokens: listToken ? [listToken] : [] });
   const mine = useOrgContributableItems(
     org?.id ?? null,
     org?.name ?? "",
     entry,
     () => {
       shared.reload();
+      owned.reload();
+      ownedCount.retry();
     },
+    query,
   );
 
   async function unshare(item: { id: string }) {
@@ -159,6 +175,8 @@ export function OrgResourceDetail() {
     if (result.success) {
       toast.success("Removed from the team.");
       shared.reload();
+      owned.reload();
+      ownedCount.retry();
       mine.reload();
     } else {
       toast.error(result.error ?? "Couldn't unshare. Only the owner can.");
@@ -242,11 +260,31 @@ export function OrgResourceDetail() {
     registryHasRoute || !entry.shareKey
       ? undefined
       : (getResourceSharePath(entry.shareKey, id) ?? undefined);
-  const filteredMine = mine.items.filter(
+  // Team view = the organization's own rows (paged, server-searched) + member-contributed grants.
+  // Grants are few; they are matched by name here and never listed twice.
+  const sharedNeedle = sharedQuery.trim().toLowerCase();
+  const ownedIds = new Set(owned.items.map((it) => it.id));
+  const grantItems = shared.items.filter(
     (it) =>
-      it.title.toLowerCase().includes(query.toLowerCase()) ||
-      idMatchesQuery(it, query),
+      !ownedIds.has(it.id) &&
+      (!listable || !sharedNeedle || it.title.toLowerCase().includes(sharedNeedle)),
   );
+  const teamItems: OrgSharedItem[] = listable
+    ? [
+        ...owned.items.map((it) => ({ id: it.id, title: it.title, source: "owned" as const })),
+        ...grantItems,
+      ]
+    : shared.items;
+  const teamLoading = shared.loading || (listable && owned.loading);
+  const teamError = shared.error ?? (listable ? owned.error : null);
+  const ownedTotal = listToken ? ownedCount.counts.get(listToken) : undefined;
+  // The whole team set: every org-owned row (counted by the same filter the list pages through)
+  // plus the grants. While the count is unknown the badge is absent, never a page length.
+  const teamTotal = !listable
+    ? shared.items.length
+    : typeof ownedTotal === "number" && !shared.loading
+      ? ownedTotal + shared.items.filter((it) => it.source === "shared").length
+      : null;
 
   return (
     <>
@@ -315,9 +353,9 @@ export function OrgResourceDetail() {
                 <h2 className="text-base font-semibold">
                   Shared with {org.name}
                 </h2>
-                {!shared.loading && (
+                {!teamLoading && teamTotal !== null && (
                   <Badge variant="secondary" className="text-xs">
-                    {shared.items.length}
+                    {teamTotal.toLocaleString()}
                   </Badge>
                 )}
               </div>
@@ -326,23 +364,41 @@ export function OrgResourceDetail() {
                 with the team.
               </p>
 
-              {shared.loading ? (
+              {listable && (
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    aria-label={`Search ${entry.labelPlural.toLowerCase()} shared with ${org.name}`}
+                    value={sharedQuery}
+                    onChange={(e) => setSharedQuery(e.target.value)}
+                    placeholder={`Search ${entry.labelPlural.toLowerCase()}…`}
+                    className="pl-9"
+                  />
+                </div>
+              )}
+              {teamLoading ? (
                 <Loading />
-              ) : shared.error ? (
+              ) : teamError ? (
                 <ReadFailure
-                  error={shared.error}
+                  error={teamError}
                   what={`the ${entry.labelPlural.toLowerCase()} shared with ${org.name}`}
-                  onRetry={shared.reload}
+                  onRetry={() => {
+                    shared.reload();
+                    owned.reload();
+                  }}
                 />
-              ) : shared.items.length === 0 ? (
+              ) : teamItems.length === 0 ? (
                 <Empty
                   icon={<Icon className="h-7 w-7 text-muted-foreground" />}
                 >
-                  Nothing here yet. Share one of yours from the right.
+                  {sharedNeedle
+                    ? "No matches."
+                    : "Nothing here yet. Share one of yours from the right."}
                 </Empty>
               ) : (
+                <>
                 <ul className="space-y-1.5">
-                  {shared.items.map((item) => (
+                  {teamItems.map((item) => (
                     <SharedRow
                       key={`${item.source}-${item.id}`}
                       item={item}
@@ -356,6 +412,10 @@ export function OrgResourceDetail() {
                     />
                   ))}
                 </ul>
+                {listable && owned.hasMore && (
+                  <ShowMore loading={owned.loadingMore} onClick={owned.loadMore} />
+                )}
+                </>
               )}
             </Card>
 
@@ -397,17 +457,18 @@ export function OrgResourceDetail() {
                       what={`your ${entry.labelPlural.toLowerCase()}`}
                       onRetry={mine.reload}
                     />
-                  ) : filteredMine.length === 0 ? (
+                  ) : mine.items.length === 0 ? (
                     <Empty
                       icon={<Icon className="h-7 w-7 text-muted-foreground" />}
                     >
-                      {mine.items.length === 0
-                        ? `You don't own any ${entry.labelPlural.toLowerCase()} yet.`
-                        : "No matches."}
+                      {query.trim()
+                        ? "No matches."
+                        : `You don't own any ${entry.labelPlural.toLowerCase()} yet.`}
                     </Empty>
                   ) : (
+                    <>
                     <ul className="space-y-1.5">
-                      {filteredMine.map((item) => {
+                      {mine.items.map((item) => {
                         const isShared =
                           mine.alreadyShared.has(item.id) ||
                           mine.justShared.has(item.id);
@@ -426,6 +487,10 @@ export function OrgResourceDetail() {
                         );
                       })}
                     </ul>
+                    {mine.hasMore && (
+                      <ShowMore loading={mine.loadingMore} onClick={mine.loadMore} />
+                    )}
+                    </>
                   )}
                 </>
               )}
@@ -652,6 +717,22 @@ function CenterState({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-full flex items-center justify-center bg-textured p-4">
       {children}
+    </div>
+  );
+}
+
+function ShowMore({
+  loading,
+  onClick,
+}: {
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <div className="flex justify-center pt-3">
+      <Button variant="ghost" size="sm" disabled={loading} onClick={onClick}>
+        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Show more"}
+      </Button>
     </div>
   );
 }

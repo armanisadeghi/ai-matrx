@@ -42,7 +42,16 @@ export interface OrgSharedItemsResult {
 export function useOrgSharedItems(
   orgId: string | null | undefined,
   entry: OrgResourceEntry | null,
+  options?: {
+    /**
+     * false = the org-owned rows come from `useKindItems` (paged, server-searched, same filter as
+     * the tile count) and this hook returns only the member-contributed grants. true (default) is
+     * kept ONLY for kinds the inventory cannot list (no reference-pickable token, e.g. sandboxes).
+     */
+    includeOwned?: boolean;
+  },
 ): OrgSharedItemsResult {
+  const includeOwned = options?.includeOwned ?? true;
   const [items, setItems] = React.useState<OrgSharedItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<unknown>(null);
@@ -68,7 +77,7 @@ export function useOrgSharedItems(
         ) as typeof supabase;
         // 1) Org-owned rows.
         const ownedById = new Map<string, OrgSharedItem>();
-        if (entry.table && entry.hasOrgColumn) {
+        if (includeOwned && entry.table && entry.hasOrgColumn) {
           let q = db
             .from(entry.table as never)
             .select(`id, ${titleCol}`)
@@ -152,7 +161,7 @@ export function useOrgSharedItems(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId, entry?.key, reloadTick]);
+  }, [orgId, entry?.key, reloadTick, includeOwned]);
 
   function reload() {
     setReloadTick((t) => t + 1);

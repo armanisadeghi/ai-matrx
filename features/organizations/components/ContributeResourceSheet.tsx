@@ -17,7 +17,6 @@ import React from "react";
 import { Loader2, Search, Check, ArrowLeft, Share2, Plus } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Input } from "@ai-matrx/design-system";
-import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -60,6 +59,7 @@ export function ContributeResourceSheet({
     orgName,
     selected,
     onContributed,
+    query,
   );
 
   React.useEffect(() => {
@@ -69,11 +69,8 @@ export function ContributeResourceSheet({
     }
   }, [open, initialEntryKey]);
 
-  const filtered = mine.items.filter(
-    (it) =>
-      it.title.toLowerCase().includes(query.toLowerCase()) ||
-      idMatchesQuery(it, query),
-  );
+  // Searched on the server and paged (useOrgContributableItems → useKindItems).
+  const filtered = mine.items;
 
   return (
     <MatrxDynamicPanelHost
@@ -163,9 +160,9 @@ export function ContributeResourceSheet({
               <div className="text-center py-12">
                 <selected.icon className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
-                  {mine.items.length === 0
-                    ? `You don't own any ${selected.labelPlural.toLowerCase()} yet.`
-                    : "No matches."}
+                  {query.trim()
+                    ? "No matches."
+                    : `You don't own any ${selected.labelPlural.toLowerCase()} yet.`}
                 </p>
               </div>
             ) : (
@@ -217,6 +214,22 @@ export function ContributeResourceSheet({
                     </li>
                   );
                 })}
+                {mine.hasMore && (
+                  <li className="flex justify-center pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={mine.loadingMore}
+                      onClick={mine.loadMore}
+                    >
+                      {mine.loadingMore ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        "Show more"
+                      )}
+                    </Button>
+                  </li>
+                )}
               </ul>
             )}
           </div>

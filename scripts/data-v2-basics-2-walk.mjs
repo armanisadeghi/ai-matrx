@@ -782,23 +782,28 @@ try {
   if (PHASE === "breaker2") {
     // BREAKER-2's steps, re-run on a fresh "Patient Visit Tracker" built through the page's own UI.
     const n = String(Date.now()).slice(-4);
-    const name = `Patient Visit Tracker ${n}`;
-    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
-    await unpark();
-    await sleep(6000);
-    if (await page.getByText("An organization is needed").count()) {
-      await page.getByRole("button", { name: "Choose organization" }).last().click();
-      await sleep(1500);
-      await page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first().click();
+    let tid = process.env.TABLE ?? null;
+    if (!tid) {
+      const name = `Patient Visit Tracker ${n}`;
+      await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+      await unpark();
       await sleep(6000);
+      if (await page.getByText("An organization is needed").count()) {
+        await page.getByRole("button", { name: "Choose organization" }).last().click();
+        await sleep(1500);
+        await page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first().click();
+        await sleep(6000);
+      }
+      await page.getByRole("button", { name: /^New table/ }).first().click();
+      await sleep(1200);
+      await page.getByPlaceholder("Table name").fill(name);
+      await page.getByRole("button", { name: "Create", exact: true }).click();
+      await until("the new table", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 60000);
+      tid = page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1];
+      step("made the table", { name, tid });
+
     }
-    await page.getByRole("button", { name: /^New table/ }).first().click();
-    await sleep(1200);
-    await page.getByPlaceholder("Table name").fill(name);
-    await page.getByRole("button", { name: "Create", exact: true }).click();
-    await until("the new table", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 60000);
-    const tid = page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1];
-    step("made the table", { name, tid });
+    step("the table", { tid });
     await open(tid, "?view=sheet");
     if (!(await page.locator("[data-sheet-layout]").count())) {
       await page.getByRole("button", { name: "Sheet", exact: true }).first().click().catch(() => {});
@@ -964,6 +969,36 @@ try {
       if (!/Neck, Shoulder/.test(body)) friction(`Body Areas as Text reads: ${body}`);
     }
     out.breaker2_table = tid;
+  }
+
+  if (PHASE === "home-error") {
+    const errs = [];
+    page.on("console", (m) => { if (m.type() === "error") errs.push(m.text().slice(0, 3000)); });
+    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await sleep(8000);
+    if (await page.getByText("An organization is needed").count()) {
+      await page.getByRole("button", { name: "Choose organization" }).last().click();
+      await sleep(1500);
+      await page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first().click();
+      await sleep(10000);
+    }
+    await shot("h03-home");
+    step("home errors", { errs: errs.filter((e) => /RecordsProvider/.test(e)).slice(0, 1) });
+  }
+
+  if (PHASE === "look-org-tables") {
+    await page.goto(`${ORIGIN}/organizations/cedar-ridge-physical-therapy/tables`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await sleep(12000);
+    await shot("h04-org-tables");
+    step("org tables", { buttons: (await page.getByRole("button").allInnerTexts()).map((b) => b.trim()).filter(Boolean).slice(0, 30) });
+  }
+
+  if (PHASE === "look-switch") {
+    await open(T.supplies, "?view=sheet");
+    await page.getByRole("button", { name: /Switch table/ }).first().click();
+    await sleep(2000);
+    await shot("h05-switch");
+    step("switch menu", { text: (await page.locator("[role=menu],[role=dialog],[data-radix-popper-content-wrapper]").first().innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 600) });
   }
 
   if (PHASE === "tidy") {

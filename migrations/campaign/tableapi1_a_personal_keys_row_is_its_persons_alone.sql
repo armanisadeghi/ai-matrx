@@ -11,7 +11,7 @@
 -- every permissive policy, and platform admins keep their read (our own admin access is never
 -- removed).
 
-set local lock_timeout = '10s';
+set local lock_timeout = '3s';
 
 -- ── 5. a personal key's row is its person's alone ────────────────────────────────────────
 create policy api_keys_personal_rows_are_their_owners on iam.api_keys

@@ -41,7 +41,7 @@
 --   6. Knobs: api_keys/personal_key_max_age_days, table_api/requests_per_minute_per_server,
 --      table_api/bulk_max_rows, mcp/oauth_dynamic_clients_enabled.
 
-set local lock_timeout = '30s';
+set local lock_timeout = '3s';
 
 -- ── 1. the minted-identity trigger learns the personal kind ────────────────────────────────
 create or replace function iam.api_key_identity_must_be_minted()
@@ -334,13 +334,6 @@ begin
 end;
 $function$;
 
-revoke all on function iam.personal_api_key_create(text, uuid, timestamp with time zone) from public, anon;
-revoke all on function iam.personal_api_key_list() from public, anon;
-revoke all on function iam.personal_api_key_revoke(uuid) from public, anon;
-grant execute on function iam.personal_api_key_create(text, uuid, timestamp with time zone) to authenticated;
-grant execute on function iam.personal_api_key_list() to authenticated;
-grant execute on function iam.personal_api_key_revoke(uuid) to authenticated;
-
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason,
    anonymous_callers, signed_in_callers)
@@ -358,6 +351,12 @@ values
    'migrations/campaign/tableapi1_a_person_can_hold_a_key_that_is_them.sql (lane TABLE-API-1)',
    'The signed-in person revokes one of their own personal keys; touches no membership.',
    false, true);
+
+-- A definer's implicit PUBLIC EXECUTE is cleared at its birth (ddl_guard); the door rows above
+-- declare the signed-in lane, and these grants open it.
+grant execute on function iam.personal_api_key_create(text, uuid, timestamp with time zone) to authenticated;
+grant execute on function iam.personal_api_key_list() to authenticated;
+grant execute on function iam.personal_api_key_revoke(uuid) to authenticated;
 
 -- ── 5b. is this OAuth client one that registered itself? (server lane only) ───────────────
 -- The AI Matrx MCP and the table API refuse sign-ins held by self-registered apps when the

@@ -84,11 +84,27 @@ async function resumeWalk() {
     .catch(() => {});
 }
 
-async function open(query = "", { width = 1600, height = 1000, dark = false } = {}) {
+const parked = async () =>
+  page.url().includes("__dev-walk") || (await page.getByRole("button", { name: /Resume this preview/ }).count()) > 0;
+
+/** Open, and when the walk cap parks the tab (another session needed the slot), resume and open again. */
+async function open(query = "", opts = {}) {
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    await openOnce(query, opts);
+    if (!(await parked())) return;
+    console.log(`[walk] parked by the walk cap (attempt ${attempt}) — resuming`);
+    await sleep(10000 * attempt);
+  }
+  throw new Error("the walk cap kept parking this tab");
+}
+
+async function openOnce(query = "", { width = 1600, height = 1000, dark = false } = {}) {
   await page.setViewportSize({ width, height });
   await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
   await page.goto(`${ORIGIN}/data-v2/${TABLE}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
-  if (page.url().includes("__dev-walk")) {
+  // The walk cap parks an idle preview behind "Resume this preview", at the same address or at
+  // /__dev-walk; a person presses Resume, and so does the walk.
+  if (page.url().includes("__dev-walk") || (await page.getByRole("button", { name: /Resume/ }).count())) {
     await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
     await sleep(6000);
     await page.goto(`${ORIGIN}/data-v2/${TABLE}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });

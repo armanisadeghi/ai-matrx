@@ -17,7 +17,7 @@ import { ArrowUpRight, ShieldCheck } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatAbsoluteDate } from "@ai-matrx/kit/format";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { isJsonObject } from "@/types/json";
 import { supabase } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
@@ -69,12 +69,16 @@ const columns: MatrxColumnDef<RetentionPolicyRow>[] = [
   { id: "id", header: "Policy id", accessorFn: (row) => row.id, width: 290, hidden: true },
 ];
 
-type SweepState = { enabled: boolean; lastRunAt: string | null } | null;
+type SweepState =
+  | { enabled: boolean; lastRunAt: string | null }
+  | { error: string }
+  | null;
 
 export function MeetingsRetentionPanel() {
   const [rows, setRows] = useState<RetentionPolicyRow[] | null>(null);
-  const [sweep, setSweep] = useState<SweepState | "unknown">(null);
+  const [sweep, setSweep] = useState<SweepState>(null);
   const [error, setError] = useState<string | null>(null);
+  const [readRevision, setReadRevision] = useState(0);
 
   useEffect(() => {
     let live = true;
@@ -90,26 +94,40 @@ export function MeetingsRetentionPanel() {
       .maybeSingle()
       .then(({ data, error: readError }) => {
         if (!live) return;
-        setSweep(readError || !data ? "unknown" : { enabled: data.enabled, lastRunAt: data.last_run_at });
+        setSweep(
+          readError
+            ? { error: readError.message }
+            : !data
+              ? { error: "The retention sweep task was not found." }
+              : { enabled: data.enabled, lastRunAt: data.last_run_at },
+        );
       });
     return () => {
       live = false;
     };
-  }, []);
+  }, [readRevision]);
 
   return (
     <div className="flex flex-col gap-2">
       <div className="rounded-md border border-border bg-card p-3 text-sm">
-        <div className="flex items-center gap-2 font-medium">
-          <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          {sweep === null
-            ? "Reading the retention sweep…"
-            : sweep === "unknown"
-              ? "The state of the retention sweep could not be read."
+        {sweep !== null && "error" in sweep ? (
+          <ErrorNotice
+            size="compact"
+            title="Could not read the retention sweep"
+            error={sweep.error}
+            operation="Read the Meet retention sweep (scheduler.sch_task)"
+            calls={["scheduler.sch_task"]}
+          />
+        ) : (
+          <div className="flex items-center gap-2 font-medium">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            {sweep === null
+              ? "Reading the retention sweep…"
               : sweep.enabled
                 ? `The retention sweep is on${sweep.lastRunAt ? ` — last ran ${formatAbsoluteDate(sweep.lastRunAt, { dateStyle: "medium", timeStyle: "short" })}` : ""}. The rules below are being enforced.`
                 : "The retention sweep is switched off, so nothing below is deleted today — the rules take effect only when it is turned on."}
-        </div>
+          </div>
+        )}
         <p className="mt-1 text-xs text-muted-foreground">
           Meet keeps no retention settings of its own: these are rows in the platform data-lifecycle system, the same rules every other kind of data follows.
           They are read-only here — browsers are refused writes to them and the lifecycle system has no admin editing screen yet, so a change is made
@@ -119,12 +137,6 @@ export function MeetingsRetentionPanel() {
           </Link>
         </p>
       </div>
-      {error ? (
-        <div className="relative rounded-md border border-destructive/40 bg-destructive/5 p-3 pr-10 text-sm text-destructive">
-          Retention rules could not be read: {error}
-          <ErrorAlchemyMenu error={error} operation="Read Meet retention policies" />
-        </div>
-      ) : null}
       <MatrxDataTable
         tableId="admin-meetings-retention"
         data={rows ?? []}
@@ -132,7 +144,15 @@ export function MeetingsRetentionPanel() {
         getRowId={(row) => row.id}
         isLoading={rows === null && error === null}
         density="condensed"
-        hidePagination
+        read={{
+          status: error ? "error" : rows === null ? "loading" : "ready",
+          error,
+          what: "retention rules",
+          onRetry: () => {
+            setError(null);
+            setReadRevision((revision) => revision + 1);
+          },
+        }}
         coverage={{ noun: "rule", answeredBy: "client", total: rows?.length }}
         toolbar={{ title: "Rules that govern meeting data" }}
       />

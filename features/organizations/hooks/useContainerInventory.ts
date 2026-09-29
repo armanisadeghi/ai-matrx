@@ -33,6 +33,8 @@ import React from "react";
 import { supabase } from "@/utils/supabase/client";
 import { ORG_RESOURCE_CATALOGUE } from "../resource-catalogue";
 import { organizationPickListsInTheNewSystem } from "@/features/user-lists/where-lists-live";
+import { listableTokens } from "@/features/scopes/registry/entityRegistry";
+import { fetchKindCounts } from "@/features/scopes/service/kindInventory";
 
 interface ContainerCountRow {
   resource_key: string;
@@ -132,6 +134,35 @@ export function useContainerInventory({
       } catch (err) {
         console.error("[useContainerInventory] count rpc threw:", err);
         failed.push("the item counts");
+      }
+
+      // ORGANIZATION TILES COUNT WHAT THE LIST SHOWS (A5-P, 2026-09-29). The container RPC above
+      // counts every row with this organization_id — 6,575 "files" for the admin organization, most
+      // of them thumbnails, provider payloads and session artifacts the per-kind page never lists.
+      // For every kind the inventory can list, the count now comes from `entity_kind_counts`, the
+      // same database filter the per-kind page pages through (`useKindItems`), so tile and list
+      // agree. Kinds it cannot list keep the container count above.
+      if (column === "organization_id") {
+        const listable = new Set<string>(listableTokens());
+        const tokenToKey = new Map<string, string>();
+        for (const entry of ORG_RESOURCE_CATALOGUE) {
+          if (entry.token && listable.has(entry.token)) tokenToKey.set(entry.token, entry.key);
+        }
+        if (tokenToKey.size > 0) {
+          try {
+            const counted = await fetchKindCounts(
+              { kind: "organization", organizationId: value },
+              [...tokenToKey.keys()],
+            );
+            for (const [token, n] of counted) {
+              const key = tokenToKey.get(token);
+              if (key && n !== null) ownedByKey.set(key, n);
+            }
+          } catch (err) {
+            console.error("[useContainerInventory] kind counts failed:", err);
+            if (!failed.includes("the item counts")) failed.push("the item counts");
+          }
+        }
       }
 
       // THE NEW SYSTEM'S SHARE OF A KIND (lane MOVER-DELETIONS): a switched organization's pick

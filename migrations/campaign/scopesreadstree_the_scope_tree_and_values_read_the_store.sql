@@ -181,11 +181,11 @@ as $function$
               'parent_scope_id', coalesce(to_jsonb(nullif(r.data ->> 'parent_id', '')), 'null'::jsonb),
               'name', coalesce(r.data -> 'name', 'null'::jsonb),
               'description', coalesce(r.data -> pt.desc_key, 'null'::jsonb),
-              'settings', coalesce((select jsonb_object_agg(s ->> 'old', custom.scope_setting_back(r.data -> (s ->> 'key'), s ->> 'behavior'))
+              'settings', case when jsonb_array_length(pt.settings_fields) = 0 then '{}'::jsonb else coalesce((select jsonb_object_agg(s ->> 'old', custom.scope_setting_back(r.data -> (s ->> 'key'), s ->> 'behavior'))
                                       from jsonb_array_elements(pt.settings_fields) s
                                      where s ->> 'old' is not null
                                        and jsonb_typeof(r.data -> (s ->> 'key')) is distinct from 'null'
-                                       and r.data ? (s ->> 'key')), '{}'::jsonb),
+                                       and r.data ? (s ->> 'key')), '{}'::jsonb) end,
               'slug', coalesce(r.data -> 'slug', 'null'::jsonb),
               'sort_order', coalesce(nullif(r.data ->> 'sort_order', '')::int, 0),
               'metadata', '{}'::jsonb,
@@ -599,13 +599,21 @@ begin
       v_task_ids    := iam.accessible_entity_ids('task', 'viewer'::public.permission_level);
     end if;
 
-    select coalesce(jsonb_agg(jsonb_build_object('o', om.organization_id, 'id', s.id, 't', s.table_id,
-                                                  'ts', s.type_sort, 'n', s.name, 'td', s.type_doc,
-                                                  'p', s.row_doc -> 'parent_scope_id')), '[]'::jsonb)
+    -- Only what this answer names (id, name, Table, parent), read straight from the Records of the
+    -- person's organizations' live scope Tables, and only in organizations whose wall she passes.
+    select coalesce(jsonb_agg(jsonb_build_object('o', r.organization_id, 'id', r.id, 't', r.table_id,
+                                                  'ts', coalesce(nullif(t.data ->> 'sort_order', '')::int, 0),
+                                                  'n', r.data ->> 'name', 'td', t.data - 'fields',
+                                                  'p', coalesce(to_jsonb(nullif(r.data ->> 'parent_id', '')), 'null'::jsonb))), '[]'::jsonb)
       into v_scopes
       from iam.organization_member om
-      cross join lateral custom.scope_rows_of(om.organization_id, null) s
-     where om.user_id = v_uid;
+      join custom.record t on t.organization_id = om.organization_id
+                          and t.table_id = custom.table_kernel_id()
+                          and t.deleted_at is null
+                          and t.data ->> 'kept_for' = 'context'
+      join custom.record r on r.organization_id = t.organization_id and r.table_id = t.id and r.deleted_at is null
+     where om.user_id = v_uid
+       and iam.has_org_access_for(v_uid, om.organization_id);
     v_levels := custom.levels_of(v_uid, (select array_agg((e ->> 'id')::uuid) from jsonb_array_elements(v_scopes) e));
 
     with
@@ -618,8 +626,6 @@ begin
                (e ->> 'ts')::int as type_sort, e ->> 'n' as name, e -> 'td' as td, e -> 'p' as parent_scope_id
           from jsonb_array_elements(v_scopes) e
          where coalesce((v_levels -> (e ->> 'id') ->> 's')::boolean, false)
-           -- the organization's wall for that person (an archived organization is closed)
-           and iam.has_org_access_for(v_uid, (e ->> 'o')::uuid)
     ),
     org_scope_types as (
         select t.organization_id,

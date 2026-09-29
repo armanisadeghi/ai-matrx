@@ -3,7 +3,7 @@
 -- inverse of tableapi1_a_person_can_hold_a_key_that_is_them.sql
 -- The two bodies below are pg_get_functiondef read from production on 2026-09-29 before the up.
 
-set local lock_timeout = '30s';
+set local lock_timeout = '3s';
 
 CREATE OR REPLACE FUNCTION iam.api_key_identity_must_be_minted()
  RETURNS trigger

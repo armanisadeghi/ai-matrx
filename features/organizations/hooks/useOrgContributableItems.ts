@@ -15,13 +15,11 @@
 
 import React from "react";
 import { recordToast, toast } from "@/lib/toast";
-import { supabase } from "@/utils/supabase/client";
 import { grantOrgAvailability } from "@/utils/permissions/service";
 import type { ResourceType } from "@/utils/permissions/registry";
 import { listOrgSharedIdsForTable } from "@/utils/permissions/orgModeration";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import type { OrgResourceEntry } from "../resource-catalogue";
 
 export interface MyItem {
@@ -39,22 +37,29 @@ export interface OrgContributableItems {
   sharingId: string | null;
   /** True when this entry can be contributed at all. */
   contributable: boolean;
+  /** The last page came back full — offer "Show more". */
+  hasMore: boolean;
+  loadingMore: boolean;
+  loadMore: () => void;
   share: (item: MyItem) => Promise<void>;
   reload: () => void;
 }
 
+/**
+ * `query` is searched ON THE SERVER by name, and the list is paged (feature knob
+ * resources.inventory/page_size) — it used to stop silently at the first 200 rows and filter those
+ * in the browser (A5-P, 2026-09-29). The rows come from `useKindItems`, the one inventory read.
+ */
 export function useOrgContributableItems(
   orgId: string | null | undefined,
   orgName: string,
   entry: OrgResourceEntry | null,
   onShared?: () => void,
+  query: string = "",
 ): OrgContributableItems {
-  const userId = useAppSelector(selectUserId);
-  const [items, setItems] = React.useState<MyItem[]>([]);
   const [alreadyShared, setAlreadyShared] = React.useState<Set<string>>(new Set());
+  const [sharedIdsError, setSharedIdsError] = React.useState<unknown>(null);
   const [justShared, setJustShared] = React.useState<Set<string>>(new Set());
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<unknown>(null);
   const [sharingId, setSharingId] = React.useState<string | null>(null);
   const [reloadTick, setReloadTick] = React.useState(0);
 
@@ -62,80 +67,38 @@ export function useOrgContributableItems(
   const contributable = Boolean(
     entry?.shareKey && entityInfo?.table && entityInfo.titleColumn,
   );
+  const active = Boolean(orgId && entry && contributable);
 
+  const list = useKindItems(
+    active ? (entry?.token ?? null) : null,
+    active ? { kind: "mine" } : null,
+    query,
+    { organizationId: orgId ?? null },
+  );
+
+  const shareKey = entry?.shareKey ?? null;
   React.useEffect(() => {
-    if (
-      !orgId ||
-      !entry ||
-      !userId ||
-      !contributable ||
-      !entityInfo ||
-      !entityInfo.titleColumn ||
-      !entry.shareKey
-    ) {
-      setItems([]);
+    if (!active || !orgId || !shareKey) {
       setAlreadyShared(new Set());
-      setError(null);
+      setSharedIdsError(null);
       return undefined;
     }
-    const table = entityInfo.table;
-    const titleCol = entityInfo.titleColumn;
-    const shareKey = entry.shareKey;
     let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      setItems([]);
-      setJustShared(new Set());
-      try {
-        // entityInfo is generated from platform.entity_types; this assertion
-        // joins that runtime registry to the schemas in generated DB types.
-        const db = supabase.schema(
-          entityInfo.schema as Parameters<typeof supabase.schema>[0],
-        );
-        let q = db
-          .from(table as never)
-          .select(`id, ${titleCol}`)
-          .eq(entityInfo.ownerColumn as never, userId)
-          .limit(200);
-        if (entry.archivedColumn) {
-          q = q.eq(entry.archivedColumn as never, false);
-        }
-        const [{ data, error }, sharedIds] = await Promise.all([
-          q,
-          listOrgSharedIdsForTable(orgId, shareKey),
-        ]);
-        if (error) throw error;
+    setJustShared(new Set());
+    listOrgSharedIdsForTable(orgId, shareKey).then(
+      (ids) => {
         if (cancelled) return;
-        // MATRX-EXCEPTION: table + title column are resolved from the org
-        // resource catalogue at runtime (any contributable kind), so the row
-        // shape cannot be a compile-time DbRpcRow guard — narrowed
-        // defensively below instead of trusted structurally.
-        const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
-        setItems(
-          rows.map((r) => ({
-            id: String(r.id),
-            title: String(r[titleCol] ?? "").trim() || "Untitled",
-          })),
-        );
-        setAlreadyShared(sharedIds);
-      } catch (err) {
-        if (!cancelled) {
-          // The consuming view renders this failure (ReadFailure, with the
-          // menu) in place of the list — no toast on top of it.
-          setError(err ?? new Error("The read failed"));
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+        setAlreadyShared(ids);
+        setSharedIdsError(null);
+      },
+      (err: unknown) => {
+        if (!cancelled) setSharedIdsError(err ?? new Error("The read failed"));
+      },
+    );
     return () => {
       cancelled = true;
     };
-    // entry?.key is the stable identity of the catalogue entry; entityInfo is
-    // deterministically derived from that entry's generated registry token.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId, entry?.key, userId, contributable, reloadTick]);
+  }, [active, orgId, shareKey, reloadTick]);
 
   async function share(item: MyItem) {
     if (!entry || !orgId || !entry.shareKey) return;
@@ -166,16 +129,20 @@ export function useOrgContributableItems(
 
   function reload() {
     setReloadTick((t) => t + 1);
+    list.reload();
   }
 
   return {
-    items,
+    items: active ? list.items.map((it) => ({ id: it.id, title: it.title })) : [],
     alreadyShared,
     justShared,
-    loading,
-    error,
+    loading: active && list.loading,
+    error: active ? (list.error ?? sharedIdsError) : null,
     sharingId,
     contributable,
+    hasMore: active && list.hasMore,
+    loadingMore: active && list.loadingMore,
+    loadMore: list.loadMore,
     share,
     reload,
   };

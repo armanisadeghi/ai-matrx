@@ -11,6 +11,7 @@
 //   platform.retention_policy                              -> platform_admin_read RLS
 
 import { supabase } from "@/utils/supabase/client";
+import { readAllRows } from "@ai-matrx/data/db";
 import { isJsonArray, isJsonObject, type JsonObject } from "@/types/json";
 import type { Database } from "@/types/database.types";
 
@@ -235,17 +236,53 @@ const RETENTION_COLUMNS =
  * for any token with no row of its own.
  */
 export async function fetchMeetRetentionPolicies(): Promise<RetentionPolicyRow[]> {
+  // This panel treats these rows as the complete set of Meet's lifecycle
+  // rules. PostgREST caps a bare select at 1,000 rows, so every scope is an
+  // exact, stably ordered read rather than a successful-looking partial list.
   const [entityRows, fileRows, globalRows] = await Promise.all([
-    supabase.schema("platform").from("retention_policy").select(RETENTION_COLUMNS).eq("scope", "entity").in("entity_token", [...MEET_RETENTION_TOKENS]),
-    supabase.schema("platform").from("retention_policy").select(RETENTION_COLUMNS).eq("scope", "entity").eq("entity_token", "file").not("custody_selector", "is", null),
-    supabase.schema("platform").from("retention_policy").select(RETENTION_COLUMNS).eq("scope", "global"),
+    readAllRows<RetentionPolicyRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("platform")
+          .from("retention_policy")
+          .select(RETENTION_COLUMNS, { count: "exact" })
+          .eq("scope", "entity")
+          .in("entity_token", [...MEET_RETENTION_TOKENS])
+          .order("id", { ascending: true })
+          .range(from, to)
+          .returns<RetentionPolicyRow[]>(),
+      { label: "platform.retention_policy (Meet entity rules)" },
+    ),
+    readAllRows<RetentionPolicyRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("platform")
+          .from("retention_policy")
+          .select(RETENTION_COLUMNS, { count: "exact" })
+          .eq("scope", "entity")
+          .eq("entity_token", "file")
+          .not("custody_selector", "is", null)
+          .order("id", { ascending: true })
+          .range(from, to)
+          .returns<RetentionPolicyRow[]>(),
+      { label: "platform.retention_policy (Meet recording rules)" },
+    ),
+    readAllRows<RetentionPolicyRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("platform")
+          .from("retention_policy")
+          .select(RETENTION_COLUMNS, { count: "exact" })
+          .eq("scope", "global")
+          .order("id", { ascending: true })
+          .range(from, to)
+          .returns<RetentionPolicyRow[]>(),
+      { label: "platform.retention_policy (global floor)" },
+    ),
   ]);
-  for (const result of [entityRows, fileRows, globalRows]) {
-    if (result.error) throw new Error(result.error.message);
-  }
-  const custody = (fileRows.data ?? []).filter((row) => {
+  const custody = fileRows.filter((row) => {
     const selector = row.custody_selector;
     return isJsonObject(selector) && selector.source_kind === MEET_RECORDING_SOURCE_KIND;
   });
-  return [...(entityRows.data ?? []), ...custody, ...(globalRows.data ?? [])];
+  return [...entityRows, ...custody, ...globalRows];
 }
