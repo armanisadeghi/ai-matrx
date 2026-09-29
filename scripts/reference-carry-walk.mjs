@@ -188,10 +188,10 @@ if (PHASE === "after" || PHASE === "kind") {
   const COMPARISON = JSON.stringify({
     __kind: "data_table",
     title: "Opus against Sonnet on the month-end close checklist",
-    columns: [{ key: "model", label: "Model" }, { key: "cost", label: "Cost per run" }, { key: "caught", label: "Errors caught" }],
+    columns: [{ name: "Model", type: "string" }, { name: "Cost per run", type: "string" }, { name: "Errors caught", type: "string" }],
     rows: [
-      { model: "claude-opus-5-5", cost: "$0.84", caught: "11 of 11" },
-      { model: "claude-sonnet-5", cost: "$0.19", caught: "9 of 11" },
+      ["claude-opus-5-5", "$0.84", "11 of 11"],
+      ["claude-sonnet-5", "$0.19", "9 of 11"],
     ],
   });
   await typeInto("The hardest problems", "Why this model", COMPARISON);
