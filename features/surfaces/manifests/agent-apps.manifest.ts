@@ -148,9 +148,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "app_visibility",
-    label: "Visibility",
+    label: "Published to the web",
     description:
-      "Who can reach the open app: `public` (reachable at `/p/[slug]` without auth), `link`, `internal` (the owning organization), or `personal`. Absent when no app is open.",
+      '"Published to the web" (anyone, signed in or not, reaches it at `/p/[slug]`) or "Not published" — the open app\'s web state. Absent when no app is open.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5,
