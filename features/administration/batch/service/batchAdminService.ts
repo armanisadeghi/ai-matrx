@@ -311,17 +311,36 @@ export interface WorkItemPage {
   items: WorkItem[];
   /** Exact number of rows matching the filter — not `items.length`. */
   matched: number;
-  /** True when `matched` exceeds what this page carries. */
-  truncated: boolean;
 }
 
-export const WORK_ITEM_PAGE_SIZE = 200;
+export const WORK_ITEM_PAGE_SIZES = [10, 25, 50, 100] as const;
+export type WorkItemPageSize = (typeof WORK_ITEM_PAGE_SIZES)[number];
+
+/**
+ * The source search covers every visible identity a person can reasonably
+ * type from this list. Lifecycle and provider remain their explicit facets.
+ */
+export function workItemSearchClause(search: string): string {
+  const term = `%${search.replace(/[%,]/g, "")}%`;
+  return `purpose.ilike.${term},custom_id.ilike.${term},link_id.ilike.${term},model.ilike.${term}`;
+}
 
 export async function listWorkItems(
   filters: WorkItemFilters = {},
-  opts: { signal?: AbortSignal; limit?: number } = {},
+  opts: {
+    signal?: AbortSignal;
+    page?: number;
+    pageSize?: WorkItemPageSize;
+    /** A single inspection excludes rows enqueued after it began. */
+    asOf?: string;
+  } = {},
 ): Promise<WorkItemPage> {
-  const limit = opts.limit ?? WORK_ITEM_PAGE_SIZE;
+  const page = Math.max(1, opts.page ?? 1);
+  const requestedPageSize = opts.pageSize ?? 25;
+  const pageSize = WORK_ITEM_PAGE_SIZES.includes(requestedPageSize)
+    ? requestedPageSize
+    : 25;
+  const from = (page - 1) * pageSize;
   let q = batchSchema()
     .from("work_item")
     .select(WORK_ITEM_COLUMNS, { count: "exact" });
@@ -335,19 +354,26 @@ export async function listWorkItems(
   if (filters.purpose) q = q.eq("purpose", filters.purpose);
   if (filters.provider) q = q.eq("provider", filters.provider);
   if (filters.batchRowId) q = q.eq("provider_batch_row_id", filters.batchRowId);
+  if (opts.asOf) q = q.lte("created_at", opts.asOf);
   if (filters.search) {
-    const term = `%${filters.search.replace(/[%,]/g, "")}%`;
-    q = q.or(`custom_id.ilike.${term},link_id.ilike.${term},model.ilike.${term}`);
+    q = q.or(workItemSearchClause(filters.search));
   }
 
-  q = q.order("created_at", { ascending: false }).limit(limit);
+  // A timestamp is not unique, so the id tie-break keeps numbered pages stable
+  // while a source page is being inspected.
+  q = q
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
+    .range(from, from + pageSize - 1);
   if (opts.signal) q = q.abortSignal(opts.signal);
 
   const { data, error, count } = await q;
   if (error) throw new Error(`batch.work_item list: ${error.message}`);
+  if (count === null) {
+    throw new Error("batch.work_item list: source did not return an exact count");
+  }
   const items = (data ?? []) as unknown as WorkItem[];
-  const matched = count ?? items.length;
-  return { items, matched, truncated: matched > items.length };
+  return { items, matched: count };
 }
 
 /** Distinct purposes/providers for the filter bar — read complete, it drives a control. */

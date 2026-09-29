@@ -4,13 +4,15 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Wrench } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
 import { useCxTableFilters } from "@/features/cx-dashboard/components/useCxTableFilters";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import {
@@ -55,12 +57,47 @@ export function RequestsContent({ result }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sourceFilter = useCxTableFilters("cx-requests");
+  const [localQuery, setLocalQuery] = useState<
+    Omit<MatrxDataTableQueryState, "page" | "pageSize">
+  >({
+    search: "",
+    anyOf: "",
+    columnFilters: {},
+    sort: null,
+  });
 
   const updateSourcePage = (page: number, perPage = result.per_page) => {
     const params = new URLSearchParams(window.location.search);
     params.set("page", String(page));
     params.set("per_page", String(perPage));
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const tableQuery: MatrxDataTableQueryState = {
+    ...localQuery,
+    page: result.page,
+    pageSize: result.per_page,
+  };
+
+  const onTableQueryChange = (next: MatrxDataTableQueryState) => {
+    const nextLocalQuery = {
+      search: next.search,
+      searchMatchMode: next.searchMatchMode,
+      searchScope: next.searchScope,
+      anyOf: next.anyOf,
+      layeredFilters: next.layeredFilters,
+      columnFilters: next.columnFilters,
+      sort: next.sort,
+    };
+    const localControlsChanged =
+      JSON.stringify(nextLocalQuery) !== JSON.stringify(localQuery);
+    setLocalQuery(nextLocalQuery);
+    if (
+      !localControlsChanged &&
+      (next.page !== result.page || next.pageSize !== result.per_page)
+    ) {
+      updateSourcePage(next.page, next.pageSize);
+    }
   };
 
   const rowMenu = useCxRowMenu({
@@ -342,12 +379,22 @@ export function RequestsContent({ result }: Props) {
             extraSections={rowMenu.sections}
           >
           <MatrxDataTable
-            urlState={{ id: "cx-requests" }}
             data={result.data}
             columns={columns}
             getRowId={(r) => r.id}
-            pageSize={0}
-            hidePagination
+            query={{
+              mode: "controlled",
+              state: tableQuery,
+              totalItems: result.total,
+              onStateChange: onTableQueryChange,
+              sourceProcessing: {
+                search: "local",
+                columnFilters: "local",
+                sort: "local",
+                sourceTotal: result.total,
+              },
+            }}
+            pageSizeOptions={[25, 50, 100]}
             emptyState={{ title: "No requests match" }}
             toolbar={{
               title: "User Requests",
@@ -399,25 +446,6 @@ export function RequestsContent({ result }: Props) {
           </NonEditableContextMenu>
         </div>
 
-        {result.total > 0 && (
-          <div className="shrink-0 border-t bg-card">
-            <GenericTablePagination
-              totalItems={result.total}
-              itemsPerPage={result.per_page}
-              currentPage={result.page}
-              onPageChange={(page) => updateSourcePage(page)}
-              onItemsPerPageChange={(perPage) => updateSourcePage(1, perPage)}
-              pageSizeOptions={[25, 50, 100]}
-              showAllOption={false}
-              compact
-              layoutType="flex"
-              containerClassName="border-t-0"
-              labelFormat={(start, end, total) =>
-                `Source rows ${start}–${end} of ${total}`
-              }
-            />
-          </div>
-        )}
       </div>
     </SurfaceRuntimeProvider>
   );

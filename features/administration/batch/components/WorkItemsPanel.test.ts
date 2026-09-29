@@ -1,14 +1,16 @@
-import { workItemsFooterLabel, workItemsSourceNotice } from "./WorkItemsPanel";
+import {
+  WORK_ITEM_PAGE_SIZES,
+  workItemSearchClause,
+} from "../service/batchAdminService";
 
-describe("WorkItemsPanel source coverage contract", () => {
-  it("labels the loaded window and exact filtered source count separately", () => {
-    expect(workItemsFooterLabel(100, 248)).toBe("100 loaded · 248 matching source");
+describe("WorkItemsPanel source pager contract", () => {
+  it("offers only source-supported page sizes", () => {
+    expect(WORK_ITEM_PAGE_SIZES).toEqual([10, 25, 50, 100]);
   });
 
-  it("leaves counts to the canonical footer and keeps only the truncation remedy", () => {
-    expect(workItemsSourceNotice(true)).toBe(
-      "Narrow the filters to inspect the rest.",
+  it("searches Purpose because it is visible in every work-item row", () => {
+    expect(workItemSearchClause("schema-translation-s13-proof")).toContain(
+      "purpose.ilike.%schema-translation-s13-proof%",
     );
-    expect(workItemsSourceNotice(false)).toBe("");
   });
 });
