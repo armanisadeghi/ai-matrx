@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-29T22:12:09.660Z",
+  "generated_at": "2026-09-29T22:40:25.486Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5197,6 +5197,12 @@
       "filename": "storereadperf3b_which_tables_she_sees_is_asked_once_per_group.sql",
       "checksum": "5a86643a334fe7b9fd451d0bbf4c9f2ac1ed0888e5b5e28a34daeb324ac3992b",
       "applied_at": "2026-09-29 20:54:28.219221+00"
+    },
+    "migrations/campaign/storereadperf4_the_scope_tree_and_the_data_home_ask_shared_answers.sql": {
+      "source": "matrx-frontend",
+      "filename": "storereadperf4_the_scope_tree_and_the_data_home_ask_shared_answers.sql",
+      "checksum": "02350fec7c67e9d751d546c173a3e6a3cb85ec7de57f4d2051daab104a9854de",
+      "applied_at": "2026-09-29 22:40:22.195229+00"
     },
     "migrations/campaign/storerel_a_carrying_link_has_a_door.sql": {
       "source": "matrx-frontend",
