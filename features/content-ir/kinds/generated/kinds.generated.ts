@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 548 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 554 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "de361286b52d";
+export const KIND_REGISTRY_FINGERPRINT = "e25e6409575c";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -638,7 +638,13 @@ export interface AssetVariantKind {
   height?: number | null;
   cdn_url?: string | null;
   file_id: string;
-  metadata?: Record<string, JsonValue>;
+  metadata?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: JsonValue | string | undefined;
+  };
   file_path: string;
   mime_type?: string | null;
   size_bytes?: number | null;
@@ -1141,6 +1147,36 @@ export interface ClaimEvidence_ListingDraft {
    */
   __kind?: string;
   source: string;
+}
+
+/**
+ * * From kind `news_client_context`.
+ */
+export interface ClientBrief {
+  text?: string;
+  __kind?: "news_client_brief";
+  is_empty?: boolean;
+  source_id?: string | null;
+}
+
+/**
+ * * From kind `news_client_context`.
+ */
+export interface ClientCompany {
+  name?: string;
+  __kind?: "news_client_company";
+  website?: string | null;
+  description?: string;
+}
+
+/**
+ * * From kind `news_client_context`.
+ */
+export interface ClientFacts {
+  other?: string[];
+  __kind?: "news_client_facts";
+  proof_assets?: ProofAsset[];
+  spokespeople?: Spokesperson[];
 }
 
 /**
@@ -1830,6 +1866,128 @@ export interface DiagramNode {
   deathYear?: string;
   generation?: number;
   description?: string;
+}
+
+/**
+ * * From kind `news_digest`.
+ */
+export interface DigestCost {
+  __kind?: "news_digest_cost";
+  run_usd?: number;
+  ceiling_usd?: number;
+  month_to_date_usd?: number;
+}
+
+/**
+ * * From kind `news_digest`.
+ */
+export interface DigestHeadline {
+  stale?: number;
+  __kind?: "news_digest_headline";
+  surfaced?: number;
+  withheld_safety?: number;
+  withheld_hygiene?: number;
+  watching_unverified?: number;
+  unverified_by_status?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: number | string | undefined;
+  };
+}
+
+/**
+ * * From kind `news_digest`.
+ */
+export interface DigestLinks {
+  __kind?: "news_digest_links";
+  tracker?: string | null;
+  run_view?: string | null;
+}
+
+/**
+ * * From kind `news_digest`.
+ */
+export interface DigestSourceHealth {
+  error?: string | null;
+  items?: number;
+  __kind?: "news_digest_source_health";
+  status: "ok" | "empty" | "error" | "unavailable" | "not_configured";
+  source_kind: string;
+}
+
+/**
+ * * From kind `news_digest`.
+ */
+export interface DigestSurfaced {
+  title: string;
+  __kind?: "news_digest_surfaced";
+  open_url?: string | null;
+  story_key: string;
+  triage_tier?: "pitch_ready" | "big_story" | "watch" | null;
+  outlet_count?: number;
+  canonical_url?: string | null;
+  first_public_at?: string | null;
+}
+
+/**
+ * * From kind `news_digest`.
+ */
+export interface DigestWatch {
+  basis?: "origin_finding" | "detector_estimate" | null;
+  label?: string;
+  title: string;
+  __kind?: "news_digest_watch";
+  detail?: string | null;
+  reason?: string;
+  open_url?: string | null;
+  story_key: string;
+  top_outlets?: string[];
+  outlet_count?: number;
+  story_size_band?: string;
+  freshness_status?: "fresh" | "fresh_new_development" | "stale" | "unverified_boundary" | "unverified_no_timestamp" | "unverified_no_corroboration" | null;
+  earliest_evidence_at?: string | null;
+}
+
+/**
+ * One watch group: freshness unverified and stale are listed; set-aside is counted by reason.
+ *  *
+ *  * From kind `news_digest`.
+ */
+export interface DigestWatchGroup {
+  count?: number;
+  group: "freshness_unverified" | "stale" | "set_aside";
+  label: string;
+  __kind?: "news_digest_watch_group";
+  listed?: number;
+  reasons?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: number | string | undefined;
+  };
+  open_url?: string | null;
+}
+
+/**
+ * * From kind `news_digest`.
+ */
+export interface DigestWindow {
+  hours: number;
+  __kind?: "news_digest_window";
+  cutoff: string;
+}
+
+/**
+ * * From kind `news_digest`.
+ */
+export interface DigestWithheld {
+  __kind?: "news_digest_withheld";
+  safety?: number;
+  hygiene?: number;
+  open_url?: string | null;
 }
 
 /**
@@ -2841,6 +2999,17 @@ export interface ItemSpecific {
   __kind?: string;
   aspect: string;
   source: string;
+}
+
+/**
+ * * From kind `news_angle_set`.
+ */
+export interface JournalistShape {
+  __kind?: "news_journalist_shape";
+  sub_beat?: string;
+  outlet_type?: string;
+  do_not_target?: string[];
+  why_now_for_beat?: string;
 }
 
 /**
@@ -3864,6 +4033,65 @@ export interface NeedsHuman {
 }
 
 /**
+ * * From kind `news_angle_set`.
+ */
+export interface NewsAngle {
+  lens?: string;
+  __kind?: "news_angle";
+  why_now?: string;
+  headline: string;
+  tentative?: boolean;
+  story_type: "data" | "founder-profile" | "contrarian" | "trend" | "customer-story" | "exec-spotlight" | "funding-mechanics" | "defensive-comment" | "category-creation" | "counterposition";
+  angle_decay: "30min" | "4hr" | "24hr" | "week" | "month" | "evergreen";
+  distinctness?: string;
+  proof_needed?: string[];
+  facts_relied_on?: string[];
+  journalist_shape?: JournalistShape;
+  angle_decay_reason?: string;
+}
+
+/**
+ * * From kind `newsworthiness_verdict`.
+ */
+export interface NewsworthinessAnchor {
+  __kind?: "newsworthiness_anchor";
+  example?: string;
+  why_not_lower?: string;
+  why_not_higher?: string;
+}
+
+/**
+ * * From kind `newsworthiness_verdict`.
+ */
+export interface NewsworthinessCap {
+  cap: number;
+  why?: string;
+  __kind?: "newsworthiness_cap";
+  trigger: string;
+}
+
+/**
+ * * From kind `newsworthiness_verdict`.
+ */
+export interface NewsworthinessDimension {
+  name: string;
+  score: number;
+  __kind?: "newsworthiness_dimension";
+  reason?: string;
+  weight: number;
+}
+
+/**
+ * * From kind `newsworthiness_verdict`.
+ */
+export interface NewsworthinessEvidence {
+  url?: string;
+  date?: string | null;
+  title?: string;
+  __kind?: "newsworthiness_evidence";
+}
+
+/**
  * Structured failure — the ONLY shape a node failure travels in.
  *
  * ``code`` — stable machine key (snake_case; shares the retry_on namespace
@@ -3911,6 +4139,18 @@ export interface NotableQuote {
    */
   __kind?: string;
   speaker?: string;
+}
+
+/**
+ * A stand-in, fallback or automatic intervention, announced with its remedy.
+ *  *
+ *  * From kind `news_digest`.
+ */
+export interface Notice {
+  code: string;
+  __kind?: "news_notice";
+  remedy: string;
+  message: string;
 }
 
 /**
@@ -4650,6 +4890,16 @@ export interface ProgressStep {
 }
 
 /**
+ * * From kind `news_client_context`.
+ */
+export interface ProofAsset {
+  url?: string | null;
+  __kind?: "news_proof_asset";
+  summary?: string;
+  asset_kind: string;
+}
+
+/**
  * One named, independently re-checkable assertion about a run.
  *
  * ``skipped`` is a first-class outcome and is NEVER a pass: a replay run
@@ -5059,6 +5309,15 @@ export interface RecipeStep {
 }
 
 /**
+ * * From kind `news_angle_set`.
+ */
+export interface RefusedAngle {
+  idea: string;
+  __kind?: "news_refused_angle";
+  reason: "duplicate" | "slop" | "hallucinated_fact" | "no_journalist_shape" | "no_why_now_but_required" | "off-beat";
+}
+
+/**
  * * Shared by 2 kinds (voice_fingerprint, voice_measure_result).
  */
 export interface RegisterAxis {
@@ -5087,6 +5346,106 @@ export interface RejectedCandidate {
   __kind?: string;
   reason: string;
   candidate: string;
+}
+
+/**
+ * * From kind `news_opportunity_report`.
+ */
+export interface ReportAngle {
+  needs?: string;
+  __kind?: "news_report_angle";
+  headline?: string;
+  tentative?: boolean;
+  angle_decay?: string;
+}
+
+/**
+ * One funnel stage, copied from ``news_run_summary.counts`` (code overwrites it after the run).
+ *  *
+ *  * From kind `news_opportunity_report`.
+ */
+export interface ReportFunnelStage {
+  count?: number;
+  stage?: string;
+  __kind?: "news_report_funnel_stage";
+}
+
+/**
+ * * From kind `news_opportunity_report`.
+ */
+export interface ReportGatedOut {
+  stale?: string[];
+  __kind?: "news_report_gated_out";
+  unverified_boundary?: string[];
+  freshness_unverified?: string[];
+  unverified_no_timestamp?: string[];
+  unverified_no_corroboration?: string[];
+}
+
+/**
+ * * From kind `news_opportunity_report`.
+ */
+export interface ReportLink {
+  tag?: string;
+  url?: string;
+  flags?: string[];
+  title?: string;
+  __kind?: "news_report_link";
+  publisher?: string;
+  published_at?: string | null;
+}
+
+/**
+ * * From kind `news_opportunity_report`.
+ */
+export interface ReportSections {
+  watch?: ReportStory[];
+  __kind?: "news_report_sections";
+  gated_out?: ReportGatedOut;
+  big_stories?: ReportStory[];
+  pitch_ready?: ReportStory[];
+}
+
+/**
+ * One story as the report shows it. Tier, size and freshness are COPIED from the inputs, never judged here.
+ *  *
+ *  * From kind `news_opportunity_report`.
+ */
+export interface ReportStory {
+  tier?: string;
+  title?: string;
+  __kind?: "news_report_story";
+  angles?: ReportAngle[];
+  reason?: string;
+  related?: ReportLink[];
+  standing?: string | null;
+  human_ask?: string | null;
+  signal_id?: string;
+  angles_note?: string;
+  bridge_note?: string | null;
+  main_source?: ReportLink;
+  proof_gated?: boolean | null;
+  tier_source?: string;
+  outlet_count?: number | null;
+  watch_reason?: string | null;
+  newsworthiness?: string | null;
+  first_public_at?: string | null;
+  story_size_band?: string | null;
+  confidence_flags?: string[];
+  freshness_status?: string;
+  new_development_at?: string | null;
+  standing_rationale?: string | null;
+  relevance_confidence?: string | null;
+}
+
+/**
+ * * From kind `news_opportunity_report`.
+ */
+export interface ReportTodaysRead {
+  __kind?: "news_report_todays_read";
+  watched?: number;
+  big_stories?: number;
+  pitch_ready?: number;
 }
 
 /**
@@ -6757,6 +7116,30 @@ export interface SpeechTurn {
 }
 
 /**
+ * * From kind `news_client_context`.
+ */
+export interface Spokesperson {
+  name: string;
+  title?: string;
+  __kind?: "news_spokesperson";
+  expertise?: string;
+}
+
+/**
+ * How many triaged stories have each standing. A TYPED object, never a free map: a registered kind is bound
+ * to the provider as a strict schema, and a free map reaches the model as an object with no properties — it
+ * can only ever come back empty (live 2026-09-28: every triage answered ``{"__kind": "news_standing_counts"}``).
+ *  *
+ *  * From kind `news_triage`.
+ */
+export interface StandingCounts {
+  none?: number;
+  __kind?: "news_standing_counts";
+  strong?: number;
+  partial?: number;
+}
+
+/**
  * * From kind `cms_starter_kit_result`.
  */
 export interface StarterKitComponent {
@@ -7141,6 +7524,39 @@ export interface TranscriptionUsage {
    * Audio duration billed by the transcription provider, in seconds.
    */
   duration_seconds?: number | null;
+}
+
+/**
+ * * From kind `news_triage`.
+ */
+export interface TriageSummary {
+  __kind?: "news_triage_summary";
+  input_count?: number;
+  watch_count?: number;
+  big_story_count?: number;
+  standing_counts?: StandingCounts;
+  pitch_ready_count?: number;
+}
+
+/**
+ * * From kind `news_triage`.
+ */
+export interface TriagedSignal {
+  tier: "pitch_ready" | "big_story" | "watch";
+  __kind?: "news_triaged_signal";
+  standing: "strong" | "partial" | "none";
+  signal_id: string;
+  off_policy?: boolean;
+  bridge_note?: string | null;
+  policy_rule?: string | null;
+  proof_gated?: boolean;
+  cluster_size?: number;
+  signal_title?: string;
+  watch_reason?: "no_client_standing" | "competitor_or_promotional" | "no_journalist_shape" | "off_beat" | "duplicate" | "weak_signal" | "client_policy_exclusion" | null;
+  consolidated_from?: string[];
+  standing_rationale?: string;
+  relevance_confidence?: string | null;
+  journalist_shape_exists?: boolean;
 }
 
 /**
@@ -9056,7 +9472,7 @@ export interface CookingRecipe {
 }
 
 /**
- * Kind `crisis_holding` (registry v2).
+ * Kind `crisis_holding` (registry v3).
  */
 export interface CrisisHolding {
   qa: ({
@@ -10151,7 +10567,7 @@ export interface FileTreeResult {
 }
 
 /**
- * Kind `file_upload_result` (registry v7).
+ * Kind `file_upload_result` (registry v8).
  */
 export interface FileUploadResult {
   /**
@@ -10162,10 +10578,12 @@ export interface FileUploadResult {
   file_id?: string | null;
   version?: number;
   checksum?: string | null;
+  shown_to?: string | null;
   file_path?: string | null;
   mime_type?: string | null;
   size_bytes?: number;
   visibility?: string | null;
+  published_to_web?: boolean | null;
 }
 
 /**
@@ -10928,7 +11346,7 @@ export interface ImageConceptsResult {
 }
 
 /**
- * Kind `image_edit_result` (registry v6).
+ * Kind `image_edit_result` (registry v7).
  */
 export interface ImageEditResult {
   op?: string;
@@ -10939,10 +11357,12 @@ export interface ImageEditResult {
   __kind?: "image_edit_result";
   cdn_url?: string | null;
   file_id?: string;
+  shown_to?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
-  visibility?: string;
+  visibility?: string | null;
   download_url?: string | null;
+  published_to_web?: boolean;
 }
 
 /**
@@ -11332,7 +11752,7 @@ export interface Items {
 }
 
 /**
- * Kind `journalist_fit` (registry v2).
+ * Kind `journalist_fit` (registry v3).
  */
 export interface JournalistFit {
   axes: {
@@ -13058,6 +13478,101 @@ export interface NerEntityRef {
 }
 
 /**
+ * Kind ``news_angle_set`` — derived field-for-field from engine ``NewsAngleSet``.
+ *  *
+ *  * Kind `news_angle_set` (registry v2).
+ */
+export interface NewsAngleSet {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "news_angle_set";
+  angles?: NewsAngle[];
+  refused?: RefusedAngle[];
+  next_step?: string;
+  signal_id: string;
+  uncomfortable_questions?: string[];
+}
+
+/**
+ * Kind ``news_client_context`` — derived field-for-field from engine ``NewsClientContext``.
+ *  *
+ *  * Kind `news_client_context` (registry v2).
+ */
+export interface NewsClientContext {
+  brief?: ClientBrief | null;
+  facts?: ClientFacts | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "news_client_context";
+  topics?: string[] | null;
+  company?: ClientCompany | null;
+  brand_id: string;
+  standing?: string[] | null;
+  exclusions?: string[] | null;
+  tracker_id?: string | null;
+  competitors?: string[] | null;
+  search_terms?: string[] | null;
+  proof_on_file?: boolean | null;
+  organization_id?: string | null;
+  run_generated_at: string;
+}
+
+/**
+ * Kind ``news_digest`` — derived field-for-field from engine ``NewsDigest``.
+ *  *
+ *  * Kind `news_digest` (registry v3).
+ */
+export interface NewsDigest {
+  cost?: DigestCost;
+  mode: "digest_every_run" | "new_surfaced_only" | "pitch_ready_only";
+  links?: DigestLinks;
+  watch?: DigestWatch[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "news_digest";
+  run_id: string;
+  window: DigestWindow;
+  notices?: Notice[];
+  version?: 1;
+  brand_id: string;
+  headline?: DigestHeadline;
+  surfaced?: DigestSurfaced[];
+  withheld?: DigestWithheld;
+  performers?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: string | undefined;
+  };
+  tracker_id?: string | null;
+  watch_groups?: DigestWatchGroup[];
+  source_health?: DigestSourceHealth[];
+  watch_overflow?: number;
+  run_generated_at: string;
+}
+
+/**
+ * Kind ``news_opportunity_report`` — derived field-for-field from engine ``NewsOpportunityReport``.
+ *  *
+ *  * Kind `news_opportunity_report` (registry v3).
+ */
+export interface NewsOpportunityReport {
+  __kind?: "news_opportunity_report";
+  funnel?: ReportFunnelStage[];
+  sections?: ReportSections;
+  disclosures?: string[];
+  todays_read?: ReportTodaysRead;
+  brief_applied?: string[];
+  monitor_notes?: string[];
+  brief_edit_offer?: string | null;
+  rendered_markdown?: string;
+}
+
+/**
  * Kind `news_result` (registry v14).
  */
 export interface NewsResult {
@@ -13106,6 +13621,17 @@ export interface NewsSearchResults {
 }
 
 /**
+ * Kind ``news_triage`` — derived field-for-field from engine ``NewsTriage``.
+ *  *
+ *  * Kind `news_triage` (registry v3).
+ */
+export interface NewsTriage {
+  __kind?: "news_triage";
+  summary?: TriageSummary;
+  triaged?: TriagedSignal[];
+}
+
+/**
  * Kind `newsjacking_expert_article` (registry v4).
  */
 export interface NewsjackingExpertArticle {
@@ -13134,6 +13660,32 @@ export interface NewsjackingExpertArticle {
     key_finding?: string;
   })[];
   news_hook_summary?: string;
+}
+
+/**
+ * Kind ``newsworthiness_verdict`` — derived field-for-field from engine ``NewsworthinessVerdict``.
+ *  *
+ *  * Kind `newsworthiness_verdict` (registry v2).
+ */
+export interface NewsworthinessVerdict {
+  fixes?: string[];
+  score?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "newsworthiness_verdict";
+  handoff?: string;
+  summary?: string;
+  caps_fired?: NewsworthinessCap[];
+  dimensions?: NewsworthinessDimension[];
+  weak_spots?: string[];
+  kill_switch?: string | null;
+  evidence_gaps?: string[];
+  evidence_used?: NewsworthinessEvidence[];
+  closest_anchor?: NewsworthinessAnchor;
+  recommendation: "Ride" | "Wait" | "Skip" | "Don't" | "Pitch" | "Revise" | "Hold";
+  coverage_outlook?: string;
+  newsworthiness_band: "historic" | "major" | "significant" | "routine" | "marginal" | "not_news" | "blocked";
 }
 
 /**
@@ -14799,7 +15351,7 @@ export interface PresentationSlide {
 /**
  * One live article rendered as a press clip: PDF, preview and page rasters.
  *  *
- *  * Kind `press_clip_render` (registry v2).
+ *  * Kind `press_clip_render` (registry v3).
  */
 export interface PressClipRender {
   /**
@@ -18831,7 +19383,7 @@ export interface SourceRef {
 }
 
 /**
- * Kind `source_request_verdict` (registry v2).
+ * Kind `source_request_verdict` (registry v3).
  */
 export interface SourceRequestVerdict {
   cap?: {
@@ -19974,7 +20526,7 @@ export interface TrustEnvelope {
 /**
  * Output of ``assets.upload`` — the master file plus its rendered variants.
  *  *
- *  * Kind `uploaded_asset` (registry v9).
+ *  * Kind `uploaded_asset` (registry v10).
  */
 export interface UploadedAsset {
   /**
@@ -19984,11 +20536,25 @@ export interface UploadedAsset {
   folder?: string;
   preset?: string | null;
   file_id?: string;
-  metadata?: Record<string, JsonValue>;
-  variants?: Record<string, AssetVariantKind>;
+  metadata?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: JsonValue | string | undefined;
+  };
+  shown_to?: "only_me" | "my_team" | "everyone" | "everyone_on_ai_matrx" | null;
+  variants?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: AssetVariantKind | string | undefined;
+  };
   visibility?: "personal" | "internal" | "link" | "public";
   primary_key?: string;
   primary_url?: string | null;
+  published_to_web?: boolean;
 }
 
 /**
@@ -20219,7 +20785,7 @@ export interface VoiceFingerprint {
 /**
  * One result of ``brand_voice_measure``: an extraction or a draft check.
  *  *
- *  * Kind `voice_measure_result` (registry v2).
+ *  * Kind `voice_measure_result` (registry v3).
  */
 export interface VoiceMeasureResult {
   stats?: VoiceCheckStats | null;
@@ -24052,9 +24618,15 @@ export type GeneratedKindSlug =
   | "ner_canonicalization_result"
   | "ner_entity_pair_group"
   | "ner_entity_ref"
+  | "news_angle_set"
+  | "news_client_context"
+  | "news_digest"
+  | "news_opportunity_report"
   | "news_result"
   | "news_search_results"
+  | "news_triage"
   | "newsjacking_expert_article"
+  | "newsworthiness_verdict"
   | "node_error"
   | "node_outcome"
   | "notable_timestamp"
@@ -24603,9 +25175,15 @@ export interface KindPayloadBySlug {
   "ner_canonicalization_result": NerCanonicalizationResult;
   "ner_entity_pair_group": NerEntityPairGroup;
   "ner_entity_ref": NerEntityRef;
+  "news_angle_set": NewsAngleSet;
+  "news_client_context": NewsClientContext;
+  "news_digest": NewsDigest;
+  "news_opportunity_report": NewsOpportunityReport;
   "news_result": NewsResult;
   "news_search_results": NewsSearchResults;
+  "news_triage": NewsTriage;
   "newsjacking_expert_article": NewsjackingExpertArticle;
+  "newsworthiness_verdict": NewsworthinessVerdict;
   "node_error": NodeError;
   "node_outcome": NodeOutcome;
   "notable_timestamp": NotableTimestamp;
@@ -25158,9 +25736,15 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "ner_canonicalization_result",
   "ner_entity_pair_group",
   "ner_entity_ref",
+  "news_angle_set",
+  "news_client_context",
+  "news_digest",
+  "news_opportunity_report",
   "news_result",
   "news_search_results",
+  "news_triage",
   "newsjacking_expert_article",
+  "newsworthiness_verdict",
   "node_error",
   "node_outcome",
   "notable_timestamp",
