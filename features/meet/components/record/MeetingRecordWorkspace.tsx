@@ -38,6 +38,7 @@ import {
   playableRecordingFileId,
   recordingNotice,
   summarizeMeetingRecordRestrictions,
+  uniqueAttendees,
   useMeetHost,
   useMeetingRecord,
   wrapUpStatus,
@@ -172,8 +173,10 @@ function Workspace({
   const notice = recordingNotice(bundle.recording);
   const when = meetingWhen(meeting);
   const length = meetingLength(meeting);
-  const attended = bundle.attendees.filter(
-    (p) => !p.isAgent && p.joinedAt !== null,
+  // People, not joins: a rejoin or a second device is one attendee.
+  const attended = uniqueAttendees(
+    bundle.attendees.filter((p) => !p.isAgent && p.joinedAt !== null),
+    bundle.names,
   ).length;
   const link = meetingLink(meetingOrigin(), meeting.slug);
   const notices = summarizeMeetingRecordRestrictions(bundle.restrictions);
