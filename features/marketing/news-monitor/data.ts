@@ -261,7 +261,7 @@ async function updateStory(
         error: null;
       }>,
   });
-  if (result.status === "ok") return result.row;
+  if (result.status === "saved") return result.row;
   if (result.status === "conflict") {
     throw new Error(
       "This story changed while you were looking at it (a run or another person updated it). The list has been refreshed — try again.",

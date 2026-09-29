@@ -230,6 +230,18 @@ export const marketingRoutes = {
     const query = params.toString();
     return `/marketing/${brandId}/intelligence/monitoring/setup${query ? `?${query}` : ""}`;
   },
+  /** One news monitor's run view — the address the engine writes into every
+   * digest and alert (aidream `services/news/run.py::run_links`). */
+  brandMonitorRun: (
+    brandId: string,
+    trackerId: string,
+    opts: { runId?: string | null; storyKey?: string | null } = {},
+  ) => {
+    const params = new URLSearchParams({ tracker: trackerId });
+    if (opts.runId) params.set("run", opts.runId);
+    if (opts.storyKey) params.set("story", opts.storyKey);
+    return `/marketing/${brandId}/intelligence/monitoring?${params.toString()}`;
+  },
   brandReputation: (brandId: string, siteId?: string) =>
     siteId
       ? `/marketing/${brandId}/intelligence/reputation/${siteId}`
