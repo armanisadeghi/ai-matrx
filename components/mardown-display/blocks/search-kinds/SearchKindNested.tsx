@@ -21,7 +21,7 @@
 import React from "react";
 import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
-import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@/features/content-ir/registry/kind-correctors";
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { readObjectKind } from "@ai-matrx/content-ir";
 import { resolveComponent } from "@/features/content-ir/registry/component-registry";

@@ -22,7 +22,7 @@
 
 import type { CanonicalBlockIR, IrDiscriminator } from "@ai-matrx/content-ir";
 import { fenceDiscriminator, xmlDiscriminator } from "@ai-matrx/content-ir";
-import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@/features/content-ir/registry/kind-correctors";
 import { kindRegistry } from "../registry/kind-registry";
 import { surfaceRegistry } from "../registry/surface-registry";
 import { flashcardsLegacyTextToKindValue } from "./flashcards-legacy-text";

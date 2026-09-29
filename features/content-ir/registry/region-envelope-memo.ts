@@ -19,19 +19,16 @@
  */
 
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
-import { normalizeJsonRegion } from "@ai-matrx/content-ir";
 import { isIrEnvelopeCache } from "@ai-matrx/content-ir";
 import { fingerprintText } from "@ai-matrx/content-ir";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { kindRegistry } from "./kind-registry";
 import { componentRegistry } from "./component-registry";
-import { KIND_CORRECTIONS_KEY, correctKindRegionSource } from "./kind-correctors";
+import { normalizeJsonRegion } from "./kind-correctors";
 import { canonicalizeCompletedLegacyQuizEnvelope } from "./legacy-quiz-envelope";
 
 const memo = new Map<string, CanonicalBlockIR>();
 const MEMO_CAP = 200;
-/** region source → the corrections its kind corrector made (kind-correctors.ts). */
-const correctionsBySource = new Map<string, string[]>();
 
 // ── Persisted-envelope seed (Phase 5: reload without re-parse) ─────────────
 
@@ -145,15 +142,10 @@ export function memoizedRegionEnvelope(
   // `schemas` is the live RESOLVER, not a static snapshot: the lazy registry
   // holds only sighted kinds, and the resolver's `request` fires the cold
   // fetch for a missing one — the static-map path could never even ask.
-  // A kind whose stated numbers derive from its own fields (draft_critique) is
-  // corrected HERE, before the envelope exists, so no renderer sees the model's
-  // arithmetic. The memo stays keyed by the ORIGINAL source.
-  const corrected = completeJson ? correctKindRegionSource(source) : null;
-  if (corrected) {
-    if (correctionsBySource.size >= MEMO_CAP) correctionsBySource.clear();
-    correctionsBySource.set(source, corrected.corrections);
-  }
-  const parseSource = corrected?.source ?? source;
+  // `normalizeJsonRegion` here is the CORRECTED form (kind-correctors.ts): a kind
+  // whose stated numbers derive from its own fields (draft_critique) comes back
+  // agreeing with them, the change recorded as a `kind_corrected` notice.
+  const parseSource = source;
   const existing = seededEnvelopeFor(parseSource);
   const parsedEnvelope = normalizeJsonRegion(parseSource, {
     schemas: kindRegistry.resolver(),
@@ -215,10 +207,5 @@ export function withIrEnvelope(
 ): Record<string, unknown> | undefined {
   const envelope = memoizedRegionEnvelope(source, options);
   if (!envelope) return metadata;
-  const corrections = correctionsBySource.get(source);
-  return {
-    ...(metadata ?? {}),
-    [IR_ENVELOPE_KEY]: envelope,
-    ...(corrections ? { [KIND_CORRECTIONS_KEY]: corrections } : {}),
-  };
+  return { ...(metadata ?? {}), [IR_ENVELOPE_KEY]: envelope };
 }

@@ -29,10 +29,10 @@ import React from "react";
 import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import {
-  envelopeFromCompleteValue,
   IR_ENVELOPE_KEY,
   readObjectKind,
 } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@/features/content-ir/registry/kind-correctors";
 import { resolveComponent } from "@/features/content-ir/registry/component-registry";
 import { isRecord } from "../search-kinds/search-kind-data";
 import { SearchKindNested } from "../search-kinds/SearchKindNested";

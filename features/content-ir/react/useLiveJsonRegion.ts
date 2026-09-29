@@ -30,6 +30,7 @@
  * perfectly pure JSON.
  */
 
+import { sessionEnvelope } from "@/features/content-ir/registry/kind-correctors";
 import { useEffect, useRef } from "react";
 import {
   disposeParseSession,
@@ -148,7 +149,7 @@ export function useLiveJsonRegion(
   const rootNode = useIrNode(identity, "");
   const envelope =
     identity && rootNode
-      ? (getParseSession(identity)?.buildEnvelope() ?? null)
+      ? sessionEnvelope(getParseSession(identity))
       : null;
 
   return { rootNode, envelope };

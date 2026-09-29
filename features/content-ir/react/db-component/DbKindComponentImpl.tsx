@@ -52,7 +52,8 @@ import { readAtVersionForKey } from "../registry-versioned";
 import { resolveLoadingSlugForKind } from "../loading/resolve-loading-slug";
 import { resolveKindLoadingComponent } from "../loading/kind-loading-registry";
 import { earlyKeysFromValue } from "../loading/kind-loading.types";
-import { KIND_CORRECTIONS_KEY } from "../../registry/kind-correctors";
+import { correctKindValue, kindCorrectionsOf } from "../../registry/kind-correctors";
+import { KindCorrectionsNotice } from "./KindCorrectionsNotice";
 
 /**
  * One entry per kind — the resolver's answer and the registry version it was
@@ -109,10 +110,17 @@ function screamRouteDefect(kindLabel: string, reason: string): void {
 function readInstanceValue(
   content: string,
   metadata: Record<string, unknown> | undefined,
-): { kind: string | null; value: unknown } {
+): { kind: string | null; value: unknown; corrections: string[] } {
+  // The backstop of the one correction step (kind-correctors.ts): whatever reaches
+  // this reader uncorrected — a pasted block with no envelope — is corrected here,
+  // and a value that already went through the step comes back unchanged.
+  const corrected = (kind: string | null, value: unknown) => {
+    const out = correctKindValue(kind, value);
+    return { kind, value: out.value, corrections: out.corrections };
+  };
   const envelope = readEnvelope(metadata);
   if (envelope?.root.kind) {
-    return { kind: envelope.root.kind, value: reconstructRegionValue(envelope) };
+    return corrected(envelope.root.kind, reconstructRegionValue(envelope));
   }
   try {
     const parsed = JSON.parse(content) as unknown;
@@ -123,43 +131,33 @@ function readInstanceValue(
       typeof (parsed as Record<string, unknown>).__kind === "string"
         ? ((parsed as Record<string, unknown>).__kind as string)
         : null;
-    return { kind, value: parsed };
+    return corrected(kind, parsed);
   } catch {
-    return { kind: null, value: null };
+    return { kind: null, value: null, corrections: [] };
   }
 }
 
 /**
- * THE CORRECTIONS NOTICE (never silent). A kind corrector (`registry/kind-correctors.ts`) may have
- * changed the value at parse — e.g. a `draft_critique` score made to agree with its own rubric —
- * and put what it changed on the block as `metadata[KIND_CORRECTIONS_KEY]`. Every db-rendered
- * kind shows those lines above its component, so no row's author has to remember to.
+ * Every correction this block carries: the server's list, the envelope's own
+ * `kind_corrected` notices, and — the backstop — any correction the value still needed
+ * when it reached this reader (a pasted block with no envelope). Shown above the
+ * component by `KindCorrectionsNotice`.
  */
-function readKindCorrections(metadata: Record<string, unknown> | undefined): string[] {
-  const raw = metadata?.[KIND_CORRECTIONS_KEY];
-  return Array.isArray(raw) ? raw.filter((line): line is string => typeof line === "string" && line.trim() !== "") : [];
+export function blockKindCorrections(
+  content: string,
+  metadata: Record<string, unknown> | undefined,
+): string[] {
+  const lines = kindCorrectionsOf(metadata);
+  for (const line of readInstanceValue(content, metadata).corrections) {
+    if (!lines.includes(line)) lines.push(line);
+  }
+  return lines;
 }
 
-export function KindCorrectionsNotice({ corrections }: { corrections: string[] }) {
-  if (corrections.length === 0) return null;
-  return (
-    <div
-      role="note"
-      data-kind-corrections=""
-      className="mb-1.5 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-1.5 text-xs text-foreground"
-    >
-      <p className="font-medium">Corrected by code before display</p>
-      <ul className="mt-0.5 list-disc pl-4 text-muted-foreground">
-        {corrections.map((line, i) => (
-          <li key={i}>{line}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+export { KindCorrectionsNotice };
 
 export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = (props) => {
-  const corrections = readKindCorrections(props.metadata);
+  const corrections = blockKindCorrections(props.content, props.metadata);
   if (corrections.length === 0) return <DbKindComponentBody {...props} />;
   return (
     <>

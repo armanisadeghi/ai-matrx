@@ -11,10 +11,10 @@
 
 import {
   IR_ENVELOPE_KEY,
-  envelopeFromCompleteValue,
   isCanonicalBlockIR,
   type CanonicalBlockIR,
 } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@/features/content-ir/registry/kind-correctors";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
 import {

@@ -70,6 +70,7 @@ import {
 } from "@/features/content-ir/surfaces/xml-finalize";
 import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embedded-kind-json";
 import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
+import { sessionEnvelope } from "@/features/content-ir/registry/kind-correctors";
 import { canonicalizeCompletedLegacyQuizEnvelope } from "@/features/content-ir/registry/legacy-quiz-envelope";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
@@ -1702,7 +1703,9 @@ export class StreamBlockAccumulator {
 
     session.end();
     session.flushNotify();
-    const parsedEnvelope = session.buildEnvelope();
+    // Corrected at close (kind-correctors.ts): a complete kind whose stated
+    // numbers derive from its own fields reaches no renderer uncorrected.
+    const parsedEnvelope = sessionEnvelope(session) as CanonicalBlockIR;
     this.irEnvelope = canonicalizeCompletedLegacyQuizEnvelope(
       parsedEnvelope,
       this.currentBlockContent,
@@ -2106,7 +2109,7 @@ export class StreamBlockAccumulator {
     }
     const envelope =
       this.irEnvelope ??
-      (this.irSession ? this.irSession.buildEnvelope() : null);
+      sessionEnvelope(this.irSession);
     if (envelope) {
       return { ...(base ?? {}), [IR_ENVELOPE_KEY]: envelope };
     }
