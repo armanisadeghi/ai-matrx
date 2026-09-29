@@ -147,7 +147,7 @@ export interface FilesPickerSearchResult {
 
 /**
  * The files library's own search over the whole tree — every matching file
- * and folder, never capped. Folders are listed only when no organization
+ * and every folder whose name matches, never capped. Folders are listed only when no organization
  * filter is set (a folder carries no organization; its files are filtered
  * when it opens).
  */
@@ -169,7 +169,14 @@ export function pickerSearch(
   const folders = organizationId
     ? []
     : searchFolders(foldersById, query)
-        .filter((f) => f.source?.kind !== "virtual")
+        // A folder matches by its OWN name: a path match would list every
+        // subfolder under a matching parent and bury the files. Its contents
+        // stay one click away (the folder opens in place).
+        .filter(
+          (f) =>
+            f.source?.kind !== "virtual" &&
+            f.folderName.toLowerCase().includes(query.trim().toLowerCase()),
+        )
         .sort((a, b) => a.folderPath.localeCompare(b.folderPath));
   return { files, folders };
 }

@@ -57,6 +57,15 @@ const foldersById: Record<string, CloudFolderRecord> = {
     deletedAt: null,
     source: { kind: "real" },
   } as unknown as CloudFolderRecord,
+  // A dated subfolder: reachable by opening its parent, not listed for its parent's name.
+  f2: {
+    id: "f2",
+    folderName: "2026-09-28",
+    folderPath: "Product Captures/2026-09-28",
+    parentId: "f1",
+    deletedAt: null,
+    source: { kind: "real" },
+  } as unknown as CloudFolderRecord,
 };
 
 describe("the canonical file picker lists the whole library", () => {

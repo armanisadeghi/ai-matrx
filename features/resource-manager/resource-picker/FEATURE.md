@@ -42,6 +42,27 @@ Of ~16 sub-pickers:
 
 ## Change Log
 
+- 2026-09-29 — **The Files view lists the whole library, never a capped slice** (Arman, from the
+  Source input's "Your files": "it isn't showing all of my files, the search clearly fails to get
+  anything other than the ones in state"). `FilesResourcePicker` always read the person's WHOLE
+  library (the `cloudFiles` tree, the same `get_user_file_tree` pages the Files app reads — search
+  moved off a server query onto that tree deliberately on 2026-07-19, `7269f63a3e`), but since
+  `7f11ed83a1` (2026-07-16) it cut Recents to the newest 20 and a search to the 20 newest matches:
+  admin@admin.com saw 20 of 414 recent files and 20 of 752 "json" matches, and a search whose
+  matches were all recent showed exactly what Recents already showed. Folders were never searched
+  though the box says "Search files and folders…". The rule now lives in
+  `filesPickerLists.ts` (`pickerRecentFiles`, `pickerSearch` over the files library's own
+  `searchFiles`/`searchFolders`): every match, counted in the section header ("Recent · 414",
+  "Files · 752", "Folders · 10"), rendered in pages by "Show more files (N more)"; Recents grows only
+  on that click so the Folders below stay reachable; a folder matches by its own name and opens in
+  place. The picker's own tree hydration read `state.user.id` (a slice gone since the userAuth
+  split), so it never fired; it reads `selectUserId`. Every host gets this (chat "+", the Source
+  input, `openFilePicker` windows) — nothing host-specific. Guard:
+  `__tests__/the-file-picker-lists-the-whole-library.test.ts` (4/4 red against the capped logic,
+  4/4 green). Also reviewed and kept `88b536cc77`'s filter row (12px text on a 36px row instead of
+  10px; "PDF Extractor (processed)" → "Already read") — right for every host, not Source-input
+  specific.
+
 - 2026-09-27 — The main menu opens with **Search your knowledge… ⌘K**: the search steps hand off
   to the ⌘K bar (`features/knowledge/command-bar/`) with "Attach here" as the primary action,
   through the host's own `onResourceSelected` (a note is fetched in full first — never a bare id).

@@ -1112,29 +1112,6 @@ export function FilesResourcePicker({
                 </div>
               ) : (
                 <div className="p-1">
-                  {folderSearchResults.length > 0 && (
-                    <div className="mb-1">
-                      <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
-                        Folders · {folderSearchResults.length}
-                      </div>
-                      {folderSearchResults.map((folder) => (
-                        <FolderNode
-                          key={folder.id}
-                          folderId={folder.id}
-                          label={folder.folderPath}
-                          level={0}
-                          onFileSelect={handleFileSelect}
-                          viewMode={viewMode}
-                          fileFilter={fileFilter}
-                          fileSort={fileSort}
-                          processedFileIds={processedFileIds}
-                          multiple={selectionMode === "multiple"}
-                          selectedFileIds={selectedFileIds}
-                          organizationId={organizationId}
-                        />
-                      ))}
-                    </div>
-                  )}
                   {visibleSearchResults.length > 0 && (
                     <>
                       <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
@@ -1148,6 +1125,29 @@ export function FilesResourcePicker({
                         selectedFileIds={selectedFileIds}
                       />
                     </>
+                  )}
+                  {folderSearchResults.length > 0 && (
+                    <div className="mt-1">
+                      <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
+                        Folders · {folderSearchResults.length}
+                      </div>
+                      {folderSearchResults.map((folder) => (
+                        <FolderNode
+                          key={folder.id}
+                          folderId={folder.id}
+                          label={folder.folderName}
+                          level={0}
+                          onFileSelect={handleFileSelect}
+                          viewMode={viewMode}
+                          fileFilter={fileFilter}
+                          fileSort={fileSort}
+                          processedFileIds={processedFileIds}
+                          multiple={selectionMode === "multiple"}
+                          selectedFileIds={selectedFileIds}
+                          organizationId={organizationId}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
               )
