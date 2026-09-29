@@ -235,7 +235,7 @@ export function ComposerPlusMenu({
             <ComposerSubmenu row={{ icon: Target, label: "Scope" }} panelClassName="w-[340px] p-0">
               <ActiveContextTree conversationId={conversationId} maxHeight={360} className="w-full" />
             </ComposerSubmenu>
-            <ComposerSubmenu row={{ icon: AppWindow, label: "Output" }} panelClassName="w-64">
+            <ComposerSubmenu row={{ icon: AppWindow, label: "Output" }} panelClassName="w-80">
               <ComposerOutputPanel conversationId={conversationId} />
             </ComposerSubmenu>
           </>

@@ -42,11 +42,15 @@ context rail); only the chrome is arranged differently.
 **Components** (this folder)
 - `ComposerModeSwitch` — Chat · Work · Advanced; `size="bar"` (top bar; below `sm` ONE button naming the mode
   that opens the three, because the phone top bar has no room for three segments) or `"panel"` (chat panel header).
-- `ComposerAgentPill` — Chat: ★ presets · Custom (+ its model) · Manage chat agents. Work: agent + Change ·
-  Recent · Model. Advanced: + Overrides · Advanced.
+- `ComposerAgentPill` — **agents first** (Arman, 2026-09-28). Chat (only Chat) reads `agent · model`; its menu is
+  the ★ chat agents + Custom, **All agents** (the ONE picker), and the **model for this chat** (change the model,
+  keep the chat agent; under Custom it also saves your default). Work / Advanced: the pill names the agent and IS
+  the agent picker (`AgentListDropdown` with the pill as its trigger) — one click, no half-way panel. A fixed
+  agent (no `onSelectAgent`) is a plain label.
 - `ComposerPlusMenu` — the 300px cascading + menu, IDENTICAL in every mode: attach rows, Search your knowledge
   (the classic ⌘K list), Tools, Skills, Connectors, Environment, Preview context, templates, Memory, Enter sends,
-  Working doc, Scratchpad, Auto-clear, and **All options** (always present — opens the Chat Options window until
+  Working doc, Scratchpad, Auto-clear, **Model and overrides** (model picker + the per-run overrides — the model
+  is secondary to the agent, so it lives here in every mode), and **All options** (always present — opens the Chat Options window until
   every setting has a home in the new UI).
 - `ComposerConnectorsPanel` — the + menu's Connectors: search, "Active in this chat" / "Connected · off in this
   chat" rows (per-chat switch = `addedMcpServers`; Reconnect; `Choose ›` = the ONE attach picker; an agent's own
@@ -54,7 +58,10 @@ context rail); only the chrome is arranged differently.
 - `ComposerEnvironmentPanel` — the Cloud chip's menu and the + menu's Environment: ONE flat list, one click chooses
   (Cloud · your computers · sandboxes, via `useComputeTargetActions.applyBinding`), plus Persistent browser and
   "Add a sandbox or computer". No nested pickers.
-- `ComposerMetaRow` / `ComposerPills` — Scope · Output | Agent · Effort · Auto (compact: Agent · Auto only).
+- `ComposerMetaRow` / `ComposerPills` — Scope · Output | Agent · Effort (compact: Agent only). One line always:
+  the row (and the chips row) scrolls sideways on a phone, never wraps (`COMPOSER_ROW_CLASS`).
+- `composer-chip.ts` — THE chip: 24px, `text-xs`, `rounded-md`, for every chip and pill around the input (Cloud,
+  connections, working context, the page chip, the context rail's pills, agent / effort / output).
 - `ComposerChipsRow` — Work+: Cloud chip + this chat's connections (`ChatConnectionsStrip variant="chips"`, the
   same data and doors as the + menu's rail at the composer's 28px chip size, `composer-chip.ts`). **Advanced**
   (`chips.repos`) adds a chip per resource chosen from an attachable connection (`name · default branch`) and a
@@ -69,7 +76,8 @@ context rail); only the chrome is arranged differently.
   skill (curated chip skill or `kind_<kind>`) toggles it in `addedSkills` (sent as `skill_config.included`, same
   write as the Quickset chips); a kind with none is kept in `outputKinds` and marked "no skill". Pure logic:
   `output-selection.ts` (test `__tests__/composer-output-selection.test.ts`).
-- `ComposerEffortPill` (the model's own value; `auto` reads "Auto effort" beside the approval pill's "Auto"), `ComposerAutoPill`, `ComposerMenu` (the row primitives), `ComposerSplash`
+- `ComposerEffortPill` — **Auto = no override** (the agent's own setting runs, named in the Auto row); any other
+  choice is sent as exactly that `reasoning_effort` override; the literal "auto" is never sent. `ComposerMenu` (the row primitives), `ComposerSplash`
   (`ComposerGreeting`, `ComposerQuickActions` with a `trailing(mandateKeys)` slot for the host's intelligence
   icon, `ComposerQuickActionsSkeleton`). The quick-action row is absent with no active organization.
 
@@ -146,6 +154,11 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-09-28** — Agents first: Chat pill = agent · model (chat agents, All agents, model for this chat); Work/Advanced
+  pill opens the agent picker directly; Model and overrides moved into + (every mode); the run-approval "Auto" pill
+  deleted (Auto is effort, = no override); one 24px `rounded-md` chip everywhere; rows never wrap; tighter spacing;
+  Enter never sends on a touch-only device (`enterSendsHere` in `components/official/composer/composerSubmit.ts`,
+  every composer) and no "Enter sends" switch is offered there.
 - **2026-09-28** — Output rebuilt to Arman's ruling: multi-select output types (Text default; shown, not sent),
   and Shapes over the full kind catalog (search, System/Organization/Mine, paging, pinned selections) replacing
   the five hardcoded chips; kind skills still ride `addedSkills`; `outputTypes`/`outputKinds` added to
