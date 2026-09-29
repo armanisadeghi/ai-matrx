@@ -36,6 +36,7 @@ import { ToolCallBatch } from "@/features/tool-call-visualization/components/Too
 import { cxToolCallToLifecycleEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 import { fetchConversationToolCallsPage } from "@/features/tool-call-visualization/service/fetchConversationToolCalls";
 import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { FullDownloadButton } from "@/features/ai-work/components/FullDownloadButton";
 import { fetchCodingSessionBindings } from "@/features/agent-connections/coding-sessions/service";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
 import { workspaceName } from "../lib/codingSessionPresentation";
@@ -424,6 +425,7 @@ export function ProviderConversationTranscript({
               variant="button"
               label_text="Attach to task"
             />
+            <FullDownloadButton conversationId={conversation.id} />
             <TranscriptConversationMenu
               conversation={conversation}
               title={title}
@@ -882,6 +884,7 @@ function ProviderTranscriptMessage({
             <ErrorAlchemyMenu />
           </p>
         )}
+        <ToolsCalledAfter names={message.toolsAfter} />
         {message.display.activityCount > 0 ? (
           <p className="mt-2 text-xs text-muted-foreground">
             {message.display.activityCount} non-text provider{` `}
@@ -893,5 +896,47 @@ function ProviderTranscriptMessage({
         ) : null}
       </article>
     </li>
+  );
+}
+
+/** How many tool names show before the rest fold behind "show all". */
+const TOOLS_AFTER_PREVIEW = 12;
+
+/**
+ * The tools the coding tool called right after this turn — their NAMES, in call
+ * order, and nothing else. That is all AI Matrx keeps of a tool call; the full
+ * input and output live in the provider's own transcript (Full Download).
+ */
+function ToolsCalledAfter({ names }: { names: string[] }) {
+  const [expanded, setExpanded] = useState(false);
+  if (names.length === 0) return null;
+  const shown = expanded ? names : names.slice(0, TOOLS_AFTER_PREVIEW);
+  const hidden = names.length - shown.length;
+  return (
+    <div
+      className="mt-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground"
+      aria-label={`Tools called after this turn: ${names.join(", ")}`}
+    >
+      <span>
+        {names.length === 1 ? "Then used 1 tool:" : `Then used ${names.length} tools:`}
+      </span>
+      {shown.map((name, index) => (
+        <span
+          key={`${index}-${name}`}
+          className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-foreground/80"
+        >
+          {name}
+        </span>
+      ))}
+      {hidden > 0 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="rounded px-1 text-xs underline-offset-2 hover:text-foreground hover:underline"
+        >
+          Show all {names.length}
+        </button>
+      ) : null}
+    </div>
   );
 }

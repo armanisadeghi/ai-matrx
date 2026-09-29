@@ -96,6 +96,13 @@ export type ProviderConversationMessage = Omit<
    * turn from this rather than from the conversation's own provider.
    */
   carriedFrom: ProviderMessageCarriedFrom | null;
+  /**
+   * The NAMES of the tools the coding tool called right after this turn, in
+   * call order — the whole kept shape of a tool call (aidream
+   * `coding_session_bridge/kept_shape.py`: text and tool names, nothing else).
+   * Empty when none were called.
+   */
+  toolsAfter: string[];
 };
 
 /** `metadata` is unknown JSON on the wire. Narrow, never assume. */
@@ -105,6 +112,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function readString(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
+/** `metadata.coding_session_bridge.tools_after`, narrowed to non-empty strings. */
+export function readToolsAfter(metadata: unknown): string[] {
+  if (!isRecord(metadata)) return [];
+  const block = isRecord(metadata.coding_session_bridge)
+    ? metadata.coding_session_bridge
+    : null;
+  const names = block?.tools_after;
+  if (!Array.isArray(names)) return [];
+  return names.filter(
+    (name): name is string => typeof name === "string" && name.trim() !== "",
+  );
 }
 
 export interface ProviderMessageAttribution {
@@ -197,6 +217,7 @@ export function normalizeProviderMessage(
     );
   }
 
+  const toolsAfter = readToolsAfter(message.metadata);
   try {
     return {
       id: message.id,
@@ -211,6 +232,7 @@ export function normalizeProviderMessage(
       agentId: message.agent_id,
       agentName: attribution.agentName,
       carriedFrom: attribution.carriedFrom,
+      toolsAfter,
     };
   } catch (error) {
     console.error(
@@ -230,6 +252,7 @@ export function normalizeProviderMessage(
       agentId: message.agent_id,
       agentName: attribution.agentName,
       carriedFrom: attribution.carriedFrom,
+      toolsAfter,
     };
   }
 }

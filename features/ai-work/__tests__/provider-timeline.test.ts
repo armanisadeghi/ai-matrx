@@ -21,6 +21,7 @@ function msg(
     agentName: null,
     // Native to this conversation, which is what the timeline tests are about.
     carriedFrom: null,
+    toolsAfter: [],
   };
 }
 

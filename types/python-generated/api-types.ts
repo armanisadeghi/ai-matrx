@@ -3883,6 +3883,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coding-sessions/raw-transcripts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Raw Transcript Sources
+         * @description Where a conversation's full provider transcripts can be fetched from.
+         */
+        get: operations["read_raw_transcript_sources_coding_sessions_raw_transcripts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/raw-transcripts/backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Backup Raw Transcript
+         * @description THE upload door for an opted-in full transcript. Body: the raw JSONL bytes.
+         *
+         *     Refused with ``raw_backup_off`` (and the sentence that says where to turn it
+         *     on) unless the owner's Feature Knob allows it. The computer that holds the
+         *     file is the only caller; the cloud never asks for the file on its own.
+         */
+        post: operations["backup_raw_transcript_coding_sessions_raw_transcripts_backup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/coding-sessions/sessions": {
         parameters: {
             query?: never;
@@ -110669,6 +110713,50 @@ export interface components {
             created_at: string;
         };
         /**
+         * RawTranscriptSource
+         * @description One provider session bound to a conversation, and where its full file is.
+         */
+        RawTranscriptSource: {
+            /** Provider */
+            provider: string;
+            /** Provider Session Id */
+            provider_session_id: string;
+            /** Native Session Id */
+            native_session_id?: string | null;
+            /** Transcript Path */
+            transcript_path?: string | null;
+            /** Backup Enabled */
+            backup_enabled: boolean;
+            /** Backup Available */
+            backup_available: boolean;
+            /** Backup File Id */
+            backup_file_id?: string | null;
+            /** Backup Download Path */
+            backup_download_path?: string | null;
+            /** Backup Stored Bytes */
+            backup_stored_bytes?: number | null;
+            /** Backup Original Bytes */
+            backup_original_bytes?: number | null;
+            /** Backup Uploaded At */
+            backup_uploaded_at?: string | null;
+            /** Backup Sentence */
+            backup_sentence: string;
+        };
+        /**
+         * RawTranscriptSources
+         * @description Full Download's server half: the sessions of one conversation, and their backups.
+         *
+         *     The first place Full Download looks is the computer that ran the session
+         *     (the client resolves ``native_session_id`` / ``transcript_path`` there); this
+         *     answer is the second place, and every "no" carries its sentence.
+         */
+        RawTranscriptSources: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** Sources */
+            sources: components["schemas"]["RawTranscriptSource"][];
+        };
+        /**
          * RaycastServiceStatus
          * @description Safe aggregate status projection for Raycast's fixed status page.
          */
@@ -148988,6 +149076,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CodingReplyResponderReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_raw_transcript_sources_coding_sessions_raw_transcripts_get: {
+        parameters: {
+            query: {
+                conversation_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RawTranscriptSources"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    backup_raw_transcript_coding_sessions_raw_transcripts_backup_post: {
+        parameters: {
+            query: {
+                provider: string;
+                provider_session_id: string;
+                provider_project_key?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RawTranscriptSource"];
                 };
             };
             /** @description Validation Error */
