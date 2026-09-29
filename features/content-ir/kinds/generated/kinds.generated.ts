@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "e25e6409575c";
+export const KIND_REGISTRY_FINGERPRINT = "f41b7e4266ec";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -20526,7 +20526,7 @@ export interface TrustEnvelope {
 /**
  * Output of ``assets.upload`` — the master file plus its rendered variants.
  *  *
- *  * Kind `uploaded_asset` (registry v10).
+ *  * Kind `uploaded_asset` (registry v11).
  */
 export interface UploadedAsset {
   /**
@@ -20551,9 +20551,11 @@ export interface UploadedAsset {
     __kind?: string;
     [key: string]: AssetVariantKind | string | undefined;
   };
+  share_url?: string | null;
   visibility?: "personal" | "internal" | "link" | "public";
   primary_key?: string;
   primary_url?: string | null;
+  share_token?: string | null;
   published_to_web?: boolean;
 }
 
