@@ -185,7 +185,7 @@ const MultiSelectDropdown = React.forwardRef<HTMLDivElement, MultiSelectDropdown
                 className={cn(
                     "fixed rounded-md border bg-popover text-popover-foreground shadow-md",
                     "max-h-[300px] overflow-auto",
-                    // Ensure visibility with very high z-index to appear above all modals/sheets
+                    // Ensure it is shown with very high z-index to appear above all modals/sheets
                     "z-[99999]"
                 )}
                 style={{
@@ -194,7 +194,7 @@ const MultiSelectDropdown = React.forwardRef<HTMLDivElement, MultiSelectDropdown
                     minWidth: DROPDOWN_MIN_WIDTH,
                     // Add a slight opacity transition for better UX
                     opacity: position ? 1 : 0,
-                    visibility: position ? 'visible' : 'hidden',
+                    ...(position ? {} : { visibility: 'hidden' as const }),
                 }}
             >
                 {creatable && (

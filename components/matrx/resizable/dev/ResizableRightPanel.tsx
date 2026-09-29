@@ -158,7 +158,7 @@ const ResizableRightPanel: React.FC<ResizableRightPanelProps> = ({
         <ResizablePanel
           id={SPACER_ID}
           {...panelSizes.spacerPanel}
-          style={{ visibility: isFullScreen ? "hidden" : "visible" }}
+          style={isFullScreen ? { visibility: "hidden" } : undefined}
         >
           <div className="h-full" />
         </ResizablePanel>
@@ -166,7 +166,7 @@ const ResizableRightPanel: React.FC<ResizableRightPanelProps> = ({
         <ResizableHandle
           withHandle
           size="lg"
-          style={{ visibility: isFullScreen ? "hidden" : "visible" }}
+          style={isFullScreen ? { visibility: "hidden" } : undefined}
           className="hover:cursor-col-resize active:cursor-col-resize"
         />
 

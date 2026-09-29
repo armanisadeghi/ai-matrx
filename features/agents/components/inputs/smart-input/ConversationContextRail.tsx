@@ -240,7 +240,7 @@ export function ConversationContextRail({
   );
   const showScratchPill = scratchEnabled || attachedScratchIds.length > 0;
 
-  // ── Canvas state for the doc pills' visibility toggle ─────────────────────
+  // ── Canvas state for the doc pills' show/hide toggle ─────────────────────
   const canvasOpen = useAppSelector(selectCanvasIsOpen);
   const currentCanvasItem = useAppSelector(selectCurrentCanvasItem);
   const currentCanvasSourceId = currentCanvasItem?.sourceMessageId ?? null;

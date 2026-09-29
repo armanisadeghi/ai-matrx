@@ -210,7 +210,7 @@ export function MobileActionBar({
     );
   }
 
-  // Search Active State - MOVED TO TOP for mobile keyboard visibility
+  // Search Active State - MOVED TO TOP for mobile keyboard display
   // KEY UX FIX: Fixed to top instead of bottom so keyboard doesn't cover it
   return (
     <div className="fixed top-0 left-0 right-0 z-50 matrx-glass-thin-border">

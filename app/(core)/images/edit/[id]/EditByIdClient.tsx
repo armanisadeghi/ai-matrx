@@ -23,7 +23,7 @@ interface Props {
 
 /**
  * Resolve the file id to a renderable URL through the universal handler.
- * `useFileSrc` returns the best URL for the file's visibility — a permanent
+ * `useFileSrc` returns the best URL for the file's web state — a permanent
  * CDN URL for public files, a freshly-minted signed URL for private ones —
  * so Filerobot always loads through the CDN when one exists and never
  * re-uses a stale signed URL. (The earlier crossOrigin pre-probe was

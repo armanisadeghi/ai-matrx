@@ -37,7 +37,7 @@ type ToasterProps = React.ComponentProps<typeof Sonner>
 function useStaleToastHeightHeal() {
   useEffect(() => {
     const heal = () => {
-      // Layout is valid whenever the viewport has width — visibility doesn't
+      // Layout is valid whenever the viewport has width — whether the tab is shown doesn't
       // matter (hidden documents still compute offsetHeight correctly).
       if (window.innerWidth === 0) return
       document
@@ -132,7 +132,7 @@ function useStaleToastSweepOnReturn() {
  * not contain it means that record left the screen and its toasts go with it.
  * Navigating DEEPER into the same record keeps them.
  *
- * The visibility half re-checks wall-clock expiry for EVERY toast this app
+ * The tab-shown half re-checks wall-clock expiry for EVERY toast this app
  * raises — since 2026-09-11 all of them run on the wall clock (`lib/toast.ts`,
  * tier (b)) — because a background tab throttles our own timers to roughly
  * once a minute.

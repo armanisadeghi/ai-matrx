@@ -1215,7 +1215,7 @@ const PROTOCOL_BLOCK_DISPATCH = {
     // `tool` here is the generic XML-tagged `<tool>...</tool>` markdown
     // block, not a `tool_call` content block (those render via
     // ToolHandlers.InlineToolCard / DbToolCard). Still, respect the
-    // same visibility flag so the surface is silent about tools end
+    // same show/hide flag so the surface is silent about tools end
     // to end.
     if (ctx.hideToolResults) return null;
     return renderNestedSection(ctx);

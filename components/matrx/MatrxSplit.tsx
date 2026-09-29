@@ -116,7 +116,7 @@ export interface MatrxSplitProps {
   /** Action surface position. Defaults to "top-right". */
   actionsPosition?: RichDocumentActionsPosition;
   /**
-   * Action surface visibility. Defaults to "always": a hover-only ⋯ hid the
+   * Action surface display. Defaults to "always": a hover-only ⋯ hid the
    * entire toolkit (print, export, save…) from anyone who did not happen to
    * mouse over the preview — Arman could not find Print in Notes
    * (2026-09-21). The icon-only variant is one small button; it can stay.

@@ -7,7 +7,7 @@
  * Called once from ChatPanelContent (the sidebar). Never called from page components.
  *
  * - On mount: dispatch initializeChatAgents (TTL-guarded, 15 min).
- * - On tab visibility change: revalidate if stale (4 hour threshold).
+ * - On tab shown change: revalidate if stale (4 hour threshold).
  */
 
 import { useEffect } from "react";

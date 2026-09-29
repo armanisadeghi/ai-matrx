@@ -1,7 +1,7 @@
 import CmsAgentsAdminClient from "@/features/cms/components/admin/CmsAgentsAdminClient";
 
 /**
- * CMS Agent Activity — the fleet-wide visibility surface (master plan P5,
+ * CMS Agent Activity — the fleet-wide oversight surface (master plan P5,
  * feature-visibility-surface doctrine). Gating: the `(admin)` route group
  * layout already enforces super-admin server-side; the `/api/cms/sites`
  * `admin_*` / `/api/cms/pages` `admin_list` actions

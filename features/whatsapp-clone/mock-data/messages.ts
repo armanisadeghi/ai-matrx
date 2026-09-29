@@ -13,7 +13,7 @@ const KELVIN_LONG_LIST = `Hey, I appreciate the honest feedback. Looking back, t
 1. The studio files were copied, not moved — the original \`features/image-studio/\` folder still exists with duplicate code. When does that get cleaned up, and who approves it?
 2. Private images (screenshots, chat uploads) will show a blank state in the image viewer because there's no signed URL fallback. Should that have been in scope for this PR?
 3. I simplified the Gallery Window panel without getting approval — if users relied on anything in the old version, that's an unapproved regression.
-4. Images uploaded through the Manager default to private visibility, meaning they won't get CDN URLs. Not sure if that's the right call.
+4. Images uploaded through the Manager default to not published to the web, meaning they won't get CDN URLs. Not sure if that's the right call.
 5. The Search page lets you click Unsplash results, but nothing happens — I assumed it was okay to leave as a no-op, but that might be wrong.
 6. Lastly, the planning docs were never committed to the repo — not sure if they're meant to live there.
 

@@ -88,7 +88,7 @@ export const SENSITIVITY_OPTIONS: { value: Sensitivity; label: string }[] = [
 // System context is platform-wide: every agent run receives it, so there is no
 // per-person clearance. The resolver's one gate (aidream migration 1039,
 // context.deliverable_system_context_items) delivers only items that are
-// visibility 'public' AND sensitivity public/internal. Say so where it is set.
+// published to the web AND sensitivity public/internal. Say so where it is set.
 export const SENSITIVITY_HINT =
   "Public and Internal items reach every agent run. Restricted and Privileged items are stored but never sent to any agent.";
 

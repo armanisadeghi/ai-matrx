@@ -455,7 +455,7 @@ export const launchAgentExecution = createAsyncThunk<
   // }
 
   // =========================================================================
-  // Step 0: Resolve visibility.
+  // Step 0: Resolve display.
   //
   // Widget handle: the caller passes `widgetHandleId` (returned by
   // `useWidgetHandle` at the widget). The submit-body assembler reads the

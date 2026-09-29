@@ -1,5 +1,5 @@
 /**
- * Shape-chip visibility logic — chips resolve ONLY when a matching, active
+ * Shape-chip display logic — chips resolve ONLY when a matching, active
  * render_block skill exists in the live skill list (no skill → no chip; the
  * chip toggles the resolved registry UUID, never a hardcoded id).
  */

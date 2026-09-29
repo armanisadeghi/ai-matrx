@@ -776,7 +776,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
           zIndex: 2,
           pointerEvents: "auto",
           position: "fixed",
-          visibility: menuPosition ? "visible" : "hidden",
+          ...(menuPosition ? {} : { visibility: "hidden" as const }),
           top: menuPosition ? `${menuPosition.top}px` : undefined,
           left: menuPosition ? `${menuPosition.left}px` : undefined,
         }}

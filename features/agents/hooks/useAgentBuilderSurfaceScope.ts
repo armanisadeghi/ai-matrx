@@ -5,7 +5,7 @@
  * operates on "the agent being edited" needs): identity, system instruction,
  * message templates, model + tiers, tools, custom tools, MCP servers, skills,
  * Matrx actions, context policies, variable definitions, output schema, UI gates,
- * settings, governance/lineage (visibility, access, version), the dirty-state
+ * settings, governance/lineage (web state, access, version), the dirty-state
  * tracking, and the full agent serialized as JSON.
  *
  * Callsites merge this with the field-specific `content` they're editing and

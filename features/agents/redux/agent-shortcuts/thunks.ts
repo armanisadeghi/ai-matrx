@@ -635,7 +635,7 @@ export const createShortcut = createAsyncThunk<
     ...shortcutData,
     organizationId,
     id: "",
-    // `null` is deliberate for global/org/project/task visibility. Only an
+    // `null` is deliberate for global/org/project/task reach. Only an
     // actually omitted value falls back to the current user.
     userId: shortcutData.userId === undefined ? userId : shortcutData.userId,
     createdAt: "",

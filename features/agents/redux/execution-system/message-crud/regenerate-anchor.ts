@@ -1,5 +1,5 @@
 // regenerate-anchor — which question a "Regenerate" re-asks. Light (no thunks,
-// no network) so the action registry can decide visibility synchronously.
+// no network) so the action registry can decide display synchronously.
 // The thunk that acts on it lives in ./regenerate-answer.
 
 import type { RootState } from "@/lib/redux/store";

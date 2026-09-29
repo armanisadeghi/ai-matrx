@@ -394,7 +394,7 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    * pinned stats bar. OFF by default; pass `true` for long-form authoring.
    */
   enableTextStats?: boolean;
-  /** Initial pinned stats bar visibility when text stats are enabled. Default: true. */
+  /** Initial pinned stats bar display when text stats are enabled. Default: true. */
   defaultShowTextStatsBar?: boolean;
   /** When provided, renders a prominent submit button at the bottom-right. */
   onSubmit?: () => void;

@@ -6,7 +6,7 @@
  * answers, without a debugger, every question the "my message doesn't show"
  * class has ever needed: which rows the spine holds (role / position /
  * status / client status / content shape), which display groups those rows
- * became, which of them the visibility window actually rendered, what the
+ * became, which of them the display window actually rendered, what the
  * last request did, and every structural write the slice performed on the
  * way there. `anomalies` names the known failure signatures outright so a
  * pasted report can be read in seconds.
@@ -237,7 +237,7 @@ export function buildTranscriptIntegrityReport(
     }
   }
 
-  // 3. The user group exists but the visibility window cut it off.
+  // 3. The user group exists but the display window cut it off.
   for (const g of groups) {
     if (g.kind === "user" && !g.rendered) {
       anomalies.push(

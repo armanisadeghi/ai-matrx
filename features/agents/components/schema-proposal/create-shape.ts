@@ -529,7 +529,7 @@ export async function createShapeFromPlan(
     // Inactive kinds render through the generic viewer (correct, not a bug).
     is_active: false,
     metadata: { source: "schema_proposal", user_authored: true } as Json,
-    // visibility rides the column default ('public'). Never write 'personal'
+    // the row controls ride the column defaults. Never write "Only me"
     // here — a personal kind is editable only by its creating account and
     // strands org admins/super admins at viewer (DB CHECK enforces this).
   }));

@@ -228,8 +228,7 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
     isVertical: boolean,
     isFullScreen: boolean,
   ): CSSProperties => ({
-    visibility:
-      isFullScreen || isMobile ? ("hidden" as const) : ("visible" as const),
+    ...(isFullScreen || isMobile ? { visibility: "hidden" as const } : {}),
     ...(isVertical
       ? {
           width: "100%",
@@ -336,7 +335,7 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
       id="dynamic-spacer"
       {...panelSizes.spacerPanel}
       style={{
-        visibility: isFullScreen || isMobile ? "hidden" : "visible",
+        ...(isFullScreen || isMobile ? { visibility: "hidden" as const } : {}),
         touchAction: "none",
         pointerEvents: "none",
       }}

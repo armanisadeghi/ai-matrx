@@ -26,7 +26,7 @@ import { useState } from 'react';
 const [isOpen, setIsOpen] = useState(false);
 
 <CategoryNotesModal
-  open={isOpen}                    // REQUIRED: Controls modal visibility
+  open={isOpen}                    // REQUIRED: Controls modal whether the modal is shown
   onOpenChange={setIsOpen}         // REQUIRED: Callback when modal opens/closes
   categoryName="SQL Templates"     // REQUIRED: Category/folder to filter notes
   onSelectNote={(note: Note) => {  // Optional: Callback when a note is selected

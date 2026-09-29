@@ -11,7 +11,7 @@
  * plumbing `RunSkillPicker` uses (folded into the request's `skill_config`
  * `included` tier by `buildSkillConfigForRequest`).
  *
- * Pure module (no React, no icons) so the visibility logic is unit-testable.
+ * Pure module (no React, no icons) so the display logic is unit-testable.
  */
 
 export interface ShapeChipDef {

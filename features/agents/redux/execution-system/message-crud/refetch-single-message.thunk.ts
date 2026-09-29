@@ -105,7 +105,7 @@ export const refetchSingleMessage = createAsyncThunk<
     let result = await read();
     // Align the retry cadence with waitForConversationPersisted: begin at
     // 250ms, back off by 1.4, cap at 1.5s. A terminal stream signal can lead
-    // the committed row's visibility; an empty active row is equally stale for
+    // the committed row's readability; an empty active row is equally stale for
     // this live-hydration caller. Ordinary CRUD refetches remain one-shot and
     // may intentionally replace content with an empty value.
     let delay = 250;

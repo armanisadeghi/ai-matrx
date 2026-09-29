@@ -452,7 +452,7 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
                 />
             )}
             
-            {/* Sheet - Always rendered but visibility and position controlled by CSS */}
+            {/* Sheet - Always rendered but display and position controlled by CSS */}
             <div
                 ref={sheetRef}
                 className={`fixed ${positionClasses} z-50 ${

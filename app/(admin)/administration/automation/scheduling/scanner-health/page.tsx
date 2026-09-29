@@ -178,7 +178,7 @@ export default function ScannerHealthPage() {
   // arrival or switch re-enters this effect and refreshes immediately.
   // The old version polled the (agent-saturated) Python backend's
   // /scheduler/status every 10s forever, including on a backgrounded or
-  // forgotten tab. Gate on document visibility: poll at 10s while watched,
+  // forgotten tab. Gate on document whether the document is shown: poll at 10s while watched,
   // stop entirely when hidden, and do one immediate refresh on re-focus so
   // the page is current the instant the admin looks back. (No Realtime path
   // exists — the scanner status is ephemeral aidream runtime state, not a

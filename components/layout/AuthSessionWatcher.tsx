@@ -24,12 +24,12 @@
  *
  * Drift is detected two ways, because cookie-based auth (@supabase/ssr) does
  * not reliably emit cross-tab auth events: (a) the auth-state listener when
- * it does fire, and (b) a storage re-read on focus/visibility and on a slow
+ * it does fire, and (b) a storage re-read on focus/tab-shown and on a slow
  * interval — the cases where another tab rotated the cookie.
  *
  * NEITHER STOP IS TERMINAL (2026-09-13). While an overlay is up the watcher
  * keeps re-reading the cookie — on any activity in the tab (pointer, key,
- * touch, focus, visibility), on a fast poll, and on a cross-tab
+ * touch, focus, tab shown), on a fast poll, and on a cross-tab
  * `matrx-auth` broadcast fired by every tab's own auth events — and acts on
  * the verdict from `authTabReconcile.ts`: resume in place when the booted
  * identity is back, reload on its own when someone else is signed in
@@ -99,7 +99,7 @@ function snapshotUnsavedWork(bootedId: string, currentId: string): number {
 }
 
 // How often to re-read the auth cookie while the tab is visible. Focus /
-// visibility checks are the primary cross-tab signal; this is the backstop
+// Tab-shown checks are the primary cross-tab signal; this is the backstop
 // for a tab the user never blurs (long editing sessions).
 const IDENTITY_RECHECK_INTERVAL_MS = 60_000;
 // An empty cookie is acted on only when a second read, this long later, is

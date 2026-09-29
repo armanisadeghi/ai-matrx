@@ -310,7 +310,7 @@ Based on the latest SEO practices for 2025, here are the most important things t
 
 8. **Build brand authority** - Become part of industry discussions across the internet to build brand awareness and trust, with both links and brand mentions becoming increasingly important.
 
-Implementing these practices will help you maintain visibility and drive results in the evolving search landscape of 2025.`;
+Implementing these practices will help you stay discoverable and drive results in the evolving search landscape of 2025.`;
 
 const grokSample = `To optimize your website for search engines (SEO), focus on these key areas:
 

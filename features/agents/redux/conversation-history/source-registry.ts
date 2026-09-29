@@ -71,7 +71,7 @@ export interface SourceMeta {
   /**
    * Marks a non-interactive / automation source (system runs, sub-agents,
    * scheduled jobs, empty rows). Informational — used by the tree to mute /
-   * group these. Default visibility is still driven by SURFACE_DEFAULTS.
+   * group these. Default display is still driven by SURFACE_DEFAULTS.
    */
   system?: boolean;
 }

@@ -6,7 +6,7 @@
  *
  * Semantics:
  *   • The selected rows get `deleted_at = now()`, `status = "compacted_hidden"`,
- *     visibility flags off — they vanish from both user and model.
+ *     shown-to flags off — they vanish from both user and model.
  *   • A new `assistant` message at the original first-replaced position
  *     carries the caller-supplied summary content. The UI should render
  *     this as "[N messages compacted — view originals]".

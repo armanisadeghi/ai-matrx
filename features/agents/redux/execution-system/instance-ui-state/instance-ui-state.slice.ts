@@ -639,7 +639,7 @@ const instanceUIStateSlice = createSlice({
 
     /**
      * @deprecated Coarse-grained action: flipped all three fine-grained
-     * visibility fields via resolveVisibilitySettings. No callers remained
+     * display fields via resolveVisibilitySettings. No callers remained
      * after Phase 3.5, kept only as a historical note. Use setShowVariablePanel
      * / setShowDefinitionMessages / setShowDefinitionMessageContent directly.
      */

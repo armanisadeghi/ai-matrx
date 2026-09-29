@@ -118,7 +118,7 @@ const MatrxPanel: React.FC<MatrxPanelProps> = (
     };
 
     const handleStyles = (isVertical: boolean, isFullScreen: boolean): CSSProperties => ({
-        visibility: isFullScreen ? 'hidden' as const : 'visible' as const,
+        ...(isFullScreen ? { visibility: 'hidden' as const } : {}),
         ...(isVertical ? {
             margin: '0 auto',
             width: '100%',
@@ -205,7 +205,7 @@ const MatrxPanel: React.FC<MatrxPanelProps> = (
             key="spacer"
             id="panel-spacer"
             {...panelSizes.spacerPanel}
-            style={{visibility: isFullScreen ? 'hidden' : 'visible'}}
+            style={isFullScreen ? { visibility: 'hidden' } : undefined}
         >
             <div className="h-full"/>
         </ResizablePanel>,

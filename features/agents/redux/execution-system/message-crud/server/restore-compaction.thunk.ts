@@ -7,7 +7,7 @@
  * Identify the operation via EITHER `compactionGroupId` OR
  * `summaryMessageId` (replace operations only — hide operations have no
  * summary row). The server restores every archived row's original
- * position, status, deleted_at, and visibility from its
+ * position, status, deleted_at, and shown-to flags from its
  * `metadata.compaction_archive` snapshot, then archives the summary
  * row (deleted_at — restorable) when `deleteSummary` is true (default).
  */

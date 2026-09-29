@@ -195,7 +195,7 @@ test("names a pending row the instant its request completes, even if it isn't st
   expect(report.anomalies.join("\n")).toMatch(/never acknowledged/);
 });
 
-test("names a user group hidden by the visibility window", () => {
+test("names a user group hidden by the display window", () => {
   const report = buildTranscriptIntegrityReport(
     stateWith([
       row("u0", "user", 0),

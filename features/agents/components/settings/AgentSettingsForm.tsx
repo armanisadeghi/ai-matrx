@@ -680,7 +680,7 @@ export function AgentSettingsForm({
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   Bind this agent to organizational structures to restrict
-                  visibility or functionality context.
+                  display or functionality context.
                 </p>
               </div>
             </div>

@@ -114,7 +114,7 @@ export function MobileDock({ items, className }: MobileDockProps) {
     measurePill();
   }, [measurePill, pathname]);
 
-  // ─── Label visibility (ResizeObserver) ────────────────────────────────────
+  // ─── Label display (ResizeObserver) ────────────────────────────────────
   const measureLabels = useCallback(() => {
     const nav = navRef.current;
     if (!nav) return;

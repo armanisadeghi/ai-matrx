@@ -267,7 +267,7 @@ export const selectShortcutFieldOriginalValue = createSelector(
 );
 
 // ---------------------------------------------------------------------------
-// Ownership / visibility classification
+// Ownership / reach classification
 // ---------------------------------------------------------------------------
 
 /**

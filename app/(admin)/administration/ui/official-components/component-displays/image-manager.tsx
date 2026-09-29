@@ -233,7 +233,7 @@ function AdvancedControlsExample() {
   const [enforceSelectionMode, setEnforceSelectionMode] = useState(true);
   const [selectionMode, setSelectionMode] = useState<"single" | "multiple">("single");
   
-  // Tab visibility controls
+  // Tab display controls
   const allTabs = [
     { id: "public-search", label: "Public Images" },
     { id: "user-images", label: "Your Images" },
@@ -572,7 +572,7 @@ function AdvancedControlsDemo() {
   const [enforceSelectionMode, setEnforceSelectionMode] = useState(true);
   const [selectionMode, setSelectionMode] = useState<"single" | "multiple">("single");
   
-  // Tab visibility controls
+  // Tab display controls
   const allTabs = [
     { id: "public-search", label: "Public Images" },
     { id: "user-images", label: "Your Images" },

@@ -10,7 +10,7 @@
 //      poll /api/version (custom fetches are not pinned by Vercel Skew
 //      Protection, so it always answers from the latest deployment) and prompt
 //      when the ids diverge. Polling runs only while the tab is visible, plus
-//      an immediate check when the tab regains visibility/focus.
+//      an immediate check when the tab regains focus (tab shown again)/focus.
 //   2. Reactive: the "matrx:chunk-load-error" window event (from the boot script's
 //      global listeners or notifyChunkLoadError) means a required module fetch
 //      failed — prompt immediately with firmer, cause-neutral copy.
@@ -35,7 +35,7 @@ import {
 } from "@/components/errors/refresh-directive";
 
 const POLL_INTERVAL_MS = 5 * 60_000;
-/** Min gap between visibility/focus-triggered checks. */
+/** Min gap between tab-shown/focus-triggered checks. */
 const CHECK_THROTTLE_MS = 60_000;
 /** After "Not now", stay quiet this long (chunk errors re-prompt sooner). */
 const SNOOZE_MS = 30 * 60_000;

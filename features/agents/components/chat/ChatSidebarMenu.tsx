@@ -91,7 +91,7 @@ const MESSAGE_TEMPLATES_HREF = "/chat/message-templates";
  *  `shell-nav-stable` height modifier so the row height stays the same
  *  across collapse/expand (otherwise `.shell-nav-item`'s padding switch
  *  produces a ~7px-per-row drift visible when the sidebar opens or
- *  closes). The label visibility and icon centering on collapse are
+ *  closes). The label display and icon centering on collapse are
  *  handled entirely by shell.css. */
 interface ChatSidebarMenuProps {
   expanded: boolean;

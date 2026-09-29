@@ -856,7 +856,7 @@ export function AgentSneakPeekModal({
   const bodyRef = useRef<HTMLDivElement>(null);
   useTransientPeek(isOpen, onClose);
 
-  // Surface-runtime visibility: record which agent is being peeked so the
+  // Surface-runtime awareness: record which agent is being peeked so the
   // Agents Hub emitter (AgentsGrid getScope) can report it at trigger time.
   useEffect(() => {
     if (!isOpen) return undefined;

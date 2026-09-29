@@ -42,7 +42,7 @@ export const COPY_SUBSET_FORMATS: ReadonlyArray<{
  * itself so the copied text and the previewed text are the same text.
  */
 export interface CopySubsetColumn<T> {
-  /** Stable id (sort/filter/visibility key). */
+  /** Stable id (sort/filter/show/hide key). */
   id: string;
   /** Header text — also the Markdown/CSV header and the JSON record key. */
   header: string;

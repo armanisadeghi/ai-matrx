@@ -8,7 +8,7 @@
  *   • Sets `is_visible_to_model = false` on the selected rows. The user
  *     still sees them; `is_visible_to_user` is unchanged.
  *   • Rows stay at their original positions; nothing is soft-deleted.
- *   • Original visibility is stashed in `metadata.compaction_archive` so
+ *   • Original shown-to-user/model state is stashed in `metadata.compaction_archive` so
  *     `restoreCompaction(...)` can reverse it with full fidelity.
  *
  * Use case: silent context optimization (background memory, context
@@ -78,7 +78,7 @@ export const hideMessages = createAsyncThunk<
     }
 
     // Hide doesn't change anything the user sees, but the agent cache
-    // must rebuild on the next turn so the model sees the new visibility
+    // must rebuild on the next turn so the model sees the new shown-to-model state
     // set. Reload the bundle so the client mirrors the updated
     // `is_visible_to_model` flags (relevant for any future agent UI that
     // surfaces "hidden from model" affordances).

@@ -659,7 +659,7 @@ export const agentDefinitionSlice = createSlice({
     },
 
     /**
-     * Per-agent skill visibility config. The full SkillConfig object is
+     * Per-agent skill exposure config. The full SkillConfig object is
      * replaced atomically; the picker UI computes the next value and
      * dispatches once. Marked dirty so the next save flushes it through
      * to `agent.definition.skill_config`.

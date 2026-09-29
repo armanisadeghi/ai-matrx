@@ -147,7 +147,7 @@ export function parseAgentCatalogProfile(
       `${targetName} does not accept ${unknownKeys
         .map((key) => `"${key}"`)
         .join(", ")}. The only accepted keys are description, category and ` +
-        `tags. The agent's name, model, tools, visibility and lifecycle ` +
+        `tags. The agent's name, model, tools, web state and lifecycle ` +
         `flags are not writable from this surface.`,
     );
   }
@@ -216,7 +216,7 @@ export function agentCatalogProfileTargetDescription(options: {
     `commas inside a tag. Empty strings are rejected rather than treated as ` +
     `"clear this field" — blanking a description or a category stays a human ` +
     `edit. No other keys are accepted: the agent's name, model, tools, ` +
-    `visibility and lifecycle flags are not writable here. ` +
+    `web state and lifecycle flags are not writable here. ` +
     options.landing
   );
 }

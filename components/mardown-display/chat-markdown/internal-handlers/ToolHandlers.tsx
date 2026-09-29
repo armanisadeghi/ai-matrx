@@ -42,7 +42,7 @@ export interface ToolCardProps {
   /**
    * Owning conversation id. Required so this card can self-gate on the
    * instance-level `hideToolResults` flag — when true, this component
-   * renders nothing. Centralizing the visibility check here means a single
+   * renders nothing. Centralizing the show/hide check here means a single
    * setting silences every tool call on the surface with no scattered
    * conditionals.
    */

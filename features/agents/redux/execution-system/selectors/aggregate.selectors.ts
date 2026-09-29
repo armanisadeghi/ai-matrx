@@ -107,7 +107,7 @@ export const selectIsAwaitingTools =
  * in `hasMessages`. Do NOT use it to drive the auto-clear toggle button's
  * on/off (`active`) state or its click handler: the toggle reflects the user's
  * setting, which must read true even on a fresh, message-less conversation.
- * For the toggle use `selectShowAutoClearToggle` (visibility) +
+ * For the toggle use `selectShowAutoClearToggle` (display) +
  * `selectAutoClearConversation` (state). (Misusing this selector for the
  * button is the exact bug that broke the Agent Builder toggle.)
  */

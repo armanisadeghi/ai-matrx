@@ -112,7 +112,7 @@ export function useInstanceBootstrap() {
     dispatch(initializeChatAgents());
   }, [dispatch]);
 
-  // ── Tab visibility stale-while-revalidate ─────────────────────────────────
+  // ── Tab shown stale-while-revalidate ─────────────────────────────────
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible" && isChatListStale()) {

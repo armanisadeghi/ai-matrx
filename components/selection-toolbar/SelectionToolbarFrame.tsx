@@ -207,7 +207,9 @@ export default function SelectionToolbarFrame({
           : {
               left: position?.left ?? -10_000,
               top: position?.top ?? -10_000,
-              visibility: position && !position.hidden ? "visible" : "hidden",
+              ...(position && !position.hidden
+                ? {}
+                : { visibility: "hidden" as const }),
             }
       }
     >

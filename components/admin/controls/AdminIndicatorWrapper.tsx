@@ -12,7 +12,7 @@
  *      pathname, console errors, and browser metadata for the
  *      copy-context workflow.
  *   2. StreamProfilerOverlay — piggybacks on the same `adminIndicator`
- *      visibility flag the admin chip uses (toggling the chip on also
+ *      display flag the admin chip uses (toggling the chip on also
  *      opens the profiler). Kept here because it isn't a self-contained
  *      registry overlay — it needs to mount as a sibling of the chip,
  *      not as its own surface.

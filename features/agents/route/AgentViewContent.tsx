@@ -670,7 +670,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
               {/*
                * Access truth: who can actually see this agent, and why —
                * replaces the old "Private" badge, which read one flag and
-               * ignored org visibility, direct shares, and container reach.
+               * ignored org reach, direct shares, and container reach.
                * Version rows are agent_definition_version, not `agent`, so
                * only the live agent gets the panel.
                */}

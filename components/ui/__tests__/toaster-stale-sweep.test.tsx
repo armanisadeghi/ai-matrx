@@ -67,11 +67,11 @@ const { Toaster } = require("../sonner") as typeof import("../sonner");
 
 let host: HTMLDivElement;
 let root: Root;
-let visibility: DocumentVisibilityState = "visible";
+let docState: DocumentVisibilityState = "visible";
 let warn: jest.SpyInstance;
 
 function setVisibility(next: DocumentVisibilityState) {
-  visibility = next;
+  docState = next;
   act(() => {
     document.dispatchEvent(new Event("visibilitychange"));
   });
@@ -88,10 +88,10 @@ function stackToasts(n: number) {
 
 beforeEach(() => {
   dismiss.mockClear();
-  visibility = "visible";
+  docState = "visible";
   Object.defineProperty(document, "visibilityState", {
     configurable: true,
-    get: () => visibility,
+    get: () => docState,
   });
   warn = jest.spyOn(console, "warn").mockImplementation(() => {});
   host = document.createElement("div");

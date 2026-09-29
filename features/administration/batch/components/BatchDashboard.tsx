@@ -3,7 +3,7 @@
 /**
  * features/administration/batch/components/BatchDashboard.tsx
  *
- * `/administration/knowledge/batch` — per-item visibility for the platform
+ * `/administration/knowledge/batch` — per-item insight for the platform
  * Batch system (matrx-batch: background AI work run through provider Batch
  * APIs at ~50% price).
  *

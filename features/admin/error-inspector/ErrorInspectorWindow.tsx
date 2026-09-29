@@ -4,7 +4,7 @@
  * ErrorInspectorWindow — admin-only WindowPanel that lists every runtime error
  * captured in the live session, from ANY source (Supabase/PostgREST, uncaught
  * runtime exceptions, unhandled rejections, console.error, Python-backend HTTP
- * failures, React render errors), with full raw detail, the visibility tier,
+ * failures, React render errors), with full raw detail, the display tier,
  * a ready-to-paste downgrade rule, and per-error / whole-list "Copy for AI".
  *
  * Data comes from the module-level capture store (lib/diagnostics) via

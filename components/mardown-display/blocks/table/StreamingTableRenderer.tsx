@@ -355,7 +355,7 @@ const StreamingTableRendererCore: React.FC<
   const tableData = internalTableData ?? parsedTable;
   const { headers, rows } = tableData;
 
-  // ── Column visibility ─────────────────────────────────────────────────────
+  // ── Column show/hide ─────────────────────────────────────────────────────
   // Hidden columns are tracked by index. Every column is shown until the
   // PERSON hides it — never by its name (a column called "Action" is content;
   // hiding it by default was a screen that lies, verify-RC-B4 R6-2). A hidden
@@ -757,7 +757,7 @@ const StreamingTableRendererCore: React.FC<
   // (full-size window view).
   const cellPaddingClass = expanded ? "px-3 py-2" : "px-2.5 py-1.5";
 
-  // Column visibility is suppressed in edit mode (you must see a column to edit
+  // Column show/hide is suppressed in edit mode (you must see a column to edit
   // it). Outside edit mode, hidden columns collapse into a thin trace stub.
   const isColumnHidden = (index: number) =>
     !isEditingEnabled && hiddenCols.has(index);
@@ -1014,7 +1014,7 @@ const StreamingTableRendererCore: React.FC<
                   className="contents"
                 />
               )}
-              {/* Column visibility — only when there's a column to hide and
+              {/* Column show/hide — only when there's a column to hide and
                   not while editing (edit mode forces all columns visible). */}
               {!isEditingEnabled && headers.length > 1 && (
                 <DropdownMenu>

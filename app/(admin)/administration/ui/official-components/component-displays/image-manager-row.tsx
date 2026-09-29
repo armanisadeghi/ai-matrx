@@ -229,7 +229,7 @@ function AdvancedExample() {
   const [enforceSelectionMode, setEnforceSelectionMode] = useState(true);
   const [selectionMode, setSelectionMode] = useState("single");
   
-  // Tab visibility configuration
+  // Tab display configuration
   const allTabs = [
     { id: "public-search", label: "Public Images" },
     { id: "user-images", label: "Your Images" },
@@ -241,7 +241,7 @@ function AdvancedExample() {
   const [visibleTabs, setVisibleTabs] = useState(["upload-images"]);
   const [initialTab, setInitialTab] = useState("upload-images");
   
-  // Toggle a tab's visibility
+  // Toggle a tab's display
   const toggleTab = (tabId) => {
     if (visibleTabs.includes(tabId)) {
       const newTabs = visibleTabs.filter(id => id !== tabId);
@@ -540,7 +540,7 @@ function AdvancedDemo() {
   const [enforceSelectionMode, setEnforceSelectionMode] = useState(true);
   const [selectionMode, setSelectionMode] = useState<"single" | "multiple">("single");
   
-  // Tab visibility configuration
+  // Tab display configuration
   const allTabs = [
     { id: "public-search", label: "Public Images" },
     { id: "user-images", label: "Your Images" },
@@ -552,7 +552,7 @@ function AdvancedDemo() {
   const [visibleTabs, setVisibleTabs] = useState<string[]>(["upload-images"]);
   const [initialTab, setInitialTab] = useState("upload-images");
   
-  // Toggle a tab's visibility
+  // Toggle a tab's display
   const toggleTab = (tabId: string) => {
     if (visibleTabs.includes(tabId)) {
       const newTabs = visibleTabs.filter(id => id !== tabId);

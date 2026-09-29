@@ -7,7 +7,7 @@
  *
  * Read through `ai.offering_capabilities` — the member-readable door that
  * returns only capability metadata (ai.offering rows themselves are
- * visibility 'internal'; pricing and internal fields stay hidden).
+ * organization-level rows; pricing and internal fields stay hidden).
  *
  * Returns `null` while loading, when no model is chosen, or when the read
  * fails or returns nothing, so a caller never mistakes "not known" for "this

@@ -85,7 +85,7 @@ export const readThreadHandler: WarRoomMasterToolHandler<
       text: messageRecordToText(rec),
     }));
 
-    // Cross-agent working-document visibility: list the conversation's docs
+    // Cross-agent working-document awareness: list the conversation's docs
     // so an overseer (or sibling agent) can read what this agent produced.
     let working_documents:
       | { id: string; kind: string; enabled: boolean }[]

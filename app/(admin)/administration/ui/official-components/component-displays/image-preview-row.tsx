@@ -211,7 +211,7 @@ function MyComponent() {
         <ComponentDisplayWrapper
           component={component}
           code={code}
-          description="Extra large image preview row for maximum visibility of image content."
+          description="Extra large image preview row for maximum legibility of image content."
         >
           <ImagePreviewDemo size="xl" />
         </ComponentDisplayWrapper>

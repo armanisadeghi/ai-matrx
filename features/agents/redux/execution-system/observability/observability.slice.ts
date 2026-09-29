@@ -12,7 +12,7 @@
  *
  * Visibility is controlled at the selector/render layer via
  * `display.showCreatorDebug` (Chat hides it, Runner shows it). The data
- * lives here either way — visibility is purely a rendering concern.
+ * lives here either way — display is purely a rendering concern.
  *
  * In Phase 1.4 this slice ships empty-but-ready. Phase 2 wires in the
  * population paths and drops the duplicate fields from `activeRequests/`.

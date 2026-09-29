@@ -395,7 +395,7 @@ export interface AgentDefinition {
   autoToolsDisabled: boolean;
 
   /**
-   * Per-agent skill visibility tiering. Persisted in `agx_agent.skill_config`
+   * Per-agent skill exposure tiering. Persisted in `agx_agent.skill_config`
    * JSONB. UUIDs reference `skill.definition.id`. See migration 0095 for the
    * structural CHECK constraint.
    *

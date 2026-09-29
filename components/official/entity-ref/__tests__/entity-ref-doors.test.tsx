@@ -161,7 +161,7 @@ describe("EntityRef doors for mandates/shortcuts surfaces", () => {
     );
   });
 
-  it("marks hover-revealed controls for the shared visibility gate", () => {
+  it("marks hover-revealed controls for the shared hover-reveal gate", () => {
     renderRef(
       <EntityRef token="organization" id="org-9" name="Acme Health" />,
     );
@@ -170,7 +170,7 @@ describe("EntityRef doors for mandates/shortcuts surfaces", () => {
     expect(controls?.getAttribute("data-reveal-on-hover")).toBe("true");
     expect(controls?.className.split(/\s+/)).toContain("entity-ref-controls");
 
-    // The actual pointer and visibility behavior is measured in Chromium at
+    // The actual pointer and reveal behavior is measured in Chromium at
     // desktop and coarse-pointer widths by entity-ref-controls.spec.ts.
     expect(container.querySelector('[title="Quick look at Acme Health"]')?.className)
       .not.toContain("pointer-events-auto");

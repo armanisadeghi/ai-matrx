@@ -774,7 +774,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "CMS Agent Activity",
         description:
-          "Fleet-wide CMS visibility — agent/human write activity, per-site page tree with preview/live links, agent write-policy editor, and validation-exception approvals.",
+          "Fleet-wide CMS oversight — agent/human write activity, per-site page tree with preview/live links, agent write-policy editor, and validation-exception approvals.",
         iconName: "Globe",
         link: "/administration/knowledge/cms-agents",
         isNew: true,

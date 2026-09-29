@@ -410,7 +410,7 @@ export const selectStructuredInstruction =
     state.instanceUIState.byConversationId[conversationId]
       ?.builderAdvancedSettings?.structuredInstruction;
 
-// ── Content visibility selectors ──────────────────────────────────────────────
+// ── Content display selectors ──────────────────────────────────────────────
 
 export const selectHideReasoning =
   (conversationId: string) =>
