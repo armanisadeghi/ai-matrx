@@ -77,9 +77,31 @@ test("a person with a passkey approves this key and is sent back to the extensio
   expect(container.textContent).toContain("Turn on password filling in Chrome on Mac");
   expect(container.textContent).toContain("900D E8A5 F008 672B");
   await act(async () => button("Approve with passkey").click());
-  expect(approve).toHaveBeenCalledWith({ keyThumbprint: KEY, label: "Chrome on Mac" });
+  expect(approve).toHaveBeenCalledWith({
+    keyThumbprint: KEY,
+    label: "Chrome on Mac",
+    deviceKind: "browser",
+  });
   expect(container.querySelector('[data-testid="approve-browser-done"]')?.textContent).toContain(
     "Go back to the AI Matrx extension",
+  );
+});
+
+test("the macOS native password app names itself instead of a browser", async () => {
+  mockParams = new URLSearchParams(`key=${KEY}&kind=mac`);
+  methods.mockResolvedValue({ password: false, passkey: true });
+  approve.mockResolvedValue({ expiresAt: "2026-09-28T23:20:00Z" });
+  await render();
+  expect(container.textContent).toContain("Turn on password filling on this Mac");
+  expect(container.textContent).not.toContain("in this browser");
+  await act(async () => button("Approve with passkey").click());
+  expect(approve).toHaveBeenCalledWith({
+    keyThumbprint: KEY,
+    label: null,
+    deviceKind: "mac",
+  });
+  expect(container.querySelector('[data-testid="approve-browser-done"]')?.textContent).toContain(
+    "Go back to the AI Matrx password app",
   );
 });
 

@@ -1719,6 +1719,9 @@ export function getVaultFillStepUpMethods(): Promise<VaultFillStepUpMethods> {
 export function approveVaultFillDeviceWithPasskey(params: {
   keyThumbprint: string;
   label: string | null;
+  /** What is being approved — the extension ("browser") or the macOS native
+   * password app ("mac"). Unset reads as "browser" on the server. */
+  deviceKind?: "browser" | "mac" | null;
   challengeId: string;
   credential: Record<string, unknown>;
 }): Promise<{ approved: boolean; key_thumbprint: string; expires_at: string }> {
@@ -1727,6 +1730,7 @@ export function approveVaultFillDeviceWithPasskey(params: {
     body: JSON.stringify({
       key_thumbprint: params.keyThumbprint,
       label: params.label,
+      device_kind: params.deviceKind ?? null,
       challenge_id: params.challengeId,
       credential: params.credential,
     }),

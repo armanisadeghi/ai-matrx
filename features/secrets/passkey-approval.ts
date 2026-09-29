@@ -95,6 +95,7 @@ function serialize(credential: PublicKeyCredential): Record<string, unknown> {
 export async function approveBrowserWithPasskey(params: {
   keyThumbprint: string;
   label: string | null;
+  deviceKind?: "browser" | "mac" | null;
 }): Promise<{ expiresAt: string }> {
   const { data, error } = await supabase.auth.passkey.startAuthentication();
   if (error || !data) {
@@ -121,6 +122,7 @@ export async function approveBrowserWithPasskey(params: {
   const result = await approveVaultFillDeviceWithPasskey({
     keyThumbprint: params.keyThumbprint,
     label: params.label,
+    deviceKind: params.deviceKind,
     challengeId: data.challenge_id,
     credential: serialize(credential),
   });

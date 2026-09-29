@@ -48,6 +48,12 @@ export function ApproveBrowserWorkspace() {
   const thumbprint = (params.get("key") ?? "").toLowerCase();
   const label = (params.get("label") ?? "").slice(0, 200) || null;
   const validKey = /^[0-9a-f]{64}$/.test(thumbprint);
+  // The opening client says what it is — the extension or the macOS native
+  // password app — so this page can name it correctly instead of always
+  // saying "browser". Unrecognized/missing reads as a browser, today's only
+  // other established client.
+  const deviceKind = params.get("kind") === "mac" ? "mac" : "browser";
+  const isMac = deviceKind === "mac";
 
   const [methods, setMethods] = useState<VaultFillStepUpMethods | null>(null);
   const [busy, setBusy] = useState<"approve" | "add" | null>(null);
@@ -78,6 +84,7 @@ export function ApproveBrowserWorkspace() {
       const { expiresAt } = await approveBrowserWithPasskey({
         keyThumbprint: thumbprint,
         label,
+        deviceKind,
       });
       setApprovedUntil(expiresAt);
     } catch (err) {
@@ -116,22 +123,24 @@ export function ApproveBrowserWorkspace() {
             <div className="flex items-center gap-2">
               <KeyRound className="h-5 w-5 text-muted-foreground" />
               <h1 className="text-base font-semibold text-foreground">
-                Turn on password filling{label ? ` in ${label}` : ""}
+                {isMac
+                  ? "Turn on password filling on this Mac"
+                  : `Turn on password filling${label ? ` in ${label}` : ""}`}
               </h1>
             </div>
 
             {!validKey ? (
               <p className="mt-3 text-sm text-muted-foreground">
-                This link is missing the browser to approve. Open the AI Matrx
-                extension, go to its Vault tab, and choose Approve with a
-                passkey again.
+                {isMac
+                  ? "This link is missing the Mac to approve. Open the AI Matrx password app and choose Approve with a passkey again."
+                  : "This link is missing the browser to approve. Open the AI Matrx extension, go to its Vault tab, and choose Approve with a passkey again."}
               </p>
             ) : (
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  The AI Matrx extension asked to fill your saved passwords in
-                  this browser. Approve it only if you just asked for this. The
-                  extension shows the same code:
+                  {isMac
+                    ? "The AI Matrx password app asked to fill your saved passwords on this Mac. Approve it only if you just asked for this. The app shows the same code:"
+                    : "The AI Matrx extension asked to fill your saved passwords in this browser. Approve it only if you just asked for this. The extension shows the same code:"}
                 </p>
                 <p
                   className="mt-2 rounded-md bg-muted px-3 py-2 text-center font-mono text-sm tracking-wider text-foreground"
@@ -155,8 +164,9 @@ export function ApproveBrowserWorkspace() {
                       className="text-sm text-foreground"
                       data-testid="approve-browser-done"
                     >
-                      Approved. Go back to the AI Matrx extension and filling
-                      turns on there. Do it within 5 minutes, or approve again.
+                      Approved. Go back to the AI Matrx{" "}
+                      {isMac ? "password app" : "extension"} and filling turns
+                      on there. Do it within 5 minutes, or approve again.
                     </p>
                   </div>
                 ) : here === false ? (
@@ -186,9 +196,13 @@ export function ApproveBrowserWorkspace() {
                       className="text-sm text-foreground"
                       data-testid="approve-browser-no-passkey"
                     >
-                      {methods.password
-                        ? "Your account has no passkey yet. Add one to approve this browser, or type your AI Matrx password in the extension instead."
-                        : "Your account has no password or passkey yet, so a browser cannot be approved. Add a passkey to your account, then approve this browser with it."}
+                      {isMac
+                        ? methods.password
+                          ? "Your account has no passkey yet. Add one to approve this Mac, or type your AI Matrx password in the password app instead."
+                          : "Your account has no password or passkey yet, so a Mac cannot be approved. Add a passkey to your account, then approve this Mac with it."
+                        : methods.password
+                          ? "Your account has no passkey yet. Add one to approve this browser, or type your AI Matrx password in the extension instead."
+                          : "Your account has no password or passkey yet, so a browser cannot be approved. Add a passkey to your account, then approve this browser with it."}
                     </p>
                     <Button
                       onClick={() => void addPasskey()}
