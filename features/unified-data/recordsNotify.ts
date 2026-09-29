@@ -10,8 +10,11 @@
 import { toast } from "@/lib/toast";
 
 export const RECORDS_NOTIFY = {
-  success: (message: string) => {
-    toast.success(message);
+  // ONE BUTTON ON THE TOAST WHEN THE PACKAGE HANDS ONE (an Undo: a table archived from its settings,
+  // lane DATA-V2-BASICS-2). Without one, the sentence alone, as before.
+  success: (message: string, action?: { label: string; run: () => void }) => {
+    if (action) toast.success(message, { action: { label: action.label, onClick: action.run } });
+    else toast.success(message);
   },
   error: (message: string) => {
     toast.error(message);
