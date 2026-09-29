@@ -23,7 +23,6 @@ agent -> Needs Arman) with ` — <question> — <what was checked> — <who>` ad
 Its files stay as they are.
 
 ## Held files
-- _conflicts/2026-09-29-161400/package.json.held — LOCAL latest 2026-09-29 15:45; GITHUB latest 2026-09-29 16:05; LOCAL lacks 1 of GITHUB's 1 new lines; GITHUB lacks 1 of LOCAL's 1 new lines; recover: git show efcc4ceee5:'package.json' / 0f0737a056:'package.json'
 
 ## Needs a manager
 
