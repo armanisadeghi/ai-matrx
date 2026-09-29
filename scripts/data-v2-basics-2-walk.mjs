@@ -705,6 +705,24 @@ try {
       if (await settings.count()) await settings.click();
       await sleep(3000);
     };
+    // A table left archived by an earlier stopped run is brought back the way a person does.
+    await page.goto(`${ORIGIN}/data-v2/${tid}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await sleep(6000);
+    if (await page.getByText("This table is archived").count()) {
+      await page.getByRole("button", { name: "Bring it back" }).click();
+      await sleep(6000);
+      step("brought back from the archived page", { text: (await page.locator("body").innerText()).replace(/\s+/g, " ").slice(0, 200) });
+    }
+    // The run's second pass is held for 12 s, so the reload lands in the middle of it, as a person's would.
+    let passes = 0;
+    await page.route("**/rpc/table_archive", async (route) => {
+      const body = route.request().postData() ?? "";
+      if (/"p_chunk":\s*[1-9]/.test(body)) {
+        passes += 1;
+        if (passes === 2) await new Promise((r) => setTimeout(r, 12000));
+      }
+      await route.continue().catch(() => {});
+    });
     const state = async () => ((await page.locator("[data-archive-state]").first().textContent().catch(() => null)) ?? "").trim();
     const buttonNamed = (name) => page.getByRole("button", { name, exact: true });
     await openSettings();
@@ -718,6 +736,7 @@ try {
     await until("a first pass", async () => /put away/.test(await state()), 20000);
     const during = await state();
     await shot("a03-archiving");
+    await page.unroute("**/rpc/table_archive");
     await page.reload({ waitUntil: "domcontentloaded" });
     await sleep(2000);
     await openSettings();
