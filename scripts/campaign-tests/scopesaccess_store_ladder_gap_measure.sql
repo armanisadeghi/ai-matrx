@@ -21,12 +21,18 @@
 \quit
 \endif
 
-begin;
+begin isolation level repeatable read;
 set local statement_timeout = 0;
+\if :{?world_until}
+\else
+\echo 'pass -v world_until=<the clone promotion time from common-docs/operations/clone/CLONE-REF>'
+\quit
+\endif
 
 create temp table g_pair on commit drop as
   select s.id as scope_id, s.organization_id as org, s.scope_type_id as table_id, s.created_by, a.seat, a.why
     from context.scopes s
+    join context.scope_types st0 on st0.id = s.scope_type_id and st0.created_at <= :'world_until'::timestamptz
     cross join lateral (
       select s.created_by as seat, 'creator'::text as why where s.created_by is not null
       union select m.user_id, 'org ' || m.role from iam.memberships m
@@ -35,7 +41,8 @@ create temp table g_pair on commit drop as
        where m.container_type = 'scope' and m.container_id = s.id and m.deleted_at is null
       union (select u.id, 'unrelated' from auth.users u
               where not exists (select 1 from iam.memberships m where m.user_id = u.id and m.container_id in (s.id, s.organization_id))
-              order by u.id limit 1)) a;
+              order by u.id limit 1)) a
+   where s.created_at <= :'world_until'::timestamptz;
 
 create temp table g_ans (scope_id uuid, seat uuid, why text, old_open boolean, old_edit boolean, new_open boolean, new_edit boolean) on commit drop;
 
@@ -50,9 +57,8 @@ begin
     perform set_config('role', 'none', true);
     select coalesce(p.created_by = p.seat, false) or coalesce(iam.has_access_for(p.seat, 'scope', p.scope_id, 'editor'), false) into v_oe;
     -- NEW: the store's doors — the organization wall, then the one ladder
-    perform set_config('role', 'authenticated', true);
+    -- (the wall is asked as the owner with the person's claims: custom.portal_admits is not a client door)
     select (iam.has_org_access(p.org) or custom.portal_admits(p.org)) into v_no;
-    perform set_config('role', 'none', true);
     v_ne := v_no and coalesce(custom.has_visibility(p.seat, 'record', p.scope_id, 'editor'), false);
     v_no := v_no and coalesce(custom.has_visibility(p.seat, 'record', p.scope_id, 'viewer'), false);
     insert into g_ans values (p.scope_id, p.seat, p.why, v_oo, v_oe, v_no, v_ne);
@@ -77,10 +83,11 @@ select why, count(*) as pairs,
  where s.scope_type_id in (select id from context.scope_types where slug = 'class')
  group by why order by why;
 \echo '── by organization (where anything differs)'
-select o.name, count(*) as pairs,
+select o.name, platform.knob_resolve('custom', 'member_default_visibility', o.id) #>> '{}' as member_default_visibility,
+       iam.member_default_level(o.id, null)::text as member_default_level, count(*) as pairs,
        count(*) filter (where old_open <> new_open) as open_differs,
        count(*) filter (where old_edit <> new_edit) as edit_differs
   from g_ans a join context.scopes s on s.id = a.scope_id join iam.organizations o on o.id = s.organization_id
- group by o.name having count(*) filter (where old_open <> new_open or old_edit <> new_edit) > 0 order by 3 desc, 4 desc;
+ group by o.id, o.name having count(*) filter (where old_open <> new_open or old_edit <> new_edit) > 0 order by 3 desc, 4 desc;
 
 rollback;

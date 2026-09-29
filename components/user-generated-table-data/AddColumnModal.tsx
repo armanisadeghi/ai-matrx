@@ -25,7 +25,7 @@ import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer'
 import { setFieldFormat } from '@/features/data-tables/service';
 import { FormulaExpressionEditor } from '@/features/data-tables/components/FormulaExpressionEditor';
 import { isServiceFailure } from '@/features/data-tables/types';
-import { columnNameTaken } from '@/features/data-tables/column-name-taken';
+import { columnNameProblem, columnNameToKeep } from '@/features/data-tables/column-name-taken';
 import { FieldFormatPicker } from '@/lib/field-formats/FieldFormatPicker';
 import {
   offerFormatWhereRelationIs,
@@ -101,12 +101,14 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
 
   // Handle form submission
   // A name another column already has is said as it is typed, and never sent (column-name-taken.ts).
-  const nameTaken = columnNameTaken(displayName, siblingFields);
+  // Blank is said once the person has typed something (three spaces, BREAKER-2 B2-08); the rest at once.
+  const nameTaken = displayName === '' ? null : columnNameProblem(displayName, siblingFields);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (nameTaken) {
-      setError(nameTaken);
+    const nameProblem = columnNameProblem(displayName, siblingFields);
+    if (nameProblem) {
+      setError(nameProblem);
       return;
     }
 
@@ -117,8 +119,8 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
       // Use the utility function
       const result = await addTableColumn({
         tableId,
-        fieldName,
-        displayName,
+        fieldName: generateFieldName(columnNameToKeep(displayName)),
+        displayName: columnNameToKeep(displayName),
         dataType,
         isRequired: isComputedFormat ? false : isRequired,
         defaultValue: isComputedFormat ? null : defaultValue || null,

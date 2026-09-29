@@ -16,17 +16,23 @@
  *   - off → the stamp is cleared AND the values the page already handed over
  *           are dropped. Off means off.
  *
- * The choice is the person's, visible in the host's chrome (the helper-context
- * contract: common-docs/systems/mandates/STATE.md). One implementation for
- * every beside-the-page chat — never a second copy of this effect.
+ * The choice is the person's, made on the ONE control: the composer's page
+ * chip (`PageContextChip` → `setPageContextEnabled`). `startsOn` is only the
+ * host's default for a new conversation — a chat that opens over ANY page
+ * (Quick Chat) starts off, so the chip shows as the eye-off icon naming the
+ * page and one click shares it. While off, the remembered page follows the
+ * person, so turning it on shares the page they are on now. The contract:
+ * common-docs/systems/mandates/STATE.md. One implementation for every
+ * beside-the-page chat — never a second copy of this effect.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { replaceSurfaceVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { replaceSurfaceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { refreshSurfaceScope } from "@/features/agents/redux/execution-system/thunks/refresh-surface-scope.thunk";
 import { useActivePageSurface } from "./useActivePageSurface";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
@@ -40,7 +46,7 @@ export interface PageFollowState {
 
 export function useConversationFollowsPage(
   conversationId: string | null,
-  includePageContext: boolean,
+  startsOn: boolean,
 ): PageFollowState {
   const dispatch = useAppDispatch();
   const { surfaceName: pageSurfaceName } = useActivePageSurface();
@@ -50,9 +56,27 @@ export function useConversationFollowsPage(
   const conversationReady = useAppSelector((state) =>
     conversationId ? Boolean(state.conversations.byConversationId[conversationId]) : false,
   );
-  // The composer's page-context chip can turn it off for this conversation.
+  // The composer's page chip turns it on and off for this conversation.
   const turnedOff = useAppSelector(selectPageContextOff(conversationId));
-  const desiredSurfaceName = includePageContext && !turnedOff && pageSurfaceName ? pageSurfaceName : null;
+  const desiredSurfaceName = !turnedOff && pageSurfaceName ? pageSurfaceName : null;
+
+  // A host that starts OFF: the first time this conversation is ready, mark it
+  // off (remembering the page, so the chip can name it). Once per conversation.
+  const seeded = useRef<string | null>(null);
+  useEffect(() => {
+    if (!conversationId || !conversationReady || seeded.current === conversationId) return;
+    seeded.current = conversationId;
+    if (!startsOn && !stampedSurfaceName) {
+      dispatch(setPageContextOff({ conversationId, previousSurfaceName: pageSurfaceName }));
+    }
+  }, [dispatch, conversationId, conversationReady, startsOn, stampedSurfaceName, pageSurfaceName]);
+
+  // While off, the remembered page follows the person.
+  const rememberedPage = turnedOff?.previousSurfaceName ?? null;
+  useEffect(() => {
+    if (!conversationId || !turnedOff || !pageSurfaceName || rememberedPage === pageSurfaceName) return;
+    dispatch(setPageContextOff({ conversationId, previousSurfaceName: pageSurfaceName }));
+  }, [dispatch, conversationId, turnedOff, rememberedPage, pageSurfaceName]);
 
   useEffect(() => {
     if (!conversationId || !conversationReady) return;

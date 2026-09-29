@@ -1,5 +1,6 @@
 "use client";
 
+import { columnNameProblem, columnNameToKeep } from "@/features/data-tables/column-name-taken";
 import { COLUMN_STORAGE_TYPES, storageTypesToChangeInto } from "@/features/data-tables/column-storage-types";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
@@ -488,6 +489,17 @@ export default function TableConfigModal({
           ([_, value]) => value !== undefined,
         ),
       );
+
+      // EVERY CHANGED NAME JUDGED LIKE ADD COLUMN'S (BREAKER-2 B2-08/09/17/18): blank, a spacing variant
+      // of another column's name, too long, or a name the table keeps for itself — refused before anything
+      // is written, naming the column.
+      for (const field of fields) {
+        const was = initialFields.find((f) => f.id === field.id);
+        if (!was || columnNameToKeep(field.display_name) === columnNameToKeep(was.display_name)) continue;
+        const problem = columnNameProblem(field.display_name, fields.filter((f) => f.id !== field.id));
+        if (problem) throw new Error(`${was.display_name}: ${problem}`);
+        field.display_name = columnNameToKeep(field.display_name);
+      }
 
       // A pattern the browser cannot compile is skipped at validation time —
       // a rule that looks armed and does nothing. Refuse it here rather than

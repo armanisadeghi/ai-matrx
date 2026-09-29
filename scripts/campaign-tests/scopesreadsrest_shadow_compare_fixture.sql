@@ -34,3 +34,18 @@ update custom.record t set deleted_at = s.deleted_at
 update custom.record f set deleted_at = i.deleted_at
   from context.context_items i where i.id = f.id and f.data_class = 'field' and f.deleted_at is distinct from i.deleted_at;
 set local session_replication_role = origin;
+-- F7 (clone only): an older row with no store twin at all — a peer lane's suite writing the older
+-- scope tables alone on the shared clone (2026-09-29 20:47Z onward, "Harbor Street PT — …" in admin's
+-- Workspace). Production 0 (platform.cutover_scope_rows_copied, lane SCOPES-PRESS-EVERYONE, and this
+-- lane's own count the same day). The twin cannot be made here, so the row is set aside for the
+-- compare (the transaction rolls back).
+set local session_replication_role = replica;
+delete from context.context_item_values v
+ where not exists (select 1 from custom.record r where r.id = v.scope_id and r.data_class = 'record');
+delete from context.scopes s
+ where not exists (select 1 from custom.record r where r.id = s.id and r.data_class = 'record');
+delete from context.context_items i
+ where not exists (select 1 from custom.record f where f.id = i.id and f.data_class = 'field');
+delete from context.scope_types s
+ where not exists (select 1 from custom.record t where t.id = s.id and t.data_class = 'table');
+set local session_replication_role = origin;

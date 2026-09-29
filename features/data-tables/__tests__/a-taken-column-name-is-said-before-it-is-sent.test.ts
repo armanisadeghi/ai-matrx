@@ -19,3 +19,23 @@ describe("a taken column name is said before it is sent", () => {
     expect(columnNameTaken("", columns)).toBeNull();
   });
 });
+
+import { columnNameProblem } from "../column-name-taken";
+
+describe("BREAKER-2: every column name is judged as it is typed", () => {
+  const visit = [{ display_name: "Visit Status" }];
+  it("refuses a blank name (three spaces)", () => {
+    expect(columnNameProblem("   ", visit)).toMatch(/needs a name/);
+  });
+  it("catches a doubled space as the same name", () => {
+    expect(columnNameProblem("Visit  Status", visit)).toMatch(/already have a column called "Visit Status"/);
+  });
+  it("refuses a 300-letter name", () => {
+    expect(columnNameProblem("x".repeat(300), visit)).toMatch(/takes up to 80/);
+  });
+  it("refuses a name the table keeps for itself", () => {
+    expect(columnNameProblem("id", visit)).toMatch(/keeps for itself/);
+    expect(columnNameProblem("Created At", visit)).toMatch(/keeps for itself/);
+    expect(columnNameProblem("Patient ID", visit)).toBeNull();
+  });
+});

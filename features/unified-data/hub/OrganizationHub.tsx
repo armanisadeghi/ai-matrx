@@ -202,19 +202,31 @@ export function OrganizationHub({
     | { phase: "read"; rows: readonly DataHomeItemRow[] }
     | { phase: "failed"; error: DoorFailure }
   >({ phase: "reading" });
+  /** Who changed each row, read in the same call (custom.data_home), keyed `${organization}:${id}`. */
+  const [changedBy, setChangedBy] = useState<ReadonlyMap<string, { at: string | null; who: string | null }> | null>(
+    null,
+  );
   useEffect(() => {
     let alive = true;
-    // THE DOORS ARE TOLD THE ORGANIZATION (DATA-HOME-2): the listings never show the rows of the
-    // choice before, while the new choice is read.
+    // ONE CALL FOR THE WHOLE HOME (custom.data_home, chair ruling 2026-09-29): the tables, everything
+    // else, and who changed each row, with the walk of which Tables she may open asked once. The door
+    // is told the organization (DATA-HOME-2), so the listings never show the rows of the choice
+    // before while the new choice is read.
     setEverywhere({ phase: "reading" });
     setPages({ phase: "reading" });
-    void doors.dataHomeTables(dataSource, oneOrganization).then((answered) => {
+    setChangedBy(null);
+    void doors.dataHome(dataSource, oneOrganization).then((answered) => {
       if (!alive) return;
-      setEverywhere(answered.ok ? { phase: "read", rows: answered.data } : { phase: "failed", error: answered.error });
-    });
-    void doors.dataHomeItems(dataSource, oneOrganization).then((answered) => {
-      if (!alive) return;
-      setPages(answered.ok ? { phase: "read", rows: answered.data } : { phase: "failed", error: answered.error });
+      if (!answered.ok) {
+        setEverywhere({ phase: "failed", error: answered.error });
+        setPages({ phase: "failed", error: answered.error });
+        return;
+      }
+      setChangedBy(
+        new Map(answered.data.changed_by.map((row) => [`${row.organization_id}:${row.id}`, { at: row.at, who: row.who }])),
+      );
+      setEverywhere({ phase: "read", rows: answered.data.tables });
+      setPages({ phase: "read", rows: answered.data.items });
     });
     return () => {
       alive = false;
@@ -303,6 +315,7 @@ export function OrganizationHub({
       everywhere:
         everywhere.phase === "read" ? { ok: true, rows: everywhere.rows } : { ok: false, error: everywhere.error },
       items: pages.phase === "read" ? { ok: true, rows: pages.rows } : { ok: false, error: pages.error },
+      ...(changedBy ? { changedBy } : {}),
     };
     setStates(
       Object.fromEntries(HUB_CAPABILITIES.map((c) => [c.id, { phase: "reading" } as HubListingState])),
@@ -353,7 +366,7 @@ export function OrganizationHub({
     return () => {
       alive = false;
     };
-  }, [client, dataSource, organizationId, tables, tablesRead.loading, facts.phase, everywhere, pages]);
+  }, [client, dataSource, organizationId, tables, tablesRead.loading, facts.phase, everywhere, pages, changedBy]);
 
   // THE ARCHIVE, through the store's own archived door over the Table kernel —
   // the same door a table's own archive uses, addressed at the kernel that

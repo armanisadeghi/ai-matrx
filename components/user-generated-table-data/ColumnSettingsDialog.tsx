@@ -73,6 +73,7 @@ import {
 } from "@/features/data-tables/service";
 import { isServiceFailure, type FieldDataType } from "@/features/data-tables/types";
 import { COLUMN_STORAGE_TYPES, storageTypesToChangeInto } from "@/features/data-tables/column-storage-types";
+import { columnNameProblem, columnNameToKeep } from "@/features/data-tables/column-name-taken";
 import {
   parseValidationRules,
   serializeValidationRules,
@@ -186,6 +187,8 @@ function ColumnSettingsForm({
     data_type: dataType,
     metadata: format ? { format } : field.metadata,
   });
+  const otherColumns = fields.filter((f) => f.id !== field.id);
+  const nameSays = columnNameToKeep(name) === columnNameToKeep(field.display_name) ? null : columnNameProblem(name, otherColumns);
   const siblings = fields
     .filter((f) => f.field_name !== field.field_name)
     .map((f) => ({
@@ -200,9 +203,12 @@ function ColumnSettingsForm({
 
   const save = async () => {
     if (!original) return;
-    const trimmed = name.trim();
-    if (!trimmed) {
-      toast({ title: "The column needs a name", variant: "destructive" });
+    // The name as it is kept, judged like Add Column's (BREAKER-2 B2-08/09/17/18): blank, a spacing
+    // variant of another column's name, too long, or a name the table keeps for itself.
+    const trimmed = columnNameToKeep(name);
+    const nameProblem = trimmed === columnNameToKeep(original.display_name) ? null : columnNameProblem(name, otherColumns);
+    if (nameProblem) {
+      toast({ title: "That name cannot be used", description: nameProblem, variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -339,7 +345,9 @@ function ColumnSettingsForm({
                 value={name}
                 disabled={readOnly || saving}
                 onChange={(e) => setName(e.target.value)}
+                aria-invalid={nameSays ? true : undefined}
               />
+              {nameSays ? <p className="text-xs text-destructive">{nameSays}</p> : null}
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Stores</Label>

@@ -61,23 +61,31 @@ end $pre$;
 -- value it was; every other Field keeps the value itself.
 create function custom._ctx_setting_back(p_value jsonb, p_behavior text)
  returns jsonb
- language sql
+ language plpgsql
  immutable
  set search_path to 'pg_catalog'
 as $function$
-  select case
-    when p_value is null or p_behavior is distinct from 'text' then p_value
-    when jsonb_typeof(p_value) = 'array' then
-      (select coalesce(jsonb_agg(case when jsonb_typeof(e.value) = 'string'
-                                           and (e.value #>> '{}') ~ '^\s*[\[{]'
-                                           and pg_input_is_valid(e.value #>> '{}', 'jsonb')
-                                      then (e.value #>> '{}')::jsonb else e.value end
-                                 order by e.ord), '[]'::jsonb)
-         from jsonb_array_elements(p_value) with ordinality e(value, ord))
-    when jsonb_typeof(p_value) = 'string' and (p_value #>> '{}') ~ '^\s*[\[{]'
-         and pg_input_is_valid(p_value #>> '{}', 'jsonb') then (p_value #>> '{}')::jsonb
-    else p_value
-  end
+declare v_out jsonb;
+begin
+  if p_value is null or p_behavior is distinct from 'text' then
+    return p_value;
+  end if;
+  if jsonb_typeof(p_value) = 'array' then
+    select coalesce(jsonb_agg(case when jsonb_typeof(e.value) = 'string'
+                                        and (e.value #>> '{}') ~ '^\s*[\[{]'
+                                        and pg_input_is_valid(e.value #>> '{}', 'jsonb')
+                                   then (e.value #>> '{}')::jsonb else e.value end
+                              order by e.ord), '[]'::jsonb)
+      into v_out
+      from jsonb_array_elements(p_value) with ordinality e(value, ord);
+    return v_out;
+  end if;
+  if jsonb_typeof(p_value) = 'string' and (p_value #>> '{}') ~ '^\s*[\[{]'
+     and pg_input_is_valid(p_value #>> '{}', 'jsonb') then
+    return (p_value #>> '{}')::jsonb;
+  end if;
+  return p_value;
+end;
 $function$;
 
 -- A scope's settings object, rebuilt from its Record: every Field the store half made for a settings key
@@ -86,23 +94,30 @@ $function$;
 -- value is left out, as the old object left it out.
 create function custom._ctx_scope_settings(p_org uuid, p_table uuid, p_data jsonb)
  returns jsonb
- language sql
+ language plpgsql
  stable
  set search_path to 'pg_catalog'
 as $function$
+-- plpgsql, not sql: its plan is kept for the session (a SQL function is planned again on every call).
+declare v_out jsonb;
+begin
   select coalesce(jsonb_object_agg(sf.setting, custom._ctx_setting_back(p_data -> sf.fkey, sf.behavior)), '{}'::jsonb)
+    into v_out
     from (select m[1] as setting, f.id, f.data ->> 'key' as fkey, f.data ->> 'type' as behavior
             from custom.record f
             cross join lateral regexp_match(f.metadata -> 'moved_from' ->> 'note',
                                             '^the ''(.*)'' key of this type''s scopes'' settings') m
            where f.organization_id = p_org
              and f.table_id = custom.field_kernel_id()
+             and f.data @> jsonb_build_object('entity_definition_id', p_table::text)
              and f.data ->> 'entity_definition_id' = p_table::text
              and f.metadata -> 'moved_from' ->> 'table' = 'context.scopes') sf
    where sf.id = custom._ctx_id('scope-setting-field', p_table::text, sf.setting)
      and sf.fkey is not null
      and p_data ? sf.fkey
-     and jsonb_typeof(p_data -> sf.fkey) <> 'null'
+     and jsonb_typeof(p_data -> sf.fkey) <> 'null';
+  return v_out;
+end;
 $function$;
 
 revoke all on function custom._ctx_setting_back(jsonb, text) from public, anon, authenticated;
@@ -127,28 +142,35 @@ create type public._edu_class_row as (
 -- are included, as public._edu_class included them. NULL when there is none.
 create function public._edu_class_find(p_class uuid)
  returns public._edu_class_row
- language sql
+ language plpgsql
  stable
  set search_path to ''
 as $function$
-  select row(r.id,
-             r.organization_id,
-             r.data ->> 'name',
-             r.data ->> coalesce((select f.data ->> 'key' from custom.record f
-                                   where f.organization_id = r.organization_id
-                                     and f.id = custom._ctx_id('scope-column-field', r.table_id::text, 'description')),
-                                  'description'),
-             r.data ->> 'slug',
-             custom._ctx_scope_settings(r.organization_id, r.table_id, r.data),
-             r.created_by,
-             r.deleted_at)::public._edu_class_row
+-- plpgsql, not sql: its plan is kept for the session (a SQL function is planned again on every call,
+-- and this one reads a partitioned table by id).
+declare v public._edu_class_row; v_table uuid; v_data jsonb; v_desc text;
+begin
+  if p_class is null then return null; end if;
+  select r.id, r.organization_id, r.table_id, r.data, r.created_by, r.deleted_at
+    into v.id, v.organization_id, v_table, v_data, v.created_by, v.deleted_at
     from custom.record r
-    join custom.record t on t.organization_id = r.organization_id and t.id = r.table_id
-   where r.id = p_class
-     and r.data_class = 'record'
-     and t.table_id = custom.table_kernel_id()
-     and t.data ->> 'kept_for' = 'context'
-     and t.data ->> 'slug' = 'class'
+   where r.id = p_class and r.data_class = 'record';
+  if v.id is null then return null; end if;
+  if not exists (select 1 from custom.record t
+                  where t.organization_id = v.organization_id and t.id = v_table
+                    and t.table_id = custom.table_kernel_id()
+                    and t.data ->> 'kept_for' = 'context' and t.data ->> 'slug' = 'class') then
+    return null;
+  end if;
+  select f.data ->> 'key' into v_desc from custom.record f
+   where f.organization_id = v.organization_id
+     and f.id = custom._ctx_id('scope-column-field', v_table::text, 'description');
+  v.name        := v_data ->> 'name';
+  v.description := v_data ->> coalesce(v_desc, 'description');
+  v.slug        := v_data ->> 'slug';
+  v.settings    := custom._ctx_scope_settings(v.organization_id, v_table, v_data);
+  return v;
+end;
 $function$;
 
 -- The class, or the same "not found" the old public._edu_class refused with.
@@ -172,18 +194,21 @@ $function$;
 -- read under each class Table's own join-code Field.
 create function public._edu_live_class_by_code(p_code text)
  returns public._edu_class_row
- language sql
+ language plpgsql
  stable
  set search_path to ''
 as $function$
-  select public._edu_class_find(r.id)
+declare v_id uuid;
+begin
+  select r.id into v_id
     from custom.record t
     join custom.record jf
       on jf.organization_id = t.organization_id
      and jf.id = custom._ctx_id('scope-setting-field', t.id::text, 'join_code')
     join custom.record r
       on r.organization_id = t.organization_id and r.table_id = t.id
-   where t.table_id = custom.table_kernel_id()
+   where t.data @> '{"kept_for": "context", "slug": "class"}'::jsonb
+     and t.table_id = custom.table_kernel_id()
      and t.data ->> 'kept_for' = 'context'
      and t.data ->> 'slug' = 'class'
      and r.data_class = 'record'
@@ -191,7 +216,10 @@ as $function$
      and jf.data ->> 'key' is not null
      and r.data ->> (jf.data ->> 'key') is not null
      and upper(r.data ->> (jf.data ->> 'key')) = upper(btrim(p_code))
-   limit 1
+   limit 1;
+  if v_id is null then return null; end if;
+  return public._edu_class_find(v_id);
+end;
 $function$;
 
 -- The three class helpers, on the class read from the store (bodies unchanged).

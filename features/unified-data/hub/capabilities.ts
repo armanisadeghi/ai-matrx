@@ -86,6 +86,11 @@ export interface HubReadContext {
    * with me is these rows.
    */
   items?: { ok: true; rows: readonly DataHomeItemRow[] } | { ok: false; error: DoorFailure } | undefined;
+  /**
+   * WHO CHANGED EACH ROW, ALREADY READ with the rest of the home (`custom.data_home`, DATA-HOME-2),
+   * keyed `${organizationId}:${id}`. When present, attachChangedBy reads it and asks no door.
+   */
+  changedBy?: ReadonlyMap<string, { at: string | null; who: string | null }> | undefined;
 }
 
 export type HubRead =
@@ -728,6 +733,16 @@ export async function attachChangedBy(
     const ids = byOrganization.get(organization) ?? [];
     ids.push(item.id);
     byOrganization.set(organization, ids);
+  }
+  // READ ALREADY, in the home's one call (custom.data_home): no second round trip.
+  if (ctx.changedBy) {
+    for (const item of items) {
+      const row = ctx.changedBy.get(`${item.organizationId ?? ctx.organizationId}:${item.id}`);
+      if (!row) continue;
+      item.changedAt = row.at ?? item.changedAt ?? null;
+      item.changedBy = row.who ?? null;
+    }
+    return;
   }
   const kind = capability.changedByKind;
   const answered = await doors.dataHomeChangedBy(

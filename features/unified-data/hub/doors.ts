@@ -366,3 +366,34 @@ export function dataHomeChangedBy(
     p_asks: real.slice(0, 200),
   });
 }
+
+/** The data home in one answer (`custom.data_home`, DATA-HOME-2). */
+export interface DataHomeAnswer {
+  tables: DataHomeTableRow[];
+  items: DataHomeItemRow[];
+  /** Who changed each row the page shows, per organization (custom.data_home_changed_by's rows). */
+  changed_by: Array<ChangedByRow & { organization_id: string }>;
+}
+
+/**
+ * THE DATA HOME IN ONE CALL (`custom.data_home`, chair ruling 2026-09-29): the tables, everything else
+ * the home lists, and who changed each row — the rows of custom.data_home_tables, custom.data_home_items
+ * and custom.data_home_changed_by, with the walk of which Tables she may open asked once for all of
+ * them. `organizationId` narrows to one organization, decided by the door in its own name.
+ */
+export async function dataHome(
+  dataSource: RecordsDataSource,
+  organizationId: string | null = null,
+): Promise<DoorAnswer<DataHomeAnswer>> {
+  const answered = await call<DataHomeAnswer | null>(
+    dataSource,
+    "data_home",
+    organizationId ? { p_organization_id: organizationId } : {},
+  );
+  if (!answered.ok) return answered;
+  const data = answered.data && !Array.isArray(answered.data) ? answered.data : null;
+  return {
+    ok: true,
+    data: { tables: data?.tables ?? [], items: data?.items ?? [], changed_by: data?.changed_by ?? [] },
+  };
+}

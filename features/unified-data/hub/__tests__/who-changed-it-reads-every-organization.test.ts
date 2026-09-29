@@ -44,3 +44,19 @@ it("asks each row's own organization, in one call, and names who changed every r
   ]);
   expect(items.map((i) => i.changedBy)).toEqual(["Dr. Lena Ortiz", "Marco Reyes"]);
 });
+
+it("reads who changed it from the home's one call when it is there, and asks no door (DATA-HOME-2)", async () => {
+  asked.length = 0;
+  const dashboards = HUB_CAPABILITIES.find((c) => c.id === "dashboards")!;
+  const items: HubItem[] = [
+    { id: "d1", title: "Recalls due this month", tableId: null, tableName: null, lane: null, facts: [], href: "/", organizationId: HARBOR },
+  ];
+  const ctx = {
+    organizationId: RINCON,
+    dataSource: {},
+    changedBy: new Map([[`${HARBOR}:d1`, { at: "2026-09-29T16:00:00Z", who: "Dr. Lena Ortiz" }]]),
+  } as unknown as HubReadContext;
+  await attachChangedBy(ctx, dashboards, items);
+  expect(asked).toEqual([]);
+  expect(items[0]?.changedBy).toBe("Dr. Lena Ortiz");
+});

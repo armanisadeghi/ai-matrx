@@ -84,6 +84,8 @@ const ROWS = [
 /** Which organization each call to the door named (null = every organization). */
 const doorAskedFor: Array<string | null> = [];
 const pagesAskedFor: Array<string | null> = [];
+/** Which data home doors the hub called, in order (DATA-HOME-2: the page asks ONE door). */
+const doorCalls: string[] = [];
 
 /** Everything beside the tables, as custom.data_home_items answers (DATA-HOME-2 tails). */
 const PAGES = [
@@ -252,7 +254,26 @@ jest.mock("../doors", () => ({
   tableKernelId: async () => ({ ok: true, data: "kernel" }),
   tableFacts: async () => ({ ok: true, data: [] }),
   // THE DOOR, AS PRODUCTION ANSWERS IT (datahome2 suite B): named one organization, only its rows.
+  // THE PAGE'S ONE DOOR (custom.data_home): the tables and everything else, as production answers.
+  dataHome: async (_ds: unknown, organizationId?: string | null) => {
+    doorCalls.push("data_home");
+    doorAskedFor.push(organizationId ?? null);
+    pagesAskedFor.push(organizationId ?? null);
+    return {
+      ok: true,
+      data: {
+        tables: organizationId ? ROWS.filter((r) => r.organization_id === organizationId) : ROWS,
+        items: organizationId ? PAGES.filter((p) => p.organization_id === organizationId) : PAGES,
+        changed_by: [],
+      },
+    };
+  },
+  dataHomeChangedBy: async () => {
+    doorCalls.push("data_home_changed_by");
+    return { ok: true, data: [] };
+  },
   dataHomeTables: async (_ds: unknown, organizationId?: string | null) => {
+    doorCalls.push("data_home_tables");
     doorAskedFor.push(organizationId ?? null);
     return { ok: true, data: organizationId ? ROWS.filter((r) => r.organization_id === organizationId) : ROWS };
   },
@@ -260,6 +281,7 @@ jest.mock("../doors", () => ({
   pipelines: async () => ({ ok: true, data: [] }),
   sharesOutside: async () => ({ ok: true, data: [] }),
   dataHomeItems: async (_ds: unknown, organizationId?: string | null) => {
+    doorCalls.push("data_home_items");
     pagesAskedFor.push(organizationId ?? null);
     return { ok: true, data: organizationId ? PAGES.filter((p) => p.organization_id === organizationId) : PAGES };
   },
@@ -341,6 +363,7 @@ afterEach(async () => {
   defaultOrderKnob = undefined;
   doorAskedFor.length = 0;
   pagesAskedFor.length = 0;
+  doorCalls.length = 0;
 });
 
 describe("the data home · default is everything", () => {
@@ -604,5 +627,21 @@ describe("the data home · every listing follows the organization dropdown", () 
     await openListing(listing);
     expect(pagesAskedFor).toEqual([RINCON]);
     expect(listingRows(listing)).toEqual([]);
+  });
+});
+
+// ── DATA-HOME-2, ONE CALL (chair ruling 2026-09-29): the page asked three doors (tables, items,
+// who-changed-it), each paying the walk of which Tables she may open. RED on the tail-3 hub: it
+// called custom.data_home_tables and custom.data_home_items, never custom.data_home.
+describe("the data home · one door for the whole page", () => {
+  it("asks custom.data_home once, and none of the three doors it replaced", async () => {
+    await mount("", { filter: "all" });
+    expect(doorCalls).toEqual(["data_home"]);
+  });
+
+  it("a picked organization is still one call, narrowed", async () => {
+    await mount("", { filter: HARBOR });
+    expect(doorCalls).toEqual(["data_home"]);
+    expect(doorAskedFor).toEqual([HARBOR]);
   });
 });

@@ -338,7 +338,13 @@ select fn, why, user_id, organization_id, arg, left(o::text, 700) as old, left(n
 \echo ==== MISMATCH COUNT
 select count(*) as mismatches from l6_verdict where verdict = 'MISMATCH';
 \if :{?dump}
-\copy (select jsonb_build_object('fn', fn, 'why', why, 'user_id', user_id, 'org', organization_id, 'arg', arg, 'o', o, 'n', n) from l6_verdict where verdict = 'MISMATCH') to :'dump'
+\pset tuples_only on
+\pset format unaligned
+\o :dump
+select jsonb_build_object('fn', fn, 'why', why, 'user_id', user_id, 'org', organization_id, 'arg', arg, 'o', o, 'n', n) from l6_verdict where verdict = 'MISMATCH';
+\o
+\pset tuples_only off
+\pset format aligned
 \endif
 \echo ==== CHECKS: the membrane guard with the new bodies
 select check_key, ok from public.__scope_access_membrane_conformance()
