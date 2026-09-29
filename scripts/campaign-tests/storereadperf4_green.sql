@@ -14,7 +14,7 @@
 -- This transaction writes (the DDL, the captures), so every statement memo is OFF here: this proves
 -- the bodies. storereadperf4_memo.sql proves the memo path equals this path, in one snapshot, on
 -- the clone with the file live. The timing is storereadperf4_timing.sql.
---   Plant (-v plant=fieldgroup): every Field shares its group's answer even when a grant names it.
+--   Plant (-v plant=fieldgroup): each group of Fields is asked at admin instead of viewer (A must go RED).
 --
 -- RUN IT (dev clone only; always rolled back; several minutes):
 --   cd matrx-frontend && psql "<clone DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/storereadperf4_green.sql
@@ -166,9 +166,10 @@ reset role;
 select md5(pg_get_functiondef('custom.context_tree'::regproc)) as body_before \gset
 select :'plant' = 'fieldgroup' as plant_fieldgroup \gset
 \if :plant_fieldgroup
-\echo 'PLANT fieldgroup: a Field a grant names shares its group''s answer'
+\echo 'PLANT fieldgroup: each group of Fields is asked at admin instead of viewer'
 do $p$ begin execute replace(pg_get_functiondef('custom.context_tree'::regproc),
-  'exists (select 1 from iam.permissions p where p.resource_type = ''record'' and p.resource_id = f.id)', 'false'); end $p$;
+  'iam.may_touch_field(v_me, g.rep, g.org, ''viewer''::public.permission_level, ''read'') as viewer_reads',
+  'iam.may_touch_field(v_me, g.rep, g.org, ''admin''::public.permission_level, ''read'') as viewer_reads'); end $p$;
 \endif
 select (:'plant' <> 'fieldgroup') = (md5(pg_get_functiondef('custom.context_tree'::regproc)) = :'body_before') as plant_took \gset
 \if :plant_took

@@ -633,6 +633,8 @@ begin
         from (select distinct o as org from unnest(p_organization_ids) o where o is not null) x
         cross join lateral unnest(string_to_array(nullif(platform.memo_k_get(
                'custom.tables_unseen:' || p_user_id::text || ':' || x.org::text || ':' || pg_catalog.pg_current_snapshot()::text), ''), ',')) y(id);
+    perform platform.memo_k_put('custom.tables_seen_orgs:' || p_user_id::text || ':' || pg_catalog.pg_current_snapshot()::text,
+                                coalesce((select string_agg(distinct x::text, ',') from unnest(p_organization_ids) x where x is not null), ''));
     return;
   end if;
 
@@ -1035,14 +1037,19 @@ begin
       return;
     end if;
     v_orgs := string_to_array(nullif(platform.memo_k_get('custom.tables_seen_orgs:' || v_user::text || ':' || v_snap), ''), ',')::uuid[];
-    if p_organization_id = any (coalesce(v_orgs, '{}'::uuid[])) then
+    -- (an organization at one of visible_set's stops walks on its own, below, without a batch)
+    if p_organization_id = any (coalesce(v_orgs, '{}'::uuid[]))
+       and not (custom.visible_set(v_user, p_organization_id, custom.table_kernel_id(),
+                                   'viewer'::public.permission_level)).o_fallback then
       v_ctx := platform.shown_to_context('record');
       foreach v_o in array v_orgs loop
         v_set := custom.visible_set(v_user, v_o, custom.table_kernel_id(), 'viewer'::public.permission_level);
         continue when v_set.o_fallback;
         v_sets := v_sets || jsonb_build_object('org', v_o, 'all', v_set.o_all_visible,
-                    'tv', to_jsonb(v_set.o_true_visibility), 'ga', to_jsonb(v_set.o_granted_all),
-                    'gv', to_jsonb(v_set.o_granted_visible), 'cv', to_jsonb(v_set.o_carried_visible));
+                    'tv', coalesce(to_jsonb(v_set.o_true_visibility), '[]'::jsonb),
+                    'ga', coalesce(to_jsonb(v_set.o_granted_all), '[]'::jsonb),
+                    'gv', coalesce(to_jsonb(v_set.o_granted_visible), '[]'::jsonb),
+                    'cv', coalesce(to_jsonb(v_set.o_carried_visible), '[]'::jsonb));
       end loop;
       if exists (select 1 from jsonb_array_elements(v_sets) e where (e ->> 'org')::uuid = p_organization_id) then
         for v_one in
@@ -1207,8 +1214,10 @@ begin
                     select r.id from custom.record r
                      where r.organization_id = p_organization_id and r.id = any (v_ids)
                        and coalesce(r.data_class, 'record') <> 'record'
-                       and not (v_set.o_fallback is false
-                                and r.table_id = custom.table_kernel_id() and r.deleted_at is null)));
+                       -- only rows levels_of can answer by class (a row of a Table that is not the
+                       -- Table kernel); every other id is asked on its own, as before
+                       and r.table_id is not null
+                       and r.table_id is distinct from custom.table_kernel_id()));
     end if;
     return query
       with people as materialized (
