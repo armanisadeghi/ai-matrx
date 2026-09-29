@@ -1,7 +1,20 @@
 -- Inverse of scopesreadsrest_the_dictionary_trash_and_facts_read_the_store.sql: the fourteen bodies it replaced, byte for byte (production, 2026-09-29), the two
 -- door rows it declared removed, and its three helpers dropped (nothing else reads them once the bodies
 -- are back).
--- BASED-ON-LINES
+-- based-on: custom.agent_context_value(jsonb, text, text, uuid, uuid, bigint) 2df8741db1910c067bae79b94aaf5d268eeae9dfdace7a8692b4b19168bfc5c4
+-- based-on: custom.table_facts(uuid) b0928ac8458639bb342d19e4682292ecee973606e2f25f892fcf779e5cbb8600
+-- based-on: platform._search_item_filed_tags(text, uuid) f485b66d13d9759f8ca5750a2288d5712d445ce3140d1d2ed57395d752d96364
+-- based-on: platform.resolve_id(uuid, text) a3dfbd92055b6b39f0aec52e1c983b369c7dc83075f30c9f75eae61251b64cf8
+-- based-on: public._trash_kind_counts(uuid, uuid, uuid) bd9ae83104c81e68c9a051cd38dbcabd1d93be8b9f9df37e452c6462f0b88b93
+-- based-on: public._trash_kind_rows(uuid, uuid, uuid, text[], integer, integer) a57c87c8aca33253915469a20cd58ca66f201e07ae8187c8fb62027f4822f886
+-- based-on: public.create_tasks_bulk(jsonb, uuid, uuid, uuid[], text, uuid, jsonb) 82e1f21263017cfc4dff673bef5581d12b6f7b92a09d1593b4a7cb1d423c8c98
+-- based-on: public.dict_list_owners_for(uuid) 8024c799c1abf45689ccce7fb7864cd9852fbdacc5fd03ac9fe082756597e92b
+-- based-on: public.dict_owner_org(text, uuid) 512b0fb87d09043ae3f806be291ab912f46108c83a67e75631e6c2e4b2f87638
+-- based-on: public.dict_resolve_for(uuid, boolean, boolean, uuid[], uuid[], uuid[]) 97a84616145870733f72ed514a7f87a82c40bc3ed8183f34d5797a15bb36fd8b
+-- based-on: public.dict_rollup_for(text, uuid) 52f69e4291235501c9c34b081f16364ec019ba0dc7052e3714c533018dc87509
+-- based-on: public.get_user_dashboard_metrics() cd6c975ba520b62a8b15ab2216dd152262969cf3e2799db7c23c863048aec66b
+-- based-on: public.kg_caller_can_target_scope(uuid) 77caf61aa3ce98634c57eba64d63600c5058797bedc495e09478e92681f2d0e8
+-- based-on: public.org_trash_restore(uuid, text, uuid) 21f0ce4664ba8167c4d5259032c77ef631870c38dc689df73826477e863143fe
 -- lane: SCOPES-READS-REST
 
 CREATE OR REPLACE FUNCTION public.dict_list_owners_for(p_user_id uuid)
@@ -1597,7 +1610,7 @@ $function$
 ;
 
 delete from platform.client_callable_door
- where schema_name = 'public' and function_name in ('_dict_context_owners', '_dict_context_owner_org');
+ where schema_name = 'public' and function_name in ('_dict_context_owners', '_dict_context_owner_org', '_trash_context_rows', 'kg_caller_can_target_scope');
 drop function if exists public._trash_context_rows(text, uuid, uuid, uuid);
 drop function if exists public._dict_context_owner_org(text, uuid);
 drop function if exists public._dict_context_owners(uuid[], uuid[]);

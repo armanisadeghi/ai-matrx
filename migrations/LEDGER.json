@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-29T21:34:17.230Z",
+  "generated_at": "2026-09-29T22:00:13.517Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4136,6 +4136,12 @@
       "checksum": "516563d6e3f585f1f080c16e755eebf6038438c7204a32308a2282db312e1512",
       "applied_at": "2026-09-25 23:12:07.380961+00"
     },
+    "migrations/campaign/scopesaccess_a_removed_scope_setting_leaves_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesaccess_a_removed_scope_setting_leaves_the_store.sql",
+      "checksum": "1c0ced66c1dc1e3e577c0f0addc0ffc22c9be83bbe3d118729c20f46d361f418",
+      "applied_at": "2026-09-29 21:49:10.033274+00"
+    },
     "migrations/campaign/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql": {
       "source": "matrx-frontend",
       "filename": "scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql",
@@ -4165,6 +4171,12 @@
       "filename": "scopeshomes_the_store_halves_keep_the_scope_columns_beside_the_side_effect_checks.sql",
       "checksum": "333d0f0030059aad09b1fb3294c56136102c6a57c2b7a7a4dc0f6cb1f9b67690",
       "applied_at": "2026-09-28 19:27:45.122179+00"
+    },
+    "migrations/campaign/scopesreadsrest_the_dictionary_trash_and_facts_read_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesreadsrest_the_dictionary_trash_and_facts_read_the_store.sql",
+      "checksum": "3137045d197ef450a7c7a81affce46a3a54758589e2b4d5f8026be5657059998",
+      "applied_at": "2026-09-29 22:00:09.376485+00"
     },
     "migrations/campaign/scopesreadsweb_the_scope_screens_read_the_store_through_its_doors.sql": {
       "source": "matrx-frontend",

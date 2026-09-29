@@ -81,7 +81,6 @@ begin
      where p_ids is null or r.id = any (p_ids);
 end;
 $function$;
-revoke all on function public._dict_context_owners(uuid[], uuid[]) from public, anon;
 grant execute on function public._dict_context_owners(uuid[], uuid[]) to service_role;
 comment on function public._dict_context_owners(uuid[], uuid[]) is
   'SCOPES-READS-REST (2026-09-29): the scope types (context Tables) and scopes (their Records) of the named organizations, from the record store, for the dictionary''s per-person bodies. A signed-in person is answered only about organizations they belong to (the older tables'' row security); the server and platform admins about any. Archived rows included, as the older bodies read them.';
@@ -132,7 +131,6 @@ begin
   return null;
 end;
 $function$;
-revoke all on function public._dict_context_owner_org(text, uuid) from public, anon;
 grant execute on function public._dict_context_owner_org(text, uuid) to service_role;
 comment on function public._dict_context_owner_org(text, uuid) is
   'SCOPES-READS-REST (2026-09-29): the organization of one scope type (context Table) or scope (its Record), from the record store, for public.dict_owner_org. Null when there is none or the older tables'' row security would not have shown it to the signed-in person.';
@@ -1893,4 +1891,25 @@ on conflict (schema_name, function_name, identity_argtypes) do update
       non_client_lane = null, reason = excluded.reason, declared_by = excluded.declared_by,
       argument_rules = excluded.argument_rules;
 grant execute on function public._dict_context_owners(uuid[], uuid[]) to authenticated;
+-- Two SECURITY DEFINER bodies no client calls, declared as such (the provision-shape guard asks it of
+-- every definer body a file writes): Trash's store predicate, and the knowledge graph's scope check
+-- (which had no client grant before this file either).
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason,
+   anonymous_callers, signed_in_callers, non_client_lane)
+values
+  ('public', '_trash_context_rows', 'p_token text, p_uid uuid, p_org uuid, p_member uuid',
+   array['text'::regtype::oid, 'uuid'::regtype::oid, 'uuid'::regtype::oid, 'uuid'::regtype::oid],
+   'migrations/campaign/scopesreadsrest_the_dictionary_trash_and_facts_read_the_store.sql (lane SCOPES-READS-REST)',
+   'SCOPES-READS-REST: the archived scope types, scopes and context items of Trash from the record store. p_uid is the person whose Trash it is and p_org the organization whose Trash it is, both already decided by the Trash doors that call it (public._trash_kind_rows / _trash_kind_counts behind the Trash page''s own gates); p_member only narrows p_org.',
+   false, false,
+   'server_only: called only inside public._trash_kind_rows and public._trash_kind_counts, which are service_role-only themselves; no client ever calls it'),
+  ('public', 'kg_caller_can_target_scope', 'p_scope_id uuid', array['uuid'::regtype::oid],
+   'migrations/campaign/scopesreadsrest_the_dictionary_trash_and_facts_read_the_store.sql (lane SCOPES-READS-REST)',
+   'Whether the signed-in person (auth.uid()) may aim a knowledge-graph write at a scope: its creator or a member of its organization. p_scope_id null answers true (no scope named).',
+   false, false,
+   'server_only: EXECUTE is held by service_role alone (no client grant on 2026-09-29, none added); the knowledge-graph server lane asks it on the person''s behalf')
+on conflict (schema_name, function_name, identity_argtypes) do update
+  set signed_in_callers = excluded.signed_in_callers, anonymous_callers = excluded.anonymous_callers,
+      non_client_lane = excluded.non_client_lane, reason = excluded.reason, declared_by = excluded.declared_by;
 grant execute on function public._dict_context_owner_org(text, uuid) to authenticated;
