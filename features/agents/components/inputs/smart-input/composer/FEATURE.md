@@ -161,6 +161,7 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-09-29** — Review fixes: "auto" effort guarded at the API selector (never sent, whichever panel wrote it); overrides survive a same-id re-create; the touch Enter rule covers every multi-line input (variable inputs, mention composer, AI chat modal, prompt input) while single-line `ProInput` keeps Go-to-submit; Quick Chat's duplicate header agent picker and "Page context" button removed — the pill and the page chip are the one control each (`useConversationFollowsPage(id, startsOn)`: Quick Chat starts off, showing the eye-off chip naming the page).
 - **2026-09-29** — Batch 1 of the page-by-page rollout: Quick Chat, the Chat window, the AI Results tab, the agent
   run page, the builder test panel, the record chat and the AI tutor render the composer (sizes and agent
   switching in "Hosts today"). The canvas's inline input-cap code became `useCompactInputMaxHeight`, shared by
