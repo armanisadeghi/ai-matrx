@@ -16,9 +16,9 @@ export type McpConfigRow = ToolTables["mcp_config"]["Row"];
 const sb = () => createClient();
 
 /**
- * MCP catalog discovery treats a missing or empty `metadata.tool_allowlist`
- * as unrestricted. Keep that meaning at this boundary: an empty editor never
- * persists `[]`, which could otherwise look like an intentional deny-all.
+ * A stored array is displayed as one name per line. A blank editor is NOT a
+ * statement about enforcement: saving it removes the key, while a stored `[]`
+ * remains a deny-all in catalog discovery.
  */
 export function toolAllowlistFromMetadata(metadata: unknown): string[] {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
@@ -50,6 +50,13 @@ export function toolAllowlistFromText(text: string): string[] {
   }, []);
 }
 
+/** A blank save removes the key and therefore widens the server's tool set. */
+export function requiresUnrestrictedToolAllowlistConfirmation(
+  text: string,
+): boolean {
+  return toolAllowlistFromText(text).length === 0;
+}
+
 /**
  * Surgical metadata merge for the only editable existing-server field. It
  * preserves every unrelated key and deliberately removes, rather than stores,
@@ -74,6 +81,14 @@ export function mergeMcpToolAllowlist(
   return next;
 }
 
+function requireMcpServerMetadataObject(metadata: unknown): void {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    throw new Error(
+      "This server has invalid metadata and cannot be safely edited.",
+    );
+  }
+}
+
 /**
  * Save only `metadata.tool_allowlist`. The version predicate makes this a
  * compare-and-set write, so a concurrent metadata edit is never overwritten.
@@ -82,21 +97,28 @@ export async function updateServerToolAllowlist(
   server: Pick<McpServerRow, "id" | "metadata" | "version">,
   editorText: string,
 ): Promise<McpServerRow> {
+  const fetchCurrent = async () => {
+    const current = await sb()
+      .schema("tool")
+      .from("mcp_server")
+      .select("*")
+      .eq("id", server.id)
+      .maybeSingle();
+    if (current.data) requireMcpServerMetadataObject(current.data.metadata);
+    return current;
+  };
   const result = await mergeJsonColumn<McpServerRow>({
-    fetchCurrent: () =>
-      sb()
-        .schema("tool")
-        .from("mcp_server")
-        .select("*")
-        .eq("id", server.id)
-        .maybeSingle(),
+    fetchCurrent,
     readColumn: (current) => current.metadata,
     merge: (current) => mergeMcpToolAllowlist(current, editorText),
     applyUpdate: ({ value, expectedVersion, nextVersion }) =>
       sb()
         .schema("tool")
         .from("mcp_server")
-        .update({ metadata: value as McpServerRow["metadata"], version: nextVersion })
+        .update({
+          metadata: value as McpServerRow["metadata"],
+          version: nextVersion,
+        })
         .eq("id", server.id)
         .eq("version", expectedVersion)
         .select("*")
@@ -104,10 +126,14 @@ export async function updateServerToolAllowlist(
   });
   if (result.status === "saved") return result.row;
   if (result.status === "not_found") {
-    throw new Error("This MCP server is no longer available. Reload and try again.");
+    throw new Error(
+      "This MCP server is no longer available. Reload and try again.",
+    );
   }
   if (result.status === "conflict") {
-    throw new Error("This MCP server kept changing while saving. Reload and try again.");
+    throw new Error(
+      "This MCP server kept changing while saving. Reload and try again.",
+    );
   }
   throw result.error;
 }

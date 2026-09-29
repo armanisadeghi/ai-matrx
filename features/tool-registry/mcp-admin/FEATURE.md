@@ -37,8 +37,9 @@ the provisioner refuses partial creation by keeping all four inserts atomic.
 Existing server fields are **read-only except `metadata.tool_allowlist`**. The
 Metadata tab saves exact MCP tool names through `mergeJsonColumn`, preserving
 unrelated metadata across concurrent writes. Blank removes the key rather than
-storing `[]`, because blank or absent means unrestricted; that widening needs
-explicit confirmation. The page's other writes are `provisionMcpServer`
+storing `[]`; an absent key permits all tools while a stored empty list denies
+all during catalog discovery, so that widening needs explicit confirmation. The
+page's other writes are `provisionMcpServer`
 (create), the `tool.mcp_config` CRUD trio, and the two side-effecting buttons —
 `refreshServer` (aidream catalog refresh) and `testMcpServer` (endpoint probe).
 
@@ -87,7 +88,8 @@ has run.
 - **2026-09-28** — Metadata now edits `tool.mcp_server.metadata.tool_allowlist`
   as trimmed, deduplicated exact names, one per line. `mergeJsonColumn` retains
   concurrent unrelated metadata; clearing the list removes the key and requires
-  confirmation because absent/empty means unrestricted.
+  confirmation because an absent key widens discovery beyond a stored empty or
+  restricted list.
 
 - **2026-09-25** — Configs are ARCHIVED, never deleted (`tool.mcp_config.deleted_at`,
   lane B-TOOL): `archiveServerConfig` stamps `deleted_at` and clears `is_default`; every
@@ -96,7 +98,7 @@ has run.
   launches and a connection that picked it falls back to the server default.
   `tool.mcp_user_conn` is owned through `created_by` (user_id retired) and a new
   connection is filed in the selected organization (`upsert_mcp_connection(…,
-  p_organization_id)`, checked with `iam.has_org_access`).
+p_organization_id)`, checked with `iam.has_org_access`).
 
 - **2026-08-29** — Routed Refresh sync to server-wide catalog reconciliation; no-auth MCP servers no longer fail on a missing Vault-backed user connection.
 

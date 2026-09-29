@@ -7,6 +7,7 @@ jest.mock("@/utils/supabase/client", () => ({
 import {
   getMcpTestNotificationLevel,
   mergeMcpToolAllowlist,
+  requiresUnrestrictedToolAllowlistConfirmation,
   toolAllowlistFromMetadata,
   updateServerToolAllowlist,
   type McpTestResult,
@@ -131,9 +132,16 @@ describe("MCP tool allowlists", () => {
     });
   });
 
-  it("treats an absent or empty stored allowlist as unrestricted", () => {
+  it("renders an absent or empty stored allowlist as no editable names", () => {
     expect(toolAllowlistFromMetadata({})).toEqual([]);
     expect(toolAllowlistFromMetadata({ tool_allowlist: [] })).toEqual([]);
+  });
+
+  it("requires explicit confirmation for every blank save, including a saved empty list", () => {
+    expect(requiresUnrestrictedToolAllowlistConfirmation(" \n ")).toBe(true);
+    expect(
+      requiresUnrestrictedToolAllowlistConfirmation("search_projects"),
+    ).toBe(false);
   });
 
   it("retries against the fresh row and preserves metadata another writer added", async () => {
@@ -243,6 +251,25 @@ describe("MCP tool allowlists", () => {
     ).rejects.toThrow("permission denied");
     expect(table.update).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    null,
+    ["saved_empty_list_is_not_scalar_metadata"],
+    "corrupt metadata",
+  ])(
+    "refuses malformed persisted metadata %p before any update",
+    async (metadata) => {
+      const { table } = mcpServerBoundary(
+        [{ data: { ...server, metadata }, error: null }],
+        [],
+      );
+
+      await expect(
+        updateServerToolAllowlist(server, "search_projects"),
+      ).rejects.toThrow("invalid metadata");
+      expect(table.update).not.toHaveBeenCalled();
+    },
+  );
 
   it("never reports a server that keeps winning the version race as saved", async () => {
     const { table } = mcpServerBoundary(

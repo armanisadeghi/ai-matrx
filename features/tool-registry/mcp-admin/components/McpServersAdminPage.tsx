@@ -53,8 +53,8 @@ import {
   computeFreshness,
   computeTestFreshness,
   formatRelativeAge,
+  requiresUnrestrictedToolAllowlistConfirmation,
   toolAllowlistFromMetadata,
-  toolAllowlistFromText,
   updateServerToolAllowlist,
   createServerConfig,
   updateServerConfig,
@@ -1524,28 +1524,34 @@ function MetaTab({
   server: McpServerRow;
   onUpdated: () => void;
 }) {
+  return (
+    <MetaTabEditor
+      key={`${server.id}:${server.version}`}
+      server={server}
+      onUpdated={onUpdated}
+    />
+  );
+}
+
+function MetaTabEditor({
+  server,
+  onUpdated,
+}: {
+  server: McpServerRow;
+  onUpdated: () => void;
+}) {
   const [currentServer, setCurrentServer] = useState(server);
   const [toolAllowlistText, setToolAllowlistText] = useState(() =>
     toolAllowlistFromMetadata(server.metadata).join("\n"),
   );
   const [saving, setSaving] = useState(false);
 
-  // A list refresh after another write must replace the draft with the latest
-  // server record. This is a state sync only; it never writes on render.
-  useEffect(() => {
-    setCurrentServer(server);
-    setToolAllowlistText(toolAllowlistFromMetadata(server.metadata).join("\n"));
-  }, [server]);
-
   const saveToolAllowlist = async () => {
-    const removingRestriction =
-      toolAllowlistFromMetadata(currentServer.metadata).length > 0 &&
-      toolAllowlistFromText(toolAllowlistText).length === 0;
-    if (removingRestriction) {
+    if (requiresUnrestrictedToolAllowlistConfirmation(toolAllowlistText)) {
       const confirmed = await confirm({
         title: "Remove this server's tool restriction?",
         description:
-          "This will remove its saved tool allowlist. Empty or absent allowlists make the server unrestricted, so future catalog syncs may register every tool the server offers.",
+          "This removes the saved tool_allowlist key. With no key, future catalog syncs and execution can permit every tool this server offers; that is broader than a saved empty or restricted list.",
         confirmLabel: "Make unrestricted",
         variant: "destructive",
       });
@@ -1586,8 +1592,8 @@ function MetaTab({
             </Label>
             <p className="mt-1 text-xs text-muted-foreground">
               One exact MCP tool name per line. Leave this blank to remove the
-              allowlist: empty or absent means this server is unrestricted, not
-              that all tools are disabled.
+              allowlist. Saving blank asks before it widens this server to all
+              tools it offers.
             </p>
           </div>
           <Button
