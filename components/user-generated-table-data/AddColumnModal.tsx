@@ -1,4 +1,5 @@
 'use client';
+import { useRelationTargets } from "@/features/data-tables/hooks/useRelationTargets";
 import { useEffect, useState } from 'react';
 import {
   Dialog,
@@ -64,6 +65,7 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
   const [fieldName, setFieldName] = useState('');
   const [dataType, setDataType] = useState('string');
   const [format, setFormat] = useState<FieldFormatConfig>({ id: 'text' });
+  const relationTargets = useRelationTargets(tableId, format.id === 'relation');
   const [isRequired, setIsRequired] = useState(false);
   // Formula + system columns store nothing: no default, never required.
   const isComputedFormat =
@@ -124,6 +126,10 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
     const nameProblem = columnNameProblem(displayName, siblingFields);
     if (nameProblem) {
       setError(nameProblem);
+      return;
+    }
+    if (format.id === 'relation' && !(format.options as { relation_target?: unknown } | undefined)?.relation_target) {
+      setError('Pick the table whose records this column points at (Points at the records of).');
       return;
     }
     if (defaultProblem && !isComputedFormat) {
@@ -269,6 +275,7 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
                 setDataType(base);
                 setFormat(next);
               }}
+              {...(relationTargets ? { relationTargets } : {})}
               triggerClassName="h-9 w-full text-sm"
             />
             {format.id === "formula" && (

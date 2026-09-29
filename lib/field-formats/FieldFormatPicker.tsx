@@ -73,6 +73,13 @@ export type FieldFormatPickerProps = {
    */
   siblingFields?: { field_name: string; display_name: string }[];
   /**
+   * THE TABLES A RELATION MAY POINT AT (BREAKER-2 B2-07): "Relation" was offered with no way to say
+   * which table's records it picks, so the store refused it every time and the column stayed Text.
+   * The caller hands the tables this column's organization keeps; the picker draws "Points at".
+   * Omit it and no Points-at control is drawn.
+   */
+  relationTargets?: { id: string; name: string }[];
+  /**
    * Removing a choice records still hold (lane CHOICE-TAILS): how many records
    * hold each choice, and where the records of each removed one go. Passed
    * straight to the choice editor; omit on the older store.
@@ -169,6 +176,7 @@ export function FieldFormatPicker({
   suggestions,
   siblingFields,
   choiceUsage,
+  relationTargets,
   rehome,
   onRehomeChange,
   className,
@@ -229,6 +237,33 @@ export function FieldFormatPicker({
             {...(rehome ? { rehome } : {})}
             {...(onRehomeChange ? { onRehomeChange } : {})}
           />
+        </div>
+      )}
+
+      {optionKeys.includes("relation_target") && relationTargets && (
+        <div className="w-full min-w-0 space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Points at the records of</Label>
+          {relationTargets.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              There is no other table in this organization to point at yet. Make the table first, then come back.
+            </p>
+          ) : (
+            <Select
+              value={typeof options.relation_target === "string" ? options.relation_target : ""}
+              onValueChange={(v) => v && setOption("relation_target" as keyof FieldFormatOptions, v as never)}
+            >
+              <SelectTrigger className="h-8 text-xs" aria-label="Points at the records of">
+                <SelectValue placeholder="Pick a table" />
+              </SelectTrigger>
+              <SelectContent>
+                {relationTargets.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
 

@@ -15,6 +15,7 @@
  */
 "use client";
 
+import { useRelationTargets } from "@/features/data-tables/hooks/useRelationTargets";
 import { useEffect, useMemo, useState } from "react";
 import type { ChoiceRehome, ChoicesRehomed, ChoiceUsage } from "@ai-matrx/records";
 import { Loader2 } from "lucide-react";
@@ -143,6 +144,7 @@ function ColumnSettingsForm({
   const [format, setFormat] = useState<FieldFormatConfig | null>(
     resolveFieldFormat(field.data_type, field.metadata),
   );
+  const relationTargets = useRelationTargets(tableId, format?.id === "relation");
   const [required, setRequired] = useState(Boolean(field.is_required));
   // THE DEFAULT, SHOWN AND CLEARABLE HERE (BREAKER-2 B2-01 S1): the only way out of a default the
   // column could not hold used to be deleting the column. A choice's default reads as its words.
@@ -423,6 +425,7 @@ function ColumnSettingsForm({
               }}
               siblingFields={siblings}
               {...(suggestions ? { suggestions } : {})}
+              {...(relationTargets ? { relationTargets } : {})}
               choiceUsage={choiceUsage}
               rehome={rehome}
               onRehomeChange={setRehome}
