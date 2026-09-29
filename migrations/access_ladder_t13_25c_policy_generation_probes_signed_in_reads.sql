@@ -1,5 +1,5 @@
--- draft: claude-opus-5.5 T-13 2.3e guard not yet applied
 -- lane: access-ladder T-13 2.3e — policy generation probes signed-in reads before it commits.
+-- chair-step: the REVOKEs only close EXECUTE on the two functions this file creates (server-only) and take back the CREATE on schema iam granted to `authenticated` for one ALTER OWNER statement in this same transaction; replaces iam.apply_rls to call the new guard.
 -- based-on: iam.apply_rls(text, text, text, text) b3034a7ada5c201ea2fa9ebba7a06898d9b155dca877082a948fc0145d391d73
 --
 -- Incident 2026-09-28 03:13:25–03:14:51Z: registering iam.org_industries -> organization (23x) regenerated
@@ -40,6 +40,15 @@ begin
   perform set_config('request.jwt.claims', coalesce(v_prev, ''), true);
 end;
 $function$;
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+select 'iam', '_policy_probe_read_as_signed_in', pg_get_function_identity_arguments(p.oid), string_to_array(p.proargtypes::text, ' ')::oid[],
+  'Runs as the role `authenticated` (its owner), never as postgres: it reads one row of p_tbl through that table''s own row security, as a signed-in account that belongs to nothing. p_tbl, p_key and p_val are chosen by iam.refuse_unreadable_policies from the catalog; it returns nothing.',
+  'matrx-frontend migrations/access_ladder_t13_25c_policy_generation_probes_signed_in_reads.sql (access-ladder T-13 2.3e)',
+  'server_only: only postgres holds EXECUTE (anon, authenticated, service_role and PUBLIC hold none); called only by iam.refuse_unreadable_policies inside iam.apply_rls.',
+  false, false
+from pg_proc p where p.oid = 'iam._policy_probe_read_as_signed_in(regclass, text, text)'::regprocedure;
+
 -- ALTER OWNER needs the new owner to hold CREATE on the schema; held only for this one statement,
 -- inside this transaction, so no session ever sees it.
 grant create on schema iam to authenticated;
@@ -93,7 +102,7 @@ begin
       -- a single-column unique key the signed-in role may read (ctid needs a table-level grant)
       select a.attname into v_key
         from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
-       where i.indrelid = v_t and i.indisunique and i.indnkeys = 1 and i.indpred is null
+       where i.indrelid = v_t and i.indisunique and i.indnkeyatts = 1 and i.indpred is null
          and has_column_privilege('authenticated', v_t, a.attname, 'SELECT')
        order by i.indisprimary desc, a.attname limit 1;
       v_val := null;
