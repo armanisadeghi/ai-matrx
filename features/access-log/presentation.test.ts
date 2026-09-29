@@ -33,6 +33,7 @@ import {
   accessLogBadge,
   accessLogOutcome,
   accessLogVerb,
+  accessWasOpened,
   authorisedByLabel,
   keyHolderLabel,
 } from "./presentation";
@@ -154,5 +155,28 @@ describe("the access log's outcome model", () => {
     // somebody of being turned away.
     const future = row({ action: "some_future_action", granted: false });
     expect(accessLogOutcome(future)).not.toBe("refused");
+  });
+
+  it("tells the person their account was taken over, as its own outcome", () => {
+    // ACCESS LADDER T-16: an organization owner or admin's only way into a
+    // member's private data is taking over the account. The row that
+    // public.org_admin_take_over_account writes must read as exactly that —
+    // never as an ordinary "opened", never as an ask.
+    const takeover = row({
+      action: "account_takeover",
+      basis: "account_takeover",
+      purpose: "offboarding",
+      targetToken: "user",
+      isEmergencyDoor: false,
+      grantExpiresAt: null,
+      actorLabel: "admin@admin.com",
+      granteeLabel: "admin@admin.com",
+    });
+    expect(accessLogOutcome(takeover)).toBe("taken_over");
+    expect(accessWasOpened(takeover)).toBe(true);
+    expect(accessLogBadge(accessLogOutcome(takeover))).toBe("Account taken over");
+    expect(accessLogVerb(accessLogOutcome(takeover))).toBe("took over");
+    expect(authorisedByLabel(takeover)).toBeNull();
+    expect(accessLogOutcome(row({ action: "account_takeover", granted: false }))).toBe("refused");
   });
 });

@@ -66,9 +66,8 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   // calls use, so it shares Chat's hue and carries its own badge.
   { href: "/staff", favicon: { color: CHAT_COLOR, letter: "Sa" } },
   { href: "/organizations", favicon: { color: "#b91c1c", letter: "O" } },
-  // DD-137a — the emergency door's two surfaces. Both paths are load-bearing:
-  // the database writes them as the deep link of every emergency-access notice.
-  { href: "/organizations/emergency-access", favicon: { color: "#b91c1c", letter: "EA" } },
+  // The access log is load-bearing: the database writes it as the deep link of
+  // every break-glass and account take-over notice.
   { href: "/me/access-log", favicon: { color: "#0f766e", letter: "AL" } },
   { href: "/notes", favicon: { color: DOCS_COLOR, letter: "N" } },
   { href: "/tasks", favicon: { color: "#16a34a", letter: "T" } },

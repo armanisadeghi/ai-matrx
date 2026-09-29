@@ -1,4 +1,4 @@
-// features/emergency-access/presentation.ts
+// features/access-log/presentation.ts
 //
 // Turning stored door values into the words on the screen — and ONLY the words
 // this client owns. The doors' own `message` sentences are never touched here.
@@ -74,7 +74,8 @@ export type AccessLogOutcome =
   | "refused"
   | "asked"
   | "lapsed"
-  | "notice_failed";
+  | "notice_failed"
+  | "taken_over";
 
 export function accessLogOutcome(entry: AccessLogEntry): AccessLogOutcome {
   switch (entry.action) {
@@ -86,6 +87,10 @@ export function accessLogOutcome(entry: AccessLogEntry): AccessLogOutcome {
       return "lapsed";
     case "notice_failed":
       return "notice_failed";
+    // ACCESS LADDER T-16: an organization owner or admin took over the account
+    // (public.org_admin_take_over_account) — the only way into Private data.
+    case "account_takeover":
+      return entry.granted ? "taken_over" : "refused";
     case "approved":
     case "read":
       // These two ARE decided by `granted` — an approval path can still end in
@@ -101,7 +106,8 @@ export function accessLogOutcome(entry: AccessLogEntry): AccessLogOutcome {
 
 /** Does this row describe something that actually OPENED? */
 export function accessWasOpened(entry: AccessLogEntry): boolean {
-  return accessLogOutcome(entry) === "granted";
+  const outcome = accessLogOutcome(entry);
+  return outcome === "granted" || outcome === "taken_over";
 }
 
 /**
@@ -145,6 +151,8 @@ export function accessLogVerb(outcome: AccessLogOutcome): string {
       return "asked to open (and nobody answered)";
     case "notice_failed":
       return "opened — and we could not deliver your notice about";
+    case "taken_over":
+      return "took over";
   }
 }
 
@@ -161,5 +169,7 @@ export function accessLogBadge(outcome: AccessLogOutcome): string {
       return "Lapsed";
     case "notice_failed":
       return "Notice failed";
+    case "taken_over":
+      return "Account taken over";
   }
 }

@@ -67124,7 +67124,6 @@ export type Database = {
           status: string
         }[]
       }
-      _door_min_chars: { Args: { p_org: string }; Returns: number }
       _door_target: {
         Args: { p_id: string; p_token: string }
         Returns: Record<string, unknown>
@@ -67133,7 +67132,6 @@ export type Database = {
         Args: { p_id: string; p_token: string }
         Returns: boolean
       }
-      _door_ttl_minutes: { Args: { p_org: string }; Returns: number }
       _fk_check13: {
         Args: never
         Returns: {
@@ -67648,43 +67646,6 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["permission_level"]
       }
-      emergency_door_approve: {
-        Args: { p_note?: string; p_request_id: string }
-        Returns: Json
-      }
-      emergency_door_class: { Args: { p_token: string }; Returns: string }
-      emergency_door_deny: {
-        Args: { p_note?: string; p_request_id: string }
-        Returns: Json
-      }
-      emergency_door_eligibility: {
-        Args: { p_id: string; p_token: string }
-        Returns: Json
-      }
-      emergency_door_lapsed_grants: {
-        Args: never
-        Returns: {
-          audit_id: string
-          expires_at: string
-          granted_to_user_id: string
-          permission_id: string
-          resource_id: string
-          resource_type: string
-          subject_user_id: string
-        }[]
-      }
-      emergency_door_open: {
-        Args: {
-          p_id: string
-          p_justification: string
-          p_purpose: string
-          p_token: string
-        }
-        Returns: Json
-      }
-      emergency_door_pending: { Args: never; Returns: Json }
-      emergency_door_purposes: { Args: never; Returns: Json }
-      emergency_door_sweep: { Args: never; Returns: Json }
       entity_read_equivalence: {
         Args: {
           p_baseline?: string
@@ -86209,7 +86170,6 @@ export type Database = {
         anon_lane: boolean | null
         share_link_lane: boolean | null
         owner_rewrite_lane: boolean | null
-        emergency_door: string | null
       }
     }
   }
@@ -95701,6 +95661,16 @@ export type Database = {
           p_org_id: string
           p_reason?: string
           p_status: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      org_admin_take_over_account: {
+        Args: {
+          p_new_password: string
+          p_org_id: string
+          p_purpose: string
+          p_reason: string
           p_user_id: string
         }
         Returns: Json

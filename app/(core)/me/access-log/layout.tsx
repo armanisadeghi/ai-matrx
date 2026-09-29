@@ -1,8 +1,8 @@
 // app/(core)/me/access-log/layout.tsx
 //
-// 🚨 THIS PATH IS LOAD-BEARING. `iam.emergency_door_open` and
-// `iam.emergency_door_approve` write `/me/access-log` into every notification
-// they send the person whose data was opened. Renaming or moving this route
+// 🚨 THIS PATH IS LOAD-BEARING. `public.hr_break_glass` and
+// `public.org_admin_take_over_account` write `/me/access-log` into every
+// notification they send the person whose data or account was opened. Renaming or moving this route
 // breaks those links silently, in the one place the platform promises never to
 // be silent. Change the database's deep link first, or not at all.
 

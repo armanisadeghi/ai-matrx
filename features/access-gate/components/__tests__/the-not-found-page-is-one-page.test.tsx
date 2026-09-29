@@ -22,9 +22,6 @@ jest.mock("@/hooks/auth/useLoginHref", () => ({ useLoginHref: () => "/login" }))
 jest.mock("@/features/scopes/registry/entityRegistry", () => ({ tryGetEntityInfo: () => null }));
 // The denied branch's panel pulls the whole app (agents, redux); the missing page never draws it.
 jest.mock("@/features/access-gate/components/RequestAccessPanel", () => ({ RequestAccessPanel: () => null }));
-jest.mock("@/features/emergency-access/components/EmergencyDoorAffordance", () => ({
-  EmergencyDoorAffordance: () => null,
-}));
 
 import { AccessDeniedView } from "../AccessDenied";
 import type { AccessDeniedContext } from "../../types";

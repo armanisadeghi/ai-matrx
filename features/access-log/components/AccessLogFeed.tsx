@@ -1,4 +1,4 @@
-// features/emergency-access/components/AccessLogFeed.tsx
+// features/access-log/components/AccessLogFeed.tsx
 //
 // THE SUBJECT'S OWN RECORD — "every time anyone opened my data".
 //
@@ -127,7 +127,8 @@ function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
   // red REFUSED card with the stand-in reason "No reason recorded".
   const outcome = accessLogOutcome(entry);
   const refused = outcome === "refused";
-  const opened = outcome === "granted";
+  const takenOver = outcome === "taken_over";
+  const opened = outcome === "granted" || takenOver;
   const holder = keyHolderLabel(entry);
   const authoriser = authorisedByLabel(entry);
 
@@ -162,7 +163,7 @@ function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
         </span>
         {entry.isEmergencyDoor ? (
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Emergency door
+            Break glass
           </span>
         ) : null}
         {entry.organizationLabel ? (
@@ -181,9 +182,9 @@ function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
           <span className="font-medium break-all">{holder}</span>{" "}
           {accessLogVerb(outcome)}{" "}
           <span className="font-medium">
-            {recordKindLabel(entry.targetToken)}
+            {takenOver ? "your account" : recordKindLabel(entry.targetToken)}
           </span>
-          {entry.targetIds.length > 1
+          {!takenOver && entry.targetIds.length > 1
             ? ` — ${entry.targetIds.length} records`
             : ""}
           .

@@ -184,6 +184,70 @@ export async function removeMember(
   return { removed: Boolean(out.removed) };
 }
 
+/** One registered reason a take-over may be done for (`platform.categories`, dimension access_purpose). */
+export interface TakeOverPurpose {
+  slug: string;
+  label: string;
+}
+
+/** The registered take-over reasons, straight from the one list the database checks against. */
+export async function listTakeOverPurposes(): Promise<TakeOverPurpose[]> {
+  const { data, error } = await supabase
+    .schema("platform")
+    .from("categories")
+    .select("slug, name")
+    .eq("dimension", "access_purpose")
+    .is("deleted_at", null)
+    .order("slug");
+  if (error) throw pgErrorToError(error);
+  return (data ?? []).flatMap((r) =>
+    r.slug ? [{ slug: r.slug, label: r.name ?? r.slug }] : [],
+  );
+}
+
+export type TakeOverResult =
+  | { takenOver: true; email: string | null; message: string }
+  | { takenOver: false; reason: string; message: string };
+
+/**
+ * Take over a member's account (ACCESS LADDER T-16) — the ONLY way an organization owner or admin
+ * reaches a member's private data. Google Workspace / Microsoft 365 model: the person is signed out
+ * everywhere, every other way in is closed, the admin sets a new password, the written reason is
+ * sent to the person and recorded on their own access log and this organization's log. Only for an
+ * account this organization alone holds. Every refusal is recorded too and comes back as
+ * `takenOver: false` with the database's own sentence.
+ */
+export async function takeOverAccount(args: {
+  orgId: string;
+  userId: string;
+  purpose: string;
+  reason: string;
+  newPassword: string;
+}): Promise<TakeOverResult> {
+  const { data, error } = await supabase.rpc("org_admin_take_over_account", {
+    p_org_id: args.orgId,
+    p_user_id: args.userId,
+    p_purpose: args.purpose,
+    p_reason: args.reason,
+    p_new_password: args.newPassword,
+  });
+  if (error) throw pgErrorToError(error);
+  const out = asRecord(data);
+  const message = typeof out.message === "string" ? out.message : "";
+  if (out.taken_over === true) {
+    return {
+      takenOver: true,
+      email: typeof out.email === "string" ? out.email : null,
+      message,
+    };
+  }
+  return {
+    takenOver: false,
+    reason: typeof out.reason === "string" ? out.reason : "refused",
+    message: message || "The take-over was refused.",
+  };
+}
+
 /** Governance audit log for the org. */
 export async function listOrgAdminAudit(
   orgId: string,

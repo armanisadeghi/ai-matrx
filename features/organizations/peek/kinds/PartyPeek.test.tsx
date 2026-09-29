@@ -53,9 +53,6 @@ jest.mock("@/components/ui/dialog", () => ({
 jest.mock("@/features/access-gate/components/RequestAccessPanel", () => ({
   RequestAccessPanel: () => null,
 }));
-jest.mock("@/features/emergency-access/components/EmergencyDoorAffordance", () => ({
-  EmergencyDoorAffordance: () => null,
-}));
 
 const fetchPartyDetail = jest.fn();
 jest.mock("@/features/crm/service", () => ({

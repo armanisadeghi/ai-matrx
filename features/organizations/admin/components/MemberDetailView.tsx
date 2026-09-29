@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Ban,
   CircleCheck,
+  KeyRound,
   Loader2,
   ShieldCheck,
   Trash2,
@@ -30,6 +31,7 @@ import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { MemberControlsForm } from "./MemberControlsForm";
 import { RemoveMemberDialog } from "./RemoveMemberDialog";
+import { TakeOverAccountDialog } from "./TakeOverAccountDialog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -54,6 +56,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
   const { unit } = useCostDisplay();
   const { member, loading, error, refresh } = useOrgMemberDetail(orgId, userId);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [takeOverOpen, setTakeOverOpen] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
 
   if (loading && !member) {
@@ -154,6 +157,12 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
             </Button>
           )}
           {!isOwner && (
+            <Button variant="outline" size="sm" onClick={() => setTakeOverOpen(true)}>
+              <KeyRound className="mr-2 h-4 w-4" />
+              Take over account
+            </Button>
+          )}
+          {!isOwner && (
             <Button variant="destructive" size="sm" onClick={() => setRemoveOpen(true)}>
               <Trash2 className="mr-2 h-4 w-4" />
               Remove
@@ -218,6 +227,15 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
           </div>
         )}
       </Card>
+
+      <TakeOverAccountDialog
+        open={takeOverOpen}
+        onOpenChange={setTakeOverOpen}
+        orgId={orgId}
+        userId={userId}
+        label={label}
+        onDone={refresh}
+      />
 
       <RemoveMemberDialog
         open={removeOpen}

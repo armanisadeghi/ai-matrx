@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1286,
+  "routeCount": 1296,
   "routes": [
     {
       "pattern": "/",
@@ -437,6 +437,11 @@
       "pattern": "/administration/automation/scheduling/cron-tester",
       "status": "live",
       "source": "app/(admin)/administration/automation/scheduling/cron-tester/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/scheduling/dated-changes",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/scheduling/dated-changes/page.tsx"
     },
     {
       "pattern": "/administration/automation/scheduling/orphan-leases",
@@ -2274,6 +2279,11 @@
       "source": "app/(core)/education/audio-study/new/page.tsx"
     },
     {
+      "pattern": "/education/audio-study/new/manual",
+      "status": "live",
+      "source": "app/(core)/education/audio-study/new/manual/page.tsx"
+    },
+    {
       "pattern": "/education/audio-study/review",
       "status": "live",
       "source": "app/(core)/education/audio-study/review/page.tsx"
@@ -2479,6 +2489,11 @@
       "source": "app/(core)/education/kits/[sourceId]/page.tsx"
     },
     {
+      "pattern": "/education/kits/new",
+      "status": "live",
+      "source": "app/(core)/education/kits/new/page.tsx"
+    },
+    {
       "pattern": "/education/learn",
       "status": "live",
       "source": "app/(core)/education/learn/page.tsx"
@@ -2567,6 +2582,11 @@
       "pattern": "/education/mind-maps/new",
       "status": "live",
       "source": "app/(core)/education/mind-maps/new/page.tsx"
+    },
+    {
+      "pattern": "/education/mind-maps/new/manual",
+      "status": "live",
+      "source": "app/(core)/education/mind-maps/new/manual/page.tsx"
     },
     {
       "pattern": "/education/notes",
@@ -2717,6 +2737,11 @@
       "pattern": "/education/subjects/quick-math/[id]",
       "status": "live",
       "source": "app/(core)/education/subjects/quick-math/[id]/page.tsx"
+    },
+    {
+      "pattern": "/education/subjects/quick-math/admin",
+      "status": "live",
+      "source": "app/(core)/education/subjects/quick-math/admin/page.tsx"
     },
     {
       "pattern": "/education/summaries",
@@ -2927,6 +2952,11 @@
       "pattern": "/google-analytics-youtube-review",
       "status": "live",
       "source": "app/(core)/google-analytics-youtube-review/page.tsx"
+    },
+    {
+      "pattern": "/google-other-contacts-review",
+      "status": "live",
+      "source": "app/(core)/google-other-contacts-review/page.tsx"
     },
     {
       "pattern": "/google-read-only-review",
@@ -3451,6 +3481,11 @@
       "source": "app/(core)/invitations/project/accept/[token]/page.tsx"
     },
     {
+      "pattern": "/invitations/share/accept/[token]",
+      "status": "live",
+      "source": "app/(core)/invitations/share/accept/[token]/page.tsx"
+    },
+    {
       "pattern": "/invitations/table/accept/[token]",
       "status": "live",
       "source": "app/(core)/invitations/table/accept/[token]/page.tsx"
@@ -3894,6 +3929,11 @@
       "pattern": "/marketing/[brandId]/identity/strategy",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/identity/strategy/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/voice",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/voice/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/inbox",
@@ -5246,11 +5286,6 @@
       "source": "app/(core)/organizations/[orgId]/workflows/page.tsx"
     },
     {
-      "pattern": "/organizations/emergency-access",
-      "status": "live",
-      "source": "app/(core)/organizations/emergency-access/page.tsx"
-    },
-    {
       "pattern": "/p/[slug]",
       "status": "live",
       "source": "app/(link)/p/[slug]/page.tsx"
@@ -5936,6 +5971,11 @@
       "source": "app/(transitional)/settings/profile/page.tsx"
     },
     {
+      "pattern": "/settings/profile/voice",
+      "status": "live",
+      "source": "app/(transitional)/settings/profile/voice/page.tsx"
+    },
+    {
       "pattern": "/settings/projects",
       "status": "live",
       "source": "app/(transitional)/settings/projects/page.tsx"
@@ -6101,6 +6141,11 @@
       "source": "app/(core)/tasks/new/page.tsx"
     },
     {
+      "pattern": "/teams/id/[teamId]",
+      "status": "live",
+      "source": "app/(core)/teams/id/[teamId]/page.tsx"
+    },
+    {
       "pattern": "/terms-and-conditions",
       "status": "live",
       "source": "app/(public)/terms-and-conditions/page.tsx"
@@ -6249,6 +6294,11 @@
       "pattern": "/vault/[itemId]",
       "status": "live",
       "source": "app/(core)/vault/[itemId]/page.tsx"
+    },
+    {
+      "pattern": "/vault/approve-browser",
+      "status": "live",
+      "source": "app/(core)/vault/approve-browser/page.tsx"
     },
     {
       "pattern": "/vault/authenticator",

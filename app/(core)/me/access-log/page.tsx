@@ -25,7 +25,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   AccessLogFeed,
   AccessLogFeedSkeleton,
-} from "@/features/emergency-access/components/AccessLogFeed";
+} from "@/features/access-log/components/AccessLogFeed";
 
 export default async function MyAccessLogPage() {
   const { isAuthenticated } = await getSessionVerdict();
