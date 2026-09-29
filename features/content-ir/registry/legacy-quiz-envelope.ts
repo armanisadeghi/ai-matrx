@@ -41,6 +41,11 @@ export function canonicalizeCompletedLegacyQuizEnvelope(
   if (title === null || !Array.isArray(sourceQuestions)) return envelope;
   const questions = sourceQuestions.flatMap((candidate) => {
     if (!isRecord(candidate)) return [];
+    // Legacy root-key quiz questions are scalar payload records, not declared
+    // nested kind instances. Python's adapter intentionally leaves their
+    // source vocabulary marker-free; do the same without affecting modern
+    // `quiz_set` documents (which return before this adapter runs).
+    const { __kind: _legacyKind, ...legacyQuestion } = candidate;
     const options = Array.isArray(candidate.options) ? candidate.options : [];
     const answer = candidate.correct_answer ?? candidate.correctAnswer ?? "";
     const correctAnswer =
@@ -51,8 +56,7 @@ export function canonicalizeCompletedLegacyQuizEnvelope(
         ? options[answer]
         : answer;
     return [{
-      ...candidate,
-      __kind: "quiz_question",
+      ...legacyQuestion,
       type: typeof candidate.type === "string" ? candidate.type : "multiple_choice",
       question: typeof candidate.question === "string" ? candidate.question : "",
       options,

@@ -67,6 +67,17 @@ describe("fenced JSON followed by prose", () => {
     });
     expect((completed?.metadata?.__ir as { root: { value: { questions: unknown[] } } })
       .root.value.questions).toHaveLength(1);
+    expect(
+      (completed?.metadata?.__ir as {
+        root: { value: { questions: Array<Record<string, unknown>> } };
+      }).root.value.questions[0],
+    ).toEqual({
+      type: "multiple_choice",
+      question: "Closest star to Earth?",
+      options: ["The Sun", "Sirius"],
+      correct_answer: "The Sun",
+      explanation: null,
+    });
     const reloaded = splitContentIntoBlocksV2(SOURCE).find(
       (block) => block.content === JSON.stringify(QUIZ, null, 2),
     );
