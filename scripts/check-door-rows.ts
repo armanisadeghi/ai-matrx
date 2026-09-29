@@ -1166,7 +1166,9 @@ async function loadDoors(
   // access log belongs in the lane that blocks, so the population is the B-75 set
   // PLUS every declaration named here. Adding a row here is how a family joins the
   // blocking lane; it is never a way to take one out.
-  const ALWAYS_PROBED = ["iam_emergency_door_dd137a"];
+  // ACCESS LADDER T-16 (2026-09-28): the organization-admin emergency door is retired; its
+  // successor, the account take-over door, writes the same access log and joins in its place.
+  const ALWAYS_PROBED = ["access_ladder_t16_account_takeover_replaces_the_emergency_door"];
   const inPopulation = (declaredBy: string | null): boolean =>
     POPULATION === "b75" ? declaredBy === "DD-169 batch 3 / B-75" || ALWAYS_PROBED.includes(declaredBy ?? "") : true;
 
@@ -3220,7 +3222,8 @@ async function replayDd213(
  * pre-fix recorder and replaces the trigger's FUNCTION with a pass-through (never
  * DROP TRIGGER: that needs an ACCESS EXCLUSIVE lock on a busy audit table and
  * killed this proof on its first run) — inside one rolled-back transaction, and
- * asserts that `iam.emergency_door_open` is then a FAIL naming the row it wrote
+ * asserts that `public.org_admin_take_over_account` (the retired emergency door's
+ * successor, access ladder T-16) is then a FAIL naming the row it wrote
  * into an organization the caller has no standing in. That door was not even in
  * this gate's population until DD-213c; it is now, and this is what keeps it
  * measured rather than hand-proven.
@@ -3232,10 +3235,11 @@ async function replayDd213c(
   catalog: Catalog,
   doors: Door[],
 ): Promise<boolean> {
-  const door = doors.find((d) => d.schema === "iam" && d.fn === "emergency_door_open");
+  // ACCESS LADDER T-16: the retired emergency door's successor writes the same access log.
+  const door = doors.find((d) => d.schema === "public" && d.fn === "org_admin_take_over_account");
   if (!door) {
     console.log(
-      `${TAG.fail}DD-213c WRITE ARM: iam.emergency_door_open is not in this population — the door family DD-213c added is missing and nothing was proven`,
+      `${TAG.fail}DD-213c WRITE ARM: public.org_admin_take_over_account is not in this population — the access-log writer DD-213c guards is missing and nothing was proven`,
     );
     return false;
   }
@@ -3255,8 +3259,8 @@ async function replayDd213c(
     green = after.verdict === "PASS";
     console.log(
       green
-        ? `${TAG.ok}DD-213c WRITE ARM (live body): iam.emergency_door_open is PASS — ${after.why}`
-        : `${TAG.fail}DD-213c WRITE ARM (live body): iam.emergency_door_open came back ${after.verdict} (${after.why})`,
+        ? `${TAG.ok}DD-213c WRITE ARM (live body): public.org_admin_take_over_account is PASS — ${after.why}`
+        : `${TAG.fail}DD-213c WRITE ARM (live body): public.org_admin_take_over_account came back ${after.verdict} (${after.why})`,
     );
 
     await db.query(preFix);
@@ -3264,7 +3268,7 @@ async function replayDd213c(
     red = before.verdict === "FAIL";
     console.log(
       red
-        ? `${TAG.ok}DD-213c RED proven: with the pre-fix iam recorder and a pass-through trigger restored, iam.emergency_door_open is ${before.verdict} — ${before.leaked.slice(0, 1).join(", ")}`
+        ? `${TAG.ok}DD-213c RED proven: with the pre-fix iam recorder and a pass-through trigger restored, public.org_admin_take_over_account is ${before.verdict} — ${before.leaked.slice(0, 1).join(", ")}`
         : `${TAG.fail}DD-213c RED: the pre-fix iam recorder came back ${before.verdict} (${before.why}) — the second access log is not being measured`,
     );
   } finally {
@@ -3481,7 +3485,7 @@ async function selfTest(
   // THE SAME PROOF ON THE SECOND ACCESS LOG. `iam.access_audit` has four writers,
   // three of which never call its recorder, so DD-213c put the rule on the table
   // as a trigger AND in the recorder. This drops the trigger and restores the
-  // pre-fix recorder from ITS shipped bytes, then probes `iam.emergency_door_open`.
+  // pre-fix recorder from ITS shipped bytes, then probes `public.org_admin_take_over_account`.
   const writeArmIam = await replayDd213c(db, q, cast, catalog, _doors);
 
   // THE DISCLOSURE ARM (DD-209 / V-102 F1). Not a leaked row — a leaked NAME and
