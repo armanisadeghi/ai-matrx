@@ -28,7 +28,7 @@ export type RawTranscriptSource = components["schemas"]["RawTranscriptSource"];
 
 export type FullDownloadStep =
   | { kind: "this_computer"; savedPath: string; subagentStreams: number; backupNote: string | null }
-  | { kind: "cloud_backup"; fileName: string }
+  | { kind: "cloud_backup"; fileName: string; thisComputer: string }
   | { kind: "not_available"; reasons: string[] };
 
 export interface FullDownloadResult {
@@ -51,12 +51,16 @@ const THIS_COMPUTER_TIMEOUT_MS = 20_000;
 export async function readRawTranscriptSources(
   dispatch: AppDispatch,
   conversationId: string,
+  organizationId: string | null,
 ): Promise<RawTranscriptSource[]> {
   const result = await dispatch(
     callApi({
       path: "/coding-sessions/raw-transcripts",
       method: "GET",
       queryParams: { conversation_id: conversationId },
+      // The conversation's OWN organization, exactly as the reply composer
+      // asks: never whichever organization the header happens to show.
+      scopeOverrides: organizationId ? { organization_id: organizationId } : undefined,
     }),
   );
   if (result.error) {
@@ -121,9 +125,13 @@ export async function fullDownloadOne(source: RawTranscriptSource): Promise<Full
 
   if (source.backup_available && source.backup_file_id) {
     const { blob, filename } = await downloadFile(source.backup_file_id);
-    const fileName = filename ?? `${source.provider}-${source.native_session_id ?? "session"}.jsonl.gz`;
+    const fileName =
+      filename || `${source.provider}-${source.native_session_id ?? "session"}.jsonl.gz`;
     saveBlob(blob, fileName);
-    return { ...base, step: { kind: "cloud_backup", fileName } };
+    return {
+      ...base,
+      step: { kind: "cloud_backup", fileName, thisComputer: reasons.join(" ") },
+    };
   }
   reasons.push(source.backup_sentence);
   return { ...base, step: { kind: "not_available", reasons } };

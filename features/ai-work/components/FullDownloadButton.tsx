@@ -26,14 +26,20 @@ const PROVIDER_NAMES: Record<string, string> = {
  * "Full Download" on a coding conversation: the complete provider transcript,
  * from this computer first, then the cloud backup, else an honest reason.
  */
-export function FullDownloadButton({ conversationId }: { conversationId: string }) {
+export function FullDownloadButton({
+  conversationId,
+  organizationId,
+}: {
+  conversationId: string;
+  organizationId: string | null;
+}) {
   const dispatch = useAppDispatch();
   const [state, setState] = useState<State>({ phase: "idle" });
 
   const run = useCallback(async () => {
     setState({ phase: "working" });
     try {
-      const sources = await readRawTranscriptSources(dispatch, conversationId);
+      const sources = await readRawTranscriptSources(dispatch, conversationId, organizationId);
       if (sources.length === 0) {
         setState({
           phase: "failed",
@@ -50,7 +56,7 @@ export function FullDownloadButton({ conversationId }: { conversationId: string 
         message: error instanceof Error ? error.message : String(error),
       });
     }
-  }, [conversationId, dispatch]);
+  }, [conversationId, organizationId, dispatch]);
 
   return (
     <div className="flex flex-col items-end gap-1">
@@ -99,8 +105,8 @@ function FullDownloadOutcome({ result }: { result: FullDownloadResult }) {
   if (step.kind === "cloud_backup") {
     return (
       <span>
-        {name}: your computer did not have it, so the cloud backup was downloaded as{" "}
-        <span className="font-mono">{step.fileName}</span>.
+        {name}: downloaded the cloud backup as <span className="font-mono">{step.fileName}</span>{" "}
+        because this computer could not provide it ({step.thisComputer})
       </span>
     );
   }

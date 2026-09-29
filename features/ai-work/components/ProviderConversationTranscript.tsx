@@ -356,6 +356,12 @@ export function ProviderConversationTranscript({
       ? null
       : activity.totalCount + liveToolCallsAdded;
   const hasEarlierAnything = hasEarlierMessages || activity.hasMore;
+  // Tool calls a coding tool made are kept as NAMES on the turn they follow;
+  // counted from the loaded turns (the header says "loaded" when more exist).
+  const keptToolNames = messages.reduce(
+    (count, message) => count + message.toolsAfter.length,
+    0,
+  );
 
   const artifacts = useCodingSessionArtifacts(sessions);
   const artifactSummary =
@@ -404,9 +410,9 @@ export function ProviderConversationTranscript({
               {totalMessages} visible{" "}
               {totalMessages === 1 ? "message" : "messages"}
               {totalToolCalls !== null
-                ? ` · ${totalToolCalls} tool ${
-                    totalToolCalls === 1 ? "action" : "actions"
-                  }`
+                ? ` · ${totalToolCalls + keptToolNames} tool ${
+                    totalToolCalls + keptToolNames === 1 ? "call" : "calls"
+                  }${hasEarlierMessages && keptToolNames > 0 ? " loaded" : ""}`
                 : null}
               {artifactSummary ? ` · ${artifactSummary}` : null}
             </p>
@@ -425,7 +431,10 @@ export function ProviderConversationTranscript({
               variant="button"
               label_text="Attach to task"
             />
-            <FullDownloadButton conversationId={conversation.id} />
+            <FullDownloadButton
+              conversationId={conversation.id}
+              organizationId={conversation.organization_id ?? null}
+            />
             <TranscriptConversationMenu
               conversation={conversation}
               title={title}
