@@ -60,7 +60,15 @@ context rail); only the chrome is arranged differently.
   (`chips.repos`) adds a chip per resource chosen from an attachable connection (`name · default branch`) and a
   `+ Choose …` chip when none is chosen; Work shows only a count on the connection. Chosen items are spoken only
   after the attachments read succeeded — a failed read is its own retry chip, never "nothing chosen".
-- `ComposerOutput` — Output pill/panel (Shapes + Let the agent decide).
+- `ComposerOutput` — Output pill/panel, two multi-select levels, sticky per chat (× resets to Text only).
+  **Types** (Text on by default · Image · Audio · Video · Voice · Music · Document · Spreadsheet · Presentation ·
+  PDF · Code · Data) live in `builderAdvancedSettings.outputTypes` and are NOT sent (no request field exists; the
+  agent picker cannot filter by them yet) — the panel says so. **Shapes** = the whole kind catalog (System ·
+  Organization · Mine tabs with counts) read through the canonical `fetchShapePage` → `shx_list_scoped`
+  (`useOutputShapeCatalog`), searchable, paged 50 at a time, selected pinned on top. A kind with a render_block
+  skill (curated chip skill or `kind_<kind>`) toggles it in `addedSkills` (sent as `skill_config.included`, same
+  write as the Quickset chips); a kind with none is kept in `outputKinds` and marked "no skill". Pure logic:
+  `output-selection.ts` (test `__tests__/composer-output-selection.test.ts`).
 - `ComposerEffortPill` (the model's own value; `auto` reads "Auto effort" beside the approval pill's "Auto"), `ComposerAutoPill`, `ComposerMenu` (the row primitives), `ComposerSplash`
   (`ComposerGreeting`, `ComposerQuickActions` with a `trailing(mandateKeys)` slot for the host's intelligence
   icon, `ComposerQuickActionsSkeleton`). The quick-action row is absent with no active organization.
@@ -138,6 +146,10 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-09-28** — Output rebuilt to Arman's ruling: multi-select output types (Text default; shown, not sent),
+  and Shapes over the full kind catalog (search, System/Organization/Mine, paging, pinned selections) replacing
+  the five hardcoded chips; kind skills still ride `addedSkills`; `outputTypes`/`outputKinds` added to
+  `BuilderAdvancedSettings` and carried across a re-create.
 - **2026-09-28** — Every composer control is reachable by Tab (a11y pass): Send, Stop, Attach/Chat options,
   Documents & context, the variable row's choices and expand buttons had `tabIndex={-1}`, so Tab never reached Send.
   A disabled Send is native `disabled` (skipped by the browser). Guard: `inputs/__tests__/composer-controls-are-reachable.test.ts`.

@@ -20,6 +20,11 @@ export interface ShapeChipDef {
   /** Chip label shown to the user. */
   label: string;
   /**
+   * The content_ir kind this chip's skill teaches — how the composer's Output
+   * → Shapes list recognises a chip skill as the same shape.
+   */
+  kind: string;
+  /**
    * Candidate `skill.definition.skill_id` slugs, in preference order. The
    * first slug that matches an active skill in the live list wins (some
    * shapes have duplicate skill registrations, e.g. `timeline-block` and
@@ -30,17 +35,19 @@ export interface ShapeChipDef {
 
 /** The curated high-value render_block shapes surfaced as quick chips. */
 export const SHAPE_CHIP_DEFS: readonly ShapeChipDef[] = [
-  { key: "flashcards", label: "Flashcards", skillIds: ["flashcard-set"] },
-  { key: "quiz", label: "Quiz", skillIds: ["quiz-set"] },
+  { key: "flashcards", label: "Flashcards", kind: "flashcard_set", skillIds: ["flashcard-set"] },
+  { key: "quiz", label: "Quiz", kind: "quiz_set", skillIds: ["quiz-set"] },
   {
     key: "timeline",
     label: "Timeline",
+    kind: "timeline",
     skillIds: ["timeline-block", "kind_timeline"],
   },
-  { key: "comparison", label: "Comparison", skillIds: ["comparison-tables"] },
+  { key: "comparison", label: "Comparison", kind: "comparison_set", skillIds: ["comparison-tables"] },
   {
     key: "diagram",
     label: "Diagram",
+    kind: "mermaid_diagram",
     skillIds: ["mermaid-diagrams", "kind_mermaid_diagram", "diagram-spec"],
   },
 ];

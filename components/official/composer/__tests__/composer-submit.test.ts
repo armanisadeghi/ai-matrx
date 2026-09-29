@@ -8,6 +8,7 @@ import path from "node:path";
 
 import {
   composerKeyIntent,
+  enterSendsHere,
   intentTakesTheKey,
   type ComposerKeyEvent,
 } from "../composerSubmit";
@@ -18,6 +19,19 @@ const key = (over: Partial<ComposerKeyEvent> = {}): ComposerKeyEvent => ({
   metaKey: false,
   ctrlKey: false,
   ...over,
+});
+
+describe("a touch-only device — Enter is always a new line (Arman, 2026-09-28)", () => {
+  it("never sends on a bare Enter from an on-screen keyboard, whatever the setting", () => {
+    expect(composerKeyIntent(key(), { submitOnEnter: true, touchKeyboard: true })).toBe("newline");
+    expect(composerKeyIntent(key(), { submitOnEnter: false, touchKeyboard: true })).toBe("newline");
+    expect(enterSendsHere(true, true)).toBe(false);
+  });
+
+  it("keeps the setting on a device with a real keyboard", () => {
+    expect(composerKeyIntent(key(), { submitOnEnter: true, touchKeyboard: false })).toBe("send");
+    expect(enterSendsHere(true, false)).toBe(true);
+  });
 });
 
 describe("composerKeyIntent — Enter sends, Shift+Enter is a new line", () => {

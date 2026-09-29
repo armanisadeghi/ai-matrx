@@ -18,9 +18,8 @@ import type { RunControlsTab } from "../RunControlsTabPanel";
 
 export type ComposerControl =
   // Agent pill
-  | "agent.presets" // Chat: ★ presets · Custom · Manage chat agents
-  | "agent.panel" // Work+: agent + Change · Recent · Model
-  | "agent.overrides" // Advanced: Overrides · Advanced in the agent panel
+  | "agent.presets" // Chat: pill = agent · model; opens chat agents · All agents · Model for this chat
+  | "agent.panel" // Work+: pill = agent name; opens the ONE agent picker directly
   // + menu
   | "plus.attach" // files · voice · link · workspace
   | "plus.templates"
@@ -32,6 +31,7 @@ export type ComposerControl =
   | "plus.previewContext"
   | "plus.documents" // Working doc · Scratchpad switches
   | "plus.environment"
+  | "plus.model" // Model · Overrides · Advanced settings (secondary to the agent — Arman, 2026-09-28)
   // Rows
   | "chips.row" // Cloud · connectors · Browser
   | "chips.repos"
@@ -49,13 +49,14 @@ const PLUS: readonly ComposerControl[] = [
   "plus.previewContext",
   "plus.documents",
   "plus.environment",
+  "plus.model",
 ];
 
 const CHAT: readonly ComposerControl[] = [...PLUS, "agent.presets"];
 
 const WORK: readonly ComposerControl[] = [...PLUS, "agent.panel", "chips.row", "meta.effort"];
 
-const ADVANCED: readonly ComposerControl[] = [...WORK, "agent.overrides", "chips.repos"];
+const ADVANCED: readonly ComposerControl[] = [...WORK, "chips.repos"];
 
 const VISIBLE: Record<ComposerMode, ReadonlySet<ComposerControl>> = {
   chat: new Set(CHAT),
@@ -68,7 +69,7 @@ export function composerShows(mode: ComposerMode, control: ComposerControl): boo
 }
 
 /**
- * At compact width the meta row holds two pills only (agent · Auto); Scope and
+ * At compact width the meta row holds the agent pill only; Scope and
  * Output move into the + menu (A5 compact-composer ruling).
  */
 export function metaRowHoldsScopeAndOutput(size: ComposerSize): boolean {

@@ -247,7 +247,7 @@ export function SmartAgentInputStacked({
       "relative flex w-full min-h-0 flex-col border border-border bg-card transition-colors focus-within:border-foreground/25",
       compact
         ? "rounded-[14px] px-1.5 py-1 gap-1"
-        : "rounded-[22px] px-2.5 pt-3 pb-2 gap-2 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+        : "rounded-[22px] px-2.5 pt-2 pb-1.5 gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
     );
     const textarea = (
       <AgentTextarea
@@ -294,7 +294,8 @@ export function SmartAgentInputStacked({
       <div
         className={cn(
           "mx-auto flex w-full min-w-0 shrink-0 flex-col",
-          compact ? "gap-1.5" : "max-w-[760px] gap-2",
+          // Tight to the card: the rows above and below belong to it (Arman, 2026-09-28).
+          compact ? "gap-1" : "max-w-[760px] gap-1",
         )}
         data-composer-size={composer.size}
         data-composer-mode={composer.mode}

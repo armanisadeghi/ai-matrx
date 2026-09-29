@@ -56,6 +56,7 @@ import {
 import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
 
 interface QuicksetPanelProps {
   conversationId: string;
@@ -264,17 +265,19 @@ export function QuicksetPanel({
   ];
   const addedTools = settings.addedTools ?? [];
   const addedSkills = settings.addedSkills ?? [];
+  // A phone's keyboard has one key for "new line": Enter never sends there.
+  const touchOnly = useTouchOnlyDevice();
 
   return (
     <div className="h-full overflow-y-auto overscroll-contain px-3 py-3">
       <div className="space-y-1.5">
-        <ToggleRow
+        {touchOnly ? null : <ToggleRow
           label="Submit on Enter"
           checked={submitOnEnter}
           onCheckedChange={(value) =>
             dispatch(setSubmitOnEnter({ conversationId, value }))
           }
-        />
+        />}
         <ToggleRow
           label="Show Creator Panel"
           checked={showCreatorPanel}

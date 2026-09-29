@@ -41,6 +41,12 @@ export type ComposerKeyIntent =
 export interface ComposerKeyState {
   /** The conversation's setting: does a bare Enter send? */
   submitOnEnter: boolean;
+  /**
+   * A touch-only device (a phone or a tablet with no mouse). Its on-screen
+   * keyboard has ONE key for "new line", so Enter can never send there — the
+   * send button does (Arman, 2026-09-28). Absent = detected from the device.
+   */
+  touchKeyboard?: boolean;
   /** Is a run streaming right now? Enables steer/interrupt. */
   isRunning?: boolean;
   /** Does this composer support the mid-run modes at all? */
@@ -58,6 +64,22 @@ export interface ComposerKeyEvent {
   isComposing?: boolean;
 }
 
+/** A phone or a mouse-less tablet: the keyboard on screen is the only keyboard. */
+export const TOUCH_ONLY_DEVICE_QUERY = "(pointer: coarse) and (hover: none)";
+
+export function isTouchOnlyDevice(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia(TOUCH_ONLY_DEVICE_QUERY).matches;
+}
+
+/**
+ * Does a bare Enter send on THIS device? The setting, except that on a
+ * touch-only device it never does — every composer shows and obeys this.
+ */
+export function enterSendsHere(submitOnEnter: boolean, touchKeyboard: boolean = isTouchOnlyDevice()): boolean {
+  return submitOnEnter && !touchKeyboard;
+}
+
 /**
  * What this keystroke means in a composer. `"none"` means the composer must
  * not call `preventDefault` — anything else means it must.
@@ -72,11 +94,12 @@ export function composerKeyIntent(
 
   const withCmd = e.metaKey || e.ctrlKey;
   const running = Boolean(state.isRunning) && state.supportsRunModes !== false;
+  const submitOnEnter = enterSendsHere(state.submitOnEnter, state.touchKeyboard);
 
   if (running && withCmd && e.shiftKey) return "interrupt";
-  if (running && withCmd && !e.shiftKey && state.submitOnEnter) return "steer";
+  if (running && withCmd && !e.shiftKey && submitOnEnter) return "steer";
 
-  if (state.submitOnEnter) {
+  if (submitOnEnter) {
     // Enter sends; Shift+Enter is the newline. ⌘/Ctrl+Enter is left to the
     // run modes above — outside a run it is simply another send.
     if (e.shiftKey) return "newline";

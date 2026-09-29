@@ -3,13 +3,18 @@
 /**
  * Effort (brief §9, Amendment 1 A1): Work and Advanced only, and only when the
  * conversation's model exposes `reasoning_effort` (its registry `controls`).
- * The values are the model's own; picking one writes the per-conversation
- * override layer (`config_overrides.reasoning_effort`) — the same write the
- * run-settings Overrides panel makes. "Agent default" clears it.
+ *
+ * THE AUTO RULE (Arman, 2026-09-28): "Auto" means DON'T TOUCH IT — no
+ * `reasoning_effort` override is sent, so the agent's own setting runs. It is
+ * never the literal value "auto" sent as an override (many models accept that
+ * word as a setting of their own, which is a different thing). Any other
+ * choice writes that exact value to the per-conversation override layer
+ * (`config_overrides.reasoning_effort`) — the same write the Overrides panel
+ * makes. The Auto row names the agent's own value when it has one.
  */
 
 import { useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
@@ -36,10 +41,6 @@ function effortWord(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-/** The pill sits beside the approval pill, which reads "Auto" — a bare "Auto" here would say the same word twice. */
-function effortPillWord(value: string): string {
-  return value === "auto" ? "Auto effort" : effortWord(value);
-}
 
 export function ComposerEffortPill({
   conversationId,
@@ -61,12 +62,15 @@ export function ComposerEffortPill({
 
   if (!model || !modelId) return null;
   const control = resolveModelControls([model], modelId).normalizedControls?.reasoning_effort;
-  const values = (control?.enum ?? []).filter(isReasoningEffort);
+  // "auto" is never offered as a value to SEND — Auto is the absence of an override.
+  const values = (control?.enum ?? []).filter(isReasoningEffort).filter((value) => value !== "auto");
   if (values.length === 0) return null;
 
-  const overridden = overrideState?.overrides?.reasoning_effort;
+  const overriddenRaw = overrideState?.overrides?.reasoning_effort;
+  const overridden = typeof overriddenRaw === "string" && overriddenRaw !== "auto" ? overriddenRaw : null;
   const base = overrideState?.baseSettings?.reasoning_effort ?? control?.default;
-  const current = typeof overridden === "string" ? overridden : typeof base === "string" ? base : null;
+  const agentOwn = typeof base === "string" ? base : null;
+  const pillWord = overridden ? `${effortWord(overridden)} effort` : "Auto effort";
 
   const choose = (value: ReasoningEffort | null) => {
     setOpen(false);
@@ -81,7 +85,7 @@ export function ComposerEffortPill({
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <button type="button" className={composerPillClass(size, open)} aria-label="Effort" title="How hard the model thinks">
-          <span className="truncate">{current ? effortPillWord(current) : "Effort"}</span>
+          <span className={overridden ? "truncate font-medium text-foreground" : "truncate"}>{pillWord}</span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0" />
         </button>
       </PopoverTrigger>
@@ -93,23 +97,21 @@ export function ComposerEffortPill({
         className="w-56 p-1"
       >
         <ComposerMenuLabel>Effort</ComposerMenuLabel>
+        <ComposerMenuRow
+          label="Auto"
+          description={agentOwn ? `The agent's own setting — ${effortWord(agentOwn)}` : "The agent's own setting"}
+          checked={!overridden}
+          onClick={() => choose(null)}
+        />
+        <ComposerMenuDivider />
         {values.map((value) => (
           <ComposerMenuRow
             key={value}
             label={effortWord(value)}
-            checked={value === current}
+            checked={value === overridden}
             onClick={() => choose(value)}
           />
         ))}
-        <ComposerMenuDivider />
-        <button
-          type="button"
-          onClick={() => choose(null)}
-          className="flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-sm text-foreground hover:bg-accent"
-        >
-          <span className="min-w-0 flex-1 truncate text-left">Agent default</span>
-          {typeof overridden !== "string" ? <Check className="h-4 w-4 shrink-0 text-primary" /> : null}
-        </button>
       </PopoverContent>
     </Popover>
   );

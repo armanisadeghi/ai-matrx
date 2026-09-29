@@ -24,6 +24,7 @@ describe("THE ONE TABLE — what each mode shows (A1, amended 2026-09-27)", () =
     "plus.previewContext",
     "plus.documents",
     "plus.environment",
+    "plus.model",
   ] as const;
 
   it("no mode has less capability: the + menu is the same in Chat, Work and Advanced", () => {
@@ -40,11 +41,9 @@ describe("THE ONE TABLE — what each mode shows (A1, amended 2026-09-27)", () =
     expect(composerShows("work", "agent.panel")).toBe(true);
     expect(composerShows("work", "chips.row")).toBe(true);
     expect(composerShows("work", "meta.effort")).toBe(true);
-    expect(composerShows("work", "agent.overrides")).toBe(false);
     // A1 ruling: repos are Advanced-only.
     expect(composerShows("work", "chips.repos")).toBe(false);
     expect(composerShows("advanced", "chips.repos")).toBe(true);
-    expect(composerShows("advanced", "agent.overrides")).toBe(true);
   });
 
   it("at compact width Scope and Output leave the meta row for the + menu (A5)", () => {

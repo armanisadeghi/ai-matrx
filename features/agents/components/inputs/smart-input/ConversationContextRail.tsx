@@ -662,7 +662,7 @@ export function ConversationContextRail({
               title={`${overflow.length} more`}
               aria-label={`${overflow.length} more context items`}
               className={cn(
-                "inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-border px-2",
+                "inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-border px-2",
                 "text-xs font-medium text-muted-foreground transition-colors",
                 "hover:bg-muted/60 hover:text-foreground",
               )}
@@ -740,7 +740,7 @@ function RailPill({ item }: { item: RailItem }) {
             onClick={item.onOpen}
             aria-label={item.label}
             className={cn(
-              "inline-flex h-6 min-w-0 items-center gap-1 rounded-full border px-2",
+              "inline-flex h-6 min-w-0 items-center gap-1 rounded-md border px-2",
               "text-[11px] font-medium transition-colors",
               item.active
                 ? item.tone === "primary"

@@ -1,37 +1,32 @@
 "use client";
 
 /**
- * The agent pill (brief §8, Amendment 1 A2/A3).
+ * The agent pill (brief §8, Amendment 1 A2/A3; Arman, 2026-09-28: "the most
+ * important thing in our system are agents").
  *
- *  - Chat mode: a flat list of ★ chat presets (`name · model`), then Custom
- *    (the default chat agent — `chat.default_new_chat` — with the person's own
- *    default model), then "Manage chat agents". Pill label: `name · model` for
- *    a preset or Custom, the agent's name otherwise.
- *  - Work mode: the agent panel — the agent + Change (the ONE agent picker),
- *    Recent (last three), Model (the canonical model picker, per conversation).
- *  - Advanced adds Overrides and Advanced (today's run-settings screens).
+ *  - Chat mode — and only Chat — shows `agent · model`. Chat agents are a
+ *    finite set, so the menu is: the ★ chat agents and Custom, "All agents"
+ *    (the ONE agent picker), and the MODEL FOR THIS CHAT — change the model
+ *    and keep the same chat agent.
+ *  - Work / Advanced: the pill names the agent and IS the agent picker — one
+ *    click opens it, no half-way panel. An agent is built with its model, so
+ *    the model is secondary: it lives in + › Model, beside the overrides.
  *
  * The composer never switches agents itself: the host's `onSelectAgent` says
  * what switching means on that surface. No `onSelectAgent` = a fixed agent —
- * no presets, no Change, no Recent.
+ * the pill is a plain label (Work+) or the model-only menu (Chat).
  */
 
 import { useState } from "react";
-import { AppWindow, ChevronDown, Cpu, Star } from "lucide-react";
-import Link from "next/link";
+import { ChevronDown, Layers, Star } from "lucide-react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
-import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
-import { RunInputCapabilities } from "@/features/agents/components/run-controls/RunInputCapabilities";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
-import { selectIsManualExecutionMode } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { knobRefusalSentence, setKnobOverride } from "@/lib/scoped-config/service";
@@ -42,17 +37,13 @@ import {
   ComposerMenuHelp,
   ComposerMenuLabel,
   ComposerMenuRow,
-  ComposerSubmenu,
 } from "./ComposerMenu";
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerAgentControl, ComposerMode, ComposerSize } from "./composer-types";
 import { useComposerAgent, type ComposerAgentInfo } from "./useComposerAgent";
-import { useRecentWorkAgents } from "./useRecentWorkAgents";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
-
-const MANUAL_MODE_HINT = "Per-run settings are edited in the builder panel during test runs";
 
 interface ComposerAgentPillProps {
   conversationId: string;
@@ -64,20 +55,16 @@ interface ComposerAgentPillProps {
 
 export function composerPillClass(size: ComposerSize, open: boolean): string {
   return cn(
-    "inline-flex min-w-0 shrink items-center gap-1 rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-    size === "compact" ? "h-7 px-1.5 text-[13px]" : "h-8 px-2 text-sm",
+    "inline-flex h-6 min-w-0 shrink items-center gap-1 rounded-md text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+    size === "compact" ? "px-1.5" : "px-2",
     open && "bg-accent text-foreground",
   );
 }
 
 function pillLabel(info: ComposerAgentInfo, mode: ComposerMode): string {
-  const name = info.agentName ?? "Agent";
-  if (composerShows(mode, "agent.presets")) {
-    if (info.isCustom) return info.effectiveModelLabel ? `Custom · ${info.effectiveModelLabel}` : "Custom";
-    if (info.preset) {
-      return info.effectiveModelLabel ? `${info.preset.name} · ${info.effectiveModelLabel}` : info.preset.name;
-    }
-  }
+  const name = info.isCustom ? "Custom" : (info.preset?.name ?? info.agentName ?? "Agent");
+  // Only Chat names the model: there the model is a first-class choice.
+  if (composerShows(mode, "agent.presets") && info.effectiveModelLabel) return `${name} · ${info.effectiveModelLabel}`;
   return name;
 }
 
@@ -85,51 +72,58 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
   const [open, setOpen] = useState(false);
   const info = useComposerAgent(conversationId);
   const label = pillLabel(info, mode);
-  const presetsMode = composerShows(mode, "agent.presets");
+  const onSelectAgent = agentControl?.onSelectAgent;
+
+  const pill = (
+    <button type="button" className={composerPillClass(size, open)} aria-label={`Agent: ${label}`} title={label}>
+      <span className="truncate font-medium text-foreground">{label}</span>
+      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+    </button>
+  );
+
+  // Work / Advanced: the pill IS the agent picker.
+  if (!composerShows(mode, "agent.presets")) {
+    if (!onSelectAgent) {
+      return (
+        <span className={cn(composerPillClass(size, false), "hover:bg-transparent")} title="This page always answers with this agent">
+          <span className="truncate font-medium text-foreground">{label}</span>
+        </span>
+      );
+    }
+    return (
+      <AgentListDropdown
+        onSelect={(agentId: string) => {
+          if (agentId !== info.agentId) onSelectAgent(agentId);
+        }}
+        activeAgentId={info.agentId}
+        contentSide={menuSide}
+        triggerSlot={pill}
+      />
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={composerPillClass(size, open)}
-          aria-label={`Agent: ${label}`}
-          title={label}
-        >
-          <span className="truncate font-medium text-foreground">{label}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        </button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{pill}</PopoverTrigger>
       <PopoverContent
-        /* sizing: fixed — the agent panel is a fixed 320px menu of known rows (brief §8) */
+        /* sizing: fixed — the chat agent menu is a fixed 320px menu of known rows (brief §8) */
         side={menuSide}
         align="end"
         sideOffset={8}
         className="flex w-80 max-h-[var(--radix-popover-content-available-height)] flex-col overflow-y-auto p-1"
       >
-        {presetsMode ? (
-          <ChatPresetsPanel
-            conversationId={conversationId}
-            info={info}
-            agentControl={agentControl}
-            close={() => setOpen(false)}
-          />
-        ) : (
-          <AgentPanel
-            conversationId={conversationId}
-            info={info}
-            mode={mode}
-            agentControl={agentControl}
-            open={open}
-            close={() => setOpen(false)}
-          />
-        )}
+        <ChatPresetsPanel
+          conversationId={conversationId}
+          info={info}
+          agentControl={agentControl}
+          close={() => setOpen(false)}
+        />
       </PopoverContent>
     </Popover>
   );
 }
 
-// ── Chat mode: presets · Custom · Manage ────────────────────────────────────
+// ── Chat mode: chat agents · All agents · Model for this chat ─────────────
 
 function ChatPresetsPanel({
   conversationId,
@@ -154,8 +148,13 @@ function ChatPresetsPanel({
     return (
       <>
         <ComposerMenuLabel>Agent</ComposerMenuLabel>
-        <ComposerMenuRow label={info.agentName ?? "Agent"} detail={info.effectiveModelLabel ?? undefined} checked />
+        <ComposerMenuRow label={info.agentName ?? "Agent"} checked />
         <ComposerMenuHelp>This page always answers with this agent.</ComposerMenuHelp>
+        <ComposerMenuDivider />
+        <ComposerMenuLabel>Model for this chat</ComposerMenuLabel>
+        <div className="px-1.5 pb-1">
+          <QuickRunModelSelect conversationId={conversationId} className="h-8 w-full" />
+        </div>
       </>
     );
   }
@@ -213,23 +212,16 @@ function ChatPresetsPanel({
   return (
     <>
       <ComposerMenuLabel>Chat agents</ComposerMenuLabel>
-      {info.presets.length === 0 ? (
-        <ComposerMenuHelp>
-          No chat presets yet. An agent becomes a preset when it carries the chat-agent tag.
-        </ComposerMenuHelp>
-      ) : (
-        info.presets.map((preset) => (
-          <ComposerMenuRow
-            key={preset.id}
-            icon={Star}
-            label={preset.name}
-            detail={preset.modelLabel ?? undefined}
-            checked={preset.id === info.agentId}
-            onClick={() => choose(preset.id)}
-          />
-        ))
-      )}
-      <ComposerMenuDivider />
+      {info.presets.map((preset) => (
+        <ComposerMenuRow
+          key={preset.id}
+          icon={Star}
+          label={preset.name}
+          detail={preset.modelLabel ?? undefined}
+          checked={preset.id === info.agentId}
+          onClick={() => choose(preset.id)}
+        />
+      ))}
       <ComposerMenuRow
         label="Custom"
         description="Your own default chat, on the model you pick"
@@ -237,142 +229,38 @@ function ChatPresetsPanel({
         disabled={!info.customAgentId}
         onClick={chooseCustom}
       />
-      <div className="px-1.5 pb-1">
-        <ModelListDropdown
-          value={personalModelId}
-          onValueChange={(modelId) => void setPersonalModel(modelId)}
-          inputModalities={[]}
-          outputModalities={["text"]}
-          placeholder={personalModelLabel ?? "Pick a model"}
-          aria-label="Model for Custom"
-          className="w-full"
-        />
-      </div>
-      <ComposerMenuDivider />
-      <Link
-        href="/agents/all"
-        onClick={close}
-        className="flex h-9 w-full items-center rounded-lg px-2.5 text-sm text-foreground hover:bg-accent"
-      >
-        <span className="min-w-0 flex-1 truncate">Manage chat agents</span>
-        <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-muted-foreground" />
-      </Link>
-    </>
-  );
-}
-
-// ── Work / Advanced: the agent panel ────────────────────────────────────────
-
-function AgentPanel({
-  conversationId,
-  info,
-  mode,
-  agentControl,
-  open,
-  close,
-}: {
-  conversationId: string;
-  info: ComposerAgentInfo;
-  mode: ComposerMode;
-  agentControl?: ComposerAgentControl;
-  open: boolean;
-  close: () => void;
-}) {
-  const isManualMode = useAppSelector(selectIsManualExecutionMode(conversationId));
-  const openRunControlsWindow = useOpenRunControlsWindow();
-  const onSelectAgent = agentControl?.onSelectAgent;
-  const recent = useRecentWorkAgents(open && Boolean(onSelectAgent), [
-    info.agentId,
-    info.customAgentId,
-    ...info.presets.map((p) => p.id),
-  ]);
-
-  const choose = (agentId: string) => {
-    close();
-    if (onSelectAgent && agentId !== info.agentId) onSelectAgent(agentId);
-  };
-
-  return (
-    <>
-      <ComposerMenuLabel>Agent</ComposerMenuLabel>
-      <div className="flex h-9 min-w-0 items-center gap-2 px-2.5">
-        <span className="min-w-0 flex-1 truncate text-sm text-foreground">{info.agentName ?? "Agent"}</span>
-        {onSelectAgent ? (
-          <AgentListDropdown
-            onSelect={(agentId: string) => choose(agentId)}
-            activeAgentId={info.agentId}
-            contentSide="left"
-            triggerSlot={
-              <span className="inline-flex h-6 shrink-0 cursor-pointer items-center rounded-md bg-primary/10 px-2 text-xs font-medium text-primary hover:bg-primary/15">
-                Change
-              </span>
-            }
-          />
-        ) : null}
-      </div>
-
-      {onSelectAgent ? (
-        <>
-          <ComposerMenuLabel>Recent</ComposerMenuLabel>
-          {recent.status === "loading" ? (
-            <div className="space-y-1 px-2.5 py-1" aria-busy="true" aria-label="Loading recent agents">
-              <div className="h-4 w-40 animate-pulse rounded bg-muted" />
-              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-            </div>
-          ) : recent.status === "error" ? (
-            <ErrorNotice
-              size="inline"
-              className="px-2.5 py-1.5"
-              message={`Your recent agents could not be read: ${recent.message}`}
-              operation="Read recent agents"
-              calls={["chat.conversation"]}
-            />
-          ) : recent.agents.length === 0 ? (
-            <ComposerMenuHelp>Agents you start conversations with will appear here.</ComposerMenuHelp>
-          ) : (
-            recent.agents.map((agent) => (
-              <ComposerMenuRow key={agent.id} label={agent.name} onClick={() => choose(agent.id)} />
-            ))
-          )}
-        </>
-      ) : null}
-
-      <ComposerMenuDivider />
-      <ComposerMenuLabel>Model</ComposerMenuLabel>
-      <div className="px-1.5 pb-1">
-        <QuickRunModelSelect conversationId={conversationId} className="h-8 w-full" />
-      </div>
-
-      {composerShows(mode, "agent.overrides") ? (
-        <>
-          <ComposerMenuDivider />
-          <ComposerSubmenu
-            row={{
-              icon: Cpu,
-              label: "Overrides",
-              disabled: isManualMode,
-              title: isManualMode ? MANUAL_MODE_HINT : "Per-run model overrides",
-            }}
-            panelClassName="w-[360px] h-[min(70dvh,520px)]"
+      <AgentListDropdown
+        onSelect={(agentId: string) => choose(agentId)}
+        activeAgentId={info.agentId}
+        contentSide="left"
+        triggerSlot={
+          <button
+            type="button"
+            className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-foreground hover:bg-accent"
           >
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              <RunConfigOverrides conversationId={conversationId} />
-              <RunInputCapabilities conversationId={conversationId} />
-            </div>
-          </ComposerSubmenu>
-          <ComposerMenuRow
-            icon={AppWindow}
-            label="Advanced"
-            disabled={isManualMode}
-            title={isManualMode ? MANUAL_MODE_HINT : "Advanced settings"}
-            chevron
-            onClick={() => {
-              close();
-              openRunControlsWindow({ conversationId, initialTab: "settings" });
-            }}
+            <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate">All agents</span>
+            <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-muted-foreground" />
+          </button>
+        }
+      />
+      <ComposerMenuDivider />
+      <ComposerMenuLabel>{info.isCustom ? "Model — your default for Custom" : "Model for this chat"}</ComposerMenuLabel>
+      <div className="px-1.5 pb-1">
+        {info.isCustom ? (
+          <ModelListDropdown
+            value={personalModelId}
+            onValueChange={(modelId) => void setPersonalModel(modelId)}
+            inputModalities={[]}
+            outputModalities={["text"]}
+            placeholder={personalModelLabel ?? "Pick a model"}
+            aria-label="Model for Custom"
+            className="w-full"
           />
-        </>
-      ) : null}
+        ) : (
+          <QuickRunModelSelect conversationId={conversationId} className="h-8 w-full" />
+        )}
+      </div>
     </>
   );
 }
