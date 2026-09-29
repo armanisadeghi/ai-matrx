@@ -20,6 +20,7 @@
 
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
