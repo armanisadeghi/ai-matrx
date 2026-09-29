@@ -218,7 +218,11 @@ this directory.
   `useEntityRelationships`), `useContainerLinks`, `useAssociationCandidates`,
   `useCategories`, `useEntityTitles`, `useUniversalEntitySearch`,
   `useAssociationEntitySelect` are RE-EXPORTS of `@ai-matrx/associations/react`
-  (byte-compatible signatures). **Components consume hooks — never slices, thunks, or
+  (byte-compatible signatures). `useKindCounts(scope)` / `useKindItems(kind, scope, query)` are host
+  hooks over `service/kindInventory.ts`: "what you have" by kind, `scope` = mine | one organization
+  (a filter, never permission); counts and lists share one DB filter (`platform._inventory_filter`
+  via `entity_kind_counts` / `reference_search_candidates`), recent first, server-searched, paged by
+  knob `resources.inventory/page_size`. Which kinds the Source input offers = `entity_types.source_input_pickable`. **Components consume hooks — never slices, thunks, or
   services directly.**
 - `components/active-context/` — Surface A (the only `appContextSlice` writers): `ActiveScopePicker`,
   `ActiveScopeChips`, `ContradictionBanner`, `ActiveContextButton`, `ContextLensBar`, `LensChip`,
@@ -397,6 +401,13 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   not the same axis.
 
 ## Change Log
+
+- 2026-09-29 — **Resource inventory primitives** (A5-P, one source input). `useKindCounts` / `useKindItems`
+  + `service/kindInventory.ts`; `reference_search_candidates` gained `p_order` ('recent'), `p_offset`,
+  `p_organization_id`, `p_mine` and returns `updated_at`; new `entity_kind_counts`; both read
+  `platform._inventory_filter` (Shown to list filter, Private = owner only, machine/child files hidden
+  set-based), so a count always equals its list. Plain plurals: Tables, Documents, Recordings,
+  Document texts, Site pages. Guard: `service/__tests__/kind-counts-equal-kind-lists.live.test.ts`.
 
 - 2026-09-29 — **The store read path is behind a switch, OFF** (lane SCOPES-WEB-REVERT). The SCOPES-READS-WEB read
   switch below broke the scope screens before a member-seat validation, so every read it moved now asks
