@@ -38,6 +38,8 @@ import {
 import { PageTemplate, Card } from "@/components/official/PageTemplate";
 import MarkdownStream from "@/components/MarkdownStream";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectLatestAnswerText as selectCommittedAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import {
@@ -142,8 +144,20 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     };
   }, [mandateReady, value]);
 
+  // 🚨 Parse the COMMITTED answer, not the run's resolved text. The run
+  // resolves with the live projection (`deriveAnswerText` over render blocks),
+  // where the agent's fenced `fact_check_report` block has already become a
+  // structured block and is DROPPED from the string — so the kind, the
+  // verdict and the per-status counts were never in `answerText`. The
+  // committed message keeps the whole text part, fence included.
+  const committedText = useAppSelector((state) =>
+    conversationId && answerText
+      ? selectCommittedAnswerText(conversationId)(state)
+      : "",
+  );
+  const settledText = committedText || answerText;
   // React Compiler memoizes this; a settled answer is parsed once per text.
-  const parsed = answerText ? parseFactCheck(answerText) : null;
+  const parsed = settledText ? parseFactCheck(settledText) : null;
 
   /** The live output — what every tab shows while the agent is still writing. */
   const liveOutput = (label: string) => (
