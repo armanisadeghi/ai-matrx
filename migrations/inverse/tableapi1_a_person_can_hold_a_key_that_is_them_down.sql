@@ -1,4 +1,6 @@
 -- chair-step: inverse of tableapi1_a_person_can_hold_a_key_that_is_them.sql — puts back the CRITICAL-1 trigger and iam.api_key_revoke exactly as they were, drops the three personal-key doors, their door rows and the four knob rows. A personal key minted in between stays in iam.api_keys but can no longer be listed or revoked by its person; revoke it first.
+-- based-on: iam.api_key_identity_must_be_minted() 177f54f945952e312c7e306308e79104ae93f4ef5426a45dc22adb0728611b68
+-- based-on: iam.api_key_revoke(uuid) bfae418cc61906cca4e8a8704406a90664ba136cac5d82cf0373422751c4e402
 --
 -- inverse of tableapi1_a_person_can_hold_a_key_that_is_them.sql
 -- The two bodies below are pg_get_functiondef read from production on 2026-09-29 before the up.
@@ -90,7 +92,7 @@ $function$;
 
 delete from platform.client_callable_door
  where schema_name = 'iam'
-   and function_name in ('personal_api_key_create', 'personal_api_key_list', 'personal_api_key_revoke');
+   and function_name in ('personal_api_key_create', 'personal_api_key_list', 'personal_api_key_revoke', 'oauth_client_is_dynamic');
 
 drop function if exists iam.personal_api_key_create(text, uuid, timestamp with time zone);
 drop function if exists iam.personal_api_key_list();

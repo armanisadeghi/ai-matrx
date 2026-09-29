@@ -376,7 +376,16 @@ as $function$
   );
 $function$;
 
-revoke all on function iam.oauth_client_is_dynamic(uuid) from public, anon, authenticated;
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+values
+  ('iam', 'oauth_client_is_dynamic', 'p_client_id uuid', array['uuid'::regtype::oid],
+   'p_client_id is an OAuth client id read off a verified access token; it is compared only with auth.oauth_clients.id and answers one boolean (NULL or unknown answers false). It names no person and no record.',
+   'migrations/campaign/tableapi1_a_person_can_hold_a_key_that_is_them.sql (lane TABLE-API-1)',
+   'server_only: the aidream table API and the AI Matrx MCP token verifier call it on the server pool to refuse self-registered OAuth apps when mcp/oauth_dynamic_clients_enabled is off; no client ever needs it.',
+   false, false);
+
 grant execute on function iam.oauth_client_is_dynamic(uuid) to service_role;
 
 -- ── 6. knobs ─────────────────────────────────────────────────────────────────────────────
