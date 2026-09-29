@@ -1192,7 +1192,6 @@ export async function createAnnouncement(
         //   org IS its home; the create surface is the admin-gated
         //   CreateAnnouncementDialog
         organization_id: await resolveSystemOrgId(supabase),
-        visibility: "internal",
         created_by: user.id,
         announcement_type: input.announcement_type || "info",
         min_display_seconds: input.min_display_seconds || 3,

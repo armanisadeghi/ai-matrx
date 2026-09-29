@@ -2,7 +2,6 @@
  "_what": "Access-ladder T-13 2.5c source ratchet for matrx-frontend: per file, the most lines allowed to name the retiring row column. Shrink-only (--shrink-baseline lowers, nothing raises). Seeded 2026-09-28 from the detector; cross-check with common-docs/projects/access-ladder/t13/census/matrx-frontend.json: 612 of the census's 660 row-access files are here, 486 more are counted because the detector is literal (every literal reference is a phase-5 conversion or a rename).",
  "files": {
   ".scratch/header-chip2.mjs": 1,
-  "actions/feedback.actions.ts": 1,
   "app/(admin)/administration/automation/scheduling/scanner-health/page.tsx": 1,
   "app/(admin)/administration/knowledge/batch/page.tsx": 1,
   "app/(admin)/administration/knowledge/cms-agents/page.tsx": 1,
@@ -71,9 +70,8 @@
   "app/api/extension/append-message/route.test.ts": 1,
   "app/api/sandbox/[id]/logs/route.ts": 1,
   "app/api/webhooks/twilio/voice/route.test.ts": 1,
-  "components/admin/ContentBlocksManager.tsx": 10,
+  "components/admin/ContentBlocksManager.tsx": 1,
   "components/admin/controls/AdminIndicatorWrapper.tsx": 1,
-  "components/admin/markdown-tester/samples-service.ts": 1,
   "components/agent-copy/copy-subset/types.ts": 1,
   "components/errors/NewVersionWatcher.tsx": 2,
   "components/image/cloud/CloudFilesBrowserTable.tsx": 12,

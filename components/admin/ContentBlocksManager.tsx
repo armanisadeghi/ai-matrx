@@ -11,6 +11,7 @@ import type { TablesUpdate } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -72,11 +73,23 @@ import {
 } from "lucide-react";
 import { DeepLinkMissNotice } from "@/components/official/deep-link/DeepLinkMissNotice";
 import {
-  ContentBlockDB,
+  type ContentBlockDB as ContentBlockDBShape,
   ContentBlockBlockType,
-  ContentBlockVisibility,
-  CreateContentBlockInput,
+  type CreateContentBlockInput as CreateContentBlockInputShape,
 } from "@/types/content-blocks-db";
+import { PUBLISHED_TO_WEB_LABEL, publishedToWebPatch } from "@/lib/row-access";
+import { getUserId } from "@/utils/auth/getUserId";
+
+/** The row's retiring column is never read or written here; the row words are
+ *  (access ladder T-13): "Published to the web" is the only row control a
+ *  platform-library block carries on this screen. */
+type RetiredKey = "visibility";
+type ContentBlockDB = Omit<ContentBlockDBShape, RetiredKey> & {
+  published_to_web: boolean;
+};
+type CreateContentBlockInput = Omit<CreateContentBlockInputShape, RetiredKey> & {
+  published_to_web?: boolean;
+};
 import { createClient } from "@/utils/supabase/client";
 import { WriteDidNotLandError, tryWriteOne, writeOne } from "@/utils/supabase/writeOne";
 import { CONTENT_BLOCK_PARAM } from "@/components/admin/content-blocks-route";
@@ -112,12 +125,6 @@ const BLOCK_TYPES: ContentBlockBlockType[] = [
   "markdown",
   "xml",
   "render_kind",
-];
-const VISIBILITIES: ContentBlockVisibility[] = [
-  "public",
-  "internal",
-  "link",
-  "personal",
 ];
 
 function normalizeBlockType(raw: string): ContentBlockBlockType {
@@ -506,7 +513,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
           category_id: block.category_id,
           skill_id: block.skill_id,
           block_type: normalizeBlockType(block.block_type),
-          visibility: block.visibility,
+          published_to_web: block.published_to_web,
           template: block.template,
           sort_order: block.sort_order ?? 0,
           is_active: block.is_active ?? true,
@@ -576,7 +583,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         category_id: selectedBlock.category_id, // UUID FK to platform.categories
         skill_id: selectedBlock.skill_id,
         block_type: selectedBlock.block_type,
-        visibility: selectedBlock.visibility,
+        published_to_web: selectedBlock.published_to_web,
         template: selectedBlock.template,
         sort_order: selectedBlock.sort_order,
         is_active: selectedBlock.is_active,
@@ -594,7 +601,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       category_id: categories.length > 0 ? categories[0].id : "", // Use first category UUID
       skill_id: null,
       block_type: "markdown",
-      visibility: "public",
+      published_to_web: true,
       template: "",
       sort_order: 0,
       is_active: true,
@@ -627,7 +634,11 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             category_id: editData.category_id, // UUID FK to platform.categories
             skill_id: editData.skill_id ?? null,
             block_type: editData.block_type,
-            visibility: editData.visibility,
+            ...(editData.published_to_web !== undefined &&
+            editData.published_to_web !==
+              contentBlocks.find((b) => b.id === editData.id)?.published_to_web
+              ? publishedToWebPatch(editData.published_to_web, getUserId())
+              : {}),
             template: editData.template,
             sort_order: editData.sort_order,
             is_active: editData.is_active,
@@ -682,8 +693,11 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             category_id: createFormData.category_id, // UUID FK to platform.categories
             skill_id: createFormData.skill_id ?? null,
             block_type: createFormData.block_type ?? "markdown",
-            // Admin-authored platform-library blocks are visible to everyone.
-            visibility: createFormData.visibility ?? "public",
+            // Admin-authored platform-library blocks are published to the web by default.
+            ...publishedToWebPatch(
+              createFormData.published_to_web ?? true,
+              getUserId(),
+            ),
             template: createFormData.template ?? "",
             sort_order: createFormData.sort_order || 0,
             is_active: createFormData.is_active !== false,
@@ -728,7 +742,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         category_id: selectedBlock.category_id, // UUID FK to platform.categories
         skill_id: selectedBlock.skill_id,
         block_type: selectedBlock.block_type,
-        visibility: selectedBlock.visibility,
+        published_to_web: selectedBlock.published_to_web,
         template: selectedBlock.template,
         sort_order: selectedBlock.sort_order,
         is_active: selectedBlock.is_active,
@@ -1506,27 +1520,18 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="edit-visibility">Visibility</Label>
-                        <Select
-                          value={editData.visibility ?? "public"}
-                          onValueChange={(value) =>
-                            handleEditChange(
-                              "visibility",
-                              value as ContentBlockVisibility,
-                            )
-                          }
-                        >
-                          <SelectTrigger id="edit-visibility">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {VISIBILITIES.map((v) => (
-                              <SelectItem key={v} value={v}>
-                                {v}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="edit-published-to-web">
+                          {PUBLISHED_TO_WEB_LABEL}
+                        </Label>
+                        <div className="flex h-9 items-center">
+                          <Switch
+                            id="edit-published-to-web"
+                            checked={editData.published_to_web === true}
+                            onCheckedChange={(checked) =>
+                              handleEditChange("published_to_web", checked)
+                            }
+                          />
+                        </div>
                       </div>
                       <div>
                         <div className="flex items-center gap-1">
@@ -1968,27 +1973,21 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="create-visibility">Visibility</Label>
-                <Select
-                  value={createFormData.visibility ?? "public"}
-                  onValueChange={(value) =>
-                    setCreateFormData({
-                      ...createFormData,
-                      visibility: value as ContentBlockVisibility,
-                    })
-                  }
-                >
-                  <SelectTrigger id="create-visibility">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VISIBILITIES.map((v) => (
-                      <SelectItem key={v} value={v}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="create-published-to-web">
+                  {PUBLISHED_TO_WEB_LABEL}
+                </Label>
+                <div className="flex h-9 items-center">
+                  <Switch
+                    id="create-published-to-web"
+                    checked={createFormData.published_to_web !== false}
+                    onCheckedChange={(checked) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        published_to_web: checked,
+                      })
+                    }
+                  />
+                </div>
               </div>
             </div>
 

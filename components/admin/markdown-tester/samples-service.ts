@@ -5,6 +5,7 @@
 // samples); platform admins write it from the studio in the admin section.
 // Rows belong to the Matrx System org, soft-delete only.
 
+import { publishedToWebPatch } from "@/lib/row-access";
 import { supabase } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -65,7 +66,7 @@ export async function createSample(
       // never chosen by a default or a trigger (no-db-assigned-org).
       // org-fallback-deliberate: shared starter samples are platform content, owned by the Matrx System org by name.
       organization_id: await resolveSystemOrgId(),
-      visibility: "public",
+      ...publishedToWebPatch(true, userId),
     })
     .select()
     .single();
