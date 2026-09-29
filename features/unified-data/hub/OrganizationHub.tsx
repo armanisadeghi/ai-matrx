@@ -640,7 +640,6 @@ export function OrganizationHub({
           scope={scope}
           kind={capability.id === "tables" ? kind : ALL_KINDS}
           order={order}
-          groupByOrganization={scope === "all"}
           inOrganization={oneOrganization ? organizationName : null}
           /* THE TABLES LISTING IS EVERY ORGANIZATION'S (DATA-HOME-1): "this organization shows
              each member only what is shared" is one organization's setting and would be false
