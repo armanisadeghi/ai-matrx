@@ -23,7 +23,7 @@
  */
 
 import { usePersonChoices } from "../person-choices";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Plus, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -122,6 +122,32 @@ export function ChoiceInput({
 }: ChoiceInputProps) {
   const [open, setOpen] = useState(autoOpen);
   const [query, setQuery] = useState(initialQuery ?? "");
+  // KEYS THAT REACHED THE GRID BEFORE THIS LIST TOOK FOCUS JOIN ITS SEARCH (BREAKER-2 B2-04 / B2-10):
+  // the grid grows the edit's seed with them; what the search has not seen yet is appended.
+  const seenQuery = useRef(initialQuery ?? "");
+  useEffect(() => {
+    const next = initialQuery ?? "";
+    if (next.length > seenQuery.current.length && next.startsWith(seenQuery.current)) {
+      const more = next.slice(seenQuery.current.length);
+      setQuery((q) => q + more);
+    }
+    seenQuery.current = next;
+  }, [initialQuery]);
+  // THE LIST'S SEARCH HAS THE KEYBOARD WHILE IT IS OPEN IN A CELL: the grid hands focus back to itself
+  // a frame after a click, and the person's typing then went nowhere while "1 selected" sat open.
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (!open || !autoOpen) return;
+    let frames = 0;
+    let id = 0;
+    const hold = () => {
+      const box = searchRef.current;
+      if (box && document.activeElement !== box) box.focus({ preventScroll: true });
+      if ((frames += 1) < 6) id = requestAnimationFrame(hold);
+    };
+    id = requestAnimationFrame(hold);
+    return () => cancelAnimationFrame(id);
+  }, [open, autoOpen]);
   // A person column's options are the organization's members, provided at
   // the grid's root; every other format ignores the second argument.
   const personChoices = usePersonChoices();
@@ -258,6 +284,7 @@ export function ChoiceInput({
             }
           >
             <CommandInput
+              ref={searchRef}
               placeholder={allowOther || offersNewWords ? "Search or type a value…" : "Search options…"}
               value={query}
               onValueChange={setQuery}

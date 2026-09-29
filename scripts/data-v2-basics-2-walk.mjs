@@ -926,13 +926,19 @@ try {
     {
       const c = await cellOf("Grace Kim", "Body Areas");
       await c.click();
-      await sleep(300);
-      await c.dblclick();
-      await sleep(900);
-      await page.keyboard.type("Elbow", { delay: 40 });
-      await page.keyboard.press("Enter");
       await sleep(500);
-      await (await cellOf("Mateo", "Copay")).click();
+      await c.click();
+      await sleep(1200);
+      await shot("r04a-list-open");
+      step("focus when the list opened", { active: await page.evaluate(() => { const a = document.activeElement; return a ? `${a.tagName} ${a.getAttribute("placeholder") ?? ""} ${a.getAttribute("aria-label") ?? ""} ${a.getAttribute("data-grid-type-catcher") !== null ? "catcher" : ""}` : null; }) });
+      await page.keyboard.type("Elbow", { delay: 40 });
+      await sleep(500);
+      await shot("r04b-typed");
+      await page.keyboard.press("Enter");
+      await sleep(800);
+      await shot("r04c-picked");
+      // A click on a cell the open list does not cover: the Title of another row.
+      await page.locator("tbody tr").first().locator("td").nth(1).click({ position: { x: 20, y: 10 } });
       await sleep(2000);
       const ask = await page.locator("[data-matrx-choice-nudge]").allInnerTexts();
       await shot("r04-several-choices-asks");
@@ -999,6 +1005,35 @@ try {
     await sleep(2000);
     await shot("h05-switch");
     step("switch menu", { text: (await page.locator("[role=menu],[role=dialog],[data-radix-popper-content-wrapper]").first().innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 600) });
+  }
+
+  if (PHASE === "multi") {
+    await open(process.env.TABLE, "?view=sheet");
+    // B2-04: several choices, a new word, a click elsewhere
+    {
+      const c = await cellOf("Grace Kim", "Body Areas");
+      await c.click();
+      await sleep(500);
+      await c.click();
+      await sleep(1200);
+      await shot("r04a-list-open");
+      step("focus when the list opened", { active: await page.evaluate(() => { const a = document.activeElement; return a ? `${a.tagName} ${a.getAttribute("placeholder") ?? ""} ${a.getAttribute("aria-label") ?? ""} ${a.getAttribute("data-grid-type-catcher") !== null ? "catcher" : ""}` : null; }) });
+      await page.keyboard.type("Elbow", { delay: 40 });
+      await sleep(500);
+      await shot("r04b-typed");
+      await page.keyboard.press("Enter");
+      await sleep(800);
+      await shot("r04c-picked");
+      // A click on a cell the open list does not cover: the Title of another row.
+      await page.locator("tbody tr").first().locator("td").nth(1).click({ position: { x: 20, y: 10 } });
+      await sleep(2000);
+      const ask = await page.locator("[data-matrx-choice-nudge]").allInnerTexts();
+      await shot("r04-several-choices-asks");
+      step("B2-04 several choices ask on click-off", { ask: ask.join(" | ").replace(/\s+/g, " ") });
+      if (!ask.some((a) => /Elbow/.test(a))) friction("a new word in a several-choice cell was not asked about on click-off");
+      await page.locator("[data-matrx-choice-nudge] button", { hasText: "Add" }).first().click().catch(() => {});
+      await sleep(2500);
+    }
   }
 
   if (PHASE === "tidy") {

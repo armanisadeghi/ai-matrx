@@ -642,7 +642,9 @@ export default function TableToolbar({
             fields={fields}
             isOpen={showPasteRowsDialog}
             onClose={() => setShowPasteRowsDialog(false)}
-            onSuccess={() => loadTableData()}
+            // A paste can add words to a column's choices (its one question, answered Add): the columns
+            // are read again with the rows, or the new choices draw as raw words (BREAKER-2 re-run).
+            onSuccess={() => loadTableData(true)}
           />
           <EditRowModal
             tableId={tableId}
