@@ -12,11 +12,12 @@
  * the discount stated out loud).
  */
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Inbox, Search, X } from "lucide-react";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
+  type MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -35,6 +36,8 @@ import {
   listWorkItems,
   num,
   type WorkItem,
+  WORK_ITEM_PAGE_SIZES,
+  type WorkItemPageSize,
   HANDLER_STATUSES,
   WORK_ITEM_STATUSES,
 } from "../service/batchAdminService";
@@ -53,19 +56,6 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 const ANY = "__any__";
-
-/** The source returns an exact filtered match count but only its newest window. */
-export function workItemsFooterLabel(loaded: number, matched: number): string {
-  return `${fmtInt(loaded)} loaded · ${fmtInt(matched)} matching source`;
-}
-
-export function workItemsSourceNotice(
-  truncated: boolean,
-): string {
-  return truncated
-    ? "Narrow the filters to inspect the rest."
-    : "";
-}
 
 export function WorkItemsPanel({
   statusFilter,
@@ -92,10 +82,22 @@ export function WorkItemsPanel({
   const [provider, setProvider] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<WorkItemPageSize>(25);
+  const [asOf, setAsOf] = useState(() => new Date().toISOString());
+  const sourceQueryKey = [
+    statusFilter,
+    handlerFilter,
+    purpose,
+    provider,
+    debounced,
+    batchFilter,
+    refreshTick,
+  ].join("\u0000");
+  const previousSourceQueryKey = useRef<string | null>(null);
 
   const [rows, setRows] = useState<WorkItem[] | null>(null);
   const [matched, setMatched] = useState(0);
-  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -113,6 +115,18 @@ export function WorkItemsPanel({
     const t = setTimeout(() => setDebounced(search.trim()), 250);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Every source predicate describes a different result set. Returning to the
+  // first source page avoids an empty, out-of-range page after it changes.
+  useEffect(() => {
+    if (previousSourceQueryKey.current === null) {
+      previousSourceQueryKey.current = sourceQueryKey;
+      return;
+    }
+    previousSourceQueryKey.current = sourceQueryKey;
+    setPage(1);
+    setAsOf(new Date().toISOString());
+  }, [sourceQueryKey]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -146,19 +160,24 @@ export function WorkItemsPanel({
         search: debounced || null,
         batchRowId: batchFilter,
       },
-      { signal: controller.signal },
+      { signal: controller.signal, page, pageSize, asOf },
     )
-      .then((page) => {
-        setRows(page.items);
-        setMatched(page.matched);
-        setTruncated(page.truncated);
+      .then((result) => {
+        const lastPage = Math.max(1, Math.ceil(result.matched / pageSize));
+        if (page > lastPage) {
+          // Deletes can shrink the exact source count between page requests.
+          // Reconcile before rendering the empty out-of-range result, then
+          // request the last real page under the same inspection boundary.
+          setMatched(result.matched);
+          setPage(lastPage);
+          return;
+        }
+        setRows(result.items);
+        setMatched(result.matched);
       })
       .catch((e: Error) => {
         if (!controller.signal.aborted) {
           setError(e.message);
-          setRows(null);
-          setMatched(0);
-          setTruncated(false);
         }
       })
       .finally(() => {
@@ -173,6 +192,9 @@ export function WorkItemsPanel({
     debounced,
     batchFilter,
     refreshTick,
+    page,
+    pageSize,
+    asOf,
   ]);
 
   const filtersActive =
@@ -190,6 +212,21 @@ export function WorkItemsPanel({
     setPurpose(null);
     setProvider(null);
     setSearch("");
+    setPage(1);
+  };
+
+  const onTableQueryChange = (next: MatrxDataTableQueryState) => {
+    const nextPageSize = WORK_ITEM_PAGE_SIZES.includes(
+      next.pageSize as WorkItemPageSize,
+    )
+      ? (next.pageSize as WorkItemPageSize)
+      : pageSize;
+    if (nextPageSize !== pageSize) {
+      setPageSize(nextPageSize);
+      setPage(1);
+      return;
+    }
+    setPage(Math.max(1, next.page));
   };
 
   const activeChips = useMemo(() => {
@@ -371,8 +408,6 @@ export function WorkItemsPanel({
     [],
   );
 
-  const sourceNotice = workItemsSourceNotice(truncated);
-
   return (
     <MatrxDataTable<WorkItem>
       tableId="batch-work-items"
@@ -380,13 +415,26 @@ export function WorkItemsPanel({
       columns={columns}
       getRowId={(row) => row.id}
       isLoading={loading}
-      // The source has no offset contract. Show every loaded row and disable
-      // local subset pages until a real source-backed pager exists.
-      pageSize={0}
-      pageSizeOptions={[]}
-      paginationLabelFormat={(_start, _end, loaded) =>
-        workItemsFooterLabel(loaded, matched)
-      }
+      pageSizeOptions={[...WORK_ITEM_PAGE_SIZES]}
+      query={{
+        mode: "controlled",
+        totalItems: matched,
+        state: {
+          page,
+          pageSize,
+          search: debounced,
+          anyOf: "",
+          columnFilters: {},
+          sort: { id: "created_at", direction: "desc" },
+        },
+        onStateChange: onTableQueryChange,
+        sourceProcessing: {
+          search: "source",
+          columnFilters: "source",
+          sort: "source",
+          sourceTotal: matched,
+        },
+      }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
       expandedDetail={{
@@ -424,7 +472,7 @@ export function WorkItemsPanel({
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search custom id, target id, model"
+              placeholder="Search purpose, custom ID, target, model"
               className="h-8 pl-7 text-xs"
               aria-label="Search work items"
             />
@@ -490,11 +538,6 @@ export function WorkItemsPanel({
                   </button>
                 ))}
               </div>
-            ) : null}
-            {!loading && !error && sourceNotice ? (
-              <p className={cn("text-xs", truncated && "text-warning")}>
-                {sourceNotice}
-              </p>
             ) : null}
           </div>
         ),
