@@ -1,6 +1,7 @@
 "use client";
 
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -103,7 +104,7 @@ function campaign(row: AdminUserAcquisitionRow): string {
 }
 
 export function UserAcquisitionTableClient() {
-  const { format: fmtCost } = useCostDisplay();
+  const fmtCost = formatAdminCost;
   const router = useRouter();
   const searchParams = useSearchParams();
   const focusUser = searchParams.get("user");
@@ -568,19 +569,7 @@ export function UserAcquisitionTableClient() {
           <span className="tabular-nums">{row.total_requests}</span>
         ),
       },
-      {
-        id: "total_cost",
-        accessorKey: "total_cost",
-        header: "Cost (USD · points)",
-        filter: "number",
-        align: "right",
-        width: 190,
-        cell: (row) => (
-          <span className="font-medium tabular-nums">
-            {fmtCost(row.total_cost)}
-          </span>
-        ),
-      },
+      ...adminCostColumns<AdminUserAcquisitionRow>({ id: "total_cost", value: (row) => row.total_cost }),
       {
         id: "ip_address",
         accessorKey: "ip_address",

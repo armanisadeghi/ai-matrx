@@ -42,8 +42,9 @@ import {
 
 import { fetchSpendOverview, viewerTimezone } from "./service";
 import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";
-import { staleness, timestamp, usd, usdPrecise } from "./format";
+import { staleness, timestamp, usd } from "./format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import type { SpendLedger, SpendLedgerRole, SpendOverview } from "./types";
 import { formatCount } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -238,36 +239,9 @@ export function SpendDashboard() {
       width: 170,
       cell: (r) => <RoleBadge role={r.role} />,
     },
-    {
-      id: "total_today",
-      header: "Today",
-      accessorFn: (r) => r.totalToday ?? -1,
-      width: 100,
-      align: "right",
-      cell: (r) => (
-        <span className="tabular-nums">{usdPrecise(r.totalToday, unit)}</span>
-      ),
-    },
-    {
-      id: "total_30d",
-      header: "Last 30 days",
-      accessorFn: (r) => r.total30d ?? -1,
-      width: 110,
-      align: "right",
-      cell: (r) => (
-        <span className="tabular-nums">{usdPrecise(r.total30d, unit)}</span>
-      ),
-    },
-    {
-      id: "total_all",
-      header: "All time",
-      accessorFn: (r) => r.totalAll ?? -1,
-      width: 110,
-      align: "right",
-      cell: (r) => (
-        <span className="tabular-nums">{usdPrecise(r.totalAll, unit)}</span>
-      ),
-    },
+    ...adminCostColumns<SpendLedger>({ id: "total_today", label: "Today", value: (r) => r.totalToday }),
+    ...adminCostColumns<SpendLedger>({ id: "total_30d", label: "Last 30 days", value: (r) => r.total30d }),
+    ...adminCostColumns<SpendLedger>({ id: "total_all", label: "All time", value: (r) => r.totalAll }),
     {
       id: "rows",
       header: "Rows",

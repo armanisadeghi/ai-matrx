@@ -177,7 +177,7 @@ $function$;
 create function public._edu_class_of(p_class uuid)
  returns public._edu_class_row
  language plpgsql
- stable security definer
+ stable
  set search_path to 'public', 'pg_temp'
 as $function$
 declare v_scope public._edu_class_row;
@@ -234,7 +234,7 @@ $function$;
 create function public._edu_is_owner(p_scope public._edu_class_row)
  returns boolean
  language sql
- stable security definer
+ stable
  set search_path to 'public', 'pg_temp'
 as $function$
   select coalesce(p_scope.created_by = (select auth.uid()), false)
@@ -244,7 +244,6 @@ $function$;
 create function public._edu_ensure_owner_membership(p_scope public._edu_class_row)
  returns void
  language plpgsql
- security definer
  set search_path to 'public', 'pg_temp'
 as $function$
 begin
@@ -259,7 +258,8 @@ begin
 end;
 $function$;
 
--- Internal: only the class doors (owned by postgres, SECURITY DEFINER) call these.
+-- Internal: only the class doors call these, and every class door is SECURITY DEFINER owned by postgres,
+-- so these run as postgres without being definers themselves (no client can reach them: no grant).
 revoke all on function public._edu_class_find(uuid) from public, anon, authenticated;
 revoke all on function public._edu_class_of(uuid) from public, anon, authenticated;
 revoke all on function public._edu_live_class_by_code(text) from public, anon, authenticated;
@@ -1354,6 +1354,28 @@ BEGIN
   END;
 END;
 $function$;
+
+-- ═══════════════════════════════════════════════════════════ the three server-only definers, declared
+-- Replacing a SECURITY DEFINER body owes its access decision in data (platform.provision_shape_debt).
+-- These three never had a row; nothing about who can call them changes (their grants are kept).
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+select v.schema_name, v.function_name, v.identity_args, v.identity_argtypes, v.reason,
+       'migrations/campaign/scopesaccess_the_class_and_access_readers_read_the_store.sql (lane SCOPES-READS-ACCESS)',
+       v.non_client_lane, false, false
+  from (values
+    ('public', 'edu_class_confer_purchase', 'p_class uuid, p_user uuid', array['uuid'::regtype, 'uuid'::regtype]::oid[],
+     'p_class is read as a class Record of a context Table with the slug class (public._edu_class_of: not a class, or NULL, is refused not-found); p_user is required (NULL refused 22023) and is the buyer the Stripe sale names; nothing about the caller is checked because only the webhook reaches it.',
+     'server_only: service_role alone holds EXECUTE; the Stripe webhook (features/entitlements/stripe/connect.ts, confer on checkout.session.completed) is the only caller, and no client may ever enrol itself by paying nothing.'),
+    ('public', 'edu_class_revoke_purchase', 'p_class uuid, p_user uuid', array['uuid'::regtype, 'uuid'::regtype]::oid[],
+     'p_class is read as a class Record of a context Table with the slug class (public._edu_class_of: not a class, or NULL, is refused not-found); p_user is the buyer the refunded Stripe sale names; an owner membership is never revoked.',
+     'server_only: service_role alone holds EXECUTE; the Stripe webhook (features/entitlements/stripe/connect.ts, revoke on a refund) is the only caller, so no client can remove another person from a class this way.'),
+    ('public', '_edu_generate_join_code', '', array[]::oid[],
+     'No arguments. It returns a six-letter code that no live class holds (read from every class Record''s join-code Field); it reads no caller and writes nothing.',
+     'server_only: called only from inside public.edu_class_join_code after its owner check; service_role holds EXECUTE for the server, no client grant.')
+  ) v(schema_name, function_name, identity_args, identity_argtypes, reason, non_client_lane)
+ where not exists (select 1 from platform.client_callable_door d
+                    where d.schema_name = v.schema_name and d.function_name = v.function_name and d.identity_args = v.identity_args);
 
 -- 4. THE FINGERPRINT, re-recorded for the one member this file moved (platform.entity_row_access_attrs).
 CREATE OR REPLACE FUNCTION iam.entity_read_kernel_expected()

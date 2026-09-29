@@ -38,6 +38,7 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { Cost } from "@/components/cost/Cost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 
 type ErrorsData = {
   error_requests: CxUserRequest[];
@@ -156,19 +157,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
           </span>
         ),
       },
-      {
-        id: "total_cost",
-        header: "Cost (USD · points)",
-        accessorFn: (r) => r.total_cost,
-        align: "right",
-        width: 190,
-        className: "whitespace-nowrap",
-        cell: (r) => (
-          <span className="font-mono whitespace-nowrap">
-            <Cost usd={r.total_cost} />
-          </span>
-        ),
-      },
+      ...adminCostColumns<CxUserRequest>({ id: "total_cost", value: (r) => r.total_cost }),
       {
         id: "created_at",
         accessorKey: "created_at",

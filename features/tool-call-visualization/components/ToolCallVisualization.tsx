@@ -58,6 +58,7 @@ import {
 } from "../result-fields/ToolErrorCard";
 import { resultAsObject } from "../renderers/_shared";
 import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
+import { ParkedOnPersonCard } from "@/features/action-requests/components/ParkedOnPersonCard";
 import {
   heldWriteHeadline,
   readRecordChangeWait,
@@ -114,6 +115,24 @@ function heldWriteOf(entry: ToolLifecycleEntry | null | undefined): RecordChange
   return readRecordChangeWait(resultAsObject(entry));
 }
 
+// ─── Calls parked on a person ────────────────────────────────────────────────
+
+/**
+ * THE ONE PLACE A CALL WAITING ON A PERSON IS NOTICED IN CHAT.
+ *
+ * A tool that needs a person — money approved (`approve_spend`), a yes, a code —
+ * parks its OWN call on an action request, and the server marks the row
+ * (`metadata.parked_on`, read into `entry.parkedOn` while the call is still
+ * waiting). Such a call is neither working nor completed, so for EVERY tool the
+ * shell names the wait and mounts the ask itself instead of the tool's body.
+ * `ask_person` is the exception by construction: its own renderer IS this card.
+ */
+function parkedOnPersonOf(entry: ToolLifecycleEntry | null | undefined): string | null {
+  if (!entry?.parkedOn || entry.toolName === "ask_person") return null;
+  if (entry.status === "completed" || entry.status === "error") return null;
+  return entry.parkedOn.actionRequestId;
+}
+
 // ─── Shell implementation ─────────────────────────────────────────────────────
 
 const ToolCallVisualizationInner: React.FC<{
@@ -167,6 +186,9 @@ const ToolCallVisualizationInner: React.FC<{
   const correctedGroup =
     settled.length > 0 &&
     settled.every((e) => e.status === "error" && correctedIds.has(e.callId));
+
+  // A call waiting on a person is not "processing": nothing is running.
+  const parkedAsk = settled.length === 1 ? parkedOnPersonOf(headerTool) : null;
 
   const phase: "starting" | "processing" | "complete" | "error" =
     entries.length === 0
@@ -265,7 +287,7 @@ const ToolCallVisualizationInner: React.FC<{
 
   // The automatic expand decision (no user override). Errors and generic raw
   // payloads NEVER default to expanded; a click still wins via `userChoice`.
-  const autoExpanded = heldWait
+  const autoExpanded = heldWait || parkedAsk
     ? true
     : phase === "error"
       ? false
@@ -375,6 +397,8 @@ const ToolCallVisualizationInner: React.FC<{
   // rest fall back to the displayName as-is.
   const phaseLabel = correctedGroup
     ? `${toolDisplayName} · corrected and retried`
+    : parkedAsk
+    ? `${toolDisplayName} · Waiting for you`
     : heldWait
     ? heldWriteHeadline(heldWait, heldTableName)
     : legacyHeld
@@ -396,7 +420,7 @@ const ToolCallVisualizationInner: React.FC<{
   // information that the verb-phrase label doesn't already convey. Dropped
   // entirely on error (the error reason is already in the main label).
   const querySubtitle: string | null =
-    phase === "error" || heldWait ? null : headerSubtitle;
+    phase === "error" || heldWait || parkedAsk ? null : headerSubtitle;
 
   // A completed tool that left behind an openable artifact (a working-document
   // patch, a saved/edited note) gets a persistent, full-width ArtifactResultBar
@@ -504,7 +528,7 @@ const ToolCallVisualizationInner: React.FC<{
           {/* Label + subtitle — SAME font/size as body markdown text, just dimmer,
             so the tool call reads as part of the response, not a separate box. */}
         <span className="flex min-w-0 items-center gap-1.5">
-          {phase === "processing" || phase === "starting" ? (
+          {(phase === "processing" || phase === "starting") && !parkedAsk ? (
             <ShimmerText
               text={phaseLabel}
               className="truncate font-sans text-sm leading-relaxed tracking-wide"
@@ -619,7 +643,8 @@ const ToolCallVisualizationInner: React.FC<{
                 const isErrored = entry.status === "error";
                 const entryWait =
                   entry === headerTool ? heldWait : heldWriteOf(entry);
-                const InlineRenderer = isErrored || entryWait
+                const entryParked = parkedOnPersonOf(entry);
+                const InlineRenderer = isErrored || entryWait || entryParked
                   ? null
                   : getInlineRenderer(entry.toolName);
                 return (
@@ -629,7 +654,12 @@ const ToolCallVisualizationInner: React.FC<{
                         {groupDisplayName}
                       </div>
                     )}
-                    {entryWait ? (
+                    {entryParked ? (
+                      <ParkedOnPersonCard
+                        actionRequestId={entryParked}
+                        conversationId={conversationId ?? null}
+                      />
+                    ) : entryWait ? (
                       <RecordChangeApprovalCard
                         wait={entryWait}
                         callId={entry.callId}

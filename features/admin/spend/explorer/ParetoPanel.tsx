@@ -30,6 +30,7 @@ import {
 import { formatPercentFromFraction, type CostUnit } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { currentCostUnit } from "@/components/cost/costUnit";
+import { formatAdminPoints, formatAdminUsd } from "@/components/cost/formatAdminCost";
 
 const PARETO_DIMENSIONS: readonly SpendDimension[] = [
   "user",
@@ -253,6 +254,13 @@ function ParetoCard({
         </div>
       </div>
       <ul className="flex h-full flex-col">
+        <li className="flex items-center gap-2 border-b border-border px-3 py-1 text-[10px] text-muted-foreground">
+          <span className="min-w-0 flex-1">Item</span>
+          <span className="w-10 shrink-0 text-right">Share</span>
+          <span className="w-20 shrink-0 text-right">Cost (USD)</span>
+          <span className="w-20 shrink-0 text-right">Points</span>
+          <span className="h-3 w-3 shrink-0" aria-hidden />
+        </li>
         {cut.head.map((row) => {
           const href = identityHref(dim, row.key);
           const label = rowLabel(dim, row);
@@ -277,8 +285,11 @@ function ParetoCard({
               <span className="relative w-10 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
                 {formatPercentFromFraction(row.share)}
               </span>
-              <span className="relative w-16 shrink-0 text-right text-xs font-medium tabular-nums text-foreground">
-                {usd(row.cost, unit)}
+              <span className="relative w-20 shrink-0 text-right text-xs font-medium tabular-nums text-foreground">
+                {formatAdminUsd(row.cost)}
+              </span>
+              <span className="relative w-20 shrink-0 text-right text-xs font-medium tabular-nums text-foreground">
+                {formatAdminPoints(row.cost)}
               </span>
               {href ? (
                 <Link
@@ -304,8 +315,11 @@ function ParetoCard({
           <span className="w-10 shrink-0 text-right tabular-nums">
             {formatPercentFromFraction(total > 0 ? cut.restCost / total : 0)}
           </span>
-          <span className="w-16 shrink-0 text-right tabular-nums">
-            {usd(cut.restCost, unit)}
+          <span className="w-20 shrink-0 text-right tabular-nums">
+            {formatAdminUsd(cut.restCost)}
+          </span>
+          <span className="w-20 shrink-0 text-right tabular-nums">
+            {formatAdminPoints(cut.restCost)}
           </span>
           <span className="h-3 w-3 shrink-0" aria-hidden />
         </li>

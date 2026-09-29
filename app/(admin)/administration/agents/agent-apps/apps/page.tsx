@@ -30,6 +30,7 @@ import {
   formatPercentFromFraction,
 } from "@ai-matrx/kit/format";
 import { Cost } from "@/components/cost/Cost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import {
   fetchAgentAppsAdmin,
   updateAgentAppAdmin,
@@ -266,16 +267,7 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
     mobileHidden: true,
     cell: (app) => formatPercentFromFraction(app.success_rate),
   },
-  {
-    id: "cost",
-    header: "Cost (USD · points)",
-    accessorKey: "total_cost",
-    filter: "number",
-    width: 190,
-    className: "text-right tabular-nums",
-    mobileHidden: true,
-    cell: (app) => <Cost usd={app.total_cost} />,
-  },
+  ...adminCostColumns<AgentAppAdminView>({ id: "cost", value: (app) => app.total_cost, mobileHidden: true }),
   {
     id: "updated",
     header: "Updated",

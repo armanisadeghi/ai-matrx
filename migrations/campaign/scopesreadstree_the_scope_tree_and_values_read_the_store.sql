@@ -384,11 +384,23 @@ declare
   v_rows   jsonb;
   v_levels jsonb;
 begin
-  -- SCOPES-READS-TREE: read from the record store. WHO SEES WHAT is the store's one ladder
-  -- (custom.levels_of), asked for every scope before any is named. DD-112 / CUT-30: membership of
-  -- the organization no longer gates the list ahead of it — a scope shared with somebody outside
-  -- is listed for her; a stranger with nothing shared is refused as before.
-  v_member := (auth.role() = 'service_role' or iam.has_org_access(p_org_id)) is true;
+  -- SCOPES-READS-TREE: read from the record store. WHO SEES WHAT is the store's own two
+  -- questions, asked exactly as custom.read_record and custom.resolve_context ask them: the
+  -- organization's wall (custom.assert_client_may_reach — a member, or somebody the organization
+  -- admits from outside: a portal principal, a class member), then the one ladder
+  -- (custom.levels_of) for every scope before any is named. DD-112 / CUT-30: plain membership no
+  -- longer gates the list ahead of the ladder — whoever the store admits from outside is listed
+  -- what was shared with her; an archived organization and a stranger are refused as before.
+  v_member := auth.role() = 'service_role';
+  if not v_member then
+    begin
+      perform custom.assert_client_may_reach(p_org_id, 'public.get_scope_tree');
+    exception when insufficient_privilege or null_value_not_allowed then
+      raise exception 'not authorized for this organization' using errcode = '42501',
+              detail = jsonb_build_object('org_id', p_org_id)::text;
+    end;
+    v_member := (iam.has_org_access(p_org_id)) is true;
+  end if;
   select coalesce(jsonb_agg(jsonb_build_object(
            'id', s.id, 'ts', s.type_sort, 'so', s.sort_order, 'n', s.name,
            'doc', s.row_doc || jsonb_build_object(
@@ -506,9 +518,15 @@ begin
     return '{}'::jsonb;
   end if;
 
-  -- THE MEMBRANE: the store's one ladder, the answer custom.read_record reads.
+  -- THE MEMBRANE: the store's own two questions, as custom.read_record asks them — the
+  -- organization's wall, then the one ladder.
   if auth.role() is distinct from 'service_role' then
-    v_levels := custom.levels_of(auth.uid(), array[p_scope_id]);
+    begin
+      perform custom.assert_client_may_reach(v_scope.organization_id, 'public.get_scope_context');
+      v_levels := custom.levels_of(auth.uid(), array[p_scope_id]);
+    exception when insufficient_privilege or null_value_not_allowed then
+      v_levels := '{}'::jsonb;
+    end;
     if not coalesce((v_levels -> (p_scope_id::text) ->> 's')::boolean, false) then
       raise exception '%', format('You do not have access to "%s". Ask someone who can already open it to share it with you.',
                                   v_scope.data ->> 'name')
@@ -600,6 +618,8 @@ begin
                (e ->> 'ts')::int as type_sort, e ->> 'n' as name, e -> 'td' as td, e -> 'p' as parent_scope_id
           from jsonb_array_elements(v_scopes) e
          where coalesce((v_levels -> (e ->> 'id') ->> 's')::boolean, false)
+           -- the organization's wall for that person (an archived organization is closed)
+           and iam.has_org_access_for(v_uid, (e ->> 'o')::uuid)
     ),
     org_scope_types as (
         select t.organization_id,

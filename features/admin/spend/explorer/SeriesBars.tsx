@@ -15,6 +15,7 @@ import { usd } from "../format";
 import type { SpendSeriesPoint } from "../types";
 import { shortLocal } from "./labels";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 
 export interface SeriesBarsProps {
   points: SpendSeriesPoint[];
@@ -27,7 +28,7 @@ export function SeriesBars({
   granularity,
   onPickDay,
 }: SeriesBarsProps) {
-  const { unit, format: formatCostDisplay } = useCostDisplay();
+  const { unit } = useCostDisplay();
   const peak = points.reduce((max, p) => Math.max(max, p.cost), 0);
   if (points.length === 0 || peak <= 0) {
     return (
@@ -98,7 +99,7 @@ export function SeriesBars({
             >
               {i === peakIndex ? (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold tabular-nums text-foreground">
-                  {formatCostDisplay(peak, { short: true })}
+                  {formatAdminCost(peak, { short: true })}
                 </span>
               ) : null}
               {clickable ? (

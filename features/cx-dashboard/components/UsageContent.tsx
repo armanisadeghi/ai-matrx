@@ -12,8 +12,8 @@ import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
 import { formatTokens, formatDuration } from "@/features/cx-dashboard/utils/format";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import { formatAdminUsdAxisTick } from "@/components/cost/formatAdminCost";
+import { formatAdminCost, formatAdminUsdAxisTick } from "@/components/cost/formatAdminCost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { buildCxSourcePageExportConfig } from "@/features/cx-dashboard/utils/export";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -37,7 +37,7 @@ const COLORS = [
 
 export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
   const router = useRouter();
-  const { format: formatCostDisplay } = useCostDisplay();
+  const formatCostDisplay = formatAdminCost;
 
   const totalCost = analytics.by_model.reduce((sum, m) => sum + m.total_cost, 0);
   const totalTokens = analytics.by_model.reduce((sum, m) => sum + m.total_tokens, 0);
@@ -83,7 +83,7 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
     { accessorKey: "total_output_tokens", header: "Output tokens", align: "right", width: 120, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_output_tokens)}</span> },
     { accessorKey: "total_cached_tokens", header: "Cached", align: "right", width: 100, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_cached_tokens)}</span> },
     { accessorKey: "total_tokens", header: "Total tokens", align: "right", width: 120, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_tokens)}</span> },
-    { accessorKey: "total_cost", header: "Cost (USD · points)", align: "right", width: 180, className: "whitespace-nowrap", cell: (row) => <span className="font-mono font-medium whitespace-nowrap">{formatCostDisplay(row.total_cost)}</span> },
+    ...adminCostColumns<CxUsageAnalytics["by_model"][number]>({ id: "total_cost", value: (row) => row.total_cost }),
     { accessorKey: "avg_duration_ms", header: "Avg duration", align: "right", width: 110, className: "whitespace-nowrap", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{formatDuration(row.avg_duration_ms)}</span> },
     {
       id: "cost_share",

@@ -40,9 +40,8 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { CxKpiCard } from "@/features/cx-dashboard/components/CxKpiCard";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import { formatAdminUsdAxisTick } from "@/components/cost/formatAdminCost";
-import { Cost } from "@/components/cost/Cost";
+import { formatAdminCost, formatAdminUsdAxisTick } from "@/components/cost/formatAdminCost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import {
   formatTokens,
   formatDuration,
@@ -108,18 +107,11 @@ const toolUsageColumns: MatrxColumnDef<ToolUsageRow>[] = [
     width: 110,
     cell: (r) => <span>{formatDuration(Math.round(r.avg_duration_ms))}</span>,
   },
-  {
-    id: "total_cost",
-    accessorKey: "total_cost",
-    header: "Cost (USD · points)",
-    align: "right",
-    width: 190,
-    cell: (r) => <span className="font-mono"><Cost usd={r.total_cost} /></span>,
-  },
+  ...adminCostColumns<ToolUsageRow>({ id: "total_cost", value: (r) => r.total_cost }),
 ];
 
 export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
-  const { format: formatCostDisplay } = useCostDisplay();
+  const formatCostDisplay = formatAdminCost;
   const router = useRouter();
   const [clickedTool, setClickedTool] = useState<ToolUsageRow | null>(null);
 

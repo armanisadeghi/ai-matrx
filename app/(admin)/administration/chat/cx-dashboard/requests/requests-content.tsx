@@ -42,6 +42,7 @@ import {
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { Cost } from "@/components/cost/Cost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 
 type Props = {
   result: CxPaginatedResponse<CxUserRequest>;
@@ -290,18 +291,7 @@ export function RequestsContent({ result }: Props) {
           </span>
         ),
       },
-      {
-        id: "total_cost",
-        header: "Cost (USD · points)",
-        accessorFn: (r) => r.total_cost,
-        align: "right",
-        width: 190,
-        cell: (r) => (
-          <span className="block font-mono">
-            <Cost usd={r.total_cost} />
-          </span>
-        ),
-      },
+      ...adminCostColumns<CxUserRequest>({ id: "total_cost", value: (r) => r.total_cost }),
       {
         id: "duration",
         header: "Duration",

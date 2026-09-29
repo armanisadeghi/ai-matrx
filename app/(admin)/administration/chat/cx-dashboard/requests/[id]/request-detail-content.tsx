@@ -52,7 +52,7 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
-import { Cost } from "@/components/cost/Cost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 
 type Detail = {
   user_request: CxUserRequest;
@@ -110,16 +110,7 @@ const apiRequestColumns: MatrxColumnDef<CxRequest>[] = [
       <span className="font-mono">{formatTokens(r.cached_tokens)}</span>
     ),
   },
-  {
-    id: "cost",
-    header: "Cost (USD · points)",
-    accessorFn: (r) => r.cost,
-    align: "right",
-    width: 190,
-    cell: (r) => (
-      <span className="font-mono"><Cost usd={r.cost} /></span>
-    ),
-  },
+  ...adminCostColumns<CxRequest>({ id: "cost", value: (r) => r.cost }),
   {
     id: "api_duration_ms",
     accessorKey: "api_duration_ms",
@@ -325,7 +316,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
             </span>
             <CxCostVerificationModal verification={cost_verification}>
               <span className="text-sm font-semibold font-mono cursor-pointer hover:text-primary flex items-center gap-1">
-                <Cost usd={ur.total_cost} />
+                {formatAdminCost(ur.total_cost)}
                 {cost_verification.has_discrepancy ? (
                   <AlertTriangle className="w-3 h-3 text-amber-500" />
                 ) : (
@@ -510,7 +501,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                       <span>{formatTokens(tc.output_tokens)} out</span>
                     ) : null}
                     <span className="font-mono">
-                      <Cost usd={tc.cost_usd} />
+                      {formatAdminCost(tc.cost_usd)}
                     </span>
                     {tc.retry_count ? (
                       <span>retries: {tc.retry_count}</span>

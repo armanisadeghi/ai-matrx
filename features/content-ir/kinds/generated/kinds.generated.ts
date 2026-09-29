@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "f41b7e4266ec";
+export const KIND_REGISTRY_FINGERPRINT = "66541c8ebe62";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -3798,6 +3798,30 @@ export interface Mechanics {
 }
 
 /**
+ * The dated article that proves the candidate covers this angle, exactly as retrieved.
+ *  *
+ *  * Shared by 2 kinds (media_candidate_verdict, media_list_ranking_result).
+ */
+export interface MediaAnchor {
+  /**
+   * A working link to the article, as retrieved.
+   */
+  url: string;
+  /**
+   * The article's exact title as retrieved.
+   */
+  title: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * The real publication date, ISO-8601, as retrieved.
+   */
+  published_at: string;
+}
+
+/**
  * * From kind `media_chapters`.
  */
 export interface MediaChapter {
@@ -3817,6 +3841,42 @@ export interface MediaChapter {
    * Start offset as MM:SS or HH:MM:SS. The first chapter is always 00:00; offsets strictly increase and never reach the media's total duration.
    */
   start_hint: string;
+}
+
+/**
+ * The run summary: how many were asked for, researched, resolved and sent first.
+ *  *
+ *  * From kind `media_list_ranking_result`.
+ */
+export interface MediaListSummary {
+  /**
+   * What the list could not cover.
+   */
+  gaps?: string[];
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * How many candidates reached a verdict.
+   */
+  resolved: number;
+  /**
+   * How many good fits the person asked for (a ceiling, never a quota).
+   */
+  requested: number;
+  /**
+   * How many go out in the first wave.
+   */
+  first_wave: number;
+  /**
+   * How many candidates were researched to find them.
+   */
+  research_target?: number | null;
+  /**
+   * Why the research target is that multiple of the request.
+   */
+  multiplier_reason?: string | null;
 }
 
 /**
@@ -13126,34 +13186,55 @@ export interface MediaAsset {
 }
 
 /**
- * Kind `media_candidate_verdict` (registry v4).
+ * One researched candidate judged for one angle.
+ *  *
+ *  * Kind `media_candidate_verdict` (registry v5).
  */
 export interface MediaCandidateVerdict {
   /**
-   * Candidate identifier as supplied to the ranker.
+   * The candidate id exactly as supplied to the ranker.
    */
   id: string;
   /**
-   * Fit grade for this candidate against the announcement.
-   */
-  fit: "strong" | "possible" | "poor" | "insufficient_evidence";
-  /**
-   * 1-based rank; 0 means unranked.
+   * 1-based rank among the kept candidates; 0 for a cut.
    */
   rank: number;
-  __kind: "media_candidate_verdict";
   /**
-   * Plain-language justification for the fit grade and rank.
+   * The registered kind this payload is an instance of.
    */
-  reason: string;
+  __kind?: "media_candidate_verdict";
   /**
-   * Up to three concerns that limit the fit or reachability.
+   * The dated article that proves the fit; null when none was found.
    */
-  concerns: string[];
+  anchor?: MediaAnchor | null;
   /**
-   * Contact reachability status for this candidate.
+   * fit, soft_fit, research_needed or cut.
+   */
+  status: "fit" | "soft_fit" | "research_needed" | "cut";
+  /**
+   * What limits the fit or the reach.
+   */
+  concerns?: string[];
+  /**
+   * The specific reason this person, in plain words.
+   */
+  why_them: string;
+  /**
+   * Why they were cut; null unless status is cut.
+   */
+  cut_reason?: "wrong_beat" | "stale" | "duplicate" | "weak_evidence" | "unsafe_hook" | "filler" | null;
+  /**
+   * How to pitch them; null for research_needed and cut.
+   */
+  pitch_note?: string | null;
+  /**
+   * Whether they can actually be reached.
    */
   reachability: "confirmed" | "candidate_only" | "none" | "unknown";
+  /**
+   * Whether the contact address is verified.
+   */
+  contact_state: "verified" | "quarantined" | "unresolved";
 }
 
 /**
@@ -13171,40 +13252,23 @@ export interface MediaChapters {
 }
 
 /**
- * Kind `media_list_ranking_result` (registry v5).
+ * Every researched candidate for one angle, judged and ranked, with the run summary.
+ *  *
+ *  * Kind `media_list_ranking_result` (registry v6).
  */
 export interface MediaListRankingResult {
-  __kind: "media_list_ranking_result";
   /**
-   * One verdict per candidate supplied to the ranker.
+   * The registered kind this payload is an instance of.
    */
-  results: ({
-    /**
-     * Candidate identifier as supplied to the ranker.
-     */
-    id: string;
-    /**
-     * Fit grade for this candidate against the announcement.
-     */
-    fit: "strong" | "possible" | "poor" | "insufficient_evidence";
-    /**
-     * 1-based rank; 0 means unranked.
-     */
-    rank: number;
-    __kind: "media_candidate_verdict";
-    /**
-     * Plain-language justification for the fit grade and rank.
-     */
-    reason: string;
-    /**
-     * Up to three concerns that limit the fit or reachability.
-     */
-    concerns: string[];
-    /**
-     * Contact reachability status for this candidate.
-     */
-    reachability: "confirmed" | "candidate_only" | "none" | "unknown";
-  })[];
+  __kind?: "media_list_ranking_result";
+  /**
+   * One verdict per researched candidate.
+   */
+  results?: MediaCandidateVerdict[];
+  /**
+   * The run summary.
+   */
+  summary: MediaListSummary;
 }
 
 /**

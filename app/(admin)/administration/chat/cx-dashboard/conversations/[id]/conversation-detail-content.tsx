@@ -42,7 +42,7 @@ import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
-import { Cost } from "@/components/cost/Cost";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 
 const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
   ssr: false,
@@ -245,7 +245,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
                   <span>{ur.iterations} iter</span>
                   <span>{ur.total_tool_calls} tools</span>
                   <span className="font-mono">
-                    <Cost usd={ur.total_cost} />
+                    {formatAdminCost(ur.total_cost)}
                   </span>
                   <span className="text-muted-foreground">
                     {formatTokens(ur.total_tokens)} tok

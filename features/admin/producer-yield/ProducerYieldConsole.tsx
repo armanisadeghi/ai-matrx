@@ -16,7 +16,7 @@
  *   Unmeasurable — spends money, no acceptance signal wired at all.
  *   Unmeasured   — outcomes exist, nobody has ever decided one. NOT 0%.
  *   Measured     — the rate is real, and 0% here is a genuine failure.
- * Every number is rendered through `formatRate` / `<Cost>` / `formatCount`,
+ * Every number is rendered through `formatRate` / `formatAdminCost` / `formatCount`,
  * which return an em dash for null. Never write `?? 0` in this file.
  *
  * THE DOOR LAW (common-docs/policies/no-dead-ends.md): every producer row links
@@ -59,8 +59,8 @@ import {
   type ProducerYieldRow,
 } from "./types";
 import { readOf } from "@/components/read-state/ReadGate";
-import { Cost } from "@/components/cost/Cost";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 
 const TONE_CLASS: Record<string, string> = {
   critical:
@@ -150,7 +150,7 @@ function StatCard({
 export function ProducerYieldConsole() {
   const params = useSearchParams();
   const focused = params?.get("producer") ?? null;
-  const { format: formatCostDisplay } = useCostDisplay();
+  const formatCostDisplay = formatAdminCost;
 
   const [checking, setChecking] = useState(false);
   const [showIdle, setShowIdle] = useState(false);
@@ -257,30 +257,9 @@ export function ProducerYieldConsole() {
       width: 100,
       cell: (row) => <YieldCell row={row} />,
     },
-    {
-      id: "cost_usd",
-      accessorKey: "cost_usd",
-      header: "Spend (USD · points)",
-      filter: "number",
-      width: 190,
-      cell: (row) => <span className="tabular-nums"><Cost usd={row.cost_usd} /></span>,
-    },
-    {
-      id: "cost_per_accepted_usd",
-      accessorKey: "cost_per_accepted_usd",
-      header: "Per accepted",
-      filter: "number",
-      width: 190,
-      cell: (row) => <span className="tabular-nums"><Cost usd={row.cost_per_accepted_usd} /></span>,
-    },
-    {
-      id: "cost_per_produced_usd",
-      accessorKey: "cost_per_produced_usd",
-      header: "Per produced",
-      filter: "number",
-      width: 190,
-      cell: (row) => <span className="tabular-nums text-muted-foreground"><Cost usd={row.cost_per_produced_usd} /></span>,
-    },
+    ...adminCostColumns<ProducerYieldRow>({ id: "cost_usd", value: (row) => row.cost_usd, label: "Spend" }),
+    ...adminCostColumns<ProducerYieldRow>({ id: "cost_per_accepted_usd", value: (row) => row.cost_per_accepted_usd, label: "Per accepted" }),
+    ...adminCostColumns<ProducerYieldRow>({ id: "cost_per_produced_usd", value: (row) => row.cost_per_produced_usd, label: "Per produced" }),
     {
       id: "actions",
       header: "Actions",
@@ -366,7 +345,7 @@ export function ProducerYieldConsole() {
           nothing has been decided after{" "}
           <strong>{floors.never_decided_min_age_days} days</strong>; alarm when a
           producer with no acceptance signal has spent{" "}
-          <strong><Cost usd={floors.no_signal_min_cost_usd} /></strong>. Below the sample
+          <strong>{formatAdminCost(floors.no_signal_min_cost_usd)}</strong>. Below the sample
           floor there is no verdict at all — a 0-of-3 yield is noise with a decimal
           point.
         </p>

@@ -46,8 +46,8 @@ import { isUuidValue } from "@/components/official/entity-ref/doors";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { humanAgentApp } from "@/features/agent-apps/format";
 import { UNKNOWN_DISPLAY, formatCount, formatDurationMs, formatPercentFromFraction, isKnownNumber, safeRatio } from "@ai-matrx/kit/format";
-import { Cost } from "@/components/cost/Cost";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
@@ -151,15 +151,7 @@ export const ANALYTICS_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
         fallback: UNKNOWN_DISPLAY,
       }),
   },
-  {
-    id: "cost",
-    header: "Cost (USD · points)",
-    accessorKey: "total_cost",
-    filter: "number",
-    width: 190,
-    className: "text-right tabular-nums",
-    cell: (app) => <Cost usd={app.total_cost} />,
-  },
+  ...adminCostColumns<AgentAppAdminView>({ id: "cost", value: (app) => app.total_cost }),
   {
     id: "tokens",
     header: "Tokens",
@@ -230,7 +222,7 @@ export default function AgentAppsAnalyticsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [viewApps, setViewApps] = useState<AgentAppAdminView[]>([]);
   const { toast } = useToast();
-  const { format: formatCostDisplay } = useCostDisplay();
+  const formatCostDisplay = formatAdminCost;
   const tableQuery = useTableUrlState({
     tableId: "admin-agent-apps-analytics",
     defaultSort: { id: "executions", direction: "desc" },

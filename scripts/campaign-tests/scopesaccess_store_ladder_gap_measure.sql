@@ -44,7 +44,7 @@ create temp table g_pair on commit drop as
               order by u.id limit 1)) a
    where s.created_at <= :'world_until'::timestamptz;
 
-create temp table g_ans (scope_id uuid, seat uuid, why text, old_open boolean, old_edit boolean, new_open boolean, new_edit boolean) on commit drop;
+create temp table g_ans (scope_id uuid, seat uuid, why text, old_open boolean, old_edit boolean, new_open boolean, new_edit boolean, member boolean) on commit drop;
 
 do $m$
 declare p record; v_oo boolean; v_oe boolean; v_no boolean; v_ne boolean;
@@ -61,7 +61,9 @@ begin
     select (iam.has_org_access(p.org) or custom.portal_admits(p.org)) into v_no;
     v_ne := v_no and coalesce(custom.has_visibility(p.seat, 'record', p.scope_id, 'editor'), false);
     v_no := v_no and coalesce(custom.has_visibility(p.seat, 'record', p.scope_id, 'viewer'), false);
-    insert into g_ans values (p.scope_id, p.seat, p.why, v_oo, v_oe, v_no, v_ne);
+    insert into g_ans values (p.scope_id, p.seat, p.why, v_oo, v_oe, v_no, v_ne,
+      exists (select 1 from iam.memberships m where m.container_type = 'organization' and m.container_id = p.org
+               and m.user_id = p.seat and m.status = 'active' and m.deleted_at is null));
   end loop;
 end $m$;
 
@@ -82,6 +84,29 @@ select why, count(*) as pairs,
   from g_ans a join context.scopes s on s.id = a.scope_id
  where s.scope_type_id in (select id from context.scope_types where slug = 'class')
  group by why order by why;
+\echo '── every difference, by its cause (chair ruling 2026-09-29: causes 1 and 2 are accepted; any other cause is not)'
+with d as (
+  select a.*, s.organization_id as org,
+         (s.organization_id in (select iam.archived_org_ids())) as org_archived,
+         (not iam.member_lane_open(s.organization_id)) as shared_only,
+         (s.organization_id in (select so.organization_id from iam.system_orgs so where so.global_readable)) as global_readable
+    from g_ans a join context.scopes s on s.id = a.scope_id
+   where a.old_open <> a.new_open or a.old_edit <> a.new_edit)
+select case
+         when org_archived then '1 accepted: the organization is archived (the platform''s archive wall)'
+         when shared_only and member then '2 accepted: the organization shows members only what is shared with them'
+         when not member and global_readable then '3 NOT covered: a global-readable system organization, read by a non-member'
+         when not member and why = 'creator' then '4 NOT covered: the scope''s creator is no longer a member (the organization wall)'
+         when not member then '5 NOT covered: a non-member (the organization wall)'
+         when old_open = new_open and old_edit and not new_edit then '6 NOT covered: a member may edit it today; the store''s member level is viewer'
+         else '7 NOT covered: other'
+       end as cause,
+       count(*) as pairs,
+       count(*) filter (where old_open and not new_open) as loses_open,
+       count(*) filter (where old_edit and not new_edit) as loses_edit,
+       count(*) filter (where new_open and not old_open) + count(*) filter (where new_edit and not old_edit) as gains,
+       count(distinct org) as organizations
+  from d group by 1 order by 1;
 \echo '── by organization (where anything differs)'
 select o.name, platform.knob_resolve('custom', 'member_default_visibility', o.id) #>> '{}' as member_default_visibility,
        iam.member_default_level(o.id, null)::text as member_default_level, count(*) as pairs,

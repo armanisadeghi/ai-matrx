@@ -15,8 +15,8 @@ import { ExternalLink } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
-import { timestamp, usd } from "../format";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { timestamp } from "../format";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import type { SpendDimension, SpendRequestRow } from "../types";
 import { compactNumber } from "./labels";
 import { formatPercentFromFraction } from "@ai-matrx/kit/format";
@@ -52,7 +52,6 @@ export function TopRequestsTable({
   rows: SpendRequestRow[];
   onDrill: (dim: SpendDimension, key: string) => void;
 }) {
-  const { unit } = useCostDisplay();
   const columns: MatrxColumnDef<SpendRequestRow>[] = [
     {
       id: "at",
@@ -68,18 +67,7 @@ export function TopRequestsTable({
         </span>
       ),
     },
-    {
-      id: "cost",
-      header: "Cost",
-      accessorFn: (r) => r.cost,
-      filter: "number",
-      defaultSortDirection: "desc",
-      width: 90,
-      align: "right",
-      cell: (r) => (
-        <span className="tabular-nums font-medium">{usd(r.cost, unit)}</span>
-      ),
-    },
+    ...adminCostColumns<SpendRequestRow>({ id: "cost", value: (r) => r.cost }),
     {
       id: "share",
       header: "Share",

@@ -26,6 +26,7 @@ import {
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { formatCount } from "@ai-matrx/kit/format";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { readOf } from "@/components/read-state/ReadGate";
 
 type Timeframe = "all" | "30d" | "7d" | "24h";
@@ -246,19 +247,7 @@ export function UsageTableClient() {
         ),
         width: 110,
       },
-      {
-        id: "total_cost",
-        accessorKey: "total_cost",
-        header: "Cost (USD · points)",
-        filter: "number",
-        align: "right",
-        cell: (r) => (
-          <span className="tabular-nums text-sm font-medium">
-            {fmtCost(r.total_cost)}
-          </span>
-        ),
-        width: 180,
-      },
+      ...adminCostColumns<AdminUserUsageRow>({ id: "total_cost", value: (r) => r.total_cost }),
       {
         id: "distinct_models",
         accessorKey: "distinct_models",

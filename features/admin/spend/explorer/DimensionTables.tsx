@@ -26,6 +26,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { timestamp, usd } from "../format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import {
   SPEND_DIMENSIONS,
   type SpendBreakdown,
@@ -39,7 +40,7 @@ import {
   identityHref,
   rowLabel,
 } from "./labels";
-import { formatCount, formatPercentFromFraction, type CostUnit } from "@ai-matrx/kit/format";
+import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 function ShareBar({ share }: { share: number }) {
   return (
@@ -60,7 +61,6 @@ function ShareBar({ share }: { share: number }) {
 function columnsFor(
   dim: SpendDimension,
   onDrill: (dim: SpendDimension, key: string) => void,
-  unit: CostUnit,
 ): MatrxColumnDef<SpendDimensionRow>[] {
   return [
     {
@@ -97,18 +97,7 @@ function columnsFor(
         );
       },
     },
-    {
-      id: "cost",
-      header: "Cost",
-      accessorFn: (r) => r.cost,
-      filter: "number",
-      defaultSortDirection: "desc",
-      width: 100,
-      align: "right",
-      cell: (r) => (
-        <span className="tabular-nums font-medium">{usd(r.cost, unit)}</span>
-      ),
-    },
+    ...adminCostColumns<SpendDimensionRow>({ id: "cost", value: (r) => r.cost }),
     {
       id: "share",
       header: "Share",
@@ -117,32 +106,8 @@ function columnsFor(
       width: 120,
       cell: (r) => <ShareBar share={r.share} />,
     },
-    {
-      id: "manual",
-      header: "Manual",
-      accessorFn: (r) => r.manualCost,
-      filter: "number",
-      width: 100,
-      align: "right",
-      cell: (r) => (
-        <span className="tabular-nums text-muted-foreground">
-          {usd(r.manualCost, unit)}
-        </span>
-      ),
-    },
-    {
-      id: "automated",
-      header: "Automated",
-      accessorFn: (r) => r.automatedCost,
-      filter: "number",
-      width: 100,
-      align: "right",
-      cell: (r) => (
-        <span className="tabular-nums text-muted-foreground">
-          {usd(r.automatedCost, unit)}
-        </span>
-      ),
-    },
+    ...adminCostColumns<SpendDimensionRow>({ id: "manual", label: "Manual", value: (r) => r.manualCost }),
+    ...adminCostColumns<SpendDimensionRow>({ id: "automated", label: "Automated", value: (r) => r.automatedCost }),
     {
       id: "requests",
       header: "Requests",
@@ -156,19 +121,7 @@ function columnsFor(
         </span>
       ),
     },
-    {
-      id: "per_request",
-      header: "Per request",
-      accessorFn: (r) => (r.requests > 0 ? r.cost / r.requests : 0),
-      filter: "number",
-      width: 100,
-      align: "right",
-      cell: (r) => (
-        <span className="tabular-nums text-muted-foreground">
-          {r.requests > 0 ? usd(r.cost / r.requests, unit) : "—"}
-        </span>
-      ),
-    },
+    ...adminCostColumns<SpendDimensionRow>({ id: "per_request", label: "Per request", value: (r) => r.requests > 0 ? r.cost / r.requests : null }),
     {
       id: "tokens_in",
       header: "Input tokens",
@@ -285,7 +238,7 @@ export function DimensionTables({
                   defaultSort: { id: "cost", direction: "desc" },
                 }}
                 data={d.rows}
-                columns={columnsFor(dim, onDrill, unit)}
+                columns={columnsFor(dim, onDrill)}
                 getRowId={(r) => r.key}
                 pageSize={15}
                 emptyState={{ title: "Nothing in this window." }}

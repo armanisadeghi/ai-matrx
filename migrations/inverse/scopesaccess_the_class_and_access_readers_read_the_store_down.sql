@@ -1,6 +1,32 @@
 -- INVERSE of migrations/campaign/scopesaccess_the_class_and_access_readers_read_the_store.sql (lane SCOPES-READS-ACCESS).
 -- chair-step: puts back the 25 class / access readers and the two kernel expectations exactly as production held them (reading context.scopes), then drops the helpers and the composite type the up made.
-@BASEDON@
+-- based-on: public.edu_class_approve(uuid, uuid) 171a983c870e0df36f86536a2a2323e6692b983b7d00374dc642a64fe33717a3
+-- based-on: public.edu_class_assign(uuid, text, uuid, date) 467655849cccbff0b2c8db9fe56c803ee90e7ff0fd90f7d63b27e5390d5204ef
+-- based-on: public.edu_class_assignments(uuid) 97386a42713f711ff291f9eaf8f4805b7a3d1671e96d118e26b07967f4221aae
+-- based-on: public.edu_class_confer_purchase(uuid, uuid) 7f0dc4fb2319be757474412133507a9a5305b113ef0324c891a44b97688ee664
+-- based-on: public.edu_class_grant(uuid, uuid) cedb39cac29d01a30bc27f2f05822bd444043d581ce818d1610f7f4ba60881ed
+-- based-on: public.edu_class_join(uuid) 8d0c825bd728e9c7fe1b32c9abbde29f6e4fd22825d3ec762404caa4b2f08dc4
+-- based-on: public.edu_class_leave(uuid) 10508d9218c66f9f9e59381e870c8cf5d4407a0a9ecf98399beaa23871ecfd34
+-- based-on: public.edu_class_progress_overview(uuid) f80404db6c01145cb8bf221d18da24d0a6d2035b20234599f2f9a2be9fd53503
+-- based-on: public.edu_class_remove(uuid, uuid) 6966a0dd5feb934b0c57ea89d5b1e651993511c6258b33d57780f736506fde1e
+-- based-on: public.edu_class_request(uuid) b85188eaa0afea9aebad6905d72baf951cc007e22ec6880ccaab0fd0b790f9ad
+-- based-on: public.edu_class_revoke_purchase(uuid, uuid) fad3919544d3d815f41ad4217448f7f44f364660ee42b7b623ffee405b9ee958
+-- based-on: public.edu_class_roster(uuid) 5c09e482e1d62f3d54659b67ec5c680645401497eccf169eb2b86c51d94049dc
+-- based-on: public.edu_class_state(uuid) 694be34bf1d4efa8b7c2565fb9a1719a01e2d186f808baf0c32d1d9262a3bdeb
+-- based-on: public.edu_class_student_progress(uuid, uuid) 7191adfdda94dcabe3218f5d9efd0b0b72ddbade19cdca21e130092318e59605
+-- based-on: public.edu_class_unassign(uuid, text, uuid) eac72955c50beff5c8c314173deca662bb31345ed776267afdd4c95cb89d9ece
+-- based-on: public.edu_class_join_code(uuid, text) 936ce0a6961f4ff95957e81b4bdcf65c3e68b2568b699fa8452b815dcf945510
+-- based-on: public.edu_class_set_access(uuid, text) cfe85999045aed0d3f7730e9ac080d4a2db57ac99d6d7f97f3cb2a55087bd125
+-- based-on: public.edu_class_by_code(text) 4eafdf164fca7eecf9614611ff43ba7d07013dacc08d00eff47dd2cabf3295e1
+-- based-on: public.edu_class_join_by_code(text) 7725bc6084285cb0b91d7a2c9d520578cb1cf3e7190692395d825cb94dfc9709
+-- based-on: public._edu_generate_join_code() 50f47d058b8813351799a11dcaf5407a6ddd39e65676337d75f8b790a9f94b0d
+-- based-on: public.edu_my_classes() 762d2368fade3d07cd6ec5596252fb1e06768b10a942c2b5b8b858584a579eac
+-- based-on: public.creator_public_page(text) c5ffb7c1d949b8bfa9a8fe4578b9c00e0ec6237c6b48e003422daca2e22ba0a5
+-- based-on: public.inv_get_by_token(text) 004ab4340c6165482f3af6ed0745db7c12fcbdb79d89c960ebd0948f658f9c5a
+-- based-on: iam._container_authz(text, uuid, uuid, boolean) 5ae62f200c6f6f7ec0d293c2ff32d56c6af676addd3151ce0218cf3b881142f2
+-- based-on: platform.entity_row_access_attrs(text, text, uuid) 03bd2aa16c22bf3f3b85fdc35885580fbf6dc16880024c5276af020213d4a326
+-- based-on: iam.entity_read_kernel_expected() 6481b9ca9bf6a8655c43e9125e7ddb2a1353fb35742fd663b97e5b3c42c6d9ad
+-- based-on: iam.entity_read_kernel_members_expected() f66d4b1c93e1f023459476a1063b7d74d222bfd1534d635c8d6e650cd9e432d1
 
 CREATE OR REPLACE FUNCTION public.edu_class_approve(p_class uuid, p_user uuid)
  RETURNS jsonb
@@ -1087,6 +1113,10 @@ CREATE OR REPLACE FUNCTION iam.entity_read_kernel_members_expected()
 AS $function$
   SELECT '{"members": {"files.is_crawl_artifact(p_file_id uuid)": "7eb586213cedff72ee4abb4dd60a0433", "iam.candidate_admits(p_type text, p_id uuid)": "aaafd2a1d1fb3e3579c326fe11d70cac", "iam.accessible_entity_candidates(p_type text)": "ff4a1d407ed7e37438cb773f0d5ce80e", "iam.accessible_child_parents(p_child_type text)": "97be40a64243f6225d0eadfb82e33827", "iam.has_org_access_for(p_user_id uuid, p_org uuid)": "05abb4362cb28aa7d775eedf975889f9", "public.is_pack_curator(p_user uuid, p_pack_id uuid)": "5e6f2b3c9c4f0f9011655974ef1532b7", "public.is_org_admin_for(p_user_id uuid, p_org_id uuid)": "ac5072f5e23eb0dfffb7ef05e9899ad4", "files.crawl_site_conveys(p_user_id uuid, p_file_id uuid)": "5fadac4e0d1ad31e788cdb446422d8fc", "public._edu_can_read_via_assignment(p_type text, p_id uuid)": "d97bbb3323238c5b8afb88e3e6337434", "public.is_rulebook_curator(p_user uuid, p_rulebook_id uuid)": "b781c4c0210974d680f53a603cb723aa", "public.library_is_open(p_entity_type text, p_entity_id uuid)": "36c934bb956df459e334c15085aacd30", "public.user_can_read_data_store_via_grant(p_user uuid, p_store uuid)": "63b3fd7f798351c9c8e7517fcfedc3fc", "public._edu_can_read_via_assignment(p_user_id uuid, p_type text, p_id uuid)": "a0d7ac13ea23ec81b8eb15bbb87e3cbb", "public.user_can_read_via_library_grant(p_user uuid, p_type text, p_id uuid)": "a49b44fa2f0de5d3aecace9d950f49e4", "files.has_access_for(p_user_id uuid, p_file_id uuid, p_required permission_level)": "d324b5143d4172b0a6b8b8188930ff7b", "iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer)": "9fe155aa00093efd6fc9c89ab94b8479", "iam.has_access_for(p_user_id uuid, p_type text, p_id uuid, p_required permission_level)": "c7e2eec401c991f06be4bf28453548e5", "iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level)": "e37fdacb359b9a528d7aef6b2bfb5270", "iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer, p_include_public boolean)": "661718136aea523e98df23cd561d5308", "iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level, p_include_public boolean)": "e6b147f6962003e0dc2c8b826ef4ee06", "public.has_permission_for(p_user_id uuid, p_resource_type text, p_resource_id uuid, p_required_permission permission_level)": "9dc1eecf01de31f4db0b0e07b1665a2b", "iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level, p_include_public boolean, p_path text[])": "746f0149143475d84be45497155a7b27", "platform.entity_row_access_attrs(p_schema text, p_table text, p_id uuid, OUT o_vis platform.visibility, OUT o_owner uuid, OUT o_org uuid, OUT o_found boolean)": "4cab0999cad6cee27fa4c6804d2f0955"}, "fingerprint": "b4faece590847dcca4ab549d8938dceb"}'::jsonb
 $function$;
+
+-- The three door rows the up declared (the bodies above are the ones production held without them).
+delete from platform.client_callable_door
+ where declared_by = 'migrations/campaign/scopesaccess_the_class_and_access_readers_read_the_store.sql (lane SCOPES-READS-ACCESS)';
 
 -- The helpers this file made (nothing else calls them once the bodies above are back).
 drop function public._edu_ensure_owner_membership(public._edu_class_row);

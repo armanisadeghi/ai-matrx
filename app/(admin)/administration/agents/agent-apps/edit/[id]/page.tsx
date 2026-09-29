@@ -26,7 +26,7 @@ import {
   type AgentAppAdminEditView,
 } from "@/features/agent-apps/format";
 import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { AgentAppAdminActions } from "@/features/agent-apps/components/AgentAppAdminActions";
 import { AgentAppEditor } from "@/features/agent-apps/components/AgentAppEditor";
 import { UpdateAgentAppModal } from "@/features/agent-apps/components/UpdateAgentAppModal";
@@ -90,7 +90,7 @@ export default function AdminEditAgentAppPage({
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const { format: formatCostDisplay } = useCostDisplay();
+  const formatCostDisplay = formatAdminCost;
   const [isPending, startTransition] = useTransition();
 
   const [app, setApp] = useState<AgentAppAdminView | null>(null);

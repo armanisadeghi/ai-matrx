@@ -24,6 +24,7 @@
  *   end                → status change only
  */
 
+import { displayNameFromToolData } from "@/features/tool-call-visualization/utils/toolDisplayName";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   ActiveRequest,
@@ -836,6 +837,8 @@ const activeRequestsSlice = createSlice({
         ) {
           existing.arguments = args;
         }
+        const namedAs = displayNameFromToolData(data);
+        if (namedAs) existing.displayName = namedAs;
         if (message !== undefined) existing.latestMessage = message ?? null;
         if (data !== undefined) existing.latestData = data ?? null;
         if (result !== undefined) existing.result = result;
@@ -854,7 +857,7 @@ const activeRequestsSlice = createSlice({
           toolName,
           // Streamed events carry the canonical name; as-called is backfilled
           // when the conversation is reloaded from cx_tool_call.tool_name_as_called.
-          displayName: toolName,
+          displayName: displayNameFromToolData(data) ?? toolName,
           status,
           arguments: args ?? {},
           startedAt: now,

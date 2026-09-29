@@ -16,6 +16,8 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { timestamp, usd } from "../format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { adminCostPoints, formatAdminPoints, formatAdminUsd } from "@/components/cost/formatAdminCost";
 import type { SpendBreakdown, SpendDimension } from "../types";
 import { compactNumber, shortLocal } from "./labels";
 import { formatPercentFromFraction } from "@ai-matrx/kit/format";
@@ -417,6 +419,18 @@ export function DigHerePanel({
     },
   ];
 
+  for (const spec of specs) {
+    const costIndex = spec.columns.indexOf("Cost");
+    if (costIndex < 0) continue;
+    spec.columns.splice(costIndex, 1, "Cost (USD)", "Points");
+    spec.numeric.splice(costIndex + 1, 0, true);
+    for (const row of spec.rows) {
+      const cost = row.values[costIndex] as number;
+      row.values.splice(costIndex + 1, 0, adminCostPoints(cost) ?? 0);
+      row.cells.splice(costIndex, 1, formatAdminUsd(cost), formatAdminPoints(cost));
+    }
+  }
+
   specs.sort((a, b) => b.cost - a.cost);
 
   const summaryColumns: MatrxColumnDef<SignalSpec>[] = [
@@ -440,29 +454,7 @@ export function DigHerePanel({
         </div>
       ),
     },
-    {
-      id: "cost",
-      header: "Cost",
-      accessorFn: (spec) => spec.cost,
-      filter: "number",
-      defaultSortDirection: "desc",
-      width: 100,
-      align: "right",
-      cell: (spec) => {
-        const share = total > 0 ? spec.cost / total : 0;
-        return (
-          <span
-            className={`whitespace-nowrap font-medium tabular-nums ${share >= 0.25 ? "text-destructive" : ""}`}
-          >
-            {spec.key === "unpriced"
-              ? "—"
-              : spec.n === 0
-                ? "none"
-                : usd(spec.cost, unit)}
-          </span>
-        );
-      },
-    },
+    ...adminCostColumns<SignalSpec>({ id: "cost", value: (spec) => spec.key === "unpriced" || spec.n === 0 ? null : spec.cost }),
     {
       id: "share",
       header: "Share",

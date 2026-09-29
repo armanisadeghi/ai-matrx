@@ -35,6 +35,7 @@ import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { formatCount, formatDurationMs, type CostUnit } from "@ai-matrx/kit/format";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { Cost } from "@/components/cost/Cost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
@@ -291,15 +292,7 @@ export const EXECUTION_COLUMNS: MatrxColumnDef<AgentAppExecutionRow>[] = [
     width: 100,
     cell: (row) => formatCount(row.tokens_used),
   },
-  {
-    id: "cost",
-    header: "Cost (USD · points)",
-    accessorFn: (row) => row.cost ?? null,
-    filter: "number",
-    align: "right",
-    width: 190,
-    cell: (row) => <Cost usd={row.cost} />,
-  },
+  ...adminCostColumns<AgentAppExecutionRow>({ id: "cost", value: (row) => row.cost }),
   {
     id: "duration",
     header: "Time",

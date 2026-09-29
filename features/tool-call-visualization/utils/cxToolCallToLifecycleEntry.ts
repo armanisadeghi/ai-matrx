@@ -16,6 +16,7 @@ import type {
   ToolLifecycleEntry,
 } from "@/features/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+import { displayNameFromToolEvents } from "./toolDisplayName";
 
 function parseOutput(raw: string | null): unknown {
   if (!raw) return null;
@@ -79,7 +80,8 @@ export function cxToolCallToLifecycleEntry(
   const entry: ToolLifecycleEntry = {
     callId: record.callId,
     toolName: record.toolName,
-    displayName: record.toolNameAsCalled ?? record.toolName,
+    displayName:
+      displayNameFromToolEvents(events) ?? record.toolNameAsCalled ?? record.toolName,
     status: deriveStatus(record),
     arguments:
       record.arguments &&

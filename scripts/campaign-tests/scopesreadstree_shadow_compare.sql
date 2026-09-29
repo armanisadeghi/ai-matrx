@@ -29,8 +29,13 @@
 --      the old side;
 --   N6 DD-112: old refused (42501) a person outside the organization and new lists what was shared
 --      with her — counted as `dd112_listed`, not a mismatch (the planted share MUST land here).
---   N7 get_scope_context: a value's `updated_at` is compared to the second (the store keeps the
---      write time as an ISO string, the old side as timestamptz).
+--   N7 get_scope_context: a value's `updated_at` is the store's clock (N1); its version is compared.
+--   N9 the organization chose `shared_only` (custom/member_default_visibility): the store shows a
+--      plain member only what is shared with her; the old scope ACL ignored the knob. Counted as
+--      `org_shared_only` when the new answer is the old one less rows (or a refusal).
+--   N10 a current value row whose every value column is empty is no value (old listed it).
+--   `store_newer`: the store holds a later version of a value than the old image (a store write
+--      the image never received); counted, named, never fixed here (no row reconciliation).
 --   N8 a date or datetime value is compared as its one value, whichever of value_text / value_date /
 --      value_timestamp the old writer put it in (the store keeps the value, not the column; the
 --      server reads the first non-null column).
@@ -50,6 +55,8 @@
 \pset pager off
 begin;
 set local statement_timeout = 0;
+set local transaction_timeout = 0;
+set local idle_in_transaction_session_timeout = 0;
 set local lock_timeout = '120s';
 
 -- THE CLONE, NEVER PRODUCTION: the quarantine facts are never true of production.
@@ -114,6 +121,55 @@ update custom.record r set data = r.data || jsonb_build_object('name', (r.data -
 set local session_replication_role = origin;
 \echo PLANT: one Castellano & Reyes scope Record renamed inside this transaction
 \endif
+
+-- THE CLONE'S OWN LAG. Production pressed every organization onto the store-first writer
+-- (SCOPES-PRESS-EVERYONE, 2026-09-29 20:07Z); on this clone a few are still on the old writer
+-- (the undo rehearsal) and no follow runs here (quarantined), so their store copy trails what
+-- other lanes wrote to the clone since. For those organizations only, every old row is carried
+-- into the store here through the store's own halves (custom._ctx_bridge, the path every
+-- store-first write takes), inside this transaction; what refuses is counted and named.
+create temp table l6_catchup (organization_id uuid, kind text, row_id uuid, ok boolean, says text) on commit drop;
+do $catchup$
+declare o uuid; r record;
+begin
+  perform set_config('request.jwt.claims', '', true);
+  for o in select distinct st.organization_id from context.scope_types st
+            where st.deleted_at is null and custom.context_writer(st.organization_id) = 'old' loop
+    for r in select x.* from context.scope_types x where x.organization_id = o order by x.created_at, x.id loop
+      begin perform custom._ctx_bridge('scope_types', 'UPDATE', to_jsonb(r), o, r.id);
+            insert into l6_catchup values (o, 'scope_type', r.id, true, null);
+      exception when others then insert into l6_catchup values (o, 'scope_type', r.id, false, sqlerrm); end;
+    end loop;
+    for r in select ci.* from context.context_items ci join context.scope_types st on st.id = ci.scope_type_id
+              where st.organization_id = o order by ci.created_at, ci.id loop
+      begin perform custom._ctx_bridge('context_items', 'UPDATE', to_jsonb(r), o, r.scope_type_id);
+            insert into l6_catchup values (o, 'context_item', r.id, true, null);
+      exception when others then insert into l6_catchup values (o, 'context_item', r.id, false, sqlerrm); end;
+    end loop;
+    for r in with recursive d as (
+               select x.id, 0 as depth from context.scopes x where x.organization_id = o and x.parent_scope_id is null
+               union all
+               select c.id, d.depth + 1 from context.scopes c join d on c.parent_scope_id = d.id where d.depth < 20)
+             select x.*, d.depth from context.scopes x join (select id, min(depth) depth from d group by id) d on d.id = x.id
+             order by d.depth, x.created_at, x.id loop
+      begin perform custom._ctx_bridge('scopes', 'UPDATE', to_jsonb(r) - 'depth', o, r.scope_type_id);
+            insert into l6_catchup values (o, 'scope', r.id, true, null);
+      exception when others then insert into l6_catchup values (o, 'scope', r.id, false, sqlerrm); end;
+    end loop;
+    for r in select v.* from context.context_item_values v join context.scopes x on x.id = v.scope_id
+              where x.organization_id = o and v.is_current order by v.created_at, v.id loop
+      begin perform custom._ctx_bridge('context_item_values', 'UPDATE', to_jsonb(r), o, null);
+            insert into l6_catchup values (o, 'value', r.id, true, null);
+      exception when others then insert into l6_catchup values (o, 'value', r.id, false, sqlerrm); end;
+    end loop;
+  end loop;
+end
+$catchup$;
+\echo ==== THE CLONE LAG, carried for the organizations still on the old writer here
+select (select name from iam.organizations where id = organization_id) as organization, kind, count(*) filter (where ok) as carried, count(*) filter (where not ok) as refused
+  from l6_catchup group by 1, 2 order by 1, 2;
+select (select name from iam.organizations where id = organization_id) as organization, kind, left(says, 160) as refused_because, count(*)
+  from l6_catchup where not ok group by 1, 2, 3 order by 4 desc limit 10;
 
 -- THE SEATS.
 create temp table l6_seat on commit drop as
@@ -275,13 +331,26 @@ begin
       into v from jsonb_array_elements(v) with ordinality x(e, ord)
      where p_side = 'new' or not exists (select 1 from context.context_items ci where ci.id = (e ->> 'id')::uuid and ci.deleted_at is not null);
   elsif p_fn in ('get_scope_context', 'get_scope_context(empty)') then
+    -- N10: a current value row whose every value column is empty is no value.
+    if p_side = 'old' then
+      select coalesce(jsonb_agg(
+               case when (e -> 'value_text') = 'null' and (e -> 'value_number') = 'null' and (e -> 'value_boolean') = 'null'
+                         and (e -> 'value_json') = 'null' and (e -> 'value_date') = 'null' and (e -> 'value_timestamp') = 'null'
+                         and (e -> 'value_time') = 'null' and (e -> 'value_document_url') = 'null' and e ? 'has_value'
+                    then e || '{"has_value": false, "version": null, "updated_at": null}'::jsonb else e end order by ord), '[]'::jsonb)
+        into v from jsonb_array_elements(v) with ordinality x(e, ord)
+       where p_fn = 'get_scope_context(empty)'
+          or not ((e -> 'value_text') = 'null' and (e -> 'value_number') = 'null' and (e -> 'value_boolean') = 'null'
+                  and (e -> 'value_json') = 'null' and (e -> 'value_date') = 'null' and (e -> 'value_timestamp') = 'null'
+                  and (e -> 'value_time') = 'null' and (e -> 'value_document_url') = 'null');
+    end if;
     select coalesce(jsonb_agg(
              e || jsonb_build_object(
                'value_text', coalesce(pg_temp.l6_ref_ids(e ->> 'value_text'), e -> 'value_text'),
-               'updated_at', case when e ? 'updated_at' then to_jsonb(date_trunc('second', (e ->> 'updated_at')::timestamptz)) end)
+               'updated_at', null)
              || case when e ? 'fetch_hint' then jsonb_build_object('fetch_hint',
                      case e ->> 'fetch_hint' when 'lazy' then 'on_demand' when 'batch_related' then 'always' else e ->> 'fetch_hint' end) else '{}'::jsonb end
-             - case when e ? 'updated_at' then '' else 'updated_at' end
+             - 'updated_at'
              - case when e ->> 'value_type' in ('date', 'datetime') then array['value_text', 'value_date', 'value_timestamp'] else array[]::text[] end
              || case when e ->> 'value_type' in ('date', 'datetime')
                      then jsonb_build_object('__when', coalesce(e -> 'value_date', e -> 'value_timestamp', e -> 'value_text')) else '{}'::jsonb end
@@ -321,6 +390,18 @@ create temp table l6_verdict on commit drop as
       when jsonb_typeof(j.o) = 'array' and jsonb_typeof(j.n) = 'array'
            and (select coalesce(jsonb_agg(e order by coalesce(e ->> 'id', e ->> 'item_id')), '[]') from jsonb_array_elements(j.o) e)
              = (select coalesce(jsonb_agg(e order by coalesce(e ->> 'id', e ->> 'item_id')), '[]') from jsonb_array_elements(j.n) e) then 'order_only'
+      when j.why = 'member' and not iam.member_lane_open(j.organization_id)
+           and (j.n ? '__error'
+                or jsonb_typeof(j.o) = 'array' and jsonb_typeof(j.n) = 'array'
+                   and not exists (select 1 from jsonb_array_elements(j.n) e
+                                    where not (j.o @> jsonb_build_array(jsonb_build_object('id', e -> 'id')))
+                                      and e ? 'id')) then 'org_shared_only'
+      when j.fn like 'get_scope_context%' and exists (
+             select 1 from context.context_item_values v
+               join custom.record f on f.id = v.context_item_id
+               join custom.record r on r.id = v.scope_id
+              where v.scope_id = j.arg::uuid and v.is_current
+                and coalesce((r.data -> '_values' -> (f.data ->> 'key') ->> 'ver')::int, 1) > v.version) then 'store_newer'
       else 'MISMATCH' end as verdict
     from l6_judged j;
 
@@ -332,6 +413,16 @@ select why, count(distinct coalesce(user_id::text, 'service') || organization_id
 \echo ==== DD-112: the planted share must be listed by the new tree and refused by the old one
 select fn, verdict, jsonb_array_length(case when jsonb_typeof(n) = 'array' then n else '[]' end) as listed
   from l6_verdict where why = 'planted share (DD-112)' and fn like 'get_scope_tree%' order by fn limit 5;
+\echo ==== DD-112, the store's own door for the same seat: the list must agree with the record
+select set_config('request.jwt.claims', jsonb_build_object('sub', '4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'role', 'authenticated')::text, true) is not null as as_test;
+set local role authenticated;
+select p.scope_id,
+       pg_temp.l6_call(format('select custom.read_record(%L::uuid, %L::uuid, false)', p.organization_id, p.scope_id)) ? '__error' as read_record_refuses,
+       (pg_temp.l6_call(format('select public.get_scope_tree(%L::uuid)', p.organization_id)) ? '__error') as tree_refuses
+  from l6_plant p;
+reset role;
+\echo ==== order_only: the ties behind each (old order key equal on both neighbours)
+select fn, why, organization_id, arg from l6_verdict where verdict = 'order_only';
 \echo ==== MISMATCHES (first 12, both sides)
 select fn, why, user_id, organization_id, arg, left(o::text, 700) as old, left(n::text, 700) as new
   from l6_verdict where verdict = 'MISMATCH' order by fn, organization_id, arg limit 12;
@@ -341,7 +432,7 @@ select count(*) as mismatches from l6_verdict where verdict = 'MISMATCH';
 \pset tuples_only on
 \pset format unaligned
 \o :dump
-select jsonb_build_object('fn', fn, 'why', why, 'user_id', user_id, 'org', organization_id, 'arg', arg, 'o', o, 'n', n) from l6_verdict where verdict = 'MISMATCH';
+select jsonb_build_object('fn', fn, 'why', why, 'user_id', user_id, 'org', organization_id, 'arg', arg, 'o', o, 'n', n) from l6_verdict where verdict in ('MISMATCH', 'order_only', 'store_newer');
 \o
 \pset tuples_only off
 \pset format aligned
