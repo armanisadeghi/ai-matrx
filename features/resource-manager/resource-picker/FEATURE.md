@@ -32,7 +32,7 @@ Of ~16 sub-pickers:
 - **~11 have no canonical equivalent at all** — the URL family (webpage, youtube, image_url, file_url: URL ingress + validation/scrape/preview), Google (external provider + connection flow), Audio/Voice Pad (live capture → synthesized text), Context Values (scope drill → `referenceFence`), Tools/Skills (run-state toggles, not pickers). Their tokens are absent from the entity registry by design; `useUniversalEntitySearch` structurally cannot serve them.
 - **2 carry irreplaceable structure** — Conversations (own/standard/alive scope + mention-string-as-context-entry, plus `EntityDoorControls`) and Tables (full_table/row/column/**cell** references via a multi-level drill).
 - **Files are ALREADY shared** — `AttachReferenceButton`/`ReferenceTypeAdder` mount this family's `FilePickerWindow`. That is the correct reuse, already done.
-- **The record-type pickers (Notes, Tasks/Projects, Workbooks, Documents)** are `reference_pickable` in `platform.entity_types`, so the canonical search *could* list them — but each has UI the flat canonical picker lacks (Notes: folder tree + counts + preview from the `useNotes` Redux slice; Tasks: project→task hierarchy + completed toggle; multi-select on Files) and needs full payloads, not `{id,label}`. Swapping would *lose* function unless the canonical picker were first extended toward these — bloating a deliberately-minimal link-picker with a foreign concept, which the reuse-first doctrine's counterweight forbids ("never silently shoehorn a new concept into a primitive it doesn't fit").
+- **The record-type pickers (Notes, Tasks/Projects, Workbooks, Documents)** are `reference_pickable` in `platform.entity_types`, so the canonical search *could* list them — but each has UI the flat canonical picker lacks (Notes: recent notes + folder tree with database counts + preview via `useNotePicker`; Tasks: project→task hierarchy + completed toggle; multi-select on Files) and needs full payloads, not `{id,label}`. Swapping would *lose* function unless the canonical picker were first extended toward these — bloating a deliberately-minimal link-picker with a foreign concept, which the reuse-first doctrine's counterweight forbids ("never silently shoehorn a new concept into a primitive it doesn't fit").
 
 **The real (narrow) duplication** is the per-picker search/list *data path* (Redux slices, `get_user_tables`, `listAccessibleDocuments`, own Supabase queries). Unifying only that onto `useUniversalEntitySearch` is possible for the record types but is a **behavior change** (folder grouping and scoping differ from a title-only ilike RPC), not a free win — so it is deferred, not done, and would be its own scoped task with live UX verification, never a blind swap.
 
@@ -41,6 +41,17 @@ Of ~16 sub-pickers:
 - **Search and Recents reach the whole library, never only what Redux happens to hold.** The tree in state is a lazy, 20-second-bounded, 100k-row-capped projection (`loadUserFileTree`), so a picker that filters `selectAllFilesArray` silently shows a partial library the moment the tree is late, errored, or large. Search must query the server (`search_files` RPC / RLS `files` read); Recents must page the server too. Filtering state is only an instant first paint. Broke 2026-07-19 (`7269f63a3e`), found 2026-09-29. Test: a file that is not loaded into state must be findable by search.
 
 ## Change Log
+
+- 2026-09-29 — **Notes opens without downloading every note** (Arman: "it took a long time … fetch the
+  last 10 most active plus some counts"). `NotesResourcePicker` opens on the N most recently changed
+  notes (knob `resource_picker.notes_recent_count`, default 10) and folders with counts from
+  `workbench.note_folder_counts`; a folder loads its notes when opened; search runs in the database
+  (knob `resource_picker.notes_search_limit`); the body is read only for a previewed or picked note, so
+  a pick still hands the host the whole `Note`. Measured on admin@admin.com: open payload 1.3 MB → ~6.6 KB.
+  Guard: `__tests__/notes-picker-opens-without-reading-bodies.test.tsx` (fails on the old picker).
+  Census, not changed (different data paths): Tasks (`useProjectsWithTasks` — every project and task),
+  Documents and Workbooks (`listAccessibleDocuments` / `listAccessibleWorkbooks` — `select *`, unbounded),
+  Tables (`custom.table_list_everywhere` — metadata only), Conversations (already bounded + server search).
 
 - 2026-09-29 — **The Files view lists the whole library, never a capped slice** (Arman, from the
   Source input's "Your files": "it isn't showing all of my files, the search clearly fails to get
