@@ -80,7 +80,9 @@ describe("task assignment notification admission", () => {
       data: { user: { id: actorId, user_metadata: {} } }, error: null,
     } as never);
     taskQuery.maybeSingle.mockResolvedValue({ data: savedTask, error: null });
-    eventQuery.maybeSingle.mockResolvedValue({ data: null, error: null });
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      config: { assignment_dm_replay_key_active: true },
+    }, error: null });
     noticeQuery.maybeSingle.mockResolvedValue({ data: null, error: null });
     jest.mocked(sendDm).mockResolvedValue({ ok: true });
     jest.mocked(sendTaskAssignmentEmail).mockResolvedValue({ success: true, message: "sent" });
@@ -100,6 +102,7 @@ describe("task assignment notification admission", () => {
       recipientId: assigneeId,
       organizationId,
       content: "Alex assigned you a task: Review the signed contract",
+      clientMessageId: `task.assigned:${taskId}:4:dm`,
     }));
     expect(sendTaskAssignmentEmail).toHaveBeenCalledWith(expect.objectContaining({
       assigneeId,
@@ -128,6 +131,7 @@ describe("task assignment notification admission", () => {
     eventQuery.maybeSingle.mockResolvedValue({ data: {
       config: {
         assignment_outbox_active: true,
+        assignment_dm_replay_key_active: true,
         assignment_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
       },
     }, error: null });
@@ -139,6 +143,42 @@ describe("task assignment notification admission", () => {
     expect(sendDm).toHaveBeenCalledTimes(1);
     expect(sendTaskAssignmentEmail).not.toHaveBeenCalled();
     expect(noticeQuery.eq).toHaveBeenCalledWith("dedupe_key", `task.assigned:${taskId}:4:email`);
+    expect(noticeQuery.eq).toHaveBeenCalledWith("dedupe_key", `task.assigned:${taskId}:4:in_app`);
+    expect(noticeQuery.eq).toHaveBeenCalledWith("recipient_user_id", assigneeId);
+  });
+
+  it("does not send a DM when the saved transition has email but no in-app notice", async () => {
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      config: {
+        assignment_outbox_active: true,
+        assignment_dm_replay_key_active: true,
+        assignment_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+    }, error: null });
+    noticeQuery.maybeSingle
+      .mockResolvedValueOnce({ data: { id: taskId }, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
+
+    const response = await POST(request({ taskId, taskVersion: 4 }));
+
+    expect(response.status).toBe(200);
+    expect(sendDm).not.toHaveBeenCalled();
+    expect(sendTaskAssignmentEmail).not.toHaveBeenCalled();
+  });
+
+  it("holds action-chip DMs until the database replay guard is active", async () => {
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      config: { assignment_dm_replay_key_active: false },
+    }, error: null });
+
+    const response = await POST(request({ taskId, taskVersion: 4 }));
+
+    expect(response.status).toBe(200);
+    expect(sendDm).not.toHaveBeenCalled();
+    expect(await response.json()).toMatchObject({
+      dmSkipped: true,
+      dmSkipReason: "replay_guard_not_active",
+    });
   });
 
   it("uses the legacy email fallback for a write older than activation with no outbox row", async () => {
@@ -148,6 +188,7 @@ describe("task assignment notification admission", () => {
     eventQuery.maybeSingle.mockResolvedValue({ data: {
       config: {
         assignment_outbox_active: true,
+        assignment_dm_replay_key_active: true,
         assignment_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
       },
     }, error: null });
@@ -163,6 +204,7 @@ describe("task assignment notification admission", () => {
     eventQuery.maybeSingle.mockResolvedValue({ data: {
       config: {
         assignment_outbox_active: true,
+        assignment_dm_replay_key_active: true,
         assignment_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
       },
     }, error: null });
@@ -170,7 +212,7 @@ describe("task assignment notification admission", () => {
     const response = await POST(request({ taskId, taskVersion: 4 }));
 
     expect(response.status).toBe(200);
-    expect(sendDm).toHaveBeenCalledTimes(1);
+    expect(sendDm).not.toHaveBeenCalled();
     expect(sendTaskAssignmentEmail).not.toHaveBeenCalled();
   });
 
@@ -179,6 +221,7 @@ describe("task assignment notification admission", () => {
       deleted_at: new Date().toISOString(),
       config: {
         assignment_outbox_active: true,
+        assignment_dm_replay_key_active: true,
         assignment_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
       },
     }, error: null });

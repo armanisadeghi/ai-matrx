@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { sendTaskAssignmentEmail } from "@/lib/email/notificationService";
-import { sendDm } from "@/lib/services/system-dm";
+import { sendDm, type SendDmResult } from "@/lib/services/system-dm";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { z } from "zod";
@@ -108,7 +108,9 @@ export async function POST(request: Request) {
         ? Date.parse(configValues.assignment_outbox_activated_at)
         : NaN;
     const outboxActive = Number.isFinite(cutoverAt);
+    const dmReplayGuardActive = configValues?.assignment_dm_replay_key_active === true;
     let outboxOwnsEmail = false;
+    let assignmentNoticeExists = true;
     if (outboxActive) {
       const { data: notice, error: noticeError } = await admin
         .schema("communication").from("notification")
@@ -121,6 +123,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, msg: "Could not verify assignment email" }, { status: 503 });
       }
       outboxOwnsEmail = Boolean(notice) || Date.parse(taskRow.updated_at) >= cutoverAt;
+      const { data: inAppNotice, error: inAppError } = await admin
+        .schema("communication").from("notification")
+        .select("id")
+        .eq("organization_id", taskRow.organization_id)
+        .eq("recipient_user_id", assigneeId)
+        .eq("dedupe_key", `task.assigned:${taskId}:${taskVersion}:in_app`)
+        .maybeSingle();
+      if (inAppError) {
+        console.error("[task-assigned] in-app notice read failed:", inAppError);
+        return NextResponse.json({ success: false, msg: "Could not verify assignment DM" }, { status: 503 });
+      }
+      assignmentNoticeExists = Boolean(inAppNotice) || Date.parse(taskRow.updated_at) < cutoverAt;
     }
 
     // Get assigner's name
@@ -152,8 +166,7 @@ export async function POST(request: Request) {
         taskId,
         taskDescription,
       });
-    const [dmResult, result] = await Promise.all([
-      sendDm({
+    const dmDelivery: Promise<SendDmResult> = dmReplayGuardActive && assignmentNoticeExists ? sendDm({
         senderId: user.id,
         recipientId: assigneeId,
         organizationId: taskRow.organization_id,
@@ -162,9 +175,9 @@ export async function POST(request: Request) {
           kind: "task_reminder",
           payload: { task_id: taskId, title: taskTitle },
         },
-      }),
-      emailDelivery,
-    ]);
+        clientMessageId: `task.assigned:${taskId}:${taskVersion}:dm`,
+      }) : Promise.resolve({ ok: true });
+    const [dmResult, result] = await Promise.all([dmDelivery, emailDelivery]);
     if (!dmResult.ok && dmResult.error !== "self") {
       console.error("[task-assigned] DM failed:", dmResult.error);
     }
@@ -174,6 +187,9 @@ export async function POST(request: Request) {
         success: true,
         msg: result.message,
         skipped: result.skipped,
+        dmSkipped: !dmReplayGuardActive || !assignmentNoticeExists,
+        dmSkipReason: !dmReplayGuardActive ? "replay_guard_not_active" :
+          !assignmentNoticeExists ? "no_saved_in_app_assignment_notice" : undefined,
       });
     }
 

@@ -90,6 +90,8 @@ export interface SendDmOptions {
   content: string;
   /** Optional action chips — `{ kind, payload }` per the message-action registry. */
   actionData?: { kind: string; payload: Record<string, unknown> };
+  /** Stable source-event key. The database enforces uniqueness for task-assignment keys. */
+  clientMessageId?: string;
   /**
    * The organization the thing this DM is ABOUT lives in — the task's, the feedback
    * item's. Required: it used to be answered with the sender's own organization.
@@ -128,7 +130,36 @@ export async function sendDm(options: SendDmOptions): Promise<SendDmResult> {
         message_type: "text",
         status: "sent",
         action_data: (options.actionData ?? null) as Json,
+        client_message_id: options.clientMessageId ?? null,
       });
+    if (error?.code === "23505" &&
+        error.message.includes("dm_task_assignment_client_message_id_uidx") &&
+        options.clientMessageId?.startsWith("task.assigned:")) {
+      const { data: existing, error: readError } = await supabase
+        .schema("communication")
+        .from("dm_messages")
+        .select("conversation_id, organization_id, sender_id, content, action_data")
+        .eq("client_message_id", options.clientMessageId)
+        .maybeSingle();
+      if (readError || !existing) {
+        return { ok: false, conversationId, error: readError?.message ?? "Assignment DM replay row missing" };
+      }
+      const action = existing.action_data;
+      const actionObject = action && typeof action === "object" && !Array.isArray(action)
+        ? action : null;
+      const payload = actionObject?.payload;
+      const existingTaskId = payload && typeof payload === "object" && !Array.isArray(payload)
+        ? payload.task_id : null;
+      if (existing.conversation_id !== conversationId ||
+          existing.organization_id !== organizationId ||
+          existing.sender_id !== senderId ||
+          existing.content !== options.content ||
+          actionObject?.kind !== options.actionData?.kind ||
+          existingTaskId !== (options.actionData?.payload.task_id ?? null)) {
+        return { ok: false, conversationId, error: "Assignment DM key belongs to a different message" };
+      }
+      return { ok: true, conversationId };
+    }
     if (error) return { ok: false, conversationId, error: error.message };
     return { ok: true, conversationId };
   } catch (err) {
