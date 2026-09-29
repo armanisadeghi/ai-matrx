@@ -17,10 +17,20 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+let suspended: string[] | undefined;
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
-  useAppSelector: () => "default",
+  // The suspension selector is tagged; every other selector reads "default".
+  useAppSelector: (sel: { suspendedFor?: string }) =>
+    sel?.suspendedFor ? suspended : "default",
 }));
+jest.mock(
+  "@/features/agents/redux/execution-system/active-requests/active-requests.selectors",
+  () => ({
+    selectSuspendedCallIds: (requestId: string) =>
+      Object.assign(() => undefined, { suspendedFor: requestId }),
+  }),
+);
 jest.mock("@/lib/redux/slices/overlaySlice", () => ({ openOverlay: jest.fn() }));
 jest.mock("@/components/loaders/ShimmerText", () => ({
   ShimmerText: ({ text }: { text: string }) => <span data-testid="shimmer">{text}</span>,
@@ -64,8 +74,8 @@ jest.mock("../ToolUpdatesOverlay", () => ({ ToolUpdatesOverlay: () => null }));
 jest.mock("../../registry/toolArtifact", () => ({ getToolArtifact: () => null }));
 jest.mock("../ArtifactResultBar", () => ({ ArtifactResultBar: () => null }));
 jest.mock("@/features/action-requests/components/ParkedOnPersonCard", () => ({
-  ParkedOnPersonCard: ({ actionRequestId }: { actionRequestId: string }) => (
-    <div data-testid="parked-ask">{actionRequestId}</div>
+  ParkedOnPersonCard: ({ actionRequestId }: { actionRequestId: string | null }) => (
+    <div data-testid="parked-ask">{actionRequestId ?? "newest-open-ask"}</div>
   ),
 }));
 
@@ -107,13 +117,25 @@ afterEach(() => {
   host = null;
 });
 
-function render(entries: ToolLifecycleEntry[]): HTMLDivElement {
+function render(entries: ToolLifecycleEntry[], requestId?: string): HTMLDivElement {
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
-  act(() => root!.render(<ToolCallVisualization entries={entries} isPersisted />));
+  act(() =>
+    root!.render(
+      <ToolCallVisualization
+        entries={entries}
+        isPersisted={!requestId}
+        {...(requestId ? { requestId } : {})}
+      />,
+    ),
+  );
   return host;
 }
+
+beforeEach(() => {
+  suspended = undefined;
+});
 
 it("a reloaded call parked on a person is drawn as waiting, with the ask open beneath it", () => {
   const el = render([entry()]);
@@ -131,4 +153,26 @@ it("once the call is answered, the ordinary card takes over", () => {
   ]);
   expect(el.textContent).not.toContain("Waiting for you");
   expect(el.querySelector("[data-testid=parked-ask]")).toBeNull();
+});
+
+it("live, the turn suspended on a call no client was handed: waiting, not working", () => {
+  suspended = ["toolu_018c26HaYp5NH7YjxGT3rpvZ"];
+  const el = render([entry({ parkedOn: undefined })], "req-live");
+  expect(el.textContent).toContain("Waiting for you");
+  expect(el.querySelector("[data-testid=parked-ask]")?.textContent).toBe("newest-open-ask");
+  expect(el.querySelector("[data-testid=shimmer]")).toBeNull();
+});
+
+it("live, a call handed to a client (a browser tool) is not a person's ask", () => {
+  suspended = ["toolu_018c26HaYp5NH7YjxGT3rpvZ"];
+  const el = render([entry({ parkedOn: undefined, isDelegated: true })], "req-live");
+  expect(el.textContent).not.toContain("Waiting for you");
+  expect(el.querySelector("[data-testid=parked-ask]")).toBeNull();
+});
+
+it("live, a call still running is still working", () => {
+  suspended = undefined;
+  const el = render([entry({ parkedOn: undefined })], "req-live");
+  expect(el.textContent).not.toContain("Waiting for you");
+  expect(el.querySelector("[data-testid=shimmer]")).not.toBeNull();
 });

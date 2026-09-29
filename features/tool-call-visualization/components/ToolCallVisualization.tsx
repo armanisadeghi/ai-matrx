@@ -71,6 +71,7 @@ import { ArtifactResultBar } from "./ArtifactResultBar";
 import { resolveToolShellDisplayMode } from "./resolveToolShellDisplayMode";
 import { withoutCorrectedFailures } from "./correctedFailures";
 import { selectCorrectedToolCallIds } from "@/features/agents/redux/execution-system/observability/observability.selectors";
+import { selectSuspendedCallIds } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 
 // ─── Public props ─────────────────────────────────────────────────────────────
 
@@ -127,11 +128,29 @@ function heldWriteOf(entry: ToolLifecycleEntry | null | undefined): RecordChange
  * shell names the wait and mounts the ask itself instead of the tool's body.
  * `ask_person` is the exception by construction: its own renderer IS this card.
  */
-function parkedOnPersonOf(entry: ToolLifecycleEntry | null | undefined): string | null {
-  if (!entry?.parkedOn || entry.toolName === "ask_person") return null;
+type ParkedAsk = {
+  /** The action request, when known. Live, before the row is re-read, it is
+   *  not: the card then finds the conversation's newest open ask. */
+  actionRequestId: string | null;
+};
+
+function parkedOnPersonOf(
+  entry: ToolLifecycleEntry | null | undefined,
+  suspendedCallIds: readonly unknown[] | undefined,
+): ParkedAsk | null {
+  if (!entry || entry.toolName === "ask_person") return null;
   if (entry.status === "completed" || entry.status === "error") return null;
-  return entry.parkedOn.actionRequestId;
+  // Reloaded: the row carries the server's marker.
+  if (entry.parkedOn) return { actionRequestId: entry.parkedOn.actionRequestId };
+  // Live: the turn suspended on this call and no client was handed it, so the
+  // server parked it (a client-delegated call arrives with `isDelegated`).
+  if (!entry.isDelegated && suspendedCallIds?.includes(entry.callId)) {
+    return { actionRequestId: null };
+  }
+  return null;
 }
+
+const noSuspendedCallIds = (): undefined => undefined;
 
 // ─── Shell implementation ─────────────────────────────────────────────────────
 
@@ -188,7 +207,14 @@ const ToolCallVisualizationInner: React.FC<{
     settled.every((e) => e.status === "error" && correctedIds.has(e.callId));
 
   // A call waiting on a person is not "processing": nothing is running.
-  const parkedAsk = settled.length === 1 ? parkedOnPersonOf(headerTool) : null;
+  const suspendedSelector = useMemo(
+    () => (requestId ? selectSuspendedCallIds(requestId) : noSuspendedCallIds),
+    [requestId],
+  );
+  const suspendedRaw = useAppSelector(suspendedSelector);
+  const suspendedCallIds = Array.isArray(suspendedRaw) ? suspendedRaw : undefined;
+  const parkedAsk =
+    settled.length === 1 ? parkedOnPersonOf(headerTool, suspendedCallIds) : null;
 
   const phase: "starting" | "processing" | "complete" | "error" =
     entries.length === 0
@@ -643,7 +669,7 @@ const ToolCallVisualizationInner: React.FC<{
                 const isErrored = entry.status === "error";
                 const entryWait =
                   entry === headerTool ? heldWait : heldWriteOf(entry);
-                const entryParked = parkedOnPersonOf(entry);
+                const entryParked = parkedOnPersonOf(entry, suspendedCallIds);
                 const InlineRenderer = isErrored || entryWait || entryParked
                   ? null
                   : getInlineRenderer(entry.toolName);
@@ -656,7 +682,7 @@ const ToolCallVisualizationInner: React.FC<{
                     )}
                     {entryParked ? (
                       <ParkedOnPersonCard
-                        actionRequestId={entryParked}
+                        actionRequestId={entryParked.actionRequestId}
                         conversationId={conversationId ?? null}
                       />
                     ) : entryWait ? (

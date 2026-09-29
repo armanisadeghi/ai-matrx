@@ -33,7 +33,9 @@ export function ParkedOnPersonCard({
   actionRequestId,
   conversationId,
 }: {
-  actionRequestId: string;
+  /** The ask this call is parked on. `null` while live, before the row is
+   *  re-read: the conversation's newest open ask is the one this turn made. */
+  actionRequestId: string | null;
   conversationId?: string | null;
 }) {
   const dispatch = useAppDispatch();
@@ -41,8 +43,10 @@ export function ParkedOnPersonCard({
     requestId: actionRequestId,
     conversationId: conversationId ?? null,
     kind: null,
-    stillMinting: false,
+    // Live and unnamed: the row may still be minting, so look a few times.
+    stillMinting: actionRequestId === null,
   });
+  const openId = lookup.phase === "open" ? lookup.request.request_id : actionRequestId;
 
   const reread = () => {
     if (!conversationId) return;
@@ -60,8 +64,9 @@ export function ParkedOnPersonCard({
   const rereadFor = useRef<string | null>(null);
   const closed = lookup.phase === "closed";
   useEffect(() => {
-    if (!closed || rereadFor.current === actionRequestId || !conversationId) return;
-    rereadFor.current = actionRequestId;
+    const key = actionRequestId ?? "live";
+    if (!closed || rereadFor.current === key || !conversationId) return;
+    rereadFor.current = key;
     void dispatch(loadConversation({ conversationId }))
       .unwrap()
       .catch((err: unknown) => {
@@ -73,10 +78,10 @@ export function ParkedOnPersonCard({
   useEffect(() => {
     if (!conversationId || typeof document === "undefined") return;
     const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || !openId) return;
       void fetchPendingActionRequests()
         .then((pending) => {
-          if (!pending.some((row) => row.request_id === actionRequestId)) {
+          if (!pending.some((row) => row.request_id === openId)) {
             void dispatch(loadConversation({ conversationId }));
           }
         })
@@ -86,7 +91,7 @@ export function ParkedOnPersonCard({
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [actionRequestId, conversationId, dispatch]);
+  }, [openId, conversationId, dispatch]);
 
   if (lookup.phase === "open") {
     return (

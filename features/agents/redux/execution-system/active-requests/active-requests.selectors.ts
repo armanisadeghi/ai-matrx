@@ -2025,6 +2025,27 @@ export const selectRequestAwaitingPerson =
     return false;
   };
 
+/**
+ * The call ids this request's turn is SUSPENDED on (`info`
+ * `suspended_awaiting_client` → `metadata.pending_call_ids`), or undefined.
+ * A pending call that never got a `tool_delegated` event (`isDelegated` false)
+ * is one the SERVER parked — on a person, through an action request — and the
+ * tool-call shell draws it as waiting, not working. Returns the stored array
+ * itself, so the reference is stable.
+ */
+export const selectSuspendedCallIds =
+  (requestId: string) =>
+  (state: RootState): readonly unknown[] | undefined => {
+    const infos = state.activeRequests.byRequestId[requestId]?.infoEvents;
+    if (!infos) return undefined;
+    for (const info of infos) {
+      if (info?.code !== "suspended_awaiting_client") continue;
+      const ids = info.metadata?.pending_call_ids;
+      if (Array.isArray(ids)) return ids;
+    }
+    return undefined;
+  };
+
 // =============================================================================
 // Record Reservation Selectors
 // =============================================================================
