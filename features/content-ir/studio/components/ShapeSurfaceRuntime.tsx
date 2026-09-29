@@ -36,7 +36,7 @@ interface ShapeSurfaceRuntimeProps {
   label: string;
   kindDefinitionId: string;
   kindVersion: number;
-  visibility: string;
+  publishedToWeb: boolean;
   isActive: boolean;
   titleKey: string | null;
   loadingComponent: string | null;
@@ -53,7 +53,7 @@ export default function ShapeSurfaceRuntime({
   label,
   kindDefinitionId,
   kindVersion,
-  visibility,
+  publishedToWeb,
   isActive,
   titleKey,
   loadingComponent,
@@ -71,7 +71,7 @@ export default function ShapeSurfaceRuntime({
         kind_label: label,
         kind_definition_id: kindDefinitionId,
         kind_version: kindVersion,
-        kind_visibility: visibility,
+        kind_published_to_web: publishedToWeb,
         kind_is_active: isActive,
         kind_title_key: titleKey ?? undefined,
         kind_loading_component: loadingComponent ?? undefined,
@@ -87,7 +87,7 @@ export default function ShapeSurfaceRuntime({
       label,
       kindDefinitionId,
       kindVersion,
-      visibility,
+      publishedToWeb,
       isActive,
       titleKey,
       loadingComponent,

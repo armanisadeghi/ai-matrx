@@ -16,8 +16,8 @@ import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { publishedToWebPatch } from "@/lib/row-access";
 export type ShapeWriteClient = SupabaseClient<Database>;
-export type ShapeVisibility = Database["platform"]["Enums"]["visibility"];
 
 /**
  * Who is authoring. "owner" is the /shapes path — writes prove
@@ -36,12 +36,13 @@ export interface EditableShapeMetadata {
 export interface UpdateOwnedShapeProfileArgs extends EditableShapeMetadata {
   definitionId: string;
   label: string;
-  visibility: ShapeVisibility;
+  /** "Published to the web": the shape sits in the shared Shapes library for anyone. */
+  publishedToWeb: boolean;
 }
 
 export interface ShapeProfileWriteResult {
   label: string;
-  visibility: ShapeVisibility;
+  publishedToWeb: boolean;
   version: number;
   metadata: Json;
   repinnedExampleCount: number;
@@ -63,6 +64,7 @@ interface OwnedDefinition {
   version: number;
   metadata: Json;
   organizationId: string;
+  publishedToWeb: boolean;
 }
 
 function trimmedOrNull(value: string | null | undefined): string | null {
@@ -113,7 +115,7 @@ async function fetchWritableDefinition(
   let query = client
     .schema("content_ir")
     .from("kind_definition")
-    .select("id,version,metadata,organization_id")
+    .select("id,version,metadata,organization_id,published_to_web")
     .eq("id", definitionId)
     .is("deleted_at", null);
   // Owner mode belts the RLS read with an explicit ownership check; admin mode
@@ -136,6 +138,7 @@ async function fetchWritableDefinition(
     version: data.version,
     metadata: data.metadata,
     organizationId: data.organization_id,
+    publishedToWeb: data.published_to_web,
   };
 }
 
@@ -187,7 +190,7 @@ export async function updateOwnedShapeProfile(
   const metadata = mergeEditableShapeMetadata(current.metadata, args);
   const result = await guardedUpdate<{
     label: string;
-    visibility: ShapeVisibility;
+    published_to_web: boolean;
     version: number;
     metadata: Json;
   }>({
@@ -198,7 +201,10 @@ export async function updateOwnedShapeProfile(
         .from("kind_definition")
         .update({
           label,
-          visibility: args.visibility,
+          // Only a change stamps who published it and when.
+          ...(args.publishedToWeb !== current.publishedToWeb
+            ? publishedToWebPatch(args.publishedToWeb, userId)
+            : {}),
           metadata,
           updated_by: userId,
           version: nextVersion,
@@ -207,7 +213,7 @@ export async function updateOwnedShapeProfile(
         .eq("version", expectedVersion);
       if (mode === "owner") updateQuery = updateQuery.eq("created_by", userId);
       const { data, error } = await updateQuery
-        .select("label,visibility,version,metadata")
+        .select("label,published_to_web,version,metadata")
         .maybeSingle();
       if (error) {
         throw new Error(`Failed to update the Shape: ${error.message}`);
@@ -218,7 +224,7 @@ export async function updateOwnedShapeProfile(
       client
         .schema("content_ir")
         .from("kind_definition")
-        .select("label,visibility,version,metadata")
+        .select("label,published_to_web,version,metadata")
         .eq("id", current.id)
         .is("deleted_at", null)
         .maybeSingle(),
@@ -254,7 +260,7 @@ export async function updateOwnedShapeProfile(
 
   return {
     label: updated.label,
-    visibility: updated.visibility,
+    publishedToWeb: updated.published_to_web,
     version: updated.version,
     metadata: updated.metadata,
     repinnedExampleCount: repinned?.length ?? 0,

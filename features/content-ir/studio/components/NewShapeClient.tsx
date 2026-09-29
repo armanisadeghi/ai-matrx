@@ -58,7 +58,7 @@ import {
   NEW_SHAPE_CARDINALITIES,
   NEW_SHAPE_EMPTY_ANSWERS,
   NEW_SHAPE_RENDER_STYLES,
-  NEW_SHAPE_VISIBILITIES,
+  NEW_SHAPE_WEB_CHOICES,
   composeNewShapeBrief,
   newShapeAnswersReady,
   type NewShapeAnswers,
@@ -375,7 +375,7 @@ function NewShapeForm({ agentId }: { agentId: string }) {
       new_shape_sample: answers.sample || undefined,
       new_shape_render_style: answers.renderStyle,
       new_shape_cardinality: answers.cardinality,
-      new_shape_visibility: answers.visibility,
+      new_shape_published_to_web: answers.web === "published_to_web",
       new_shape_assets: [...answers.assets],
       new_shape_submitted: submitted !== null,
     });
@@ -459,9 +459,9 @@ function NewShapeForm({ agentId }: { agentId: string }) {
 
         <FieldBlock step={6} title="Who can use it?">
           <TileChoice
-            options={NEW_SHAPE_VISIBILITIES}
-            value={answers.visibility}
-            onChange={(visibility) => patch({ visibility })}
+            options={NEW_SHAPE_WEB_CHOICES}
+            value={answers.web}
+            onChange={(web) => patch({ web })}
             columns="sm:grid-cols-2"
           />
         </FieldBlock>

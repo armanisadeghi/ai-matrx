@@ -37,7 +37,7 @@ export default async function ShapeRecordsTablePage({ params }: PageProps) {
             label={detail.label}
             kindDefinitionId={detail.id}
             kindVersion={detail.version}
-            visibility={detail.visibility}
+            publishedToWeb={detail.publishedToWeb}
             isActive={detail.isActive}
             titleKey={detail.titleKey}
             loadingComponent={detail.loadingComponent}

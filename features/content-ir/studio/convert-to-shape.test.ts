@@ -12,7 +12,7 @@ const DEFINITION: ShapeDefinitionSnapshot = {
   label: "Sales summary",
   isActive: true,
   version: 4,
-  visibility: "public",
+  publishedToWeb: true,
   emittedJsonSchema: {
     type: "object",
     properties: { total: { type: "number" } },

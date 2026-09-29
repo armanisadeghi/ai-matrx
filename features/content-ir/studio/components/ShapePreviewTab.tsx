@@ -22,7 +22,7 @@ interface ShapePreviewTabProps {
   kind: string;
   kindDefinitionId: string;
   label: string;
-  visibility: string;
+  publishedToWeb: boolean;
   titleKey: string | null;
   loadingComponent: string | null;
   emittedJsonSchema: Json | null;
@@ -41,7 +41,7 @@ export default function ShapePreviewTab({
   kind,
   kindDefinitionId,
   label,
-  visibility,
+  publishedToWeb,
   titleKey,
   loadingComponent,
   emittedJsonSchema,
@@ -70,7 +70,7 @@ export default function ShapePreviewTab({
         kind_label: label,
         kind_definition_id: kindDefinitionId,
         kind_version: kindVersion,
-        kind_visibility: visibility,
+        kind_published_to_web: publishedToWeb,
         kind_is_active: isActive,
         kind_title_key: titleKey ?? undefined,
         kind_loading_component: loadingComponent ?? undefined,
@@ -105,7 +105,7 @@ export default function ShapePreviewTab({
       label,
       kindDefinitionId,
       kindVersion,
-      visibility,
+      publishedToWeb,
       isActive,
       titleKey,
       loadingComponent,
@@ -142,7 +142,7 @@ export default function ShapePreviewTab({
           kind={kind}
           kindDefinitionId={kindDefinitionId}
           label={label}
-          visibility={visibility}
+          publishedToWeb={publishedToWeb}
           titleKey={titleKey}
           loadingComponent={loadingComponent}
           emittedJsonSchema={emittedJsonSchema}

@@ -19,7 +19,7 @@ export interface ShapeDefinitionSnapshot {
   label: string;
   isActive: boolean;
   version: number;
-  visibility: string;
+  publishedToWeb: boolean;
   emittedJsonSchema: Json | null;
   metadata: Json;
   authoringOwner: string;
@@ -277,7 +277,7 @@ export function buildConvertToShapeSeed(input: {
         label: definition.label,
         is_active: definition.isActive,
         version: definition.version,
-        visibility: definition.visibility,
+        published_to_web: definition.publishedToWeb,
         authoring_owner: definition.authoringOwner,
         is_contract_artifact: definition.isContractArtifact,
         metadata: definition.metadata,

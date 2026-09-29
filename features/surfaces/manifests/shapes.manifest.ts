@@ -64,7 +64,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Kind identity",
     sortOrder: 100,
     description:
-      "Which kind (shape) the user has open, and its ownership / visibility / version standing.",
+      "Which kind (shape) the user has open, and its ownership / published-to-the-web / version standing.",
   },
   {
     key: "kind_schema",
@@ -164,11 +164,11 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 130,
   },
   {
-    name: "kind_visibility",
-    label: "Kind visibility",
+    name: "kind_published_to_web",
+    label: "Kind published to the web",
     description:
-      "`internal` or `public` — shapes may never be `personal` (rejected by a DB check). Empty when no shape is open.",
-    valueType: "string",
+      "True when the shape is published to the web (listed in the shared Shapes library, anyone can open it); false when it stays inside its organization. Absent when no shape is open.",
+    valueType: "boolean",
     alwaysAvailable: false,
     typicalCharCount: 10,
     group: "kind_identity",
@@ -211,7 +211,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kind_owned_by_viewer",
     label: "Owned by viewer",
     description:
-      "True when the current user created this kind and therefore sees the owner editor (label, visibility, examples, activation). Absent when no shape is open.",
+      "True when the current user created this kind and therefore sees the owner editor (label, published to the web, examples, activation). Absent when no shape is open.",
     valueType: "boolean",
     alwaysAvailable: false,
     typicalCharCount: 5,
@@ -574,11 +574,11 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 840,
   },
   {
-    name: "new_shape_visibility",
-    label: "Chosen visibility",
+    name: "new_shape_published_to_web",
+    label: "Chosen: published to the web",
     description:
-      "`internal` (their organization) or `public` (the shared Shapes library) — the visibility the new shape will be created with. Shapes may never be `personal`. Empty off /shapes/new.",
-    valueType: "string",
+      "True when the person chose to publish the new shape to the web (the shared Shapes library); false when it stays inside their organization. Absent off /shapes/new.",
+    valueType: "boolean",
     alwaysAvailable: false,
     typicalCharCount: 10,
     group: "shape_draft",
@@ -651,8 +651,8 @@ const surfaceSpecific: SurfaceValue[] = [
  * Ruled out ON PURPOSE, so the next agent does not "helpfully" add them:
  *   - `kind` (the SLUG) — identity. Renaming an existing kind's slug breaks
  *     every `__kind` payload, instance, and tool call that references it.
- *   - `kind_visibility` — internal → public PUBLISHES the shape into the
- *     shared library. A human decides that.
+ *   - `kind_published_to_web` — publishing puts the shape in front of
+ *     anyone, in the shared library. A human decides that.
  *   - activation (`is_active`) — a VERDICT from the dual gate, not a field.
  *   - example / instance CRUD and re-pinning — these bump the definition
  *     version and re-validate every sample; not an agent's call.
@@ -755,7 +755,7 @@ WHICH VALUES EXIST DEPENDS ON THE ROUTE — nothing here is guaranteed, so check
   - /shapes/[kind] and /shapes/[kind]/schema (studio_tab "preview" / "schema") — the full kind identity, kind_field_data and kind_emitted_json_schema, the samples (kind_examples, counts, canonical flag) and, for the owner, the activation verdict.
   - /shapes/[kind]/instances (studio_tab "instances") — kind identity plus kind_instances, kind_instance_count, and the focused instance. The schema and activation values are NOT emitted here.
   - /shapes/[kind]/test (studio_tab "test") — kind identity plus test_draft_instance and test_save_state. The schema, samples, and activation values are NOT emitted here.
-  - /shapes/new (studio_tab "new") — the dedicated create form: new_shape_name, new_shape_intent, new_shape_sample, new_shape_render_style, new_shape_cardinality, new_shape_visibility, new_shape_assets, new_shape_submitted, shape_creator_agent_id. Every one of them is a decision the user made in the form, so treat them as instructions rather than hints; new_shape_submitted flips true once the builder run starts in the page's result pane.
+  - /shapes/new (studio_tab "new") — the dedicated create form: new_shape_name, new_shape_intent, new_shape_sample, new_shape_render_style, new_shape_cardinality, new_shape_published_to_web, new_shape_assets, new_shape_submitted, shape_creator_agent_id. Every one of them is a decision the user made in the form, so treat them as instructions rather than hints; new_shape_submitted flips true once the builder run starts in the page's result pane.
   - /shapes/instances/[id] is a permalink resolver that redirects; it renders nothing and emits nothing.
 Three things to get right. First, the emitted JSON Schema is the AUTHORITY on validity — validate any payload you propose against it rather than inferring structure from a sample. Second, \`is_active\` is a VERDICT from a dual gate, not a flag you may recommend flipping casually: both the structural leg (the canonical sample validates) and the render leg (that sample lights up a real component) must pass, and activation_reasons tells you exactly what is blocking. Third, instances store the root \`__kind\` marker as part of the payload and pin the kind version they were saved at — a pinned version older than kind_version means the instance may not satisfy the current schema.
 Detection rows (which XML tag or fence language maps to this kind) are deliberately not part of this surface — no studio route loads them, so never claim a kind is or is not detected from what you see here.
@@ -829,7 +829,7 @@ export function createShapesScope(values: {
   kind_label?: string;
   kind_definition_id?: string;
   kind_version?: number;
-  kind_visibility?: string;
+  kind_published_to_web?: boolean;
   kind_is_active?: boolean;
   kind_title_key?: string;
   kind_loading_component?: string;
@@ -870,7 +870,7 @@ export function createShapesScope(values: {
   new_shape_sample?: string;
   new_shape_render_style?: string;
   new_shape_cardinality?: string;
-  new_shape_visibility?: string;
+  new_shape_published_to_web?: boolean;
   new_shape_assets?: string[];
   new_shape_submitted?: boolean;
   // draft

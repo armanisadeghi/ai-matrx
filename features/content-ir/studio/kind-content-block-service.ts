@@ -120,7 +120,7 @@ export async function ownerUpsertKindContentBlock(
           ...fields,
           organization_id: await ensureOrgId(undefined),
           created_by: userId,
-          visibility: "personal",
+          shown_to: "only_me",
         });
   if (error) {
     throw new Error(`Failed to store the content block: ${error.message}`);

@@ -121,25 +121,25 @@ const CARDINALITY_BRIEF: Record<NewShapeCardinality, string> = {
     "Each instance is a COLLECTION — the shape carries a titled group and an array of the repeated items inside it.",
 };
 
-// --------------------------------------------------------------- visibility
+// ------------------------------------------------------ published to the web
 
-/** Mirrors `content_ir.kind_definition.visibility`. `personal` does not exist
- *  for shapes — the DB check `kind_definition_no_personal_visibility` refuses
- *  it, because a personal shape is stranded the moment its author is away. */
-export type NewShapeVisibility = "internal" | "public";
+/** Mirrors `content_ir.kind_definition.published_to_web`. A shape is always open to people who
+ *  reach it through the organization; there is no "Only me" for shapes (a shape one account alone
+ *  can edit is stranded the moment its author is away). */
+export type NewShapeWebChoice = "not_published" | "published_to_web";
 
-export const NEW_SHAPE_VISIBILITIES: ReadonlyArray<
-  NewShapeChoice<NewShapeVisibility>
+export const NEW_SHAPE_WEB_CHOICES: ReadonlyArray<
+  NewShapeChoice<NewShapeWebChoice>
 > = [
   {
-    id: "internal",
+    id: "not_published",
     label: "My organization",
     description: "Everyone who has access through your organization.",
   },
   {
-    id: "public",
-    label: "Everyone",
-    description: "Published into the shared Shapes library.",
+    id: "published_to_web",
+    label: "Published to the web",
+    description: "Anyone can open it; it is listed in the shared Shapes library.",
   },
 ];
 
@@ -196,7 +196,7 @@ export interface NewShapeAnswers {
   sample: string;
   renderStyle: NewShapeRenderStyle;
   cardinality: NewShapeCardinality;
-  visibility: NewShapeVisibility;
+  web: NewShapeWebChoice;
   assets: readonly NewShapeAsset[];
 }
 
@@ -206,7 +206,7 @@ export const NEW_SHAPE_EMPTY_ANSWERS: NewShapeAnswers = {
   sample: "",
   renderStyle: "auto",
   cardinality: "single",
-  visibility: "internal",
+  web: "not_published",
   assets: NEW_SHAPE_DEFAULT_ASSETS,
 };
 
@@ -242,7 +242,9 @@ export function composeNewShapeBrief(answers: NewShapeAnswers): {
     "",
     CARDINALITY_BRIEF[answers.cardinality],
     RENDER_STYLE_BRIEF[answers.renderStyle],
-    `Visibility: \`${answers.visibility}\`${answers.visibility === "public" ? " — it goes into the shared Shapes library." : " — it stays inside their organization."} Never set \`personal\`; the database refuses it for shapes.`,
+    answers.web === "published_to_web"
+      ? "Published to the web: yes — it goes into the shared Shapes library, which anyone can open."
+      : "Published to the web: no — it stays inside their organization.",
     "",
     "Then build what they asked for alongside it:",
     assets,

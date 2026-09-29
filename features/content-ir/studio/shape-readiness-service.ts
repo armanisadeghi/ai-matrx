@@ -33,7 +33,7 @@ export async function loadShapeReadiness(
       .schema("content_ir")
       .from("kind_definition")
       .select(
-        "id,kind,label,is_active,version,visibility,emitted_json_schema,metadata,authoring_owner,is_contract_artifact,created_at",
+        "id,kind,label,is_active,version,published_to_web,emitted_json_schema,metadata,authoring_owner,is_contract_artifact,created_at",
       )
       .eq("kind", rootKind)
       .is("deleted_at", null)
@@ -60,7 +60,7 @@ export async function loadShapeReadiness(
         label: row.label,
         isActive: row.is_active,
         version: row.version,
-        visibility: row.visibility,
+        publishedToWeb: row.published_to_web,
         emittedJsonSchema: row.emitted_json_schema,
         metadata: row.metadata,
         authoringOwner: row.authoring_owner,

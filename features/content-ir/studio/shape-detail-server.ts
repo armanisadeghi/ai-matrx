@@ -20,7 +20,7 @@ export interface ShapeDetail {
   kind: string;
   label: string;
   isActive: boolean;
-  visibility: string;
+  publishedToWeb: boolean;
   version: number;
   updatedAt: string;
   fieldData: Json | null;
@@ -70,7 +70,7 @@ export async function getShapeDetail(
         .schema("content_ir")
         .from("kind_definition")
         .select(
-          "id,kind,label,is_active,visibility,version,updated_at,data,emitted_json_schema,metadata,created_by",
+          "id,kind,label,is_active,published_to_web,version,updated_at,data,emitted_json_schema,metadata,created_by",
         )
         .eq("kind", kindSlug)
         .is("deleted_at", null)
@@ -90,7 +90,7 @@ export async function getShapeDetail(
     kind: data.kind,
     label: data.label,
     isActive: data.is_active,
-    visibility: data.visibility,
+    publishedToWeb: data.published_to_web,
     version: data.version,
     updatedAt: data.updated_at,
     fieldData: data.data,

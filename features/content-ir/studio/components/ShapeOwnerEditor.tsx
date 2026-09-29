@@ -26,31 +26,28 @@ import KindExampleManager from "@/features/content-ir/studio/components/KindExam
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import KindContentBlockGenerator from "@/features/content-ir/studio/components/KindContentBlockGenerator";
 import { ownerUpsertKindContentBlock } from "@/features/content-ir/studio/kind-content-block-service";
-import {
-  updateOwnedShapeProfile,
-  type ShapeVisibility,
-} from "@/features/content-ir/studio/shape-authoring-service";
+import { updateOwnedShapeProfile } from "@/features/content-ir/studio/shape-authoring-service";
+import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-const SHAPE_VISIBILITIES: ReadonlyArray<{
-  value: ShapeVisibility;
+/** A shape is always open to people who reach it through your organization; publishing it to the
+ *  web puts it in the shared Shapes library, which anyone can open. (No "Only me": a shape one
+ *  account alone can edit is stranded the moment its author is away.) */
+const SHAPE_WEB_CHOICES: ReadonlyArray<{
+  value: boolean;
   label: string;
   description: string;
 }> = [
-  // No "Personal" option — a personal kind is editable only by the one account
-  // that created it (org admins and super admins resolve to viewer), which
-  // strands the shape the moment its author is unavailable. The DB CHECK
-  // `kind_definition_no_personal_visibility` rejects the value outright.
   {
-    value: "internal",
-    label: "Organization",
+    value: false,
+    label: "Not published",
     description:
       "Available to people who have access through your organization.",
   },
   {
-    value: "public",
-    label: "Public",
-    description: "Visible in the shared Shapes library.",
+    value: true,
+    label: PUBLISHED_TO_WEB_LABEL,
+    description: "Anyone can open it; it is listed in the shared Shapes library.",
   },
 ];
 
@@ -58,7 +55,7 @@ interface ShapeOwnerEditorProps {
   kind: string;
   kindDefinitionId: string;
   label: string;
-  visibility: string;
+  publishedToWeb: boolean;
   titleKey: string | null;
   loadingComponent: string | null;
   emittedJsonSchema: Json | null;
@@ -93,7 +90,7 @@ export default function ShapeOwnerEditor({
   kind,
   kindDefinitionId,
   label: initialLabel,
-  visibility: initialVisibility,
+  publishedToWeb: initialPublishedToWeb,
   titleKey: initialTitleKey,
   loadingComponent: initialLoadingComponent,
   emittedJsonSchema,
@@ -104,11 +101,7 @@ export default function ShapeOwnerEditor({
 }: ShapeOwnerEditorProps) {
   const router = useRouter();
   const [label, setLabel] = useState(initialLabel);
-  const [visibility, setVisibility] = useState<ShapeVisibility>(
-    SHAPE_VISIBILITIES.some((option) => option.value === initialVisibility)
-      ? (initialVisibility as ShapeVisibility)
-      : "internal",
-  );
+  const [publishedToWeb, setPublishedToWeb] = useState(initialPublishedToWeb);
   const [titleKey, setTitleKey] = useState(initialTitleKey ?? "");
   const [loadingComponent, setLoadingComponent] = useState(
     initialLoadingComponent ?? "",
@@ -138,8 +131,8 @@ export default function ShapeOwnerEditor({
   // All three are `mode: "draft"`: they stage into the same setState the
   // user's own edits call, and the user still presses "Save details" (which is
   // what runs `updateOwnedShapeProfile`, bumps the version, and re-pins the
-  // samples). Deliberately NOT writable: `visibility` (internal → public
-  // publishes the shape) and the `kind` slug itself (identity).
+  // samples). Deliberately NOT writable: "Published to the web" (it
+  // puts the shape in front of anyone) and the `kind` slug itself (identity).
   //
   // Each handler validates against the REAL vocabulary the select offers —
   // the schema's own top-level properties and the loading registry's keys —
@@ -194,7 +187,7 @@ export default function ShapeOwnerEditor({
       const result = await updateOwnedShapeProfile(supabase, {
         definitionId: kindDefinitionId,
         label,
-        visibility,
+        publishedToWeb,
         titleKey: titleKey || null,
         loadingComponent: loadingComponent || null,
       });
@@ -296,25 +289,30 @@ export default function ShapeOwnerEditor({
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="shape-visibility">Visibility</Label>
+              <Label htmlFor="shape-published-to-web">
+                {PUBLISHED_TO_WEB_LABEL}
+              </Label>
               <select
-                id="shape-visibility"
-                value={visibility}
+                id="shape-published-to-web"
+                value={publishedToWeb ? "on" : "off"}
                 onChange={(event) =>
-                  setVisibility(event.target.value as ShapeVisibility)
+                  setPublishedToWeb(event.target.value === "on")
                 }
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
               >
-                {SHAPE_VISIBILITIES.map((option) => (
-                  <option key={option.value} value={option.value}>
+                {SHAPE_WEB_CHOICES.map((option) => (
+                  <option
+                    key={option.label}
+                    value={option.value ? "on" : "off"}
+                  >
                     {option.label}
                   </option>
                 ))}
               </select>
               <p className="text-[11px] text-muted-foreground">
                 {
-                  SHAPE_VISIBILITIES.find(
-                    (option) => option.value === visibility,
+                  SHAPE_WEB_CHOICES.find(
+                    (option) => option.value === publishedToWeb,
                   )?.description
                 }
               </p>

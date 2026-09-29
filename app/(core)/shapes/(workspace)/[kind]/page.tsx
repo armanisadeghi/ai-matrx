@@ -32,7 +32,7 @@ export default async function ShapePreviewPage({ params }: PageProps) {
             kind={detail.kind}
             kindDefinitionId={detail.id}
             label={detail.label}
-            visibility={detail.visibility}
+            publishedToWeb={detail.publishedToWeb}
             titleKey={detail.titleKey}
             loadingComponent={detail.loadingComponent}
             emittedJsonSchema={detail.emittedJsonSchema}
