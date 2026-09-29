@@ -63,10 +63,15 @@ export function useConversationFollowsPage(
   // A host that starts OFF: the first time this conversation is ready, mark it
   // off (remembering the page, so the chip can name it). Once per conversation.
   const seeded = useRef<string | null>(null);
+  // Set in the same commit the off flag is dispatched, before this render's
+  // `turnedOff` can see it — so the stamping effect below never shares the
+  // page for a moment in between.
+  const seededOff = useRef<string | null>(null);
   useEffect(() => {
     if (!conversationId || !conversationReady || seeded.current === conversationId) return;
     seeded.current = conversationId;
     if (!startsOn && !stampedSurfaceName) {
+      seededOff.current = conversationId;
       dispatch(setPageContextOff({ conversationId, previousSurfaceName: pageSurfaceName }));
     }
   }, [dispatch, conversationId, conversationReady, startsOn, stampedSurfaceName, pageSurfaceName]);
@@ -80,6 +85,10 @@ export function useConversationFollowsPage(
 
   useEffect(() => {
     if (!conversationId || !conversationReady) return;
+    if (seededOff.current === conversationId) {
+      if (!turnedOff) return; // the off flag has not reached this render yet
+      seededOff.current = null;
+    }
     if (stampedSurfaceName === desiredSurfaceName) return;
     dispatch(patchConversation({ conversationId, surfaceName: desiredSurfaceName }));
     // Read the new page NOW, so the composer shows what the chat will get.
@@ -89,7 +98,7 @@ export function useConversationFollowsPage(
       dispatch(replaceSurfaceVariableValues({ conversationId, values: {} }));
       dispatch(replaceSurfaceContextEntries({ conversationId, entries: [] }));
     }
-  }, [dispatch, conversationId, conversationReady, stampedSurfaceName, desiredSurfaceName]);
+  }, [dispatch, conversationId, conversationReady, stampedSurfaceName, desiredSurfaceName, turnedOff]);
 
   return {
     pageSurfaceName,

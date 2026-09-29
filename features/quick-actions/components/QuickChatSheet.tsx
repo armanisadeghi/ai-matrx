@@ -1,8 +1,8 @@
 // features/quick-actions/components/QuickChatSheet.tsx
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Braces, MessageSquarePlus, PanelLeft } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { MessageSquarePlus, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -17,11 +17,11 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatHistorySidebar } from "@/features/agents/components/chat/ChatHistorySidebar";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
-import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
 import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
 import { useConversationFollowsPage } from "@/features/surfaces/runtime/useConversationFollowsPage";
+import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   registerSurface,
   unregisterSurface,
@@ -48,6 +48,9 @@ const QUICK_CHAT_PANEL_SURFACE = "quick-chat:panel";
 
 /** Per-viewer convenience only — the panel works identically without it. */
 const PAGE_CONTEXT_STORAGE_KEY = "matrx:quick-chat:include-page-context";
+
+/** The stored choice only changes from this panel, so there is nothing to subscribe to. */
+const subscribeToNothing = () => () => {};
 
 function readStoredPageContext(): boolean {
   try {
@@ -177,12 +180,9 @@ function QuickChatSheetBody({
     string | null
   >(initialConversationId ?? null);
   const [showHistory, setShowHistory] = useState(false);
-  const [includePageContext, setIncludePageContext] = useState(false);
-  // Read after mount — the stored choice must not differ between server and
-  // first client render.
-  useEffect(() => {
-    setIncludePageContext(readStoredPageContext());
-  }, []);
+  // The person's last choice for sharing the page with a NEW chat. The server
+  // snapshot is "off", so server and first client render agree.
+  const pageStartsOn = useSyncExternalStore(subscribeToNothing, readStoredPageContext, () => false);
 
   const loadAbortRef = useRef<AbortController | null>(null);
   const activeSurfaceKeyRef = useRef<string | null>(null);
@@ -237,22 +237,22 @@ function QuickChatSheetBody({
   // Keep the conversation's surface stamp equal to what the toggle SAYS, for
   // whichever conversation is in the panel (fresh or reopened) and whichever
   // page is underneath it right now — the ONE shared implementation.
-  const { pageSurfaceName, pageSurfaceLabel } = useConversationFollowsPage(
-    conversationId,
-    includePageContext,
+  // The page is shared or not from ONE control — the composer's page chip.
+  // Quick Chat opens over any page, so a new chat starts the way the person
+  // last left it (off until they first turn it on).
+  useConversationFollowsPage(conversationId, pageStartsOn);
+  const pageContextOff = useAppSelector(selectPageContextOff(conversationId));
+  const pageShared = useAppSelector((state) =>
+    conversationId ? Boolean(state.conversations.byConversationId[conversationId]?.surfaceName) : false,
   );
-
-  const handleTogglePageContext = useCallback(() => {
-    setIncludePageContext((prev) => {
-      const next = !prev;
-      try {
-        window.localStorage.setItem(PAGE_CONTEXT_STORAGE_KEY, next ? "1" : "0");
-      } catch {
-        /* storage unavailable — the toggle still works for this session */
-      }
-      return next;
-    });
-  }, []);
+  useEffect(() => {
+    if (!pageContextOff && !pageShared) return; // nothing decided yet
+    try {
+      window.localStorage.setItem(PAGE_CONTEXT_STORAGE_KEY, pageContextOff ? "0" : "1");
+    } catch {
+      /* storage unavailable — the chip still works for this chat */
+    }
+  }, [pageContextOff, pageShared]);
 
   // Track the active surface key for the unmount clearFocus — written in an
   // effect (never during render) so the ref always holds the last committed key.
@@ -365,43 +365,9 @@ function QuickChatSheetBody({
           </Tooltip>
         </TooltipProvider>
 
-        <div className="flex min-w-0 flex-1 items-center">
-          <AgentListDropdown
-            onSelect={(id: string) => handleSelectAgent(id)}
-            activeAgentId={agentId}
-            compact
-            noBorder
-          />
-        </div>
+        {/* The agent is chosen from the composer's agent pill — one switcher. */}
+        <div className="min-w-0 flex-1" />
 
-        {pageSurfaceName && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-7 shrink-0 gap-1.5 px-2 text-xs",
-                    includePageContext &&
-                      "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
-                  )}
-                  onClick={handleTogglePageContext}
-                  aria-pressed={includePageContext}
-                  aria-label="Include page context"
-                >
-                  <Braces className="h-3.5 w-3.5" />
-                  Page context
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {includePageContext
-                  ? `On — this chat receives the live values from ${pageSurfaceLabel} with every message`
-                  : `Off — turn on to share the live values from ${pageSurfaceLabel} with this chat`}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
 
         <TooltipProvider>
           <Tooltip>
