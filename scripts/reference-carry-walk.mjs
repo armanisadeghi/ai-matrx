@@ -108,19 +108,22 @@ if (PHASE === "after") {
   const href = await link.getAttribute("href").catch(() => null);
   step("the Team lead chip is a door", { href });
   if (href) {
-    const [popup] = await Promise.all([
-      context.waitForEvent("page", { timeout: 15000 }).catch(() => null),
-      link.click({ modifiers: ["Meta"] }).catch(() => null),
-    ]);
-    const target = popup ?? page;
-    await target.waitForLoadState("domcontentloaded", { timeout: 120000 }).catch(() => undefined);
-    await sleep(6000);
-    step("the chip opened", { url: target.url().replace(ORIGIN, "") });
-    await target.screenshot({ path: join(SHOTS, `${PHASE}-team-lead-opened.png`) });
-    if (popup) await popup.close();
+    // A plain click, as a person clicks: the chip is a real link to the record's one address.
+    await link.click().catch(() => null);
+    await until("the record page", async () => !page.url().includes(T.cedarRidgeDepartments), 60000);
+    await page.waitForLoadState("domcontentloaded", { timeout: 120000 }).catch(() => undefined);
+    await sleep(8000);
+    step("the chip opened", { url: page.url().replace(ORIGIN, ""), title: (await page.title()).slice(0, 80) });
+    await shot("team-lead-opened");
   }
+  // A kind value opens the real view in a window: Arman's copied Titanium cell (read only — opening writes nothing).
+  await open(T.titaniumDepartment);
+  const fenceCell = await cellOf("Web Development", "Team Leader");
+  await shot("titanium-kind-cell");
+  const kindChip = fenceCell.locator("[data-records-kind-value] a[href], [data-records-kind-value] button").first();
+  const kindHref = await kindChip.getAttribute("href").catch(() => null);
+  step("the copied reference's chip", { href: kindHref, text: (await kindChip.innerText().catch(() => "")).slice(0, 80) });
 }
-
 // 4 — an entity-reference cell is edited with a picker (admin's Workspace · Model Picks).
 await open(T.modelPicks);
 const firstPick = (await page.locator("tbody tr").first().innerText().catch(() => "")).split("\n")[0]?.trim() || "";
@@ -136,13 +139,21 @@ if (PHASE === "after") {
   if (offered) {
     await pick.click();
     await sleep(800);
-    await page.getByRole("textbox", { name: /Search — Pick for Model/ }).fill("claude");
-    const found = await until("candidates", async () => (await page.locator("[data-entity-reference-candidate]").count()) > 0, 20000);
-    const names = await page.locator("[data-entity-reference-candidate]").allInnerTexts();
-    step("the picker found models", { count: names.length, first: names.slice(0, 4), ms: found.ms });
+    // The search narrows the list (the typing pauses, then the store's search door answers). The walk
+    // picks the model this row already named, so the table ends as it began.
+    await page.getByRole("textbox", { name: /Search — Pick for Model/ }).fill("3.5-flash-lite");
+    const found = await until(
+      "candidates for the words",
+      async () => {
+        const all = await page.locator("[data-entity-reference-candidate]").allInnerTexts();
+        return all.length > 0 && all.every((t) => /flash-lite/i.test(t)) ? all : null;
+      },
+      20000,
+    );
+    step("the picker found models by their words", { count: found.v?.length ?? 0, first: (found.v ?? []).slice(0, 4), ms: found.ms });
     await shot("model-picks-picker-open");
-    if (names.length > 0) {
-      await page.locator("[data-entity-reference-candidate]").first().click();
+    if (found.v) {
+      await page.locator("[data-entity-reference-candidate]", { hasText: /^gemini-3\.5-flash-lite$/ }).first().click();
       await sleep(800);
       await shot("model-picks-picked");
       const save = page.getByRole("button", { name: /^Save/ }).first();
@@ -152,6 +163,55 @@ if (PHASE === "after") {
       await shot("model-picks-saved");
     }
   }
+}
+
+// 4b — a value that names its own shape opens the real view in a window. admin's own Model Picks: the
+// "The hardest problems" row's "Why this model" holds a pasted comparison for the walk, then its own
+// words again (the walk ends with the table as it found it). Every change is typed into the grid.
+const WHY_HARDEST =
+  "Highest intelligence: the hardest coding, agentic and long-running tasks. Thinking is always on and it can't be forced to call a specific tool.";
+async function typeInto(rowText, col, words) {
+  const cell = await cellOf(rowText, col);
+  await cell.dblclick();
+  await sleep(900);
+  await page.keyboard.press("Meta+A");
+  await page.keyboard.insertText(words);
+  await page.keyboard.press("Enter");
+  await sleep(3500);
+}
+if (PHASE === "after" || PHASE === "kind") {
+  await open(T.modelPicks);
+  // Put back what the first version of this walk typed into the wrong row (2026-09-29 20:00Z).
+  if (await page.locator("tbody tr", { hasText: "Nightly ticket triage" }).count()) {
+    await typeInto("Nightly ticket triage", "Purpose", "The hardest problems");
+  }
+  const COMPARISON = JSON.stringify({
+    __kind: "data_table",
+    title: "Opus against Sonnet on the month-end close checklist",
+    columns: [{ key: "model", label: "Model" }, { key: "cost", label: "Cost per run" }, { key: "caught", label: "Errors caught" }],
+    rows: [
+      { model: "claude-opus-5-5", cost: "$0.84", caught: "11 of 11" },
+      { model: "claude-sonnet-5", cost: "$0.19", caught: "9 of 11" },
+    ],
+  });
+  await typeInto("The hardest problems", "Why this model", COMPARISON);
+  step("a pasted kind value reads as its kind", await readCell("The hardest problems", "Why this model"));
+  await shot("kind-cell");
+  const why = await cellOf("The hardest problems", "Why this model");
+  const button = why.locator("[data-records-kind-button]").first();
+  if (await button.isVisible().catch(() => false)) {
+    await button.click();
+    await sleep(4000);
+    const win = await page.evaluate(() =>
+      [...document.querySelectorAll("[data-window-panel], [role=dialog], [id^=structured-value-window]")].map((d) => d.innerText.replace(/\s+/g, " ").slice(0, 240)),
+    );
+    step("the kind opened in a window", { windows: win });
+    await shot("kind-window");
+    await page.keyboard.press("Escape").catch(() => undefined);
+  }
+  await open(T.modelPicks);
+  await typeInto("The hardest problems", "Why this model", WHY_HARDEST);
+  step("the row reads as it did", await readCell("The hardest problems", "Why this model"));
 }
 
 // 5 — phone width: the chips wrap inside the cell, no sideways page scroll.
