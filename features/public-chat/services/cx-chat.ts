@@ -135,7 +135,7 @@ export async function getUserChatHistory(
     .schema("chat")
     .from("conversation")
     // Ownership is `created_by` (canonical, trigger-stamped); `user_id` is
-    // deprecated and slated for drop. RLS also gates this query by visibility.
+    // deprecated and slated for drop. RLS also gates this query.
     .select("id, title, status, message_count, created_at, updated_at")
     .eq("created_by", userId)
     .is("deleted_at", null)

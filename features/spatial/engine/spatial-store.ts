@@ -7,7 +7,7 @@
  * straight to the DOM. React only hears about COARSE changes, each through
  * its own `useSyncExternalStore` channel:
  *   - the detail tier (read / glance / overview) — changes a few times per zoom
- *   - each tile's visibility (culling) — changes only when a tile crosses the edge
+ *   - each tile's in-view state (culling) — changes only when a tile crosses the edge
  * Both are recomputed at most once per animation frame.
  */
 

@@ -1227,7 +1227,7 @@ function normalizeField(row: VaultFieldMaskedRow): VaultField {
 
 /**
  * Client-side capability projection for the direct list read. Mirrors
- * aidream's `item_capabilities` matrix; visibility under RLS already
+ * aidream's `item_capabilities` matrix; being readable under RLS already
  * implies `can_use`. Server responses carry authoritative capabilities
  * and every mutation is re-checked server-side regardless.
  */

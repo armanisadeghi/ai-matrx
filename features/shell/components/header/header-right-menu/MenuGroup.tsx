@@ -88,7 +88,7 @@ export function MenuGroup({
           and the panel unable to scroll to it because a clipped child adds
           nothing to `scrollHeight`. Hiding the content makes a collapsed row
           ABSENT instead of present-but-unreachable (and drops it out of the
-          tab order). `visibility` transitions discretely — visible the instant
+          tab order). the CSS hidden/visible property transitions discretely — visible the instant
           the group opens, hidden only when the collapse finishes — so it is
           listed in the same `transition-[…]` and the animation is unchanged.
           Measured gate:

@@ -59,11 +59,11 @@ export function ListMetaHeader({
   onEdit,
   onDelete,
 }: ListMetaHeaderProps) {
-  const visibility = getListVisibility({
+  const audience = getListVisibility({
     is_public: list.is_public,
     public_read: list.public_read,
   });
-  const visConfig = VISIBILITY_CONFIG[visibility];
+  const visConfig = VISIBILITY_CONFIG[audience];
   const VisIcon = visConfig.icon;
 
   const bookmark: FullListBookmark = {
@@ -136,7 +136,7 @@ export function ListMetaHeader({
         </div>
       </div>
 
-      {/* Meta row: stats + visibility */}
+      {/* Meta row: stats + audience */}
       <div className="flex items-center gap-3 flex-wrap">
         <span
           className={cn(

@@ -931,7 +931,7 @@ export function revokeConsequence(
   return `${head}, which stops ${parts.join("; ")}.${resources}`;
 }
 
-/** Is this provider connected at all? Drives the prompt card's own visibility. */
+/** Is this provider connected at all? Drives whether the prompt card shows. */
 export function anyProductConnected(
   health: readonly ConnectorProductHealth[],
 ): boolean {

@@ -9,6 +9,12 @@
 
 "use client";
 
+import {
+  PUBLISHED_TO_WEB_LABEL,
+  SHOWN_TO_LABELS,
+  publishedToWebLabel,
+  shownToLabel,
+} from "@/lib/row-access";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -61,32 +67,22 @@ import {
   parseUpdateEducationNotes,
 } from "./educationNoteAgentWrites";
 
-type VisibilityFilter = "all" | "mine" | "shared" | "public";
-const VISIBILITY_FILTERS: { id: VisibilityFilter; label: string }[] = [
+type NoteListFilter = "all" | "only_me" | "published";
+const NOTE_LIST_FILTERS: { id: NoteListFilter; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "mine", label: "Mine" },
-  { id: "shared", label: "Shared" },
-  { id: "public", label: "Public" },
+  { id: "only_me", label: SHOWN_TO_LABELS.only_me },
+  { id: "published", label: PUBLISHED_TO_WEB_LABEL },
 ];
 
-const VISIBILITY_LABEL: Record<string, string> = {
-  personal: "Personal",
-  internal: "Org",
-  link: "Link",
-  public: "Public",
-};
-
-function matchesVisibility(
-  filter: VisibilityFilter,
-  v: string | null,
+function matchesListFilter(
+  filter: NoteListFilter,
+  n: { shown_to: string | null; published_to_web: boolean },
 ): boolean {
   switch (filter) {
-    case "mine":
-      return v === "personal" || v === "internal" || v == null;
-    case "shared":
-      return v === "link";
-    case "public":
-      return v === "public";
+    case "only_me":
+      return n.shown_to === "only_me";
+    case "published":
+      return n.published_to_web;
     default:
       return true;
   }
@@ -139,7 +135,7 @@ export function EduNotesHome() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [visibility, setVisibility] = useState<VisibilityFilter>("all");
+  const [listFilter, setListFilter] = useState<NoteListFilter>("all");
   const [isPending, startTransition] = useTransition();
   const [navId, setNavId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -363,7 +359,7 @@ export function EduNotesHome() {
 
   const q = query.trim().toLowerCase();
   const visible = (rows ?? []).filter(
-    (r) => matchesVisibility(visibility, r.visibility) && matchesQuery(r, q),
+    (r) => matchesListFilter(listFilter, r) && matchesQuery(r, q),
   );
 
   return (
@@ -394,14 +390,14 @@ export function EduNotesHome() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              {VISIBILITY_FILTERS.map((f) => (
+              {NOTE_LIST_FILTERS.map((f) => (
                 <button
                   key={f.id}
                   type="button"
-                  onClick={() => setVisibility(f.id)}
+                  onClick={() => setListFilter(f.id)}
                   className={cn(
                     "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                    visibility === f.id
+                    listFilter === f.id
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:bg-accent",
                   )}
@@ -492,9 +488,12 @@ export function EduNotesHome() {
                         <h3 className="min-w-0 truncate text-sm font-semibold text-foreground">
                           {n.label || "Untitled note"}
                         </h3>
-                        {n.visibility && n.visibility !== "personal" && (
+                        {(n.published_to_web ||
+                          (n.shown_to && n.shown_to !== "only_me")) && (
                           <span className="shrink-0 inline-flex items-center rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4 text-muted-foreground">
-                            {VISIBILITY_LABEL[n.visibility] ?? n.visibility}
+                            {n.published_to_web
+                              ? publishedToWebLabel(true)
+                              : shownToLabel(n.shown_to)}
                           </span>
                         )}
                       </div>

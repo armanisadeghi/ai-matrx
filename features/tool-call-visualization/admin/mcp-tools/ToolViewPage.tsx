@@ -368,7 +368,7 @@ export function ToolViewPage({ tool }: Props) {
         validation_exempt: tool.validation_exempt ?? null,
         max_client_wait_seconds: tool.max_client_wait_seconds ?? null,
       },
-      tool_visibility: tool.visibility || undefined,
+      tool_visibility: tool.published_to_web ? "published_to_web" : "not_published",
       tool_updated_at: tool.updated_at || undefined,
       selection: window.getSelection()?.toString() || undefined,
     });
@@ -378,7 +378,7 @@ export function ToolViewPage({ tool }: Props) {
   // `writeTargets` (the catalogue mount registers none; see the manifest's
   // writeTargets block for why). Three authored-metadata fields only:
   // description, category, tags. Everything capability-shaped — is_active,
-  // admin_only, gating, exemptions, visibility, tier — plus the name, the
+  // admin_only, gating, exemptions, published to the web, tier — plus the name, the
   // parameter/output schemas, annotations and MCP provenance stays human-only.
   //
   // These are `mode: "entity"`: this page holds no editor state to stage a

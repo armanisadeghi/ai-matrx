@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * SandboxEnvTab — env-var visibility only (agent env + passthrough).
+ * SandboxEnvTab — env-var inspection only (agent env + passthrough).
  *
  * Mounts the existing SandboxDiagnosticsPanel in `view="env"` mode. Two
  * inner sub-tabs render:

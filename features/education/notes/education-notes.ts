@@ -38,13 +38,13 @@ export function isEducationNote(note: { folder_name: string | null | undefined }
 export const EDUCATION_NOTE_CREATE_FIELDS = { folder_name: EDUCATION_NOTES_FOLDER } as const;
 
 const EDUCATION_NOTE_LIST_COLUMNS =
-  "id,created_by,label,folder_name,folder_id,tags,updated_at,position,organization_id,visibility,version";
+  "id,created_by,label,folder_name,folder_id,tags,updated_at,position,organization_id,shown_to,published_to_web,version";
 
 export interface ListEducationNotesOptions {
   /**
    * `mine` — only notes I created (the personal study-guide library).
    * `default` — the note token's registry list scope, exactly as the Notes app
-   * list decides it (the Smart Notes home, which filters visibility itself).
+   * list decides it (the Smart Notes home, which filters by Shown to itself).
    */
   owner?: "mine" | "default";
 }

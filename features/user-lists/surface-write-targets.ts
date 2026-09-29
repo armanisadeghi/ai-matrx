@@ -53,7 +53,7 @@ import type { SurfaceWriteTarget } from "@/features/surfaces/types";
 import { LIST_VISIBILITY_VALUES } from "./types";
 
 /**
- * The visibility vocabulary as model-facing prose, derived from the runtime
+ * The audience vocabulary as model-facing prose, derived from the runtime
  * constant that `getListVisibility` actually produces. Interpolated into the
  * manifests' `list_visibility` description so the enum an agent is told about
  * is literally the enum the page emits.

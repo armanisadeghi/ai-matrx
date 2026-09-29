@@ -22,6 +22,7 @@ const row = {
   solutions: [{ task: "Solve", steps: [], solutionAnswer: "1", transitionText: null }],
   metadata: {}, organization_id: "22222222-2222-4222-8222-222222222222",
   visibility: "public", shown_to: null, resources: null, related_content: null,
+  published_to_web: true, published_to_web_at: null, published_to_web_by: null,
   created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z",
   created_by: null, updated_by: null, deleted_at: null, version: 4,
 } satisfies MathProblemRow;
@@ -36,7 +37,7 @@ describe("Quick Math agent write parsers", () => {
   it("creates unpublished internal drafts", () => {
     const [created] = parseCreateMathProblems([createValue], [row]);
     expect(created.is_published).toBe(false);
-    expect(created.visibility).toBe("internal");
+    expect(created.published_to_web).toBe(false);
     expect(created.title).toBe("New equation");
   });
 

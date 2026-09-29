@@ -24,7 +24,7 @@
 // WHAT IS THIS FILE'S JOB — the two things only this route knows:
 //
 // 1. SCOPE. RLS on `workspace.tasks` is far WIDER than the list: a `pub_read`
-//    policy delivers every `visibility='public'` task in the system, and
+//    policy delivers every task published to the web in the system, and
 //    `std_select` adds shared/permission-granted rows. Applying whatever
 //    arrives would put tasks on screen that a reload then removes. So every
 //    payload is tested against the RPC's own task predicate (not deleted, open
@@ -190,7 +190,10 @@ function toTaskRecord(
         ? (row.settings as Record<string, unknown>)
         : null,
     created_at: str(row.created_at) ?? existing.created_at ?? null,
-    visibility: str(row.visibility) ?? existing.visibility,
+    published_to_web:
+      typeof row.published_to_web === "boolean"
+        ? row.published_to_web
+        : existing.published_to_web,
   };
 }
 

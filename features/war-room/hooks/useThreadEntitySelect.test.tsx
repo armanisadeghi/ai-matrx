@@ -96,12 +96,12 @@ function noteRow(id: string, label: string) {
     position: 0,
     project_id: null,
     sync_version: 1, search_engine_indexed: null, shown_to: null,
+    published_to_web: false, published_to_web_at: null, published_to_web_by: null,
     tags: [],
     task_id: null,
     updated_at: STAMP,
     updated_by: null,
     version: 1,
-    visibility: "personal",
   } satisfies Note;
 }
 

@@ -27,6 +27,7 @@
  * never a blank dialog pretending the record is empty.
  */
 
+import { shownToLabel } from "@/lib/row-access";
 import React from "react";
 import { Boxes } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
@@ -41,7 +42,7 @@ const DETAIL_FIELDS = [
   "summary",
   "tagline",
   "status",
-  "visibility",
+  "shown_to",
   "category",
 ] as const;
 
@@ -128,7 +129,8 @@ export function RegistryPeek({
       ) : row ? (
         <>
           {DETAIL_FIELDS.map((field) => {
-            const value = asText(row[field]);
+            const raw = asText(row[field]);
+            const value = field === "shown_to" && raw ? shownToLabel(raw) : raw;
             return value ? (
               <PeekField key={field} label={field.replace(/_/g, " ")}>
                 <div className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words text-sm text-muted-foreground">

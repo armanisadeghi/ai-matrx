@@ -14,6 +14,7 @@ const row = (): StudyMediaRow => ({
   shown_to: null, source_id: "source-1", source_kind: "note", source_title: "Lecture",
   status: "ready", title: "Original", trust: { confidence: "grounded", citations: [] },
   updated_at: "2026-09-27T00:00:00Z", updated_by: "user-1", version: 7, visibility: "personal",
+  published_to_web: false, published_to_web_at: null, published_to_web_by: null,
 });
 
 describe("summary writes", () => {

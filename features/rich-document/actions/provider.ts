@@ -147,7 +147,7 @@ const MENU_ALIASES: Record<string, string> = {
 
 export interface RichDocumentTargetHost {
   kind: "rich-document";
-  /** Render-time context: labels, visibility, toggle state. */
+  /** Render-time context: labels, shown/hidden, toggle state. */
   ctx: RichDocumentActionContext;
   /** Click-time context factory: what handlers run against (live content). */
   getCtx: () => RichDocumentActionContext;

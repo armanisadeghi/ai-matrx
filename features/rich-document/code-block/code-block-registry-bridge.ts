@@ -45,7 +45,7 @@ export function resolveCodeBlockMenuItems(
   ctx: RichDocumentActionContext,
 ): MenuItem[] {
   // Only the code-block family is evaluated — a block never pays for the
-  // visibility predicates of every document action in the registry.
+  // show predicates of every document action in the registry.
   return getAllActions()
     .filter((a) => String(a.id).startsWith(CODE_BLOCK_ACTION_PREFIX))
     .filter((a) => !a.requiresAuth || ctx.isAuthenticated)

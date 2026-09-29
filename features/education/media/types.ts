@@ -21,7 +21,7 @@ export type StudyMediaUpdate = Edu["study_media"]["Update"];
  * tools; `summary` is the grounded study summary produced by the P9 Universal
  * Ingest kit flow; `memory_aid` is the Memory Tools artifact (VISION §11 —
  * mnemonics / analogies / memory palace, structured in `ir_envelope`). All share
- * this table for their trust + visibility + versioning + source lineage.
+ * this table for their trust + row controls + versioning + source lineage.
  */
 export type EduMediaKind = "audio" | "mind_map" | "summary" | "memory_aid";
 
@@ -116,7 +116,7 @@ export interface NewStudyMediaInput {
   // mind map
   irEnvelope?: unknown;
   diagramKind?: string | null;
-  visibility?: Database["platform"]["Enums"]["visibility"];
+  shownTo?: Database["platform"]["Enums"]["shown_to"] | null;
 }
 
 /** Patch shape for updating an artifact after generation completes. */
@@ -133,7 +133,10 @@ export type StudyMediaPatch = Partial<
     | "duration_seconds"
     | "ir_envelope"
     | "diagram_kind"
-    | "visibility"
+    | "shown_to"
+    | "published_to_web"
+    | "published_to_web_at"
+    | "published_to_web_by"
     | "metadata"
   >
 >;

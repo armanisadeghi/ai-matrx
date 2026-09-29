@@ -200,7 +200,9 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
               ...(mapConfig.linkedCards !== undefined
                 ? { linked_card_count: mapConfig.linkedCards }
                 : {}),
-              map_visibility: media.visibility,
+              map_visibility: media.published_to_web
+                ? "published_to_web"
+                : (media.shown_to ?? "default"),
               is_owner: isOwner,
               ...(trust
                 ? {

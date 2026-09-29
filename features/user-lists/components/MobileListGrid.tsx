@@ -38,8 +38,8 @@ export function MobileListGrid({ lists }: MobileListGridProps) {
   return (
     <div className="md:hidden grid grid-cols-1 gap-3 p-4">
       {lists.map((list) => {
-        const visibility = getListVisibility(list);
-        const visConfig = VISIBILITY_CONFIG[visibility];
+        const audience = getListVisibility(list);
+        const visConfig = VISIBILITY_CONFIG[audience];
         const VisIcon = visConfig.icon;
 
         return (

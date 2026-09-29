@@ -155,7 +155,7 @@ export function useApprovalStanding(
     async function ask() {
       timer = null;
       if (!live || decided || inFlight) return;
-      if (!visible()) return; // resumed by the visibility listener
+      if (!visible()) return; // resumed by the page-shown listener
       inFlight = true;
       try {
         const next = await readApprovalStanding(organizationId!, approvalId!);

@@ -57,7 +57,7 @@ export function ListItemsTableView({ list, items, read }: ListItemsTableViewProp
     new Set(items.map((i) => i.group_name).filter((g): g is string => !!g)),
   ).sort();
 
-  const visibility = getListVisibility(list);
+  const audience = getListVisibility(list);
 
   const columns: ColumnConfig<UserListItem>[] = [
     {
@@ -151,7 +151,7 @@ export function ListItemsTableView({ list, items, read }: ListItemsTableViewProp
   };
 
   const visibilityBadge =
-    visibility === "public" ? (
+    audience === "public" ? (
       <Badge
         variant="outline"
         className="gap-1 text-green-600 border-green-600/40 bg-green-600/10"

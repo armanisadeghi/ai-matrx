@@ -22,7 +22,7 @@
  * on the matching anchor — without re-emitting the page, so we don't
  * fight ourselves.
  *
- * Density / pane visibility is owned by the caller so power users can
+ * Density / which panes show is owned by the caller so power users can
  * collapse a pane via keyboard.
  */
 
@@ -1998,7 +1998,7 @@ export function PaneHeader({
   icon: React.ReactNode;
   onTogglePane?: () => void;
   /** Returns the text to copy for the entire pane. When provided, renders a
-   *  copy-to-clipboard button next to the EyeOff visibility toggle. */
+   *  copy-to-clipboard button next to the EyeOff show/hide toggle. */
   onCopyAll?: () => string;
   copyAllLabel?: string;
 }) {

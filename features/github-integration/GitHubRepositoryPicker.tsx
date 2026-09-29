@@ -5,7 +5,7 @@
  *
  * It replaced a native `<select>` holding 62 `<option>` elements. A select is
  * the wrong primitive here for a reason that is not cosmetic: it cannot be
- * searched, it cannot show visibility or permission, and — the part that
+ * searched, it cannot show public/private or permission, and — the part that
  * matters — it cannot say "your search matched nothing because that account
  * isn't connected". A user hunting for `AI-Matrix-Engine/aidream` in a select
  * scrolls, fails, and blames us. Here the empty result carries the fix.
@@ -20,7 +20,7 @@ import type { GitHubRepository } from "./types";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /**
- * Search over what the row actually SHOWS: full name, visibility word, and
+ * Search over what the row actually SHOWS: full name, public/private word, and
  * permission word. Typing "private" or "admin" filters, because those are the
  * words on screen and a search box that ignores them is a lie.
  */
@@ -31,10 +31,10 @@ export function filterGitHubRepositories(
   const needle = query.trim().toLowerCase();
   if (!needle) return repositories;
   return repositories.filter((repository) => {
-    const visibility = repository.private ? "private" : "public";
+    const repoAccess = repository.private ? "private" : "public";
     const haystack = [
       repository.fullName,
-      visibility,
+      repoAccess,
       repository.permissionLevel ?? "",
       repository.archived ? "archived" : "",
     ]

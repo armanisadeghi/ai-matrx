@@ -267,11 +267,11 @@ export async function listMyPublicResources(): Promise<OwnedPublicResource[]> {
   const [sets, docs] = await Promise.all([
     sb.schema("education").from("fc_set")
       .select("id, name")
-      .eq("created_by", uid).eq("visibility", "public").is("deleted_at", null)
+      .eq("created_by", uid).eq("published_to_web", true).is("deleted_at", null)
       .order("updated_at", { ascending: false }),
     sb.schema("education").from("learn_doc")
       .select("id, title")
-      .eq("created_by", uid).eq("visibility", "public").is("deleted_at", null)
+      .eq("created_by", uid).eq("published_to_web", true).is("deleted_at", null)
       .order("updated_at", { ascending: false }),
   ]);
 

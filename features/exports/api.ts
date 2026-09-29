@@ -70,7 +70,6 @@ export async function fetchExportAdapters(
 export async function createExportLibrary(input: {
   fileId: string;
   name?: string;
-  visibility?: string;
   organizationId?: string;
 }): Promise<CreateExportResponse> {
   const { data } = await postJson<
@@ -78,13 +77,11 @@ export async function createExportLibrary(input: {
     {
       file_id: string;
       name?: string;
-      visibility?: string;
       organization_id?: string;
     }
   >("/media/exports", {
     file_id: input.fileId,
     name: input.name,
-    visibility: input.visibility,
     organization_id: input.organizationId,
   });
   return parseCreateExportResponse(data);

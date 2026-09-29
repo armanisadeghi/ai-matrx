@@ -4,7 +4,7 @@
 // Lists tab and its count, and the list pickers (agent variable binding, choice columns, the floating
 // list workspace). The one door is the store's: `custom.pick_list_index(org)` for one organization
 // (the organization wall first) and `custom.pick_list_index_everywhere()` for every organization the
-// person is a member of. It answers the Tables of choices the store's own visibility lets her open,
+// person is a member of. It answers the Tables of choices the store's own access rules lets her open,
 // each with its item count, plus — until the final switch archives them — her own live older lists,
 // marked `livesIn: "older"` so a row opens where the list lives (`/lists/<id>` decides).
 //

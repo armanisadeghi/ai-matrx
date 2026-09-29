@@ -245,7 +245,6 @@ export function parseExportLibrary(payload: unknown, field = "the export"): Expo
     status: optStr(row.status ?? row.sync_status, `${field}.status`),
     bytes: optNum(row.bytes, `${field}.bytes`),
     total_items: optNum(row.total_items ?? row.item_count, `${field}.total_items`),
-    visibility: optStr(row.visibility, `${field}.visibility`),
     organization_id: optStr(row.organization_id, `${field}.organization_id`),
     created_at: optStr(row.created_at, `${field}.created_at`),
     updated_at: optStr(row.updated_at, `${field}.updated_at`),

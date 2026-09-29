@@ -72,7 +72,7 @@ export default function CmsAgentsAdminClient() {
                 <div>
                     <h1 className="text-base font-bold text-foreground">CMS Agent Activity</h1>
                     <p className="text-xs text-muted-foreground">
-                        Live visibility into every agent + human write against the CMS project
+                        Live view of every agent + human write against the CMS project
                         (viyklljfdhtidwecakwx) — {sites.length} site{sites.length === 1 ? '' : 's'} in the fleet.
                     </p>
                 </div>

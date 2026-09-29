@@ -16,6 +16,11 @@ import {
   withDisplayTitle,
 } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
+import {
+  currentUserIdOrNull,
+  rowAccessColumns,
+  type RowAccessChange,
+} from "@/lib/row-access/columns";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
@@ -195,25 +200,25 @@ export const assessmentService = {
     }
   },
 
-  /** Flip visibility (personal → link/public) for sharing. */
-  async updateVisibility(
+  /** Save an assessment's row controls ("Shown to", "Published to the web"). */
+  async updateRowAccess(
     id: string,
-    visibility: AssessmentRow["visibility"],
+    change: RowAccessChange,
   ): Promise<AsResult<AssessmentRow>> {
     try {
       const { data, error } = await EDU()
         .from("assessment")
-        .update({ visibility } as never)
+        .update(rowAccessColumns(change, await currentUserIdOrNull()))
         .eq("id", id)
         .select("*")
         .single();
-      if (error) return fail("updateVisibility", error);
+      if (error) return fail("updateRowAccess", error);
       return {
         data: withDisplayTitle(data as AssessmentRow, "title"),
         error: null,
       };
     } catch (e) {
-      return fail("updateVisibility", e);
+      return fail("updateRowAccess", e);
     }
   },
 

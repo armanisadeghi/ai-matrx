@@ -10,9 +10,9 @@ import { acknowledgedPreparedSource, savePreparedContentEdit } from "./preparedE
 const note = (overrides: Partial<Note> = {}): Note => ({
   id: "33333333-3333-4333-8333-333333333333", organization_id: "11111111-1111-4111-8111-111111111111",
   version: 0, content: "base", label: "Note", folder_name: null, folder_id: null, tags: [], metadata: {}, custom_fields: {},
-  visibility: "personal", position: 0, project_id: null, task_id: null, created_at: "2026-09-12T00:00:00Z",
+  position: 0, project_id: null, task_id: null, created_at: "2026-09-12T00:00:00Z",
   created_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", updated_at: "2026-09-12T00:00:00Z", updated_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", deleted_at: null,
-  content_hash: null, file_path: null, last_device_id: null, sync_version: 0, search_engine_indexed: null, shown_to: null, ...overrides,
+  content_hash: null, file_path: null, last_device_id: null, sync_version: 0, search_engine_indexed: null, shown_to: null, published_to_web: false, published_to_web_at: null, published_to_web_by: null, ...overrides,
 });
 const source = () => captureNoteEditSource({ acknowledgedNote: note(), displayedNote: note({ content: "dirty" }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "editor", snapshotId: "snapshot" });
 const receipt = (overrides: Partial<NoteSaveReceipt> = {}): NoteSaveReceipt => ({ note: note({ content: "saved", version: 1 }), databaseWrite: "saved", succeededFields: [], failedFields: [], safeCauses: {}, ...overrides });

@@ -188,7 +188,6 @@ describe("the Library read, against the envelope the server actually sends", () 
         sync_status: "completed",
         item_count: 10000,
         organization_id: "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f",
-        visibility: "personal",
       },
     });
 

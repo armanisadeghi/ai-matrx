@@ -392,7 +392,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
         <WorkingDocumentHeader sessionId={sessionId} />
 
         {/* Body — all three modes stay mounted; switching tabs only flips
-          visibility. This keeps one shared state across Record / Agent / Live:
+          which one shows. This keeps one shared state across Record / Agent / Live:
           nothing unmounts, re-fetches, re-resolves the conversation, or flashes
           a spinner when you move between tabs. */}
         <main className="relative min-h-0 flex-1">

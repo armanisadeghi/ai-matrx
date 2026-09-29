@@ -6,7 +6,7 @@ import { createProjectsScope } from "@/features/surfaces/manifests/projects.mani
 import type { Project } from "@/features/projects/types";
 
 /**
- * Placement visibility for the projects surface menu.
+ * Placement display for the projects surface menu.
  *
  * The project workspace is a mix of editable inputs (the in-place name /
  * description editors) and read-only facts the user reads (the hero, meta,

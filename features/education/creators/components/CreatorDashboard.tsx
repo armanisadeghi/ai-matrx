@@ -416,7 +416,7 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
       apply: async (value) => {
         const isPublic = readVisibility(value);
         const profile = await setCreatorPublic(isPublic);
-        if (!profile?.handle) throw new Error("The creator profile was not returned after updating visibility.");
+        if (!profile?.handle) throw new Error("The creator profile was not returned after publishing it to the web.");
         setIsPublic(profile.is_public);
         return {
           summary: profile.is_public ? "Published creator page." : "Unpublished creator page.",

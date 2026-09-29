@@ -74,8 +74,8 @@ function ListRow({
 }: ListRowProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const visibility = getListVisibility(list);
-  const VisIcon = VISIBILITY_ICONS[visibility];
+  const audience = getListVisibility(list);
+  const VisIcon = VISIBILITY_ICONS[audience];
   const isLoading = navigatingId === list.id;
   const isDisabled = isAnyNavigating;
 
@@ -110,7 +110,7 @@ function ListRow({
           <VisIcon
             className={cn(
               "h-3 w-3 flex-shrink-0",
-              VISIBILITY_COLORS[visibility],
+              VISIBILITY_COLORS[audience],
             )}
           />
         )}

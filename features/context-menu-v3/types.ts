@@ -26,7 +26,7 @@ import type { ResourceType } from "@/utils/permissions/types";
 import type { SelectionRange } from "./utils/selection-tracking";
 
 // ---------------------------------------------------------------------------
-// Placement visibility — which dynamic submenus render, and how.
+// Placement display — which dynamic submenus render, and how.
 // ---------------------------------------------------------------------------
 
 export type PlacementVisibility = "show" | "hide" | "disable";
@@ -379,7 +379,7 @@ export interface ContextMenuV3CoreProps {
   // can read — see `model/requirement-gate.ts`. A host that wants to refuse a
   // qualifying item uses the exclusion valve (the `menu` surface-config
   // namespace), which is authored per PLACE and survives a remount.
-  /** Per-placement visibility. Defaults to "show" for every placement. */
+  /** Per-placement display. Defaults to "show" for every placement. */
   placementMode?: PlacementMode;
 
   // ── Surface passthrough ─────────────────────────────────────────────────

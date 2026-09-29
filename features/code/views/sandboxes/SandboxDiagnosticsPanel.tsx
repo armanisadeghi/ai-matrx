@@ -3,7 +3,7 @@
 /**
  * SandboxDiagnosticsPanel
  *
- * Total visibility into the sandbox's state. Three sections:
+ * Total insight into the sandbox's state. Three sections:
  *
  *   1. Readiness check — every layer reported with status code + latency:
  *        container ≫ matrx_agent (port 8000) ≫ aidream /api/health (8001)

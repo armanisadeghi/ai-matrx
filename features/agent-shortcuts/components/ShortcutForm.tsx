@@ -348,7 +348,7 @@ export function ShortcutForm({
   // THE SYSTEM-AGENT LAW: a GLOBAL shortcut is system configuration — only
   // system agents (agent_type='builtin') may be bound. Personal/shared/org
   // agents break every user the shortcut serves the moment ownership,
-  // visibility, or archival shifts.
+  // sharing, or archival shifts.
   const isGlobalScope = scope === "global";
   const builtinAgents = useAppSelector(selectBuiltinAgents);
   useEffect(() => {

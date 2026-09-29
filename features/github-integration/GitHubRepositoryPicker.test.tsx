@@ -53,7 +53,7 @@ describe("filterGitHubRepositories", () => {
     ).toEqual(["armanisadeghi/ai-matrx-admin"]);
   });
 
-  it("matches on the visibility and permission words the row shows", () => {
+  it("matches on the public/private and permission words the row shows", () => {
     expect(
       filterGitHubRepositories(REPOSITORIES, "private").map((r) => r.fullName),
     ).toEqual(["armanisadeghi/matrx-sandbox"]);

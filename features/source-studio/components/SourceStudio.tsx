@@ -1207,7 +1207,7 @@ function PortionsList({
   );
 }
 
-// ── Pane visibility strip ─────────────────────────────────────────────────
+// ── Pane show/hide strip ─ ─────────────────────────────────────────────────
 
 function PaneStrip({
   panes,

@@ -3,7 +3,7 @@
 // Two containers inside the sheet nav:
 //   shell-mobile-main-nav  — standard nav (always SSR)
 //   shell-mobile-route-nav — route menu (client island, Large Routes)
-// data-sidebar-view on .shell-mobile-sheet controls visibility.
+// data-sidebar-view on .shell-mobile-sheet controls which view shows.
 //
 // All links carry data-nav-href. Active state is driven entirely by CSS:
 //   .shell-root[data-pathname^="/demos/chat"] [data-nav-href="/demos/chat"] { ... }

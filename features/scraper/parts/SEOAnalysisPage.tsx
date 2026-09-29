@@ -468,8 +468,8 @@ const SEOAnalysisPage = ({ overview = {}, structuredData = {} }) => {
               
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 {faqOpportunities.length > 0 
-                  ? `We've detected ${faqOpportunities.length} potential FAQ items on this page. Adding FAQ schema can improve your visibility in Google's search results.`
-                  : 'No FAQ items detected. Consider adding FAQ content to improve search visibility.'}
+                  ? `We've detected ${faqOpportunities.length} potential FAQ items on this page. Adding FAQ schema can improve how you appear in Google's search results.`
+                  : 'No FAQ items detected. Consider adding FAQ content to improve how you show up in search.'}
               </p>
               
               {faqOpportunities.length > 0 && (

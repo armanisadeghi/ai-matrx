@@ -96,6 +96,9 @@ export async function emitAssistTracked(
     version: 1,
     visibility: "personal",
     shown_to: null,
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
     deleted_at: null,
     custom_fields: {},
   });

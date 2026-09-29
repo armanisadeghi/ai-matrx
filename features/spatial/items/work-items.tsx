@@ -208,7 +208,7 @@ function NotePicker({ onPick, onCancel }: PickerProps) {
 
 /**
  * The file's surface host for one tile — the SAME `SingleFileSurfaceHost` the
- * `/files/f/[id]` page mounts (values, rename / move / visibility / restore
+ * `/files/f/[id]` page mounts (values, rename / move / sharing / restore
  * write targets, open-tab / go-to-page / download tools). Keyed by file so a
  * re-pointed tile starts on Preview.
  */

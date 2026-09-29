@@ -24,7 +24,7 @@ describe("resolveShortcutWriteScope", () => {
     resolveSystemOrgId.mockResolvedValue(SYSTEM_ORG_ID);
   });
 
-  it("keeps personal visibility while carrying the selected organization", async () => {
+  it("keeps the personal scope while carrying the selected organization", async () => {
     await expect(
       resolveShortcutWriteScope({ scope: "user", userId: USER_ID }),
     ).resolves.toEqual({
@@ -70,7 +70,7 @@ describe("resolveShortcutWriteScope", () => {
     });
   });
 
-  it("carries selected org ownership alongside project visibility", async () => {
+  it("carries selected org ownership alongside project scope", async () => {
     await expect(
       resolveShortcutWriteScope({
         scope: "project",
@@ -85,7 +85,7 @@ describe("resolveShortcutWriteScope", () => {
     });
   });
 
-  it("refuses incomplete visibility context before a write", async () => {
+  it("refuses incomplete scope context before a write", async () => {
     await expect(
       resolveShortcutWriteScope({ scope: "user", userId: null }),
     ).rejects.toThrow("before authentication is ready");

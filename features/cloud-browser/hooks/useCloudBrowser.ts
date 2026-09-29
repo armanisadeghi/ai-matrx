@@ -136,7 +136,7 @@ export function useCloudBrowser(
     const schedule = () => {
       if (!disposed && timer === null) {
         timer = setTimeout(() => {
-          // A visibility change can now immediately resume the exact poll.
+          // A tab show/hide change can now immediately resume the exact poll.
           timer = null;
           void poll();
         }, 2000);

@@ -4,7 +4,7 @@
 // cookie-free client (works inside cached / statically-generated routes) +
 // `unstable_cache` tagged so a publish can bust every consumer at once
 // (list page, article pages, sitemap, OG). RLS `pub_read` restricts anon to
-// `visibility='public'`, so only published docs are ever returned.
+// rows published to the web, so only published docs are ever returned.
 //
 // Loud recovery: a read failure THROWS (never a silent empty list) — an empty
 // learn index is indistinguishable from a broken DB otherwise.
@@ -31,7 +31,7 @@ async function fetchPublishedRows(): Promise<LearnDocRow[]> {
     // private columns, so `*` is a 42501. Keep this literal for Supabase's
     // compile-time row inference; public-exposure.test.ts forces registry parity.
     .select(LEARN_DOC_PUBLIC_SELECT)
-    .eq("visibility", "public")
+    .eq("published_to_web", true)
     .is("deleted_at", null)
     .order("content_updated_at", { ascending: false, nullsFirst: false });
   if (error) {

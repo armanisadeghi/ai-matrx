@@ -89,7 +89,7 @@ export const selectProjects = createSelector(
         subtasks: [],
         updatedAt: rec.updated_at ?? null,
         userId: rec.created_by ?? null,
-        isPublic: rec.visibility === "public",
+        isPublic: rec.published_to_web === true,
         origin: (rec.origin as Task["origin"]) ?? "user",
         sourceType: rec.source_type ?? null,
         sourceUrl: rec.source_url ?? null,

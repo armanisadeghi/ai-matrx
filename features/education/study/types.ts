@@ -59,7 +59,6 @@ export interface NewSessionInput {
   sourceQuery?: Record<string, unknown> | null;
   settings?: Record<string, unknown>;
   status?: string;
-  visibility?: Database["platform"]["Enums"]["visibility"];
   metadata?: Record<string, unknown>;
 }
 
@@ -280,7 +279,7 @@ export type SessionArtifact =
 // ─── Planner (Phase 6 — real study_goal CRUD) ─────────────────────────────────
 /**
  * `study_goal` has no dedicated topic/item_type/set columns — it's a generic
- * entity row (title/target_date/status/visibility) shared by every future
+ * entity row (title/target_date/status/Shown to) shared by every future
  * planner use, not just flashcards. Targeting info rides in `metadata` jsonb
  * so the column set never has to grow per-mode. The planner's heuristic
  * ranking (soonest target_date + highest struggle count) reads this back to

@@ -18,7 +18,7 @@ describe("noteAdapter.edit", () => {
     const USER = "33333333-3333-4333-8333-333333333333";
     const snapshot = {
       id: NOTE, organization_id: ORG, version: 4, content: "base", label: "L",
-      folder_name: "Draft", folder_id: "f1", tags: ["a"], metadata: {}, visibility: "personal",
+      folder_name: "Draft", folder_id: "f1", tags: ["a"], metadata: {}, shown_to: null, published_to_web: false,
       position: 0, project_id: null, task_id: null,
     };
     const source = captureNoteEditSource({
@@ -31,7 +31,7 @@ describe("noteAdapter.edit", () => {
     await noteAdapter.edit({ newContent: "edited", source } as never);
     expect(persistNoteUpdate).toHaveBeenCalledWith(NOTE, { content: "edited" }, expect.objectContaining({
       expectedVersion: 4,
-      acknowledgedBase: { content: "base", label: "L", folder_id: "f1", folder_name: "Draft", tags: ["a"], visibility: "personal" },
+      acknowledgedBase: { content: "base", label: "L", folder_id: "f1", folder_name: "Draft", tags: ["a"], shown_to: null, published_to_web: false },
     }));
   });
 });

@@ -13,7 +13,7 @@
 //   "Categories group and curate; they do not gate. A place may explicitly
 //    exclude."
 //
-// WHAT THIS REPLACES. Until Phase 6.7 the menu decided visibility with two
+// WHAT THIS REPLACES. Until Phase 6.7 the menu decided what shows with two
 // unrelated mechanisms glued together: 16 hardcoded feature slugs
 // (`enabled_features`, EMPTY on 168 of 207 rows, so "untagged → general → show
 // everywhere") OR an exact `surface_name` string match — and anything that

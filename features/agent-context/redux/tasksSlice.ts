@@ -48,7 +48,7 @@ export interface TaskRecord {
   description?: string | null;
   settings?: Record<string, unknown> | null;
   created_at?: string | null;
-  visibility?: string | null;
+  published_to_web?: boolean | null;
 }
 
 type TaskPriority = "low" | "medium" | "high";
@@ -93,7 +93,7 @@ export const fetchTask = createAsyncThunk(
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select(
-        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, visibility, organization_id",
+        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, published_to_web, organization_id",
       )
       .is("deleted_at", null)
       .eq("id", taskId)
@@ -241,7 +241,7 @@ export const createTaskThunk = createAsyncThunk(
         settings: {},
       })
       .select(
-        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, visibility",
+        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, published_to_web",
       )
       .single();
     if (error) throw error;

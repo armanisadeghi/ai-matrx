@@ -6,7 +6,7 @@
  * 🚨 F-40. The `party` token had no peek at all, so every surface that names a
  * Person — the approvals queue's contact-import card first among them — could
  * only send the reader to `/crm/<id>`, out of whatever they were doing. The
- * generic `RegistryPeek` would have answered with the name, `visibility` and two
+ * generic `RegistryPeek` would have answered with the name, the row column for who sees it and two
  * dates: nothing that tells two same-named People apart. The question a reader
  * actually asks is *which* person, and the answer is the job title, the employer
  * and the contact values, which is why this kind earns a bespoke peek (see the

@@ -9,6 +9,7 @@
 // drift; the generated types win.
 
 import type { LucideIcon } from "lucide-react";
+import type { ShownTo } from "@/lib/row-access";
 import {
   CircleHelp,
   DraftingCompass,
@@ -108,7 +109,9 @@ export interface InterviewSessionRow {
   vision_document: string | null;
   requirements_document: string | null;
   finalized_at: string | null;
-  visibility: string;
+  /** Row controls (access ladder): which lists show it; the anonymous lane. */
+  shown_to: ShownTo | null;
+  published_to_web: boolean;
   created_by: string;
   organization_id: string | null;
   created_at: string;
@@ -118,7 +121,7 @@ export interface InterviewSessionRow {
   metadata: Record<string, unknown> | null;
 }
 
-/** `interview.turn` — component of session (no visibility column; RLS via parent). */
+/** `interview.turn` — component of session (no row controls; RLS via parent). */
 export interface InterviewTurnRow {
   id: string;
   session_id: string;

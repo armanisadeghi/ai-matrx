@@ -24,7 +24,7 @@ export default function SidebarCreatorHubToggle() {
 
   // `creatorDebug.isCreator` is set client-side by `useCreatorOwnershipSync`
   // (post-mount effect), so on first render it is always false. Defer the
-  // visibility gate to post-hydration to guarantee SSR and the first client
+  // show/hide gate to post-hydration to guarantee SSR and the first client
   // commit agree — otherwise this toggle and the sibling admin toggle can
   // swap DOM positions during hydration and crash the tree.
   const [hydrated, setHydrated] = useState(false);

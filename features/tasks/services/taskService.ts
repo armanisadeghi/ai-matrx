@@ -344,7 +344,6 @@ export async function uploadTaskAttachment(
     try {
       await fileHandler.ensureFolderPath({
         folderPath,
-        visibility: "personal",
       });
     } catch (err) {
       console.error("Failed to ensure task attachments folder:", err);
@@ -356,7 +355,6 @@ export async function uploadTaskAttachment(
         { kind: "file", file },
         {
           folderPath,
-          visibility: "personal",
           metadata: {
             origin: "task-attachment",
             task_id: taskId,
@@ -948,7 +946,7 @@ export async function shareTask(
 }
 
 /**
- * Make a task publicly accessible (sets visibility = 'public' on the task row).
+ * Publish a task to the web (sets published_to_web on the task row).
  */
 export async function makeTaskPublic(taskId: string): Promise<TaskShareResult> {
   const { data, error } = await supabase.rpc("make_resource_public", {
@@ -966,7 +964,7 @@ export async function makeTaskPublic(taskId: string): Promise<TaskShareResult> {
 }
 
 /**
- * Make a task private (sets visibility = 'personal' on the task row).
+ * Stop publishing a task to the web (make_resource_private).
  */
 export async function makeTaskPrivate(
   taskId: string,

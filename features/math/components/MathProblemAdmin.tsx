@@ -140,11 +140,11 @@ function toWriteValues(draft: ProblemDraft) {
 }
 
 function createInput(draft: ProblemDraft): Omit<MathProblemInsert, "organization_id"> {
-  return { ...toWriteValues(draft), metadata: {}, visibility: draft.published ? "public" : "internal" };
+  return { ...toWriteValues(draft), metadata: {}, published_to_web: draft.published };
 }
 
 function updatePatch(draft: ProblemDraft): MathProblemUpdate {
-  return { ...toWriteValues(draft), visibility: draft.published ? "public" : "internal" };
+  return { ...toWriteValues(draft), published_to_web: draft.published };
 }
 
 export function MathProblemAdmin() {

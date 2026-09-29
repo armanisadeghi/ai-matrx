@@ -77,7 +77,6 @@ export interface ExportLibrary {
   status?: string | null;
   bytes?: number | null;
   total_items?: number | null;
-  visibility?: string | null;
   organization_id?: string | null;
   created_at?: string | null;
   updated_at?: string | null;

@@ -1977,7 +1977,7 @@ export const primaryNavItems: ShellNavItem[] = [
     profileMenu: false,
     dashboard: false,
     description:
-      "Brands and websites, planning, search and visibility, channels, intelligence, and measurement",
+      "Brands and websites, planning, search and reach, channels, intelligence, and measurement",
     color: "green",
     // GENERATED from features/marketing/lib/marketing-nav.ts — the ONE
     // declaration of this module's shape. Never hand-edit these children; add

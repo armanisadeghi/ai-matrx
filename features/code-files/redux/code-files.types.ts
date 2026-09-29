@@ -1,3 +1,4 @@
+import type { ShownTo } from "@/lib/row-access";
 // features/code-files/redux/code-files.types.ts
 //
 // Types for the code-files Redux slice. Mirrors the notes architecture but is
@@ -11,8 +12,6 @@
 
 // ── DB row shapes ───────────────────────────────────────────────────────────
 
-/** Access driver — mirrors the `platform.visibility` enum. */
-export type CodeVisibility = "personal" | "internal" | "link" | "public";
 
 export interface CodeFile {
   id: string;
@@ -33,7 +32,9 @@ export interface CodeFile {
   s3_key: string | null;
   /** S3 bucket name (only set when content is stored in S3). */
   s3_bucket: string | null;
-  visibility: CodeVisibility;
+  /** Row controls (access ladder): which lists show it; the anonymous lane. */
+  shown_to: ShownTo | null;
+  published_to_web: boolean;
   /** Soft-delete marker; NULL = live. */
   deleted_at: string | null;
   is_readonly: boolean;
@@ -56,7 +57,9 @@ export interface CodeFolder {
   icon_name: string | null;
   color: string | null;
   sort_order: number;
-  visibility: CodeVisibility;
+  /** Row controls (access ladder): which lists show it; the anonymous lane. */
+  shown_to: ShownTo | null;
+  published_to_web: boolean;
   /** Soft-delete marker; NULL = live. */
   deleted_at: string | null;
   is_active: boolean;

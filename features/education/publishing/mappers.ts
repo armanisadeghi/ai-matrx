@@ -22,7 +22,7 @@ export function mapRowToLearnDoc(row: LearnDocRow): LearnDocRecord {
     keywords: row.keywords ?? [],
     sections: (row.sections ?? []) as EduSection[],
     related,
-    status: row.visibility === "public" ? "published" : "draft",
+    status: row.published_to_web ? "published" : "draft",
     publishedAt: row.published_at,
     updatedAt: row.updated_at,
   };

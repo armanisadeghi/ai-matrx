@@ -37,7 +37,7 @@ export function useCodeEditorBasics({
   height = "600px",
 }: UseCodeEditorBasicsProps) {
   // Measures the exact height of the Monaco editor wrapper div so we can give
-  // Monaco an explicit pixel height regardless of toolbar visibility.
+  // Monaco an explicit pixel height whether or not the toolbar shows.
   const [editorWrapperRef, { height: editorWrapperHeight }] =
     useMeasure<HTMLDivElement>();
   const [activeFile, setActiveFile] = useState<string>(files[0]?.path || "");

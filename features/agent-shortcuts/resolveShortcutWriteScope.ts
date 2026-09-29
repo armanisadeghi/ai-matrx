@@ -10,7 +10,7 @@ export interface ShortcutWriteScopeFields {
 }
 
 /**
- * Resolve shortcut/category visibility and organization ownership together.
+ * Resolve shortcut/category scope and organization ownership together.
  *
  * Visibility scope and tenant ownership are separate facts: a personal row is
  * identified by `created_by`, but it still belongs to the organization the

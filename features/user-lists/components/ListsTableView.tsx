@@ -28,8 +28,8 @@ interface ListsTableViewProps {
 }
 
 function VisibilityBadge({ list }: { list: UserList }) {
-  const visibility = getListVisibility(list);
-  if (visibility === "public") {
+  const audience = getListVisibility(list);
+  if (audience === "public") {
     return (
       <Badge
         variant="outline"
@@ -40,7 +40,7 @@ function VisibilityBadge({ list }: { list: UserList }) {
       </Badge>
     );
   }
-  if (visibility === "authenticated") {
+  if (audience === "authenticated") {
     return (
       <Badge
         variant="outline"
@@ -116,8 +116,8 @@ export function ListsTableView({ lists, read }: ListsTableViewProps) {
       ),
     },
     {
-      key: "visibility",
-      header: "Visibility",
+      key: "audience",
+      header: "Access",
       width: "110px",
       render: (item) => <VisibilityBadge list={item} />,
     },

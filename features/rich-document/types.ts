@@ -51,7 +51,8 @@ export type NoteDisplayedPhysicalSnapshot = Omit<
     | "folder_id"
     | "tags"
     | "metadata"
-    | "visibility"
+    | "shown_to"
+    | "published_to_web"
     | "position"
     | "project_id"
     | "task_id"
@@ -426,7 +427,7 @@ export interface RichDocumentAction {
   category: ActionCategory;
   /** Which source types this action operates on. "*" = all sources. */
   supportedSources: ContentSourceType[] | "*";
-  /** Optional visibility predicate. Default: true. */
+  /** Optional show predicate. Default: true. */
   visible?: (ctx: RichDocumentActionContext) => boolean;
   /** Optional disabled predicate. Returns boolean OR a reason for tooltips. */
   disabled?: (ctx: RichDocumentActionContext) => boolean | { reason: string };
@@ -480,7 +481,7 @@ export interface RichDocumentAction {
 // ============================================================================
 // VARIANT / POSITION / BEHAVIOR — three orthogonal axes describing the
 // action surface. `variant` = WHAT renders, `position` = WHERE, `behavior`
-// = visibility. The old conflated "hover-menu" is now expressed as
+// = when it shows. The old conflated "hover-menu" is now expressed as
 // `{ variant: "icon-only", position: "top-right", behavior: "hover-only" }`.
 // ============================================================================
 

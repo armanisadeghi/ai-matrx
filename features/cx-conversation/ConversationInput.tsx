@@ -306,7 +306,6 @@ export function ConversationInput({
             { kind: "file", file },
             {
               folderPath,
-              visibility: "personal",
               createShareLink: true,
               shareLinkPermissionLevel: "viewer",
             },

@@ -27,8 +27,6 @@ export interface SavedClaimRow {
   user_id: string | null;
   organization_id: string | null;
   project_id: string | null;
-  /** Canonical access driver (db-rules §6a); replaced the legacy `is_public`. */
-  visibility: string;
   tags: string[];
   created_at: string;
   updated_at: string | null;
@@ -57,7 +55,7 @@ export function useMyClaims(userId: string | undefined) {
         .from(TABLE as never)
         .select(
           "id, applicant_name, case_number, date_of_injury, occupational_code, " +
-            "user_id, organization_id, project_id, visibility, tags, created_at, updated_at",
+            "user_id, organization_id, project_id, tags, created_at, updated_at",
         )
         .is("deleted_at", null)
         .order("updated_at", { ascending: false, nullsFirst: false })

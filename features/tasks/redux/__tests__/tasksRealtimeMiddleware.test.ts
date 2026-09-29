@@ -89,7 +89,7 @@ function taskRow(over: Record<string, unknown> = {}) {
     updated_at: "2026-09-08T00:00:00.000Z",
     created_at: "2026-09-01T00:00:00.000Z",
     settings: {},
-    visibility: "private",
+    published_to_web: false,
     origin: "user",
     source_type: null,
     source_url: null,
@@ -213,7 +213,7 @@ describe("scope — RLS delivers more than this list carries", () => {
         created_by: "other-user",
         assignee_id: null,
         project_id: "project-i-cannot-see",
-        visibility: "public",
+        published_to_web: true,
       }),
     });
     jest.runAllTimers();

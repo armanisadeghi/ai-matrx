@@ -152,7 +152,7 @@ export type UserListBookmark =
 // ─── Visibility ───────────────────────────────────────────────────────────────
 
 /**
- * The REAL visibility vocabulary, as a runtime constant.
+ * The REAL audience vocabulary, as a runtime constant.
  *
  * `getListVisibility` below is the only producer of these strings, so this
  * array is the single source of truth for "what can `list_visibility` ever

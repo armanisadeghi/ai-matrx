@@ -284,7 +284,7 @@ export interface SessionSettings {
   moduleShortcutId: string | null;
   moduleIntervalMs: number | null;
   columnWidths: number[] | null;
-  /** Column 4 history visibility — when true, shows prior module segments
+  /** Column 4 history display — when true, shows prior module segments
    * in addition to the active module's segments. */
   showPriorModules: boolean;
   /** Per-session user context items, passed to agents as context entries. */

@@ -95,7 +95,7 @@ const VARIANTS: Array<{
       "One screen, one table. List switcher drops down from the top, table fills the rest.",
     bullets: [
       "Maximum space for the table",
-      "Inline-editable list name / description / visibility",
+      "Inline-editable list name / description / sharing",
       "Native combobox for the Group cell",
       "Uses the official curated icon picker window",
     ],
@@ -122,7 +122,7 @@ const SCHEMA = [
   {
     title: "udt_structured_lists",
     description:
-      "One row per list. Carries name, description, owner, visibility (private / shared / public).",
+      "One row per list. Carries name, description, owner, sharing (private / shared / public).",
   },
   {
     title: "udt_structured_list_items",

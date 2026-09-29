@@ -52,8 +52,8 @@ export function ListCard({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const visibility = getListVisibility(list);
-  const visConfig = VISIBILITY_CONFIG[visibility];
+  const audience = getListVisibility(list);
+  const visConfig = VISIBILITY_CONFIG[audience];
   const VisIcon = visConfig.icon;
   const isDisabled = isAnyNavigating;
 

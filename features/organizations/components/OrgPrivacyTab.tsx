@@ -8,8 +8,8 @@
  * + budget for the org-wide knowledge-graph auto-ingest pipeline.
  *
  * All writes go React → Supabase via `useOrgAutoRagPreference`. RLS
- * enforces "only an org admin/owner can write here" — the visibility of
- * the tab is also gated by `canManageSettings` in `OrgSettings.tsx`.
+ * enforces "only an org admin/owner can write here" — whether
+ * the tab shows is also gated by `canManageSettings` in `OrgSettings.tsx`.
  *
  * No emojis, Lucide icons only, semantic colors only. React Compiler
  * handles memoization — no manual `useMemo` / `useCallback`.

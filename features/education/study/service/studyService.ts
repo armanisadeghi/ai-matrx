@@ -180,7 +180,6 @@ export const studyService = {
       source_query: (input.sourceQuery ?? null) as never,
       settings: (input.settings ?? {}) as never,
       ...(input.status ? { status: input.status } : {}),
-      ...(input.visibility ? { visibility: input.visibility } : {}),
       metadata: (input.metadata ?? {}) as never,
     } as never;
 
@@ -321,7 +320,7 @@ export const studyService = {
     // "we couldn't open this". `.eq("created_by", userId)` was such a
     // predicate, and it is far narrower than the row's own authorization:
     // `education.study_session`'s RLS also admits platform admins, the owning
-    // organization's owners/admins, `visibility = 'public'` rows, `iam`
+    // organization's owners/admins, `iam`
     // permissions and memberships, `platform.reachability` and
     // `platform.entity_grants`. A coach granted view on a learner's session —
     // or an admin opening it from a report — read the row fine and was told

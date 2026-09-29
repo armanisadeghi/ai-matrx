@@ -97,7 +97,7 @@ const SUB_AREAS: ModuleSubArea[] = [
     status: "Live",
     href: "/notes",
     items: [
-      "Org-wide visibility",
+      "Org-wide sharing",
       "Comment + suggestion threads",
       "Permission-aware",
       "Activity feed",

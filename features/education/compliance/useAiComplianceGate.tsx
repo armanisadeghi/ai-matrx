@@ -69,7 +69,7 @@ export interface UseAiComplianceGateResult {
    * blocking. Call once on entering education so declaration happens up front.
    */
   promptDeclarationIfNeeded: () => void;
-  /** Render once near the action; self-controls its own visibility. */
+  /** Render once near the action; decides for itself when it shows. */
   Gate: () => React.ReactElement | null;
   reload: () => void;
 }

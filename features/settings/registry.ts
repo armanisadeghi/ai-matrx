@@ -877,7 +877,7 @@ export const settingsRegistry: SettingsTabDef[] = [
   },
 ];
 
-/** Returns the registry filtered by visibility rules. */
+/** Returns the registry filtered by display rules. */
 export function getVisibleTabs(isAdmin: boolean): SettingsTabDef[] {
   return settingsRegistry.filter((t) => {
     if (t.requiresAdmin && !isAdmin) return false;

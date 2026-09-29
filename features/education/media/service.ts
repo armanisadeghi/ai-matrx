@@ -9,6 +9,11 @@
 "use client";
 
 import { withDisplayTitle } from "@/components/markdown-core/plain-title";
+import {
+  currentUserIdOrNull,
+  rowAccessColumns,
+  type RowAccessChange,
+} from "@/lib/row-access/columns";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
@@ -91,7 +96,7 @@ export const studyMediaService = {
     try {
       const orgId = await ensureOrgId(undefined);
       const row = toInsert(input, orgId);
-      if (input.visibility) row.visibility = input.visibility;
+      if (input.shownTo !== undefined) row.shown_to = input.shownTo;
       const { data, error } = await EDU()
         .from("study_media")
         .insert(row)
@@ -242,10 +247,11 @@ export const studyMediaService = {
     }
   },
 
-  async updateVisibility(
+  /** Save the artifact's row controls ("Shown to", "Published to the web"). */
+  async updateRowAccess(
     id: string,
-    visibility: StudyMediaRow["visibility"],
+    change: RowAccessChange,
   ): Promise<MediaResult<StudyMediaRow>> {
-    return this.update(id, { visibility });
+    return this.update(id, rowAccessColumns(change, await currentUserIdOrNull()));
   },
 };

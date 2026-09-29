@@ -148,7 +148,6 @@ export default function TaskAttachmentsPanel({
       const fileArray = Array.from(files);
       const result = await uploadMany(fileArray, {
         folderPath: folderForTask(taskId),
-        visibility: "personal",
         metadata: {
           origin: "task-attachment",
           task_id: taskId,

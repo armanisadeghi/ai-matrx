@@ -7,7 +7,7 @@
 // read out of `hr.access_role.capabilities` in the live database (2026-08-26). Adding
 // one to this list does not create it; granting it in `hr.access_role` does.
 //
-// Nav visibility, tab visibility and action visibility are CAPABILITY-driven, never
+// What nav, tabs and actions show is CAPABILITY-driven, never
 // role-string-driven (SPEC-UI-IA §2.2) — a custom Access Level that grants timesheet
 // approval without full HR admin gets Time without inheriting the rest.
 

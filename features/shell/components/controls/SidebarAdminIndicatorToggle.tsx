@@ -16,7 +16,7 @@ export default function SidebarAdminIndicatorToggle() {
     selectIsOverlayOpen(state, "adminIndicator"),
   );
 
-  // Defer the visibility gate to post-hydration. This control sits next to
+  // Defer the show/hide gate to post-hydration. This control sits next to
   // SidebarCreatorHubToggle in the footer; if either toggle's gate flips
   // between SSR and the first client commit, the buttons swap DOM positions
   // and React's hydration reconciles the wrong node, producing the

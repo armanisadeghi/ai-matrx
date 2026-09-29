@@ -159,7 +159,7 @@ describe("spatial store culling", () => {
     expect(store.isVisible("far")).toBe(false);
     expect(store.getTier()).toBe("read");
 
-    // Pan the far tile into view: exactly one visibility notification.
+    // Pan the far tile into view: exactly one in-view notification.
     store.setCamera({ x: -19_800, y: 0, z: 1 });
     store.recomputeCoarse();
     expect(store.isVisible("far")).toBe(true);

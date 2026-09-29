@@ -12,7 +12,7 @@
  *     exact documents; search is live because Drive is far too large to list,
  *     and the surface SAYS it is searching rather than showing an empty box.
  *   - **Cursor's repository selection** — the repo is chosen deliberately, its
- *     visibility and your permission are on the row, and the choice sticks.
+ *     public/private and your permission are on the row, and the choice sticks.
  *
  * ONE picker serves every provider. Which resources exist, what they are
  * called, and whether candidates come from our synced inventory or a live

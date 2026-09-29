@@ -28,7 +28,7 @@ export interface CreateCodeFileInput {
   metadata?: Json;
   s3_key?: string | null;
   s3_bucket?: string | null;
-  visibility?: Database["platform"]["Enums"]["visibility"];
+  shown_to?: Database["platform"]["Enums"]["shown_to"] | null;
 }
 
 export type UpdateCodeFileInput =
@@ -59,7 +59,7 @@ export interface UpdateCodeFolderInput {
 
 /** Columns selected for the list view — intentionally excludes content. */
 const LIST_COLUMNS =
-  "id,created_by,folder_id,repository_id,organization_id,project_id,workspace_id,task_id,name,path,language,content_hash,s3_key,s3_bucket,visibility,deleted_at,is_readonly,tags,metadata,version,created_at,updated_at";
+  "id,created_by,folder_id,repository_id,organization_id,project_id,workspace_id,task_id,name,path,language,content_hash,s3_key,s3_bucket,shown_to,published_to_web,deleted_at,is_readonly,tags,metadata,version,created_at,updated_at";
 
 /**
  * Fetch metadata (no content) for all of the current user's code files.
@@ -154,7 +154,7 @@ export async function createCodeFile(
       metadata: input.metadata ?? {},
       s3_key: input.s3_key ?? null,
       s3_bucket: input.s3_bucket ?? null,
-      visibility: input.visibility ?? "personal",
+      shown_to: input.shown_to ?? "only_me",
     })
     .select("*")
     .single();

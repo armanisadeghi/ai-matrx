@@ -11,7 +11,7 @@ import type { Database } from "@/types/database.types";
 /** Raw DB row. */
 export type LearnDocRow = Database["education"]["Tables"]["learn_doc"]["Row"];
 
-/** Publication status, derived from `visibility` (public = published). */
+/** Publication status, derived from `published_to_web` (published to the web = published). */
 export type LearnDocStatus = "draft" | "published";
 
 /** A learn doc as authored — render payload + identity + status. */

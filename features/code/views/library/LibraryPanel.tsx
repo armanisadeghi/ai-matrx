@@ -32,6 +32,7 @@ import type {
   LibraryTreeActions,
 } from "./LibraryTreeNode";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { publishedToWebLabel, shownToLabel, SHOWN_TO_LABEL } from "@/lib/row-access";
 
 interface LibraryPanelProps {
   className?: string;
@@ -362,8 +363,12 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
               <dd>{propertiesTarget.kind}</dd>
               <dt className="text-muted-foreground">Path</dt>
               <dd className="break-all font-mono">{propertiesTarget.path}</dd>
-              <dt className="text-muted-foreground">Visibility</dt>
-              <dd>{propertiesTarget.item.visibility}</dd>
+              <dt className="text-muted-foreground">{SHOWN_TO_LABEL}</dt>
+              <dd>
+                {propertiesTarget.item.published_to_web
+                  ? publishedToWebLabel(true)
+                  : shownToLabel(propertiesTarget.item.shown_to)}
+              </dd>
               <dt className="text-muted-foreground">Updated</dt>
               <dd>
                 {new Date(propertiesTarget.item.updated_at).toLocaleString()}

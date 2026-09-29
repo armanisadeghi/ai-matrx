@@ -11,7 +11,7 @@
 // person and an agent generate exactly the same way and pay exactly the same.
 //
 // Render `<Gates />` once where the hook is used: it carries the COPPA dialog
-// and the paywall, which self-control their visibility.
+// and the paywall, which decide for themselves when they show.
 
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";

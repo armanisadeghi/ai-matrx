@@ -87,7 +87,7 @@ export async function storeListsOf(client: SupabaseClient, userId: string): Prom
 /**
  * An organization's pick lists that live in the new system, that the signed-in person may open —
  * the organization's Lists tab and its count read these beside the org's live older lists. From THE
- * LIST INDEX (`custom.pick_list_index`, which asks the store's own visibility, never the active org).
+ * LIST INDEX (`custom.pick_list_index`, which asks the store's own access rules, never the active org).
  */
 export async function organizationPickListsInTheNewSystem(
   client: SupabaseClient,

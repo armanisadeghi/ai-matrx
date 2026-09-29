@@ -387,7 +387,7 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
       </div>
 
       {/*
-        The bulk action's promise and the dialog's visibility are DELIBERATELY
+        The bulk action's promise and whether the dialog is open are DELIBERATELY
         separate. The shell holds its button in a pending state until the
         promise settles, so a successful send resolves it IMMEDIATELY — while
         the dialog stays open on its "Sent · Open the Rulebook" panel, which is

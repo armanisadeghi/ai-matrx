@@ -36,7 +36,6 @@ export async function uploadCodeFileToS3(
     { kind: "file", file },
     {
       folderPath: CloudFolders.CODE_EDITOR,
-      visibility: "personal",
       metadata: { origin: "code-editor", code_file_id: args.fileId },
     },
   );

@@ -13,7 +13,7 @@
  *
  * Sidebar flips between Files and Pages views (auto-flip on doc select).
  * Reader supports an optional Chunks pane synced bidirectionally with
- * the active page. Per-file pane visibility + sidebar view persist in
+ * the active page. Per-file shown panes + sidebar view persist in
  * localStorage via `pdfStudioPersistenceMiddleware`.
  *
  * Reader sync (active page, pending scroll, visible panes) lives in the
@@ -314,7 +314,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     async (id: string) => {
       setDocLoading(true);
       // Tell the slice immediately so persistence middleware can hydrate
-      // the per-doc pane visibility before the reader mounts.
+      // the per-doc shown panes before the reader mounts.
       dispatch(setActiveDocId(id));
       const read = await extractor.readDocument(id);
       // No signed-in user is known yet: nothing was asked, so nothing is
@@ -1192,7 +1192,7 @@ function EmptyShell({
   );
 }
 
-// ── Pane visibility strip ─────────────────────────────────────────────────
+// ── Pane show/hide strip ─ ─────────────────────────────────────────────────
 
 function PaneVisibilityStrip({
   visiblePanes,

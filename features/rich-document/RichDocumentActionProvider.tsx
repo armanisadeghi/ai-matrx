@@ -30,7 +30,7 @@ import type {
 export interface RichDocumentActionProviderProps {
   /** Live content the actions operate on (re-read at click time via the bridge). */
   content: string;
-  /** Source identity — drives action visibility + save-to-task parent linking. */
+  /** Source identity — drives which actions show + save-to-task parent linking. */
   source: ContentSource;
   /** The surface a <RichDocumentActionSurface/> consumes. Required. */
   surfaceId: string;

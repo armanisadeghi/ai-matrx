@@ -154,7 +154,7 @@ export function transformProblem(
         is_published: true,
         created_by: null,
         organization_id: organizationId,
-        visibility: "internal",
+        published_to_web: false,
     };
 }
 

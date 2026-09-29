@@ -267,7 +267,7 @@ export type HrCustomFieldDefinition = {
 export type HrCustomFieldTarget = {
   id: string;
   /**
-   * Who set this row. Every live row is the Matrx System org at `visibility='public'`
+   * Who set this row. Every live row is the Matrx System org, published to the web
    * — a PLATFORM DEFAULT every employer inherits — so the panel compares this against
    * the active employer to say which of the two it is looking at. Selected on purpose
    * (DD-097): without it the surface cannot tell an inherited default from an

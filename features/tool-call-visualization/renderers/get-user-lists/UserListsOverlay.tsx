@@ -311,7 +311,7 @@ export const UserListsOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                                     </div>
                                 </div>
 
-                                {/* Right: visibility badge */}
+                                {/* Right: audience badge */}
                                 <Badge variant={vis.variant} className="flex-shrink-0 flex items-center gap-1 text-xs">
                                     {vis.icon}
                                     {vis.label}

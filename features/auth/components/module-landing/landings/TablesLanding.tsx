@@ -42,7 +42,7 @@ const CAPABILITIES: ModuleCapability[] = [
     icon: Share2,
     title: "Permission-aware sharing",
     description:
-      "Per-row, per-column visibility. Share a table with an external collaborator without giving them access to the rest of your workspace.",
+      "Per-row, per-column access. Share a table with an external collaborator without giving them access to the rest of your workspace.",
   },
 ];
 

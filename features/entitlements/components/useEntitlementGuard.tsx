@@ -7,7 +7,7 @@
 //
 //   const gen = useEntitlementGuard("education.generate_cards");
 //   <button onClick={() => gen.guard(generateDeck)}>Generate</button>
-//   <gen.Paywall />        // render once; it self-controls visibility
+//   <gen.Paywall />        // render once; it decides when it shows
 //   <EntitlementMeter capability="education.generate_cards" />  // limit before cap
 
 "use client";
@@ -43,7 +43,7 @@ export interface UseEntitlementGuardResult extends UseEntitlementResult {
   commit: EntitlementCommit;
   /** True while the pre-action check is in flight. */
   isChecking: boolean;
-  /** Render once near the action; self-controls its own visibility. */
+  /** Render once near the action; decides for itself when it shows. */
   Paywall: () => React.ReactElement | null;
 }
 

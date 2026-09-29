@@ -83,7 +83,7 @@ export function HostSetupImpl() {
         (s): GameDeckOption => ({
           id: s.id,
           name: s.name,
-          isPrivate: s.visibility === "personal",
+          isPrivate: s.shown_to === "only_me",
         }),
       ),
       host_max_players: maxPlayers,
@@ -221,7 +221,7 @@ export function HostSetupImpl() {
           <ul className="flex flex-col gap-1.5">
             {sets.map((s) => {
               const selected = source.kind === "set" && source.set.id === s.id;
-              const isPrivate = s.visibility === "personal";
+              const isPrivate = s.shown_to === "only_me";
               return (
                 <li key={s.id}>
                   <button
@@ -242,7 +242,7 @@ export function HostSetupImpl() {
                       className="inline-flex items-center gap-1 text-xs text-muted-foreground"
                       title={
                         isPrivate
-                          ? "Private — only you can load these cards. Share it for a cross-account game."
+                          ? "Shown to: Only me. Share it for a cross-account game."
                           : "Others can load these cards"
                       }
                     >

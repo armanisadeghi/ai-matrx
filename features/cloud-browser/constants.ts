@@ -59,7 +59,7 @@ export const CONTROL_LEASE_RENEW_INTERVAL_MS = 20_000;
 // ── Retention (D-20) ─────────────────────────────────────────────────────────
 export const CHECKPOINT_RETENTION_DAYS = 30;
 
-/** The three visibility tiers of PLAN.md §First-release media policy. */
+/** The three media tiers of PLAN.md §First-release media policy. */
 export type MediaTier = "written" | "screenshots" | "takeover";
 
 /** Honest walkthrough — the AWS session-expiry caveat is stated, not hidden. */

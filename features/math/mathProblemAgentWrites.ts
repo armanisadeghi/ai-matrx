@@ -134,7 +134,7 @@ export function parseCreateMathProblems(value: unknown, existingRows: readonly M
       ...(fields.hint !== undefined ? { hint: fields.hint } : {}),
       ...(fields.difficulty_level !== undefined ? { difficulty_level: fields.difficulty_level } : {}),
       ...(fields.sort_order !== undefined ? { sort_order: fields.sort_order } : {}),
-      metadata: {}, visibility: "internal", is_published: false,
+      metadata: {}, published_to_web: false, is_published: false,
     };
   }, {
     nameOf: rawName,

@@ -11,7 +11,7 @@
  *    null while `has_more` is true — and this service passes that through as
  *    "at least this many" rather than handing the shell a page count dressed
  *    up as a corpus size.
- * 2. **Scopes and facets.** A connected account has no visibility lanes and the
+ * 2. **Scopes and facets.** A connected account has no list lanes and the
  *    server publishes no facet counts over someone else's drive. Declaring
  *    none is the honest answer; a chip with a count derived from the page in
  *    hand would be a number about nothing.

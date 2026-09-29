@@ -56,8 +56,8 @@ function formatDate(dateStr: string | null | undefined): string {
 }
 
 function MetaContent({ list }: { list: UserList }) {
-  const visibility = getListVisibility(list);
-  const visConfig = VISIBILITY_CONFIG[visibility];
+  const audience = getListVisibility(list);
+  const visConfig = VISIBILITY_CONFIG[audience];
   const VisIcon = visConfig.icon;
 
   return (

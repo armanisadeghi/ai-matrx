@@ -16,7 +16,7 @@ type SurfaceGate = "auth" | "view" | "edit";
 
 const GATE_NOTE: Record<SurfaceGate, string> = {
   auth: "Your library — requires sign-in.",
-  view: "Open to anyone with view access (respects the item's visibility / share grant).",
+  view: "Open to anyone with view access (respects the item's access / share grant).",
   edit: "Edit surface — gated to EDIT permission (owner or editor-shared). View-only sharees are redirected to the view route.",
 };
 

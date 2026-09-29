@@ -116,7 +116,7 @@ const asTextList = (v: unknown): string[] =>
  *     the type's "the panel lights up the moment the lane ships it" promise real. It is
  *     never defaulted to a string, because a fabricated last-4 is worse than no last-4.
  *   • The wire carries SIX fields the type does not declare — `created_by`, `updated_by`,
- *     `created_at`, `deleted_at`, `metadata`, `visibility`. types.ts is RIGHT to omit
+ *     `created_at`, `deleted_at`, `metadata` and the retiring row column. types.ts is RIGHT to omit
  *     them: none is route 68's business, and `_door_list` already filters `deleted_at`.
  *     They are dropped here rather than widened into the type.
  *   • `ein` is stripped upstream by `hr._project_row` (`client_excluded_columns = {ein}`
@@ -466,12 +466,12 @@ export async function fetchHrCustomFieldRegistry(args: {
       )
       // DECLARED SCOPE: an ENABLEMENT row is not the same shape as a definition.
       // Every one of the five live rows sits in the Matrx System org at
-      // `visibility = 'public'` — they are PLATFORM DEFAULTS that every employer
+      // published to the web — they are PLATFORM DEFAULTS that every employer
       // inherits, which is why the old `eq(organization_id)` filter returned ZERO
       // rows for a real employer and the page said nothing was switched on. The
       // scope is therefore stated as: this employer's own rows, PLUS the public
       // platform defaults. RLS remains the ceiling; this is the narrower claim.
-      .or(`organization_id.eq.${args.organizationId},visibility.eq.public`)
+      .or(`organization_id.eq.${args.organizationId},published_to_web.eq.true`)
       .like("target_token", HR_CUSTOM_FIELD_TOKEN_LIKE)
       .is("deleted_at", null)
       .order("target_token", { ascending: true }),
