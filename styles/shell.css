@@ -825,40 +825,10 @@ button.shell-nav-item {
   justify-content: flex-start;
 }
 
-/* Tooltip on collapsed sidebar */
-.shell-root > #shell-sidebar-toggle:not(:checked) ~ :is(.shell-nav-item, .shell-sidebar-switch)[title]:hover::after,
-.shell-root > #shell-sidebar-toggle:not(:checked) ~ * :is(.shell-nav-item, .shell-sidebar-switch)[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  left: calc(100% + 0.5rem);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--matrx-glass-bg-active);
-  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8) brightness(1.1);
-  border: 1px solid var(--matrx-glass-border-color);
-  border-radius: 0.375rem;
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--shell-nav-text-hover);
-  white-space: nowrap;
-  z-index: 50;
-  pointer-events: none;
-  box-shadow: var(--matrx-glass-shadow);
-  animation: shell-tooltip-in var(--shell-duration-fast)
-    var(--shell-ease-spring);
-}
-
-@keyframes shell-tooltip-in {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) translateX(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
-}
+/* Collapsed-rail names are the design-system title takeover's job (the
+   `title` on each row, `data-title-side="right"` on the aside). The CSS
+   `::after` tooltip that lived here was clipped by the rail's own overflow and
+   never visible, so only the browser's box ever showed (removed 2026-09-28). */
 
 /* ---------------------------------------------------------------------------
    9b. Nav Item Groups — Medium Routes with nested children

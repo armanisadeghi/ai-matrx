@@ -40,7 +40,10 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
   const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
   const activeCandidates = [...visibleItems, settingsItem];
   return (
-    <aside className="shell-sidebar">
+    // `data-title-side="right"`: every `title` in the rail shows as the fleet
+    // tooltip (the design-system title takeover), opening beside the rail —
+    // it only appears while the label is hidden (collapsed rail).
+    <aside className="shell-sidebar" data-title-side="right">
       {/* Brand Section — Route header override + default toggle fallback */}
       <div className="shell-sidebar-brand">
         {/* Route header override — rendered by client island, empty on Small/Medium routes */}
