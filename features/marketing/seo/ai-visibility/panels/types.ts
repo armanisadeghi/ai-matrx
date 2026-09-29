@@ -93,6 +93,16 @@ export interface PanelMetrics {
   min_cells_for_rate: number;
   metrics: MetricEstimate[];
   comparisons: PairedComparison[];
+  /** All six definitions, always — an unmeasured metric still shows its "does not prove". */
+  definitions?: MetricDefinition[];
+}
+
+export interface MetricDefinition {
+  metric: PanelMetricKey | string;
+  display_name: string;
+  numerator: string;
+  denominator: string;
+  does_not_prove: string;
 }
 
 // ─── Design workflow ────────────────────────────────────────────────────────

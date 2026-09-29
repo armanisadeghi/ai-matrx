@@ -17,6 +17,7 @@ import type {
   DesignPerformer,
   DesignStepStatus,
   GateStatus,
+  MetricDefinition,
   MetricEstimate,
   MetricInterval,
   MetricStratum,
@@ -365,13 +366,17 @@ export interface MetricGroup {
  * A metric the server sent nothing for still gets a group, so its absence
  * reads "Not measured yet" instead of disappearing.
  */
-export function groupMetrics(estimates: MetricEstimate[]): MetricGroup[] {
+export function groupMetrics(
+  estimates: MetricEstimate[],
+  definitions: MetricDefinition[] = [],
+): MetricGroup[] {
   return METRIC_ORDER.map((metric) => {
     const mine = estimates.filter((estimate) => estimate.metric === metric);
+    const definition = definitions.find((d) => d.metric === metric);
     return {
       metric,
-      displayName: mine[0]?.display_name || METRIC_NAMES[metric],
-      doesNotProve: mine[0]?.does_not_prove ?? "",
+      displayName: mine[0]?.display_name || definition?.display_name || METRIC_NAMES[metric],
+      doesNotProve: mine[0]?.does_not_prove || definition?.does_not_prove || "",
       estimates: [...mine].sort((a, b) =>
         stratumLabel(a.stratum).localeCompare(stratumLabel(b.stratum)),
       ),
@@ -436,4 +441,9 @@ export function pivotByAidedStatus(estimates: MetricEstimate[]): AidedPivot {
     columns,
     rows: [...rows.values()].sort((a, b) => a.label.localeCompare(b.label)),
   };
+}
+
+/** The server numbers its ladder rungs ("1. A mention…"); the list numbers them already. */
+export function ladderRung(text: string): string {
+  return text.replace(/^\s*\d+\.\s+/, "");
 }

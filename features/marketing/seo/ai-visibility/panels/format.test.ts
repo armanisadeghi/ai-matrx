@@ -6,6 +6,7 @@ import {
   formatComparison,
   formatMetricValue,
   groupMetrics,
+  ladderRung,
   laneName,
   methodText,
   panelStatusInfo,
@@ -211,5 +212,25 @@ describe("paired comparisons", () => {
         interval: null,
       }),
     ).toBe("change on 0 unchanged question slots: not measured yet");
+  });
+});
+
+describe("metric definitions and ladder", () => {
+  it("an unmeasured metric still carries its does-not-prove line from the definitions", () => {
+    const groups = groupMetrics([], [
+      {
+        metric: "citation_presence",
+        display_name: "Cited as a source",
+        numerator: "n",
+        denominator: "d",
+        does_not_prove: "traffic, clicks, or that the citation shaped the answer",
+      },
+    ]);
+    const cited = groups.find((g) => g.metric === "citation_presence");
+    expect(cited?.doesNotProve).toMatch(/traffic/);
+    expect(cited?.estimates).toHaveLength(0);
+  });
+  it("strips the server's own rung numbers so the list is not numbered twice", () => {
+    expect(ladderRung("1. A mention")).toBe("A mention");
   });
 });

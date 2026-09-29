@@ -32,7 +32,6 @@ import {
   stepStatusName,
 } from "./format";
 import {
-  PanelApiError,
   fetchDesignArtifact,
   fetchDesignRun,
   panelQueryKeys,
@@ -55,14 +54,9 @@ export function usePanelDesign(
   const dispatch = useAppDispatch();
   return useQuery({
     queryKey: panelQueryKeys.design(panelId),
-    queryFn: async () => {
-      try {
-        return await fetchDesignRun(dispatch, panelId, organizationId);
-      } catch (error) {
-        if (error instanceof PanelApiError && error.status === 404) return null;
-        throw error;
-      }
-    },
+    // The server answers `null` for a hand-typed (never designed) panel; a 404 now means the
+    // panel itself is missing or not readable, and is shown as the error it is.
+    queryFn: () => fetchDesignRun(dispatch, panelId, organizationId),
     refetchInterval: (query) =>
       query.state.data?.status === "running" ? POLL_MS : false,
   });

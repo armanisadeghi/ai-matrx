@@ -95,8 +95,8 @@ export function fetchDesignRun(
   dispatch: AppDispatch,
   panelId: string,
   organizationId: string,
-): Promise<DesignRunView> {
-  return request<DesignRunView>(dispatch, {
+): Promise<DesignRunView | null> {
+  return request<DesignRunView | null>(dispatch, {
     path: `/ai-visibility/panels/${enc(panelId)}/design`,
     method: "GET",
     organizationId,

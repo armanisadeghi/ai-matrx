@@ -30,6 +30,7 @@ import {
   formatComparison,
   formatMetricValue,
   groupMetrics,
+  ladderRung,
   methodText,
   metricName,
   pivotByAidedStatus,
@@ -160,7 +161,7 @@ function MetricCard({
 }
 
 export function PanelMetricsBody({ data }: { data: PanelMetrics }) {
-  const groups = groupMetrics(data.metrics);
+  const groups = groupMetrics(data.metrics, data.definitions ?? []);
   const [first, second, ...rest] = groups;
   return (
     <div className="flex flex-col gap-3 p-3">
@@ -224,7 +225,7 @@ export function PanelMetricsBody({ data }: { data: PanelMetrics }) {
           <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-[11px] text-muted-foreground">
             {data.evidence_ladder.map((rung, index) => (
               <li key={index} className={cn(index === 0 && "font-medium text-foreground")}>
-                {rung}
+                {ladderRung(rung)}
               </li>
             ))}
           </ol>
