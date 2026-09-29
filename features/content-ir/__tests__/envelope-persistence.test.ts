@@ -187,6 +187,42 @@ function makePyEnvelope(source: string): CanonicalBlockIR {
 // ---------------------------------------------------------------------------
 
 describe("persisted envelope cache (stream → parts → reload)", () => {
+  it("reuses a persisted legacy fenced quiz envelope by reference", () => {
+    const quiz = {
+      quiz_title: "Space Basics",
+      multiple_choice: [
+        {
+          question: "Closest star to Earth?",
+          options: ["The Sun", "Sirius"],
+          correct_answer: "The Sun",
+        },
+      ],
+    };
+    const source = `Here is your quiz.\n\n\`\`\`json\n${JSON.stringify(quiz, null, 2)}\n\`\`\`\n\nGood luck!\n`;
+    const streamed = runAccumulator("req-legacy-persist", source, 4)
+      .map((block) => envelopeOf(block.metadata))
+      .find((envelope): envelope is CanonicalBlockIR => envelope !== null);
+    if (!streamed) throw new Error("legacy stream produced no envelope");
+
+    const persistedEnvelope = JSON.parse(JSON.stringify(streamed)) as CanonicalBlockIR;
+    const parts: MessagePart[] = [
+      {
+        type: "text",
+        text: source,
+        metadata: {
+          [IR_ENVELOPE_KEY]: envelopeCacheFromEnvelopes([persistedEnvelope]),
+        },
+      } as CxTextContent,
+    ];
+
+    normalizeContentBlocks(parts);
+    const reloaded = splitContentIntoBlocksV2(source)
+      .map((block) => envelopeOf(block.metadata))
+      .find((envelope): envelope is CanonicalBlockIR => envelope !== null);
+
+    expect(reloaded).toBe(persistedEnvelope);
+  });
+
   it("round-trips the streamed envelope through cx content parts with ZERO re-parse", () => {
     // ── Stream: the REAL accumulator parses the region once ────────────────
     const blocks = runAccumulator("req-roundtrip", ROUNDTRIP_STREAM, 3);

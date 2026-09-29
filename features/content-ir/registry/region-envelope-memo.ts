@@ -154,14 +154,18 @@ export function memoizedRegionEnvelope(
     correctionsBySource.set(source, corrected.corrections);
   }
   const parseSource = corrected?.source ?? source;
+  const existing = seededEnvelopeFor(parseSource);
   const parsedEnvelope = normalizeJsonRegion(parseSource, {
     schemas: kindRegistry.resolver(),
-    existing: seededEnvelopeFor(parseSource),
+    existing,
   });
-  const envelope = canonicalizeCompletedLegacyQuizEnvelope(
-    parsedEnvelope,
-    parseSource,
-  );
+  // A persisted exact-source match is already a completed, canonical envelope.
+  // `normalizeJsonRegion` promises to return that object by reference; do not
+  // re-run the legacy adapter and defeat the no-reparse identity guarantee.
+  const envelope =
+    parsedEnvelope === existing
+      ? parsedEnvelope
+      : canonicalizeCompletedLegacyQuizEnvelope(parsedEnvelope, parseSource);
   if (!completeJson && !envelope.root.kind) return null;
 
   // 🚨 THE ZERO-PREFETCH LAW (Arman, 2026-08-31): the warm tiers are kicked
