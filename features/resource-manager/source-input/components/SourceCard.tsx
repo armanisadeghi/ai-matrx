@@ -113,6 +113,8 @@ export function SourceCard({
   set: UseSourceSetResult;
   /** The deliveries this host can use — the card offers only these. Omitted = both. */
   deliveries?: readonly SourceDelivery[];
+  /** A stored file whose state cannot be asked for until an organization is picked (V2-F #3). */
+  heldForOrganization?: boolean;
   /** The processing-runner job reading this file, when this session started one. */
   job: ProcessingJob | null;
   onProcessingSettled: () => void;
