@@ -280,7 +280,7 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
               />
             )}
             <p className="text-xs text-muted-foreground">
-              How this column is displayed and edited. The stored data type stays exactly as chosen above.
+              How this column is displayed and edited. A look that holds something else — a date, several tags, a number, a tick — makes the column store that too.
             </p>
           </div>
 

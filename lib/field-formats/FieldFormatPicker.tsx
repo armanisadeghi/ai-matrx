@@ -138,6 +138,26 @@ const CURRENCIES = [
   "BRL",
 ];
 
+/**
+ * Does picking this look change what the column stores? (BREAKER-2 B2-06.) Only a look that holds a
+ * plain value of another kind — a date, several tags, a number, a tick — and not a Whole number look on
+ * a Number column or a Date look on a Date & time column.
+ */
+export function lookChangesWhatItStores(look: { id: string; base: string }, dataType: string): boolean {
+  return (
+    PLAIN_VALUE_LOOKS.has(look.id) &&
+    look.base !== dataType &&
+    !(look.base === "integer" && dataType === "number") &&
+    !(look.base === "date" && dataType === "datetime")
+  );
+}
+
+/** Looks that hold a plain value of their own base: picking one makes the column store that base. */
+const PLAIN_VALUE_LOOKS = new Set([
+  "date", "datetime", "tags", "boolean",
+  "number", "decimal", "currency", "percent", "progress", "duration", "integer", "rating", "file_size",
+]);
+
 export function FieldFormatPicker({
   dataType,
   value,
@@ -395,7 +415,15 @@ export function FieldFormatPicker({
               const picked = getFieldFormat(id);
               if (!picked) return;
               const next = { id: id as FieldFormatConfig["id"], options: {} };
-              if (onDataTypeChange && otherKinds.some((d) => d.id === picked.id)) {
+              // WHAT A COLUMN STORES FOLLOWS HOW IT SHOWS (BREAKER-2 B2-06). "Shows as Date" over a Text
+              // column made a column that looked like dates, stored words, and was no date column to the
+              // Calendar; "Shows as Tags" over one value refused every list of tags. A look that stores
+              // something else (a date, several values, a number, a tick) changes what the column stores
+              // too, wherever the caller can change it; a look that stores words keeps the column's words.
+              // (Choice, person, link and worked-out looks are kinds of their own — the format writer
+              // changes what those store; they are not this rule's.)
+              const storesOther = lookChangesWhatItStores(picked, dataType);
+              if (onDataTypeChange && (storesOther || otherKinds.some((d) => d.id === picked.id))) {
                 onDataTypeChange(picked.base, next);
                 return;
               }
