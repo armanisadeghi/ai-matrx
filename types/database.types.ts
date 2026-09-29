@@ -10976,6 +10976,7 @@ export type Database = {
           agent_version_id: string | null
           api_duration_ms: number | null
           completed_at: string | null
+          conversation_id: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -11004,12 +11005,14 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          workflow_run_id: string | null
         }
         Insert: {
           agent_id?: string | null
           agent_version_id?: string | null
           api_duration_ms?: number | null
           completed_at?: string | null
+          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -11038,12 +11041,14 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_run_id?: string | null
         }
         Update: {
           agent_id?: string | null
           agent_version_id?: string | null
           api_duration_ms?: number | null
           completed_at?: string | null
+          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -11072,8 +11077,31 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_run_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_request_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_request_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_request_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_todo: {
         Row: {
@@ -11553,6 +11581,10 @@ export type Database = {
           old_iterations: number
           user_request_id: string
         }[]
+      }
+      root_conversation_id: {
+        Args: { p_conversation_id: string }
+        Returns: string
       }
       user_request_totals_bump: {
         Args: {
@@ -67981,6 +68013,7 @@ export type Database = {
         Args: {
           p_id?: string
           p_organization_id: string
+          p_personal_hides?: boolean
           p_table_id?: string
           p_type?: string
           p_user_id: string
