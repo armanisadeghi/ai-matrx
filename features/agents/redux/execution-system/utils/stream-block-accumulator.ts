@@ -496,8 +496,14 @@ export class StreamBlockAccumulator {
   private isProcessingLineQueue = false;
   /** Incomplete generic XML must never promote embedded JSON on finalize. */
   private genericXmlRecoverySuppressed = false;
-  /** Only the unused text slot opened after a clean generic XML close is omitted. */
-  private suppressEmptyGenericXmlTrailingSlot = false;
+  /**
+   * The unused text slot opened after a clean container close is omitted.
+   *
+   * A completed bare JSON root opens a fresh text slot so subsequent source
+   * can continue in document order. If the stream ends there, emitting that
+   * slot creates a second, empty terminal block after the actual answer.
+   */
+  private suppressEmptyTrailingSlot = false;
 
   constructor(
     requestId: string,
@@ -697,7 +703,7 @@ export class StreamBlockAccumulator {
     this.lineQueue = [];
     this.isProcessingLineQueue = false;
     this.genericXmlRecoverySuppressed = false;
-    this.suppressEmptyGenericXmlTrailingSlot = false;
+    this.suppressEmptyTrailingSlot = false;
   }
 
   /**
@@ -911,7 +917,7 @@ export class StreamBlockAccumulator {
         this.openBlock("text", dispatch);
         const remainder = source.slice(rootEnd).trim();
         if (remainder) this.processLine(remainder, dispatch);
-        else this.suppressEmptyGenericXmlTrailingSlot = true;
+        else this.suppressEmptyTrailingSlot = true;
       }
       return;
     }
@@ -1047,6 +1053,9 @@ export class StreamBlockAccumulator {
           this.closeCurrentBlock(dispatch);
           this.subState = { kind: "none" };
           this.openBlock("text", dispatch);
+          // Preserve the slot for a following line, but do not emit a second
+          // terminal block when this clean JSON object is the whole answer.
+          this.suppressEmptyTrailingSlot = true;
         }
         return;
       }
@@ -1425,7 +1434,7 @@ export class StreamBlockAccumulator {
         this.openBlock("text", dispatch);
         const remainder = rawLine.slice(rootEnd).trim();
         if (remainder) this.processLine(remainder, dispatch);
-        else this.suppressEmptyGenericXmlTrailingSlot = true;
+        else this.suppressEmptyTrailingSlot = true;
         return;
       }
 
@@ -1770,7 +1779,7 @@ export class StreamBlockAccumulator {
   // ── Block lifecycle helpers ─────────────────────────────────────────
 
   private appendToCurrentBlock(line: string): void {
-    this.suppressEmptyGenericXmlTrailingSlot = false;
+    this.suppressEmptyTrailingSlot = false;
     // Join on "\n" from the second line onward. Keyed off the line COUNT (not
     // whether content is currently empty) so a leading blank line is preserved
     // verbatim — matching V2's `currentText += line + "\n"` accumulation.
@@ -1964,7 +1973,7 @@ export class StreamBlockAccumulator {
     this.currentBlockEmitted = false;
     this.pendingMediaData = null;
     this.genericXmlRecoverySuppressed = false;
-    this.suppressEmptyGenericXmlTrailingSlot = false;
+    this.suppressEmptyTrailingSlot = false;
   }
 
   private emitCurrentBlock(
@@ -2015,7 +2024,7 @@ export class StreamBlockAccumulator {
     if (
       !content &&
       status === "complete" &&
-      this.suppressEmptyGenericXmlTrailingSlot
+      this.suppressEmptyTrailingSlot
     )
       return;
 
