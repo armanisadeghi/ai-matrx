@@ -9,15 +9,16 @@
  * version — the honest Repin affordance (validates at CURRENT schema first,
  * refuses loudly otherwise; P-1 parity via `repinKindInstance`).
  *
- * "View as table" (the ratified Convert Pattern, read-only/export v1): FLAT
- * kinds project their instances into a NEW dataset snapshot via
- * `createDatasetFromTable` — click-to-convert, no sync, no substrate.
+ * "Save to a table" (the ratified Convert Pattern, read-only/export v1): FLAT
+ * kinds hand their instances' fields to the ONE `saveToTable` overlay — a new
+ * table or rows added to one — a snapshot, no sync, no substrate.
  *
  * HEAVY (KindInputForm pulls ajv + the production input stack) — the route
  * loads this tab via `next/dynamic({ ssr: false })` (ShapeInstancesTabLoader).
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -144,7 +145,7 @@ export default function ShapeInstancesTab({
   const [repinning, setRepinning] = useState(false);
   const [verdictWarning, setVerdictWarning] = useState<string | null>(null);
   const [flatKeys, setFlatKeys] = useState<string[] | null>(null);
-  const [converting, setConverting] = useState(false);
+  const openSaveToTable = useOpenSaveToTable();
   // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md): the
   // default hides archived instances, and the control beside the list header
   // reveals them in one click. It is a server request, so the count beside
@@ -368,45 +369,15 @@ export default function ShapeInstancesTab({
     }
   }
 
-  async function handleViewAsTable(): Promise<void> {
-    if (!flatKeys || entries.length === 0) return;
-    setConverting(true);
-    try {
-      const { createDatasetFromTable } =
-        await import("@/features/data-tables/create-dataset-from-table");
-      const rows = entries
-        .map((entry) => instanceDataAsRecord(entry.data))
-        .filter((data): data is Record<string, unknown> => data !== null)
-        .map((data) => {
-          const row: Record<string, unknown> = {};
-          for (const key of flatKeys) row[key] = cellValue(data[key]);
-          return row;
-        });
-      const result = await createDatasetFromTable({
-        name: `${label} instances`,
-        description: `Snapshot of your "${kind}" instances (${new Date().toLocaleDateString()}). One-time export — edits here do not sync back.`,
-        headers: flatKeys,
-        rows,
-      });
-      if (!result.success || !result.tableId) {
-        throw new Error(result.error ?? "Failed to create the dataset");
-      }
-      const tableId = result.tableId;
-      toast.success(`Dataset created (${result.inserted} rows)`, {
-        description: "One-time snapshot — it does not sync back to instances.",
-        action: {
-          label: "Open",
-          onClick: () =>
-            window.open(`/data/${tableId}`, "_blank", "noopener,noreferrer"),
-        },
-      });
-    } catch (error) {
-      toast.error("Failed to create the dataset", {
-        description: error instanceof Error ? error.message : String(error),
-      });
-    } finally {
-      setConverting(false);
-    }
+  // THE ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE): the instances' flat fields as rows —
+  // a new table with each column's type proposed, or rows added to a table the person has.
+  function handleViewAsTable(): void {
+    if (!flatKeys || entries.length === 0 || !openSaveToTable) return;
+    const rows = entries
+      .map((entry) => instanceDataAsRecord(entry.data))
+      .filter((data): data is Record<string, unknown> => data !== null)
+      .map((data) => flatKeys.map((key) => cellValue(data[key])));
+    openSaveToTable({ grid: { headers: flatKeys, rows }, title: `${label} instances` });
   }
 
   if (list.status === "loading") {
@@ -508,20 +479,15 @@ export default function ShapeInstancesTab({
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </button>
-            {flatKeys && (
+            {flatKeys && openSaveToTable && (
               <button
                 type="button"
-                onClick={() => void handleViewAsTable()}
-                disabled={converting}
+                onClick={handleViewAsTable}
                 className="flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                title="Create a one-time dataset snapshot of these instances"
+                title="Save these instances as a table"
               >
-                {converting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Table2 className="h-3.5 w-3.5" />
-                )}
-                View as table
+                <Table2 className="h-3.5 w-3.5" />
+                Save to a table
               </button>
             )}
           </div>

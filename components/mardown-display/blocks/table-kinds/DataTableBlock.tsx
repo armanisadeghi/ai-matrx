@@ -87,6 +87,7 @@ import {
   ArrowUpDown,
   Braces,
   Copy,
+  Database,
   Download,
   Loader2,
   Maximize2,
@@ -119,6 +120,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewerWindow";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { readSearchKindValue, text } from "../search-kinds/search-kind-data";
 import {
   ColumnTypeBadge,
@@ -202,6 +204,7 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
   const { value, isComplete } = readSearchKindValue<"data_table">(serverData);
   const { copyText } = useClipboard();
   const openTableWindow = useOpenTableViewerWindow();
+  const openSaveToTable = useOpenSaveToTable();
   // THE FETCH-MORE SEAM (LAW 3). Null when the host cannot re-read — the
   // banner then says so rather than offering a button that does nothing.
   const more = useDataTableMore();
@@ -424,6 +427,29 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
           >
             <AGENT_ICON className="h-3.5 w-3.5" />
           </button>
+          {/* THE ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE): a new table, or these rows added
+              to one the person has — the `saveToTable` overlay. */}
+          {openSaveToTable ? (
+          <button
+            type="button"
+            onClick={() =>
+              openSaveToTable({
+                grid: {
+                  headers: columns.map((column) => column.name),
+                  rows: sorted.map((row) =>
+                    columns.map((column) => cellToText(row[column.index])),
+                  ),
+                },
+                title: title ?? null,
+              })
+            }
+            title="Save to a table"
+            aria-label="Save to a table"
+            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Database className="h-3.5 w-3.5" />
+          </button>
+          ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

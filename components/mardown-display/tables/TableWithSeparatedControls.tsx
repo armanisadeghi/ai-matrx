@@ -17,7 +17,6 @@ import {
   FileDown,
   ChevronDown,
   Database,
-  ArrowUpRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -28,8 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "../themes";
-import SaveTableModal from "./SaveTableModal";
-import ViewTableModal from "./ViewTableModal";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 
 // Custom debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -59,9 +57,8 @@ interface TableControlsProps {
   showNormalized: boolean;
   setShowNormalized: (value: boolean) => void;
   editMode: "none" | "header" | number;
-  savedTableInfo: SavedTableInfo | null;
-  setShowSaveModal: (value: boolean) => void;
-  setShowViewModal: (value: boolean) => void;
+  /** THE one "Save to a table" (SAVE-AS-TABLE-EVERYWHERE): the `saveToTable` overlay. */
+  onSaveAsTable: (() => void) | null;
   onSave: (tableData: { headers: string[]; rows: string[][] }) => void;
   onContentChange?: (updatedMarkdown: string) => void;
   toggleGlobalEditMode: (notifyContentChange: () => boolean) => void;
@@ -74,9 +71,7 @@ const TableControls: React.FC<TableControlsProps> = ({
   showNormalized,
   setShowNormalized,
   editMode,
-  savedTableInfo,
-  setShowSaveModal,
-  setShowViewModal,
+  onSaveAsTable,
   onSave,
   onContentChange,
   toggleGlobalEditMode,
@@ -213,41 +208,20 @@ const TableControls: React.FC<TableControlsProps> = ({
   }, [content, tableData.headers, toast]);
 
   const renderTableActionButton = useCallback(() => {
-    if (!debouncedTableData.normalizedData) return null;
-    if (savedTableInfo) {
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowViewModal(true)}
-          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-          disabled={isUpdating}
-        >
-          <ArrowUpRight className="h-4 w-4" />
-          View Saved Table
-        </Button>
-      );
-    } else {
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowSaveModal(true)}
-          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-          disabled={isUpdating}
-        >
-          <Database className="h-4 w-4" />
-          Save
-        </Button>
-      );
-    }
-  }, [
-    debouncedTableData.normalizedData,
-    savedTableInfo,
-    setShowViewModal,
-    setShowSaveModal,
-    isUpdating,
-  ]);
+    if (!debouncedTableData.normalizedData || !onSaveAsTable) return null;
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onSaveAsTable}
+        className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+        disabled={isUpdating}
+      >
+        <Database className="h-4 w-4" />
+        Save to a table
+      </Button>
+    );
+  }, [debouncedTableData.normalizedData, onSaveAsTable, isUpdating]);
 
   if (isUpdating) {
     // Placeholder mimicking the controls' layout
@@ -264,24 +238,15 @@ const TableControls: React.FC<TableControlsProps> = ({
             {showNormalized ? "Table" : "Data"}
           </Button>
         )}
-        {debouncedTableData.normalizedData && (
+        {debouncedTableData.normalizedData && onSaveAsTable && (
           <Button
             variant="outline"
             size="sm"
             className="flex items-center gap-2"
             disabled
           >
-            {savedTableInfo ? (
-              <>
-                <ArrowUpRight className="h-4 w-4" />
-                View Saved Table
-              </>
-            ) : (
-              <>
-                <Database className="h-4 w-4" />
-                Save
-              </>
-            )}
+            <Database className="h-4 w-4" />
+            Save to a table
           </Button>
         )}
         <Button
@@ -437,12 +402,6 @@ const TableControls: React.FC<TableControlsProps> = ({
   );
 };
 
-interface SavedTableInfo {
-  table_id: string;
-  table_name: string;
-  row_count: string;
-  field_count: string;
-}
 interface MarkdownTableProps {
   data: {
     headers: string[];
@@ -479,11 +438,6 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   const tableFontsize = fontSize;
   const toast = useToastManager();
   const tableTheme = THEMES[theme]?.table || THEMES.professional.table;
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [savedTableInfo, setSavedTableInfo] = useState<SavedTableInfo | null>(
-    null,
-  );
 
   useEffect(() => {
     if (data) {
@@ -569,11 +523,10 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
     toast.info("Edits cancelled");
   }, [data, toast]);
 
-  const handleSaveComplete = useCallback((tableInfo: SavedTableInfo) => {
-    setSavedTableInfo(tableInfo);
-    setShowSaveModal(false);
-    setShowViewModal(true);
-  }, []);
+  const openSaveToTable = useOpenSaveToTable();
+  const onSaveAsTable = useCallback(() => {
+    openSaveToTable?.({ grid: { headers: tableData.headers, rows: tableData.rows } });
+  }, [openSaveToTable, tableData.headers, tableData.rows]);
 
   const isEditingEnabled = editMode !== "none";
   const isEditingHeader = editMode === "header";
@@ -678,30 +631,13 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
         showNormalized={showNormalized}
         setShowNormalized={setShowNormalized}
         editMode={editMode}
-        savedTableInfo={savedTableInfo}
-        setShowSaveModal={setShowSaveModal}
-        setShowViewModal={setShowViewModal}
+        onSaveAsTable={openSaveToTable ? onSaveAsTable : null}
         onSave={onSave}
         onContentChange={onContentChange}
         toggleGlobalEditMode={toggleGlobalEditMode}
         handleSave={handleSave}
         handleCancel={handleCancel}
       />
-      {showSaveModal && (
-        <SaveTableModal
-          isOpen={showSaveModal}
-          onClose={() => setShowSaveModal(false)}
-          onSaveComplete={handleSaveComplete}
-          tableData={tableData.normalizedData ?? []}
-        />
-      )}
-      {showViewModal && savedTableInfo && (
-        <ViewTableModal
-          isOpen={showViewModal}
-          onClose={() => setShowViewModal(false)}
-          tableInfo={savedTableInfo}
-        />
-      )}
     </div>
   );
 };

@@ -3,8 +3,9 @@
 // features/rich-document/hosts/DocumentDialogsImpl.tsx
 //
 // The dialogs behind useDocumentDialogsHost, compiled as ONE piece behind the
-// host's single dynamic edge: the convert-source dialog, the canonical
-// "save table as data" modal, and the save-as-flashcard question prompt.
+// host's single dynamic edge: the convert-source dialog and the
+// save-as-flashcard question prompt. (Saving a table is the `saveToTable`
+// overlay — the one "Save to a table" every surface opens.)
 
 import * as React from "react";
 import { toast } from "@/lib/toast";
@@ -12,7 +13,6 @@ import {
   ConvertContentDialog,
   type ConvertOrigin,
 } from "@/features/education/convert/ConvertContentDialog";
-import SaveTableModal from "@/components/mardown-display/tables/SaveTableModal";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -66,8 +66,6 @@ export interface DocumentDialogsImplProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
   } | null;
-  table: { headers: string[]; rows: string[][] } | null;
-  onTableClose: () => void;
   cardAnswer: string | null;
   onCardClose: () => void;
   agentReview: {
@@ -89,8 +87,6 @@ export default function DocumentDialogsImpl(
 ): React.ReactElement {
   const {
     convert,
-    table,
-    onTableClose,
     cardAnswer,
     onCardClose,
     agentReview,
@@ -107,15 +103,6 @@ export default function DocumentDialogsImpl(
           onOpenChange={convert.onOpenChange}
           origin={convert.origin}
           text={convert.text}
-        />
-      ) : null}
-      {table ? (
-        <SaveTableModal
-          isOpen
-          onClose={onTableClose}
-          tableData={table.rows.map((row) =>
-            Object.fromEntries(table.headers.map((h, i) => [h, row[i] ?? ""])),
-          )}
         />
       ) : null}
       {chatDialog ? (

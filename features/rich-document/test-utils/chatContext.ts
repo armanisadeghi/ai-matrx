@@ -43,7 +43,6 @@ export function chatContext(
       onRequestDelete: noop,
       onRequestEditHistory: noop,
       onRequestConvert: noop,
-      onRequestSaveTable: noop,
       onRequestFlashcard: noop,
     },
   });

@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { Copy } from "lucide-react";
+import { Copy, Table2 } from "lucide-react";
+import { shapeOfValue } from "@ai-matrx/records-ui/table-shape";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { outputSchemaKeys } from "@/features/mandates/output-contract";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
@@ -105,6 +107,31 @@ function CopyRawButton({ rawContent }: { rawContent: string }) {
     >
       <Copy className="h-3.5 w-3.5" />
       Copy
+    </button>
+  );
+}
+
+/**
+ * THE ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE): an agent's structured answer that holds
+ * rows (a list of records, a kind value's items) offers them as a new table or rows for one the
+ * person has. Absent when the answer holds no rows — never a dead control.
+ */
+function SaveAnswerToTableButton({ value }: { value: StructuredValue }) {
+  const openSaveToTable = useOpenSaveToTable();
+  if (!openSaveToTable || !shapeOfValue(value)) return null;
+  return (
+    <button
+      type="button"
+      aria-label="Save to a table"
+      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openSaveToTable({ value });
+      }}
+    >
+      <Table2 className="h-3.5 w-3.5" />
+      Save to a table
     </button>
   );
 }
@@ -293,6 +320,7 @@ export function StructuredAgentAnswerBlock({
         <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-muted-foreground">
           Details
           <CopyRawButton rawContent={rawContent} />
+          <SaveAnswerToTableButton value={value} />
         </summary>
         <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">
           {rawContent}

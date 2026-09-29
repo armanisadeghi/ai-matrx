@@ -40,13 +40,10 @@ import {
 import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewerWindow";
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "../../themes";
-import SaveTableModal from "../../tables/SaveTableModal";
 import { TableSaveToMenu } from "../../tables/TableSaveToMenu";
 import { phoneStackCellProps, useTableViewer } from "../../tables/table-viewer";
 import { ChartThisButton, TableChartPanel } from "../chart/TableChart";
 import { tableActionRowClass, useTableActionTitles } from "../../tables/table-action-row";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "../../tables/editing/TableEditToolbar";
 import { RowActionsMenu } from "../../tables/editing/RowActionsMenu";
 import { ColumnActionsMenu } from "../../tables/editing/ColumnActionsMenu";
@@ -80,13 +77,6 @@ import {
 // TYPES
 // ============================================================================
 
-interface SavedTableInfo {
-  table_id: string;
-  table_name: string;
-  row_count: string;
-  field_count: string;
-}
-
 interface StreamingTableRendererProps {
   content: string;
   metadata?: {
@@ -102,13 +92,13 @@ interface StreamingTableRendererProps {
   onSave?: (tableData: { headers: string[]; rows: string[][] }) => void;
   onContentChange?: (updatedMarkdown: string) => void;
   /**
-   * One-click convert for materialized chat artifacts — renders in the
-   * action toolbar instead of the modal "Save" path.
+   * What "Save to ▸ A table…" is told (SAVE-AS-TABLE-EVERYWHERE): the name a new table is offered,
+   * and where the rows landed — a canvas chat artifact links itself to that table and becomes live.
    */
-  convertToTable?: {
-    onClick: () => void | Promise<void>;
-    busy?: boolean;
-    disabled?: boolean;
+  saveAsTable?: {
+    title?: string | null;
+    resolveTitle?: () => Promise<string | null>;
+    onSaved?: (tableId: string, how: "new" | "existing") => void | Promise<void>;
   };
   /**
    * Rendered inside the full-size TableViewerWindow. Suppresses the
@@ -308,7 +298,7 @@ const StreamingTableRendererCore: React.FC<
   theme = "professional",
   onSave = () => {},
   onContentChange,
-  convertToTable,
+  saveAsTable,
   expanded = false,
   parsedTable,
 }) => {
@@ -333,17 +323,12 @@ const StreamingTableRendererCore: React.FC<
   const tableTheme = THEMES[theme]?.table || THEMES.professional.table;
 
   // State Management
-  const dispatch = useAppDispatch();
   const [editMode, setEditMode] = useState<"none" | "header" | number>("none");
   const [showNormalized, setShowNormalized] = useState(false);
   // "Chart this" — draws this table through the one chart primitive.
   const [showChart, setShowChart] = useState(false);
   // Icon-only table action row: each button's name becomes its tooltip.
   const actionRowRef = useTableActionTitles<HTMLDivElement>();
-  const [savedTableInfo, setSavedTableInfo] = useState<SavedTableInfo | null>(
-    null,
-  );
-  const [showSaveModal, setShowSaveModal] = useState(false);
 
   // internalTableData holds user edits. null means "not yet in edit mode — use parsedTable".
   // We never sync parsedTable → state during streaming to avoid the useEffect update cascade.
@@ -697,26 +682,6 @@ const StreamingTableRendererCore: React.FC<
   // ========================================================================
   // DATABASE FUNCTIONS
   // ========================================================================
-
-  const handleSaveComplete = (tableInfo: SavedTableInfo) => {
-    // SaveTableModal already dispatches `openQuickDataWindow` on success and
-    // closes itself. We just record the result so the action button can flip
-    // from "Save" to "View Saved Table" — a re-open shortcut for the same
-    // window with this table pre-selected.
-    setSavedTableInfo(tableInfo);
-    setShowSaveModal(false);
-  };
-
-  const handleViewSavedTable = () => {
-    if (!savedTableInfo) return;
-    dispatch(
-      openOverlay({
-        overlayId: "quickDataWindow",
-        data: { selectedTable: savedTableInfo.table_id },
-      }),
-    );
-  };
-
 
   // ========================================================================
   // RENDER
@@ -1108,10 +1073,9 @@ const StreamingTableRendererCore: React.FC<
                     <TableSaveToMenu
                       headers={headers}
                       rows={rows}
-                      savedTableName={savedTableInfo?.table_name ?? null}
-                      convertToTable={convertToTable}
-                      onSaveAsDataTable={() => setShowSaveModal(true)}
-                      onOpenSavedTable={handleViewSavedTable}
+                      title={saveAsTable?.title ?? null}
+                      {...(saveAsTable?.resolveTitle ? { resolveTitle: saveAsTable.resolveTitle } : {})}
+                      {...(saveAsTable?.onSaved ? { onSaved: saveAsTable.onSaved } : {})}
                     />
                   )}
               <ExportDropdownMenu
@@ -1172,15 +1136,6 @@ const StreamingTableRendererCore: React.FC<
         />
       )}
 
-      {/* Modals */}
-      {showSaveModal && (
-        <SaveTableModal
-          isOpen={showSaveModal}
-          onClose={() => setShowSaveModal(false)}
-          onSaveComplete={handleSaveComplete}
-          tableData={tableData.normalizedData}
-        />
-      )}
     </div>
   );
 };

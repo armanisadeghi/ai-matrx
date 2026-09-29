@@ -903,6 +903,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: false,
   },
+  saveToTable: {
+    label: "Save to a table",
+    instanceMode: "multi",
+    isWindow: false,
+  },
   saveToNotesFullscreen: {
     label: "Save To Notes Fullscreen",
     instanceMode: "multi",

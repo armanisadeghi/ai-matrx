@@ -91,26 +91,33 @@ describe("the expanded action set", () => {
   it("host-owned dialogs are absent without a host, present with one", () => {
     const bare = ids(noteContext());
     expect(bare).not.toContain("save-as-flashcard");
-    expect(bare).not.toContain("save-table-as-data");
     const hosted = ids(
       noteContext({
         content: RICH_MESSAGE,
-        callbacks: { onRequestFlashcard: jest.fn(), onRequestSaveTable: jest.fn() },
+        callbacks: { onRequestFlashcard: jest.fn() },
       }),
     );
-    expect(hosted).toEqual(expect.arrayContaining(["save-as-flashcard", "save-table-as-data"]));
+    expect(hosted).toEqual(expect.arrayContaining(["save-as-flashcard"]));
   });
 
-  it("save-table-as-data hands the parsed table to the host", () => {
-    const onRequestSaveTable = jest.fn();
-    const ctx = chatContext("assistant", {
-      callbacks: { ...chatContext("assistant").callbacks, onRequestSaveTable },
-    });
+  // SAVE-AS-TABLE-EVERYWHERE: "Save to a table…" needs no host — it opens the one overlay — and it
+  // is offered for every shape the one reader understands, not only a markdown table.
+  it("save-table-as-data opens the one Save to a table overlay with the content", () => {
+    const dispatch = jest.fn();
+    const ctx = chatContext("assistant", { dispatch });
     void getAction("save-table-as-data")!.run(ctx);
-    expect(onRequestSaveTable).toHaveBeenCalledWith({
-      headers: ["Tier", "Window"],
-      rows: [["Gold", "60 days"]],
-    });
+    const opened = dispatch.mock.calls.map((c) => c[0]).find((a) => a?.payload?.overlayId === "saveToTable");
+    expect(opened).toBeDefined();
+    expect(opened.payload.data.text).toBe(ctx.content);
+  });
+
+  it("offers Save to a table for a few bullet points and for Key: value lines, never for prose", () => {
+    const bullets = ids(noteContext({ content: "Bring:\n\n- Loose shorts\n- Water bottle\n- Knee brace\n" }));
+    expect(bullets).toContain("save-table-as-data");
+    const record = ids(noteContext({ content: "Patient: Camille Duprez\nVisit type: Initial Evaluation\n" }));
+    expect(record).toContain("save-table-as-data");
+    const prose = ids(noteContext({ content: "Keep icing the knee twice a day, and rest it after exercise." }));
+    expect(prose).not.toContain("save-table-as-data");
   });
 
   it("ask-in-chat is offered only where a conversation exists, and quotes as CONTEXT", () => {

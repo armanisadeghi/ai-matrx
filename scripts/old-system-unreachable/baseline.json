@@ -1,5 +1,5 @@
 {
-  "about": "check:old-system-unreachable census \u2014 every place that names an old door; it only shrinks (lane FINAL-SWITCH).",
+  "about": "check:old-system-unreachable census — every place that names an old door; it only shrinks (lane FINAL-SWITCH).",
   "entries": [
     "aidream:aidream/services/kind_records/children.py content_ir.kind_instance",
     "aidream:aidream/services/kind_records/routed.py content_ir.kind_instance",
@@ -27,9 +27,6 @@
     "matrx-frontend:app/(core)/data/create/page.tsx @/components/user-generated-table-data",
     "matrx-frontend:app/(public)/free/zip-code-heatmap/components/FileUpload.tsx @/utils/user-table-utls",
     "matrx-frontend:app/api/cms/collections/route.ts udt_column_facets",
-    "matrx-frontend:components/mardown-display/blocks/json/AppendToTableDialog.tsx @/utils/user-table-utls",
-    "matrx-frontend:components/mardown-display/blocks/json/AppendToTableDialog.tsx udt_bulk_write",
-    "matrx-frontend:components/mardown-display/blocks/json/JsonToTableDialog.tsx @/utils/user-table-utls",
     "matrx-frontend:components/mardown-display/tables/SaveTableModal.tsx @/utils/user-table-utls",
     "matrx-frontend:components/user-generated-table-data/AddColumnModal.tsx @/utils/user-table-utls",
     "matrx-frontend:components/user-generated-table-data/AddRowModal.tsx @/utils/user-table-utls",
@@ -71,7 +68,6 @@
     "matrx-frontend:features/data-tables/components/LocatedTableViewer.tsx @/components/user-generated-table-data",
     "matrx-frontend:features/data-tables/components/RowLabelPicker.tsx udt_set_table_row_label",
     "matrx-frontend:features/data-tables/components/SheetLayout.tsx @/components/user-generated-table-data",
-    "matrx-frontend:features/data-tables/create-dataset-from-table.ts @/utils/user-table-utls",
     "matrx-frontend:features/data-tables/data-source/record-store.ts get_user_table_data_paginated_v2",
     "matrx-frontend:features/data-tables/data-source/record-store.ts udt_bulk_write",
     "matrx-frontend:features/data-tables/data-source/record-store.ts update_user_table_config",

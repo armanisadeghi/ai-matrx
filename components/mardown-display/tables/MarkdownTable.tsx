@@ -33,9 +33,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "../themes";
-import SaveTableModal from "./SaveTableModal";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "./editing/TableEditToolbar";
 import { RowActionsMenu } from "./editing/RowActionsMenu";
 import { ColumnActionsMenu } from "./editing/ColumnActionsMenu";
@@ -203,13 +200,6 @@ const ExportDropdownMenu: React.FC<ExportDropdownMenuProps> = ({
   );
 };
 
-interface SavedTableInfo {
-  table_id: string;
-  table_name: string;
-  row_count: string;
-  field_count: string;
-}
-
 interface MarkdownTableProps {
   // headers/rows are declared optional (not just string[]) because this block
   // renders LLM-authored JSON via the generic block registry — the payload is
@@ -247,10 +237,6 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   // product has just told the Expert is deliberately false. RichDocument
   // prints the banner that stands in their place.
   const specimenMode = useSpecimenMode();
-  const dispatch = useAppDispatch();
-  const [savedTableInfo, setSavedTableInfo] = useState<SavedTableInfo | null>(
-    null,
-  );
 
   // Use useMemo to create stable table data based on content, not object references
   const tableData = useMemo(() => {
@@ -279,7 +265,6 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   const tableFontsize = fontSize;
   const toast = useToastManager();
   const tableTheme = THEMES[theme]?.table || THEMES.professional.table;
-  const [showSaveModal, setShowSaveModal] = useState(false);
   // "Chart this" — draws this table through the one chart primitive.
   const [showChart, setShowChart] = useState(false);
   // Icon-only table action row: each button's name becomes its tooltip.
@@ -634,25 +619,6 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
     setEditMode,
   });
 
-  const handleSaveComplete = (tableInfo: SavedTableInfo) => {
-    // SaveTableModal already dispatches `openQuickDataWindow` on success and
-    // closes itself. We just record the result so the action button can flip
-    // from "Save" to "View Saved Table" — a re-open shortcut for the same
-    // window with this table pre-selected.
-    setSavedTableInfo(tableInfo);
-    setShowSaveModal(false);
-  };
-
-  const handleViewSavedTable = () => {
-    if (!savedTableInfo) return;
-    dispatch(
-      openOverlay({
-        overlayId: "quickDataWindow",
-        data: { selectedTable: savedTableInfo.table_id },
-      }),
-    );
-  };
-
   // On a phone the table reads as the PHONE-STACK card list (each row a card,
   // each value labelled) — except while editing, which needs the grid.
   const phoneStack = isMobile && !isEditingEnabled;
@@ -867,9 +833,6 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                 <TableSaveToMenu
                   headers={internalTableData.headers}
                   rows={internalTableData.rows}
-                  savedTableName={savedTableInfo?.table_name ?? null}
-                  onSaveAsDataTable={() => setShowSaveModal(true)}
-                  onOpenSavedTable={handleViewSavedTable}
                 />
               )}
               <ExportDropdownMenu
@@ -919,14 +882,6 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
             </Button>
           ) : null}
         </div>
-      )}
-      {showSaveModal && internalTableData.normalizedData && (
-        <SaveTableModal
-          isOpen={showSaveModal}
-          onClose={() => setShowSaveModal(false)}
-          onSaveComplete={handleSaveComplete}
-          tableData={internalTableData.normalizedData}
-        />
       )}
     </div>
   );

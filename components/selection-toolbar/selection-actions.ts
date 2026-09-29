@@ -105,6 +105,8 @@ export const SELECTION_ACTION_MODES: Readonly<Record<string, ModeRule>> = {
   // Every selection that has no richer home: copy it, keep it
   "selection:copy": ["read", "edit"],
   "selection:save-to-notes": ["read", "edit"],
+  // A selection that reads as rows (a table, a list, Key: value lines, CSV) — SAVE-AS-TABLE-EVERYWHERE
+  "selection:save-to-table": ["read", "edit"],
 };
 
 /**
@@ -152,6 +154,8 @@ export interface SelectionCommonHost {
   kind: "selection-common";
   text: string;
   saveToNotes(content: string): void;
+  /** The one "Save to a table" (SAVE-AS-TABLE-EVERYWHERE) for a selection that reads as rows. */
+  saveToTable(content: string): void;
   /** The app's feedback window (a passage report). */
   openFeedback(report: { title: string; subject: FeedbackSubject }): void;
 }
@@ -194,6 +198,7 @@ export const SELECTION_PRIORITY: Readonly<Record<SelectionMode, readonly string[
     "selection:table-del-col",
     "selection:table-del-table",
     "selection:save-to-notes",
+    "selection:save-to-table",
   ],
   read: [
     "selection:highlight-yellow",
@@ -210,6 +215,7 @@ export const SELECTION_PRIORITY: Readonly<Record<SelectionMode, readonly string[
     "selection:report",
     "selection:copy",
     "selection:save-to-notes",
+    "selection:save-to-table",
   ],
 };
 

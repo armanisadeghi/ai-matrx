@@ -10,9 +10,10 @@
  * labelled menu, which renders only for a viewer who can write (see
  * `useTableViewer`) — a guest keeps the actions that work for her: view, chart,
  * copy and download. Both table renderers (MarkdownTable, StreamingTableRenderer)
- * use it.
+ * use it, and the canvas table artifact through StreamingTableRenderer.
  */
-import { ChevronDown, Database, ArrowUpRight, FileSpreadsheet, Loader2, Sheet, Table2 } from "lucide-react";
+import { ChevronDown, Database, FileSpreadsheet, Loader2, Sheet, Table2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,37 +21,57 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { useSendToWorkbook } from "./SendToWorkbookButton";
 import { useSendToGoogleSheet } from "./SendToGoogleSheetButton";
 
+/**
+ * "A table…" is THE one "Save to a table" (lane SAVE-AS-TABLE-EVERYWHERE, 2026-09-29): the
+ * `saveToTable` overlay — a new table with its columns' types proposed, or these rows added to a
+ * table the person has, columns matched. It replaced the two writes this menu used to carry ("A
+ * live table" for a chat artifact, "A data table" for everything else), each with its own dialog.
+ */
 export function TableSaveToMenu({
   headers,
   rows,
-  savedTableName,
-  onSaveAsDataTable,
-  onOpenSavedTable,
-  hideDataTable = false,
-  convertToTable,
+  title,
+  resolveTitle,
+  onSaved,
 }: {
   headers: string[];
   rows: string[][];
-  /** Set once this table was saved as a data table — the item then opens it. */
-  savedTableName?: string | null;
-  onSaveAsDataTable: () => void;
-  onOpenSavedTable: () => void;
-  /** The surface offers its own "Convert to table" instead of a data-table save. */
-  hideDataTable?: boolean;
-  /**
-   * A chat artifact's one-press convert: the artifact itself BECOMES a live table. It is the first
-   * item of this menu, never an unlabeled icon beside it (lane HANDOVER, 2026-09-28: the one write
-   * a person came for sat as a bare table icon while "Save to" offered only a workbook and a sheet).
-   */
-  convertToTable?: { onClick: () => void | Promise<void>; busy?: boolean; disabled?: boolean } | undefined;
+  /** The name a new table is offered (the conversation, the artifact). */
+  title?: string | null;
+  /** Or a name worked out when the person asks (read before the screen opens). */
+  resolveTitle?: () => Promise<string | null>;
+  /** The rows landed in this table — a chat artifact links itself to it and becomes live. */
+  onSaved?: (tableId: string, how: "new" | "existing") => void | Promise<void>;
 }) {
   const workbook = useSendToWorkbook({ headers, rows });
   const sheet = useSendToGoogleSheet({ headers, rows });
-  const busy = workbook.pushing || sheet.pushing || Boolean(convertToTable?.busy);
+  const openSaveToTable = useOpenSaveToTable();
+  const [naming, setNaming] = useState(false);
+  const busy = workbook.pushing || sheet.pushing || naming;
   if (!headers.length) return null;
+
+  const saveAsTable = async () => {
+    let name = title ?? null;
+    if (resolveTitle) {
+      setNaming(true);
+      try {
+        name = (await resolveTitle()) ?? name;
+      } catch {
+        // A name is a proposal; the screen offers the table's own heading instead.
+      } finally {
+        setNaming(false);
+      }
+    }
+    openSaveToTable?.({
+      grid: { headers, rows },
+      title: name,
+      ...(onSaved ? { onSaved: (event) => onSaved(event.tableId, event.how) } : {}),
+    });
+  };
 
   return (
     <>
@@ -73,24 +94,11 @@ export function TableSaveToMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          {convertToTable ? (
-            <DropdownMenuItem
-              disabled={Boolean(convertToTable.disabled || convertToTable.busy)}
-              onSelect={() => void convertToTable.onClick()}
-              className="gap-2"
-            >
-              <Table2 className="h-4 w-4" /> {convertToTable.busy ? "Making the table…" : "A live table"}
+          {openSaveToTable ? (
+            <DropdownMenuItem disabled={naming} onSelect={() => void saveAsTable()} className="gap-2">
+              <Table2 className="h-4 w-4" /> A table…
             </DropdownMenuItem>
           ) : null}
-          {hideDataTable || convertToTable ? null : savedTableName ? (
-            <DropdownMenuItem onSelect={onOpenSavedTable} className="gap-2">
-              <ArrowUpRight className="h-4 w-4" /> Open “{savedTableName}”
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem onSelect={onSaveAsDataTable} className="gap-2">
-              <Database className="h-4 w-4" /> A data table
-            </DropdownMenuItem>
-          )}
           <DropdownMenuItem
             disabled={workbook.pushing}
             onSelect={() => void workbook.send()}

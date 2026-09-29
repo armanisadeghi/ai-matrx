@@ -347,8 +347,6 @@ export interface RichDocumentActionContextCallbacks {
   onRequestEditHistory?: () => void;
   /** Open the host-owned ConvertContentDialog (the ONE convert-source dialog). */
   onRequestConvert?: () => void;
-  /** Open the host-owned "save table as data" dialog for a parsed table. */
-  onRequestSaveTable?: (table: { headers: string[]; rows: string[][] }) => void;
   /** Open the host-owned "save as flashcard" prompt (the text is the answer). */
   onRequestFlashcard?: (answer: string) => void;
   /**

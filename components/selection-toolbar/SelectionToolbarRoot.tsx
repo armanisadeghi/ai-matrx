@@ -344,6 +344,14 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       text: open.text.trim(),
       saveToNotes: (content: string) =>
         dispatch(openOverlay({ overlayId: "saveToNotes", instanceId: `selection-notes:${crypto.randomUUID()}`, data: { initialContent: content } })),
+      saveToTable: (content: string) =>
+        dispatch(
+          openOverlay({
+            overlayId: "saveToTable",
+            instanceId: `selection-table:${crypto.randomUUID()}`,
+            data: { text: content, value: null, hasValue: false, grid: null, title: null, shapeIndex: 0, organizationId: null, callbackGroupId: null },
+          }),
+        ),
       openFeedback: (report) => openFeedback(report),
     };
     const toolbar: SelectionToolbarHost = {

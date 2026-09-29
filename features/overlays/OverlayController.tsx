@@ -1118,6 +1118,13 @@ const QuickNoteSaveOverlay = lazyOverlay(
     ),
   { ssr: false },
 );
+const SaveToTableOverlay = lazyOverlay(
+  () =>
+    import("@/features/save-to-table/SaveToTableOverlay").then((m) => ({
+      default: m.SaveToTableOverlay,
+    })),
+  { ssr: false },
+);
 const ApprovalsWindow = lazyOverlay(
   () => import("@/features/approvals/windows/ApprovalsWindow"),
   { ssr: false },
@@ -2345,6 +2352,7 @@ export default function OverlayController() {
       selectOpenInstances(s, "saveContactFromSelection"),
     ),
     saveToNotes: useAppSelector((s) => selectOpenInstances(s, "saveToNotes")),
+    saveToTable: useAppSelector((s) => selectOpenInstances(s, "saveToTable")),
     saveToNotesFullscreen: useAppSelector((s) =>
       selectOpenInstances(s, "saveToNotesFullscreen"),
     ),
@@ -7286,6 +7294,51 @@ export default function OverlayController() {
             title={typeof data?.title === "string" ? data.title : undefined}
             initialEditorMode={
               data?.initialEditorMode as EditorMode | undefined
+            }
+          />
+        );
+      })}
+
+      {/* saveToTable — multi-instance: the ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE) */}
+      {instancesById.saveToTable.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const grid = data?.grid as { headers?: unknown; rows?: unknown } | null | undefined;
+        return (
+          <SaveToTableOverlay
+            key={inst.instanceId}
+            isOpen
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "saveToTable",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            text={typeof data?.text === "string" ? data.text : null}
+            value={data?.value}
+            hasValue={data?.hasValue === true}
+            grid={
+              grid && Array.isArray(grid.headers) && Array.isArray(grid.rows)
+                ? {
+                    headers: grid.headers as string[],
+                    rows: grid.rows as string[][],
+                  }
+                : null
+            }
+            title={typeof data?.title === "string" ? data.title : null}
+            shapeIndex={
+              typeof data?.shapeIndex === "number" ? data.shapeIndex : 0
+            }
+            organizationId={
+              typeof data?.organizationId === "string"
+                ? data.organizationId
+                : null
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
             }
           />
         );

@@ -137,7 +137,6 @@ export const INTEGRATIONS: Integration[] = [
         "features/scheduling/components/form/triggers/EventForm.tsx",
         "features/resource-manager/resource-picker/TablesResourcePicker.tsx",
         "app/(public)/free/zip-code-heatmap/components/TableDataSource.tsx",
-        "components/mardown-display/blocks/json/AppendToTableDialog.tsx",
         "components/mardown-display/tables/SaveTableModal.tsx",
       ].map((file) => ({ kind: "contains" as const, repo: "matrx-frontend" as const, file, pattern: "listTablesEverywhere", says: `${file.split("/").pop()} lists both stores` })),
       { kind: "db", sql: exists("custom", "table_list_everywhere"), says: "the both-stores list door is live" },
@@ -209,13 +208,13 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: "F5", repo: "matrx-frontend", plan: "R", disposition: "repointed",
     what: "Births from a CSV block, a canvas table, the content-IR studio",
-    why: "INTEG-CLIENTS: create-dataset-from-table goes through service.createTable",
+    why: "SAVE-AS-TABLE-EVERYWHERE: every such birth is the saveToTable overlay, which asks whereANewTableIsBorn (record store → records-ui SaveToTable; older → SaveTableModal → service.createTable)",
     plain: "saving a CSV or a canvas table still creates it in the older tables",
-    owner: "matrx-frontend features/data-tables/create-dataset-from-table.ts",
+    owner: "matrx-frontend features/save-to-table/SaveToTableOverlay.tsx",
     claims: { "matrx-frontend": ["components/mardown-display/blocks/csv/CsvBlock.tsx"] },
     proofs: [
-      { kind: "contains", repo: "matrx-frontend", file: "features/data-tables/create-dataset-from-table.ts", pattern: "createTable", says: "births through the seam" },
-      { kind: "lacks", repo: "matrx-frontend", files: ["features/data-tables/create-dataset-from-table.ts", "components/mardown-display/blocks/csv/CsvBlock.tsx"], pattern: "\\.rpc\\(|\\.from\\(\\s*[\"']udt_", says: "reaches no older door itself" },
+      { kind: "contains", repo: "matrx-frontend", file: "features/save-to-table/SaveToTableOverlay.tsx", pattern: "whereANewTableIsBorn", says: "births where the organization's tables live" },
+      { kind: "lacks", repo: "matrx-frontend", files: ["features/save-to-table/SaveToTableOverlay.tsx", "components/mardown-display/blocks/csv/CsvBlock.tsx"], pattern: "\\.rpc\\(|\\.from\\(\\s*[\"']udt_", says: "reaches no older door itself" },
     ],
   },
   {
@@ -226,7 +225,7 @@ export const INTEGRATIONS: Integration[] = [
     owner: "matrx-frontend features/data-tables/save-to-table.ts",
     proofs: [
       { kind: "contains", repo: "matrx-frontend", file: "features/data-tables/save-to-table.ts", pattern: "locateTable\\(", says: "locates the table before writing" },
-      { kind: "lacks", repo: "matrx-frontend", files: ["features/data-tables/save-to-table.ts", "components/mardown-display/blocks/json/AppendToTableDialog.tsx"], pattern: "\\.rpc\\(\\s*[\"'`]udt_bulk_write", says: "no direct older bulk write" },
+      { kind: "lacks", repo: "matrx-frontend", files: ["features/data-tables/save-to-table.ts", "components/mardown-display/tables/SaveTableModal.tsx"], pattern: "\\.rpc\\(\\s*[\"'`]udt_bulk_write", says: "no direct older bulk write" },
     ],
   },
   {

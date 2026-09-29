@@ -23,7 +23,9 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 import { cleanMarkdown } from "@/utils/markdown-processors/clean-markdown-to-text";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { registerAction } from "../provider";
-import { contentFileName, getErrorMessage, contentForDestination } from "../utils";
+import { contentFileName, deriveContentTitle, getErrorMessage, contentForDestination } from "../utils";
+import { hasTableShape } from "@ai-matrx/records-ui/table-shape";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";
 import {
@@ -199,11 +201,22 @@ registerAction({
   },
 });
 
+/**
+ * THE ONE "SAVE TO A TABLE" (lane SAVE-AS-TABLE-EVERYWHERE, 2026-09-29). Offered whenever the one
+ * shape reader (`hasTableShape`, records-ui) finds rows in what was right-clicked or selected — a
+ * table, a list or a few bullets, `Key: value` lines, CSV/TSV, a kind value, JSON rows — and it opens
+ * the `saveToTable` overlay: a new table, or rows added to one the person has. No host dialog, no
+ * per-surface parse: chat, notes, every RichDocument and the right-click menu reach the same screen.
+ */
+const tableShapeText = (ctx: RichDocumentActionContext): string => {
+  const selected = ctx.applicationScope?.selection;
+  if (typeof selected === "string" && hasTableShape(selected)) return selected;
+  return ctx.content;
+};
+
 registerAction({
-  // The canonical "Save as data" dialog (the same one a rendered table's
-  // toolbar opens) — the host owns it so it outlives the menu.
   id: "save-table-as-data",
-  label: "Save table as a data table",
+  label: "Save to a table…",
   icon: Database,
   iconColor: "text-emerald-500 dark:text-emerald-400",
   category: "save",
@@ -211,12 +224,26 @@ registerAction({
   renderSlot: "overflow",
   order: 14,
   requiresAuth: true,
-  visible: (ctx) => Boolean(ctx.callbacks?.onRequestSaveTable) && hasTable(ctx),
+  visible: (ctx) => hasTableShape(tableShapeText(ctx)),
   run: (ctx) => {
-    const table = parseFirstMarkdownTable(ctx.content);
-    if (!table) return;
+    const text = tableShapeText(ctx);
     ctx.onClose();
-    ctx.callbacks?.onRequestSaveTable?.(table);
+    ctx.dispatch(
+      openOverlay({
+        overlayId: "saveToTable",
+        instanceId: ctx.instanceKey("save-to-table"),
+        data: {
+          text,
+          value: null,
+          hasValue: false,
+          grid: null,
+          title: deriveContentTitle(ctx) ?? null,
+          shapeIndex: 0,
+          organizationId: ctx.organizationId,
+          callbackGroupId: null,
+        },
+      }),
+    );
   },
 });
 

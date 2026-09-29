@@ -6,7 +6,8 @@
 // ever a one-button bar. Registry actions like every other; the machinery
 // (the clipboard transport, the notes overlay) loads at click time.
 
-import { ClipboardCopy, NotebookPen } from "lucide-react";
+import { ClipboardCopy, NotebookPen, Table2 } from "lucide-react";
+import { hasTableShape } from "@ai-matrx/records-ui/table-shape";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import {
@@ -62,6 +63,27 @@ const ACTIONS: Action[] = [
       if (!common) return;
       selectionToolbarHostOf(t)?.ui.close();
       common.saveToNotes(common.text);
+    },
+  },
+  {
+    // THE ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE, 2026-09-29): offered only when the
+    // selected text reads as rows — a table, a list or a few bullets, Key: value lines, CSV/TSV.
+    id: "selection:save-to-table",
+    label: "Save to a table",
+    icon: registerAlchemyIcon(Table2),
+    category: "save",
+    order: 1,
+    placement: "overflow",
+    preserveSelection: true,
+    eligible: (t) => {
+      const common = commonOf(t);
+      return common && hasTableShape(common.text) ? eligible("selection:save-to-table")(t) : ({ status: "absent" } as const);
+    },
+    run: (t) => {
+      const common = commonOf(t);
+      if (!common) return;
+      selectionToolbarHostOf(t)?.ui.close();
+      common.saveToTable(common.text);
     },
   },
 ];

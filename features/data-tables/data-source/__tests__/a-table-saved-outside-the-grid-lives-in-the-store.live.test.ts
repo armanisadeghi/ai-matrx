@@ -10,7 +10,7 @@
  * then clicks "Save as table" on the answer — and, the next morning, appends two more
  * deliveries to the "Parts on order" table it already keeps.
  *
- * RED before the repoint: `createDatasetFromTable` called `create_new_user_table_dynamic`,
+ * RED before the repoint: the chat-table save helper (since replaced by the saveToTable overlay) called `create_new_user_table_dynamic`,
  * so the new table was a `workbench.udt_datasets` row the organization's screens no longer
  * read; and `appendToTable` reached the seam UNPLACED, so the two deliveries were written
  * into the archived older copy of "Parts on order" and reported as saved.
@@ -57,7 +57,6 @@ jest.mock("@/utils/auth/getUserId", () => ({
   requireUserId: () => userId,
 }));
 
-import { createDatasetFromTable } from "../../create-dataset-from-table";
 import { appendToTable } from "../../save-to-table";
 import * as service from "../../service";
 import { forgetAllTablePlacements, placeTableInRecordStore } from "../table-home";
@@ -134,21 +133,35 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
   });
 
   it("a chat answer saved as a table is born in the record store, rows and all", async () => {
-    const result = await createDatasetFromTable({
-      name: "Rincon Plumbing — Parts received this week",
+    // The seam every birth outside the grid takes (the `saveToTable` overlay's older-store branch
+    // and every older caller): `service.createTable`, then one `bulkWrite` of the rows.
+    const headers = ["Part", "Supplier", "Qty", "For job"];
+    const born = await service.createTable({
+      tableName: "Rincon Plumbing — Parts received this week",
       description: "From the chat: what came in from suppliers, Sep 22–26",
-      headers: ["Part", "Supplier", "Qty", "For job"],
-      rows: [
-        { Part: "3/4 in copper sweat elbow (25-pack)", Supplier: "Ferguson Ventura", Qty: "4", "For job": "Ojai repipe" },
-        { Part: "Moen 1222 cartridge", Supplier: "Ewing Oxnard", Qty: "6", "For job": "Stock" },
-        { Part: "Uponor 1/2 in ProPEX ring (100)", Supplier: "Ferguson Ventura", Qty: "2", "For job": "Ojai repipe" },
-      ],
+      isPublic: false,
+      authenticatedRead: false,
+      fields: headers.map((h, i) => ({
+        field_name: h.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+        display_name: h,
+        data_type: "string",
+        field_order: i + 1,
+        is_required: false,
+      })),
       organizationId: ORG,
     });
-    expect(result.error).toBeUndefined();
-    expect(result.success).toBe(true);
-    expect(result.inserted).toBe(3);
-    const tableId = result.tableId!;
+    expect(born.error).toBeUndefined();
+    expect(born.success).toBe(true);
+    const tableId = born.tableId!;
+    const written = await service.bulkWrite({
+      tableId,
+      operations: [
+        { part: "3/4 in copper sweat elbow (25-pack)", supplier: "Ferguson Ventura", qty: "4", for_job: "Ojai repipe" },
+        { part: "Moen 1222 cartridge", supplier: "Ewing Oxnard", qty: "6", for_job: "Stock" },
+        { part: "Uponor 1/2 in ProPEX ring (100)", supplier: "Ferguson Ventura", qty: "2", for_job: "Ojai repipe" },
+      ].map((data) => ({ op: "insert" as const, data })),
+    });
+    expect(written.success ? null : written.error).toBeNull();
 
     // RED before the repoint: this was a `workbench.udt_datasets` row.
     expect(await isStoreTable(tableId)).toBe(true);

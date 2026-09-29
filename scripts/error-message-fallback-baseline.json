@@ -167,8 +167,6 @@
   "components/layout/AnnouncementExperience.tsx": 1,
   "components/mardown-display/blocks/comparison/parseComparisonJSON.ts": 1,
   "components/mardown-display/blocks/decision-tree/parseDecisionTreeJSON.ts": 1,
-  "components/mardown-display/blocks/json/AppendToTableDialog.tsx": 2,
-  "components/mardown-display/blocks/json/JsonToTableDialog.tsx": 1,
   "components/mardown-display/blocks/presentations/presentation-export.ts": 4,
   "components/mardown-display/blocks/presentations/PresentationExportMenu.tsx": 1,
   "components/mardown-display/blocks/quiz/quiz-utils.ts": 1,

@@ -3,8 +3,7 @@
 // features/rich-document/hosts/DocumentDialogsHost.tsx
 //
 // The host half of the registry actions whose dialog must OUTLIVE the menu
-// that asked: convert-to-study (the ONE convert-source dialog), save a table
-// as a data table (the canonical SaveTableModal a rendered table opens), and
+// that asked: convert-to-study (the ONE convert-source dialog) and
 // save as flashcard (the reader writes the question; the passage is the
 // answer). The actions only ask through `ctx.callbacks`; the SURFACE owns the
 // dialogs — RichDocument for every document, the chat bars for a chat turn.
@@ -55,7 +54,6 @@ export interface DocumentDialogsHost {
   callbacks: Pick<
     RichDocumentActionContextCallbacks,
     | "onRequestConvert"
-    | "onRequestSaveTable"
     | "onRequestFlashcard"
     | "onRequestTextAgentAction"
     | "onRequestDelete"
@@ -87,9 +85,6 @@ export function useDocumentDialogsHost(args: {
 }): DocumentDialogsHost {
   const [convertOpen, setConvertOpen] = React.useState(false);
   const [convertMounted, setConvertMounted] = React.useState(false);
-  const [table, setTable] = React.useState<
-    { headers: string[]; rows: string[][] } | null
-  >(null);
   const [cardAnswer, setCardAnswer] = React.useState<string | null>(null);
   const [agentReview, setAgentReview] = React.useState<{
     actionId: "cleanup" | "help" | "customAgent";
@@ -109,7 +104,6 @@ export function useDocumentDialogsHost(args: {
             setConvertOpen(true);
           }
         : undefined,
-      onRequestSaveTable: (t) => setTable(t),
       onRequestFlashcard: (answer) => setCardAnswer(answer),
       onRequestTextAgentAction: args.writable
         ? (actionId, ctx) => setAgentReview({ actionId, ctx })
@@ -118,15 +112,13 @@ export function useDocumentDialogsHost(args: {
       onRequestEditHistory: chat ? () => setChatDialog("history") : undefined,
     },
     dialogs:
-      (origin && convertMounted) || table || cardAnswer !== null || agentReview || (chat && chatDialog) ? (
+      (origin && convertMounted) || cardAnswer !== null || agentReview || (chat && chatDialog) ? (
         <DocumentDialogsImpl
           convert={
             origin && convertMounted
               ? { origin, text: args.text, open: convertOpen, onOpenChange: setConvertOpen }
               : null
           }
-          table={table}
-          onTableClose={() => setTable(null)}
           cardAnswer={cardAnswer}
           onCardClose={() => setCardAnswer(null)}
           agentReview={agentReview}

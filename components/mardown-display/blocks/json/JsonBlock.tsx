@@ -10,12 +10,12 @@ import {
   Compass,
   FileJson,
   StretchHorizontal,
-  Plus,
   TableProperties,
   MoreHorizontal,
   AlignJustify,
   Shapes,
 } from "lucide-react";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import {
@@ -59,16 +59,6 @@ const JsonTreeViewer = lazy(() =>
 );
 const RawJsonExplorer = lazy(
   () => import("@/components/official/json-explorer/RawJsonExplorer"),
-);
-const JsonToTableDialog = lazy(() =>
-  import("@/components/mardown-display/blocks/json/JsonToTableDialog").then(
-    (m) => ({ default: m.JsonToTableDialog }),
-  ),
-);
-const AppendToTableDialog = lazy(() =>
-  import("@/components/mardown-display/blocks/json/AppendToTableDialog").then(
-    (m) => ({ default: m.AppendToTableDialog }),
-  ),
 );
 
 function PaneFallback({ label = "Loading…" }: { label?: string }) {
@@ -125,8 +115,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
 }) => {
   const openConvertToShape = useOpenConvertToShapeWindow();
   const [mode, setMode] = useState<ViewMode>("code");
-  const [saveNewOpen, setSaveNewOpen] = useState(false);
-  const [appendOpen, setAppendOpen] = useState(false);
+  const openSaveToTable = useOpenSaveToTable();
   // Local override for the displayed/edited text when the parent has not
   // wired up `onCodeChange`. When the parent IS wired up, reformat actions
   // call `onCodeChange` directly so the change persists wherever the block
@@ -204,26 +193,34 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
       });
     }
 
-    if (tabular.isTabular) {
+    if (tabular.isTabular && openSaveToTable) {
+      // THE ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE): a new table, or these rows added
+      // to one the person has, columns matched — the `saveToTable` overlay, not a JSON dialog.
       items.push({
-        key: "save-new-table",
-        icon: Plus,
-        iconColor: "text-emerald-600 dark:text-emerald-400",
-        label: "Save as new table…",
-        description: "Create a fresh data table from these rows",
-        category: "Data",
-        showToast: false,
-        action: () => setSaveNewOpen(true),
-      });
-      items.push({
-        key: "append-table",
+        key: "save-to-table",
         icon: TableProperties,
         iconColor: "text-emerald-600 dark:text-emerald-400",
-        label: "Append to existing table…",
-        description: "Map columns and insert into one of your tables",
+        label: "Save to a table…",
+        description: "A new table, or add these rows to one you have",
         category: "Data",
         showToast: false,
-        action: () => setAppendOpen(true),
+        action: () =>
+          openSaveToTable({
+            grid: {
+              headers: tabular.columns,
+              rows: tabular.rows.map((row) =>
+                tabular.columns.map((c) => {
+                  const v = row[c];
+                  if (v === null || v === undefined) return "";
+                  return typeof v === "object" ? JSON.stringify(v) : String(v);
+                }),
+              ),
+            },
+            title:
+              tabular.source === "wrapped-array" && tabular.wrapperKey
+                ? tabular.wrapperKey.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+                : null,
+          }),
       });
     }
 
@@ -277,19 +274,10 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
     allowConvertToShape,
     effectiveContent,
     openConvertToShape,
+    openSaveToTable,
     parsed,
     tabular,
   ]);
-
-  const suggestedTableName = useMemo(() => {
-    if (!tabular.isTabular) return "";
-    if (tabular.source === "wrapped-array" && tabular.wrapperKey) {
-      return tabular.wrapperKey
-        .replace(/[_-]+/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-    }
-    return "JSON Data";
-  }, [tabular]);
 
   // Canonical formattings of the current parsed value. `null` when the
   // payload is unparseable (streaming / invalid) — the early-return below
@@ -512,27 +500,6 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
             )}
           </div>
         </div>
-      )}
-      {saveNewOpen && tabular.isTabular && (
-        <Suspense fallback={null}>
-          <JsonToTableDialog
-            open={saveNewOpen}
-            onOpenChange={setSaveNewOpen}
-            rows={tabular.rows}
-            columns={tabular.columns}
-            suggestedName={suggestedTableName}
-          />
-        </Suspense>
-      )}
-      {appendOpen && tabular.isTabular && (
-        <Suspense fallback={null}>
-          <AppendToTableDialog
-            open={appendOpen}
-            onOpenChange={setAppendOpen}
-            rows={tabular.rows}
-            columns={tabular.columns}
-          />
-        </Suspense>
       )}
     </div>
   );

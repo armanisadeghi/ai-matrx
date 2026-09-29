@@ -84,6 +84,8 @@
     "check:routes-register-page-capture": "tsx scripts/check-routes-register-page-capture.ts",
     "check:routes-register-page-capture:self-test": "tsx scripts/check-routes-register-page-capture.ts --self-test",
     "check:old-system-unreachable": "tsx scripts/check-old-system-unreachable.ts",
+    "check:save-to-table-everywhere": "tsx scripts/check-save-to-table-everywhere.ts",
+    "check:save-to-table-everywhere:self-test": "tsx scripts/check-save-to-table-everywhere.ts --self-test",
     "check:old-system-unreachable:self-test": "tsx scripts/check-old-system-unreachable.ts --self-test",
     "check:table-home-reads-the-switch": "tsx scripts/check-table-home-reads-the-switch.ts",
     "check:object-pages-read-the-objects-organization:self-test": "tsx scripts/check-object-pages-read-the-objects-organization.ts --self-test",

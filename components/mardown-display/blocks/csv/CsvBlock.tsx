@@ -12,12 +12,9 @@ import {
   X,
   Check as CheckIcon,
   Table2,
-  Loader2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { createDatasetFromTable } from "@/features/data-tables/create-dataset-from-table";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 
 function parseCsv(content: string, delimiter: string): string[][] {
   const rows: string[][] = [];
@@ -100,8 +97,7 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
   );
   const [editValue, setEditValue] = useState("");
   const [data, setData] = useState(() => parseCsv(content, delimiter));
-  const [saving, setSaving] = useState(false);
-  const dispatch = useAppDispatch();
+  const openSaveToTable = useOpenSaveToTable();
 
   useEffect(() => {
     setData(parseCsv(content, delimiter));
@@ -117,46 +113,14 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Save the CSV as a real, live `udt_datasets` table (CSV → UDT, the preferred
-  // home for tabular data). Reuses the shared create primitive and opens it in
-  // the Quick Data window — the same destination as the markdown-table Save.
-  const handleSaveAsTable = async () => {
+  // THE ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE): a new table with its columns' types
+  // proposed, or these rows added to a table the person has — the `saveToTable` overlay.
+  const handleSaveAsTable = () => {
     if (headers.length === 0 || bodyRows.length === 0) {
       toast.error("No CSV rows to save.");
       return;
     }
-    setSaving(true);
-    try {
-      const safeHeaders = headers.map((h, i) => h || `Column ${i + 1}`);
-      const rows = bodyRows.map((row) => {
-        const obj: Record<string, string> = {};
-        safeHeaders.forEach((h, i) => {
-          obj[h] = row[i] ?? "";
-        });
-        return obj;
-      });
-      const result = await createDatasetFromTable({
-        name: "Table from CSV",
-        description: "Created from a chat CSV block",
-        headers: safeHeaders,
-        rows,
-      });
-      if (result.success && result.tableId) {
-        toast.success(`Saved as a live table (${result.inserted} rows)`, {
-          description: "Opening — edit it as a real data table.",
-        });
-        dispatch(
-          openOverlay({
-            overlayId: "quickDataWindow",
-            data: { selectedTable: result.tableId },
-          }),
-        );
-      } else {
-        toast.error(`Save failed: ${result.error ?? "unknown error"}`);
-      }
-    } finally {
-      setSaving(false);
-    }
+    openSaveToTable?.({ grid: { headers, rows: bodyRows } });
   };
 
   const handleSort = (colIdx: number) => {
@@ -236,19 +200,16 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-1">
+          {openSaveToTable ? (
           <button
             onClick={handleSaveAsTable}
-            disabled={saving}
-            title="Save as a live data table"
+            title="Save to a table"
             className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
           >
-            {saving ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Table2 className="w-3.5 h-3.5" />
-            )}
-            <span>Save as table</span>
+            <Table2 className="w-3.5 h-3.5" />
+            <span>Save to a table</span>
           </button>
+          ) : null}
           <button
             onClick={handleCopy}
             className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"

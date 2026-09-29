@@ -13,7 +13,6 @@ import {
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { canvasItemsService } from "@/features/canvas/services/canvasItemsService";
 import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
-import { createDatasetFromTable } from "@/features/data-tables/create-dataset-from-table";
 import { deriveDatasetNameForChatTable, isPlaceholderTableTitle } from "@/features/data-tables/derive-dataset-name";
 import { readTableDetails } from "@/features/data-tables/service";
 import { useOpenUserTableWindow } from "@/features/overlays/openers/userTableWindow";
@@ -89,7 +88,6 @@ function TableArtifactMaterialized({
   onContentChange?: (newContent: string) => void;
 }) {
   const { row, loading, refetch } = useCanvasItem(canvasItemId);
-  const [converting, setConverting] = useState(false);
   const [reverting, setReverting] = useState(false);
   const openTableWindow = useOpenUserTableWindow();
 
@@ -149,40 +147,32 @@ function TableArtifactMaterialized({
     [canvasItemId, onContentChange],
   );
 
-  const handleConvert = useCallback(async () => {
+  // THE ARTIFACT BECOMES A LIVE TABLE through the ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE,
+  // 2026-09-29; the handover row-7 seed made it here with its own create path). The name offered is
+  // the conversation's; the rows go through the store's import doors; when they land — a new table
+  // or rows added to one the person has — the artifact links itself to that table.
+  const resolveTitle = useCallback(async () => {
     const parsed = parseMarkdownTable(content);
-    if (!parsed || parsed.headers.length === 0) {
-      toast.error("Couldn't read this table's columns to convert.");
-      return;
-    }
-    setConverting(true);
-    try {
-      const name = await deriveDatasetNameForChatTable({
-        sourceMessageId: row?.source_message_id,
-        canvasItemId,
-        artifactTitle: row?.title,
-        tableMarkdown: content,
-        headers: parsed.headers,
+    return deriveDatasetNameForChatTable({
+      sourceMessageId: row?.source_message_id,
+      canvasItemId,
+      artifactTitle: row?.title,
+      tableMarkdown: content,
+      headers: parsed?.headers ?? [],
+    });
+  }, [content, row, canvasItemId]);
+
+  const linkToSavedTable = useCallback(
+    async (tableId: string) => {
+      await canvasArtifactService.setExternalLink(canvasItemId, {
+        externalSystem: UDT_SYSTEM,
+        externalId: tableId,
       });
-      const result = await createDatasetFromTable({
-        name,
-        headers: parsed.headers,
-        rows: parsed.normalizedData,
-      });
-      if (result.success && result.tableId) {
-        await canvasArtifactService.setExternalLink(canvasItemId, {
-          externalSystem: UDT_SYSTEM,
-          externalId: result.tableId,
-        });
-        toast.success("Converted to a live table");
-        refetch();
-      } else {
-        toast.error(`Convert failed: ${result.error ?? "unknown error"}`);
-      }
-    } finally {
-      setConverting(false);
-    }
-  }, [content, row, canvasItemId, refetch]);
+      toast.success("This table is live now");
+      refetch();
+    },
+    [canvasItemId, refetch],
+  );
 
   // Revert a converted table back to the editable text table — unlink the UDT
   // dataset (it is kept, not deleted; the original markdown lives in
@@ -284,17 +274,14 @@ function TableArtifactMaterialized({
     );
   }
 
-  // Non-linked → full markdown table toolbar, including one-click convert.
+  // Non-linked → full markdown table toolbar; "Save to ▸ A table…" makes it live.
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
       <StreamingTableRenderer
         content={content}
         metadata={{ isComplete: true }}
         onContentChange={persistEdit}
-        convertToTable={{
-          onClick: handleConvert,
-          busy: converting,
-        }}
+        saveAsTable={{ resolveTitle, onSaved: (tableId) => linkToSavedTable(tableId) }}
       />
     </Suspense>
   );
