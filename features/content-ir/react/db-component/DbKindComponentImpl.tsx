@@ -52,6 +52,7 @@ import { readAtVersionForKey } from "../registry-versioned";
 import { resolveLoadingSlugForKind } from "../loading/resolve-loading-slug";
 import { resolveKindLoadingComponent } from "../loading/kind-loading-registry";
 import { earlyKeysFromValue } from "../loading/kind-loading.types";
+import { KIND_CORRECTIONS_KEY } from "../../registry/kind-correctors";
 
 /**
  * One entry per kind — the resolver's answer and the registry version it was
@@ -128,7 +129,47 @@ function readInstanceValue(
   }
 }
 
-export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
+/**
+ * THE CORRECTIONS NOTICE (never silent). A kind corrector (`registry/kind-correctors.ts`) may have
+ * changed the value at parse — e.g. a `draft_critique` score made to agree with its own rubric —
+ * and put what it changed on the block as `metadata[KIND_CORRECTIONS_KEY]`. Every db-rendered
+ * kind shows those lines above its component, so no row's author has to remember to.
+ */
+function readKindCorrections(metadata: Record<string, unknown> | undefined): string[] {
+  const raw = metadata?.[KIND_CORRECTIONS_KEY];
+  return Array.isArray(raw) ? raw.filter((line): line is string => typeof line === "string" && line.trim() !== "") : [];
+}
+
+export function KindCorrectionsNotice({ corrections }: { corrections: string[] }) {
+  if (corrections.length === 0) return null;
+  return (
+    <div
+      role="note"
+      data-kind-corrections=""
+      className="mb-1.5 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-1.5 text-xs text-foreground"
+    >
+      <p className="font-medium">Corrected by code before display</p>
+      <ul className="mt-0.5 list-disc pl-4 text-muted-foreground">
+        {corrections.map((line, i) => (
+          <li key={i}>{line}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = (props) => {
+  const corrections = readKindCorrections(props.metadata);
+  if (corrections.length === 0) return <DbKindComponentBody {...props} />;
+  return (
+    <>
+      <KindCorrectionsNotice corrections={corrections} />
+      <DbKindComponentBody {...props} />
+    </>
+  );
+};
+
+const DbKindComponentBody: React.FC<DbKindComponentImplProps> = ({
   content,
   metadata,
   className,

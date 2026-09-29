@@ -531,6 +531,8 @@ export type FeSynthesizedBlockType =
   | "product_research"
   | "value_assessment"
   | "asset_grading"
+  | "media_list_ranking_result"
+  | "media_candidate_verdict"
   | "enrichment_verification"
   | "pricing_proposal"
   | "listing_draft"
@@ -712,6 +714,8 @@ export type ShapeBlockType =
   | "product_research"
   | "value_assessment"
   | "asset_grading"
+  | "media_list_ranking_result"
+  | "media_candidate_verdict"
   | "enrichment_verification"
   | "pricing_proposal"
   | "listing_draft"
@@ -2595,6 +2599,8 @@ const SHAPE_BLOCK_DISPATCH = {
   product_research: searchKindEntry(BlockComponents.ProductResearchBlock),
   value_assessment: searchKindEntry(BlockComponents.ValueAssessmentBlock),
   asset_grading: searchKindEntry(BlockComponents.AssetGradingBlock),
+  media_list_ranking_result: searchKindEntry(BlockComponents.MediaListRankingBlock),
+  media_candidate_verdict: searchKindEntry(BlockComponents.MediaCandidateVerdictBlock),
   enrichment_verification: searchKindEntry(
     BlockComponents.EnrichmentVerificationBlock,
   ),

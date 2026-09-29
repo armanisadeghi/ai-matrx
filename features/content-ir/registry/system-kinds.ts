@@ -60,6 +60,7 @@ import { SCRAPER_PAGE_KIND_DEFINITIONS } from "../kinds/scraper-page";
 import { TASK_LIST_KIND_DEFINITIONS } from "../kinds/task-list";
 import { MAP_TOPIC_PROPOSAL_KIND_DEFINITIONS } from "../kinds/map-topic-proposal";
 import { PR_PLAY_MENU_KIND_DEFINITIONS } from "../kinds/pr-play-menu";
+import { MEDIA_LIST_KIND_DEFINITIONS } from "../kinds/media-list";
 import { NEWS_MONITOR_KIND_DEFINITIONS } from "../kinds/news-monitor";
 import { DECISION_ANSWERS_KIND_DEFINITIONS } from "../kinds/decision-answers";
 import { LIST_CHANGE_PROPOSAL_KIND_DEFINITIONS } from "../kinds/list-change-proposal";
@@ -125,6 +126,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // component, `MapTopicProposalBlock`, over the shared `TopicTree`.
   ...MAP_TOPIC_PROPOSAL_KIND_DEFINITIONS,
   ...PR_PLAY_MENU_KIND_DEFINITIONS,
+  ...MEDIA_LIST_KIND_DEFINITIONS,
   ...NEWS_MONITOR_KIND_DEFINITIONS,
   ...DECISION_ANSWERS_KIND_DEFINITIONS,
   ...LIST_CHANGE_PROPOSAL_KIND_DEFINITIONS,

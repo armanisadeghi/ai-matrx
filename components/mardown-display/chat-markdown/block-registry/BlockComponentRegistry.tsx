@@ -118,6 +118,10 @@ import {
   ReviewVerdictBlock as ReviewVerdictBlockImpl,
   ValueAssessmentBlock as ValueAssessmentBlockImpl,
 } from "../../blocks/commerce-kinds/commerce-kind-blocks";
+import {
+  MediaCandidateVerdictBlock as MediaCandidateVerdictBlockImpl,
+  MediaListRankingBlock as MediaListRankingBlockImpl,
+} from "../../blocks/media-list/media-list-blocks";
 // Lulu print lane kind family — one canonical renderer per shape.
 import {
   LuluCoverDimensionsBlock as LuluCoverDimensionsBlockImpl,
@@ -884,6 +888,20 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <ValueAssessmentBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  MediaListRankingBlock: (
+    props: React.ComponentProps<typeof MediaListRankingBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <MediaListRankingBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  MediaCandidateVerdictBlock: (
+    props: React.ComponentProps<typeof MediaCandidateVerdictBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <MediaCandidateVerdictBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
   AssetGradingBlock: (

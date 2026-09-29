@@ -305,6 +305,31 @@ describe("DbKindComponentImpl — compile + render + error boundary", () => {
     expect(html).toContain("bold");
   });
 
+  it("shows the kind corrector's corrections above the component — never a silent rewrite", () => {
+    componentRegistry.ingestDbRows([
+      dbRow({
+        kind: "k1_render",
+        componentKey: "k1_render_view",
+        isActive: true,
+        componentSource: REACT_SOURCE,
+      }),
+    ]);
+    const block = kindBlock("k1_render", { title: "hello" });
+    const withNotes = renderToStaticMarkup(
+      <DbKindComponentImpl
+        content={block.content}
+        metadata={{ ...block.metadata, kindCorrections: ["score 7 → 6 (by the points scale)"] }}
+      />,
+    );
+    expect(withNotes).toContain("data-kind-corrections");
+    expect(withNotes).toContain("score 7 → 6 (by the points scale)");
+    expect(withNotes).toContain('data-testid="db-kind-demo"');
+    const without = renderToStaticMarkup(
+      <DbKindComponentImpl content={block.content} metadata={block.metadata} />,
+    );
+    expect(without).not.toContain("data-kind-corrections");
+  });
+
   it("a throwing component falls back to the generic structured viewer, loudly — never a blank hole", () => {
     clearCapturedErrors();
     const consoleError = jest
