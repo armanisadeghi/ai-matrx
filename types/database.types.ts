@@ -43599,7 +43599,186 @@ export type Database = {
   }
   graveyard: {
     Tables: {
-      [_ in never]: never
+      pb_claim_appeals_fd31de: {
+        Row: {
+          claim_id: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          filed_on: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          reason: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          filed_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          filed_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      pb_insurance_claims_fd31de: {
+        Row: {
+          billed_cents: number | null
+          carrier: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          status: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          billed_cents?: number | null
+          carrier: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          billed_cents?: number | null
+          carrier?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      provlock_recall_visits_all8u5: {
+        Row: {
+          booked: boolean | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          due_on: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          patient_ref: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          booked?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          due_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          patient_ref: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          booked?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          due_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          patient_ref?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -128106,134 +128285,6 @@ export type Database = {
           },
         ]
       }
-      pb_claim_appeals_fd31de: {
-        Row: {
-          claim_id: string
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          filed_on: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          reason: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          claim_id: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          filed_on?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          reason: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          claim_id?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          filed_on?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          reason?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pb_claim_appeals_fd31de_claim_id_fkey"
-            columns: ["claim_id"]
-            isOneToOne: false
-            referencedRelation: "pb_insurance_claims_fd31de"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pb_insurance_claims_fd31de: {
-        Row: {
-          billed_cents: number | null
-          carrier: string
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          status: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          billed_cents?: number | null
-          carrier: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          status?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          billed_cents?: number | null
-          carrier?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          status?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
       product_capture_file: {
         Row: {
           created_at: string
@@ -128571,66 +128622,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      provlock_recall_visits_all8u5: {
-        Row: {
-          booked: boolean | null
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          due_on: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          patient_ref: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          booked?: boolean | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          due_on?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          patient_ref: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          booked?: boolean | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          due_on?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          patient_ref?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
       }
       schema_templates: {
         Row: {
