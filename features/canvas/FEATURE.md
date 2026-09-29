@@ -47,6 +47,10 @@ the rules an agent editing THIS directory must obey.
   adds an unnecessary layer, causes a shift in the top header buttons and
   creates a mess that clearly shows it is not properly built to be identical to
   the way the canvas actually works. FOLLOW established patterns."*
+  The global mount points are exactly: `DeferredIslands` (authenticated shell),
+  `app/(public)/layout.tsx`, and `app/(link)/layout.tsx` (shell-less link pages,
+  e.g. published agent app `/p/<slug>`) — a shell-less group mounts the front
+  door in its LAYOUT, never in a page.
   Guards: `features/canvas/__tests__/one-canvas-presentation.test.ts` (static —
   no dock module, no dock state, no route mounting a presentation) and
   `features/shell/layout-gate/canvas-one-presentation.spec.ts` (real-engine

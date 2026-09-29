@@ -122,6 +122,9 @@ describe("the canvas has exactly one presentation", () => {
       // the public layout. Both mount the SAME front door.
       "features/shell/islands/DeferredIslands.tsx",
       "app/(public)/layout.tsx",
+      // The shell-less `(link)` group's layout — the same front door, for the
+      // published agent app at `/p/<slug>` (agent output can open the canvas).
+      "app/(link)/layout.tsx",
       // The front door itself and its own implementation.
       "features/canvas/core/CanvasSideSheet.tsx",
       "features/canvas/core/CanvasSideSheetImpl.tsx",
@@ -149,8 +152,12 @@ describe("the canvas has exactly one presentation", () => {
     expect(toggle).toContain('data-canvas-header-slot="control"');
     expect(toggle).not.toContain('data-canvas-header-slot="reserved"');
     expect(toggle).not.toContain("CanvasHeaderSlotSpacer");
-    // Availability is the ONLY thing that can remove the slot.
-    expect(toggle).toContain("if (!isAvailable) return null;");
+    // Availability is the ONLY thing that can remove the slot. The shell
+    // header reserves it until availability is KNOWN (the front door mounts
+    // after hydration); once known, only "unavailable" removes it.
+    expect(toggle).toContain(
+      "if (!isAvailable && (availabilityKnown || !reserveUntilKnown)) return null;",
+    );
     expect(toggle).not.toContain("!isAvailable || itemCount === 0");
     // One box, one constant, every state.
     expect(toggle).toContain(

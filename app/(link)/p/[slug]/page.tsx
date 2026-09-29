@@ -8,7 +8,6 @@ import type { Metadata } from "next";
 import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
 import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import type { PublicAgentApp } from "@/features/agent-apps/types";
-import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
 import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
 
 // A PUBLISHED APP IS A LINK SOMEBODY SENT (page-pass 2026-09-27). It lives in
@@ -180,7 +179,6 @@ export default async function PublicAppPage({
           slug={app.slug}
           surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
         />
-        <CanvasSideSheet />
       </>
     );
   }
@@ -197,9 +195,6 @@ export default async function PublicAppPage({
         />
       </main>
       <MadeWithAiMatrx publisherName={rpcRow.publisher_name} />
-      {/* Agent output can open the canvas; `(link)` carries no canvas host of
-          its own, so the app page mounts the lazy front door itself. */}
-      <CanvasSideSheet />
     </>
   );
 }
