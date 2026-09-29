@@ -276,6 +276,7 @@ export function SiteSettingsWorkspace() {
                 <Label className="text-xs">Who sees it</Label>
                 <div>
                   <RowAccessControl
+                    staged
                     value={{ shownTo, publishedToWeb }}
                     save={async (patch) => {
                       if (patch.shownTo !== undefined) setShownTo(patch.shownTo);

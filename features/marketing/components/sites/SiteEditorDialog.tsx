@@ -351,6 +351,7 @@ function SiteEditorDialogBody({
               <Label className="text-xs">Who sees it</Label>
               <div>
                 <RowAccessControl
+                  staged
                   size="default"
                   value={{
                     shownTo: draft.shownTo,

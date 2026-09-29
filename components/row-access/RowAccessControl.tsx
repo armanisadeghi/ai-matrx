@@ -55,6 +55,7 @@ export function RowAccessControl({
   save,
   publicUrl,
   size = "sm",
+  staged = false,
 }: {
   value: RowAccessValue;
   /** The feature's own writer. Throw (or reject) to report a failure; the menu says so. */
@@ -62,6 +63,11 @@ export function RowAccessControl({
   /** The record's own address, offered as "Copy link" once it is published to the web. */
   publicUrl?: string;
   size?: "sm" | "default";
+  /**
+   * The host only STAGES the choice (a dialog or form with its own Save): the menu then says
+   * nothing on pick, because nothing is saved until the host's Save — which reports the outcome.
+   */
+  staged?: boolean;
 }) {
   const [saving, setSaving] = useState(false);
 
@@ -70,7 +76,7 @@ export function RowAccessControl({
     setSaving(true);
     try {
       await save(patch);
-      toast.success(done);
+      if (!staged) toast.success(done);
     } catch (err) {
       toast.error("Couldn't save", {
         description: err instanceof Error ? err.message : String(err),
