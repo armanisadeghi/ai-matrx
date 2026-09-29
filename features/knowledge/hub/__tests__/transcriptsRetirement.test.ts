@@ -149,7 +149,6 @@ const S = (id: string, source: string | null, status: string): StudioSessionFiel
   title: id === "s1" ? "Lecture" : "Tidy notes",
   source,
   status,
-  visibility: "public",
   total_duration_ms: 120000,
   transcript_id: null,
   organization_id: "o1",
@@ -226,14 +225,16 @@ describe("Folders / Visibility / Status / Type / Scope facets over the rows' own
     expect(c.kind.map((v) => v.value).sort()).toEqual(["cleanup", "session", "source", "transcript"]);
     expect(c.status).toEqual(expect.arrayContaining([{ value: "draft", count: 1 }, { value: "live", count: 1 }]));
     expect(c.folder).toEqual(expect.arrayContaining([{ value: "Interviews", count: 2 }]));
-    expect(c.visibility).toEqual(expect.arrayContaining([{ value: "public", count: 2 }]));
-    expect(c.scope).toEqual(expect.arrayContaining([{ value: "mine", count: 2 }, { value: "public", count: 2 }]));
+    // Studio sessions are a Private table: they carry no row controls, so only the transcript
+    // and the Source it became count here.
+    expect(c.visibility).toEqual(expect.arrayContaining([{ value: "organization", count: 2 }]));
+    expect(c.scope).toEqual(expect.arrayContaining([{ value: "mine", count: 2 }, { value: "shared", count: 3 }]));
   });
 
   it("narrows AND across facets, OR within one; a non-transcript row leaves when a facet is set", () => {
     const only = (g: Record<string, string>) =>
       narrowByTranscriptFacets(hits, facetSelectionFromGroup(g), factFor).map((h) => h.id);
-    expect(only({ visibility: "public" })).toEqual(["s1", "c1"]);
+    expect(only({ visibility: "organization" })).toEqual(["t1", "p1"]);
     expect(only({ kind: "transcript,cleanup" })).toEqual(["t1", "c1"]);
     expect(only({ folder: "Interviews", kind: "source" })).toEqual(["p1"]);
     expect(only({ status: "draft" })).toEqual(["t1"]);

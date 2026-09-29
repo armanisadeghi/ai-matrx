@@ -140,7 +140,7 @@ export function CaptureReview({
   }, [savedFileId, transcribing]);
 
   // Join the unified audio system while review playback runs (playback lock
-  // + Audio panel visibility). Photos never register.
+  // + Audio panel listing). Photos never register.
   useMediaElementPlaybackSession({
     elementRef: mediaRef,
     isPlaying: kind !== "photo" && isPlaying,

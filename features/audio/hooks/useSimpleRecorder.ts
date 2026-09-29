@@ -69,7 +69,7 @@ export function useSimpleRecorder({
   const analyserSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   // This recording's session in the unified audio registry (Audio panel
-  // visibility, live → history). Ended in cleanup (the single exit for every
+  // listing, live → history). Ended in cleanup (the single exit for every
   // path: normal stop, takeover, error, reset, unmount).
   const recordingSessionRef = useRef<PlaybackSessionHandle | null>(null);
 
@@ -202,7 +202,7 @@ export function useSimpleRecorder({
 
         // Calculate average audio level (0-100)
         const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-        const normalizedLevel = Math.min(100, (average / 255) * 150); // Scale up for better visibility
+        const normalizedLevel = Math.min(100, (average / 255) * 150); // Scale up so quiet input still shows
 
         setAudioLevel(normalizedLevel);
         animationFrameRef.current = requestAnimationFrame(updateAudioLevel);

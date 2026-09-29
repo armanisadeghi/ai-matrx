@@ -2,7 +2,7 @@
 //
 // Candidate source for the `data_store` entity token in the association
 // pickers. Direct-to-Supabase: `rag.fn_list_user_data_stores` already
-// replicates the full owner + org + library-grant visibility clause
+// replicates the full owner + org + library-grant access clause
 // (identity from auth.uid() only), so there's no RLS-parity gap left — see
 // features/rag/hooks/useDataStores.ts, which uses the same RPC.
 // Registered on the entity-registry overlay as `listCandidates`, which every

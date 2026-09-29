@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Hooks for the /knowledge/library surface — visibility into processed documents.
+ * Hooks for the /knowledge/library surface — a window into processed documents.
  *
  * These are PURE DB READS (aggregate counts over docproc.* + rag.*), so they
  * go DIRECT to Postgres via SECURITY DEFINER RPCs — never through Python.
@@ -271,7 +271,7 @@ export function useLibrary(opts: UseLibraryOptions = {}) {
       }
       if (cancelled || pollMs <= 0) return;
       // Skip scheduling the next tick when the tab is hidden — we re-arm on
-      // visibility change below.
+      // tab show/hide below.
       if (typeof document !== "undefined" && document.hidden) return;
       pollTimer = setTimeout(run, pollMs);
     };

@@ -931,7 +931,7 @@ function StoreDetailPanel({
         </div>
         {/*
          * Access truth: replaces the raw org-uuid chip with the real answer —
-         * visibility, named organization, direct grants, and every container
+         * who sees it, named organization, direct grants, and every container
          * this store is reachable through.
          */}
         <AccessSummaryPanel

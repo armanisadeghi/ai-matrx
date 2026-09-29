@@ -22,7 +22,7 @@ export type TranscriptListKind =
   | "cleanup"
   | "unsorted";
 
-/** All four scopes — transcripts and sessions carry visibility + iam grants. */
+/** All four scopes — transcripts and sessions carry Shown to + iam grants. */
 export const TRANSCRIPT_LIST_SCOPES: ListScopeKind[] = [
   "mine",
   "orgs",

@@ -8,7 +8,7 @@ import { getHighlightTerms } from "@/features/rag/components/hit-card/query-high
 import type { RagSearchHit, RagSearchResponse } from "@/features/rag/api/search";
 
 /**
- * Placement visibility for the `matrx-user/knowledge-search` surface menu.
+ * Placement display for the `matrx-user/knowledge-search` surface menu.
  *
  * Both regions this surface wires are effectively read-only at the text level:
  * the search box holds a single short query and the results list is rendered

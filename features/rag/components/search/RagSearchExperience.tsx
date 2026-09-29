@@ -13,7 +13,7 @@
  *                          /chat) launched on the `matrx-user/knowledge-search`
  *                          surface with the Knowledge tool family armed, so the
  *                          agent searches the page's retrieval scope
- *   4. Diagnostics     — caller's content inventory, per-route visibility
+ *   4. Diagnostics     — caller's content inventory, per-route access
  *                          breakdown, per-query trace, admin ACL-bypass
  *
  * Designed for admins demoing the Knowledge system. The Search tab should also
@@ -2585,7 +2585,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
               <p>
                 Click <strong>Load</strong> to fetch every{" "}
                 {RAG_VOCAB.segmentShort.toLowerCase()} visible to you, grouped
-                by source kind and visibility route.
+                by source kind and access route.
               </p>
               <p className="mt-2 text-xs">
                 If you're not finding your PDFs in search, this is the fastest
@@ -2665,7 +2665,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
 
                 <div className="rounded-md border bg-card overflow-hidden">
                   <div className="px-3 py-2 border-b bg-muted/30 text-xs font-semibold">
-                    By visibility route (why is each{" "}
+                    By access route (why is each{" "}
                     {RAG_VOCAB.segmentShort.toLowerCase()} visible?)
                   </div>
                   <div className="divide-y">

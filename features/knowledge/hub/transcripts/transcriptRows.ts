@@ -73,7 +73,6 @@ export interface StudioSessionFields {
   title: string | null;
   source: string | null;
   status: string | null;
-  visibility: string | null;
   total_duration_ms: number | null;
   transcript_id: string | null;
   organization_id: string | null;
@@ -187,7 +186,6 @@ export function rowFromSession(s: StudioSessionFields, userId: string | null): T
     word_count: null as unknown as number,
     folder_name: null as unknown as string,
     transcript_id: s.transcript_id ?? "",
-    visibility: s.visibility ?? "",
     created_by: s.created_by ?? "",
     organization_id: s.organization_id ?? "",
     created_at: s.created_at ?? "",

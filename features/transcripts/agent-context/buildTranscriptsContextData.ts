@@ -4,7 +4,7 @@ import { createTranscriptsScope } from "@/features/surfaces/manifests/transcript
 import type { Transcript, TranscriptSegment } from "@/features/transcripts/types";
 
 /**
- * Placement visibility for the transcripts surface menu.
+ * Placement display for the transcripts surface menu.
  *
  * The viewer is read-only at the text level, so the editor-only `content-block`
  * placement (insert a template at the cursor) is hidden; everything else —
