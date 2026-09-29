@@ -263,7 +263,20 @@ reader of an older tag will otherwise conclude the package is broken.
    surface looks healthy on load and then stops moving. This is THE blocker for
    "captions, live notes, Q&A and the wrap-up without a page reload".
 
+## In the meeting and after — Meet wave 5 (2026-09-29)
+
+Polls, Q&A, the shared whiteboard, breakout rooms and translated captions all live in
+`@ai-matrx/meet` (the Activities control in the package's `ControlBar`, so the Room and the
+Board layout both have it; server `aidream/services/meet/collab.py`, `breakouts.py`,
+`captions.py`). This app adds nothing in the room. After the meeting, the record's right side
+has an **Activity** tab (`components/record/ActivityLogPanel.tsx`): poll results, every question
+with its answer, and the whiteboard as it was left, read through the package's
+`loadMeetingActivities` (`GET /v1/meet/collab`) — what a reader sees is the server's decision.
+Census: `common-docs/systems/communications/meet/PARITY.md` § Wave 5.
+
 ## Change log
+
+- 2026-09-29 — Meet wave 5: record Activity tab (polls, Q&A, whiteboard); the in-room activities come with `@ai-matrx/meet`.
 
 - 2026-09-28 — Access ladder T-32: "Share with everyone in the meeting" in the record bar (recording + transcript + notes to every invitee and attendee as person shares; knob `meet.share_with_attendees_after_meeting`, default offer). See `features/sharing/FEATURE.md`.
 - 2026-09-28 — NEW agent surface `matrx-user/meeting` (`agent-surface/MeetingSurfaceHost.tsx`, registered in `ui.ui_surface`), mounted by `MeetingDetail`; it supports `chrome="embedded"` for the Board meeting tile. Notes, decisions and action items are not write targets because the client has no canonical write for them.

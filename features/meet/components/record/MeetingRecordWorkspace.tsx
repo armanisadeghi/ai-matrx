@@ -9,7 +9,8 @@
 //   left   recording (plays from any transcript line), summary, decisions,
 //          action items that become platform tasks, notes as it happened,
 //          ask the meeting, what guests may read
-//   right  Transcript (search, click-to-seek, follow-along) | Chat | People
+//   right  Transcript (search, click-to-seek, follow-along) | Chat | Activity
+//          (polls, Q&A, whiteboard — Meet wave 5) | People
 //   top    when · how long · who, Email recap (host), Export
 //
 // The data is the package's `useMeetingRecord` (the same bundle the public
@@ -24,6 +25,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  BarChart3,
   ChevronRight,
   Mail,
   MessageSquare,
@@ -51,6 +53,7 @@ import { ensureOrganizationContext } from "@/lib/organization/organization-gate"
 import { meetingOrigin } from "@/features/meet/components/invite/MeetingInviteButton";
 import { ActionItemsSection } from "@/features/meet/components/record/ActionItemsSection";
 import { AttendancePanel } from "@/features/meet/components/record/AttendancePanel";
+import { ActivityLogPanel } from "@/features/meet/components/record/ActivityLogPanel";
 import { ChatLogPanel } from "@/features/meet/components/record/ChatLogPanel";
 import { RecapDialog } from "@/features/meet/components/record/RecapDialog";
 import { RecordExportMenu } from "@/features/meet/components/record/RecordExportMenu";
@@ -61,7 +64,7 @@ import {
 import { TranscriptPanel } from "@/features/meet/components/record/TranscriptPanel";
 import { ShareWithAudienceButton } from "@/features/sharing/audience/ShareWithAudience";
 
-type Side = "transcript" | "chat" | "people";
+type Side = "transcript" | "chat" | "activity" | "people";
 
 export function MeetingRecordWorkspace({
   meeting,
@@ -194,6 +197,7 @@ function Workspace({
   const sides: { key: Side; label: string; icon: typeof Users }[] = [
     { key: "transcript", label: "Transcript", icon: ScrollText },
     { key: "chat", label: "Chat", icon: MessageSquare },
+    { key: "activity", label: "Activity", icon: BarChart3 },
     {
       key: "people",
       label: `People${attended ? ` ${attended}` : ""}`,
@@ -442,6 +446,8 @@ function Workspace({
               />
             ) : side === "chat" ? (
               <ChatLogPanel meetingId={meeting.id} />
+            ) : side === "activity" ? (
+              <ActivityLogPanel meetingId={meeting.id} />
             ) : (
               <AttendancePanel meeting={meeting} bundle={bundle} />
             )}
