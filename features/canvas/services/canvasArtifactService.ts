@@ -76,7 +76,7 @@ const CANVAS_TYPE_TO_ARTIFACT_TYPE: Partial<Record<string, ArtifactTypeEnum>> =
  * lib/security/public-exposure.ts#ANON_COLUMN_SURFACE (DD-186).
  */
 const ANON_CANVAS_ITEM_COLUMNS =
-  "id,type,content,title,description,is_favorited,is_archived,tags,session_id,source_message_id,task_id,is_public,created_at,updated_at,last_accessed_at,content_hash,project_id,conversation_id,artifact_index,parent_canvas_id,source_type,external_system,external_id,deleted_at,visibility,source_system,source_id,version";
+  "id,type,content,title,description,is_favorited,is_archived,tags,session_id,source_message_id,task_id,is_public,created_at,updated_at,last_accessed_at,content_hash,project_id,conversation_id,artifact_index,parent_canvas_id,source_type,external_system,external_id,deleted_at,source_system,source_id,version";
 
 export function canvasTypeToArtifactType(
   canvasType: string,

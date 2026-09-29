@@ -277,7 +277,7 @@ export function SavedCanvasItems() {
                 </div>
 
                 {/* Share indicator */}
-                {item.visibility === "public" && (
+                {item.published_to_web && (
                   <div className="absolute bottom-3 left-3">
                     <Badge variant="secondary" className="text-xs">
                       <Globe className="w-3 h-3 mr-1" />

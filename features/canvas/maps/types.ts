@@ -35,8 +35,8 @@ export interface MapListRow {
   arrow_count: number;
   is_favorited: boolean;
   is_archived: boolean;
-  /** Canonical access driver (db-rules §6a). "public" is what the Shared badge reads. */
-  visibility: string;
+  /** "Published to the web" — what the Shared badge reads. */
+  published_to_web: boolean;
   tags: string[];
   updated_at: string;
   created_at: string;

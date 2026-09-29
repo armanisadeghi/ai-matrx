@@ -94,6 +94,14 @@ interface CanvasShareSheetProps {
 // SHARED FORM CONTENT
 // ============================================================================
 
+/** The sheet's three choices in the access words (Published to the web / an
+ *  Anyone link / Only me) — the values stay the request's own keys. */
+const SHARE_CHOICE_LABELS: Record<CanvasVisibility, string> = {
+  public: "Published to the web",
+  unlisted: "Anyone with the link",
+  personal: "Only me",
+};
+
 function ShareFormContent({
   canvasType,
   hasScoring,
@@ -227,15 +235,15 @@ function ShareFormContent({
         {/* Settings Summary */}
         <div className="p-4 rounded-lg bg-muted/50 space-y-2.5">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Visibility</span>
+            <span className="text-muted-foreground">Who can open it</span>
             <Badge
               variant="outline"
-              className="capitalize flex items-center gap-1"
+              className="flex items-center gap-1"
             >
               {visibility === "public" && <Globe className="w-3 h-3" />}
               {visibility === "unlisted" && <Link2 className="w-3 h-3" />}
               {visibility === "personal" && <Lock className="w-3 h-3" />}
-              {visibility}
+              {SHARE_CHOICE_LABELS[visibility]}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
@@ -322,7 +330,7 @@ function ShareFormContent({
           className="absolute inset-0 overflow-y-auto space-y-3 m-0 pr-1"
         >
           <div className="space-y-2">
-            <Label>Visibility</Label>
+            <Label>Who can open it</Label>
             <Select
               value={visibility}
               onValueChange={(v: CanvasVisibility) => setVisibility(v)}
@@ -332,19 +340,19 @@ function ShareFormContent({
                   {visibility === "public" && (
                     <>
                       <Globe className="w-4 h-4 shrink-0 text-muted-foreground" />
-                      <span>Public</span>
+                      <span>Published to the web</span>
                     </>
                   )}
                   {visibility === "unlisted" && (
                     <>
                       <Link2 className="w-4 h-4 shrink-0 text-muted-foreground" />
-                      <span>Unlisted</span>
+                      <span>Anyone with the link</span>
                     </>
                   )}
                   {visibility === "personal" && (
                     <>
                       <Lock className="w-4 h-4 shrink-0 text-muted-foreground" />
-                      <span>Private</span>
+                      <span>Only me</span>
                     </>
                   )}
                 </SelectValue>
@@ -352,14 +360,14 @@ function ShareFormContent({
               <SelectContent>
                 <SelectItem
                   value="public"
-                  textValue="Public"
+                  textValue="Published to the web"
                   className="py-2.5"
                 >
                   <div className="flex items-center gap-3">
                     <Globe className="w-4 h-4 shrink-0 text-muted-foreground" />
                     <div>
                       <div className="font-medium text-sm leading-none">
-                        Public
+                        Published to the web
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
                         Anyone can find and view
@@ -369,14 +377,14 @@ function ShareFormContent({
                 </SelectItem>
                 <SelectItem
                   value="unlisted"
-                  textValue="Unlisted"
+                  textValue="Anyone with the link"
                   className="py-2.5"
                 >
                   <div className="flex items-center gap-3">
                     <Link2 className="w-4 h-4 shrink-0 text-muted-foreground" />
                     <div>
                       <div className="font-medium text-sm leading-none">
-                        Unlisted
+                        Anyone with the link
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
                         Only people with the link can view
@@ -385,15 +393,15 @@ function ShareFormContent({
                   </div>
                 </SelectItem>
                 <SelectItem
-                  value="private"
-                  textValue="Private"
+                  value="personal"
+                  textValue="Only me"
                   className="py-2.5"
                 >
                   <div className="flex items-center gap-3">
                     <Lock className="w-4 h-4 shrink-0 text-muted-foreground" />
                     <div>
                       <div className="font-medium text-sm leading-none">
-                        Private
+                        Only me
                       </div>
                       {/* Honest claim only: this setting controls publication
                           of the share record, not every access path to the

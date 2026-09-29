@@ -38,7 +38,7 @@ import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 /** Columns the list needs. `content` comes along for the box/arrow counts. */
 const LIST_COLUMNS =
-  "id,title,description,content,tags,is_favorited,is_archived,visibility,created_at,updated_at";
+  "id,title,description,content,tags,is_favorited,is_archived,published_to_web,created_at,updated_at";
 
 const SORTABLE: Record<string, string> = {
   title: "title",
@@ -62,7 +62,7 @@ function toRow(raw: Record<string, unknown>): MapListRow {
     arrow_count: diagram?.edges.length ?? 0,
     is_favorited: raw.is_favorited === true,
     is_archived: raw.is_archived === true,
-    visibility: typeof raw.visibility === "string" ? raw.visibility : "internal",
+    published_to_web: raw.published_to_web === true,
     tags: Array.isArray(raw.tags) ? (raw.tags as string[]) : [],
     updated_at: typeof raw.updated_at === "string" ? raw.updated_at : "",
     created_at: typeof raw.created_at === "string" ? raw.created_at : "",
@@ -212,7 +212,7 @@ export async function getMap(id: string): Promise<{
       tags: data.tags,
       is_favorited: data.is_favorited,
       is_archived: data.is_archived,
-      visibility: data.visibility,
+      published_to_web: data.published_to_web,
       created_at: data.created_at,
       updated_at: data.updated_at,
     }),

@@ -42,10 +42,10 @@ export function CanvasDiscovery() {
                 // signed-out visitor, where `*` is refused (42501). Register:
                 // lib/security/public-exposure.ts#ANON_COLUMN_SURFACE (DD-186).
                 .select(
-                    'id,title,description,canvas_type,canvas_data,thumbnail_url,creator_username,creator_display_name,original_id,forked_from,version_number,fork_count,view_count,like_count,share_count,comment_count,play_count,completion_rate,has_scoring,high_score,high_score_user,average_score,total_attempts,visibility,allow_remixes,require_attribution,featured,tags,categories,created_at,updated_at,published_at,last_played_at,trending_score,search_vector,deleted_at',
+                    'id,title,description,canvas_type,canvas_data,thumbnail_url,creator_username,creator_display_name,original_id,forked_from,version_number,fork_count,view_count,like_count,share_count,comment_count,play_count,completion_rate,has_scoring,high_score,high_score_user,average_score,total_attempts,published_to_web,allow_remixes,require_attribution,featured,tags,categories,created_at,updated_at,published_at,last_played_at,trending_score,search_vector,deleted_at',
                 )
                 .is('deleted_at', null)
-                .eq('visibility', 'public');
+                .eq('published_to_web', true);
 
             // Apply type filter
             if (filterType !== 'all') {
@@ -84,7 +84,11 @@ export function CanvasDiscovery() {
             const { data, error } = await query.limit(50);
 
             if (error) throw error;
-            return data as SharedCanvasItem[];
+            // `shown_to` is a list word anon cannot read (no column grant) and a
+            // public gallery has no use for; null = the type's default.
+            return (data ?? []).map(
+                (row) => ({ ...row, shown_to: null }) as SharedCanvasItem,
+            );
         },
         staleTime: 1000 * 60, // 1 minute
     });

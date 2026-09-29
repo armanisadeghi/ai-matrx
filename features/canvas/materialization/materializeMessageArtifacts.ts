@@ -122,7 +122,7 @@ export async function materializeMessageArtifacts(
     };
   }
 
-  // The terminal stream can beat row visibility, and a failed persistence
+  // The terminal stream can beat the row becoming readable, and a failed persistence
   // lane can roll the reservation back entirely. Defer either zero-row state
   // to the on-load reconciler, which runs only against durable messages.
   if (data === null) {

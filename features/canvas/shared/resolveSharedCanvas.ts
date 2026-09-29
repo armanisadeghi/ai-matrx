@@ -5,7 +5,7 @@
  *   - a canonical share-link token (`platform.share_links`, resolved through the
  *     anon `resolve_share_token` RPC — the token IS the authorization, and the
  *     registry's `public_columns` allowlist bounds what ships to the visitor);
- *   - a row UUID (the public-visibility lane: discovery-gallery items are
+ *   - a row UUID (the published-to-the-web lane: discovery-gallery items are
  *     anon-readable via `pub_read` RLS, so a public canvas needs no secret).
  *
  * The bespoke `canvas.shared_canvas_items.share_token` lane was converged onto
@@ -33,12 +33,14 @@ export async function resolveSharedCanvas(
       // signed-out visitor may read; the register is
       // lib/security/public-exposure.ts#ANON_COLUMN_SURFACE (DD-186).
       .select(
-        "id,title,description,canvas_type,canvas_data,thumbnail_url,creator_username,creator_display_name,original_id,forked_from,version_number,fork_count,view_count,like_count,share_count,comment_count,play_count,completion_rate,has_scoring,high_score,high_score_user,average_score,total_attempts,visibility,allow_remixes,require_attribution,featured,tags,categories,created_at,updated_at,published_at,last_played_at,trending_score,search_vector,deleted_at",
+        "id,title,description,canvas_type,canvas_data,thumbnail_url,creator_username,creator_display_name,original_id,forked_from,version_number,fork_count,view_count,like_count,share_count,comment_count,play_count,completion_rate,has_scoring,high_score,high_score_user,average_score,total_attempts,published_to_web,allow_remixes,require_attribution,featured,tags,categories,created_at,updated_at,published_at,last_played_at,trending_score,search_vector,deleted_at",
       )
       .is("deleted_at", null)
       .eq("id", tokenOrId)
       .maybeSingle();
-    return (data as SharedCanvasItem | null) ?? null;
+    // `shown_to` is a list word anon cannot read (no column grant); null = the
+    // type's default, never needed on a shared page.
+    return data ? ({ ...data, shown_to: null } as SharedCanvasItem) : null;
   }
 
   const resolved = await resolveShareToken(tokenOrId, client);
