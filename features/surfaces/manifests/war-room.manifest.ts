@@ -460,6 +460,8 @@ The cockpit view values (view_mode, projected_tab, density) describe how the use
       sortOrder: 10,
     },
   ],
+  // Which record, at a glance.
+  briefValues: ["room_name", "active_thread_title", "thread_count"],
   writeTargets,
   configNamespaces: [
     {

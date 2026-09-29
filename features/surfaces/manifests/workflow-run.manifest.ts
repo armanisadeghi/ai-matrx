@@ -345,6 +345,8 @@ run_control, retry_step and skip_step drive the run exactly like the page's own 
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  // Which record, at a glance.
+  briefValues: ["workflow_name", "run_status", "run_started_at", "step_count"],
   writeTargets,
 };
 

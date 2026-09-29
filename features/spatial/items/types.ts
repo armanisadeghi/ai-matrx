@@ -81,6 +81,17 @@ export type ItemSurface =
       none: string;
     };
 
+/**
+ * One way to start a new item. `create` is synchronous and cheap: return the
+ * item to place NOW (a draft note, a new chat that opens its conversation when
+ * mounted), so the person can start immediately. `Picker` is for a start that
+ * needs ONE choice first (which agent to chat with) — the board shows it the
+ * way it shows a bring-in picker, and places what it picks.
+ */
+export type StartNewEntry =
+  | { label: string; icon?: LucideIcon; create: () => PlacedItem }
+  | { label: string; icon?: LucideIcon; Picker: ComponentType<PickerProps> };
+
 export interface BoardItemType {
   /** Registry key. For entity sources it equals `source.entity`. */
   key: string;
@@ -96,15 +107,22 @@ export interface BoardItemType {
   /** The feature's agent surface for the tile's record (see `ItemSurface`). */
   surface: ItemSurface;
   /**
-   * "Start something new". Synchronous and cheap: return the item to place
-   * NOW (a draft note, a new chat that opens its conversation when mounted),
-   * so the person can start immediately. Omit when the type has no "new".
+   * "Start something new" — one entry, or several ways to start the same
+   * kind of thing (a chat, and a chat with an agent you pick). Each entry is
+   * an Add-menu and Start-panel item of its own. Omit when the type has no
+   * "new". See `StartNewEntry`.
    */
-  startNew?: { label: string; create: () => PlacedItem };
+  startNew?: StartNewEntry | readonly StartNewEntry[];
   /** "Bring in what you have": a picker over the person's existing records. */
   bringIn?: { label: string; Picker: ComponentType<PickerProps> };
   /** Where the tile's "Open" goes (no dead ends). Null when it has no page. */
   href?: (source: NodeSource) => string | null;
   /** A word for agents' `board_read` ("chat", "note", "file"…). Defaults to `key`. */
   kindLabel?: string;
+}
+
+/** Every way to start a new item of this type, in menu order (none → []). */
+export function startNewEntries(type: BoardItemType): readonly StartNewEntry[] {
+  if (!type.startNew) return [];
+  return "label" in type.startNew ? [type.startNew] : type.startNew;
 }

@@ -2,7 +2,7 @@
  * chatTranscriptScope — the `conversation` record and the `transcript` value
  * of the `matrx-user/chat` surface, built from state the page already renders.
  *
- * Pure: no store, no React, no fetch. `ChatRoomClient.getChatScope` reads the
+ * Pure: no store, no React, no fetch. `ChatConversationSurface.getChatScope` reads the
  * messages slice and the observability slice (where tool calls live) and hands
  * the rows here; the surface's `getScope` is polled every 400 ms, so nothing
  * in this module may do work beyond walking what it is given.

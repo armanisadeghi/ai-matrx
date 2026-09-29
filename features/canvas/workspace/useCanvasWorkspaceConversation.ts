@@ -13,9 +13,12 @@
  *   - mount / `startNew()` — launch a fresh conversation under the mandate
  *     (with `enabled: false`, nothing launches until the host enables it —
  *     a chat that starts closed costs nothing until it is first opened);
- *   - `openExisting(id)`   — load a history conversation IN PLACE through the
- *     canonical `loadConversation` thunk (the path the agent-app shell and
- *     the tutor use), never a navigation.
+ *   - `openExisting(id)`   — reopen a history conversation IN PLACE through
+ *     the canonical resume sequence (`resumeConversation`, the imperative twin
+ *     of `useConversationResume` that /chat runs): hydrate, re-surface an
+ *     unanswered client tool prompt, and REATTACH to a turn the server is
+ *     still running — so a board tile reloaded mid-answer keeps streaming.
+ *     Never a navigation, never `loadConversation` alone.
  *   - `startWith(agentId)` — a fresh conversation with the chosen agent.
  * A host that owns SEVERAL conversations (one per board tile) passes `start`:
  * what to open on mount (a saved conversation, a chosen agent, or new). It is
@@ -33,7 +36,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
@@ -53,17 +56,18 @@ export type CanvasWorkspaceConversation =
 type Request =
   | { kind: "new"; nonce: number; mandateKey?: AnyMandateKey }
   | { kind: "agent"; agentId: string; nonce: number }
-  | { kind: "open"; conversationId: string; nonce: number };
+  | { kind: "open"; conversationId: string; agentId: string | null; nonce: number };
 
 /** What to open on mount. Default: a new conversation under the mandate. */
 export type CanvasWorkspaceStart =
   | { kind: "new" }
   | { kind: "agent"; agentId: string }
-  | { kind: "open"; conversationId: string };
+  | { kind: "open"; conversationId: string; agentId?: string | null };
 
 function initialRequest(start: CanvasWorkspaceStart | undefined): Request {
   if (start?.kind === "agent") return { kind: "agent", agentId: start.agentId, nonce: 0 };
-  if (start?.kind === "open") return { kind: "open", conversationId: start.conversationId, nonce: 0 };
+  if (start?.kind === "open")
+    return { kind: "open", conversationId: start.conversationId, agentId: start.agentId ?? null, nonce: 0 };
   return { kind: "new", nonce: 0 };
 }
 
@@ -74,6 +78,12 @@ function initialRequest(start: CanvasWorkspaceStart | undefined): Request {
 export type CanvasWorkspaceConversationOptions = {
   enabled?: boolean;
   start?: CanvasWorkspaceStart;
+  /**
+   * `null` = this conversation IS its host's own chat (a board chat tile), so
+   * a new launch adopts no mounted surface — exactly /chat's own launcher
+   * (`runtime: { surfaceName: null }`). Omitted = the default adoption.
+   */
+  surfaceName?: null;
 };
 
 /** A bare start (`{ kind }`) — as opposed to the options form, which never carries `kind`. */
@@ -85,10 +95,10 @@ function isCanvasWorkspaceStart(
 
 function resolveStartOptions(
   input: CanvasWorkspaceStart | CanvasWorkspaceConversationOptions | undefined,
-): { enabled: boolean; start: CanvasWorkspaceStart | undefined } {
-  if (!input) return { enabled: true, start: undefined };
-  if (isCanvasWorkspaceStart(input)) return { enabled: true, start: input };
-  return { enabled: input.enabled ?? true, start: input.start };
+): { enabled: boolean; start: CanvasWorkspaceStart | undefined; ownSurface: boolean } {
+  if (!input) return { enabled: true, start: undefined, ownSurface: false };
+  if (isCanvasWorkspaceStart(input)) return { enabled: true, start: input, ownSurface: false };
+  return { enabled: input.enabled ?? true, start: input.start, ownSurface: input.surfaceName === null };
 }
 
 export interface CanvasWorkspaceConversationController {
@@ -96,7 +106,8 @@ export interface CanvasWorkspaceConversationController {
   /** The id when ready, else null. */
   conversationId: string | null;
   startNew: () => void;
-  openExisting: (conversationId: string) => void;
+  /** `agentId` (when the caller knows it) builds a cold instance under that agent. */
+  openExisting: (conversationId: string, agentId?: string | null) => void;
   /**
    * The composer's agent switch (ComposerAgentControl.onSelectAgent): a fresh
    * conversation with that agent — never a revival. `via.mandateKey` (Custom =
@@ -110,7 +121,7 @@ export function useCanvasWorkspaceConversation(
   surfaceKey: string,
   input?: CanvasWorkspaceStart | CanvasWorkspaceConversationOptions,
 ): CanvasWorkspaceConversationController {
-  const { enabled, start } = resolveStartOptions(input);
+  const { enabled, start, ownSurface } = resolveStartOptions(input);
   const dispatch = useAppDispatch();
   const { launchMandate, launchAgent } = useAgentLauncher();
   const [request, setRequest] = useState<Request>(() => initialRequest(start));
@@ -131,13 +142,15 @@ export function useCanvasWorkspaceConversation(
     const stale = () => handled.current !== key;
 
     if (request.kind === "new" || request.kind === "agent") {
+      const runtime = ownSurface ? { runtime: { surfaceName: null } } : {};
       const launch =
         request.kind === "agent"
-          ? launchAgent(request.agentId, { surfaceKey, sourceFeature: "chat" })
+          ? launchAgent(request.agentId, { surfaceKey, sourceFeature: "chat", ...runtime })
           : launchMandate(request.mandateKey ?? DEFAULT_NEW_CHAT_MANDATE_KEY, {
               surfaceKey,
               // A REGISTERED feature, never a new string: this surface IS the chat.
               sourceFeature: "chat",
+              ...runtime,
             });
       launch.then(
         (result) => {
@@ -150,7 +163,7 @@ export function useCanvasWorkspaceConversation(
       );
     } else {
       const target = request.conversationId;
-      dispatch(loadConversation({ conversationId: target, surfaceKey }))
+      dispatch(resumeConversation({ conversationId: target, agentId: request.agentId, surfaceKey }))
         .unwrap()
         .then(
           () => {
@@ -162,7 +175,7 @@ export function useCanvasWorkspaceConversation(
           },
         );
     }
-  }, [enabled, surfaceKey, request, launchMandate, launchAgent, dispatch, waitingForOrganization]);
+  }, [enabled, surfaceKey, request, launchMandate, launchAgent, dispatch, waitingForOrganization, ownSurface]);
 
   const startNew = () => {
     setConversationId(null);
@@ -178,11 +191,11 @@ export function useCanvasWorkspaceConversation(
         : { kind: "agent", agentId, nonce: current.nonce + 1 },
     );
   };
-  const openExisting = (id: string) => {
+  const openExisting = (id: string, agentId?: string | null) => {
     if (id === conversationId) return;
     setConversationId(null);
     setFailure(null);
-    setRequest((current) => ({ kind: "open", conversationId: id, nonce: current.nonce + 1 }));
+    setRequest((current) => ({ kind: "open", conversationId: id, agentId: agentId ?? null, nonce: current.nonce + 1 }));
   };
 
   let conversation: CanvasWorkspaceConversation;

@@ -725,7 +725,7 @@ export function ChatRoomClient({
     );
   }
 
-  if ((isInitializing || !conversationId) && !canRenderLandingDuringInit) {
+  if (!conversationId || (isInitializing && !canRenderLandingDuringInit)) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-textured">
         <ChatRoomSkeleton />
