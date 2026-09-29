@@ -75,7 +75,8 @@ export type AccessLogOutcome =
   | "asked"
   | "lapsed"
   | "notice_failed"
-  | "taken_over";
+  | "taken_over"
+  | "records_taken_over";
 
 export function accessLogOutcome(entry: AccessLogEntry): AccessLogOutcome {
   switch (entry.action) {
@@ -91,6 +92,11 @@ export function accessLogOutcome(entry: AccessLogEntry): AccessLogOutcome {
     // (public.org_admin_take_over_account) — the only way into Private data.
     case "account_takeover":
       return entry.granted ? "taken_over" : "refused";
+    // ACCESS LADDER T-16d: for a member who also belongs to other organizations,
+    // an owner or admin moved their records in ONE organization to a named
+    // member (public.org_admin_take_over_member_records). Sign-in untouched.
+    case "records_takeover":
+      return entry.granted ? "records_taken_over" : "refused";
     case "approved":
     case "read":
       // These two ARE decided by `granted` — an approval path can still end in
@@ -107,7 +113,11 @@ export function accessLogOutcome(entry: AccessLogEntry): AccessLogOutcome {
 /** Does this row describe something that actually OPENED? */
 export function accessWasOpened(entry: AccessLogEntry): boolean {
   const outcome = accessLogOutcome(entry);
-  return outcome === "granted" || outcome === "taken_over";
+  return (
+    outcome === "granted" ||
+    outcome === "taken_over" ||
+    outcome === "records_taken_over"
+  );
 }
 
 /**
@@ -153,6 +163,8 @@ export function accessLogVerb(outcome: AccessLogOutcome): string {
       return "opened — and we could not deliver your notice about";
     case "taken_over":
       return "took over";
+    case "records_taken_over":
+      return "took over";
   }
 }
 
@@ -171,5 +183,7 @@ export function accessLogBadge(outcome: AccessLogOutcome): string {
       return "Notice failed";
     case "taken_over":
       return "Account taken over";
+    case "records_taken_over":
+      return "Records taken over";
   }
 }

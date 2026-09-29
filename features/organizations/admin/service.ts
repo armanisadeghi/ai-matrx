@@ -248,6 +248,96 @@ export async function takeOverAccount(args: {
   };
 }
 
+/** One kind of record an org-scoped take-over would move, with how many. */
+export interface TakeOverRecordCount {
+  token: string;
+  label: string;
+  dataClass: string;
+  count: number;
+}
+
+/**
+ * Which take-over applies to this member (ACCESS LADDER T-16d), read from the database:
+ * `account` — they belong to this organization alone, so the whole account can be taken over;
+ * `records` — they also belong to other organizations, so only their records HERE can be moved.
+ * Never names their other organizations.
+ */
+export interface TakeOverOptions {
+  mode: "account" | "records";
+  records: TakeOverRecordCount[];
+  total: number;
+}
+
+export async function getTakeOverOptions(orgId: string, userId: string): Promise<TakeOverOptions> {
+  const { data, error } = await supabase.rpc("org_admin_take_over_options", {
+    p_org_id: orgId,
+    p_user_id: userId,
+  });
+  if (error) throw pgErrorToError(error);
+  const out = asRecord(data);
+  const rows = Array.isArray(out.records) ? out.records : [];
+  return {
+    mode: out.mode === "account" ? "account" : "records",
+    records: rows.flatMap((r) => {
+      const o = asRecord(r);
+      return typeof o.token === "string"
+        ? [
+            {
+              token: o.token,
+              label: typeof o.label === "string" ? o.label : o.token,
+              dataClass: typeof o.data_class === "string" ? o.data_class : "organization",
+              count: num(o.count),
+            },
+          ]
+        : [];
+    }),
+    total: num(out.total),
+  };
+}
+
+export type TakeOverRecordsResult =
+  | { takenOver: true; recordsMoved: number; notMoved: number; message: string }
+  | { takenOver: false; reason: string; message: string };
+
+/**
+ * Take over a member's records in THIS organization (ACCESS LADDER T-16d) — for a member who also
+ * belongs to other organizations. Ownership of every record they hold here (Private included,
+ * Confidential never) moves to `toUserId` (null = the caller). Their sign-in, sessions and other
+ * organizations are untouched. The person is told; it is recorded on their access log and this
+ * organization's log. Every refusal comes back as `takenOver: false` with the database's sentence.
+ */
+export async function takeOverMemberRecords(args: {
+  orgId: string;
+  userId: string;
+  purpose: string;
+  reason: string;
+  toUserId: string | null;
+}): Promise<TakeOverRecordsResult> {
+  const { data, error } = await supabase.rpc("org_admin_take_over_member_records", {
+    p_org_id: args.orgId,
+    p_user_id: args.userId,
+    p_purpose: args.purpose,
+    p_reason: args.reason,
+    ...(args.toUserId ? { p_to_user_id: args.toUserId } : {}),
+  });
+  if (error) throw pgErrorToError(error);
+  const out = asRecord(data);
+  const message = typeof out.message === "string" ? out.message : "";
+  if (out.taken_over === true) {
+    return {
+      takenOver: true,
+      recordsMoved: num(out.records_moved),
+      notMoved: Array.isArray(out.not_moved) ? out.not_moved.length : 0,
+      message,
+    };
+  }
+  return {
+    takenOver: false,
+    reason: typeof out.reason === "string" ? out.reason : "refused",
+    message: message || "The take-over was refused.",
+  };
+}
+
 /** Governance audit log for the org. */
 export async function listOrgAdminAudit(
   orgId: string,

@@ -1,20 +1,27 @@
 "use client";
 
 /**
- * Take over a member's account — ACCESS LADDER T-16 (common-docs/policies/access-ladder.md).
+ * Take over a member — ACCESS LADDER T-16 / T-16d (common-docs/policies/access-ladder.md).
  *
  * Private is the owner alone. An organization owner or admin's ONLY way into a member's private
- * data is taking over the account, the Google Workspace / Microsoft 365 procedure: the person is
- * signed out everywhere, every other way into the account is closed, the admin sets a new password
- * and signs in as the account. The written reason is sent to the person and recorded on their own
- * access log and on this organization's log. It works only for an account this organization alone
- * holds; a person's own account that also belongs to other organizations is refused by the database
- * with its own sentence, which this dialog shows verbatim.
+ * data is a take-over, and there are two, which the database picks for this member
+ * (public.org_admin_take_over_options) and this ONE dialog offers automatically:
  *
- * Moving their work to someone else is NOT this: that is offboarding's transfer.
+ *   account — the member belongs to this organization alone (a managed account, the Google
+ *     Workspace / Microsoft 365 model): they are signed out everywhere, every other way in is
+ *     closed, the admin sets a new password and signs in as the account
+ *     (public.org_admin_take_over_account).
+ *   records — the member also belongs to other organizations, so the account is their own:
+ *     ownership of everything they hold IN THIS ORGANIZATION (their Private records here included,
+ *     Confidential never) moves to a member the admin names, default the admin. Their sign-in and
+ *     every other organization are untouched (public.org_admin_take_over_member_records).
+ *
+ * Both need a reason category and a written reason that is sent to the person; both are recorded
+ * on the person's own access log and this organization's log. Every refusal is the database's
+ * own sentence, shown verbatim.
  */
 import React, { useEffect, useState } from "react";
-import { KeyRound, Loader2 } from "lucide-react";
+import { FolderInput, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -36,56 +43,126 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { listTakeOverPurposes, takeOverAccount, type TakeOverPurpose } from "../service";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  getTakeOverOptions,
+  listOrgMembers,
+  listTakeOverPurposes,
+  takeOverAccount,
+  takeOverMemberRecords,
+  type TakeOverOptions,
+  type TakeOverPurpose,
+} from "../service";
+import type { OrgAdminMember } from "../types";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
+  orgName: string;
   userId: string;
   label: string;
   onDone: () => void;
 }
 
 const MIN_PASSWORD = 12;
+/** The Select's value for "me" — the database's default recipient (p_to_user_id omitted). */
+const ME = "__me__";
 
-export function TakeOverAccountDialog({ open, onOpenChange, orgId, userId, label, onDone }: Props) {
+function errorText(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
+
+export function TakeOverAccountDialog({
+  open,
+  onOpenChange,
+  orgId,
+  orgName,
+  userId,
+  label,
+  onDone,
+}: Props) {
+  const myId = useAppSelector(selectUserId);
+  const [options, setOptions] = useState<TakeOverOptions | null>(null);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
   const [purposes, setPurposes] = useState<TakeOverPurpose[] | null>(null);
   const [purposesError, setPurposesError] = useState<string | null>(null);
+  const [members, setMembers] = useState<OrgAdminMember[] | null>(null);
   const [purpose, setPurpose] = useState("");
   const [reason, setReason] = useState("");
   const [password, setPassword] = useState("");
+  const [recipient, setRecipient] = useState(ME);
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    setOptions(null);
+    setOptionsError(null);
+    getTakeOverOptions(orgId, userId)
+      .then((o) => {
+        if (!live) return;
+        setOptions(o);
+        if (o.mode === "records") {
+          listOrgMembers(orgId)
+            .then((rows) => live && setMembers(rows))
+            .catch(() => live && setMembers([]));
+        }
+      })
+      .catch((err: unknown) => live && setOptionsError(errorText(err, "The take-over options could not be loaded.")));
+    return () => {
+      live = false;
+    };
+  }, [open, orgId, userId]);
 
   useEffect(() => {
     if (!open || purposes) return;
     let live = true;
     listTakeOverPurposes()
       .then((rows) => live && setPurposes(rows))
-      .catch((err: unknown) =>
-        live && setPurposesError(err instanceof Error ? err.message : "The reason list could not be loaded."),
-      );
+      .catch((err: unknown) => live && setPurposesError(errorText(err, "The reason list could not be loaded.")));
     return () => {
       live = false;
     };
   }, [open, purposes]);
 
+  const mode = options?.mode ?? null;
+  const recipients = (members ?? []).filter((m) => m.userId !== userId && m.userId !== myId);
+
   const submit = async () => {
+    if (!mode) return;
     setBusy(true);
     setRefusal(null);
     try {
-      const result = await takeOverAccount({ orgId, userId, purpose, reason, newPassword: password });
-      if (!result.takenOver) {
-        setRefusal(result.message);
-        return;
+      if (mode === "account") {
+        const result = await takeOverAccount({ orgId, userId, purpose, reason, newPassword: password });
+        if (!result.takenOver) {
+          setRefusal(result.message);
+          return;
+        }
+        toast.success(result.message);
+        setPassword("");
+      } else {
+        const result = await takeOverMemberRecords({
+          orgId,
+          userId,
+          purpose,
+          reason,
+          toUserId: recipient === ME ? null : recipient,
+        });
+        if (!result.takenOver) {
+          setRefusal(result.message);
+          return;
+        }
+        if (result.notMoved > 0) toast.warning(result.message);
+        else toast.success(result.message);
       }
-      toast.success(result.message);
-      setPassword("");
       onOpenChange(false);
       onDone();
     } catch (err) {
-      setRefusal(err instanceof Error ? err.message : "The take-over could not be completed.");
+      setRefusal(errorText(err, "The take-over could not be completed."));
     } finally {
       setBusy(false);
     }
@@ -95,87 +172,172 @@ export function TakeOverAccountDialog({ open, onOpenChange, orgId, userId, label
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <AlertDialogHeader>
-          <AlertDialogTitle>Take over {label}&apos;s account</AlertDialogTitle>
+          <AlertDialogTitle>
+            {mode === "records"
+              ? `Take over ${label}'s records in ${orgName}`
+              : `Take over ${label}'s account`}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            This is the only way into a member&apos;s private data. It happens the moment you
-            confirm:
+            {mode === "records"
+              ? `${label} also belongs to other organizations, so their account is their own. You can take over what they hold in this organization. It happens the moment you confirm:`
+              : "This is the only way into a member's private data. It happens the moment you confirm:"}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li>{label} is signed out on every device, and their password stops working.</li>
-          <li>
-            Their reset links, second sign-in factor and outside sign-ins (such as Google) are
-            removed.
-          </li>
-          <li>You sign in as the account with the new password you set here.</li>
-          <li>
-            {label} is told who did it and the reason you write, and it stays on their access
-            record and this organization&apos;s log permanently.
-          </li>
-        </ul>
+        {optionsError ? (
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            {optionsError}
+          </p>
+        ) : !mode ? (
+          <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Checking which take-over applies…
+          </div>
+        ) : mode === "account" ? (
+          <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+            <li>{label} is signed out on every device, and their password stops working.</li>
+            <li>
+              Their reset links, second sign-in factor and outside sign-ins (such as Google) are
+              removed.
+            </li>
+            <li>You sign in as the account with the new password you set here.</li>
+            <li>
+              {label} is told who did it and the reason you write, and it stays on their access
+              record and this organization&apos;s log permanently.
+            </li>
+          </ul>
+        ) : (
+          <div className="space-y-3">
+            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+              <li>
+                Everything {label} owns in this organization, including their private AI chats
+                here, now belongs to the person you choose below.
+              </li>
+              <li>
+                Their sign-in is not touched, and nothing they hold in other organizations moves.
+                Confidential records, such as HR files and saved passwords, stay with them.
+              </li>
+              <li>
+                {label} is told who did it and the reason you write, and it stays on their access
+                record and this organization&apos;s log permanently.
+              </li>
+            </ul>
+            <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
+              {options && options.total > 0 ? (
+                <>
+                  <div className="mb-2 font-medium text-foreground">
+                    What moves ({options.total} {options.total === 1 ? "record" : "records"})
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {options.records.map((r) => (
+                      <span
+                        key={r.token}
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
+                      >
+                        {r.label}
+                        <span className="font-medium text-muted-foreground">{r.count}</span>
+                        {r.dataClass === "private" ? (
+                          <span className="text-muted-foreground">· private</span>
+                        ) : null}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <span className="text-muted-foreground">
+                  {label} owns nothing in this organization right now. Taking over still tells
+                  them and is recorded.
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
-        <div className="space-y-3 py-1">
-          <div className="space-y-1.5">
-            <Label htmlFor="takeover-purpose">Reason category</Label>
-            {purposesError ? (
-              <p className="text-sm text-destructive">{purposesError}</p>
+        {mode ? (
+          <div className="space-y-3 py-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="takeover-purpose">Reason category</Label>
+              {purposesError ? (
+                <p className="text-sm text-destructive">{purposesError}</p>
+              ) : (
+                <Select value={purpose} onValueChange={setPurpose} disabled={!purposes}>
+                  <SelectTrigger id="takeover-purpose">
+                    <SelectValue placeholder={purposes ? "Choose a reason" : "Loading reasons…"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(purposes ?? []).map((p) => (
+                      <SelectItem key={p.slug} value={p.slug}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="takeover-reason">Why, in your own words (sent to {label})</Label>
+              <Textarea
+                id="takeover-reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+                className="text-base md:text-sm"
+              />
+            </div>
+            {mode === "account" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="takeover-password">New password for the account</Label>
+                <Input
+                  id="takeover-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="text-base md:text-sm"
+                />
+                <p className="text-xs text-muted-foreground">At least {MIN_PASSWORD} characters.</p>
+              </div>
             ) : (
-              <Select value={purpose} onValueChange={setPurpose} disabled={!purposes}>
-                <SelectTrigger id="takeover-purpose">
-                  <SelectValue placeholder={purposes ? "Choose a reason" : "Loading reasons…"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(purposes ?? []).map((p) => (
-                    <SelectItem key={p.slug} value={p.slug}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <Label htmlFor="takeover-recipient">Give their records to</Label>
+                <Select value={recipient} onValueChange={setRecipient}>
+                  <SelectTrigger id="takeover-recipient">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ME}>Me</SelectItem>
+                    {recipients.map((m) => (
+                      <SelectItem key={m.userId} value={m.userId}>
+                        {m.displayName || m.email || m.userId}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
+            {refusal ? (
+              <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                {refusal}
+              </p>
+            ) : null}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="takeover-reason">Why, in your own words (sent to {label})</Label>
-            <Textarea
-              id="takeover-reason"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={3}
-              className="text-base md:text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="takeover-password">New password for the account</Label>
-            <Input
-              id="takeover-password"
-              type="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="text-base md:text-sm"
-            />
-            <p className="text-xs text-muted-foreground">At least {MIN_PASSWORD} characters.</p>
-          </div>
-          {refusal ? (
-            <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-              {refusal}
-            </p>
-          ) : null}
-        </div>
+        ) : null}
 
         <AlertDialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={busy} variant="destructive">
-            {busy ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <KeyRound className="mr-2 h-4 w-4" />
-            )}
-            Take over account
-          </Button>
+          {mode ? (
+            <Button onClick={submit} disabled={busy} variant="destructive">
+              {busy ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : mode === "account" ? (
+                <KeyRound className="mr-2 h-4 w-4" />
+              ) : (
+                <FolderInput className="mr-2 h-4 w-4" />
+              )}
+              {mode === "account" ? "Take over account" : "Take over records"}
+            </Button>
+          ) : null}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -179,4 +179,27 @@ describe("the access log's outcome model", () => {
     expect(authorisedByLabel(takeover)).toBeNull();
     expect(accessLogOutcome(row({ action: "account_takeover", granted: false }))).toBe("refused");
   });
+
+  it("tells the person their records in one organization were taken over", () => {
+    // ACCESS LADDER T-16d: a member who also belongs to other organizations
+    // keeps their account; an owner or admin moves their records in ONE
+    // organization to a named member. The row names the member who received
+    // them and, separately, the admin who did it.
+    const moved = row({
+      action: "records_takeover",
+      basis: "records_takeover",
+      purpose: "offboarding",
+      targetToken: "user",
+      isEmergencyDoor: false,
+      grantExpiresAt: null,
+      actorLabel: "admin@admin.com",
+      granteeLabel: "lead@example.com",
+    });
+    expect(accessLogOutcome(moved)).toBe("records_taken_over");
+    expect(accessWasOpened(moved)).toBe(true);
+    expect(accessLogBadge(accessLogOutcome(moved))).toBe("Records taken over");
+    expect(keyHolderLabel(moved)).toBe("lead@example.com");
+    expect(authorisedByLabel(moved)).toBe("admin@admin.com");
+    expect(accessLogOutcome(row({ action: "records_takeover", granted: false }))).toBe("refused");
+  });
 });

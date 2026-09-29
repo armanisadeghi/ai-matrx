@@ -128,7 +128,8 @@ function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
   const outcome = accessLogOutcome(entry);
   const refused = outcome === "refused";
   const takenOver = outcome === "taken_over";
-  const opened = outcome === "granted" || takenOver;
+  const recordsTakenOver = outcome === "records_taken_over";
+  const opened = outcome === "granted" || takenOver || recordsTakenOver;
   const holder = keyHolderLabel(entry);
   const authoriser = authorisedByLabel(entry);
 
@@ -182,9 +183,13 @@ function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
           <span className="font-medium break-all">{holder}</span>{" "}
           {accessLogVerb(outcome)}{" "}
           <span className="font-medium">
-            {takenOver ? "your account" : recordKindLabel(entry.targetToken)}
+            {takenOver
+              ? "your account"
+              : recordsTakenOver
+                ? "your records in this organization"
+                : recordKindLabel(entry.targetToken)}
           </span>
-          {!takenOver && entry.targetIds.length > 1
+          {!takenOver && !recordsTakenOver && entry.targetIds.length > 1
             ? ` — ${entry.targetIds.length} records`
             : ""}
           .

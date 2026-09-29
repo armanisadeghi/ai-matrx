@@ -232,6 +232,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
         open={takeOverOpen}
         onOpenChange={setTakeOverOpen}
         orgId={orgId}
+        orgName={organization.name}
         userId={userId}
         label={label}
         onDone={refresh}

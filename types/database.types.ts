@@ -42243,6 +42243,10 @@ export type Database = {
         Args: { p_conversation_id: string; p_file_ids: string[] }
         Returns: number
       }
+      _adopt_chat_output_ids: {
+        Args: { p_conversation_id: string; p_file_ids: string[] }
+        Returns: number
+      }
       assert_safe_file_name: {
         Args: { p_max_segment?: number; p_raw: string }
         Returns: string
@@ -42251,6 +42255,7 @@ export type Database = {
         Args: { p_max_segment?: number; p_raw: string }
         Returns: string
       }
+      chat_file_ids_in: { Args: { p_text: string }; Returns: string[] }
       crawl_site_conveys: {
         Args: { p_file_id: string; p_user_id: string }
         Returns: boolean
@@ -42314,6 +42319,15 @@ export type Database = {
       is_user_visible_path: { Args: { p_file_path: string }; Returns: boolean }
       is_user_visible_paths: { Args: { p_paths: string[] }; Returns: Json }
       min_tombstone_retention_days: { Args: never; Returns: number }
+      private_children_missing_parent: {
+        Args: never
+        Returns: {
+          check_name: string
+          file_id: string
+          parent_id: string
+          parent_type: string
+        }[]
+      }
       ultimate_parent_record: {
         Args: { p_file_id: string }
         Returns: Record<string, unknown>
@@ -67218,6 +67232,18 @@ export type Database = {
       }
       _org_availability_arm: { Args: never; Returns: undefined }
       _org_availability_token: { Args: never; Returns: string }
+      _org_records_owned_by: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: {
+          data_class: string
+          label: string
+          owner_column: string
+          row_count: number
+          schema_name: string
+          table_name: string
+          token: string
+        }[]
+      }
       _person_name: { Args: { p_user_id: string }; Returns: string }
       _reach_node_lanes: {
         Args: {
@@ -67516,6 +67542,15 @@ export type Database = {
       canonical_certify_ok: {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: boolean
+      }
+      children_with_own_read_arms: {
+        Args: never
+        Returns: {
+          check_name: string
+          policy_name: string
+          table_name: string
+          token: string
+        }[]
       }
       claim_world_namespace: {
         Args: { p_namespace: string; p_organization_id: string }
@@ -68064,6 +68099,7 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
       }
+      org_open_gate_deparsed: { Args: never; Returns: string }
       org_open_predicate: { Args: never; Returns: string }
       org_readable: {
         Args: { p_org: string; p_token: string }
@@ -83597,6 +83633,10 @@ export type Database = {
         Returns: string
       }
       anon_function_birth_schemas: { Args: never; Returns: string[] }
+      anyone_link_active: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: boolean
+      }
       apply_dated_change: { Args: { p_change_id: string }; Returns: Json }
       apply_due_dated_changes: { Args: never; Returns: Json }
       archived_parent_of: {
@@ -84324,6 +84364,16 @@ export type Database = {
       enforce_definer_client_grants_impl: {
         Args: { p_grant: boolean; p_objids: unknown[]; p_tag: string }
         Returns: undefined
+      }
+      ensure_anyone_link: {
+        Args: {
+          p_created_by: string
+          p_metadata?: Json
+          p_organization_id: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: string
       }
       entity_default_list_scope: { Args: { p_token: string }; Returns: string }
       entity_default_visibility: {
@@ -95673,6 +95723,20 @@ export type Database = {
           p_reason: string
           p_user_id: string
         }
+        Returns: Json
+      }
+      org_admin_take_over_member_records: {
+        Args: {
+          p_org_id: string
+          p_purpose: string
+          p_reason: string
+          p_to_user_id?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      org_admin_take_over_options: {
+        Args: { p_org_id: string; p_user_id: string }
         Returns: Json
       }
       org_create: {
