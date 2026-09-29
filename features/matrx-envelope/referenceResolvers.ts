@@ -20,6 +20,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import { useEffect, useRef, useState } from "react";
 
 import { scopesService } from "@/features/scopes/service/scopesService";
@@ -626,21 +627,50 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     }),
     openId: () => undefined,
   },
-  scope_type: createStoreRecordResolver({
-    openItemType: "scope_type",
-    titleFields: ["label_singular", "label_plural", "name"],
-    bodyFields: ["description"],
-  }),
-  scope: createStoreRecordResolver({
-    openItemType: "scope",
-    titleFields: ["name"],
-    bodyFields: ["description", "scope_description"],
-  }),
-  context_item: createStoreRecordResolver({
-    openItemType: "context_item",
-    titleFields: ["label", "key"],
-    bodyFields: ["description"],
-  }),
+  // The scope read switch (lane SCOPES-WEB-REVERT): OFF (default) reads the context tables, as
+  // before lane SCOPES-READS-WEB; ON resolves through the record store.
+  scope_type: scopesReadFromStore()
+    ? createStoreRecordResolver({
+        openItemType: "scope_type",
+        titleFields: ["label_singular", "label_plural", "name"],
+        bodyFields: ["description"],
+      })
+    : createRecordResolver({
+        openItemType: "scope_type",
+        schema: "context",
+        table: "scope_types",
+        select: "label_singular, label_plural, description",
+        titleFields: ["label_singular", "label_plural"],
+        bodyFields: ["description"],
+      }),
+  scope: scopesReadFromStore()
+    ? createStoreRecordResolver({
+        openItemType: "scope",
+        titleFields: ["name"],
+        bodyFields: ["description", "scope_description"],
+      })
+    : createRecordResolver({
+        openItemType: "scope",
+        schema: "context",
+        table: "scopes",
+        select: "name, description",
+        titleFields: ["name"],
+        bodyFields: ["description"],
+      }),
+  context_item: scopesReadFromStore()
+    ? createStoreRecordResolver({
+        openItemType: "context_item",
+        titleFields: ["label", "key"],
+        bodyFields: ["description"],
+      })
+    : createRecordResolver({
+        openItemType: "context_item",
+        schema: "context",
+        table: "context_items",
+        select: "display_name, description, value_type",
+        titleFields: ["display_name"],
+        bodyFields: ["description"],
+      }),
 
   /** Current value at scope × context_item (the cell agents care about). */
   context_value: {
@@ -984,8 +1014,9 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
   const table = dot === -1 ? entry.table : entry.table.slice(dot + 1);
   // THE SCOPE SYSTEM LIVES IN THE RECORD STORE (lane SCOPES-READS-WEB): the catalogue still names
   // the old `context.*` tables for scope / scope_type / context_item, and those nouns resolve through
-  // the store resolvers above. A catalogue row naming the context schema is never read by table here.
-  if (schema === "context") return undefined;
+  // the store resolvers above while the scope read switch is on (`scopesReadFromStore()`); with it
+  // off (the default) a context-schema row is read by table, as before.
+  if (schema === "context" && scopesReadFromStore()) return undefined;
   const titleFields = entry.title_column
     ? [entry.title_column, ...COMMON_TITLE_FIELDS]
     : COMMON_TITLE_FIELDS;

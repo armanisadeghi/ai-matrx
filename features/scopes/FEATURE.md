@@ -398,6 +398,13 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-29 — **The store read path is behind a switch, OFF** (lane SCOPES-WEB-REVERT). The SCOPES-READS-WEB read
+  switch below broke the scope screens before a member-seat validation, so every read it moved now asks
+  `scopesReadFromStore()` (`service/scopesReadKnob.ts`, knob `scopes/read_from_store`, build env
+  `NEXT_PUBLIC_SCOPES_READ_FROM_STORE`, default OFF): OFF reads the `context.*` tables exactly as before commit
+  3ed36176d1, ON reads the store doors. The store doors and adapter stay. Tests: each store suite runs with the
+  switch on; its `*.context-tables.test.ts` twin runs the old path with it off. Flip only after member-seat parity on
+  every scope screen and tree speed (common-docs/projects/data-doctrine-adoption/v5/PROGRESS-SCOPES-WEB-REVERT.md).
 - 2026-09-29 — **Every web read of the scope system comes from the record store** (lane SCOPES-READS-WEB, SCOPES-CUTOVER-PLAN
   step 2.4). `scopesService.ts` reads through `custom.context_tree` / `context_scopes` / `context_items` / `context_values` /
   `context_archived_types` / `context_system_items` (`service/storeScopeReads.ts`), decoded by the permanent adapter

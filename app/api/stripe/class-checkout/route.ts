@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import type { Json } from "@/types/database.types";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { ensureStripeCustomer } from "@/features/entitlements/stripe/sync";
@@ -70,28 +71,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "classId is required" }, { status: 400 });
     }
 
-    // Resolve the class scope authoritatively, from the record store where it lives (lane
-    // SCOPES-READS-WEB): the server-only door custom.context_class_for_checkout reads it as the
+    // Resolve the class scope authoritatively. Read switch OFF (default): context.scopes with the
+    // admin client (bypasses RLS). ON — from the record store (lane SCOPES-READS-WEB): the server-only door custom.context_class_for_checkout reads it as the
     // server (the person is not a member of the class's organization yet — paying makes her one)
     // and answers only what the checkout needs: owner, organization, liveness, settings.
     const admin = createAdminClient();
-    const { data: found, error: classError } = await (admin as unknown as SupabaseClient)
-      .schema("custom")
-      .rpc("context_class_for_checkout", { p_scope_id: body.classId });
-    if (classError) {
-      return NextResponse.json({ error: classError.message }, { status: 500 });
+    type ClassScope = {
+      id: string;
+      name: string | null;
+      settings: Json;
+      created_by: string | null;
+      organization_id: string;
+      scope_type_id: string;
+      deleted_at: string | null;
+    };
+    let scope: ClassScope | null;
+    if (scopesReadFromStore()) {
+      const { data: found, error: classError } = await (admin as unknown as SupabaseClient)
+        .schema("custom")
+        .rpc("context_class_for_checkout", { p_scope_id: body.classId });
+      if (classError) {
+        return NextResponse.json({ error: classError.message }, { status: 500 });
+      }
+      scope = isJsonObject(found) ? (found as ClassScope) : null;
+    } else {
+      // READ SWITCH OFF (the default, lane SCOPES-WEB-REVERT): the context table, as before.
+      const { data } = await admin
+        .schema("context")
+        .from("scopes")
+        .select("id, name, settings, created_by, organization_id, scope_type_id, deleted_at")
+        .eq("id", body.classId)
+        .maybeSingle();
+      scope = data;
     }
-    const scope = isJsonObject(found)
-      ? (found as {
-          id: string;
-          name: string | null;
-          settings: Json;
-          created_by: string | null;
-          organization_id: string;
-          scope_type_id: string;
-          deleted_at: string | null;
-        })
-      : null;
     if (!scope || scope.deleted_at) {
       return NextResponse.json({ error: "Class not found" }, { status: 404 });
     }

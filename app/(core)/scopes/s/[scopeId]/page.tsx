@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { contextDb } from "@/utils/supabase/contextDb";
+import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import { oldTypeSlug, type StoreScopeRow } from "@/features/scopes/service/storeScopeAdapter";
 import { scopeHref, scopeSeg } from "@/features/scopes/lib/scopeRoutes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -54,6 +56,39 @@ export default async function ScopeShortLink({
   // The scope, read from the record store where it lives (lane SCOPES-READS-WEB): the store's
   // `custom.context_scopes` door finds its organization from the object itself and decides on the
   // one ladder — a scope this person may not open is absent, which is a 404 here, as before.
+  // READ SWITCH OFF (the default, lane SCOPES-WEB-REVERT): the context tables, as before.
+  if (!scopesReadFromStore()) {
+    const { data, error } = await contextDb(supabase)
+      .from("scopes")
+      .select("id, slug, organization_id, scope_type_id")
+      .eq("id", scopeId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) notFound();
+    // These two reads are decoration, never gates: a null row falls back to the id segment.
+    const [{ data: scopeType }, { data: org }] = await Promise.all([
+      contextDb(supabase)
+        .from("scope_types")
+        .select("id, slug")
+        .eq("id", data.scope_type_id)
+        .maybeSingle(),
+      supabase
+        .schema("iam")
+        .from("organizations")
+        .select("id, slug")
+        .eq("id", data.organization_id)
+        .maybeSingle(),
+    ]);
+    redirect(
+      scopeHref(
+        scopeSeg(org ?? { id: data.organization_id }),
+        scopeType ?? { id: data.scope_type_id },
+        data,
+      ),
+    );
+  }
+
   const { data: rows, error } = await (supabase as unknown as SupabaseClient)
     .schema("custom")
     .rpc("context_scopes", { p_scope_ids: [scopeId] });

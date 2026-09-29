@@ -131,6 +131,12 @@ jest.mock("@/utils/supabase/workspaceDb", () => ({
 
 // eslint-disable-next-line import/first
 import { scopesService } from "@/features/scopes/service/scopesService";
+import { __setScopesReadFromStoreForTests } from "@/features/scopes/service/scopesReadKnob";
+
+// THE STORE READ PATH (read switch ON, lane SCOPES-WEB-REVERT): these assertions are the store
+// doors' contract; the switch is OFF in the app until member-seat parity holds.
+beforeAll(() => __setScopesReadFromStoreForTests(true));
+afterAll(() => __setScopesReadFromStoreForTests(null));
 
 beforeEach(() => {
   doorsCalled.length = 0;

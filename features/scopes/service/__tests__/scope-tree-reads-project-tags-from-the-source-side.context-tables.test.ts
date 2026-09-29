@@ -16,10 +16,6 @@
  *
  * Guard: the tree must (1) never call the target-side read, (2) ask for the
  * project → scope edges of its projects, and (3) carry scopes past row 1000.
- *
- * Since lane SCOPES-READS-WEB (2026-09-29) the scope types and scopes come from the record store's
- * `custom.context_tree` door in ONE answer (no 1000-row page at all), and the old context schema is
- * never touched: the mock throws if anything asks for it.
  */
 const USER = "a3c1d2e4-5f60-4718-9a2b-3c4d5e6f7081";
 const ORG = "7721ceda-72f0-4e4c-b712-00cf9dc8f117";
@@ -73,32 +69,21 @@ function table(rows: unknown[]) {
   return q;
 }
 
-const treeCalls: unknown[] = [];
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
-    schema: (name: string) => {
-      if (name === "context") throw new Error("the old context schema was read");
-      if (name === "custom") {
-        return {
-          rpc: (door: string, args: unknown) => {
-            treeCalls.push({ door, args });
-            if (door !== "context_tree") throw new Error(`unexpected door ${door}`);
-            return Promise.resolve({
-              data: {
-                types: [{ id: TYPE, organization_id: ORG, label_singular: "Establishment", label_plural: "Establishments", icon: null, color: null, max_assignments_per_entity: null, sort_order: 0, default_variable_keys: null, slug: "establishment", description: null, created_at: "", updated_at: "" }],
-                scopes: scopeRows,
-              },
-              error: null,
-            });
-          },
-        };
-      }
-      return {
-        from: () =>
-          table([{ id: ORG, name: "Northwind Recycling", abbreviation: "NR", slug: "northwind", settings: {}, created_by: USER, archived_at: null }]),
-      };
-    },
+    schema: () => ({
+      from: () =>
+        table([{ id: ORG, name: "Northwind Recycling", abbreviation: "NR", slug: "northwind", settings: {}, created_by: USER, archived_at: null }]),
+    }),
   },
+}));
+jest.mock("@/utils/supabase/contextDb", () => ({
+  contextDb: () => ({
+    from: (t: string) =>
+      t === "scopes"
+        ? table(scopeRows)
+        : table([{ id: TYPE, organization_id: ORG, label_singular: "Establishment", label_plural: "Establishments", icon: null, color: null, max_assignments_per_entity: null, sort_order: 0, parent_type_id: null, default_variable_keys: [], slug: "establishment", description: null, created_at: "", updated_at: "" }]),
+  }),
 }));
 jest.mock("@/utils/supabase/workspaceDb", () => ({
   workspaceDb: () => ({
@@ -126,9 +111,10 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { __setScopesReadFromStoreForTests } from "@/features/scopes/service/scopesReadKnob";
 
-// THE STORE READ PATH (read switch ON, lane SCOPES-WEB-REVERT): these assertions are the store
-// doors' contract; the switch is OFF in the app until member-seat parity holds.
-beforeAll(() => __setScopesReadFromStoreForTests(true));
+// THE CONTEXT-TABLES READ PATH (read switch OFF — the default, lane SCOPES-WEB-REVERT): the reads
+// the scope screens run today, exactly as before lane SCOPES-READS-WEB. The store twin is
+// the same-named test without `.context-tables`.
+beforeAll(() => __setScopesReadFromStoreForTests(false));
 afterAll(() => __setScopesReadFromStoreForTests(null));
 
 it("reads the project → scope edges from the source side, never every edge into every scope", async () => {

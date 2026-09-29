@@ -85,6 +85,14 @@ export const OLD_RELATIONS: ReadonlyArray<{ name: string; re: RegExp; only?: Reg
    * `provision_scope_dataset`, the unused `updateContextItem` UPDATE) that lane SCOPES-OLD-WRITERS
    * retires. The context schema's REFERENCE tables stay (plan decision 3: templates, System context
    * items, …) and are not matched. Server readers are lane SCOPES-READS-SERVER's census.
+   *
+   * ALLOWED WHILE THE READ SWITCH IS OFF (lane SCOPES-WEB-REVERT, 2026-09-29): the store read path
+   * went live before a member-seat validation and was put behind `scopesReadFromStore()`
+   * (`features/scopes/service/scopesReadKnob.ts`, knob `scopes/read_from_store`, default OFF). The
+   * census therefore also holds the knob-off old-table reads: `scopesService.ts`, the scope short
+   * link (`app/(core)/scopes/s/[scopeId]/page.tsx`), the class checkout route and the knowledge
+   * hub's `tagApi.ts`. When the switch is flipped on for good, delete those branches and shrink the
+   * census with --write-baseline. Any OTHER web file that reads these tables is still RED.
    */
   {
     name: "context.* scope tables",

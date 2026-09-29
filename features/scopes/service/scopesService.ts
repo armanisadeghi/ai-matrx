@@ -2,17 +2,24 @@
 //
 // THE SOLE CHOKEPOINT for the scope system from frontend code.
 //
-// READS COME FROM THE RECORD STORE (lane SCOPES-READS-WEB, 2026-09-29): a scope type is a store
-// Table (`kept_for = context`), a scope is a Record of it, a context item is a Field, a value is the
-// Record's document under the item's key. Every read below goes through the store's
-// `custom.context_*` doors via `storeScopeReads.ts`, decoded by `storeScopeAdapter.ts` — the permanent adapter that turns the store's
-// words into the node types the screens already hold. No read in this file (or anywhere in the web
-// app) touches `context.scope_types` / `scopes` / `context_items` / `context_item_values`; the
-// guard is `pnpm check:old-system-unreachable` (its "context.* scope tables" relations).
+// TWO READ PATHS, ONE SWITCH (lane SCOPES-WEB-REVERT, 2026-09-29). The switch is
+// `scopesReadFromStore()` (knob `scopes/read_from_store`, `scopesReadKnob.ts`), OFF by default.
 //
-// What still names the `context` schema, on purpose, lives in `olderContextWrites.ts`: two WRITES
-// (the older dataset store's `provision_scope_dataset`, the unused `updateContextItem` UPDATE),
-// retired by lane SCOPES-OLD-WRITERS (SCOPES-CUTOVER-PLAN L11), never reads.
+//   - OFF (today): every read below reads the `context.*` tables directly, exactly as before lane
+//     SCOPES-READS-WEB (commit 3ed36176d1). This is the path every screen runs.
+//   - ON: every read goes through the record store's `custom.context_*` doors via
+//     `storeScopeReads.ts`, decoded by `storeScopeAdapter.ts` into the same node types. A scope type
+//     is a store Table (`kept_for = context`), a scope a Record, a context item a Field, a value the
+//     Record's document under the item's key.
+//
+// The store path was switched on before a member-seat validation and the scope screens broke
+// (Arman, 2026-09-29). It stays OFF until member-seat parity holds on every scope screen and the
+// tree is as fast as the old read — see common-docs/projects/data-doctrine-adoption/v5/
+// PROGRESS-SCOPES-WEB-REVERT.md. `pnpm check:old-system-unreachable` holds the old-table reads here
+// in its census while the switch is off; flipping it on is the moment to remove them.
+//
+// The two WRITES that still name the `context` schema live in `olderContextWrites.ts`
+// (lane SCOPES-OLD-WRITERS).
 //
 // SCOPE ASSIGNMENTS MOVED OFF ctx_scope_assignments → platform.associations
 // (DB changeover, data fully copied). A scope tag is the unified edge
@@ -39,7 +46,11 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
+import { readAllRows } from "@ai-matrx/data/db";
+import { readAllRowsIn } from "@/lib/supabase/readAllRowsIn";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { contextDb } from "@/utils/supabase/contextDb";
+import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import {
   provisionScopeDatasetInTheOlderStore,
   updateContextItemRow,
@@ -74,6 +85,7 @@ import {
   decodeScopeNode,
   decodeScopeTypeNode,
   resolveSlug,
+  toScopeNode,
 } from "@/features/scopes/service/scopeRows";
 import type {
   ApplyTemplateResult,
@@ -221,10 +233,21 @@ export const scopesService = {
       // (`custom.scope_table_provision`, GRID-PRIMITIVES G11) answers it — never another older
       // dataset nobody's screens read. The id comes back PLACED, so the caller's next
       // read or write (the list-change engine's `getCompleteTable` / `bulkWrite`) reaches it.
-      // Where the scope lives, read from the scope itself in the store (lane SCOPES-READS-WEB).
-      const scopeRes = await readScopesById([scopeId]);
-      if (!scopeRes.ok) return scopeRes;
-      const organizationId = scopeRes.data[0]?.organization_id;
+      // Where the scope lives: from the scope itself (the store's door when the read switch is on).
+      let organizationId: string | undefined;
+      if (scopesReadFromStore()) {
+        const scopeRes = await readScopesById([scopeId]);
+        if (!scopeRes.ok) return scopeRes;
+        organizationId = scopeRes.data[0]?.organization_id;
+      } else {
+        const { data: scope, error: scopeError } = await contextDb(supabase)
+          .from("scopes")
+          .select("organization_id")
+          .eq("id", scopeId)
+          .maybeSingle();
+        if (scopeError) return err(...mapPgErrorPair(scopeError));
+        organizationId = (scope as { organization_id?: string } | null)?.organization_id;
+      }
       if (!organizationId) {
         return err("not_found", "That scope could not be read, so no table was provisioned for it.");
       }
@@ -305,6 +328,10 @@ export const scopesService = {
               error: null,
             });
 
+      // READ SWITCH OFF (the default): the scope types and scopes come from the context tables,
+      // in parallel with the organizations and projects, exactly as before lane SCOPES-READS-WEB.
+      const oldTypesP = scopesReadFromStore() ? null : bootTreeTypesFromContextTables(orgIds);
+
       // VIEW LAW: org-scoped — restricted to orgIds (see orgsP above).
       const projectsP = workspaceDb(supabase)
         .from("projects")
@@ -317,7 +344,7 @@ export const scopesService = {
       if (orgsRes.error) return err(...mapPgErrorPair(orgsRes.error));
       if (projectsRes.error) return err(...mapPgErrorPair(projectsRes.error));
 
-      // THE SCOPE TYPES AND SCOPES, FROM THE STORE (lane SCOPES-READS-WEB): one call of
+      // READ SWITCH ON — THE SCOPE TYPES AND SCOPES, FROM THE STORE (lane SCOPES-READS-WEB): one call of
       // `custom.context_tree` for the LIVE organizations of the caller's memberships — the door
       // decides each one it is named and refuses an organization the caller cannot reach, so an
       // archived organization (closed, never a place to work) is not named. The door answers the
@@ -328,11 +355,22 @@ export const scopesService = {
         .map((row) => row.id);
       // Beside it, in parallel: the project → scope edges of these projects (see below).
       const projectIds = (projectsRes.data ?? []).map((p) => p.id);
-      const [treeRes, projectScopesRes] = await Promise.all([
-        readScopeTree(liveOrgIds),
-        bulkEntityScopeIds("project", projectIds),
-      ]);
-      if (isScopesRpcErr(treeRes)) return treeRes;
+      let treeTypes: ScopeTypeNode[];
+      let projectScopesRes: Awaited<ReturnType<typeof bulkEntityScopeIds>>;
+      if (oldTypesP) {
+        const oldTypes = await oldTypesP;
+        if (isScopesRpcErr(oldTypes)) return oldTypes;
+        treeTypes = oldTypes.data;
+        projectScopesRes = await bulkEntityScopeIds("project", projectIds);
+      } else {
+        const [treeRes, projectRes] = await Promise.all([
+          readScopeTree(liveOrgIds),
+          bulkEntityScopeIds("project", projectIds),
+        ]);
+        if (isScopesRpcErr(treeRes)) return treeRes;
+        treeTypes = treeRes.data.types;
+        projectScopesRes = projectRes;
+      }
 
       // Per-project scope_id list, read from the SOURCE side: the project →
       // scope edges of these projects, and nothing else.
@@ -353,7 +391,7 @@ export const scopesService = {
 
       // Group scope_types and projects per org.
       const scopeTypesByOrg = new Map<string, ScopeTypeNode[]>();
-      for (const node of treeRes.data.types) {
+      for (const node of treeTypes) {
         const list = scopeTypesByOrg.get(node.organization_id) ?? [];
         list.push(node);
         scopeTypesByOrg.set(node.organization_id, list);
@@ -445,7 +483,13 @@ export const scopesService = {
       // true only on a request carrying the admin-lane header) reads a non-member
       // organization for the console, exactly as the old tables' platform-admin
       // policies did (lane SCOPES-READS-WEB).
-      const [orgRes, treeRes] = await Promise.all([orgP, readScopeTree([organizationId])]);
+      // Read switch OFF (default): the context tables, whose platform-admin policies decide.
+      const [orgRes, treeRes] = await Promise.all([
+        orgP,
+        scopesReadFromStore()
+          ? readScopeTree([organizationId]).then((r) => (isScopesRpcErr(r) ? r : ok(r.data.types)))
+          : adminLaneTypesFromContextTables(organizationId),
+      ]);
       if (orgRes.error) return err(...mapPgErrorPair(orgRes.error));
       if (isScopesRpcErr(treeRes)) return treeRes;
       const row = orgRes.data;
@@ -466,7 +510,7 @@ export const scopesService = {
         // The console acts with the platform-admin arm, not a membership role.
         role: "admin",
         admin_lane: true,
-        scope_types: treeRes.data.types,
+        scope_types: treeRes.data,
         // The scope console does not show projects; an admin-lane org carries none.
         projects: [],
       };
@@ -511,7 +555,19 @@ export const scopesService = {
       requireUserId();
       // VIEW LAW: system context items are intentionally global public facts with no owner or scope dimension.
       // Read through the store's door (reference data that stays in place; lane SCOPES-READS-WEB).
-      const { data: answer, error } = await runWithSessionRetry(() => contextDoorQuery("context_system_items"));
+      const { data: answer, error } = await runWithSessionRetry(() =>
+        scopesReadFromStore()
+          ? contextDoorQuery("context_system_items")
+          : contextDb(supabase)
+              .from("system_context_item")
+              .select(
+                "id, key, display_name, description, item_class, value_type, sensitivity, sort_order",
+              )
+              .eq("is_active", true)
+              .is("deleted_at", null)
+              .order("sort_order", { ascending: true })
+              .order("key", { ascending: true }),
+      );
       if (error) return err(...mapPgErrorPair(error));
       const data = (Array.isArray(answer) ? answer : []) as Array<{
         id: string;
@@ -644,6 +700,16 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ items: ContextItemRow[] }>> {
     try {
       requireUserId();
+      if (!scopesReadFromStore()) {
+        const { data, error } = await contextDb(supabase)
+          .from("context_items")
+          .select("*")
+          .eq("scope_type_id", scopeTypeId)
+          .is("deleted_at", null)
+          .eq("is_active", true);
+        if (error) return err(...mapPgErrorPair(error));
+        return ok({ items: data ?? [] });
+      }
       // The type's Fields, from the store (lane SCOPES-READS-WEB).
       const res = await readContextItems([scopeTypeId]);
       if (!res.ok) return res;
@@ -661,6 +727,24 @@ export const scopesService = {
     try {
       requireUserId();
       if (scopeTypeIds.length === 0) return ok({ items: [] });
+      if (!scopesReadFromStore()) {
+        // Every item of every listed type, however many (readAllRowsIn: batched ids, whole reads).
+        const items = await readAllRowsIn(
+          scopeTypeIds,
+          (batch) =>
+            ({ from, to }) =>
+              contextDb(supabase)
+                .from("context_items")
+                .select("*", { count: "exact" })
+                .in("scope_type_id", batch)
+                .is("deleted_at", null)
+                .eq("is_active", true)
+                .order("id", { ascending: true })
+                .range(from, to),
+          { label: "context.context_items (active, by scope type)" },
+        );
+        return ok({ items });
+      }
       // Every item of every listed type, from the store, in batches (lane SCOPES-READS-WEB).
       const res = await readContextItems(scopeTypeIds);
       if (!res.ok) return res;
@@ -684,6 +768,31 @@ export const scopesService = {
       // IN BATCHES, EACH READ WHOLE (lane HANDOVER, 2026-09-27; lane SCOPES-READS-WEB): the store's
       // values door answers at most 200 scopes a call, so `readContextValues` asks 100 at a time
       // (in the request body — no address to overflow) and returns every current value.
+      if (!scopesReadFromStore()) {
+        // `readAllRowsIn` asks 100 scopes at a time, each read whole.
+        const values = await readAllRowsIn(
+          scopeIds,
+          (batch) =>
+            ({ from, to }) =>
+              contextDb(supabase)
+                .from("context_item_values")
+                .select(
+                  `scope_id, context_item_id, id, version, is_current,
+                   value_text, value_number, value_boolean, value_date, value_json,
+                   value_document_url, value_document_size_bytes,
+                   value_timestamp, value_time,
+                   value_reference_id, value_reference_type,
+                   source_type, authored_by, created_at`,
+                  { count: "exact" },
+                )
+                .in("scope_id", batch)
+                .eq("is_current", true)
+                .order("id", { ascending: true })
+                .range(from, to),
+          { label: "context.context_item_values (current, by scope)" },
+        );
+        return ok({ values: values as (ContextItemValue & { scope_id: string })[] });
+      }
       const res = await readContextValues(scopeIds);
       if (!res.ok) return res;
       return ok({ values: res.data });
@@ -697,6 +806,22 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ values: ContextItemValue[] }>> {
     try {
       requireUserId();
+      if (!scopesReadFromStore()) {
+        const { data, error } = await contextDb(supabase)
+          .from("context_item_values")
+          .select(
+            `context_item_id, id, version, is_current,
+             value_text, value_number, value_boolean, value_date, value_json,
+             value_document_url, value_document_size_bytes,
+             value_timestamp, value_time,
+             value_reference_id, value_reference_type,
+             source_type, authored_by, created_at`,
+          )
+          .eq("scope_id", scopeId)
+          .eq("is_current", true);
+        if (error) return err(...mapPgErrorPair(error));
+        return ok({ values: (data ?? []) as ContextItemValue[] });
+      }
       const res = await readContextValues([scopeId]);
       if (!res.ok) return res;
       return ok({ values: res.data.map(({ scope_id: _scope, ...v }) => v as ContextItemValue) });
@@ -719,6 +844,17 @@ export const scopesService = {
   > {
     try {
       requireUserId();
+      if (!scopesReadFromStore()) {
+        const { data, error } = await contextDb(supabase)
+          .from("scope_types")
+          .select("id, label_singular, label_plural, slug, parent_type_id, sort_order")
+          .eq("organization_id", organizationId)
+          .is("deleted_at", null)
+          .order("sort_order")
+          .order("label_plural");
+        if (error) return err(...mapPgErrorPair(error));
+        return ok({ types: data ?? [] });
+      }
       const res = await readScopeTree([organizationId]);
       if (!res.ok) return res;
       const types = res.data.types
@@ -748,6 +884,17 @@ export const scopesService = {
   > {
     try {
       requireUserId();
+      if (!scopesReadFromStore()) {
+        const { data, error } = await contextDb(supabase)
+          .from("scopes")
+          .select("id, name, parent_scope_id, scope_type_id")
+          .eq("organization_id", organizationId)
+          .eq("scope_type_id", scopeTypeId)
+          .is("deleted_at", null)
+          .order("name");
+        if (error) return err(...mapPgErrorPair(error));
+        return ok({ scopes: data ?? [] });
+      }
       const res = await readScopeTree([organizationId]);
       if (!res.ok) return res;
       const scopes = (res.data.types.find((t) => t.id === scopeTypeId)?.scopes ?? [])
@@ -769,6 +916,16 @@ export const scopesService = {
   > {
     try {
       requireUserId();
+      if (!scopesReadFromStore()) {
+        const { data, error } = await contextDb(supabase)
+          .from("scopes")
+          .select("id, name, organization_id, scope_type_id")
+          .eq("id", scopeId)
+          .is("deleted_at", null)
+          .maybeSingle();
+        if (error) return err(...mapPgErrorPair(error));
+        return ok({ scope: data ?? null });
+      }
       const res = await readScopesById([scopeId]);
       if (!res.ok) return res;
       const row = res.data[0];
@@ -807,6 +964,36 @@ export const scopesService = {
   > {
     try {
       requireUserId();
+      if (!scopesReadFromStore()) {
+        const ctx = contextDb(supabase);
+        const [valueRes, scopeRes, itemRes] = await Promise.all([
+          ctx
+            .from("context_item_values")
+            .select(
+              `context_item_id, id, version, is_current,
+               value_text, value_number, value_boolean, value_date, value_json,
+               value_document_url, value_document_size_bytes,
+               value_reference_id, value_reference_type,
+               source_type, authored_by, created_at`,
+            )
+            .eq("scope_id", args.scopeId)
+            .eq("context_item_id", args.contextItemId)
+            .eq("is_current", true)
+            .maybeSingle(),
+          ctx.from("scopes").select("name").eq("id", args.scopeId).maybeSingle(),
+          ctx
+            .from("context_items")
+            .select("display_name")
+            .eq("id", args.contextItemId)
+            .maybeSingle(),
+        ]);
+        if (valueRes.error) return err(...mapPgErrorPair(valueRes.error));
+        return ok({
+          scopeName: scopeRes.data?.name ?? null,
+          itemName: itemRes.data?.display_name ?? null,
+          value: (valueRes.data ?? null) as ContextItemValue | null,
+        });
+      }
       const [valueRes, scopeRes] = await Promise.all([
         readContextValues([args.scopeId]),
         readScopesById([args.scopeId]),
@@ -843,6 +1030,9 @@ export const scopesService = {
   }): Promise<ScopesRpcResult<ResolvedSuggestionTarget>> {
     try {
       requireUserId();
+
+      // Read switch OFF (default): the context tables, exactly as before lane SCOPES-READS-WEB.
+      if (!scopesReadFromStore()) return await resolveSuggestionTargetFromContextTables(args);
 
       // The scope, its type, its items and their current values — from the store (lane SCOPES-READS-WEB).
       const scopeRes = await readScopesById([args.scopeId]);
@@ -1036,30 +1226,10 @@ export const scopesService = {
       // VIEW LAW: public catalog by design — templates are a read-only, platform-wide catalog (see header above).
       // Read through the store's own templates door (reference data; lane SCOPES-READS-WEB). The door
       // answers the ACTIVE templates — the only ones any caller asks for (no caller passes false today).
-      const res = await callContextDoor<
-        Array<{
-          id: string;
-          key: string;
-          name: string;
-          description: string | null;
-          category: string | null;
-          icon: string | null;
-          is_active: boolean | null;
-          sort_order: number | null;
-          audience: string | null;
-          scope_types?: Array<{
-            id: string;
-            key: string;
-            icon: string | null;
-            label_singular: string;
-            label_plural: string;
-            sort_order: number | null;
-            max_assignments_per_entity: number | null;
-            parent_template_type_id: string | null;
-            fields?: Array<{ id: string; key: string; display_name: string; sort_order: number | null }>;
-          }>;
-        }>
-      >("context_templates");
+      // Read switch OFF (default): the context schema's templates tables, as before.
+      const res = scopesReadFromStore()
+        ? await callContextDoor<StoreTemplateRow[]>("context_templates")
+        : await templatesFromContextTables(activeOnly);
       if (!res.ok) return res;
       const data = (res.data ?? [])
         .filter((row) => !activeOnly || row.is_active !== false)
@@ -1142,6 +1312,22 @@ export const scopesService = {
       requireUserId();
       const wanted = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
       if (wanted.length === 0) return ok([]);
+      if (!scopesReadFromStore()) {
+        const { data, error } = await contextDb(supabase)
+          .from("scopes")
+          .select("id, name, scope_type:scope_types(label_singular)")
+          .eq("organization_id", organizationId)
+          .is("deleted_at", null)
+          .or(wanted.map((n) => `name.ilike.${JSON.stringify(n.replace(/[%_]/g, "\\$&"))}`).join(","));
+        if (error) return err(...mapPgErrorPair(error));
+        // MATRX-EXCEPTION: aliased single-object embed typed as an array by the generator (see fetchScopeDisplays).
+        const rows = (data ?? []) as unknown as Array<{
+          id: string;
+          name: string;
+          scope_type: { label_singular: string } | null;
+        }>;
+        return ok(rows.map((r) => ({ id: r.id, name: r.name, type: r.scope_type?.label_singular ?? "" })));
+      }
       // The organization's live scopes, from the store's tree door; a name matches case-insensitively.
       const res = await readScopeTree([organizationId]);
       if (!res.ok) return res;
@@ -1355,10 +1541,24 @@ export const scopesService = {
       const table = ENTITY_ORG_TABLE[entityType];
       if (!table || scopeIds.length === 0) return ok({ organization_id: null });
 
-      // The org of the first assigned scope, read from the scope itself in the store.
-      const scopeRes = await readScopesById([scopeIds[0]!]);
-      if (!scopeRes.ok) return scopeRes;
-      const orgId = scopeRes.data[0]?.organization_id ?? null;
+      // The org of the first assigned scope (scopes carry organization_id); from the store's
+      // door when the read switch is on.
+      let orgId: string | null;
+      if (scopesReadFromStore()) {
+        const scopeRes = await readScopesById([scopeIds[0]!]);
+        if (!scopeRes.ok) return scopeRes;
+        orgId = scopeRes.data[0]?.organization_id ?? null;
+      } else {
+        const { data: scopeRow, error: sErr } = await contextDb(supabase)
+          .from("scopes")
+          .select("organization_id")
+          .eq("id", scopeIds[0])
+          .maybeSingle();
+        if (sErr) return err(...mapPgErrorPair(sErr));
+        orgId =
+          (scopeRow as { organization_id?: string | null } | null)
+            ?.organization_id ?? null;
+      }
       if (!orgId) return ok({ organization_id: null });
 
       // Adopt ONLY when the container currently has no org (DB-enforced).
@@ -1469,6 +1669,44 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ types: ArchivedScopeTypeRow[] }>> {
     try {
       requireUserId();
+      if (!scopesReadFromStore()) {
+        const { data, error } = await contextDb(supabase)
+          .from("scope_types")
+          .select(
+            "id, organization_id, label_singular, label_plural, icon, color, deleted_at",
+          )
+          .eq("organization_id", orgId)
+          .not("deleted_at", "is", null)
+          .order("deleted_at", { ascending: false });
+        if (error) return err(...mapPgErrorPair(error));
+  
+        const rows = (data ?? []) as ArchivedScopeTypeRow[];
+        if (rows.length === 0) return ok({ types: [] });
+  
+        // What each removal took with it, so the disclosure states the
+        // consequence of a restore instead of a bare name.
+        const { data: scopeRows, error: scopeErr } = await contextDb(supabase)
+          .from("scopes")
+          .select("id, scope_type_id, deleted_at")
+          .in(
+            "scope_type_id",
+            rows.map((r) => r.id),
+          )
+          .not("deleted_at", "is", null);
+        if (scopeErr) return err(...mapPgErrorPair(scopeErr));
+  
+        const counts = new Map<string, number>();
+        for (const row of scopeRows ?? []) {
+          counts.set(row.scope_type_id, (counts.get(row.scope_type_id) ?? 0) + 1);
+        }
+  
+        return ok({
+          types: rows.map((row) => ({
+            ...row,
+            archived_scope_count: counts.get(row.id) ?? 0,
+          })),
+        });
+      }
       // The archived scope types and what each removal took with it, from the store's archive
       // (lane SCOPES-READS-WEB), so the disclosure states the consequence of a restore.
       const res = await readArchivedScopeTypes(orgId);
@@ -1836,6 +2074,38 @@ async function fetchScopeDisplays(
   scopeIds: string[],
 ): Promise<ScopesRpcResult<ScopeWithType[]>> {
   if (scopeIds.length === 0) return ok([]);
+  if (!scopesReadFromStore()) {
+    // EVERY ROW, HOWEVER MANY (lane HANDOVER, 2026-09-27): read by id in batches, each read whole.
+    let data: unknown[];
+    try {
+      data = await readAllRowsIn(
+        scopeIds,
+        (batch) =>
+          ({ from, to }: { from: number; to: number }) =>
+            contextDb(supabase)
+              .from("scopes")
+              .select(
+                "id, name, scope_type:scope_types(id, label_singular, label_plural, icon, color)",
+                { count: "exact" },
+              )
+              // A removed scope is not a tag anybody can still be shown. Same working-set
+              // rule as the boot tree (F6).
+              .is("deleted_at", null)
+              .in("id", batch)
+              .order("id", { ascending: true })
+              .range(from, to),
+        { label: "context.scopes (display, by id)" },
+      );
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+    // MATRX-EXCEPTION: `scope_type:scope_types(...)` is an aliased single-object
+    // PostgREST embed; the generated client infers it as an array-shaped embed
+    // (no `!inner`/single-row hint), so it cannot structurally match
+    // ScopeWithType without a DbRpcRow-style guard (this is a table embed, not
+    // an RPC). Runtime shape is verified — one scope_types row per scope (FK).
+    return ok(data as unknown as ScopeWithType[]);
+  }
   // By id, each scope in the organization it lives in, from the store (lane SCOPES-READS-WEB). A
   // removed scope, or one this person may not open, is absent — no tag anybody can still be shown.
   const res = await readScopesById(scopeIds);
@@ -1847,6 +2117,304 @@ async function fetchScopeDisplays(
       scope_type: row.scope_type ? scopeTypeDisplayFromStore(row.scope_type) : null,
     })),
   );
+}
+
+// ─── internal: the READ-SWITCH-OFF path (the context tables, as before lane SCOPES-READS-WEB) ───
+//
+// Everything below reads `context.*` directly and runs only while `scopesReadFromStore()` is off
+// (the default). It is the code that ran before commit 3ed36176d1, kept verbatim so the screens show
+// exactly what they showed then. Remove it when the switch is flipped on for good.
+
+/** The boot tree's scope types with their scopes nested, for the caller's organizations. */
+async function bootTreeTypesFromContextTables(
+  orgIds: string[],
+): Promise<ScopesRpcResult<ScopeTypeNode[]>> {
+  // VIEW LAW: org-scoped — restricted to orgIds (the caller's own
+  // memberships, resolved via iam.memberships), never a bare RLS-only read.
+  // The boot tree is the LIVE working set every
+  // picker, context surface and org page reads; a removed scope type must
+  // not reach any of them. The archive reveal for the scopes page is
+  // `listArchivedScopeTypes` behind `ArchivedDisclosure` (ScopesManager),
+  // not a widening of this cache. THE F6 DEFECT: until 2026-09-21 this
+  // read carried no `deleted_at` filter at all, so a type deleted from its
+  // own page came back as a card with an "Open" door after a full reload.
+  const scopeTypesP = contextDb(supabase)
+    .from("scope_types")
+    .select(
+      `id, organization_id, label_singular, label_plural, icon, color,
+       max_assignments_per_entity, sort_order, parent_type_id,
+       default_variable_keys, slug, description, created_at, updated_at`,
+    )
+    .in("organization_id", orgIds)
+    .is("deleted_at", null)
+    .order("sort_order", { ascending: true });
+
+  // COMPLETE, not the first 1000 (2026-09-27): the boot tree is the working
+  // set every picker reads, and PostgREST's 1000-row cap made it silently
+  // drop scopes (admin@admin.com: 1000 of 2296), which also dropped their
+  // project tags. `readAllRows` pages to the declared total or throws.
+  const scopesP = readAllRows(
+    ({ from, to }) =>
+      contextDb(supabase)
+        .from("scopes")
+        .select(
+          `id, scope_type_id, organization_id, name, description,
+           parent_scope_id, settings, slug, sort_order, created_by,
+           created_at, updated_at`,
+          { count: "exact" },
+        )
+        .in("organization_id", orgIds)
+        .is("deleted_at", null)
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "context.scopes (boot tree)" },
+  ).then((data) => ({ data, error: null }));
+
+  const [scopeTypesRes, scopesRes] = await Promise.all([scopeTypesP, scopesP]);
+  if (scopeTypesRes.error) return err(...mapPgErrorPair(scopeTypesRes.error));
+  if (scopesRes.error) return err(...mapPgErrorPair(scopesRes.error));
+
+  // Index scopes by scope_type_id for fast nesting.
+  const scopesByType = new Map<string, ScopeNode[]>();
+  for (const sc of scopesRes.data ?? []) {
+    const list = scopesByType.get(sc.scope_type_id) ?? [];
+    list.push(toScopeNode(sc));
+    scopesByType.set(sc.scope_type_id, list);
+  }
+  return ok(
+    (scopeTypesRes.data ?? []).map((t) => ({
+      ...t,
+      description: t.description ?? "",
+      scopes: scopesByType.get(t.id) ?? [],
+    })),
+  );
+}
+
+/** The ONE organization the admin console names: its scope types with their scopes nested. */
+async function adminLaneTypesFromContextTables(
+  organizationId: string,
+): Promise<ScopesRpcResult<ScopeTypeNode[]>> {
+  // VIEW LAW: org-scoped — the ONE organization the admin console names;
+  // RLS's platform-admin arm decides (admin lane only).
+  const scopeTypesP = contextDb(supabase)
+    .from("scope_types")
+    .select(
+      `id, organization_id, label_singular, label_plural, icon, color,
+       max_assignments_per_entity, sort_order, parent_type_id,
+       default_variable_keys, slug, description, created_at, updated_at`,
+    )
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null)
+    .order("sort_order", { ascending: true });
+  // VIEW LAW: org-scoped — see scopeTypesP above.
+  const scopesP = contextDb(supabase)
+    .from("scopes")
+    .select(
+      `id, scope_type_id, organization_id, name, description,
+       parent_scope_id, settings, slug, sort_order, created_by,
+       created_at, updated_at`,
+    )
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  const [typesRes, scopesRes] = await Promise.all([scopeTypesP, scopesP]);
+  if (typesRes.error) return err(...mapPgErrorPair(typesRes.error));
+  if (scopesRes.error) return err(...mapPgErrorPair(scopesRes.error));
+
+  const scopesByType = new Map<string, ScopeNode[]>();
+  for (const sc of scopesRes.data ?? []) {
+    const list = scopesByType.get(sc.scope_type_id) ?? [];
+    list.push(toScopeNode(sc));
+    scopesByType.set(sc.scope_type_id, list);
+  }
+  return ok(
+    (typesRes.data ?? []).map((t) => ({
+      ...t,
+      description: t.description ?? "",
+      scopes: scopesByType.get(t.id) ?? [],
+    })),
+  );
+}
+
+/** One template as the store's templates door answers it (the shape `listTemplates` maps). */
+type StoreTemplateRow = {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  icon: string | null;
+  is_active: boolean | null;
+  sort_order: number | null;
+  audience: string | null;
+  scope_types?: Array<{
+    id: string;
+    key: string;
+    icon: string | null;
+    label_singular: string;
+    label_plural: string;
+    sort_order: number | null;
+    max_assignments_per_entity: number | null;
+    parent_template_type_id: string | null;
+    fields?: Array<{ id: string; key: string; display_name: string; sort_order: number | null }>;
+  }>;
+};
+
+/** The templates catalog from the context schema's templates tables, in the door's row shape. */
+async function templatesFromContextTables(
+  activeOnly: boolean,
+): Promise<ScopesRpcResult<StoreTemplateRow[]>> {
+  // VIEW LAW: public catalog by design — templates are a read-only, platform-wide catalog.
+  const query = contextDb(supabase)
+    .from("templates")
+    .select(
+      `id, key, name, description, category, icon, is_active, sort_order, audience,
+       template_scope_types (
+         id, key, icon, label_singular, label_plural, sort_order,
+         max_assignments_per_entity, parent_template_type_id,
+         template_context_items ( id, key, display_name, sort_order )
+       )`,
+    )
+    .order("sort_order", { ascending: true });
+  const { data, error } = activeOnly ? await query.eq("is_active", true) : await query;
+  if (error) return err(...mapPgErrorPair(error));
+  return ok(
+    (data ?? []).map(({ template_scope_types, ...row }) => ({
+      ...row,
+      scope_types: (template_scope_types ?? []).map(({ template_context_items, ...st }) => ({
+        ...st,
+        fields: template_context_items ?? [],
+      })),
+    })) as StoreTemplateRow[],
+  );
+}
+
+async function resolveSuggestionTargetFromContextTables(args: {
+  scopeId: string;
+  contextItemId: string | null;
+}): Promise<ScopesRpcResult<ResolvedSuggestionTarget>> {
+  try {
+    requireUserId();
+
+    const { data: scope, error: scopeErr } = await contextDb(supabase)
+      .from("scopes")
+      .select("id, slug, name, description, scope_type_id, organization_id")
+      .eq("id", args.scopeId)
+      .is("deleted_at", null)
+      .single();
+    if (scopeErr) return err(...mapPgErrorPair(scopeErr));
+    if (!scope)
+      return err(
+        "not_found",
+        recordUnavailable({
+          entity: "scope",
+          reason: "unknown",
+          recordId: args.scopeId,
+          token: "scope",
+          relation: "scopes",
+        }).message,
+      );
+
+    const scopeTypeP = contextDb(supabase)
+      .from("scope_types")
+      .select("id, slug, label_singular, label_plural, icon, color")
+      .eq("id", scope.scope_type_id)
+      .is("deleted_at", null)
+      .single();
+
+    const orgP = supabase
+      .schema("iam")
+      .from("organizations")
+      .select("id, name, slug")
+      .eq("id", scope.organization_id)
+      .single();
+
+    const itemsP = contextDb(supabase)
+      .from("context_items")
+      .select("id, slug, key, display_name, value_type, sort_order")
+      .eq("scope_type_id", scope.scope_type_id)
+      .is("deleted_at", null)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    const valuesP = contextDb(supabase)
+      .from("context_item_values")
+      .select(
+        "context_item_id, value_text, value_number, value_boolean, value_json, source_type, version, created_at",
+      )
+      .eq("scope_id", args.scopeId)
+      .eq("is_current", true);
+
+    const [scopeTypeRes, orgRes, itemsRes, valuesRes] = await Promise.all([
+      scopeTypeP,
+      orgP,
+      itemsP,
+      valuesP,
+    ]);
+
+    if (scopeTypeRes.error) return err(...mapPgErrorPair(scopeTypeRes.error));
+    if (orgRes.error) return err(...mapPgErrorPair(orgRes.error));
+    if (itemsRes.error) return err(...mapPgErrorPair(itemsRes.error));
+    if (valuesRes.error) return err(...mapPgErrorPair(valuesRes.error));
+
+    const valuesByItem = new Map<string, ResolvedSuggestionValue>();
+    for (const v of valuesRes.data ?? []) {
+      valuesByItem.set(v.context_item_id, {
+        value_text: v.value_text ?? null,
+        value_number: v.value_number ?? null,
+        value_boolean: v.value_boolean ?? null,
+        value_json: v.value_json ?? null,
+        source_type: v.source_type ?? null,
+        version: v.version ?? null,
+        created_at: v.created_at ?? null,
+      });
+    }
+
+    const items: ResolvedSuggestionItem[] = (itemsRes.data ?? []).map(
+      (it) => ({
+        id: it.id,
+        slug: it.slug ?? null,
+        key: it.key,
+        display_name: it.display_name,
+        value_type: it.value_type,
+        sort_order: it.sort_order ?? 0,
+        current: valuesByItem.get(it.id) ?? null,
+      }),
+    );
+
+    const targetItem = args.contextItemId
+      ? (items.find((it) => it.id === args.contextItemId) ?? null)
+      : null;
+
+    return ok({
+      org: {
+        id: orgRes.data.id,
+        name: orgRes.data.name,
+        slug: orgRes.data.slug,
+      },
+      scope_type: {
+        id: scopeTypeRes.data.id,
+        slug: scopeTypeRes.data.slug ?? null,
+        label_singular: scopeTypeRes.data.label_singular,
+        label_plural: scopeTypeRes.data.label_plural,
+        icon: scopeTypeRes.data.icon ?? null,
+        color: scopeTypeRes.data.color ?? null,
+      },
+      scope: {
+        id: scope.id,
+        slug: scope.slug ?? null,
+        name: scope.name,
+        description: scope.description ?? null,
+      },
+      target_item: targetItem,
+      items,
+    });
+  } catch (e) {
+    return { ok: false, error: mapPgError(e) };
+  }
 }
 
 function notYetImplemented(name: string) {

@@ -30,31 +30,33 @@ jest.mock("@/utils/auth/getUserId", () => ({
 jest.mock("@/utils/supabase/adminLane", () => ({ browserAdminLaneOpen: () => false }));
 
 const scopeIdsAsked: string[][] = [];
-// The display read is the record store's `custom.context_scopes` door (lane SCOPES-READS-WEB): it
-// answers only the live scopes the reader may open, each with its type.
-jest.mock("@/utils/supabase/client", () => ({
-  supabase: {
-    schema: (name: string) => {
-      if (name !== "custom") throw new Error(`the ${name} schema was read`);
-      return {
-        rpc: (door: string, args: { p_scope_ids: string[] }) => {
-          if (door !== "context_scopes") throw new Error(`unexpected door ${door}`);
-          scopeIdsAsked.push(args.p_scope_ids);
-          const live = [
-            {
-              id: SCOPE_INTAKE,
-              scope_type_id: "t",
-              organization_id: "o",
-              name: "Patient intake",
-              scope_type: { id: "t", label_singular: "Workflow", label_plural: "Workflows" },
-            },
-          ];
-          return Promise.resolve({ data: live.filter((sc) => args.p_scope_ids.includes(sc.id)), error: null });
-        },
+jest.mock("@/utils/supabase/contextDb", () => ({
+  contextDb: () => ({
+    from: () => {
+      let ids: string[] | null = null;
+      const q: Record<string, unknown> = {};
+      q.select = () => q;
+      q.is = () => q;
+      // The display read pages to its declared total (readAllRows / readAllRowsIn).
+      q.order = () => q;
+      q.range = () => q;
+      q.in = (_col: string, v: string[]) => {
+        ids = v;
+        scopeIdsAsked.push(v);
+        return q;
       };
+      q.then = (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => {
+        const live = [
+          { id: SCOPE_INTAKE, name: "Patient intake", scope_type: { id: "t", label_singular: "Workflow" } },
+        ];
+        const data = ids ? live.filter((s) => ids!.includes(s.id)) : live;
+        return Promise.resolve({ data, error: null, count: data.length }).then(res, rej);
+      };
+      return q;
     },
-  },
+  }),
 }));
+jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 
 const listForTargets = jest.fn(async (..._args: unknown[]) => ({ ok: true, data: { edges: [] } }));
 const listForSources = jest.fn(async (_type: string, _ids: string[], _target?: string) => ({
@@ -76,9 +78,10 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { __setScopesReadFromStoreForTests } from "@/features/scopes/service/scopesReadKnob";
 
-// THE STORE READ PATH (read switch ON, lane SCOPES-WEB-REVERT): these assertions are the store
-// doors' contract; the switch is OFF in the app until member-seat parity holds.
-beforeAll(() => __setScopesReadFromStoreForTests(true));
+// THE CONTEXT-TABLES READ PATH (read switch OFF — the default, lane SCOPES-WEB-REVERT): the reads
+// the scope screens run today, exactly as before lane SCOPES-READS-WEB. The store twin is
+// the same-named test without `.context-tables`.
+beforeAll(() => __setScopesReadFromStoreForTests(false));
 afterAll(() => __setScopesReadFromStoreForTests(null));
 
 it("reads the notes' outgoing scope edges, never every edge into every scope", async () => {
