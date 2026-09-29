@@ -1,1010 +1,453 @@
--- migrate: skip: ROLLBACK SCRIPT for T-13 phase 3 (expand) — never swept, run by hand only, with psql in autocommit so every statement is its own transaction (one table per transaction): psql "$DSN" -v ON_ERROR_STOP=1 -f migrations/access_ladder_t13_3_rollback.sql
--- Generated 2026-09-28 from platform._t13_transitional_targets() (334 tables) — common-docs/projects/access-ladder/t13/PLAN.md §3 rollback column.
--- Order: (1) drop the dual-write and counter triggers so nothing derives any more; (2) put shown_to back to null on the
--- rows the backfill set, from ops.t13_backfill_ledger, with row triggers skipped (the backfill skipped them too);
--- (3) drop the two T-13 checks and the three columns (published_to_web is derived — the ledger's
--- published_to_web ids need no revert once the column is gone). The machinery functions and ops tables of
--- access_ladder_t13_3a stay (inert without triggers); drop them in the same change that retires the campaign.
+-- migrate: skip: ROLLBACK SCRIPT for T-13 phase 3 (expand + 3.2b) — never swept, run by hand only, with psql in autocommit on a SESSION connection (port 5432, never the 6543 transaction pooler — it drops the mode setting and the script then refuses): psql "$DSN" -v ON_ERROR_STOP=1 -c "set t13.rollback_mode = 'apply'" -f migrations/access_ladder_t13_3_rollback.sql
+-- Generated 2026-09-28 from platform._t13_transitional_targets() (334 tables); rewritten 2026-09-28 (3.2b) to retry per table.
+-- common-docs/projects/access-ladder/t13/PLAN.md §3 rollback column.
+--
+-- Per table, in order, each unit its own transaction (2 s lock timeout):
+--   (1) drop the dual-write and counter triggers so nothing derives any more, and put back the column defaults the
+--       3.2b marker defaults replaced (verbatim from ops.t13_default_ledger);
+--   (2) put shown_to back to null on the rows the backfill set, from ops.t13_backfill_ledger, 5,000 rows per
+--       transaction, row triggers skipped for that transaction (session_replication_role = replica — the backfill
+--       skipped them too);
+--   (3) drop the two T-13 checks and the three columns (published_to_web is derived — the ledger's published_to_web
+--       ids need no revert once the column is gone).
+-- A lock timeout or a deadlock rolls back only that unit and retries it, backing off 0.5 s, 1 s, 2 s … 30 s (+ jitter),
+-- 10 tries; then it STOPS by name. SAFE TO RE-RUN: every unit is idempotent (IF EXISTS, ledger-driven, only rows still
+-- at 'only_me'), so a stopped or interrupted run is finished by running the file again.
+-- The machinery functions and ops tables of access_ladder_t13_3a/3b stay (inert without triggers); drop them in the
+-- same change that retires the campaign.
+--
+-- MODE — ONE setting, read by the DO block; without it the script refuses and changes nothing:
+--   set t13.rollback_mode = 'apply';                                   every table, for real
+--   set t13.rollback_mode = 'dry_run:seo.keyword,files.files';          every unit executed, then rolled back
+--   set t13.rollback_mode = 'apply:seo.keyword';                        only the listed tables, for real
+-- One setting, not two, so a mode can never arrive without its table list (2026-09-28: a dry run whose two settings
+-- were sent through the transaction pooler lost both and ran step 1 for real on one table; restored the same minute).
 set lock_timeout = '2s';
 
--- (1) triggers
-drop trigger if exists _a0_t13_dual_write on admin.admin_markdown_samples; drop trigger if exists _t13_count_row_column_writes on admin.admin_markdown_samples;
-drop trigger if exists _a0_t13_dual_write on admin.feature_docs; drop trigger if exists _t13_count_row_column_writes on admin.feature_docs;
-drop trigger if exists _a0_t13_dual_write on agent.cmp_comparison_sets; drop trigger if exists _t13_count_row_column_writes on agent.cmp_comparison_sets;
-drop trigger if exists _a0_t13_dual_write on agent.cmp_response_feedback; drop trigger if exists _t13_count_row_column_writes on agent.cmp_response_feedback;
-drop trigger if exists _a0_t13_dual_write on agent.definition; drop trigger if exists _t13_count_row_column_writes on agent.definition;
-drop trigger if exists _a0_t13_dual_write on agent.exemplar; drop trigger if exists _t13_count_row_column_writes on agent.exemplar;
-drop trigger if exists _a0_t13_dual_write on agent.mandate_note; drop trigger if exists _t13_count_row_column_writes on agent.mandate_note;
-drop trigger if exists _a0_t13_dual_write on agent.message_template; drop trigger if exists _t13_count_row_column_writes on agent.message_template;
-drop trigger if exists _a0_t13_dual_write on agent.prompt_remediation; drop trigger if exists _t13_count_row_column_writes on agent.prompt_remediation;
-drop trigger if exists _a0_t13_dual_write on agent.shortcut; drop trigger if exists _t13_count_row_column_writes on agent.shortcut;
-drop trigger if exists _a0_t13_dual_write on agent.template; drop trigger if exists _t13_count_row_column_writes on agent.template;
-drop trigger if exists _a0_t13_dual_write on agent.term_list; drop trigger if exists _t13_count_row_column_writes on agent.term_list;
-drop trigger if exists _a0_t13_dual_write on ai.api; drop trigger if exists _t13_count_row_column_writes on ai.api;
-drop trigger if exists _a0_t13_dual_write on ai.endpoint; drop trigger if exists _t13_count_row_column_writes on ai.endpoint;
-drop trigger if exists _a0_t13_dual_write on ai.model_alias; drop trigger if exists _t13_count_row_column_writes on ai.model_alias;
-drop trigger if exists _a0_t13_dual_write on ai.model_definition; drop trigger if exists _t13_count_row_column_writes on ai.model_definition;
-drop trigger if exists _a0_t13_dual_write on ai.offering; drop trigger if exists _t13_count_row_column_writes on ai.offering;
-drop trigger if exists _a0_t13_dual_write on ai.provider; drop trigger if exists _t13_count_row_column_writes on ai.provider;
-drop trigger if exists _a0_t13_dual_write on ai.setting; drop trigger if exists _t13_count_row_column_writes on ai.setting;
-drop trigger if exists _a0_t13_dual_write on ai.voices; drop trigger if exists _t13_count_row_column_writes on ai.voices;
-drop trigger if exists _a0_t13_dual_write on app_config; drop trigger if exists _t13_count_row_column_writes on app_config;
-drop trigger if exists _a0_t13_dual_write on app.definition; drop trigger if exists _t13_count_row_column_writes on app.definition;
-drop trigger if exists _a0_t13_dual_write on billing.capability; drop trigger if exists _t13_count_row_column_writes on billing.capability;
-drop trigger if exists _a0_t13_dual_write on billing.capability_limit; drop trigger if exists _t13_count_row_column_writes on billing.capability_limit;
-drop trigger if exists _a0_t13_dual_write on billing.plan; drop trigger if exists _t13_count_row_column_writes on billing.plan;
-drop trigger if exists _a0_t13_dual_write on billing.plan_limit; drop trigger if exists _t13_count_row_column_writes on billing.plan_limit;
-drop trigger if exists _a0_t13_dual_write on billing.price; drop trigger if exists _t13_count_row_column_writes on billing.price;
-drop trigger if exists _a0_t13_dual_write on billing.product; drop trigger if exists _t13_count_row_column_writes on billing.product;
-drop trigger if exists _a0_t13_dual_write on billing.spend_approval; drop trigger if exists _t13_count_row_column_writes on billing.spend_approval;
-drop trigger if exists _a0_t13_dual_write on billing.spend_guardrail; drop trigger if exists _t13_count_row_column_writes on billing.spend_guardrail;
-drop trigger if exists _a0_t13_dual_write on browser.login_recipe; drop trigger if exists _t13_count_row_column_writes on browser.login_recipe;
-drop trigger if exists _a0_t13_dual_write on browser.site_policy; drop trigger if exists _t13_count_row_column_writes on browser.site_policy;
-drop trigger if exists _a0_t13_dual_write on canvas.canvas_items; drop trigger if exists _t13_count_row_column_writes on canvas.canvas_items;
-drop trigger if exists _a0_t13_dual_write on canvas.shared_canvas_items; drop trigger if exists _t13_count_row_column_writes on canvas.shared_canvas_items;
-drop trigger if exists _a0_t13_dual_write on catalog_entries; drop trigger if exists _t13_count_row_column_writes on catalog_entries;
-drop trigger if exists _a0_t13_dual_write on chat.agent_run; drop trigger if exists _t13_count_row_column_writes on chat.agent_run;
-drop trigger if exists _a0_t13_dual_write on code.code_file_folders; drop trigger if exists _t13_count_row_column_writes on code.code_file_folders;
-drop trigger if exists _a0_t13_dual_write on code.code_files; drop trigger if exists _t13_count_row_column_writes on code.code_files;
-drop trigger if exists _a0_t13_dual_write on code.code_repositories; drop trigger if exists _t13_count_row_column_writes on code.code_repositories;
-drop trigger if exists _a0_t13_dual_write on commerce.certified_printer; drop trigger if exists _t13_count_row_column_writes on commerce.certified_printer;
-drop trigger if exists _a0_t13_dual_write on commerce.cloud_sync_connection; drop trigger if exists _t13_count_row_column_writes on commerce.cloud_sync_connection;
-drop trigger if exists _a0_t13_dual_write on commerce.ebay_category; drop trigger if exists _t13_count_row_column_writes on commerce.ebay_category;
-drop trigger if exists _a0_t13_dual_write on commerce.ebay_category_aspect; drop trigger if exists _t13_count_row_column_writes on commerce.ebay_category_aspect;
-drop trigger if exists _a0_t13_dual_write on commerce.ebay_category_tree; drop trigger if exists _t13_count_row_column_writes on commerce.ebay_category_tree;
-drop trigger if exists _a0_t13_dual_write on commerce.ebay_marketplace_policy; drop trigger if exists _t13_count_row_column_writes on commerce.ebay_marketplace_policy;
-drop trigger if exists _a0_t13_dual_write on commerce.ebay_notification_destination; drop trigger if exists _t13_count_row_column_writes on commerce.ebay_notification_destination;
-drop trigger if exists _a0_t13_dual_write on commerce.ebay_notification_topic; drop trigger if exists _t13_count_row_column_writes on commerce.ebay_notification_topic;
-drop trigger if exists _a0_t13_dual_write on commerce.intake_batch; drop trigger if exists _t13_count_row_column_writes on commerce.intake_batch;
-drop trigger if exists _a0_t13_dual_write on commerce.label_batch; drop trigger if exists _t13_count_row_column_writes on commerce.label_batch;
-drop trigger if exists _a0_t13_dual_write on commerce.marketplace_account; drop trigger if exists _t13_count_row_column_writes on commerce.marketplace_account;
-drop trigger if exists _a0_t13_dual_write on commerce.marketplace_rate_budget; drop trigger if exists _t13_count_row_column_writes on commerce.marketplace_rate_budget;
-drop trigger if exists _a0_t13_dual_write on commerce.print_order; drop trigger if exists _t13_count_row_column_writes on commerce.print_order;
-drop trigger if exists _a0_t13_dual_write on commerce.product; drop trigger if exists _t13_count_row_column_writes on commerce.product;
-drop trigger if exists _a0_t13_dual_write on communication.meet_call_invites; drop trigger if exists _t13_count_row_column_writes on communication.meet_call_invites;
-drop trigger if exists _a0_t13_dual_write on communication.meet_meetings; drop trigger if exists _t13_count_row_column_writes on communication.meet_meetings;
-drop trigger if exists _a0_t13_dual_write on communication.notification_channel_preference; drop trigger if exists _t13_count_row_column_writes on communication.notification_channel_preference;
-drop trigger if exists _a0_t13_dual_write on communication.notification_event_override; drop trigger if exists _t13_count_row_column_writes on communication.notification_event_override;
-drop trigger if exists _a0_t13_dual_write on communication.notification_event_type; drop trigger if exists _t13_count_row_column_writes on communication.notification_event_type;
-drop trigger if exists _a0_t13_dual_write on communication.notification_preference; drop trigger if exists _t13_count_row_column_writes on communication.notification_preference;
-drop trigger if exists _a0_t13_dual_write on communication.sms_consent; drop trigger if exists _t13_count_row_column_writes on communication.sms_consent;
-drop trigger if exists _a0_t13_dual_write on communication.sms_notification_preferences; drop trigger if exists _t13_count_row_column_writes on communication.sms_notification_preferences;
-drop trigger if exists _a0_t13_dual_write on communication.sms_notifications; drop trigger if exists _t13_count_row_column_writes on communication.sms_notifications;
-drop trigger if exists _a0_t13_dual_write on communication.sms_phone_numbers; drop trigger if exists _t13_count_row_column_writes on communication.sms_phone_numbers;
-drop trigger if exists _a0_t13_dual_write on content_ir.kind_definition; drop trigger if exists _t13_count_row_column_writes on content_ir.kind_definition;
-drop trigger if exists _a0_t13_dual_write on content_ir.kind_instance; drop trigger if exists _t13_count_row_column_writes on content_ir.kind_instance;
-drop trigger if exists _a0_t13_dual_write on content.document; drop trigger if exists _t13_count_row_column_writes on content.document;
-drop trigger if exists _a0_t13_dual_write on context.scopes; drop trigger if exists _t13_count_row_column_writes on context.scopes;
-drop trigger if exists _a0_t13_dual_write on context.system_context_item; drop trigger if exists _t13_count_row_column_writes on context.system_context_item;
-drop trigger if exists _a0_t13_dual_write on crm.blocklist_entry; drop trigger if exists _t13_count_row_column_writes on crm.blocklist_entry;
-drop trigger if exists _a0_t13_dual_write on crm.contact_medium; drop trigger if exists _t13_count_row_column_writes on crm.contact_medium;
-drop trigger if exists _a0_t13_dual_write on crm.deal; drop trigger if exists _t13_count_row_column_writes on crm.deal;
-drop trigger if exists _a0_t13_dual_write on crm.enrichment_call; drop trigger if exists _t13_count_row_column_writes on crm.enrichment_call;
-drop trigger if exists _a0_t13_dual_write on crm.jurisdiction_policy; drop trigger if exists _t13_count_row_column_writes on crm.jurisdiction_policy;
-drop trigger if exists _a0_t13_dual_write on crm.outreach_list; drop trigger if exists _t13_count_row_column_writes on crm.outreach_list;
-drop trigger if exists _a0_t13_dual_write on crm.party; drop trigger if exists _t13_count_row_column_writes on crm.party;
-drop trigger if exists _a0_t13_dual_write on crm.registry_ingest_run; drop trigger if exists _t13_count_row_column_writes on crm.registry_ingest_run;
-drop trigger if exists _a0_t13_dual_write on crm.registry_source; drop trigger if exists _t13_count_row_column_writes on crm.registry_source;
-drop trigger if exists _a0_t13_dual_write on crm.sending_identity; drop trigger if exists _t13_count_row_column_writes on crm.sending_identity;
-drop trigger if exists _a0_t13_dual_write on crm.sending_policy; drop trigger if exists _t13_count_row_column_writes on crm.sending_policy;
-drop trigger if exists _a0_t13_dual_write on custom.anon_form; drop trigger if exists _t13_count_row_column_writes on custom.anon_form;
-drop trigger if exists _a0_t13_dual_write on custom.anon_hit; drop trigger if exists _t13_count_row_column_writes on custom.anon_hit;
-drop trigger if exists _a0_t13_dual_write on custom.anon_inbound; drop trigger if exists _t13_count_row_column_writes on custom.anon_inbound;
-drop trigger if exists _a0_t13_dual_write on custom.anon_replay; drop trigger if exists _t13_count_row_column_writes on custom.anon_replay;
-drop trigger if exists _a0_t13_dual_write on custom.anon_submission; drop trigger if exists _t13_count_row_column_writes on custom.anon_submission;
-drop trigger if exists _a0_t13_dual_write on custom.anon_token; drop trigger if exists _t13_count_row_column_writes on custom.anon_token;
-drop trigger if exists _a0_t13_dual_write on custom.doc_render; drop trigger if exists _t13_count_row_column_writes on custom.doc_render;
-drop trigger if exists _a0_t13_dual_write on custom.doc_signature; drop trigger if exists _t13_count_row_column_writes on custom.doc_signature;
-drop trigger if exists _a0_t13_dual_write on custom.external_link; drop trigger if exists _t13_count_row_column_writes on custom.external_link;
-drop trigger if exists _a0_t13_dual_write on custom.external_source; drop trigger if exists _t13_count_row_column_writes on custom.external_source;
-drop trigger if exists _a0_t13_dual_write on custom.io_comment; drop trigger if exists _t13_count_row_column_writes on custom.io_comment;
-drop trigger if exists _a0_t13_dual_write on custom.io_import; drop trigger if exists _t13_count_row_column_writes on custom.io_import;
-drop trigger if exists _a0_t13_dual_write on custom.io_outbox; drop trigger if exists _t13_count_row_column_writes on custom.io_outbox;
-drop trigger if exists _a0_t13_dual_write on custom.merge_field_provenance; drop trigger if exists _t13_count_row_column_writes on custom.merge_field_provenance;
-drop trigger if exists _a0_t13_dual_write on docproc.derive_runs; drop trigger if exists _t13_count_row_column_writes on docproc.derive_runs;
-drop trigger if exists _a0_t13_dual_write on docproc.page_extraction_jobs; drop trigger if exists _t13_count_row_column_writes on docproc.page_extraction_jobs;
-drop trigger if exists _a0_t13_dual_write on docproc.page_extraction_page_runs; drop trigger if exists _t13_count_row_column_writes on docproc.page_extraction_page_runs;
-drop trigger if exists _a0_t13_dual_write on docproc.processed_documents; drop trigger if exists _t13_count_row_column_writes on docproc.processed_documents;
-drop trigger if exists _a0_t13_dual_write on education.assessment; drop trigger if exists _t13_count_row_column_writes on education.assessment;
-drop trigger if exists _a0_t13_dual_write on education.content_certification; drop trigger if exists _t13_count_row_column_writes on education.content_certification;
-drop trigger if exists _a0_t13_dual_write on education.fc_card; drop trigger if exists _t13_count_row_column_writes on education.fc_card;
-drop trigger if exists _a0_t13_dual_write on education.fc_set; drop trigger if exists _t13_count_row_column_writes on education.fc_set;
-drop trigger if exists _a0_t13_dual_write on education.game_badge; drop trigger if exists _t13_count_row_column_writes on education.game_badge;
-drop trigger if exists _a0_t13_dual_write on education.game_result; drop trigger if exists _t13_count_row_column_writes on education.game_result;
-drop trigger if exists _a0_t13_dual_write on education.game_room; drop trigger if exists _t13_count_row_column_writes on education.game_room;
-drop trigger if exists _a0_t13_dual_write on education.league_membership; drop trigger if exists _t13_count_row_column_writes on education.league_membership;
-drop trigger if exists _a0_t13_dual_write on education.learn_doc; drop trigger if exists _t13_count_row_column_writes on education.learn_doc;
-drop trigger if exists _a0_t13_dual_write on education.math_problems; drop trigger if exists _t13_count_row_column_writes on education.math_problems;
-drop trigger if exists _a0_t13_dual_write on education.quiz_sessions; drop trigger if exists _t13_count_row_column_writes on education.quiz_sessions;
-drop trigger if exists _a0_t13_dual_write on education.study_goal; drop trigger if exists _t13_count_row_column_writes on education.study_goal;
-drop trigger if exists _a0_t13_dual_write on education.study_media; drop trigger if exists _t13_count_row_column_writes on education.study_media;
-drop trigger if exists _a0_t13_dual_write on education.study_plan; drop trigger if exists _t13_count_row_column_writes on education.study_plan;
-drop trigger if exists _a0_t13_dual_write on education.study_reminder_context; drop trigger if exists _t13_count_row_column_writes on education.study_reminder_context;
-drop trigger if exists _a0_t13_dual_write on education.study_reminder_delivery; drop trigger if exists _t13_count_row_column_writes on education.study_reminder_delivery;
-drop trigger if exists _a0_t13_dual_write on esign.campaign; drop trigger if exists _t13_count_row_column_writes on esign.campaign;
-drop trigger if exists _a0_t13_dual_write on esign.consent_disclosure; drop trigger if exists _t13_count_row_column_writes on esign.consent_disclosure;
-drop trigger if exists _a0_t13_dual_write on esign.envelope; drop trigger if exists _t13_count_row_column_writes on esign.envelope;
-drop trigger if exists _a0_t13_dual_write on esign.provider_binding; drop trigger if exists _t13_count_row_column_writes on esign.provider_binding;
-drop trigger if exists _a0_t13_dual_write on extend.wbx_demo; drop trigger if exists _t13_count_row_column_writes on extend.wbx_demo;
-drop trigger if exists _a0_t13_dual_write on extend.wbx_guidance; drop trigger if exists _t13_count_row_column_writes on extend.wbx_guidance;
-drop trigger if exists _a0_t13_dual_write on extend.wbx_highlight; drop trigger if exists _t13_count_row_column_writes on extend.wbx_highlight;
-drop trigger if exists _a0_t13_dual_write on extend.wbx_pattern; drop trigger if exists _t13_count_row_column_writes on extend.wbx_pattern;
-drop trigger if exists _a0_t13_dual_write on extend.wbx_recipe; drop trigger if exists _t13_count_row_column_writes on extend.wbx_recipe;
-drop trigger if exists _a0_t13_dual_write on extend.wbx_screenshot; drop trigger if exists _t13_count_row_column_writes on extend.wbx_screenshot;
-drop trigger if exists _a0_t13_dual_write on extend.wbx_seo_audit; drop trigger if exists _t13_count_row_column_writes on extend.wbx_seo_audit;
-drop trigger if exists _a0_t13_dual_write on files.account_tiers; drop trigger if exists _t13_count_row_column_writes on files.account_tiers;
-drop trigger if exists _a0_t13_dual_write on files.files; drop trigger if exists _t13_count_row_column_writes on files.files;
-drop trigger if exists _a0_t13_dual_write on files.folders; drop trigger if exists _t13_count_row_column_writes on files.folders;
-drop trigger if exists _a0_t13_dual_write on files.machine_written_prefixes; drop trigger if exists _t13_count_row_column_writes on files.machine_written_prefixes;
-drop trigger if exists _a0_t13_dual_write on files.sync_mappings; drop trigger if exists _t13_count_row_column_writes on files.sync_mappings;
-drop trigger if exists _a0_t13_dual_write on growth.loop_run; drop trigger if exists _t13_count_row_column_writes on growth.loop_run;
-drop trigger if exists _a0_t13_dual_write on growth.stage_ref_kind; drop trigger if exists _t13_count_row_column_writes on growth.stage_ref_kind;
-drop trigger if exists _a0_t13_dual_write on hindsight.enrollment; drop trigger if exists _t13_count_row_column_writes on hindsight.enrollment;
-drop trigger if exists _a0_t13_dual_write on hindsight.regression_case; drop trigger if exists _t13_count_row_column_writes on hindsight.regression_case;
-drop trigger if exists _a0_t13_dual_write on hindsight.replay_step; drop trigger if exists _t13_count_row_column_writes on hindsight.replay_step;
-drop trigger if exists _a0_t13_dual_write on hr.access_role; drop trigger if exists _t13_count_row_column_writes on hr.access_role;
-drop trigger if exists _a0_t13_dual_write on hr.alert_routing_rule; drop trigger if exists _t13_count_row_column_writes on hr.alert_routing_rule;
-drop trigger if exists _a0_t13_dual_write on hr.asset; drop trigger if exists _t13_count_row_column_writes on hr.asset;
-drop trigger if exists _a0_t13_dual_write on hr.auto_close_rule; drop trigger if exists _t13_count_row_column_writes on hr.auto_close_rule;
-drop trigger if exists _a0_t13_dual_write on hr.careers_portal; drop trigger if exists _t13_count_row_column_writes on hr.careers_portal;
-drop trigger if exists _a0_t13_dual_write on hr.checklist_template; drop trigger if exists _t13_count_row_column_writes on hr.checklist_template;
-drop trigger if exists _a0_t13_dual_write on hr.course; drop trigger if exists _t13_count_row_column_writes on hr.course;
-drop trigger if exists _a0_t13_dual_write on hr.crew; drop trigger if exists _t13_count_row_column_writes on hr.crew;
-drop trigger if exists _a0_t13_dual_write on hr.deduction_code; drop trigger if exists _t13_count_row_column_writes on hr.deduction_code;
-drop trigger if exists _a0_t13_dual_write on hr.department; drop trigger if exists _t13_count_row_column_writes on hr.department;
-drop trigger if exists _a0_t13_dual_write on hr.earning_code; drop trigger if exists _t13_count_row_column_writes on hr.earning_code;
-drop trigger if exists _a0_t13_dual_write on hr.employee; drop trigger if exists _t13_count_row_column_writes on hr.employee;
-drop trigger if exists _a0_t13_dual_write on hr.employer_profile; drop trigger if exists _t13_count_row_column_writes on hr.employer_profile;
-drop trigger if exists _a0_t13_dual_write on hr.field_policy; drop trigger if exists _t13_count_row_column_writes on hr.field_policy;
-drop trigger if exists _a0_t13_dual_write on hr.holiday_calendar; drop trigger if exists _t13_count_row_column_writes on hr.holiday_calendar;
-drop trigger if exists _a0_t13_dual_write on hr.interview_kit; drop trigger if exists _t13_count_row_column_writes on hr.interview_kit;
-drop trigger if exists _a0_t13_dual_write on hr.job_title; drop trigger if exists _t13_count_row_column_writes on hr.job_title;
-drop trigger if exists _a0_t13_dual_write on hr.jurisdiction; drop trigger if exists _t13_count_row_column_writes on hr.jurisdiction;
-drop trigger if exists _a0_t13_dual_write on hr.jurisdiction_rule; drop trigger if exists _t13_count_row_column_writes on hr.jurisdiction_rule;
-drop trigger if exists _a0_t13_dual_write on hr.jurisdiction_rule_class; drop trigger if exists _t13_count_row_column_writes on hr.jurisdiction_rule_class;
-drop trigger if exists _a0_t13_dual_write on hr.jurisdiction_rule_org_decision; drop trigger if exists _t13_count_row_column_writes on hr.jurisdiction_rule_org_decision;
-drop trigger if exists _a0_t13_dual_write on hr.kiosk_device; drop trigger if exists _t13_count_row_column_writes on hr.kiosk_device;
-drop trigger if exists _a0_t13_dual_write on hr.leave_policy; drop trigger if exists _t13_count_row_column_writes on hr.leave_policy;
-drop trigger if exists _a0_t13_dual_write on hr.location; drop trigger if exists _t13_count_row_column_writes on hr.location;
-drop trigger if exists _a0_t13_dual_write on hr.overtime_alert_rule; drop trigger if exists _t13_count_row_column_writes on hr.overtime_alert_rule;
-drop trigger if exists _a0_t13_dual_write on hr.pay_group; drop trigger if exists _t13_count_row_column_writes on hr.pay_group;
-drop trigger if exists _a0_t13_dual_write on hr.posting; drop trigger if exists _t13_count_row_column_writes on hr.posting;
-drop trigger if exists _a0_t13_dual_write on hr.provider_binding; drop trigger if exists _t13_count_row_column_writes on hr.provider_binding;
-drop trigger if exists _a0_t13_dual_write on hr.record_class; drop trigger if exists _t13_count_row_column_writes on hr.record_class;
-drop trigger if exists _a0_t13_dual_write on hr.requisition; drop trigger if exists _t13_count_row_column_writes on hr.requisition;
-drop trigger if exists _a0_t13_dual_write on hr.retention_rule; drop trigger if exists _t13_count_row_column_writes on hr.retention_rule;
-drop trigger if exists _a0_t13_dual_write on hr.schedule; drop trigger if exists _t13_count_row_column_writes on hr.schedule;
-drop trigger if exists _a0_t13_dual_write on hr.schedule_guidance; drop trigger if exists _t13_count_row_column_writes on hr.schedule_guidance;
-drop trigger if exists _a0_t13_dual_write on hr.schedule_template; drop trigger if exists _t13_count_row_column_writes on hr.schedule_template;
-drop trigger if exists _a0_t13_dual_write on hr.survey; drop trigger if exists _t13_count_row_column_writes on hr.survey;
-drop trigger if exists _a0_t13_dual_write on hr.workflow_definition; drop trigger if exists _t13_count_row_column_writes on hr.workflow_definition;
-drop trigger if exists _a0_t13_dual_write on hr.workflow_flow_type; drop trigger if exists _t13_count_row_column_writes on hr.workflow_flow_type;
-drop trigger if exists _a0_t13_dual_write on iam.access_requests; drop trigger if exists _t13_count_row_column_writes on iam.access_requests;
-drop trigger if exists _a0_t13_dual_write on iam.api_keys; drop trigger if exists _t13_count_row_column_writes on iam.api_keys;
-drop trigger if exists _a0_t13_dual_write on iam.emergency_door_request; drop trigger if exists _t13_count_row_column_writes on iam.emergency_door_request;
-drop trigger if exists _a0_t13_dual_write on iam.industries; drop trigger if exists _t13_count_row_column_writes on iam.industries;
-drop trigger if exists _a0_t13_dual_write on iam.team; drop trigger if exists _t13_count_row_column_writes on iam.team;
-drop trigger if exists _a0_t13_dual_write on interview.decision_interview; drop trigger if exists _t13_count_row_column_writes on interview.decision_interview;
-drop trigger if exists _a0_t13_dual_write on interview.session; drop trigger if exists _t13_count_row_column_writes on interview.session;
-drop trigger if exists _a0_t13_dual_write on legal.wc_impairment_definition; drop trigger if exists _t13_count_row_column_writes on legal.wc_impairment_definition;
-drop trigger if exists _a0_t13_dual_write on mandate.binding; drop trigger if exists _t13_count_row_column_writes on mandate.binding;
-drop trigger if exists _a0_t13_dual_write on mandate.definition; drop trigger if exists _t13_count_row_column_writes on mandate.definition;
-drop trigger if exists _a0_t13_dual_write on mandate.provision; drop trigger if exists _t13_count_row_column_writes on mandate.provision;
-drop trigger if exists _a0_t13_dual_write on mandate.reference; drop trigger if exists _t13_count_row_column_writes on mandate.reference;
-drop trigger if exists _a0_t13_dual_write on mandate.scan; drop trigger if exists _t13_count_row_column_writes on mandate.scan;
-drop trigger if exists _a0_t13_dual_write on mandate.treatment; drop trigger if exists _t13_count_row_column_writes on mandate.treatment;
-drop trigger if exists _a0_t13_dual_write on marketing.initiative; drop trigger if exists _t13_count_row_column_writes on marketing.initiative;
-drop trigger if exists _a0_t13_dual_write on media.capture_handoff; drop trigger if exists _t13_count_row_column_writes on media.capture_handoff;
-drop trigger if exists _a0_t13_dual_write on media.catalog_setting; drop trigger if exists _t13_count_row_column_writes on media.catalog_setting;
-drop trigger if exists _a0_t13_dual_write on media.source_library; drop trigger if exists _t13_count_row_column_writes on media.source_library;
-drop trigger if exists _a0_t13_dual_write on meta.audit_exemption; drop trigger if exists _t13_count_row_column_writes on meta.audit_exemption;
-drop trigger if exists _a0_t13_dual_write on ops.app_log_muted_pattern; drop trigger if exists _t13_count_row_column_writes on ops.app_log_muted_pattern;
-drop trigger if exists _a0_t13_dual_write on ops.app_log_norm_exception; drop trigger if exists _t13_count_row_column_writes on ops.app_log_norm_exception;
-drop trigger if exists _a0_t13_dual_write on ops.check_item; drop trigger if exists _t13_count_row_column_writes on ops.check_item;
-drop trigger if exists _a0_t13_dual_write on ops.check_run; drop trigger if exists _t13_count_row_column_writes on ops.check_run;
-drop trigger if exists _a0_t13_dual_write on ops.proof_check; drop trigger if exists _t13_count_row_column_writes on ops.proof_check;
-drop trigger if exists _a0_t13_dual_write on ops.proof_scenario; drop trigger if exists _t13_count_row_column_writes on ops.proof_scenario;
-drop trigger if exists _a0_t13_dual_write on pdf.pdf_redaction_audits; drop trigger if exists _t13_count_row_column_writes on pdf.pdf_redaction_audits;
-drop trigger if exists _a0_t13_dual_write on plan.entity; drop trigger if exists _t13_count_row_column_writes on plan.entity;
-drop trigger if exists _a0_t13_dual_write on plan.node; drop trigger if exists _t13_count_row_column_writes on plan.node;
-drop trigger if exists _a0_t13_dual_write on plan.profile; drop trigger if exists _t13_count_row_column_writes on plan.profile;
-drop trigger if exists _a0_t13_dual_write on platform.action_request; drop trigger if exists _t13_count_row_column_writes on platform.action_request;
-drop trigger if exists _a0_t13_dual_write on platform.approach; drop trigger if exists _t13_count_row_column_writes on platform.approach;
-drop trigger if exists _a0_t13_dual_write on platform.assist_producer_policy; drop trigger if exists _t13_count_row_column_writes on platform.assist_producer_policy;
-drop trigger if exists _a0_t13_dual_write on platform.assists; drop trigger if exists _t13_count_row_column_writes on platform.assists;
-drop trigger if exists _a0_t13_dual_write on platform.assurance_level; drop trigger if exists _t13_count_row_column_writes on platform.assurance_level;
-drop trigger if exists _a0_t13_dual_write on platform.categories; drop trigger if exists _t13_count_row_column_writes on platform.categories;
-drop trigger if exists _a0_t13_dual_write on platform.change_type_default; drop trigger if exists _t13_count_row_column_writes on platform.change_type_default;
-drop trigger if exists _a0_t13_dual_write on platform.continued_access; drop trigger if exists _t13_count_row_column_writes on platform.continued_access;
-drop trigger if exists _a0_t13_dual_write on platform.custom_entity_definition; drop trigger if exists _t13_count_row_column_writes on platform.custom_entity_definition;
-drop trigger if exists _a0_t13_dual_write on platform.custom_field_definition; drop trigger if exists _t13_count_row_column_writes on platform.custom_field_definition;
-drop trigger if exists _a0_t13_dual_write on platform.custom_field_target; drop trigger if exists _t13_count_row_column_writes on platform.custom_field_target;
-drop trigger if exists _a0_t13_dual_write on platform.dated_change; drop trigger if exists _t13_count_row_column_writes on platform.dated_change;
-drop trigger if exists _a0_t13_dual_write on platform.domain_classification; drop trigger if exists _t13_count_row_column_writes on platform.domain_classification;
-drop trigger if exists _a0_t13_dual_write on platform.egress_device; drop trigger if exists _t13_count_row_column_writes on platform.egress_device;
-drop trigger if exists _a0_t13_dual_write on platform.flexible_data; drop trigger if exists _t13_count_row_column_writes on platform.flexible_data;
-drop trigger if exists _a0_t13_dual_write on platform.guided_checklist_run; drop trigger if exists _t13_count_row_column_writes on platform.guided_checklist_run;
-drop trigger if exists _a0_t13_dual_write on platform.knob_scope_kind; drop trigger if exists _t13_count_row_column_writes on platform.knob_scope_kind;
-drop trigger if exists _a0_t13_dual_write on platform.knob_write_door; drop trigger if exists _t13_count_row_column_writes on platform.knob_write_door;
-drop trigger if exists _a0_t13_dual_write on platform.outcome_event; drop trigger if exists _t13_count_row_column_writes on platform.outcome_event;
-drop trigger if exists _a0_t13_dual_write on platform.output_feedback; drop trigger if exists _t13_count_row_column_writes on platform.output_feedback;
-drop trigger if exists _a0_t13_dual_write on platform.outsider_consumer; drop trigger if exists _t13_count_row_column_writes on platform.outsider_consumer;
-drop trigger if exists _a0_t13_dual_write on platform.purpose; drop trigger if exists _t13_count_row_column_writes on platform.purpose;
-drop trigger if exists _a0_t13_dual_write on platform.retention_policy; drop trigger if exists _t13_count_row_column_writes on platform.retention_policy;
-drop trigger if exists _a0_t13_dual_write on platform.route_manifest; drop trigger if exists _t13_count_row_column_writes on platform.route_manifest;
-drop trigger if exists _a0_t13_dual_write on platform.rulebook; drop trigger if exists _t13_count_row_column_writes on platform.rulebook;
-drop trigger if exists _a0_t13_dual_write on platform.saved_view; drop trigger if exists _t13_count_row_column_writes on platform.saved_view;
-drop trigger if exists _a0_t13_dual_write on platform.secure_delivery; drop trigger if exists _t13_count_row_column_writes on platform.secure_delivery;
-drop trigger if exists _a0_t13_dual_write on platform.shareable_resource_registry; drop trigger if exists _t13_count_row_column_writes on platform.shareable_resource_registry;
-drop trigger if exists _a0_t13_dual_write on platform.source_authority; drop trigger if exists _t13_count_row_column_writes on platform.source_authority;
-drop trigger if exists _a0_t13_dual_write on platform.taxonomy_node; drop trigger if exists _t13_count_row_column_writes on platform.taxonomy_node;
-drop trigger if exists _a0_t13_dual_write on podcast.pc_articles; drop trigger if exists _t13_count_row_column_writes on podcast.pc_articles;
-drop trigger if exists _a0_t13_dual_write on podcast.pc_episodes; drop trigger if exists _t13_count_row_column_writes on podcast.pc_episodes;
-drop trigger if exists _a0_t13_dual_write on podcast.pc_race; drop trigger if exists _t13_count_row_column_writes on podcast.pc_race;
-drop trigger if exists _a0_t13_dual_write on podcast.pc_shows; drop trigger if exists _t13_count_row_column_writes on podcast.pc_shows;
-drop trigger if exists _a0_t13_dual_write on podcast.pc_studio_runs; drop trigger if exists _t13_count_row_column_writes on podcast.pc_studio_runs;
-drop trigger if exists _a0_t13_dual_write on rag.context_item_suggestions; drop trigger if exists _t13_count_row_column_writes on rag.context_item_suggestions;
-drop trigger if exists _a0_t13_dual_write on rag.data_stores; drop trigger if exists _t13_count_row_column_writes on rag.data_stores;
-drop trigger if exists _a0_t13_dual_write on rag.kg_alerts; drop trigger if exists _t13_count_row_column_writes on rag.kg_alerts;
-drop trigger if exists _a0_t13_dual_write on rag.kg_suggestion_ack; drop trigger if exists _t13_count_row_column_writes on rag.kg_suggestion_ack;
-drop trigger if exists _a0_t13_dual_write on rag.kg_sweep_queue; drop trigger if exists _t13_count_row_column_writes on rag.kg_sweep_queue;
-drop trigger if exists _a0_t13_dual_write on rag.kg_sweep_run; drop trigger if exists _t13_count_row_column_writes on rag.kg_sweep_run;
-drop trigger if exists _a0_t13_dual_write on rag.kg_value_matches; drop trigger if exists _t13_count_row_column_writes on rag.kg_value_matches;
-drop trigger if exists _a0_t13_dual_write on rag.library_docs; drop trigger if exists _t13_count_row_column_writes on rag.library_docs;
-drop trigger if exists _a0_t13_dual_write on rag.ner_canonicalizer_shadow; drop trigger if exists _t13_count_row_column_writes on rag.ner_canonicalizer_shadow;
-drop trigger if exists _a0_t13_dual_write on rag.scope_association_suggestions; drop trigger if exists _t13_count_row_column_writes on rag.scope_association_suggestions;
-drop trigger if exists _a0_t13_dual_write on rag.scope_item_value_suggestions; drop trigger if exists _t13_count_row_column_writes on rag.scope_item_value_suggestions;
-drop trigger if exists _a0_t13_dual_write on rag.scope_suggestions; drop trigger if exists _t13_count_row_column_writes on rag.scope_suggestions;
-drop trigger if exists _a0_t13_dual_write on research.rs_context_bundle; drop trigger if exists _t13_count_row_column_writes on research.rs_context_bundle;
-drop trigger if exists _a0_t13_dual_write on research.rs_template; drop trigger if exists _t13_count_row_column_writes on research.rs_template;
-drop trigger if exists _a0_t13_dual_write on research.rs_topic; drop trigger if exists _t13_count_row_column_writes on research.rs_topic;
-drop trigger if exists _a0_t13_dual_write on research.youtube_search; drop trigger if exists _t13_count_row_column_writes on research.youtube_search;
-drop trigger if exists _a0_t13_dual_write on research.youtube_video; drop trigger if exists _t13_count_row_column_writes on research.youtube_video;
-drop trigger if exists _a0_t13_dual_write on runtime.global_origin; drop trigger if exists _t13_count_row_column_writes on runtime.global_origin;
-drop trigger if exists _a0_t13_dual_write on runtime.global_request; drop trigger if exists _t13_count_row_column_writes on runtime.global_request;
-drop trigger if exists _a0_t13_dual_write on runtime.operation_stream; drop trigger if exists _t13_count_row_column_writes on runtime.operation_stream;
-drop trigger if exists _a0_t13_dual_write on runtime.operation_stream_batch; drop trigger if exists _t13_count_row_column_writes on runtime.operation_stream_batch;
-drop trigger if exists _a0_t13_dual_write on scheduler.sch_task; drop trigger if exists _t13_count_row_column_writes on scheduler.sch_task;
-drop trigger if exists _a0_t13_dual_write on scraper.scrape_parsed_page; drop trigger if exists _t13_count_row_column_writes on scraper.scrape_parsed_page;
-drop trigger if exists _a0_t13_dual_write on seo.ai_capability; drop trigger if exists _t13_count_row_column_writes on seo.ai_capability;
-drop trigger if exists _a0_t13_dual_write on seo.collection_run; drop trigger if exists _t13_count_row_column_writes on seo.collection_run;
-drop trigger if exists _a0_t13_dual_write on seo.engine_schedule; drop trigger if exists _t13_count_row_column_writes on seo.engine_schedule;
-drop trigger if exists _a0_t13_dual_write on seo.geo_place; drop trigger if exists _t13_count_row_column_writes on seo.geo_place;
-drop trigger if exists _a0_t13_dual_write on seo.keyword; drop trigger if exists _t13_count_row_column_writes on seo.keyword;
-drop trigger if exists _a0_t13_dual_write on seo.keyword_class_rule; drop trigger if exists _t13_count_row_column_writes on seo.keyword_class_rule;
-drop trigger if exists _a0_t13_dual_write on seo.keyword_edge; drop trigger if exists _t13_count_row_column_writes on seo.keyword_edge;
-drop trigger if exists _a0_t13_dual_write on seo.keyword_facet; drop trigger if exists _t13_count_row_column_writes on seo.keyword_facet;
-drop trigger if exists _a0_t13_dual_write on seo.keyword_market; drop trigger if exists _t13_count_row_column_writes on seo.keyword_market;
-drop trigger if exists _a0_t13_dual_write on seo.keyword_place; drop trigger if exists _t13_count_row_column_writes on seo.keyword_place;
-drop trigger if exists _a0_t13_dual_write on seo.keyword_topic; drop trigger if exists _t13_count_row_column_writes on seo.keyword_topic;
-drop trigger if exists _a0_t13_dual_write on seo.map_facet; drop trigger if exists _t13_count_row_column_writes on seo.map_facet;
-drop trigger if exists _a0_t13_dual_write on seo.map_facet_value; drop trigger if exists _t13_count_row_column_writes on seo.map_facet_value;
-drop trigger if exists _a0_t13_dual_write on seo.rank_target; drop trigger if exists _t13_count_row_column_writes on seo.rank_target;
-drop trigger if exists _a0_t13_dual_write on seo.source_request; drop trigger if exists _t13_count_row_column_writes on seo.source_request;
-drop trigger if exists _a0_t13_dual_write on seo.starter_pack; drop trigger if exists _t13_count_row_column_writes on seo.starter_pack;
-drop trigger if exists _a0_t13_dual_write on seo.story_angle; drop trigger if exists _t13_count_row_column_writes on seo.story_angle;
-drop trigger if exists _a0_t13_dual_write on seo.topic; drop trigger if exists _t13_count_row_column_writes on seo.topic;
-drop trigger if exists _a0_t13_dual_write on seo.topical_map; drop trigger if exists _t13_count_row_column_writes on seo.topical_map;
-drop trigger if exists _a0_t13_dual_write on skill.definition; drop trigger if exists _t13_count_row_column_writes on skill.definition;
-drop trigger if exists _a0_t13_dual_write on skill.render_definition; drop trigger if exists _t13_count_row_column_writes on skill.render_definition;
-drop trigger if exists _a0_t13_dual_write on tool.bundle; drop trigger if exists _t13_count_row_column_writes on tool.bundle;
-drop trigger if exists _a0_t13_dual_write on tool.definition; drop trigger if exists _t13_count_row_column_writes on tool.definition;
-drop trigger if exists _a0_t13_dual_write on tool.executor; drop trigger if exists _t13_count_row_column_writes on tool.executor;
-drop trigger if exists _a0_t13_dual_write on tool.mcp_config; drop trigger if exists _t13_count_row_column_writes on tool.mcp_config;
-drop trigger if exists _a0_t13_dual_write on tool.mcp_server; drop trigger if exists _t13_count_row_column_writes on tool.mcp_server;
-drop trigger if exists _a0_t13_dual_write on tool.surface_defaults; drop trigger if exists _t13_count_row_column_writes on tool.surface_defaults;
-drop trigger if exists _a0_t13_dual_write on transcripts.transcripts; drop trigger if exists _t13_count_row_column_writes on transcripts.transcripts;
-drop trigger if exists _a0_t13_dual_write on ui.ui_client; drop trigger if exists _t13_count_row_column_writes on ui.ui_client;
-drop trigger if exists _a0_t13_dual_write on ui.ui_surface_agent_pref; drop trigger if exists _t13_count_row_column_writes on ui.ui_surface_agent_pref;
-drop trigger if exists _a0_t13_dual_write on ui.ui_surface_agent_role; drop trigger if exists _t13_count_row_column_writes on ui.ui_surface_agent_role;
-drop trigger if exists _a0_t13_dual_write on ui.ui_surface_client_tool; drop trigger if exists _t13_count_row_column_writes on ui.ui_surface_client_tool;
-drop trigger if exists _a0_t13_dual_write on ui.ui_surface_config; drop trigger if exists _t13_count_row_column_writes on ui.ui_surface_config;
-drop trigger if exists _a0_t13_dual_write on ui.ui_surface_item_type; drop trigger if exists _t13_count_row_column_writes on ui.ui_surface_item_type;
-drop trigger if exists _a0_t13_dual_write on ui.ui_surface_value; drop trigger if exists _t13_count_row_column_writes on ui.ui_surface_value;
-drop trigger if exists _a0_t13_dual_write on ui.ui_surface_write_target; drop trigger if exists _t13_count_row_column_writes on ui.ui_surface_write_target;
-drop trigger if exists _a0_t13_dual_write on users.invitation_codes; drop trigger if exists _t13_count_row_column_writes on users.invitation_codes;
-drop trigger if exists _a0_t13_dual_write on users.invitation_requests; drop trigger if exists _t13_count_row_column_writes on users.invitation_requests;
-drop trigger if exists _a0_t13_dual_write on users.profiles; drop trigger if exists _t13_count_row_column_writes on users.profiles;
-drop trigger if exists _a0_t13_dual_write on users.system_announcements; drop trigger if exists _t13_count_row_column_writes on users.system_announcements;
-drop trigger if exists _a0_t13_dual_write on users.user_achievements; drop trigger if exists _t13_count_row_column_writes on users.user_achievements;
-drop trigger if exists _a0_t13_dual_write on users.user_analysis_preferences; drop trigger if exists _t13_count_row_column_writes on users.user_analysis_preferences;
-drop trigger if exists _a0_t13_dual_write on users.user_markdown_samples; drop trigger if exists _t13_count_row_column_writes on users.user_markdown_samples;
-drop trigger if exists _a0_t13_dual_write on web.analysis_item; drop trigger if exists _t13_count_row_column_writes on web.analysis_item;
-drop trigger if exists _a0_t13_dual_write on web.brand; drop trigger if exists _t13_count_row_column_writes on web.brand;
-drop trigger if exists _a0_t13_dual_write on web.listing_publisher; drop trigger if exists _t13_count_row_column_writes on web.listing_publisher;
-drop trigger if exists _a0_t13_dual_write on web.news_item; drop trigger if exists _t13_count_row_column_writes on web.news_item;
-drop trigger if exists _a0_t13_dual_write on web.offering_template; drop trigger if exists _t13_count_row_column_writes on web.offering_template;
-drop trigger if exists _a0_t13_dual_write on web.provider; drop trigger if exists _t13_count_row_column_writes on web.provider;
-drop trigger if exists _a0_t13_dual_write on web.site; drop trigger if exists _t13_count_row_column_writes on web.site;
-drop trigger if exists _a0_t13_dual_write on web.voice_fingerprint; drop trigger if exists _t13_count_row_column_writes on web.voice_fingerprint;
-drop trigger if exists _a0_t13_dual_write on web.youtube_video; drop trigger if exists _t13_count_row_column_writes on web.youtube_video;
-drop trigger if exists _a0_t13_dual_write on workbench.google_document; drop trigger if exists _t13_count_row_column_writes on workbench.google_document;
-drop trigger if exists _a0_t13_dual_write on workbench.heatmap_saves; drop trigger if exists _t13_count_row_column_writes on workbench.heatmap_saves;
-drop trigger if exists _a0_t13_dual_write on workbench.note_folders; drop trigger if exists _t13_count_row_column_writes on workbench.note_folders;
-drop trigger if exists _a0_t13_dual_write on workbench.notes; drop trigger if exists _t13_count_row_column_writes on workbench.notes;
-drop trigger if exists _a0_t13_dual_write on workbench.pb_claim_appeals_fd31de; drop trigger if exists _t13_count_row_column_writes on workbench.pb_claim_appeals_fd31de;
-drop trigger if exists _a0_t13_dual_write on workbench.pb_insurance_claims_fd31de; drop trigger if exists _t13_count_row_column_writes on workbench.pb_insurance_claims_fd31de;
-drop trigger if exists _a0_t13_dual_write on workbench.product_capture_item; drop trigger if exists _t13_count_row_column_writes on workbench.product_capture_item;
-drop trigger if exists _a0_t13_dual_write on workbench.provlock_recall_visits_all8u5; drop trigger if exists _t13_count_row_column_writes on workbench.provlock_recall_visits_all8u5;
-drop trigger if exists _a0_t13_dual_write on workbench.udt_datasets; drop trigger if exists _t13_count_row_column_writes on workbench.udt_datasets;
-drop trigger if exists _a0_t13_dual_write on workbench.udt_documents; drop trigger if exists _t13_count_row_column_writes on workbench.udt_documents;
-drop trigger if exists _a0_t13_dual_write on workbench.udt_structured_lists; drop trigger if exists _t13_count_row_column_writes on workbench.udt_structured_lists;
-drop trigger if exists _a0_t13_dual_write on workbench.udt_workbooks; drop trigger if exists _t13_count_row_column_writes on workbench.udt_workbooks;
-drop trigger if exists _a0_t13_dual_write on workbench.working_documents; drop trigger if exists _t13_count_row_column_writes on workbench.working_documents;
-drop trigger if exists _a0_t13_dual_write on workflow.comparison; drop trigger if exists _t13_count_row_column_writes on workflow.comparison;
-drop trigger if exists _a0_t13_dual_write on workflow.definition; drop trigger if exists _t13_count_row_column_writes on workflow.definition;
-drop trigger if exists _a0_t13_dual_write on workflow.run; drop trigger if exists _t13_count_row_column_writes on workflow.run;
-drop trigger if exists _a0_t13_dual_write on workflow.runtime_surface; drop trigger if exists _t13_count_row_column_writes on workflow.runtime_surface;
-drop trigger if exists _a0_t13_dual_write on workflow.template; drop trigger if exists _t13_count_row_column_writes on workflow.template;
-drop trigger if exists _a0_t13_dual_write on workflow.trigger; drop trigger if exists _t13_count_row_column_writes on workflow.trigger;
-drop trigger if exists _a0_t13_dual_write on workspace.projects; drop trigger if exists _t13_count_row_column_writes on workspace.projects;
-drop trigger if exists _a0_t13_dual_write on workspace.spatial_boards; drop trigger if exists _t13_count_row_column_writes on workspace.spatial_boards;
-drop trigger if exists _a0_t13_dual_write on workspace.tasks; drop trigger if exists _t13_count_row_column_writes on workspace.tasks;
-drop trigger if exists _a0_t13_dual_write on workspace.threads; drop trigger if exists _t13_count_row_column_writes on workspace.threads;
-drop trigger if exists _a0_t13_dual_write on workspace.war_rooms; drop trigger if exists _t13_count_row_column_writes on workspace.war_rooms;
-
--- (2) shown_to set by the backfill goes back to null
-set session_replication_role = replica;
-update admin.admin_markdown_samples x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'admin.admin_markdown_samples' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update admin.feature_docs x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'admin.feature_docs' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.cmp_comparison_sets x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.cmp_comparison_sets' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.cmp_response_feedback x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.cmp_response_feedback' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.exemplar x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.exemplar' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.mandate_note x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.mandate_note' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.message_template x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.message_template' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.prompt_remediation x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.prompt_remediation' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.shortcut x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.shortcut' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.template x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.template' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update agent.term_list x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'agent.term_list' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ai.api x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ai.api' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ai.endpoint x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ai.endpoint' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ai.model_alias x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ai.model_alias' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ai.model_definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ai.model_definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ai.offering x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ai.offering' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ai.provider x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ai.provider' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ai.setting x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ai.setting' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ai.voices x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ai.voices' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update app_config x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'app_config' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update app.definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'app.definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update billing.capability x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'billing.capability' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update billing.capability_limit x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'billing.capability_limit' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update billing.plan x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'billing.plan' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update billing.plan_limit x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'billing.plan_limit' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update billing.price x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'billing.price' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update billing.product x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'billing.product' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update billing.spend_guardrail x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'billing.spend_guardrail' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update browser.login_recipe x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'browser.login_recipe' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update browser.site_policy x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'browser.site_policy' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update canvas.canvas_items x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'canvas.canvas_items' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update canvas.shared_canvas_items x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'canvas.shared_canvas_items' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update catalog_entries x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'catalog_entries' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update chat.agent_run x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'chat.agent_run' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update code.code_file_folders x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'code.code_file_folders' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update code.code_files x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'code.code_files' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update code.code_repositories x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'code.code_repositories' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.certified_printer x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.certified_printer' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.cloud_sync_connection x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.cloud_sync_connection' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.ebay_category x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.ebay_category' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.ebay_category_aspect x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.ebay_category_aspect' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.ebay_category_tree x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.ebay_category_tree' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.ebay_marketplace_policy x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.ebay_marketplace_policy' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.ebay_notification_destination x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.ebay_notification_destination' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.ebay_notification_topic x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.ebay_notification_topic' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.intake_batch x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.intake_batch' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.label_batch x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.label_batch' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.marketplace_account x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.marketplace_account' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.marketplace_rate_budget x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.marketplace_rate_budget' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.print_order x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.print_order' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update commerce.product x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'commerce.product' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.meet_call_invites x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.meet_call_invites' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.meet_meetings x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.meet_meetings' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.notification_channel_preference x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.notification_channel_preference' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.notification_event_override x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.notification_event_override' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.notification_event_type x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.notification_event_type' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.notification_preference x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.notification_preference' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.sms_consent x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.sms_consent' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.sms_notification_preferences x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.sms_notification_preferences' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.sms_notifications x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.sms_notifications' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update communication.sms_phone_numbers x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'communication.sms_phone_numbers' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update content_ir.kind_definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'content_ir.kind_definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update content_ir.kind_instance x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'content_ir.kind_instance' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update content.document x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'content.document' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update context.scopes x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'context.scopes' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update context.system_context_item x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'context.system_context_item' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.blocklist_entry x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.blocklist_entry' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.contact_medium x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.contact_medium' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.deal x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.deal' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.enrichment_call x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.enrichment_call' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.jurisdiction_policy x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.jurisdiction_policy' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.outreach_list x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.outreach_list' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.party x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.party' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.registry_ingest_run x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.registry_ingest_run' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.registry_source x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.registry_source' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.sending_identity x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.sending_identity' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update crm.sending_policy x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'crm.sending_policy' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.anon_form x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.anon_form' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.anon_hit x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.anon_hit' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.anon_inbound x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.anon_inbound' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.anon_replay x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.anon_replay' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.anon_submission x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.anon_submission' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.anon_token x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.anon_token' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.doc_render x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.doc_render' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.doc_signature x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.doc_signature' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.external_link x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.external_link' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.external_source x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.external_source' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.io_comment x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.io_comment' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.io_import x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.io_import' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.io_outbox x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.io_outbox' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update custom.merge_field_provenance x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'custom.merge_field_provenance' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update docproc.derive_runs x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'docproc.derive_runs' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update docproc.page_extraction_jobs x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'docproc.page_extraction_jobs' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update docproc.page_extraction_page_runs x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'docproc.page_extraction_page_runs' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update docproc.processed_documents x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'docproc.processed_documents' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.assessment x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.assessment' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.content_certification x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.content_certification' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.fc_card x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.fc_card' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.fc_set x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.fc_set' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.game_badge x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.game_badge' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.game_result x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.game_result' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.game_room x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.game_room' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.league_membership x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.league_membership' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.learn_doc x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.learn_doc' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.math_problems x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.math_problems' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.quiz_sessions x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.quiz_sessions' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.study_goal x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.study_goal' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.study_media x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.study_media' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.study_plan x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.study_plan' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.study_reminder_context x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.study_reminder_context' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update education.study_reminder_delivery x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'education.study_reminder_delivery' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update esign.campaign x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'esign.campaign' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update esign.consent_disclosure x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'esign.consent_disclosure' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update esign.envelope x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'esign.envelope' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update esign.provider_binding x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'esign.provider_binding' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update extend.wbx_demo x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'extend.wbx_demo' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update extend.wbx_highlight x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'extend.wbx_highlight' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update extend.wbx_pattern x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'extend.wbx_pattern' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update extend.wbx_recipe x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'extend.wbx_recipe' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update extend.wbx_screenshot x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'extend.wbx_screenshot' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update extend.wbx_seo_audit x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'extend.wbx_seo_audit' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update files.account_tiers x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'files.account_tiers' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update files.files x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'files.files' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update files.folders x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'files.folders' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update files.machine_written_prefixes x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'files.machine_written_prefixes' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update files.sync_mappings x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'files.sync_mappings' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update growth.loop_run x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'growth.loop_run' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update growth.stage_ref_kind x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'growth.stage_ref_kind' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hindsight.enrollment x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hindsight.enrollment' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hindsight.regression_case x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hindsight.regression_case' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hindsight.replay_step x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hindsight.replay_step' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.access_role x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.access_role' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.alert_routing_rule x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.alert_routing_rule' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.asset x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.asset' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.auto_close_rule x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.auto_close_rule' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.careers_portal x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.careers_portal' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.checklist_template x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.checklist_template' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.course x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.course' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.crew x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.crew' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.deduction_code x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.deduction_code' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.department x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.department' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.earning_code x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.earning_code' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.employee x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.employee' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.employer_profile x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.employer_profile' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.field_policy x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.field_policy' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.holiday_calendar x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.holiday_calendar' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.interview_kit x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.interview_kit' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.job_title x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.job_title' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.jurisdiction x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.jurisdiction' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.jurisdiction_rule x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.jurisdiction_rule' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.jurisdiction_rule_class x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.jurisdiction_rule_class' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.jurisdiction_rule_org_decision x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.jurisdiction_rule_org_decision' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.kiosk_device x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.kiosk_device' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.leave_policy x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.leave_policy' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.location x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.location' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.overtime_alert_rule x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.overtime_alert_rule' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.pay_group x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.pay_group' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.posting x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.posting' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.provider_binding x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.provider_binding' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.record_class x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.record_class' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.requisition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.requisition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.retention_rule x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.retention_rule' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.schedule x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.schedule' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.schedule_guidance x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.schedule_guidance' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.schedule_template x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.schedule_template' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.survey x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.survey' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.workflow_definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.workflow_definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update hr.workflow_flow_type x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'hr.workflow_flow_type' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update iam.access_requests x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'iam.access_requests' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update iam.api_keys x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'iam.api_keys' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update iam.emergency_door_request x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'iam.emergency_door_request' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update iam.industries x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'iam.industries' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update iam.team x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'iam.team' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update interview.decision_interview x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'interview.decision_interview' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update interview.session x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'interview.session' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update legal.wc_impairment_definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'legal.wc_impairment_definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update mandate.binding x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'mandate.binding' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update mandate.definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'mandate.definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update mandate.provision x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'mandate.provision' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update mandate.reference x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'mandate.reference' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update mandate.scan x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'mandate.scan' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update mandate.treatment x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'mandate.treatment' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update marketing.initiative x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'marketing.initiative' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update media.capture_handoff x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'media.capture_handoff' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update media.catalog_setting x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'media.catalog_setting' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update media.source_library x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'media.source_library' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update meta.audit_exemption x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'meta.audit_exemption' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ops.app_log_muted_pattern x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ops.app_log_muted_pattern' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ops.app_log_norm_exception x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ops.app_log_norm_exception' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ops.check_item x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ops.check_item' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ops.check_run x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ops.check_run' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ops.proof_check x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ops.proof_check' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ops.proof_scenario x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ops.proof_scenario' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update pdf.pdf_redaction_audits x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'pdf.pdf_redaction_audits' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update plan.entity x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'plan.entity' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update plan.node x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'plan.node' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update plan.profile x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'plan.profile' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.action_request x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.action_request' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.approach x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.approach' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.assist_producer_policy x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.assist_producer_policy' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.assists x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.assists' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.assurance_level x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.assurance_level' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.categories x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.categories' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.change_type_default x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.change_type_default' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.continued_access x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.continued_access' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.custom_entity_definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.custom_entity_definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.custom_field_definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.custom_field_definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.custom_field_target x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.custom_field_target' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.domain_classification x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.domain_classification' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.egress_device x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.egress_device' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.flexible_data x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.flexible_data' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.guided_checklist_run x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.guided_checklist_run' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.knob_scope_kind x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.knob_scope_kind' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.knob_write_door x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.knob_write_door' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.outcome_event x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.outcome_event' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.output_feedback x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.output_feedback' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.outsider_consumer x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.outsider_consumer' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.purpose x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.purpose' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.retention_policy x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.retention_policy' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.route_manifest x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.route_manifest' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.rulebook x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.rulebook' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.saved_view x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.saved_view' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.secure_delivery x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.secure_delivery' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.shareable_resource_registry x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.shareable_resource_registry' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.source_authority x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.source_authority' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update platform.taxonomy_node x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'platform.taxonomy_node' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update podcast.pc_articles x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'podcast.pc_articles' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update podcast.pc_episodes x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'podcast.pc_episodes' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update podcast.pc_race x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'podcast.pc_race' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update podcast.pc_shows x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'podcast.pc_shows' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update podcast.pc_studio_runs x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'podcast.pc_studio_runs' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.context_item_suggestions x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.context_item_suggestions' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.data_stores x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.data_stores' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.kg_alerts x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.kg_alerts' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.kg_suggestion_ack x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.kg_suggestion_ack' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.kg_sweep_queue x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.kg_sweep_queue' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.kg_sweep_run x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.kg_sweep_run' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.kg_value_matches x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.kg_value_matches' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.library_docs x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.library_docs' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.ner_canonicalizer_shadow x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.ner_canonicalizer_shadow' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.scope_association_suggestions x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.scope_association_suggestions' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.scope_item_value_suggestions x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.scope_item_value_suggestions' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update rag.scope_suggestions x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'rag.scope_suggestions' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update research.rs_context_bundle x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'research.rs_context_bundle' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update research.rs_template x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'research.rs_template' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update research.rs_topic x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'research.rs_topic' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update research.youtube_search x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'research.youtube_search' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update research.youtube_video x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'research.youtube_video' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update runtime.global_origin x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'runtime.global_origin' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update runtime.global_request x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'runtime.global_request' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update runtime.operation_stream x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'runtime.operation_stream' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update runtime.operation_stream_batch x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'runtime.operation_stream_batch' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update scheduler.sch_task x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'scheduler.sch_task' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update scraper.scrape_parsed_page x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'scraper.scrape_parsed_page' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.ai_capability x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.ai_capability' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.collection_run x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.collection_run' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.engine_schedule x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.engine_schedule' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.geo_place x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.geo_place' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.keyword x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.keyword' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.keyword_class_rule x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.keyword_class_rule' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.keyword_edge x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.keyword_edge' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.keyword_facet x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.keyword_facet' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.keyword_market x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.keyword_market' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.keyword_place x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.keyword_place' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.keyword_topic x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.keyword_topic' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.map_facet x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.map_facet' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.map_facet_value x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.map_facet_value' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.rank_target x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.rank_target' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.source_request x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.source_request' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.starter_pack x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.starter_pack' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.story_angle x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.story_angle' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.topic x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.topic' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update seo.topical_map x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'seo.topical_map' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update skill.definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'skill.definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update skill.render_definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'skill.render_definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update tool.bundle x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'tool.bundle' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update tool.definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'tool.definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update tool.executor x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'tool.executor' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update tool.mcp_config x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'tool.mcp_config' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update tool.mcp_server x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'tool.mcp_server' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update tool.surface_defaults x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'tool.surface_defaults' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update transcripts.transcripts x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'transcripts.transcripts' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ui.ui_client x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ui.ui_client' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ui.ui_surface_agent_pref x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ui.ui_surface_agent_pref' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ui.ui_surface_agent_role x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ui.ui_surface_agent_role' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ui.ui_surface_client_tool x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ui.ui_surface_client_tool' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ui.ui_surface_config x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ui.ui_surface_config' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ui.ui_surface_item_type x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ui.ui_surface_item_type' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ui.ui_surface_value x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ui.ui_surface_value' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update ui.ui_surface_write_target x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'ui.ui_surface_write_target' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update users.invitation_codes x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'users.invitation_codes' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update users.invitation_requests x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'users.invitation_requests' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update users.profiles x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'users.profiles' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update users.system_announcements x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'users.system_announcements' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update users.user_achievements x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'users.user_achievements' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update users.user_markdown_samples x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'users.user_markdown_samples' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update web.analysis_item x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'web.analysis_item' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update web.brand x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'web.brand' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update web.listing_publisher x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'web.listing_publisher' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update web.news_item x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'web.news_item' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update web.offering_template x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'web.offering_template' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update web.provider x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'web.provider' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update web.site x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'web.site' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update web.youtube_video x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'web.youtube_video' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.google_document x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.google_document' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.heatmap_saves x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.heatmap_saves' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.note_folders x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.note_folders' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.notes x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.notes' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.product_capture_item x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.product_capture_item' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.udt_datasets x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.udt_datasets' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.udt_documents x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.udt_documents' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.udt_structured_lists x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.udt_structured_lists' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.udt_workbooks x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.udt_workbooks' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workbench.working_documents x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workbench.working_documents' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workflow.comparison x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workflow.comparison' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workflow.definition x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workflow.definition' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workflow.run x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workflow.run' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workflow.runtime_surface x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workflow.runtime_surface' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workflow.template x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workflow.template' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workflow.trigger x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workflow.trigger' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workspace.projects x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workspace.projects' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workspace.spatial_boards x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workspace.spatial_boards' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workspace.tasks x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workspace.tasks' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workspace.threads x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workspace.threads' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-update workspace.war_rooms x set shown_to = null from ops.t13_backfill_ledger l where l.table_ref = 'workspace.war_rooms' and l.column_name = 'shown_to' and l.id = x.id and x.shown_to = 'only_me';
-set session_replication_role = origin;
-
--- (3) checks and columns
-alter table admin.admin_markdown_samples drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table admin.feature_docs drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.cmp_comparison_sets drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.cmp_response_feedback drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.exemplar drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.mandate_note drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.message_template drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.prompt_remediation drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.shortcut drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.template drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table agent.term_list drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ai.api drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ai.endpoint drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ai.model_alias drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ai.model_definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ai.offering drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ai.provider drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ai.setting drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ai.voices drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table app_config drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table app.definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table billing.capability drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table billing.capability_limit drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table billing.plan drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table billing.plan_limit drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table billing.price drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table billing.product drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table billing.spend_approval drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table billing.spend_guardrail drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table browser.login_recipe drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table browser.site_policy drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table canvas.canvas_items drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table canvas.shared_canvas_items drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table catalog_entries drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table chat.agent_run drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table code.code_file_folders drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table code.code_files drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table code.code_repositories drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.certified_printer drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.cloud_sync_connection drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.ebay_category drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.ebay_category_aspect drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.ebay_category_tree drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.ebay_marketplace_policy drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.ebay_notification_destination drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.ebay_notification_topic drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.intake_batch drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.label_batch drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.marketplace_account drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.marketplace_rate_budget drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.print_order drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table commerce.product drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.meet_call_invites drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.meet_meetings drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.notification_channel_preference drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.notification_event_override drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.notification_event_type drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.notification_preference drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.sms_consent drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.sms_notification_preferences drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.sms_notifications drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table communication.sms_phone_numbers drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table content_ir.kind_definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table content_ir.kind_instance drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table content.document drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table context.scopes drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table context.system_context_item drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.blocklist_entry drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.contact_medium drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.deal drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.enrichment_call drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.jurisdiction_policy drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.outreach_list drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.party drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.registry_ingest_run drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.registry_source drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.sending_identity drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table crm.sending_policy drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.anon_form drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.anon_hit drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.anon_inbound drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.anon_replay drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.anon_submission drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.anon_token drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.doc_render drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.doc_signature drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.external_link drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.external_source drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.io_comment drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.io_import drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.io_outbox drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table custom.merge_field_provenance drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table docproc.derive_runs drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table docproc.page_extraction_jobs drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table docproc.page_extraction_page_runs drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table docproc.processed_documents drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.assessment drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.content_certification drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.fc_card drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.fc_set drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.game_badge drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.game_result drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.game_room drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.league_membership drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.learn_doc drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.math_problems drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.quiz_sessions drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.study_goal drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.study_media drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.study_plan drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.study_reminder_context drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table education.study_reminder_delivery drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table esign.campaign drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table esign.consent_disclosure drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table esign.envelope drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table esign.provider_binding drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table extend.wbx_demo drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table extend.wbx_guidance drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table extend.wbx_highlight drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table extend.wbx_pattern drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table extend.wbx_recipe drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table extend.wbx_screenshot drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table extend.wbx_seo_audit drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table files.account_tiers drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table files.files drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table files.folders drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table files.machine_written_prefixes drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table files.sync_mappings drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table growth.loop_run drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table growth.stage_ref_kind drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hindsight.enrollment drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hindsight.regression_case drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hindsight.replay_step drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.access_role drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.alert_routing_rule drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.asset drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.auto_close_rule drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.careers_portal drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.checklist_template drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.course drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.crew drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.deduction_code drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.department drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.earning_code drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.employee drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.employer_profile drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.field_policy drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.holiday_calendar drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.interview_kit drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.job_title drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.jurisdiction drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.jurisdiction_rule drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.jurisdiction_rule_class drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.jurisdiction_rule_org_decision drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.kiosk_device drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.leave_policy drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.location drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.overtime_alert_rule drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.pay_group drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.posting drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.provider_binding drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.record_class drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.requisition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.retention_rule drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.schedule drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.schedule_guidance drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.schedule_template drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.survey drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.workflow_definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table hr.workflow_flow_type drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table iam.access_requests drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table iam.api_keys drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table iam.emergency_door_request drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table iam.industries drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table iam.team drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table interview.decision_interview drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table interview.session drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table legal.wc_impairment_definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table mandate.binding drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table mandate.definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table mandate.provision drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table mandate.reference drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table mandate.scan drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table mandate.treatment drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table marketing.initiative drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table media.capture_handoff drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table media.catalog_setting drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table media.source_library drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table meta.audit_exemption drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ops.app_log_muted_pattern drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ops.app_log_norm_exception drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ops.check_item drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ops.check_run drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ops.proof_check drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ops.proof_scenario drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table pdf.pdf_redaction_audits drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table plan.entity drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table plan.node drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table plan.profile drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.action_request drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.approach drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.assist_producer_policy drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.assists drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.assurance_level drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.categories drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.change_type_default drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.continued_access drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.custom_entity_definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.custom_field_definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.custom_field_target drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.dated_change drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.domain_classification drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.egress_device drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.flexible_data drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.guided_checklist_run drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.knob_scope_kind drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.knob_write_door drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.outcome_event drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.output_feedback drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.outsider_consumer drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.purpose drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.retention_policy drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.route_manifest drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.rulebook drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.saved_view drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.secure_delivery drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.shareable_resource_registry drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.source_authority drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table platform.taxonomy_node drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table podcast.pc_articles drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table podcast.pc_episodes drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table podcast.pc_race drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table podcast.pc_shows drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table podcast.pc_studio_runs drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.context_item_suggestions drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.data_stores drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.kg_alerts drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.kg_suggestion_ack drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.kg_sweep_queue drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.kg_sweep_run drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.kg_value_matches drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.library_docs drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.ner_canonicalizer_shadow drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.scope_association_suggestions drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.scope_item_value_suggestions drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table rag.scope_suggestions drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table research.rs_context_bundle drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table research.rs_template drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table research.rs_topic drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table research.youtube_search drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table research.youtube_video drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table runtime.global_origin drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table runtime.global_request drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table runtime.operation_stream drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table runtime.operation_stream_batch drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table scheduler.sch_task drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table scraper.scrape_parsed_page drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.ai_capability drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.collection_run drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.engine_schedule drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.geo_place drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.keyword drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.keyword_class_rule drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.keyword_edge drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.keyword_facet drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.keyword_market drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.keyword_place drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.keyword_topic drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.map_facet drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.map_facet_value drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.rank_target drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.source_request drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.starter_pack drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.story_angle drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.topic drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table seo.topical_map drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table skill.definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table skill.render_definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table tool.bundle drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table tool.definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table tool.executor drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table tool.mcp_config drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table tool.mcp_server drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table tool.surface_defaults drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table transcripts.transcripts drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ui.ui_client drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ui.ui_surface_agent_pref drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ui.ui_surface_agent_role drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ui.ui_surface_client_tool drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ui.ui_surface_config drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ui.ui_surface_item_type drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ui.ui_surface_value drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table ui.ui_surface_write_target drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table users.invitation_codes drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table users.invitation_requests drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table users.profiles drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table users.system_announcements drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table users.user_achievements drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table users.user_analysis_preferences drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table users.user_markdown_samples drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table web.analysis_item drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table web.brand drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table web.listing_publisher drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table web.news_item drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table web.offering_template drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table web.provider drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table web.site drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table web.voice_fingerprint drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table web.youtube_video drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.google_document drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.heatmap_saves drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.note_folders drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.notes drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.pb_claim_appeals_fd31de drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.pb_insurance_claims_fd31de drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.product_capture_item drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.provlock_recall_visits_all8u5 drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.udt_datasets drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.udt_documents drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.udt_structured_lists drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.udt_workbooks drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workbench.working_documents drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workflow.comparison drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workflow.definition drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workflow.run drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workflow.runtime_surface drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workflow.template drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workflow.trigger drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workspace.projects drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workspace.spatial_boards drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workspace.tasks drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workspace.threads drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
-alter table workspace.war_rooms drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by;
+do $rollback$
+declare
+  v_tables text[] := array[
+    'admin.admin_markdown_samples',
+    'admin.feature_docs',
+    'agent.cmp_comparison_sets',
+    'agent.cmp_response_feedback',
+    'agent.definition',
+    'agent.exemplar',
+    'agent.mandate_note',
+    'agent.message_template',
+    'agent.prompt_remediation',
+    'agent.shortcut',
+    'agent.template',
+    'agent.term_list',
+    'ai.api',
+    'ai.endpoint',
+    'ai.model_alias',
+    'ai.model_definition',
+    'ai.offering',
+    'ai.provider',
+    'ai.setting',
+    'ai.voices',
+    'app_config',
+    'app.definition',
+    'billing.capability',
+    'billing.capability_limit',
+    'billing.plan',
+    'billing.plan_limit',
+    'billing.price',
+    'billing.product',
+    'billing.spend_approval',
+    'billing.spend_guardrail',
+    'browser.login_recipe',
+    'browser.site_policy',
+    'canvas.canvas_items',
+    'canvas.shared_canvas_items',
+    'catalog_entries',
+    'chat.agent_run',
+    'code.code_file_folders',
+    'code.code_files',
+    'code.code_repositories',
+    'commerce.certified_printer',
+    'commerce.cloud_sync_connection',
+    'commerce.ebay_category',
+    'commerce.ebay_category_aspect',
+    'commerce.ebay_category_tree',
+    'commerce.ebay_marketplace_policy',
+    'commerce.ebay_notification_destination',
+    'commerce.ebay_notification_topic',
+    'commerce.intake_batch',
+    'commerce.label_batch',
+    'commerce.marketplace_account',
+    'commerce.marketplace_rate_budget',
+    'commerce.print_order',
+    'commerce.product',
+    'communication.meet_call_invites',
+    'communication.meet_meetings',
+    'communication.notification_channel_preference',
+    'communication.notification_event_override',
+    'communication.notification_event_type',
+    'communication.notification_preference',
+    'communication.sms_consent',
+    'communication.sms_notification_preferences',
+    'communication.sms_notifications',
+    'communication.sms_phone_numbers',
+    'content_ir.kind_definition',
+    'content_ir.kind_instance',
+    'content.document',
+    'context.scopes',
+    'context.system_context_item',
+    'crm.blocklist_entry',
+    'crm.contact_medium',
+    'crm.deal',
+    'crm.enrichment_call',
+    'crm.jurisdiction_policy',
+    'crm.outreach_list',
+    'crm.party',
+    'crm.registry_ingest_run',
+    'crm.registry_source',
+    'crm.sending_identity',
+    'crm.sending_policy',
+    'custom.anon_form',
+    'custom.anon_hit',
+    'custom.anon_inbound',
+    'custom.anon_replay',
+    'custom.anon_submission',
+    'custom.anon_token',
+    'custom.doc_render',
+    'custom.doc_signature',
+    'custom.external_link',
+    'custom.external_source',
+    'custom.io_comment',
+    'custom.io_import',
+    'custom.io_outbox',
+    'custom.merge_field_provenance',
+    'docproc.derive_runs',
+    'docproc.page_extraction_jobs',
+    'docproc.page_extraction_page_runs',
+    'docproc.processed_documents',
+    'education.assessment',
+    'education.content_certification',
+    'education.fc_card',
+    'education.fc_set',
+    'education.game_badge',
+    'education.game_result',
+    'education.game_room',
+    'education.league_membership',
+    'education.learn_doc',
+    'education.math_problems',
+    'education.quiz_sessions',
+    'education.study_goal',
+    'education.study_media',
+    'education.study_plan',
+    'education.study_reminder_context',
+    'education.study_reminder_delivery',
+    'esign.campaign',
+    'esign.consent_disclosure',
+    'esign.envelope',
+    'esign.provider_binding',
+    'extend.wbx_demo',
+    'extend.wbx_guidance',
+    'extend.wbx_highlight',
+    'extend.wbx_pattern',
+    'extend.wbx_recipe',
+    'extend.wbx_screenshot',
+    'extend.wbx_seo_audit',
+    'files.account_tiers',
+    'files.files',
+    'files.folders',
+    'files.machine_written_prefixes',
+    'files.sync_mappings',
+    'growth.loop_run',
+    'growth.stage_ref_kind',
+    'hindsight.enrollment',
+    'hindsight.regression_case',
+    'hindsight.replay_step',
+    'hr.access_role',
+    'hr.alert_routing_rule',
+    'hr.asset',
+    'hr.auto_close_rule',
+    'hr.careers_portal',
+    'hr.checklist_template',
+    'hr.course',
+    'hr.crew',
+    'hr.deduction_code',
+    'hr.department',
+    'hr.earning_code',
+    'hr.employee',
+    'hr.employer_profile',
+    'hr.field_policy',
+    'hr.holiday_calendar',
+    'hr.interview_kit',
+    'hr.job_title',
+    'hr.jurisdiction',
+    'hr.jurisdiction_rule',
+    'hr.jurisdiction_rule_class',
+    'hr.jurisdiction_rule_org_decision',
+    'hr.kiosk_device',
+    'hr.leave_policy',
+    'hr.location',
+    'hr.overtime_alert_rule',
+    'hr.pay_group',
+    'hr.posting',
+    'hr.provider_binding',
+    'hr.record_class',
+    'hr.requisition',
+    'hr.retention_rule',
+    'hr.schedule',
+    'hr.schedule_guidance',
+    'hr.schedule_template',
+    'hr.survey',
+    'hr.workflow_definition',
+    'hr.workflow_flow_type',
+    'iam.access_requests',
+    'iam.api_keys',
+    'iam.emergency_door_request',
+    'iam.industries',
+    'iam.team',
+    'interview.decision_interview',
+    'interview.session',
+    'legal.wc_impairment_definition',
+    'mandate.binding',
+    'mandate.definition',
+    'mandate.provision',
+    'mandate.reference',
+    'mandate.scan',
+    'mandate.treatment',
+    'marketing.initiative',
+    'media.capture_handoff',
+    'media.catalog_setting',
+    'media.source_library',
+    'meta.audit_exemption',
+    'ops.app_log_muted_pattern',
+    'ops.app_log_norm_exception',
+    'ops.check_item',
+    'ops.check_run',
+    'ops.proof_check',
+    'ops.proof_scenario',
+    'pdf.pdf_redaction_audits',
+    'plan.entity',
+    'plan.node',
+    'plan.profile',
+    'platform.action_request',
+    'platform.approach',
+    'platform.assist_producer_policy',
+    'platform.assists',
+    'platform.assurance_level',
+    'platform.categories',
+    'platform.change_type_default',
+    'platform.continued_access',
+    'platform.custom_entity_definition',
+    'platform.custom_field_definition',
+    'platform.custom_field_target',
+    'platform.dated_change',
+    'platform.domain_classification',
+    'platform.egress_device',
+    'platform.flexible_data',
+    'platform.guided_checklist_run',
+    'platform.knob_scope_kind',
+    'platform.knob_write_door',
+    'platform.outcome_event',
+    'platform.output_feedback',
+    'platform.outsider_consumer',
+    'platform.purpose',
+    'platform.retention_policy',
+    'platform.route_manifest',
+    'platform.rulebook',
+    'platform.saved_view',
+    'platform.secure_delivery',
+    'platform.shareable_resource_registry',
+    'platform.source_authority',
+    'platform.taxonomy_node',
+    'podcast.pc_articles',
+    'podcast.pc_episodes',
+    'podcast.pc_race',
+    'podcast.pc_shows',
+    'podcast.pc_studio_runs',
+    'rag.context_item_suggestions',
+    'rag.data_stores',
+    'rag.kg_alerts',
+    'rag.kg_suggestion_ack',
+    'rag.kg_sweep_queue',
+    'rag.kg_sweep_run',
+    'rag.kg_value_matches',
+    'rag.library_docs',
+    'rag.ner_canonicalizer_shadow',
+    'rag.scope_association_suggestions',
+    'rag.scope_item_value_suggestions',
+    'rag.scope_suggestions',
+    'research.rs_context_bundle',
+    'research.rs_template',
+    'research.rs_topic',
+    'research.youtube_search',
+    'research.youtube_video',
+    'runtime.global_origin',
+    'runtime.global_request',
+    'runtime.operation_stream',
+    'runtime.operation_stream_batch',
+    'scheduler.sch_task',
+    'scraper.scrape_parsed_page',
+    'seo.ai_capability',
+    'seo.collection_run',
+    'seo.engine_schedule',
+    'seo.geo_place',
+    'seo.keyword',
+    'seo.keyword_class_rule',
+    'seo.keyword_edge',
+    'seo.keyword_facet',
+    'seo.keyword_market',
+    'seo.keyword_place',
+    'seo.keyword_topic',
+    'seo.map_facet',
+    'seo.map_facet_value',
+    'seo.rank_target',
+    'seo.source_request',
+    'seo.starter_pack',
+    'seo.story_angle',
+    'seo.topic',
+    'seo.topical_map',
+    'skill.definition',
+    'skill.render_definition',
+    'tool.bundle',
+    'tool.definition',
+    'tool.executor',
+    'tool.mcp_config',
+    'tool.mcp_server',
+    'tool.surface_defaults',
+    'transcripts.transcripts',
+    'ui.ui_client',
+    'ui.ui_surface_agent_pref',
+    'ui.ui_surface_agent_role',
+    'ui.ui_surface_client_tool',
+    'ui.ui_surface_config',
+    'ui.ui_surface_item_type',
+    'ui.ui_surface_value',
+    'ui.ui_surface_write_target',
+    'users.invitation_codes',
+    'users.invitation_requests',
+    'users.profiles',
+    'users.system_announcements',
+    'users.user_achievements',
+    'users.user_analysis_preferences',
+    'users.user_markdown_samples',
+    'web.analysis_item',
+    'web.brand',
+    'web.listing_publisher',
+    'web.news_item',
+    'web.offering_template',
+    'web.provider',
+    'web.site',
+    'web.voice_fingerprint',
+    'web.youtube_video',
+    'workbench.google_document',
+    'workbench.heatmap_saves',
+    'workbench.note_folders',
+    'workbench.notes',
+    'workbench.pb_claim_appeals_fd31de',
+    'workbench.pb_insurance_claims_fd31de',
+    'workbench.product_capture_item',
+    'workbench.provlock_recall_visits_all8u5',
+    'workbench.udt_datasets',
+    'workbench.udt_documents',
+    'workbench.udt_structured_lists',
+    'workbench.udt_workbooks',
+    'workbench.working_documents',
+    'workflow.comparison',
+    'workflow.definition',
+    'workflow.run',
+    'workflow.runtime_surface',
+    'workflow.template',
+    'workflow.trigger',
+    'workspace.projects',
+    'workspace.spatial_boards',
+    'workspace.tasks',
+    'workspace.threads',
+    'workspace.war_rooms'
+  ];
+  v_mode   text    := coalesce(current_setting('t13.rollback_mode', true), '');
+  v_only   text[]  := case when position(':' in v_mode) > 0
+                           then string_to_array(regexp_replace(split_part(v_mode, ':', 2), '\s', '', 'g'), ',') end;
+  v_dry    boolean := v_mode like 'dry\_run%';
+  t        text;
+  rel      regclass;
+  step     int;
+  tries    int;
+  ok       boolean;
+  more     boolean;
+  n        bigint;
+  msg      text;
+  l        record;
+  v_shown  boolean;
+begin
+  if v_mode !~ '^(apply|dry_run)(:.+)?$' then
+    raise exception 'T-13 rollback refuses to start: t13.rollback_mode is %', coalesce(nullif(v_mode, ''), 'not set')
+      using hint = 'In this same session first: set t13.rollback_mode = ''apply'' (or ''dry_run'' / ''apply:schema.table,schema.table''). Use a session connection (port 5432); the transaction pooler drops the setting.';
+  end if;
+  raise notice 'T-13 rollback: % on %', case when v_dry then 'DRY RUN (every unit rolled back)' else 'APPLY' end,
+    coalesce(array_to_string(v_only, ', '), 'all ' || cardinality(v_tables) || ' tables');
+  foreach t in array v_tables loop
+    continue when v_only is not null and not (t = any (v_only));
+    rel := to_regclass(t);
+    if rel is null then
+      raise notice '% : table gone, skipped', t;
+      continue;
+    end if;
+    for step in 1..3 loop
+      more := true;
+      while more loop
+        tries := 0;
+        loop
+          n := 0;
+          begin
+            perform set_config('lock_timeout', '2s', true);
+            if step = 1 then
+              execute format('drop trigger if exists _a0_t13_dual_write on %s', rel);
+              execute format('drop trigger if exists _t13_count_row_column_writes on %s', rel);
+              for l in select d.column_name, d.old_default from ops.t13_default_ledger d where d.table_ref = rel loop
+                if exists (select 1 from pg_attribute where attrelid = rel and attname = l.column_name and not attisdropped) then
+                  execute format('alter table %s alter column %I set default %s', rel, l.column_name, l.old_default);
+                end if;
+              end loop;
+              msg := 'triggers dropped, defaults restored';
+            elsif step = 2 then
+              v_shown := exists (select 1 from pg_attribute where attrelid = rel and attname = 'shown_to' and not attisdropped);
+              if v_shown then
+                set local session_replication_role = replica;  -- a SET statement: supautils admits it, set_config() is refused
+                execute format($q$
+                  with pick as (
+                    select x.id from %1$s x
+                      join ops.t13_backfill_ledger b on b.table_ref = %2$L and b.column_name = 'shown_to' and b.id = x.id
+                     where x.shown_to = 'only_me'
+                     limit 5000
+                       for update of x skip locked)
+                  update %1$s x set shown_to = null from pick where x.id = pick.id$q$, rel, rel::text);
+                get diagnostics n = row_count;
+                set local session_replication_role = origin;
+              end if;
+              msg := format('shown_to reset on %s rows', n);
+            else
+              execute format('alter table %s drop constraint if exists t13_indexed_only_when_published, drop constraint if exists t13_everyone_on_ai_matrx_only_when_published, drop column if exists published_to_web, drop column if exists published_to_web_at, drop column if exists published_to_web_by', rel);
+              msg := 'checks and columns dropped';
+            end if;
+            if v_dry then
+              raise exception 't13 rollback dry run' using errcode = 'T13DR';
+            end if;
+            ok := true;
+          exception
+            when sqlstate 'T13DR' then ok := true; msg := msg || ' (dry run, rolled back)';
+            when lock_not_available or deadlock_detected then ok := false; msg := sqlerrm;
+          end;
+          commit;
+          exit when ok;
+          tries := tries + 1;
+          raise notice '% step % : % — retry % after backoff', t, step, msg, tries;
+          if tries >= 10 then
+            raise exception 'T-13 rollback STOPPED at % step %: still locked after 10 tries (%). Everything before it is committed; re-run this file (safe).', t, step, msg;
+          end if;
+          perform pg_sleep(least(30, 0.5 * 2 ^ (tries - 1)) + random() * 0.5);
+        end loop;
+        raise notice '% step % : %', t, step, msg || case when tries > 0 then format(' (after %s retries)', tries) else '' end;
+        more := step = 2 and n > 0 and not v_dry;
+      end loop;
+    end loop;
+  end loop;
+end
+$rollback$;
