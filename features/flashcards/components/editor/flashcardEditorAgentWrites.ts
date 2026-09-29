@@ -62,7 +62,8 @@ export function parseMatchingCardUpdate(
       "matching_card_content only accepts card_id, expected_version, prompt, and pairs.",
     );
   const id = text(record.card_id, "matching_card_content.card_id");
-  if (!Number.isSafeInteger(record.expected_version) || record.expected_version < 1)
+  const expectedVersion = record.expected_version;
+  if (typeof expectedVersion !== "number" || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1)
     throw new Error(
       "matching_card_content.expected_version must be the positive version from cards.",
     );
