@@ -144,6 +144,8 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
   // never this component's memory (a reload or a navigation keeps the truth).
   const starting = Boolean(live && !live.runId && !live.error);
   const runs = useMonitorRuns(trackerId, starting);
+  const anyRunGoing = (runs.data ?? []).some((r) => !isTerminalRunStatus(r.status));
+  const tracker = useTracker(trackerId, starting || anyRunGoing ? 5000 : false);
   const selectedRunId =
     runParam ??
     live?.runId ??
@@ -158,7 +160,6 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
     selectedRunId && runStatus && !isTerminalRunStatus(runStatus),
   );
   const running = starting || selectedActive;
-  const tracker = useTracker(trackerId, running ? 5000 : false);
   const parts = useRunParts(selectedRunId, running ? 4000 : false);
   const stories = useTrackerStories(trackerId);
 
