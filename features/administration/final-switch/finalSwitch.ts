@@ -237,6 +237,27 @@ export async function readFinalSwitch(): Promise<FinalSwitchBoard> {
 }
 
 /** Sort for the table: what blocks first, then what copying again clears, then the ready. */
+/**
+ * A check's title, from its state (lane FINAL-SWITCH-2). A readiness check's `says` is its NAME: the
+ * sentence it reads when it is met ("The last Step 1 … finished green"). Printed bold over an unmet
+ * check's detail it reads as a claim the detail then contradicts, so an unmet check's title says
+ * what is not true yet: "Not yet: the last Step 1 … finished green." A screen never lies.
+ */
+export function checkTitle(
+  says: string | null | undefined,
+  met: boolean,
+  /** Inside a sentence ("Copy again: not yet: …"): lower-case "not yet", no closing full stop. */
+  inline = false,
+): string {
+  const name = (says ?? "").trim().replace(/[.:]+$/, "");
+  if (!name) return met ? "" : inline ? "not yet" : "Not yet.";
+  if (met) return inline ? name : `${name}.`;
+  // Lower-case the first letter only when it starts an ordinary word ("Every" → "every"), never an
+  // acronym or a name that is capitalized in its second letter too ("AI Matrx", "URL").
+  const lowered = /^[A-Z][a-z]/.test(name) ? name[0].toLowerCase() + name.slice(1) : name;
+  return inline ? `not yet: ${lowered}` : `Not yet: ${lowered}.`;
+}
+
 export function organizationOrder(o: FinalSwitchOrganization): number {
   if (o.cannot_clear.length > 0) return 0;
   if (o.rerun_clears.length > 0 || (o.context_clears?.length ?? 0) > 0)

@@ -11,7 +11,8 @@
 //   4. the last rehearsal on the dev clone is on the page with its date;
 //   5. Step 1 covers the context copy (coordinator 2026-09-27): the organizations only the context copy
 //      clears are named as Step 1's, and the page says whether THIS server's context copy carries a
-//      large organization (aidream 991ff424b5) — in red when it does not.
+//      large organization (aidream 991ff424b5) — in red when it does not;
+//   6. an unmet check's title says what is not true yet, never its met-form name as a claim (FINAL-SWITCH-2).
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -184,7 +185,7 @@ test("copy again is its own step: while a run is unfinished the press is off and
   expect(byTestId("final-switch-copy-again-organizations")!.textContent).toContain("Harbor Dental Group");
   expect(byTestId("final-switch-orphans")!.textContent).toContain("goes to Developer111's Org at Copy again");
   expect(byTestId("final-switch-orphans")!.textContent).toContain("archived by the press with no owner organization");
-  expect(container.textContent).toContain("No row was edited in an older table after it was copied (4)");
+  expect(container.textContent).toContain("Copy again: not yet: no row was edited in an older table after it was copied (4)");
 });
 
 test("switched: no press, the undo is offered, the last run is said", async () => {
@@ -234,7 +235,7 @@ test("Step 1 covers the context copy: the organizations only it clears are Step 
   expect(gate.textContent).toContain("does not have aidream 991ff424b5");
   expect(gate.className).toContain("text-destructive");
   // Aamir's Org's waiting edits are Step 1's to clear — not a blocker a person must fix.
-  expect(container.textContent).toContain("Context copy: No scope edit is waiting to be copied");
+  expect(container.textContent).toContain("Context copy: not yet: no scope edit is waiting to be copied");
   expect(byTestId("final-switch-counts")!.textContent).toContain("1 need the context copy first");
   expect(byTestId("final-switch-counts")!.textContent).toContain("0 blocked");
 });
@@ -244,4 +245,28 @@ test("no context copy needed: the page does not ask the server about it", async 
   await mount();
   expect(byTestId("final-switch-context-gate")).toBeNull();
   expect(readFinalSwitchCapabilities).not.toHaveBeenCalled();
+});
+
+test("an unmet check never reads as a claim: its title says what is not true yet (lane FINAL-SWITCH-2)", async () => {
+  // Production, 2026-09-29: the platform list printed a check's NAME — the sentence it reads when met —
+  // as a bold claim right before the detail that contradicts it: "The last Step 1 (Copy again and the
+  // context copy) finished green. The last Step 1 finished with refusals: see its record."
+  const b = board("after_copy");
+  b.platform = [
+    { key: "orphan_tables", says: "Every older table belongs to an organization", met: true, detail: "No older table is outside an organization.", fix: null },
+    { key: "copy_again_finished", says: "The last Step 1 (Copy again and the context copy) finished green", met: false, detail: "The last Step 1 finished with refusals: see its record. Run Step 1 again.", fix: "Step 1 on this page (it resumes where it stopped)." },
+  ];
+  b.organizations[0] = {
+    ...b.organizations[0],
+    cannot_clear: [{ switch: "Data tables", key: "automations_follow", says: 'Every "when a row changes" automation names its table', detail: "1 automations run on a change to any older table.", clears: 0, leaves: 1 }],
+  };
+  readFinalSwitch.mockResolvedValue(b);
+  await mount();
+  const text = container.textContent ?? "";
+  expect(text).toContain("Not yet: the last Step 1 (Copy again and the context copy) finished green.");
+  expect(text).not.toContain("The last Step 1 (Copy again and the context copy) finished green.");
+  expect(text).toContain("Every older table belongs to an organization.");
+  expect(text).toContain('Not yet: every "when a row changes" automation names its table.');
+  expect(text).toContain("Copy again: not yet: no row was edited in an older table after it was copied (4)");
+  expect(text).not.toContain("Copy again: No row was edited");
 });

@@ -40,6 +40,7 @@ import {
   type FinalSwitchBoard,
   type FinalSwitchOrganization,
   type FinalSwitchProgress,
+  checkTitle,
 } from "./finalSwitch";
 import lastRehearsal from "./last-rehearsal.json";
 
@@ -135,13 +136,13 @@ function OrganizationRow({ org }: { org: FinalSwitchOrganization }) {
             {org.rerun_clears.map((d) => (
               <li key={d.key} title={d.detail ?? undefined}>
                 <span className="text-muted-foreground">Copy again:</span>{" "}
-                {d.says} ({d.clears})
+                {checkTitle(d.says, false, true)} ({d.clears})
               </li>
             ))}
             {(org.context_clears ?? []).map((d) => (
               <li key={d.key} title={d.detail ?? undefined}>
                 <span className="text-muted-foreground">Context copy:</span>{" "}
-                {d.says}
+                {checkTitle(d.says, false, true)}
               </li>
             ))}
           </ul>
@@ -154,7 +155,7 @@ function OrganizationRow({ org }: { org: FinalSwitchOrganization }) {
           <ul className="flex flex-col gap-1 text-destructive">
             {org.cannot_clear.map((d) => (
               <li key={`${d.switch}-${d.key}`}>
-                <span className="font-medium">{d.says}.</span> {d.detail}
+                <span className="font-medium">{checkTitle(d.says, false)}</span> {d.detail}
               </li>
             ))}
           </ul>
@@ -707,7 +708,7 @@ export function FinalSwitchScreen() {
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
                     )}
                     <span>
-                      <span className="font-medium">{c.says}.</span> {c.detail}
+                      <span className="font-medium">{checkTitle(c.says, c.met)}</span> {c.detail}
                       {!c.met && c.fix && (
                         <span className="text-muted-foreground">
                           {" "}
