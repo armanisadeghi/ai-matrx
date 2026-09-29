@@ -39,7 +39,7 @@ import { PageTemplate, Card } from "@/components/official/PageTemplate";
 import MarkdownStream from "@/components/MarkdownStream";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectLatestAnswerText as selectCommittedAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectFirstExtractedObject } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import {
@@ -81,8 +81,14 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   overview = {},
   offerValues,
 }) => {
-  const { run, isRunning, error, conversationId, hasLiveRun } =
-    useLiveAgentRun();
+  const {
+    run,
+    isRunning,
+    error,
+    conversationId,
+    activeRequestId,
+    hasLiveRun,
+  } = useLiveAgentRun();
   /** The settled answer text — the ONLY thing this tab parses. */
   const [answerText, setAnswerText] = useState<string>("");
   // Gate: the tab runs only once its mandate resolves; unresolved renders the
@@ -144,20 +150,17 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     };
   }, [mandateReady, value]);
 
-  // 🚨 Parse the COMMITTED answer, not the run's resolved text. The run
-  // resolves with the live projection (`deriveAnswerText` over render blocks),
-  // where the agent's fenced `fact_check_report` block has already become a
-  // structured block and is DROPPED from the string — so the kind, the
-  // verdict and the per-status counts were never in `answerText`. The
-  // committed message keeps the whole text part, fence included.
-  const committedText = useAppSelector((state) =>
-    conversationId && answerText
-      ? selectCommittedAnswerText(conversationId)(state)
-      : "",
+  // 🚨 THE ARTIFACT FIRST (ruling 2026-09-29): the report's fields come from
+  // the platform's extracted object for this run — never from re-parsing a
+  // string. The resolved `answerText` supplies only the three prose sections
+  // (its fenced block was already lifted out into a structured block).
+  const artifact = useAppSelector((state) =>
+    activeRequestId && answerText
+      ? (selectFirstExtractedObject(activeRequestId)(state)?.value ?? null)
+      : null,
   );
-  const settledText = committedText || answerText;
   // React Compiler memoizes this; a settled answer is parsed once per text.
-  const parsed = settledText ? parseFactCheck(settledText) : null;
+  const parsed = answerText ? parseFactCheck(answerText, artifact) : null;
 
   /** The live output — what every tab shows while the agent is still writing. */
   const liveOutput = (label: string) => (
@@ -240,7 +243,23 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     if (pre) return pre;
 
     if (parsed?.report) {
-      return <Card title="Claims">{markdown(reportAsKindBlock(parsed.report))}</Card>;
+      return (
+        <Card title="Claims">
+          <div data-fact-check-report-source={parsed.reportSource} className="space-y-4">
+            {parsed.reportSource === "answer_text" ? (
+              <div className="flex items-start gap-2 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  The platform did not hand back this run&rsquo;s structured
+                  claims report, so it was read from the JSON the agent wrote
+                  into its answer text instead.
+                </span>
+              </div>
+            ) : null}
+            {markdown(reportAsKindBlock(parsed.report))}
+          </div>
+        </Card>
+      );
     }
 
     return (

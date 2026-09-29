@@ -88,3 +88,50 @@ describe("parseFactCheck — JSON block absent", () => {
     expect(parseFactCheck(other).report).toBeNull();
   });
 });
+
+/**
+ * THE ARTIFACT FIRST (ruling 2026-09-29): the fields come from the platform's
+ * extracted `fact_check_report` object. The live answer string a text run
+ * resolves with has the fenced block already lifted out into a structured
+ * block, so the string alone never carried the report. The text parse is the
+ * announced fallback only when no artifact exists.
+ */
+describe("parseFactCheck — the extracted artifact is the source of the fields", () => {
+  const artifact = parseFactCheck(REAL_ANSWER).report;
+
+  it("takes the report from the artifact when the answer text has no JSON block", () => {
+    const parsed = parseFactCheck(WITHOUT_JSON, artifact);
+    expect(parsed.reportSource).toBe("artifact");
+    expect(parsed.report?.__kind).toBe("fact_check_report");
+    expect(parsed.verdict).toBe("blocked_by_claims");
+    expect(parsed.statusCounts).toEqual({
+      verified: 7,
+      disputed: 2,
+      unverifiable: 1,
+      missing_source: 1,
+    });
+    // Sections still come from the prose.
+    expect(parsed.summary).toContain("BLOCKED BY CLAIMS");
+  });
+
+  it("prefers the artifact over a fenced block in the text", () => {
+    if (!artifact) throw new Error("fixture must carry a report");
+    const edited = { ...artifact, verdict: "risky" as const };
+    const parsed = parseFactCheck(REAL_ANSWER, edited);
+    expect(parsed.reportSource).toBe("artifact");
+    expect(parsed.verdict).toBe("risky");
+  });
+
+  it("falls back to the text block — and says so — when the artifact is absent or another kind", () => {
+    expect(parseFactCheck(REAL_ANSWER, null).reportSource).toBe("answer_text");
+    const other = parseFactCheck(REAL_ANSWER, { __kind: "something_else" });
+    expect(other.reportSource).toBe("answer_text");
+    expect(other.report?.verdict).toBe("blocked_by_claims");
+  });
+
+  it("has no report source at all when neither exists", () => {
+    const parsed = parseFactCheck(WITHOUT_JSON, undefined);
+    expect(parsed.reportSource).toBeNull();
+    expect(parsed.report).toBeNull();
+  });
+});

@@ -10,6 +10,13 @@
  * structured truth: the Claims tab renders it through its registered kind
  * component, and the stat row counts its claims per status.
  *
+ * 🚨 THE ARTIFACT FIRST (ruling 2026-09-29). The report is taken from the
+ * platform's EXTRACTED object for the run (`selectFirstExtractedObject`),
+ * never by re-parsing a string: the answer text a run resolves with has the
+ * fenced block already lifted into a structured block, so the string does not
+ * carry it. Parsing the fence out of the text is the ANNOUNCED fallback only —
+ * `reportSource: "answer_text"` — for a run with no artifact.
+ *
  * The retired agent's headings (FACT CHECK SUMMARY … OVERALL RATING n/10) are
  * gone from this file on purpose — no second format is read.
  */
@@ -41,8 +48,10 @@ export interface ParsedFactCheck {
   factsAndCitations: string;
   /** Body of `## Warning`, with the trailing JSON block removed. */
   warning: string;
-  /** The `fact_check_report` kind, `__kind` intact — null when the block is absent or unreadable. */
+  /** The `fact_check_report` kind, `__kind` intact — null when neither source has it. */
   report: FactCheckReport | null;
+  /** Where `report` came from: the run's extracted artifact, the text fallback, or nowhere. */
+  reportSource: "artifact" | "answer_text" | null;
   /** From the kind; else from the `Verdict:` line of the verdict section; else null. */
   verdict: FactCheckVerdict | null;
   /** Claims per status, from the kind — null when the kind is absent. */
@@ -133,9 +142,20 @@ function countStatuses(report: FactCheckReport): FactCheckStatusCounts {
   return counts;
 }
 
-export function parseFactCheck(content: string): ParsedFactCheck {
+/**
+ * @param content  the answer prose — the three sections come from here.
+ * @param artifact the run's extracted structured object, when the platform
+ *                 produced one; used whenever it is a `fact_check_report`.
+ */
+export function parseFactCheck(
+  content: string,
+  artifact?: unknown,
+): ParsedFactCheck {
   const sections = splitSections(content);
-  const report = extractFactCheckReport(content);
+  const fromArtifact = isReport(artifact) ? artifact : null;
+  const fromText = fromArtifact ? null : extractFactCheckReport(content);
+  const report = fromArtifact ?? fromText;
+  const reportSource = fromArtifact ? "artifact" : fromText ? "answer_text" : null;
   const summary = cleanSection(sections.get(SECTION_KEYS.verdict));
   const warning = cleanSection(
     sections.get(SECTION_KEYS.warning)?.replace(FENCED_JSON, ""),
@@ -145,6 +165,7 @@ export function parseFactCheck(content: string): ParsedFactCheck {
     factsAndCitations: cleanSection(sections.get(SECTION_KEYS.facts)),
     warning,
     report,
+    reportSource,
     verdict: report?.verdict ?? verdictFromLine(summary),
     statusCounts: report ? countStatuses(report) : null,
   };
