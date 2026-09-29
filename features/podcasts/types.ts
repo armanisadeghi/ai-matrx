@@ -277,6 +277,9 @@ type SignedOutReadable<T> = Omit<
   | "search_engine_indexed"
   // Access ladder T-11: a list-scope column, never read by a signed-out page.
   | "shown_to"
+  // Access ladder T-13: who published it to the web, and when, are not granted to `anon`.
+  | "published_to_web_at"
+  | "published_to_web_by"
 > &
   Partial<
     Pick<
@@ -290,6 +293,8 @@ type SignedOutReadable<T> = Omit<
         | "metadata"
         | "search_engine_indexed"
         | "shown_to"
+        | "published_to_web_at"
+        | "published_to_web_by"
       >
     >
   >;

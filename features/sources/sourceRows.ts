@@ -31,7 +31,6 @@ export const SOURCE_LIST_COLUMNS = [
   "total_pages",
   "organization_id",
   "created_by",
-  "visibility",
   "created_at",
   "updated_at",
   // When the Source entered the person's world — see SOURCE_LIST_ORDER_COLUMN.
@@ -91,7 +90,6 @@ export interface SourceListRow {
   total_pages: number | null;
   organization_id: string;
   created_by: string;
-  visibility: string;
   created_at: string;
   updated_at: string;
   /** When the Source entered the person's world — see SOURCE_LIST_ORDER_COLUMN. */

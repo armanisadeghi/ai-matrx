@@ -34,6 +34,11 @@
 
 import type { DetailField, DetailRow, DetailRecordType } from "@/lib/detail/types";
 import { formatWhen } from "@/lib/detail/format";
+import {
+  PUBLISHED_TO_WEB_LABEL,
+  SHOWN_TO_LABEL,
+  shownToLabel,
+} from "@/lib/row-access";
 import { hasAnyDoor } from "@/components/official/entity-ref/doors";
 import type { Json } from "@/types/database.types";
 
@@ -164,7 +169,12 @@ export function researchTemplateDetailFields(row: DetailRow): DetailField[] {
   if (typeof row.version === "number") {
     push("version", "Version", String(row.version));
   }
-  push("visibility", "Who can see this", text(row, "visibility"));
+  push("shown_to", SHOWN_TO_LABEL, shownToLabel(text(row, "shown_to")));
+  push(
+    "published_to_web",
+    PUBLISHED_TO_WEB_LABEL,
+    row.published_to_web === true ? "Yes" : "No",
+  );
   push(
     "created_at",
     "Created",

@@ -365,7 +365,7 @@ describe("createNoteAboutEvent", () => {
     });
     expect(state.createdNotes[0]).toMatchObject({
       organization_id: ORG,
-      visibility: "personal",
+      shown_to: "only_me",
     });
     expect(state.addCalls).toEqual([
       {

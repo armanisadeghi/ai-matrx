@@ -18,7 +18,7 @@ export type InboxRow =
 /**
  * Mine + My Orgs, and deliberately no more.
  *
- * An interaction is private business data: it carries no `visibility` axis, and
+ * An interaction is private business data: it carries no Shown to control, and
  * CRM still has no grant-reader RPC (features/crm/FEATURE.md § Not built yet).
  * Rendering a Shared / Industry / Public tab here would be a tab that can only
  * ever say zero — a lie the fixed-five vocabulary does not require us to tell.

@@ -39,7 +39,8 @@ export interface LabelBatchRow {
   deleted_at: string | null;
   version: number;
   metadata: Record<string, unknown>;
-  visibility: string;
+  shown_to: string | null;
+  published_to_web: boolean;
 }
 
 export interface LabelCodeRow {

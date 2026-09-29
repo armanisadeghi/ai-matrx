@@ -34,7 +34,6 @@ function row(over: Partial<SourceListRow>): SourceListRow {
     total_pages: null,
     organization_id: "o",
     created_by: "u",
-    visibility: "personal",
     created_at: "2026-09-26T00:00:00Z",
     updated_at: "2026-09-26T00:00:00Z",
     ...over,

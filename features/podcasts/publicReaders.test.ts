@@ -157,7 +157,7 @@ const SHOW = {
   thumbnail_url: null,
   rss_settings: null,
   deleted_at: null,
-  visibility: "public",
+  published_to_web: true,
 };
 
 const EPISODE = {
@@ -186,7 +186,7 @@ const EPISODE = {
     { start_hint: "01:30", title: "The main thread", summary: "The body." },
   ],
   deleted_at: null,
-  visibility: "public",
+  published_to_web: true,
 };
 
 beforeEach(() => {

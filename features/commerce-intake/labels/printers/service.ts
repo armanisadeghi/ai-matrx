@@ -305,7 +305,6 @@ export async function recordCertification(
     .insert({
       ...values,
       organization_id: args.organizationId,
-      visibility: "internal",
     })
     .select(COLUMNS)
     .single();

@@ -1,4 +1,5 @@
 import type { PlacementMode } from "@/features/context-menu-v3/types";
+import { publishedToWebLabel, shownToLabel } from "@/lib/row-access";
 import { createResearchScope } from "@/features/surfaces/manifests/research.manifest";
 import {
   deriveReadiness,
@@ -11,7 +12,7 @@ import type {
 } from "@/features/research/types";
 
 /**
- * Placement visibility for the research surface menu.
+ * Placement display for the research surface menu.
  *
  * Research surfaces are a mix of editable inputs (the new-topic query / subject)
  * and read-only output the user reads (the assembled document, the syntheses).
@@ -196,7 +197,11 @@ export function buildResearchContextData(
     topic_name: name || undefined,
     topic_description: description || undefined,
     organization_id: topic?.organization_id || undefined,
-    topic_visibility: topic?.visibility || undefined,
+    topic_visibility: topic
+      ? topic.published_to_web
+        ? publishedToWebLabel(true)
+        : shownToLabel(topic.shown_to)
+      : undefined,
     template_id: topic?.template_id || undefined,
     topic_created_at: topic?.created_at || undefined,
     topic_updated_at: topic?.updated_at || undefined,

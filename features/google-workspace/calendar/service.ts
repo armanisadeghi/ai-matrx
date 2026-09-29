@@ -85,7 +85,7 @@ export async function readAgendaEvents(args: {
         .from("calendar_event")
         .select(EVENT_COLUMNS, { count: "exact" })
         // THE VIEW LAW: `mine` is the declared scope. A person's agenda is their
-        // own (PLAN §5.6 / R1: these rows are `visibility personal`), and RLS
+        // own (PLAN §5.6 / R1: calendar events are a Private table), and RLS
         // above this would also admit shared ones — which is exactly the
         // "org-wide readability poisons a personal space" the law forbids.
         .eq("created_by", args.userId)
@@ -349,7 +349,7 @@ export async function createNoteAboutEvent(args: {
     content: "",
     organization_id: organizationId,
     // R1 / PLAN §5.6: a note about a personal calendar event is personal too.
-    visibility: "personal",
+    shown_to: "only_me",
   });
 
   const failures: string[] = [];

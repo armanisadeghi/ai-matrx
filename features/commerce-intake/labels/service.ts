@@ -153,7 +153,6 @@ export async function createLabelBatch(args: {
       code_prefix: args.codePrefix?.trim() || null,
       purpose: args.purpose?.trim() || null,
       state: "open",
-      visibility: "internal",
     })
     .select(BATCH_COLUMNS)
     .single();

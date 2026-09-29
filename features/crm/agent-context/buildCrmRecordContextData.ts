@@ -184,7 +184,6 @@ export function buildCrmRecordContextData(
     source: party.source ?? "",
     source_detail: party.source_detail ?? "",
     organization_id: party.organization_id,
-    visibility: party.visibility,
     assigned_to: party.assigned_to ?? "",
     primary_employer: party.employer
       ? { id: party.employer.id, name: party.employer.display_name }
@@ -214,7 +213,8 @@ export function buildCrmRecordContextData(
       expert_status: party.expert_status,
       source: party.source,
       source_detail: party.source_detail,
-      visibility: party.visibility,
+      shown_to: party.shown_to,
+      published_to_web: party.published_to_web,
       organization_id: party.organization_id,
       created_at: party.created_at,
       updated_at: party.updated_at,

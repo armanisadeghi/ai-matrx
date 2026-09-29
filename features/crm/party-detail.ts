@@ -20,8 +20,8 @@
  * Headline, Legal name, Domain, Do not contact), the kind words are the ONE
  * resolver (`party-words.ts`), the contact points are the ONE read
  * (`partyContactPointsQuery`) under the ONE suppression rule
- * (`reachability.ts`), and `visibility` goes through the platform's plain-words
- * map (`lib/record-words.ts`).
+ * (`reachability.ts`), and the row controls speak the access ladder's words
+ * (`lib/row-access`).
  *
  * Nothing outside this list is shown. A column added to `crm.party` tomorrow
  * does not silently appear in a person's dossier — adding it here is a decision.
@@ -50,7 +50,11 @@ import type {
 import { formatWhen } from "@/lib/detail/format";
 import { hasAnyDoor } from "@/components/official/entity-ref/doors";
 import { supabase } from "@/utils/supabase/client";
-import { visibilityWords } from "@/lib/record-words";
+import {
+  PUBLISHED_TO_WEB_LABEL,
+  SHOWN_TO_LABEL,
+  shownToLabel,
+} from "@/lib/row-access";
 
 import { partyKindWord } from "./party-words";
 import {
@@ -219,7 +223,12 @@ export function partyDetailFields(row: DetailRow): DetailField[] {
     });
   }
 
-  push("visibility", "Who can see this", visibilityWords(row.visibility));
+  push("shown_to", SHOWN_TO_LABEL, shownToLabel(text(row, "shown_to")));
+  push(
+    "published_to_web",
+    PUBLISHED_TO_WEB_LABEL,
+    row.published_to_web === true ? "Yes" : "No",
+  );
   push(
     "created_at",
     "Added",

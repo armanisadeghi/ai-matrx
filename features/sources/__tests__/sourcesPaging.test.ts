@@ -22,7 +22,7 @@ function row(over: Partial<SourceListRow>): SourceListRow {
     id: "id", name: "n", source_kind: "scrape_parsed_page", source_id: "s", mime_type: null,
     origin_client: "web", capture_method: "http", canonical_identity: null,
     derivation_kind: "initial_extract", parent_processed_id: null, kept_at: null,
-    total_pages: null, organization_id: "o", created_by: "u", visibility: "internal",
+    total_pages: null, organization_id: "o", created_by: "u",
     created_at: "2026-09-26T00:00:00Z", updated_at: "2026-09-26T00:00:00Z", ...over,
   } as SourceListRow;
 }

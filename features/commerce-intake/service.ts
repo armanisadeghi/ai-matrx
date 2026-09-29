@@ -281,7 +281,6 @@ export async function ensureOpenBatch(args: {
       capture_mode: args.captureMode,
       status: "open",
       received_at: new Date().toISOString(),
-      visibility: "internal",
     })
     .select(BATCH_COLUMNS)
     .single();

@@ -1,7 +1,7 @@
 /**
  * Arman's ruling (2026-09-26): a Source is organization data; there is no
  * per-Source privacy choice. "Mine" is only "captured by me"; the organization
- * view lists every Source in the organization — never filtered by visibility —
+ * view lists every Source in the organization — never filtered by who sees it —
  * and no row calls a Source "Personal".
  */
 import { applySourcesScope } from "@/features/sources/sourceRows";

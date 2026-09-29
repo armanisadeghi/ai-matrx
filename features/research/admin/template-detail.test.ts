@@ -30,7 +30,8 @@ const ROW: DetailRow = {
   autonomy_level: "semi",
   metadata: { template_type: "company" },
   version: 3,
-  visibility: "public",
+  shown_to: null,
+  published_to_web: true,
   created_at: "2026-02-18T11:31:00.000Z",
   updated_at: "2026-08-18T22:57:00.000Z",
 };
@@ -89,8 +90,10 @@ describe("researchTemplateDetailFields — labelled settings, never a JSON block
     expect(field(fields, "page_summary_agent_id")).toBeUndefined();
   });
 
-  it("unpacks metadata the same way, and reads the human words for kind, autonomy and visibility", () => {
+  it("unpacks metadata the same way, and reads the human words for kind, autonomy and the row controls", () => {
     const fields = researchTemplateDetailFields(ROW);
+    expect(field(fields, "published_to_web")?.text).toBe("Yes");
+    expect(field(fields, "shown_to")?.text).toBe("Default for this type");
     expect(field(fields, "metadata:template_type")?.text).toBe("company");
     expect(field(fields, "is_system")?.text).toBe("Built into the platform");
     expect(field(fields, "autonomy_level")?.text).toBe("Semi-automatic");

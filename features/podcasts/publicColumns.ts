@@ -45,6 +45,7 @@ export const PC_SHOW_PUBLIC_COLUMNS = [
   "rss_settings",
   "deleted_at",
   "visibility",
+  "published_to_web",
 ] as const;
 
 /** `podcast.pc_episodes` — the 22 columns `anon` may read. */
@@ -71,6 +72,7 @@ export const PC_EPISODE_PUBLIC_COLUMNS = [
   "chapters",
   "deleted_at",
   "visibility",
+  "published_to_web",
 ] as const;
 
 /** `podcast.pc_articles` — the 14 columns `anon` may read. */
@@ -89,6 +91,7 @@ export const PC_ARTICLE_PUBLIC_COLUMNS = [
   "updated_at",
   "deleted_at",
   "visibility",
+  "published_to_web",
 ] as const;
 
 /**
@@ -97,13 +100,13 @@ export const PC_ARTICLE_PUBLIC_COLUMNS = [
  * same reason `features/education/publishing/publicColumns.ts` does.
  */
 export const PC_SHOW_PUBLIC_SELECT =
-  "id,slug,title,description,image_url,author,is_published,created_at,updated_at,og_image_url,thumbnail_url,rss_settings,deleted_at,visibility";
+  "id,slug,title,description,image_url,author,is_published,created_at,updated_at,og_image_url,thumbnail_url,rss_settings,deleted_at,visibility,published_to_web";
 
 export const PC_EPISODE_PUBLIC_SELECT =
-  "id,slug,show_id,title,description,audio_url,image_url,video_url,display_mode,episode_number,duration_seconds,is_published,created_at,updated_at,og_image_url,thumbnail_url,host_count,speakers,script,chapters,deleted_at,visibility";
+  "id,slug,show_id,title,description,audio_url,image_url,video_url,display_mode,episode_number,duration_seconds,is_published,created_at,updated_at,og_image_url,thumbnail_url,host_count,speakers,script,chapters,deleted_at,visibility,published_to_web";
 
 export const PC_ARTICLE_PUBLIC_SELECT =
-  "id,show_id,episode_id,kind,slug,title,content_markdown,og_image_url,canonical_url,status,created_at,updated_at,deleted_at,visibility";
+  "id,show_id,episode_id,kind,slug,title,content_markdown,og_image_url,canonical_url,status,created_at,updated_at,deleted_at,visibility,published_to_web";
 
 /**
  * An episode joined to its show, for the public episode page and the blog

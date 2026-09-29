@@ -110,7 +110,7 @@ const EMPLOYER_EMBED =
  *
  * THE VIEW LAW: the scope predicate is explicit per scope kind —
  *   mine → created_by = me · orgs → organization_id ∈ my orgs (or one org) ·
- *   public → visibility = 'public'. Never a bare RLS-filtered read.
+ *   public → published_to_web. Never a bare RLS-filtered read.
  */
 /**
  * The filter methods the party predicates use, structurally — so ONE helper
@@ -169,7 +169,7 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
     const filter = teamReachOrFilter(reach, ctx.userId);
     q = filter === null ? q.in("organization_id", []) : q.or(filter);
   } else if (scope.kind === "public") {
-    q = q.eq("visibility", "public");
+    q = q.eq("published_to_web", true);
   } else {
     throw new Error(`[crm] unsupported list scope: ${scope.kind}`);
   }
