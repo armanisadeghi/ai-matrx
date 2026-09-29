@@ -398,6 +398,14 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-29 — **Every web read of the scope system comes from the record store** (lane SCOPES-READS-WEB, SCOPES-CUTOVER-PLAN
+  step 2.4). `scopesService.ts` reads through `custom.context_tree` / `context_scopes` / `context_items` / `context_values` /
+  `context_archived_types` / `context_system_items` (`service/storeScopeReads.ts`), decoded by the permanent adapter
+  `service/storeScopeAdapter.ts` into the existing node types; the scope short link, the class checkout
+  (`custom.context_class_for_checkout`, server only), the knowledge hub's tags and the envelope's scope / scope type /
+  context item chips too. The two remaining context-schema WRITES sit alone in `service/olderContextWrites.ts` for lane
+  SCOPES-OLD-WRITERS. Guard: `pnpm check:old-system-unreachable` (relation "context.* scope tables") and
+  `service/__tests__/scope-reads-come-from-the-store.test.ts`.
 - 2026-09-27 — **The boot scope tree reads project tags from the source side, and reads every scope.** `getScopeTree` asked
   `assoc_for_targets('scope', <every scope>)` for every edge into every scope (transcripts, agents, workflows …) to keep
   the project ones: 3–4 s per page, paged twice, against the 8 s statement timeout → `rpc/assoc_for_targets` 500 (57014)

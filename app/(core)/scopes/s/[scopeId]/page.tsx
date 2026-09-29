@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import { contextDb } from "@/utils/supabase/contextDb";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { oldTypeSlug, type StoreScopeRow } from "@/features/scopes/service/storeScopeAdapter";
 import { scopeHref, scopeSeg } from "@/features/scopes/lib/scopeRoutes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -33,8 +34,8 @@ export default async function ScopeShortLink({
   if (!UUID_RE.test(scopeId)) notFound();
 
   const supabase = await createClient();
-  // context.* has no anonymous grants — an anon query errors rather than
-  // returning empty. Send signed-out visitors to login and back here.
+  // The store's scope doors answer nobody signed out. Send signed-out visitors
+  // to login and back here.
   const { user, authUnavailable } = await getServerAuth();
   if (!user && authUnavailable) {
     console.warn(
@@ -50,13 +51,14 @@ export default async function ScopeShortLink({
   }
   if (!user) redirect(`/login?next=/scopes/s/${scopeId}`);
 
-  const { data, error } = await contextDb(supabase)
-    .from("scopes")
-    .select("id, slug, organization_id, scope_type_id")
-    .eq("id", scopeId)
-    .is("deleted_at", null)
-    .maybeSingle();
+  // The scope, read from the record store where it lives (lane SCOPES-READS-WEB): the store's
+  // `custom.context_scopes` door finds its organization from the object itself and decides on the
+  // one ladder — a scope this person may not open is absent, which is a 404 here, as before.
+  const { data: rows, error } = await (supabase as unknown as SupabaseClient)
+    .schema("custom")
+    .rpc("context_scopes", { p_scope_ids: [scopeId] });
   if (error) throw error;
+  const data = (Array.isArray(rows) ? (rows as StoreScopeRow[]) : [])[0];
   if (!data) notFound();
 
   // Land on the CANONICAL address, not an id one. A short link that redirected
@@ -64,28 +66,23 @@ export default async function ScopeShortLink({
   // canonicalizer to rewrite it a moment later — a visible second navigation on
   // every share of a scope. Resolve the org + type slugs here instead.
   //
-  // These two reads are decoration, never gates: a null row (RLS, a race, a
-  // row without a slug) falls back to the id segment, which the routes resolve
+  // The organization read is decoration, never a gate: a null row (RLS, a race,
+  // a row without a slug) falls back to the id segment, which the routes resolve
   // exactly as before. Only the SCOPE read above decides 404.
-  const [{ data: scopeType }, { data: org }] = await Promise.all([
-    contextDb(supabase)
-      .from("scope_types")
-      .select("id, slug")
-      .eq("id", data.scope_type_id)
-      .maybeSingle(),
-    supabase
-      .schema("iam")
-      .from("organizations")
-      .select("id, slug")
-      .eq("id", data.organization_id)
-      .maybeSingle(),
-  ]);
+  const { data: org } = await supabase
+    .schema("iam")
+    .from("organizations")
+    .select("id, slug")
+    .eq("id", data.organization_id)
+    .maybeSingle();
+  const typeSlug = oldTypeSlug(data.scope_type?.slug ?? null);
+  const scopeType = typeSlug ? { id: data.scope_type_id, slug: typeSlug } : { id: data.scope_type_id };
 
   redirect(
     scopeHref(
       scopeSeg(org ?? { id: data.organization_id }),
-      scopeType ?? { id: data.scope_type_id },
-      data,
+      scopeType,
+      { id: data.id, slug: data.slug ?? null },
     ),
   );
 }

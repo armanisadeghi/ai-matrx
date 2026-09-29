@@ -34,14 +34,22 @@ function query(table: string, rows: unknown) {
 const ORG = "7721ceda-72f0-4e4c-b712-00cf9dc8f117";
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
-    schema: () => ({
-      from: (t: string) =>
-        query(t, { id: ORG, name: "Northwind Recycling", abbreviation: "NR", slug: "northwind", settings: {}, created_by: null, archived_at: null }),
-    }),
+    schema: (name: string) => {
+      if (name === "context") throw new Error("the old context schema was read");
+      if (name === "custom") {
+        return {
+          rpc: (door: string, args: { p_organization_ids?: string[] }) => {
+            calls.push({ table: door, filters: [["organization_id", args.p_organization_ids?.[0]]] });
+            return Promise.resolve({ data: { types: [], scopes: [] }, error: null });
+          },
+        };
+      }
+      return {
+        from: (t: string) =>
+          query(t, { id: ORG, name: "Northwind Recycling", abbreviation: "NR", slug: "northwind", settings: {}, created_by: null, archived_at: null }),
+      };
+    },
   },
-}));
-jest.mock("@/utils/supabase/contextDb", () => ({
-  contextDb: () => ({ from: (t: string) => query(t, []) }),
 }));
 
 import { scopesService } from "@/features/scopes/service/scopesService";
@@ -61,7 +69,8 @@ it("in the admin lane, reads only the organization it was asked for", async () =
   mockLaneOpen.mockReturnValue(true);
   const res = await scopesService.getOrganizationTreeForAdmin(ORG);
   expect(res).toMatchObject({ ok: true, data: { organization: { id: ORG, admin_lane: true, role: "admin" } } });
-  expect(calls.map((c) => c.table).sort()).toEqual(["organizations", "scope_types", "scopes"]);
+  // The organization, and ONE call of the store's tree door naming only that organization.
+  expect(calls.map((c) => c.table).sort()).toEqual(["context_tree", "organizations"]);
   for (const c of calls) {
     const col = c.table === "organizations" ? "id" : "organization_id";
     expect(c.filters).toContainEqual([col, ORG]);

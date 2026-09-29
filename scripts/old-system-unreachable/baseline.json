@@ -1,5 +1,5 @@
 {
-  "about": "check:old-system-unreachable census — every place that names an old door; it only shrinks (lane FINAL-SWITCH).",
+  "about": "check:old-system-unreachable census \u2014 every place that names an old door; it only shrinks (lane FINAL-SWITCH).",
   "entries": [
     "aidream:aidream/services/kind_records/children.py content_ir.kind_instance",
     "aidream:aidream/services/kind_records/routed.py content_ir.kind_instance",
@@ -123,6 +123,7 @@
     "matrx-frontend:features/marketing/seo/keyword-research/data/server.ts content_ir.kind_instance",
     "matrx-frontend:features/matrx-envelope/referenceResolvers.ts get_full_table",
     "matrx-frontend:features/page-extraction/data-review/export-targets.ts @/utils/user-table-utls",
+    "matrx-frontend:features/scopes/service/olderContextWrites.ts context.* scope tables",
     "matrx-frontend:features/scopes/service/scopesService.ts list_udt_dataset_templates",
     "matrx-frontend:features/secrets/components/VaultCreateDialog.tsx @/utils/user-table-utls",
     "matrx-frontend:features/secrets/components/VaultItemDetail.tsx @/utils/user-table-utls",

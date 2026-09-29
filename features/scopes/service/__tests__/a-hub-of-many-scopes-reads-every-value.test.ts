@@ -11,7 +11,8 @@
  * cells even when the address fit.
  *
  * Guard: 640 scopes with 3 current values each (1920 rows) → every request names at most 100 scopes,
- * and every row comes back.
+ * and every row comes back. Since lane SCOPES-READS-WEB the values come from the record store's
+ * `custom.context_values` door, which refuses more than 200 scopes a call.
  */
 const USER = "a3c1d2e4-5f60-4718-9a2b-3c4d5e6f7081";
 
@@ -20,49 +21,40 @@ jest.mock("@/utils/auth/getUserId", () => ({
   requireUserId: () => USER,
 }));
 jest.mock("@/utils/supabase/adminLane", () => ({ browserAdminLaneOpen: () => false }));
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
-
 const SCOPES = Array.from({ length: 640 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`);
 const VALUES = SCOPES.flatMap((scopeId, i) =>
   [0, 1, 2].map((k) => ({
-    id: `10000000-0000-4000-8000-${String(i * 3 + k).padStart(12, "0")}`,
     scope_id: scopeId,
     context_item_id: `20000000-0000-4000-8000-00000000000${k}`,
-    is_current: true,
-    value_text: `Patient ${i} note ${k}`,
+    key: `note_${k}`,
+    value: `Patient ${i} note ${k}`,
+    field: { type: "text", multi: false },
+    version: 1,
+    set_at: "2026-09-29T00:00:00Z",
+    source_type: "manual",
+    value_id: `10000000-0000-4000-8000-${String(i * 3 + k).padStart(12, "0")}`,
   })),
 );
 const idsPerRequest: number[] = [];
 
-/** A PostgREST-shaped builder: honours `.in()`, `.range()`, and caps a page at 1000 like the server. */
-function table() {
-  let ids: string[] = [];
-  let range: [number, number] | null = null;
-  const q: Record<string, unknown> = {};
-  for (const m of ["select", "is", "order", "eq"]) q[m] = () => q;
-  q.in = (_col: string, list: string[]) => {
-    ids = list;
-    idsPerRequest.push(list.length);
-    return q;
-  };
-  q.range = (from: number, to: number) => {
-    range = [from, to];
-    return q;
-  };
-  q.then = (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => {
-    if (ids.length > 100) {
-      // What the gateway does with an address this long: no answer PostgREST ever saw.
-      return Promise.resolve({ data: null, error: { message: "TypeError: Failed to fetch" }, count: null }).then(res, rej);
-    }
-    const wanted = new Set(ids);
-    const rows = VALUES.filter((v) => wanted.has(v.scope_id));
-    const [from, to] = range ?? [0, rows.length - 1];
-    const page = rows.slice(from, Math.min(to, from + 999) + 1);
-    return Promise.resolve({ data: page, error: null, count: rows.length }).then(res, rej);
-  };
-  return q;
-}
-jest.mock("@/utils/supabase/contextDb", () => ({ contextDb: () => ({ from: () => table() }) }));
+jest.mock("@/utils/supabase/client", () => ({
+  supabase: {
+    schema: (name: string) => {
+      if (name !== "custom") throw new Error(`the ${name} schema was read`);
+      return {
+        rpc: (door: string, args: { p_scope_ids: string[] }) => {
+          if (door !== "context_values") throw new Error(`unexpected door ${door}`);
+          idsPerRequest.push(args.p_scope_ids.length);
+          if (args.p_scope_ids.length > 200) {
+            return Promise.resolve({ data: null, error: { code: "22023", message: "custom.context_values answers at most 200 scopes a call" } });
+          }
+          const wanted = new Set(args.p_scope_ids);
+          return Promise.resolve({ data: VALUES.filter((v) => wanted.has(v.scope_id)), error: null });
+        },
+      };
+    },
+  },
+}));
 
 // eslint-disable-next-line import/first
 import { scopesService } from "../scopesService";

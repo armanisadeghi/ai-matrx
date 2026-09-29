@@ -73,9 +73,27 @@ export const OLD_MODULES = [
  * `features/content-ir/studio/kind-record-home.ts`. Matched as a table read in TS (`.from("kind_instance")`)
  * or the generated model in Python (`get_db_model("KindInstance")`, `KindInstance.`).
  */
-export const OLD_RELATIONS = [
+export const OLD_RELATIONS: ReadonlyArray<{ name: string; re: RegExp; only?: RegExp }> = [
   { name: "content_ir.kind_instance", re: /\.from\(\s*['"`]kind_instance['"`]\s*\)|get_db_model\(\s*['"]KindInstance['"]\s*\)|\bKindInstance\.(?:create|create_item|filter|get|get_or_none|update_where|objects)\b/ },
-] as const;
+  /**
+   * THE OLD SCOPE TABLES (lane SCOPES-READS-WEB, SCOPES-CUTOVER-PLAN step 2.4): a scope type is a
+   * store Table, a scope a Record, a context item a Field, and every web read of them goes through
+   * the store's `custom.context_*` doors (`features/scopes/service/storeScopeReads.ts`). Matched as
+   * the context-schema handle (`contextDb(…)` / `.schema("context")`, TS) and as a table read of one
+   * of the six leaving tables by name (`.from("scopes")`, …). The census holds only what is left on
+   * purpose: `features/scopes/service/olderContextWrites.ts` — two WRITES (the older dataset store's
+   * `provision_scope_dataset`, the unused `updateContextItem` UPDATE) that lane SCOPES-OLD-WRITERS
+   * retires. The context schema's REFERENCE tables stay (plan decision 3: templates, System context
+   * items, …) and are not matched. Server readers are lane SCOPES-READS-SERVER's census.
+   */
+  {
+    name: "context.* scope tables",
+    // The web app's own code (matrx-frontend's shipped directories, matrx-extend's src): walks,
+    // censuses and seeds under scripts/ read the old tables to VERIFY the store, which is their job.
+    only: /^(?:app|features|components|lib|utils|hooks|providers|packages)\/|^src\//,
+    re: /contextDb\(|\.schema\(\s*['"`]context['"`]\s*\)(?!\s*\.from\(\s*['"`](?:system_context_item|templates|template_scope_types|template_context_items|user_active_context|context_access_log|scope_door_registry)['"`])|\.from\(\s*['"`](?:scope_types|scopes|context_items|context_item_values|context_value_refs|scope_dataset_instances)['"`]\s*\)/,
+  },
+];
 
 type Root = { repo: string; dir: string };
 const ROOTS: Root[] = [
@@ -136,7 +154,8 @@ export function scan(roots: Root[], writeDoors: string[], readDoors: readonly st
     const files: string[] = [];
     walk(root.dir, files);
     for (const f of files) {
-      const rel = relative(root.repo === "matrx-frontend" ? FRONTEND : join(WORKSPACE, root.repo), f).split(sep).join("/");
+      // matrx-frontend's one root IS the repository (FRONTEND), or the self-test's planted checkout.
+      const rel = relative(root.repo === "matrx-frontend" ? root.dir : join(WORKSPACE, root.repo), f).split(sep).join("/");
       if (root.repo === "matrx-frontend" && SELF.has(rel)) continue;
       const text = readFileSync(f, "utf8");
       if (!doorRes.some((d) => d.re.test(text)) && !modRes.some((m) => m.re.test(text)) && !OLD_RELATIONS.some((r) => r.re.test(text))) continue;
@@ -144,7 +163,7 @@ export function scan(roots: Root[], writeDoors: string[], readDoors: readonly st
       lines.forEach((line, i) => {
         for (const d of doorRes) if (d.re.test(line)) hits.push({ repo: root.repo, file: rel, line: i + 1, door: d.door, kind: d.kind });
         for (const m of modRes) if (m.re.test(line)) hits.push({ repo: root.repo, file: rel, line: i + 1, door: m.door, kind: m.kind });
-        for (const r of OLD_RELATIONS) if (r.re.test(line)) hits.push({ repo: root.repo, file: rel, line: i + 1, door: r.name, kind: "relation" });
+        for (const r of OLD_RELATIONS) if ((!r.only || (root.repo !== "aidream" && r.only.test(rel))) && r.re.test(line)) hits.push({ repo: root.repo, file: rel, line: i + 1, door: r.name, kind: "relation" });
       });
     }
   }
@@ -209,9 +228,20 @@ function selfTest(): number {
     writeFileSync(join(dir, "features/old.ts"), "// moved to the new store\n");
     const moved = judge(scan(roots, ["udt_bulk_write"], ["get_full_table"], ["@/components/user-generated-table-data"]), planted.newPlaces);
     if (moved.stale.length !== 2) throw new Error("STALE expected when the old call is gone");
+    // THE OLD SCOPE TABLES (lane SCOPES-READS-WEB): a web read of a leaving context table is RED; a
+    // read of the context schema's reference data, and a verification walk under scripts/, are not.
+    mkdirSync(join(dir, "scripts"), { recursive: true });
+    writeFileSync(join(dir, "features/scopeRead.ts"), 'await supabase.schema("context").from("scopes").select("id");\n');
+    writeFileSync(join(dir, "features/scopeRead2.ts"), 'const db = contextDb(supabase);\n');
+    writeFileSync(join(dir, "features/reference.ts"), 'await admin.schema("context").from("system_context_item").select("*");\n');
+    writeFileSync(join(dir, "features/storeRead.ts"), 'await supabase.schema("custom").rpc("context_tree", { p_organization_ids: [] });\n');
+    writeFileSync(join(dir, "scripts/walk.mjs"), 'await db.schema("context").from("scopes").select("id");\n');
+    const ctx = judge(scan(roots, [], [], []), []).newPlaces.filter((k) => k.endsWith("context.* scope tables")).sort();
+    const wantCtx = ["matrx-frontend:features/scopeRead.ts context.* scope tables", "matrx-frontend:features/scopeRead2.ts context.* scope tables"];
+    if (ctx.join() !== wantCtx.join()) throw new Error(`context scope tables: expected ${wantCtx}, got ${ctx}`);
     const sql = "x\n    -- OLD-WRITE-DOORS-BEGIN\n    'public.udt_bulk_write(uuid, jsonb)',\n    -- OLD-WRITE-DOORS-END\n";
     if (writeDoorsFromCampaign(sql).join() !== "udt_bulk_write") throw new Error("campaign list not read");
-    console.log("✓ self-test: a new call to an old door is RED, the census makes it GREEN, a removed call is STALE, the press's list is read from the campaign file");
+    console.log("✓ self-test: a new call to an old door is RED, the census makes it GREEN, a removed call is STALE, the press's list is read from the campaign file, a web read of an old scope table is RED while reference data and scripts/ walks are not");
     return 0;
   } catch (e) {
     console.error(`✗ self-test: ${(e as Error).message}`);

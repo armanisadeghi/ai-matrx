@@ -145,6 +145,41 @@ async function resolveFileReferenceValue(
   return firstField(row, ["file_name"]) ?? firstField(row, ["mime_type"]);
 }
 
+/**
+ * A thing kept in the RECORD STORE, named by id (lane SCOPES-READS-WEB): a scope (a Record), a scope
+ * type (a Table), a context item (a Field). The store says which organization the id opens in
+ * (`custom.where_id_opens`, never the working organization) and `custom.read_record` answers its
+ * document on the one ladder and the one read mask — so a chip names only what its reader may see.
+ */
+function createStoreRecordResolver(config: {
+  openItemType: KnownItemType;
+  titleFields: string[];
+  bodyFields?: string[];
+}): ReferenceResolver {
+  return {
+    openItemType: config.openItemType,
+    openId: (ref) => ref.id,
+    resolveValue: async (client, ref) => {
+      if (!ref.id) return undefined;
+      const store = client.schema("custom");
+      const opens = await store.rpc("where_id_opens", { p_id: ref.id });
+      const organizationId = (opens.data as { organization_id?: unknown } | null)?.organization_id;
+      if (opens.error || typeof organizationId !== "string") return undefined;
+      const read = await store.rpc("read_record", {
+        p_organization_id: organizationId,
+        p_record_id: ref.id,
+        p_by_id: false,
+      });
+      if (read.error || !read.data || typeof read.data !== "object") return undefined;
+      const doc = read.data as Record<string, unknown>;
+      const heading = firstField(doc, config.titleFields);
+      const body = config.bodyFields ? firstField(doc, config.bodyFields) : undefined;
+      if (heading && body) return `${heading}\n${body}`;
+      return heading ?? body;
+    },
+  };
+}
+
 function createRecordResolver(config: RecordResolverConfig): ReferenceResolver {
   return {
     openItemType: config.openItemType,
@@ -591,28 +626,19 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     }),
     openId: () => undefined,
   },
-  scope_type: createRecordResolver({
+  scope_type: createStoreRecordResolver({
     openItemType: "scope_type",
-    schema: "context",
-    table: "scope_types",
-    select: "label_singular, label_plural, description",
-    titleFields: ["label_singular", "label_plural"],
+    titleFields: ["label_singular", "label_plural", "name"],
     bodyFields: ["description"],
   }),
-  scope: createRecordResolver({
+  scope: createStoreRecordResolver({
     openItemType: "scope",
-    schema: "context",
-    table: "scopes",
-    select: "name, description",
     titleFields: ["name"],
-    bodyFields: ["description"],
+    bodyFields: ["description", "scope_description"],
   }),
-  context_item: createRecordResolver({
+  context_item: createStoreRecordResolver({
     openItemType: "context_item",
-    schema: "context",
-    table: "context_items",
-    select: "display_name, description, value_type",
-    titleFields: ["display_name"],
+    titleFields: ["label", "key"],
     bodyFields: ["description"],
   }),
 
@@ -956,6 +982,10 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
   const dot = entry.table.indexOf(".");
   const schema = dot === -1 ? "public" : entry.table.slice(0, dot);
   const table = dot === -1 ? entry.table : entry.table.slice(dot + 1);
+  // THE SCOPE SYSTEM LIVES IN THE RECORD STORE (lane SCOPES-READS-WEB): the catalogue still names
+  // the old `context.*` tables for scope / scope_type / context_item, and those nouns resolve through
+  // the store resolvers above. A catalogue row naming the context schema is never read by table here.
+  if (schema === "context") return undefined;
   const titleFields = entry.title_column
     ? [entry.title_column, ...COMMON_TITLE_FIELDS]
     : COMMON_TITLE_FIELDS;

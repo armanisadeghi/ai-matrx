@@ -13,13 +13,14 @@
  *                                   per organization (a `#tag` chip filters by
  *                                   all of them)
  *
- * All reads go DIRECT to Supabase under RLS, with a declared scope (my
- * organizations) — never a bare RLS-only read.
+ * Tag scopes are read from the RECORD STORE through its scope doors (lane
+ * SCOPES-READS-WEB): `custom.context_tree` for my organizations' tags,
+ * `custom.context_scopes` for tags named by id — never the old context tables.
  */
 
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
-import { contextDb } from "@/utils/supabase/contextDb";
+import { readScopeTree, readScopesById } from "@/features/scopes/service/storeScopeReads";
 import { getUserOrganizations } from "@/features/organizations/service";
 import { refusalMessage } from "@/features/knowledge/hub/triage/triageApi";
 
@@ -58,17 +59,17 @@ export async function fileUnderTag(entityToken: string, entityId: string, name: 
   return String(data ?? "");
 }
 
-async function tagTypeIds(): Promise<string[]> {
+/** Every live tag scope (a scope of the type whose slug is `tag`) in my organizations, from the store. */
+async function myTagScopes(): Promise<ScopeRow[]> {
   const orgIds = (await getUserOrganizations()).map((o) => o.id);
   if (!orgIds.length) return [];
-  const { data, error } = await contextDb(supabase)
-    .from("scope_types")
-    .select("id")
-    .eq("slug", "tag")
-    .in("organization_id", orgIds)
-    .is("deleted_at", null);
-  if (error) throw new Error(refusalMessage(error, "Reading your tag types"));
-  return ((data ?? []) as { id: string }[]).map((r) => r.id);
+  const res = await readScopeTree(orgIds);
+  if (!res.ok) throw new Error(`Reading your tag types: ${res.error.message}`);
+  return res.data.types
+    .filter((t) => t.slug === "tag")
+    .flatMap((t) =>
+      t.scopes.map((sc) => ({ id: sc.id, name: sc.name, slug: sc.slug, organization_id: sc.organization_id })),
+    );
 }
 
 interface ScopeRow {
@@ -111,20 +112,7 @@ async function filedCounts(ids: string[]): Promise<Map<string, number>> {
 
 /** Every tag in my organizations, most-used first. */
 export async function listTags(): Promise<HubTag[]> {
-  const types = await tagTypeIds();
-  if (!types.length) return [];
-  const scopes = await readAllRows(
-    ({ from, to }) =>
-      contextDb(supabase)
-        .from("scopes")
-        .select("id, name, slug, organization_id", { count: "exact" })
-        .in("scope_type_id", types)
-        .is("deleted_at", null)
-        .order("id", { ascending: true })
-        .range(from, to),
-    { label: "context.scopes (tags)" },
-  );
-  const rows = scopes as ScopeRow[];
+  const rows = await myTagScopes();
   const counts = await filedCounts(rows.map((r) => r.id));
   return rows
     .map((r) => toTag(r, counts.get(r.id) ?? 0))
@@ -135,28 +123,12 @@ export async function listTags(): Promise<HubTag[]> {
 export async function findTagsByName(name: string): Promise<HubTag[]> {
   const clean = normalizeTagName(name);
   if (!clean) return [];
-  const types = await tagTypeIds();
-  if (!types.length) return [];
-  const base = () =>
-    contextDb(supabase)
-      .from("scopes")
-      .select("id, name, slug, organization_id")
-      .in("scope_type_id", types)
-      .is("deleted_at", null)
-      .limit(50);
   const slug = tagSlug(clean);
-  const [bySlug, byName] = await Promise.all([
-    slug ? base().eq("slug", slug) : Promise.resolve({ data: [], error: null }),
-    base().ilike("name", clean.replace(/[\\%_]/g, (c) => `\\${c}`)),
-  ]);
-  if (bySlug.error) throw new Error(refusalMessage(bySlug.error, "Looking up the tag"));
-  if (byName.error) throw new Error(refusalMessage(byName.error, "Looking up the tag"));
-  const seen = new Set<string>();
+  const lower = clean.toLowerCase();
   const out: HubTag[] = [];
-  for (const r of [...((bySlug.data ?? []) as ScopeRow[]), ...((byName.data ?? []) as ScopeRow[])]) {
-    if (seen.has(r.id)) continue;
-    seen.add(r.id);
-    out.push(toTag(r));
+  for (const r of await myTagScopes()) {
+    if ((slug && r.slug === slug) || (r.name ?? "").trim().toLowerCase() === lower) out.push(toTag(r));
+    if (out.length >= 50) break;
   }
   return out;
 }
@@ -175,14 +147,11 @@ export async function listItemTags(entityToken: string, entityId: string): Promi
   if (error) throw new Error(refusalMessage(error, "Reading its tags"));
   const ids = ((edges ?? []) as { target_id: string }[]).map((e) => e.target_id);
   if (!ids.length) return [];
-  const types = await tagTypeIds();
-  if (!types.length) return [];
-  const { data, error: e2 } = await contextDb(supabase)
-    .from("scopes")
-    .select("id, name, slug, organization_id")
-    .in("id", ids)
-    .in("scope_type_id", types)
-    .is("deleted_at", null);
-  if (e2) throw new Error(refusalMessage(e2, "Reading its tags"));
+  // Those scopes, from the store (each in its own organization); only the TAG ones name a tag.
+  const res = await readScopesById(ids);
+  if (!res.ok) throw new Error(refusalMessage(res.error, "Reading its tags"));
+  const data = res.data
+    .filter((r) => r.scope_type?.slug === "tag")
+    .map((r) => ({ id: r.id, name: r.name ?? null, slug: r.slug ?? null, organization_id: r.organization_id }));
   return [...new Set(((data ?? []) as ScopeRow[]).map((r) => toTag(r).name))].sort((a, b) => a.localeCompare(b));
 }
