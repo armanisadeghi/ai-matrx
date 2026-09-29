@@ -77,6 +77,14 @@ export function ServerOperationBanner({
 
   const hasQuestion = pendingAsks.length > 0;
   const continuing = operation.recoveryState === "continuing";
+  // Parked on a person (an approve-spend ask): the call's own card holds the
+  // form, and only the answer resumes the turn — no "Continue agent" here.
+  const waitingOnPerson = waiting && operation.recoveryState === "waiting_on_person";
+  const showParkedAsk = () => {
+    document
+      .querySelector("[data-parked-ask]")
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   const shouldRecheck =
     !operation.userRequestId ||
     operation.recoveryState === "checking_for_prompt" ||
@@ -88,6 +96,8 @@ export function ServerOperationBanner({
       pendingAsks.length === 1
         ? "The agent needs your answer."
         : `The agent has ${pendingAsks.length} questions for you.`;
+  } else if (waitingOnPerson) {
+    message = "Your agent is waiting for your answer below.";
   } else if (waiting && operation.recoveryState === "continuing") {
     message = "No answer is needed — continuing the agent now.";
   } else if (waiting && operation.recoveryState === "checking_for_prompt") {
@@ -103,7 +113,7 @@ export function ServerOperationBanner({
 
   return (
     <div className="mb-1.5 flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
-      {waiting && hasQuestion ? (
+      {waiting && (hasQuestion || waitingOnPerson) ? (
         <MessageCircleQuestion className="h-4 w-4 shrink-0 text-primary" />
       ) : waiting ? (
         <CircleDashed className="h-4 w-4 shrink-0 text-primary" />
@@ -120,7 +130,16 @@ export function ServerOperationBanner({
           Show {pendingAsks.length === 1 ? "question" : "questions"}
         </button>
       )}
-      {waiting && !hasQuestion && !continuing && (
+      {waitingOnPerson && !hasQuestion && (
+        <button
+          type="button"
+          onClick={showParkedAsk}
+          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+        >
+          Show
+        </button>
+      )}
+      {waiting && !hasQuestion && !continuing && !waitingOnPerson && (
         <button
           type="button"
           onClick={continueAgent}

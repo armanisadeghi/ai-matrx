@@ -64,6 +64,7 @@ import type {
   ServerOperationState,
 } from "./types";
 import { decideWaitingInputRecovery } from "./waiting-input-recovery";
+import { countOpenAsksForConversation } from "./parked-on-person";
 
 export interface ReconnectServerOperationArgs {
   conversationId: string;
@@ -228,13 +229,38 @@ export const reconnectServerOperation = createAsyncThunk<
         );
         const asks =
           selectActivePendingAsksForConversation(conversationId)(getState());
+        // A TURN PARKED ON A PERSON has no pending call (core omits it so no
+        // client answers it) — the durable fact is its OPEN action request.
+        // Read only when nothing else explains the wait. A failed read is
+        // never taken as "nothing parked": resuming a turn still waiting on
+        // someone's approval is the one wrong move, so it re-checks instead.
+        let parkedOnPersonCount = 0;
+        if (surfaced === 0 && asks.length === 0) {
+          try {
+            parkedOnPersonCount = await countOpenAsksForConversation(conversationId);
+          } catch (err) {
+            console.error(
+              "[runtime-reconnect] could not read the person's open asks; not resuming a turn that may be waiting on one.",
+              { conversationId, executionId: op.execution_id, err },
+            );
+            stampOperation("waiting_input", true, "checking_for_prompt");
+            return;
+          }
+        }
         const decision = decideWaitingInputRecovery({
           pendingCallCount: surfaced,
           pendingAskCount: asks.length,
+          parkedOnPersonCount,
           userRequestId: op.request_id,
         });
         if (decision === "prompt_visible") {
           stampOperation("waiting_input", true, "prompt_visible");
+          return;
+        }
+        if (decision === "waiting_on_person") {
+          // The tool call's own card holds the ask (ParkedOnPersonCard). The
+          // answer door resumes the turn; nothing here may.
+          stampOperation("waiting_input", true, "waiting_on_person");
           return;
         }
         if (decision === "pending_tool") {

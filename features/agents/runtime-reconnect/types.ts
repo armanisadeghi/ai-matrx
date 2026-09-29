@@ -85,6 +85,7 @@ export interface ServerOperationState {
     | "checking_for_prompt"
     | "prompt_visible"
     | "pending_tool"
+    | "waiting_on_person"
     | "continuing"
     | "needs_action"
     | "live_replay_unavailable";

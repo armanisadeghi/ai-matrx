@@ -95,7 +95,7 @@ export function ParkedOnPersonCard({
 
   if (lookup.phase === "open") {
     return (
-      <div className="rounded-md border border-border bg-card">
+      <div data-parked-ask="" className="rounded-md border border-border bg-card">
         <p className="flex items-center gap-2 px-4 pt-4 text-sm font-medium">
           <HandHelping className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
           {lookup.request.render.title}
@@ -107,7 +107,7 @@ export function ParkedOnPersonCard({
 
   if (lookup.phase === "unreachable") {
     return (
-      <div className="flex items-center justify-between gap-3 p-4">
+      <div data-parked-ask="" className="flex items-center justify-between gap-3 p-4">
         <p className="text-sm text-muted-foreground">
           This call is waiting for you, and we could not load what it needs just now. Nothing was
           lost — try again.
@@ -128,5 +128,9 @@ export function ParkedOnPersonCard({
     );
   }
 
-  return <p className="p-4 text-sm text-muted-foreground">Getting what your agent needs from you…</p>;
+  return (
+    <p data-parked-ask="" className="p-4 text-sm text-muted-foreground">
+      Getting what your agent needs from you…
+    </p>
+  );
 }
