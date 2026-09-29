@@ -96,6 +96,7 @@ export function createItemSurfaceIndex(): ItemSurfaceIndex {
         const done = (capture: SurfaceRegistry | null) => {
           clearTimeout(timer);
           set.delete(done);
+          if (set.size === 0) waiters.delete(tileId);
           resolve(capture);
         };
         const timer = setTimeout(() => done(null), timeoutMs);

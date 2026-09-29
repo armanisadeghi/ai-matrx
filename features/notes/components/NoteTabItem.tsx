@@ -516,7 +516,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
         ...(item.disabledReason ? { disabled: true, description: item.disabledReason } : {}),
       })),
     },
-    tabSection(false),
+    ...(standalone ? [] : [tabSection(false)]),
   ];
   function tabSection(primary: boolean): ContextMenuExtraSection {
     return {
@@ -547,7 +547,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
     ...tabExtraSections
       .filter((section) => section.id !== "note-tab")
       .map((section) => (section.id === "note-actions" ? { ...section, label: undefined } : section)),
-    tabSection(true),
+    ...(standalone ? [] : [tabSection(true)]),
   ];
 
   // ONE MENU FOR THE NOTE (R26, ALC-15 round 5). The tab's ⋯ and a right-click
@@ -564,6 +564,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
     extraSections: tabExtraSections,
     heading: { label: "Note", text: label || "Untitled note" },
   });
+  // eslint-disable-next-line react-hooks/refs -- external menu registry needs current rows during this render.
   recordRows.current = {
     entity: { type: "note" as const, id: noteId, title: label, resourceType: "note" as const },
     extraSections: tabExtraSections,
@@ -718,8 +719,8 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
                   ref={moreRef}
                   data-note-tab-more=""
                   className={actionBtnClass}
-                  title="Tab and note actions"
-                  aria-label="Tab and note actions"
+                  title={standalone ? "Note actions" : "Tab and note actions"}
+                  aria-label={standalone ? "Note actions" : "Tab and note actions"}
                   aria-haspopup="menu"
                   onClick={(e) => {
                     e.stopPropagation();
