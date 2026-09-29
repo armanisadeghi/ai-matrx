@@ -667,6 +667,83 @@ try {
     await page.keyboard.press("Escape");
   }
 
+  if (PHASE === "look-home") {
+    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await unpark();
+    await sleep(8000);
+    if (await page.getByText("An organization is needed").count()) {
+      await page.getByRole("button", { name: "Choose organization" }).last().click();
+      await sleep(1500);
+      const pick = page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first();
+      step("org choices", { found: await pick.count() });
+      await pick.click().catch(() => {});
+      await sleep(6000);
+    }
+    await shot("h01-data-home");
+    step("data home", { buttons: (await page.getByRole("button").allInnerTexts()).map((b) => b.trim()).filter(Boolean).slice(0, 40) });
+    const nt = page.getByRole("button", { name: /^New table/ }).first();
+    if (await nt.count()) {
+      await nt.click();
+      await sleep(2500);
+      await shot("h02-new-table");
+      step("new table dialog", { text: (await page.getByRole("dialog").first().innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 800) });
+      await page.keyboard.press("Escape");
+    }
+  }
+
+  if (PHASE === "archive") {
+    // BREAKER-1 B-F13: archive a 120-record table (three passes), reload in the middle, carry on, Undo.
+    const pickOrg = async () => {
+      if (await page.getByText("An organization is needed").count()) {
+        await page.getByRole("button", { name: "Choose organization" }).last().click();
+        await sleep(1500);
+        await page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first().click();
+        await sleep(6000);
+      }
+    };
+    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await unpark();
+    await sleep(6000);
+    await pickOrg();
+    const name = `Stock count, March ${String(Date.now()).slice(-4)}`;
+    await page.getByRole("button", { name: /^New table/ }).first().click();
+    await sleep(1200);
+    await page.getByPlaceholder("Table name").fill(name);
+    await page.getByRole("button", { name: "Create and import a file" }).click();
+    await sleep(4000);
+    await page.locator("input[type=file]").first().setInputFiles(join(process.cwd(), "scripts/fixtures/stock-count-march.csv"));
+    await sleep(5000);
+    await shot("a00-import-preview");
+    step("chose the file", { name, preview: (await page.locator("body").innerText()).replace(/\s+/g, " ").match(/Import[^]{0,400}/)?.[0]?.slice(0, 400) ?? null });
+    const importBtn = page.getByRole("button", { name: /^Import( \d+.*)?$/ }).first();
+    if (await importBtn.count()) await importBtn.click();
+    await sleep(20000);
+    await shot("a01-imported");
+    const importText = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+    step("after import", { url: page.url().replace(ORIGIN, ""), rows: importText.match(/of \d+ (rows|records)|\d+ records?/g)?.slice(0, 4) ?? null, import_words: importText.match(/Import[^.]{0,160}/)?.[0] ?? null });
+    await page.getByRole("button", { name: "Open the table" }).first().click().catch(() => {});
+    await until("the table", async () => page.url().includes("/data-v2/") && (await page.locator("thead th").count()) > 1, 120000);
+    await sleep(3000);
+    out.archive_table_url = page.url();
+    step("opened the table", { url: page.url().replace(ORIGIN, ""), headers: await headers() });
+    await page.locator('[aria-label="Table settings"]').first().click();
+    await sleep(3000);
+    await shot("a02-settings");
+    step("settings", { text: (await page.locator("body").innerText()).replace(/\s+/g, " ").match(/This table[^]{0,300}/)?.[0] ?? null });
+  }
+
+  if (PHASE === "paging") {
+    // A native table of 120 records in the records-ui grid: what is asked, what is shown.
+    const asked = [];
+    page.on("request", (r) => { if (/\/rpc\/read_/.test(r.url())) asked.push({ url: r.url().replace(/^.*\/rpc\//, ""), body: (r.postData() ?? "").slice(0, 400) }); });
+    await open(process.env.TABLE ?? "87013986-e75a-44e7-bc4a-124640c991d5");
+    await sleep(3000);
+    const shown = await rowTexts();
+    const footer = await page.evaluate(() => document.body.innerText.match(/\d+[–-]\d+ of [\d,]+|Unknown total|of [\d,]+ (rows|records)/g));
+    await shot("p01-paging");
+    step("120 records in the grid", { first: shown.slice(0, 3), last: shown.slice(-2), shown: shown.length, footer, asked: asked.slice(0, 6) });
+  }
+
   if (PHASE === "tidy") {
     // Columns earlier walks added and left on the test table, removed the way a person removes them.
     await open(T.supplies, "?view=sheet");

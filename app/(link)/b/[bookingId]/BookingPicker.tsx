@@ -165,7 +165,11 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
     const refusedShape: Record<string, string> = {};
     for (const [key, typedIn] of Object.entries(answers)) {
       const field = fieldFor.get(key);
-      if (!field || typeof typedIn !== "string") {
+      // A PICKED CHOICE IS ALREADY THE STORE'S KEY (lane HANDOVER, 2026-09-29). The Visit type's
+      // picker hands "follow_up"; reading that as typed text asked the column's choices, which a
+      // stranger's page never loads, and refused every booking with "its options have not been
+      // read yet". Only what was TYPED is read as typing.
+      if (!field || typeof typedIn !== "string" || PICKED.has(fieldKindFor(field))) {
         coerced[key] = typedIn;
         continue;
       }
@@ -268,49 +272,43 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
           const label = q.ask || labelFor.get(q.field) || q.field;
           const shapeRefusal = wrongShape[q.field];
           const wrong = missing.includes(q.field) || Boolean(shapeRefusal);
-          const kind = fieldFor.has(q.field)
-            ? fieldKindFor(fieldFor.get(q.field) as Field)
-            : null;
           return (
             <label key={q.field} className="flex flex-col gap-1">
               <span className="text-sm">
                 {label}
                 {q.required ? <span aria-hidden="true"> *</span> : null}
               </span>
-              {kind !== null && PICKED_KINDS.has(kind) ? (
-                // A CHOICE IS PICKED, NEVER TYPED (lane HANDOVER, 2026-09-28): the Visit type was a
-                // free-text box on this page. The public form's own control draws it from the
-                // choices the booking door hands the question.
-                <RecordsUiProvider value={{}}>
-                  <FieldControl
-                    field={fieldFor.get(q.field) as Field}
-                    value={answers[q.field] ?? null}
-                    onChange={(next) => {
-                      setAnswers((a) => ({ ...a, [q.field]: next }));
-                      setMissing((m) => m.filter((k) => k !== q.field));
-                    }}
-                  />
-                </RecordsUiProvider>
+              {/* EVERY QUESTION IS THE FORM'S OWN CONTROL (lane HANDOVER, 2026-09-28). The page drew
+                  choices with FieldControl and everything else with its own one-line <input>, so
+                  a clinic's multi-line Visit notes was a single line and a date would be typed.
+                  One control, the one the public form and the grid use, for every kind. */}
+              {fieldFor.has(q.field) ? (
+                <div
+                  className={wrong ? "rounded ring-1 ring-destructive" : undefined}
+                  aria-invalid={wrong || undefined}
+                >
+                  <RecordsUiProvider value={{}}>
+                    <FieldControl
+                      field={fieldFor.get(q.field) as Field}
+                      value={answers[q.field] ?? null}
+                      onChange={(next) => {
+                        setAnswers((a) => ({ ...a, [q.field]: next }));
+                        setMissing((m) => m.filter((k) => k !== q.field));
+                        // The sentence goes the moment the person changes the thing it is about.
+                        setWrongShape((w) => {
+                          if (!(q.field in w)) return w;
+                          const rest = { ...w };
+                          delete rest[q.field];
+                          return rest;
+                        });
+                      }}
+                    />
+                  </RecordsUiProvider>
+                </div>
               ) : (
-              <input
-                className={`h-11 rounded border bg-background px-3 text-base ${wrong ? "border-destructive" : "border-input"}`}
-                value={typeof answers[q.field] === "string" ? (answers[q.field] as string) : ""}
-                required={Boolean(q.required)}
-                aria-invalid={wrong || undefined}
-                {...keyboardFor(kind)}
-                autoComplete={autoCompleteFor(kind, q.field)}
-                onChange={(e) => {
-                  setAnswers((a) => ({ ...a, [q.field]: e.target.value }));
-                  // The sentence goes the moment the person changes the thing
-                  // it is about; it is never left standing over new typing.
-                  setWrongShape((w) => {
-                    if (!(q.field in w)) return w;
-                    const next = { ...w };
-                    delete next[q.field];
-                    return next;
-                  });
-                }}
-              />
+                <p className="text-xs text-muted-foreground">
+                  This question names a column the page could not read, so it cannot be answered here.
+                </p>
               )}
               {shapeRefusal ? (
                 <span className="text-xs text-destructive">{shapeRefusal} <ErrorAlchemyMenu error={shapeRefusal} /></span>
@@ -462,42 +460,8 @@ function q_label(
   return (asked && asked.trim()) || labelFor.get(key) || key;
 }
 
-/**
- * A booking page asks a stranger for their name and how to reach them, on a
- * phone, once. Autofill is the difference between four taps and forty.
- *
- * 🚨 IT READS THE FIELD, NOT THE NAME OF THE KEY (TAILS-3, 2026-09-21). This
- * used to be three regexes over the key — `/mail/`, `/phone|mobile|tel/`,
- * `/name/` — which is the screen inventing its own opinion of a column beside
- * the store's. A Field already DECLARES that it is an email or a phone, and
- * `fieldKindFor` is the one body that reads that declaration. The key is kept
- * only as the fallback for a question whose Field this page could not resolve.
- */
-function autoCompleteFor(kind: FieldKind | null, field: string): string | undefined {
-  if (kind === "email") return "email";
-  if (kind === "phone") return "tel";
-  if (kind === null) {
-    if (/mail/.test(field)) return "email";
-    if (/phone|mobile|tel/.test(field)) return "tel";
-  }
-  if (/name/.test(field)) return "name";
-  return undefined;
-}
-
-/**
- * The keyboard a phone raises. A number column that raises a full QWERTY is
- * how "2019" becomes "2O19" one-handed in a driveway.
- */
-function keyboardFor(kind: FieldKind | null): { inputMode?: "numeric" | "decimal" | "tel" | "email" } {
-  if (kind === "number") return { inputMode: "numeric" };
-  if (kind === "currency" || kind === "percent") return { inputMode: "decimal" };
-  if (kind === "phone") return { inputMode: "tel" };
-  if (kind === "email") return { inputMode: "email" };
-  return {};
-}
-
-/** The kinds a visitor picks from rather than types. */
-const PICKED_KINDS: ReadonlySet<FieldKind> = new Set(["select", "multi_select", "checkbox"]);
+/** The kinds whose control hands over the store's own key, never typed words. */
+const PICKED: ReadonlySet<FieldKind> = new Set(["select", "multi_select", "checkbox"]);
 
 function isBlank(value: unknown): boolean {
   if (value === null || value === undefined) return true;
