@@ -1521,6 +1521,10 @@ export class StreamBlockAccumulator {
           this.closeCurrentBlock(dispatch);
           this.subState = { kind: "none" };
           this.openBlock("text", dispatch);
+          // Keep a fresh slot for source that follows this root, but do not
+          // emit that unused slot on finalize. Its inherited IR envelope
+          // otherwise looks like a second, empty structured answer.
+          this.suppressEmptyTrailingSlot = true;
         }
         return;
       }

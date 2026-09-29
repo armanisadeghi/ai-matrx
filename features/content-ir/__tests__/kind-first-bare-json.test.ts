@@ -140,5 +140,15 @@ describe("a bound agent's bare JSON, with __kind first", () => {
     const final = [...enveloped].reverse().find((u) => u.block.status === "complete");
     expect(envelopeOf(final!.block)!.root.status).toBe("complete");
     expect(envelopeOf(final!.block)!.root.kind).toBe(kind);
+    // A completed root opens a text slot so following source can keep its
+    // document order. That slot must remain internal when the stream ends:
+    // `irEnvelope` still names the completed kind, so emitting it would make
+    // parity select an invented empty structured answer as the terminal one.
+    const completed = enveloped.filter((u) => u.block.status === "complete");
+    expect(completed).toHaveLength(1);
+    expect(envelopeOf(completed[0]!.block)!.root.value).toMatchObject({
+      __kind: kind,
+      title: JSON.parse(document).title,
+    });
   });
 });
