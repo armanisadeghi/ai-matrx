@@ -24,6 +24,40 @@ const PayloadSchema = z.object({
   context: z.unknown(),
 });
 
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+async function resolveGuestOrganization(
+  admin: AdminClient,
+  authUserId: string | null,
+): Promise<{ organizationId: string; organizationNote: string | null }> {
+  if (!authUserId) {
+    return {
+      // org-fallback-deliberate: no guest account exists yet, so the platform's own error ledger is the only owner.
+      organizationId: await resolveSystemOrgId(admin),
+      organizationNote:
+        "No guest account exists yet for this fingerprint, so the row is filed under the system organization.",
+    };
+  }
+  const { data, error } = await admin
+    .schema("iam")
+    .from("memberships")
+    .select("container_id")
+    .eq("user_id", authUserId)
+    .eq("container_type", "organization")
+    .eq("status", "active")
+    .is("deleted_at", null);
+  const orgIds = [...new Set((data ?? []).map((row) => row.container_id).filter(Boolean))];
+  if (!error && orgIds.length === 1) {
+    return { organizationId: orgIds[0] as string, organizationNote: null };
+  }
+  const note = error
+    ? `The guest's organization could not be read (${error.message}); filed under the system organization.`
+    : `Signup defect: guest ${authUserId} has ${orgIds.length} active organization memberships (every account gets exactly one at signup). Remedy: select iam.provision_signup_organization('${authUserId}'); and fix what made signup skip it. Filed under the system organization.`;
+  console.error(`[client-error] ${note}`);
+  // org-fallback-deliberate: a signup defect left no single guest organization; the row names it (above).
+  return { organizationId: await resolveSystemOrgId(admin), organizationNote: note };
+}
+
 export async function POST(request: NextRequest) {
   const parsed = PayloadSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -40,12 +74,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown guest identity" }, { status: 404 });
   }
 
-  // org-fallback-deliberate: a GUEST has no organization — `guest_executions`
-  //   carries none and the person has chosen none — and ops.system_error is
-  //   the platform's own error ledger, so the platform is the only tenant this
-  //   row can belong to. It used to resolve the guest's personal organization
-  //   first, filing the platform's diagnostics in a private workspace.
-  const organizationId = await resolveSystemOrgId(admin);
+  // THE GUEST'S OWN ORGANIZATION. Every account gets exactly one organization
+  // at signup, a guest included (migrations/guests_get_their_organization_at_signup.sql),
+  // so the row is filed where the guest acts — its ONE active membership, read,
+  // never chosen. The system organization is used only when there is no guest
+  // identity at all yet (the fingerprint was recorded before the server minted
+  // its auth user), or when signup left the guest with zero or several
+  // memberships — a signup defect, which the row itself names so it is fixed,
+  // never absorbed.
+  const { organizationId, organizationNote } = await resolveGuestOrganization(
+    admin,
+    guest.auth_user_id,
+  );
   // An unregistered slug is never stored: a client that sends one is telling us
   // its map is wrong, and a wrong feature is harder to notice than a missing one.
   const sourceFeature =
@@ -69,6 +109,7 @@ export async function POST(request: NextRequest) {
         : {}),
       fingerprint: parsed.data.fingerprint,
       identity_state: "guest",
+      ...(organizationNote ? { organization_note: organizationNote } : {}),
     },
     source_app: "matrx-frontend",
     source_feature: sourceFeature,

@@ -119,8 +119,14 @@ export async function fetchAgentOutputSchemas(
   }
 
   const supabase = createClient();
-  // `agent.definition` is a signed-in read; a guest (a public app at
-  // /p/<slug>) can read no agent's schema, so it has none — not a failure.
+  // `agent.definition` is a signed-in read, so a guest (a public app at
+  // /p/<slug>) cannot ask it. OPEN DEFECT (2026-09-29), not a design: the
+  // guest's public app DOES have a contract and should read it through a
+  // signed-out door beside `public.get_aga_public_execution`; creating that
+  // door is refused today by two DB guards that contradict each other (T-13
+  // bans reading `visibility`; `door_body_must_decide` accepts only
+  // `visibility = 'public'` or a signed-in access check). Until then the
+  // guest's verdict is "unknown" (null), which callers treat as no contract.
   // Decided INSIDE the shared read so concurrent callers still dedupe on it.
   const query = (async () => {
     if (!(await hasBrowserSession())) {

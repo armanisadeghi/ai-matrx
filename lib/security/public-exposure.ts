@@ -513,7 +513,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "id", "name", "common_name", "capabilities", "context_window", "max_tokens",
       "is_primary", "is_premium", "mid_fallback_id", "guest_fallback_id", "release_date", "description",
       "cost_rating", "speed_rating", "maker", "usage_basis", "token_billed", "points_per_million_input",
-      "points_per_million_output", "is_deprecated", "retired_at", "successor_id",
+      "points_per_million_output", "is_deprecated", "retired_at", "successor_id", "controls", "constraints",
     ],
     why:
 "The anonymous model catalog — features/ai-models/hooks/useModelCatalog.ts: \"user → ai.model_public (anon + authenticated; masked, points pricing)\". A view with security_invoker OFF, so it does not consult RLS; kept because it is meant to be world-readable.",

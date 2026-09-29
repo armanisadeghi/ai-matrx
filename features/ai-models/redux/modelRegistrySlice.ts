@@ -285,6 +285,10 @@ export const fetchModelIdentityById = createAsyncThunk<
   },
 );
 
+/** The resolved columns both `ai.model_config` and `ai.model_public` carry. */
+const MODEL_CONFIG_COLUMNS =
+  "id, name, common_name, maker, cost_rating, speed_rating, is_premium, is_primary, context_window, max_tokens, capabilities, controls, constraints, is_deprecated, retired_at, successor_id" as const;
+
 /**
  * Fetch the full record for a single model by ID — deprecated or not.
  *
@@ -308,17 +312,24 @@ export const fetchModelIdentityById = createAsyncThunk<
  */
 export const fetchModelById = createAsyncThunk(
   "modelRegistry/fetchModelById",
-  async (modelId: string, { rejectWithValue }) => {
+  async (modelId: string, { rejectWithValue, getState }) => {
     console.log(
       "[modelRegistry] fetchModelById — fetching full record for",
       modelId,
     );
+    // A signed-out guest (a public app at /p/<slug>, signed-out chat) has no
+    // session, so it reads the SAME resolved columns from the world-readable
+    // catalog `ai.model_public` (owner-rights, anon grant bounded by column —
+    // migrations/guests_read_model_details_from_model_public.sql). A signed-in
+    // reader keeps `ai.model_config`, which runs as its caller.
+    const auth = getState() as { userAuth?: { accessToken?: string | null } };
+    const relation = auth.userAuth?.accessToken ? "model_config" : "model_public";
     try {
       const supabase = createClient();
       const { data, error } = await supabase
         .schema("ai")
-        .from("model_config")
-        .select("*")
+        .from(relation)
+        .select(MODEL_CONFIG_COLUMNS)
         .eq("id", modelId)
         .maybeSingle();
       if (error) throw error;
@@ -328,12 +339,12 @@ export const fetchModelById = createAsyncThunk(
           reason: "unknown",
           recordId: modelId,
           token: "ai_model",
-          relation: "model_config",
+          relation,
         });
       }
       if (!data.id || !data.name) {
         throw new Error(
-          `ai.model_config returned a row without id/name for model ${modelId}`,
+          `ai.${relation} returned a row without id/name for model ${modelId}`,
         );
       }
       // normalizeModel keeps the legacy-alias mapping (a TEXT model's
@@ -368,16 +379,6 @@ export const fetchModelById = createAsyncThunk(
   },
   {
     condition: (modelId: string, { getState }) => {
-      // `ai.model_config` is a signed-in read. A known fingerprint guest (a
-      // signed-out visitor running a public app at /p/<slug>) can never read
-      // it, so it is not asked — it only answered 401 (page-pass 2026-09-27).
-      const auth = getState() as {
-        userAuth?: { accessToken?: string | null };
-        userProfile?: { fingerprintId?: string | null };
-      };
-      if (!auth.userAuth?.accessToken && auth.userProfile?.fingerprintId) {
-        return false;
-      }
       const { entities, detailStatusById } = (
         getState() as { modelRegistry: ModelRegistryState }
       ).modelRegistry;

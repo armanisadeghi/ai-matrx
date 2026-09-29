@@ -44,8 +44,10 @@ shared defects, 2026-09-27). Guard: `components/header/HeaderPhoneOverflow.test.
 Rules: a control is never unmounted on state — that is what shifted the row
 (owner, 2026-09-16: *"causes a shift in the top header buttons"*). A control
 with nothing to do is `disabled` **with a tooltip naming the reason and the
-way out**; a control a guest cannot use opens the auth gate naming the
-feature. The one conditional element is the organization control: it NAMES the
+way out**; a control for a genuinely account-only feature (the guest's own
+agent bindings, its inbox) opens the auth gate naming the feature. Never gate
+a feature a guest can use in order to route around a defect — fix the defect
+(`../common-docs/policies/fix-the-defect-never-hide-the-feature.md`). The one conditional element is the organization control: it NAMES the
 active organization on every ordinary page (and opens the picker), asks "Choose
 organization" while none is chosen — tinted primary, never alarm red — and is
 absent on /administration/* (the admin seat never acts as itself). Guards:

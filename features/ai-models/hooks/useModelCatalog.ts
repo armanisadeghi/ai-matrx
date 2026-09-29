@@ -51,7 +51,11 @@ import type {
 import { requireCanonicalCapabilities } from "@/features/ai-models/capabilities/parse";
 import type { Database, Json } from "@/types/database.types";
 
-type ModelPublicRow = Database["ai"]["Views"]["model_public"]["Row"];
+/** The catalog row: the view minus the per-model resolved settings the list never reads. */
+type ModelPublicRow = Omit<
+  Database["ai"]["Views"]["model_public"]["Row"],
+  "controls" | "constraints"
+>;
 type ModelAdminRow = Database["ai"]["Views"]["model_admin"]["Row"];
 
 export type ModelCatalogVariant = "user" | "admin";
@@ -444,7 +448,12 @@ async function loadCatalog(
       supabase
         .schema("ai")
         .from("model_public")
-        .select("*")
+        // Named, never "*": the view also carries each model's resolved
+        // controls/constraints (a per-row function call) for the one-model
+        // detail read — the catalog list never pays for them.
+        .select(
+          "id, name, common_name, capabilities, context_window, max_tokens, is_primary, is_premium, mid_fallback_id, guest_fallback_id, release_date, description, cost_rating, speed_rating, maker, usage_basis, token_billed, points_per_million_input, points_per_million_output, is_deprecated, retired_at, successor_id",
+        )
         .order("common_name", { ascending: true, nullsFirst: false }),
       supabase
         .schema("ai")

@@ -3512,7 +3512,9 @@ export type Database = {
         Row: {
           capabilities: Json | null
           common_name: string | null
+          constraints: Json | null
           context_window: number | null
+          controls: Json | null
           cost_rating: number | null
           description: string | null
           guest_fallback_id: string | null
