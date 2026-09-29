@@ -133,7 +133,11 @@ export function buildDisplayEntries({
 
   const entries: DisplayEntry[] = [];
   for (const rec of messages) {
-    if (rec.role === "tool" || rec.role === "system") continue;
+    // "output" is a runtime row (an OpenAI reasoning item persisted on its own) that belongs to the assistant turn
+    // it sits in. Like a tool row it renders nothing here and must NEVER be a turn boundary: treated as one, it
+    // split the PR Director's turn in two and the first half — ending on a tool call — was declared "finished
+    // without writing an answer" directly above the real answer (conversation 88d030cd…, 2026-09-29).
+    if (rec.role === "tool" || rec.role === "system" || (rec.role as string) === "output") continue;
     // A consumed PREFILL: its text is the start of the reply that follows, so
     // it never renders as a turn of its own.
     if (recordFlags(rec).prefill === true && rec.id !== streamingAssistantId) continue;
