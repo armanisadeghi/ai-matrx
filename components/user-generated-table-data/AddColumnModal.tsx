@@ -26,6 +26,7 @@ import { setFieldFormat } from '@/features/data-tables/service';
 import { FormulaExpressionEditor } from '@/features/data-tables/components/FormulaExpressionEditor';
 import { isServiceFailure } from '@/features/data-tables/types';
 import { columnNameProblem, columnNameToKeep } from '@/features/data-tables/column-name-taken';
+import { offListChoiceWords, readCellWord, takesOtherWords } from '@/features/data-tables/cell-word';
 import { FieldFormatPicker } from '@/lib/field-formats/FieldFormatPicker';
 import {
   offerFormatWhereRelationIs,
@@ -104,11 +105,29 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
   // Blank is said once the person has typed something (three spaces, BREAKER-2 B2-08); the rest at once.
   const nameTaken = displayName === '' ? null : columnNameProblem(displayName, siblingFields);
 
+  // THE DEFAULT, READ AS THE COLUMN WILL READ IT, AS IT IS TYPED (BREAKER-2 B2-01 S1, B2-14): "abc" on a
+  // Whole number column, or "Rutine" on a Choice column without it, used to be accepted and then made
+  // every new row fail or carry a word nobody chose. The store refuses them too; this says it first.
+  const defaultColumn = { display_name: columnNameToKeep(displayName) || 'This column', data_type: dataType, metadata: { format } };
+  const defaultRead = defaultValue.trim() === '' ? null : readCellWord(defaultValue, defaultColumn);
+  const defaultOffList = defaultRead?.ok ? offListChoiceWords(defaultRead.value, defaultColumn) : [];
+  const defaultProblem = !defaultRead
+    ? null
+    : !defaultRead.ok
+      ? defaultRead.why
+      : defaultOffList.length > 0 && !takesOtherWords(defaultColumn)
+        ? `“${defaultOffList.join(', ')}” is not one of the choices, so it cannot be the default. Pick one of the choices, or add it to them first.`
+        : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const nameProblem = columnNameProblem(displayName, siblingFields);
     if (nameProblem) {
       setError(nameProblem);
+      return;
+    }
+    if (defaultProblem && !isComputedFormat) {
+      setError(defaultProblem);
       return;
     }
 
@@ -123,7 +142,8 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
         displayName: columnNameToKeep(displayName),
         dataType,
         isRequired: isComputedFormat ? false : isRequired,
-        defaultValue: isComputedFormat ? null : defaultValue || null,
+        // The default as the column keeps it ("$30" → 30, "yes" → ticked), never the raw words.
+        defaultValue: isComputedFormat || !defaultRead?.ok ? null : (defaultRead.value as string | number | boolean | null),
         ...(typeof insertAtOrder === "number" ? { fieldOrder: insertAtOrder } : {}),
       });
       
@@ -287,6 +307,7 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
               id="defaultValue"
               value={defaultValue}
               onChange={(e) => setDefaultValue(e.target.value)}
+              aria-invalid={defaultProblem ? true : undefined}
               placeholder={`e.g. ${
                 dataType === 'boolean' ? 'true/false' :
                 dataType === 'number' || dataType === 'integer' ? '0' : 
@@ -297,6 +318,7 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
                 'Default text'
               }`}
             />
+            {defaultProblem ? <p className="text-xs text-destructive" data-default-problem="">{defaultProblem}</p> : null}
           </div>
           </>
           )}

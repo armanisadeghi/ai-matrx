@@ -74,6 +74,8 @@ import {
 import { isServiceFailure, type FieldDataType } from "@/features/data-tables/types";
 import { COLUMN_STORAGE_TYPES, storageTypesToChangeInto } from "@/features/data-tables/column-storage-types";
 import { columnNameProblem, columnNameToKeep } from "@/features/data-tables/column-name-taken";
+import { offListChoiceWords, readCellWord, takesOtherWords } from "@/features/data-tables/cell-word";
+import { inlineChoices } from "@/lib/field-formats/choices";
 import {
   parseValidationRules,
   serializeValidationRules,
@@ -142,6 +144,16 @@ function ColumnSettingsForm({
     resolveFieldFormat(field.data_type, field.metadata),
   );
   const [required, setRequired] = useState(Boolean(field.is_required));
+  // THE DEFAULT, SHOWN AND CLEARABLE HERE (BREAKER-2 B2-01 S1): the only way out of a default the
+  // column could not hold used to be deleting the column. A choice's default reads as its words.
+  const defaultShown = (() => {
+    const held = field.default_value;
+    if (held === null || held === undefined) return "";
+    const choices = inlineChoices(resolveFieldFormat(field.data_type, field.metadata).options);
+    const word = (v: unknown) => choices.find((c) => c.value === String(v) || (c as { id?: string }).id === String(v))?.label ?? choices.find((c) => c.value === String(v))?.value ?? String(v);
+    return Array.isArray(held) ? held.map(word).join(", ") : typeof held === "object" ? JSON.stringify(held) : word(held);
+  })();
+  const [defaultWords, setDefaultWords] = useState(defaultShown);
   const [rules, setRules] = useState<ValidationRules>(parseValidationRules(field.validation_rules));
   const [asRowLabel, setAsRowLabel] = useState(isLabel);
   const [saving, setSaving] = useState(false);
@@ -198,6 +210,16 @@ function ColumnSettingsForm({
       metadata: f.metadata,
     }));
   const summaryKinds = summaryKindsFor(dataType);
+  const defaultColumn = { display_name: columnNameToKeep(name) || field.display_name, data_type: dataType, metadata: format ? { format } : field.metadata };
+  const defaultRead = defaultWords.trim() === "" ? null : readCellWord(defaultWords, defaultColumn);
+  const defaultOffList = defaultRead?.ok ? offListChoiceWords(defaultRead.value, defaultColumn) : [];
+  const defaultProblem = !defaultRead
+    ? null
+    : !defaultRead.ok
+      ? defaultRead.why
+      : defaultOffList.length > 0 && !takesOtherWords(defaultColumn)
+        ? `“${defaultOffList.join(", ")}” is not one of the choices, so it cannot be the default. Pick one of the choices, or add it to them first.`
+        : null;
   const typeChanged = dataType !== field.data_type;
   const onTheRecordStore = isRecordStoreTable(tableId);
 
@@ -252,6 +274,10 @@ function ColumnSettingsForm({
       const priorRules = serializeValidationRules(parseValidationRules(original.validation_rules));
       const update: Record<string, unknown> = { id: original.id };
       if (required !== Boolean(original.is_required)) update.is_required = required;
+      if (!computed && defaultWords.trim() !== defaultShown.trim()) {
+        if (defaultProblem) throw new Error(defaultProblem);
+        update.default_value = defaultRead && defaultRead.ok ? defaultRead.value : null;
+      }
       if (JSON.stringify(nextRules) !== JSON.stringify(priorRules)) update.validation_rules = nextRules;
       if (Object.keys(update).length > 1) {
         const saved = await updateTableConfig({ tableId, fieldUpdates: [update as Record<string, unknown> & { id: string }] });
@@ -422,6 +448,29 @@ function ColumnSettingsForm({
                 onChange={setRules}
                 disabled={readOnly || saving}
               />
+            </div>
+          )}
+
+          {!computed && (
+            <div className="space-y-1">
+              <Label htmlFor="col-default" className="text-xs">Default for a new row</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="col-default"
+                  className="h-9 text-sm"
+                  value={defaultWords}
+                  placeholder="None"
+                  disabled={readOnly || saving}
+                  onChange={(e) => setDefaultWords(e.target.value)}
+                  aria-invalid={defaultProblem ? true : undefined}
+                />
+                {defaultWords !== "" ? (
+                  <Button type="button" variant="ghost" size="sm" className="h-9" disabled={readOnly || saving} onClick={() => setDefaultWords("")}>
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
+              {defaultProblem ? <p className="text-xs text-destructive" data-default-problem="">{defaultProblem}</p> : null}
             </div>
           )}
 
