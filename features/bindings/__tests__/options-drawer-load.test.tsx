@@ -100,7 +100,8 @@ const OWNER = {
   mandateId: "mandate-1",
   organizationId: "org-1",
   label: "Goal Writer",
-  visibility: "private" as never,
+  shownTo: null,
+  publishedToWeb: false,
 };
 
 function drawer() {

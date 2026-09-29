@@ -26,7 +26,7 @@ export interface ClearContextButtonProps {
   onCleared?: () => void;
   /** Hide when appContextSlice has nothing set. Default true. */
   hideWhenEmpty?: boolean;
-  /** Force visibility regardless of Redux (field-local selection). */
+  /** Force it shown regardless of Redux (field-local selection). */
   visible?: boolean;
 }
 

@@ -36,7 +36,8 @@ export type SavedView = {
   description: string | null;
   definition: SavedViewDefinition;
   isDefault: boolean;
-  visibility: string;
+  /** "Shown to" — which lists show this view; null = the type's default. */
+  shownTo: string | null;
   createdBy: string | null;
   updatedAt: string;
 };
@@ -59,7 +60,7 @@ function toSavedView(row: Record<string, unknown>): SavedView {
     description: typeof row.description === "string" ? row.description : null,
     definition: parseSavedViewDefinition(row.definition),
     isDefault: row.is_default === true,
-    visibility: typeof row.visibility === "string" ? row.visibility : "personal",
+    shownTo: typeof row.shown_to === "string" ? row.shown_to : null,
     createdBy: typeof row.created_by === "string" ? row.created_by : null,
     updatedAt: typeof row.updated_at === "string" ? row.updated_at : "",
   };
@@ -78,7 +79,7 @@ export async function listSavedViews(args: {
   const { data, error } = await db()
     .from(TABLE)
     .select(
-      "id,name,description,definition,is_default,visibility,created_by,updated_at",
+      "id,name,description,definition,is_default,shown_to,created_by,updated_at",
     )
     .eq("surface_key", DATA_TABLE_SURFACE_KEY)
     .eq("subject_id", args.tableId)

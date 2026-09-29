@@ -2,7 +2,7 @@
  * What a saved view of a data table CONTAINS, and how it is read back safely.
  *
  * A saved view is the whole `TableViewState` — search, sort, filters, page size,
- * column visibility and column order — under a name. It is the URL made durable:
+ * which columns are shown and their order — under a name. It is the URL made durable:
  * the URL already carries a view, this gives that view a name you can return to.
  *
  * 🚨 VALIDATE ON READ, ALWAYS DEGRADE. The definition is jsonb, which means it

@@ -225,7 +225,7 @@ describe("activeFiltersOnly", () => {
 });
 
 
-describe("column visibility and order", () => {
+describe("shown columns and order", () => {
   const FIELDS = [
     { field_name: "a", field_order: 0 },
     { field_name: "b", field_order: 1 },

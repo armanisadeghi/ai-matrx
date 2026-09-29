@@ -10,7 +10,7 @@
 //   People tab → a grant to each person named; "Add everyone in <organization>" names each
 //                current member (a share names PEOPLE, never an organization — SHARE-PEOPLE-ONLY);
 //                they see it under "Shared" and can bind it at their own level
-//   Public tab → visibility public; everyone sees it under "Public"
+//   Public tab → published to the web; everyone sees it under "Public"
 // `mandate` is in platform.shareable_resource_registry (mandate_share_without_move.sql),
 // and mandate.definition's RLS honours the grants through iam.has_access('mandate', …).
 // Proof from each viewer's seat: `pnpm check:mandate-sharing-lanes`.
@@ -22,12 +22,13 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { invalidateMandateCache } from "@/features/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMandateWorkspaceData";
+import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 
 type Mandate = MandateWorkspaceData["mandate"];
 
-/** The button's words for the stored visibility. Grants are counted inside the dialog. Pure. */
-export function mandateShareButtonLabel(visibility: string | null | undefined): string {
-  return visibility === "public" || visibility === "link" ? "Public" : "Share";
+/** The button's words for the mandate's web state. Grants are counted inside the dialog. Pure. */
+export function mandateShareButtonLabel(publishedToWeb: boolean | null | undefined): string {
+  return publishedToWeb ? PUBLISHED_TO_WEB_LABEL : "Share";
 }
 
 export function MandateVisibilityControl({
@@ -38,8 +39,7 @@ export function MandateVisibilityControl({
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const isPublic = mandate.visibility === "public" || mandate.visibility === "link";
-  const Icon = isPublic ? Globe : mandate.visibility === "personal" ? Lock : Share2;
+  const Icon = mandate.published_to_web ? Globe : mandate.shown_to === "only_me" ? Lock : Share2;
 
   return (
     <>
@@ -50,14 +50,14 @@ export function MandateVisibilityControl({
         onClick={() => setOpen(true)}
       >
         <Icon className="h-3.5 w-3.5" />
-        {mandateShareButtonLabel(mandate.visibility)}
+        {mandateShareButtonLabel(mandate.published_to_web)}
       </Button>
       {open ? (
         <ShareModal
           isOpen={open}
           onClose={() => {
             setOpen(false);
-            // Visibility may have changed inside the dialog; the row and its cache re-read.
+            // Sharing or publishing may have changed inside the dialog; the row and its cache re-read.
             invalidateMandateCache(mandate.mandate_key);
             onChanged();
           }}

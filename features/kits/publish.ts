@@ -1,10 +1,10 @@
 // features/kits/publish.ts — a saved kit is one catalog row the organization owns.
 //
 // `public.catalog_entries` (app 'matrx', kind 'kit'), `organization_id` = the
-// organization the person SET, `visibility` 'internal' = that organization's members
-// read it (std_select: `organization_id IN iam.my_orgs()`), `created_by` = the person
+// organization the person SET, no row controls written (that organization's members
+// read it: std_select `organization_id IN iam.my_orgs()`), `created_by` = the person
 // (std_insert requires it; std_update / std_delete let the creator edit and unpublish).
-// "Share publicly" is an admin-only act for now and is not offered here.
+// "Publish to the web" is an admin-only act for now and is not offered here.
 //
 // Keys are unique across the WHOLE catalog (UNIQUE (app, kind, key)), so an
 // organization's kit key carries the organization: `<slug>.<org8>`, and a collision
@@ -39,7 +39,6 @@ export async function publishKit(args: {
         payload: payload as unknown as Json,
         schema_version: 1,
         organization_id: args.organizationId,
-        visibility: "internal",
         created_by: args.userId,
         is_active: true,
         sort_order: 100,

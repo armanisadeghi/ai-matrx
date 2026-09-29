@@ -270,7 +270,7 @@ export function SheetViewControls(props: SheetViewProps) {
     <>
       <div className="flex shrink-0 items-center [&>div]:flex-nowrap">{savedBar}</div>
 
-      {/* Column visibility + order for THIS VIEW. Deliberately next to the
+      {/* Shown columns + order for THIS VIEW. Deliberately next to the
           grid rather than inside Table Settings: Table Settings edits the
           table for everyone, this edits only what you are looking at. */}
       <div className="flex shrink-0 items-center gap-1">

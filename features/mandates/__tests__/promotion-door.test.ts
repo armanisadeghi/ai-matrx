@@ -51,7 +51,7 @@ describe("the promotion door", () => {
     expect(source).toContain('.rpc("duplicate_mandate"');
     expect(source).toContain("p_as_system: true");
     // A client-side read-then-insert is exactly what `duplicateWorkflow`
-    // replaced for workflows: it copied the source's org and visibility onto
+    // replaced for workflows: it copied the source's org and row controls onto
     // the copy. There is no second write path here.
     expect(source).not.toMatch(/\.insert\(/);
     expect(source).not.toMatch(/\.upsert\(/);

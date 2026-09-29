@@ -25,12 +25,13 @@
 //     says out loud that these options are the job's, org-wide — unlike the
 //     holder above, a treatment has no per-person rung and pretending otherwise
 //     would be the screen lying.
-//   · `visibility` — the mandate's, so a private job's presentation is not more
-//     visible than the job it presents.
+//   · "Shown to" and "Published to the web" — the mandate's, so a job's
+//     presentation is never listed or published wider than the job it presents.
 //   · `name` — the mandate's label, which is what the row is called in the
 //     admin browser; it is not a second editable title.
 
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { publishedToWebPatch } from "@/lib/row-access";
 import { invalidateMandateCache } from "@/features/mandates/service";
 import { createClient } from "@/utils/supabase/client";
 import { getResourceAccess } from "@/utils/permissions/access";
@@ -66,7 +67,8 @@ export interface PresentationOwner {
   mandateId: string;
   organizationId: string;
   label: string;
-  visibility: MandateTreatmentRow["visibility"];
+  shownTo: MandateTreatmentRow["shown_to"];
+  publishedToWeb: boolean;
 }
 
 /**
@@ -148,7 +150,8 @@ export async function writePresentation({
         tier: TREATMENT_TIER_WIDGET,
         is_default: true,
         is_enabled: enabled,
-        visibility: owner.visibility,
+        shown_to: owner.shownTo,
+        ...(owner.publishedToWeb ? publishedToWebPatch(true, null) : {}),
         config,
       })
       .select("id, version")

@@ -485,7 +485,8 @@ function OneMandateBindingWorkspace({
             mandateId: data.mandate.id,
             organizationId: data.mandate.organization_id,
             label: data.mandate.label?.trim() || "Display name unavailable",
-            visibility: data.mandate.visibility,
+            shownTo: data.mandate.shown_to,
+            publishedToWeb: data.mandate.published_to_web,
           }}
           autoRun={parseBindingWave1(binding).autoRun === true}
           onSurfaceRead={setJobSurfaceName}
@@ -1418,7 +1419,7 @@ function BindingDraft({
    * (`SurfaceAgentBindPanel.tsx:310-313`, `BindingColumn.tsx:317-321`) and open
    * `GlobalBindAgentGuard`: it audits the agent's lineage, offers its linked
    * system twin, offers Linked Agent Sync when there is none, and prints a
-   * destructive warning when the agent's card visibility is not public — the
+   * destructive warning when the agent's card is not published to the web — the
    * half that matters most here, because an invisible holder set as THE SYSTEM
    * ANSWER is invisible to precisely the people a system answer exists for.
    *
@@ -2705,7 +2706,7 @@ function BindingDraft({
 
       {/* F1 — the system rung's awareness gate. Mounted only while the write it
           guards is the one being attempted, and only for an agent holder: a
-          workflow holder has no card visibility and no linked system twin, so
+          workflow holder has no published card and no linked system twin, so
           the guard would have nothing to audit and would be a dialog that
           exists to say nothing. */}
       {holder.kind === "agent" && agentId ? (

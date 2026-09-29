@@ -16,7 +16,7 @@
  * can still answer "where was I, and which agent was this about".
  *
  * Reads and writes go straight to Supabase under RLS (`agent.mandate_note`,
- * entity variant, `internal` visibility) — no Next.js route, no Python hop.
+ * entity variant, organization-wide) — no Next.js route, no Python hop.
  *
  * Notes are NEVER fed to an agent implicitly. They are human-to-human evidence
  * for the human who decides what a mandate should be.

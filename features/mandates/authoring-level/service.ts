@@ -7,11 +7,11 @@
 // and soft mandates; an organization and a user create SOFT mandates only.
 //
 // One door, aidream `POST /mandates/soft` (the super-admin `POST /mandates` is
-// untouched). The server decides the home and the visibility, never the client:
+// untouched). The server decides the home and "Shown to", never the client:
 //   level "user"          → homed in the caller's personal organization,
-//                           visibility personal (only me until I share it)
-//   level "organization"  → homed in that organization, visibility internal
-//                           (every member); refused unless the caller is an
+//                           Shown to: Only me (until I share it)
+//   level "organization"  → homed in that organization, Shown to: the type's
+//                           default (every member); refused unless the caller is an
 //                           owner/admin there, and refused for the system org.
 // Server refusals are shown verbatim — the server's words are the UI copy.
 
@@ -36,7 +36,6 @@ export interface CreatedSoftMandate {
   mandateKey: string;
   mandateId: string;
   organizationId: string;
-  visibility: string;
 }
 
 function wireDraftInputs(items: DraftInput[]) {
@@ -102,13 +101,11 @@ export async function createSoftMandate(
     mandate_key: string;
     mandate_id: string;
     organization_id: string;
-    visibility: string;
   };
   invalidateMandateCache(data.mandate_key);
   return {
     mandateKey: data.mandate_key,
     mandateId: data.mandate_id,
     organizationId: data.organization_id,
-    visibility: data.visibility,
   };
 }

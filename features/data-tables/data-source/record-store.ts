@@ -206,7 +206,10 @@ function asDataset(
     template_id: null,
     template_version: null,
     version: 1,
-    visibility: "personal",
+    shown_to: "only_me",
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
     workbook_id: null,
   } as Dataset;
 }

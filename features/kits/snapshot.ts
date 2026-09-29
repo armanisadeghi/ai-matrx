@@ -22,7 +22,6 @@ export interface AgentFacts {
   name: string;
   description: string | null;
   organizationId: string | null;
-  visibility: string | null;
   createdBy: string | null;
   variableDefinitions: unknown;
 }
@@ -31,7 +30,7 @@ export async function readAgentFacts(agentId: string): Promise<AgentFacts> {
   const { data, error } = await supabase
     .schema("agent")
     .from("definition")
-    .select("id, name, description, organization_id, visibility, created_by, variable_definitions")
+    .select("id, name, description, organization_id, created_by, variable_definitions")
     .eq("id", agentId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -42,7 +41,6 @@ export async function readAgentFacts(agentId: string): Promise<AgentFacts> {
     name: data.name,
     description: data.description,
     organizationId: data.organization_id,
-    visibility: data.visibility as string | null,
     createdBy: data.created_by,
     variableDefinitions: data.variable_definitions,
   };
@@ -195,9 +193,8 @@ export function agentForkableByOrg(agent: AgentFacts, organizationId: string): {
   if (agent.organizationId !== organizationId) {
     return { ok: false, why: "This agent lives in a different organization, so people here may not be able to copy it when they install the kit." };
   }
-  if (agent.visibility === "personal") {
-    return { ok: false, why: "This agent is private to you, so other people in the organization cannot copy it when they install the kit." };
-  }
+  // "Shown to: Only me" only keeps it out of other people's lists — it never locks, so members of
+  // its organization can still open and copy it.
   return { ok: true, why: null };
 }
 

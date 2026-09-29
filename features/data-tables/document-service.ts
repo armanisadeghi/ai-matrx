@@ -99,7 +99,7 @@ export async function createDocument(
 export async function listAccessibleDocuments(): Promise<
   ServiceResult<DocumentRow[]>
 > {
-  // RLS handles owner / public / shared visibility.
+  // RLS handles owner / published-to-the-web / shared access.
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_documents")

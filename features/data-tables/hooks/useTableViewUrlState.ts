@@ -66,7 +66,7 @@ export type TableViewUrlState = {
   /** Field names in this view's order; empty means the table's own order. */
   columnOrder: string[];
   setColumnOrder: (value: string[]) => void;
-  /** Convenience: flip one column's visibility. */
+  /** Convenience: show or hide one column. */
   toggleColumn: (fieldName: string) => void;
   /** Layout: how the grid uses horizontal space (`auto` = platform default). */
   layoutMode: TableLayoutChoice;

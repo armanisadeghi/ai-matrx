@@ -937,7 +937,7 @@ export type UpdatedTableMetadata = {
  * THE COALESCE CONTRACT, and why it matters: every argument except the id is
  * `COALESCE(p_x, x)` server-side, so an OMITTED field is left alone rather
  * than nulled. That is what makes a description-only write safe — it cannot
- * blank the table's name or flip its visibility as a side effect. Pass only
+ * blank the table's name or flip whether it is published to the web as a side effect. Pass only
  * what you intend to change.
  *
  * Requires owner or editor access; the RPC raises 42501 otherwise, which
