@@ -49,7 +49,6 @@ import {
   type SetupFacts,
 } from "@/features/marketing/monitor-setup/api";
 import { useTracker } from "@/features/marketing/monitor-setup/data";
-import { SETTINGS_BASE, tabIdToHref } from "@/features/settings/route-shell/routing";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -83,13 +82,6 @@ import {
 } from "./run-document";
 import { SetAsideLists } from "./SetAsideLists";
 import { StoryActions } from "./StoryActions";
-
-/**
- * Where the `news.*` knobs live in universal settings: the feature they are
- * filed under in the registry (`platform.feature_knob.taxonomy_node_id` →
- * marketing › public-relations). Knob VALUES are never edited here.
- */
-const NEWS_KNOBS_TAB_ID = "config.marketing.publicRelations";
 
 /** The "News monitor run" template's steps, in order (aidream `workflows/news_monitor_run_v1.py`). */
 const STEP_LABELS: Record<string, string> = {
@@ -286,7 +278,11 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
   const personActed = [...storyMap.values()].filter(
     (s) => s.status === "dismissed" || Boolean(s.surfaced_override_at),
   );
-  const settingsHref = `${tabIdToHref(SETTINGS_BASE, NEWS_KNOBS_TAB_ID)}?org=${encodeURIComponent(brandCtx.organizationId)}`;
+  // The `news.*` knobs are organization / brand / site settings (never per
+  // person), so they live in the ORGANIZATION's universal settings — the
+  // personal settings surface filters them out by design. Values are never
+  // edited on this page.
+  const settingsHref = `/organizations/${encodeURIComponent(brandCtx.organizationId)}/settings/configuration`;
   const trackerSummaryRun = isRecord(monitor.last_run_summary)
     ? str(monitor.last_run_summary.run_id)
     : "";
