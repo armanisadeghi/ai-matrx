@@ -52,7 +52,7 @@ const iso = (ms: number) => new Date(ms).toISOString();
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-/** [key, label, kind, note, satisfied?] — an explicit `false` is a declared gap. */
+/** [key, label, kind, note, satisfied?] — an explicit `false` is a declared gap; omitted means in hand. */
 type ProofSeed = readonly [string, string, string, string | null, boolean?];
 /** [key, label, how_to_get, owner, effort] */
 type GapSeed = readonly [string, string, string, string, string];
@@ -550,9 +550,10 @@ function proofJson(items: readonly ProofSeed[], malformed = 0): Json {
     label,
     kind,
     note,
-    // Only emitted when the seed says something. Silence lets
-    // `missing_evidence` decide, which is the analyzer's authority.
-    ...(satisfied === undefined ? {} : { satisfied }),
+    // A seed that says nothing is a proof in hand unless `missing_evidence`
+    // names it: silence on a real row is OWED (the server's gate), so the
+    // sample states it explicitly.
+    satisfied: satisfied ?? true,
   }));
   // Entries with no readable label at all — exactly what an older analyzer
   // version or a hand-edited row leaves behind.

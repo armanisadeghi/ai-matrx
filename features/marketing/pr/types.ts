@@ -249,8 +249,8 @@ export interface ProofItem {
   kind: ProofKind;
   note: string | null;
   /**
-   * An explicit flag from the payload, or `null` when it said nothing. An
-   * explicit `false` makes this a gap even if `missing_evidence` never named it.
+   * An explicit flag from the payload, or `null` when it said nothing. Only
+   * `true` clears it: silence is owed, as the server's gate reads it.
    */
   satisfied: boolean | null;
 }
@@ -390,9 +390,29 @@ function readList<T>(
   return { items, malformed: malformedRaw.length, malformedRaw };
 }
 
+/**
+ * THE KEY SPELLINGS, ONCE. The readers and `readEntryKeys` (which the "I have this" write
+ * uses to find the same entry again) share these lists — two copies drifted before.
+ * aidream's Story Engine (`services/seo/story_engine.py`) stores the analyst's free-form
+ * dicts, and every live row on 2026-09-29 used `need`/`why`, `gap`/`how_to_close`, and
+ * `excerpt`/`supports`/`source_id`/`source_kind` — none of which were read, so every ladder
+ * said "No proof recorded". Guard: `__tests__/ladder-reads-the-story-engine.test.ts`.
+ */
+const PROOF_LABEL_KEYS = ["label", "requirement", "need", "claim", "title", "name", "text", "fact"] as const;
+const MISSING_LABEL_KEYS = ["label", "requirement", "gap", "claim", "title", "name", "text", "fact"] as const;
+const EVIDENCE_LABEL_KEYS = ["label", "claim", "requirement", "supports", "title", "name", "text", "excerpt"] as const;
+
+/** `page:https://…` / `url:https://…` source ids carry the link after the prefix. */
+function linkFromSourceId(record: { [key: string]: Json }): string | null {
+  const id = str(record, "source_id");
+  if (!id) return null;
+  const match = /^(?:[a-z_]+:)?(https?:\/\/\S+)$/i.exec(id);
+  return match ? match[1] : null;
+}
+
 export function readProofRequired(column: Json): ParsedList<ProofItem> {
   return readList(column, (record, index) => {
-    const label = str(record, "label", "requirement", "claim", "title", "name", "text", "fact");
+    const label = str(record, ...PROOF_LABEL_KEYS);
     if (!label) return null;
     return {
       key: str(record, "key", "id") ?? `proof_${index}`,
@@ -413,13 +433,13 @@ export function readMissingEvidence(
   column: Json,
 ): ParsedList<MissingEvidenceItem> {
   return readList(column, (record, index) => {
-    const label = str(record, "label", "requirement", "claim", "title", "name", "text", "fact");
+    const label = str(record, ...MISSING_LABEL_KEYS);
     if (!label) return null;
     return {
       key: str(record, "key", "id") ?? `missing_${index}`,
       label,
       how_to_get:
-        str(record, "how_to_get", "how", "next_step", "detail", "description") ??
+        str(record, "how_to_get", "how_to_close", "how", "next_step", "detail", "description") ??
         "No path recorded yet — the analysis did not say how to get this.",
       owner: oneOf(
         record,
@@ -439,13 +459,14 @@ export function readMissingEvidence(
 
 export function readEvidenceRefs(column: Json): ParsedList<EvidenceRef> {
   return readList(column, (record, index) => {
-    const label = str(record, "label", "claim", "requirement", "title", "name", "text");
+    const label = str(record, ...EVIDENCE_LABEL_KEYS);
     if (!label) return null;
     return {
       key: str(record, "key", "id") ?? `evidence_${index}`,
       label,
-      source: str(record, "source", "source_label", "publisher", "outlet") ?? "Unattributed",
-      url: str(record, "url", "href", "link", "source_url"),
+      source:
+        str(record, "source", "source_label", "publisher", "outlet", "source_kind") ?? "Unattributed",
+      url: str(record, "url", "href", "link", "source_url") ?? linkFromSourceId(record),
       captured_at: str(record, "captured_at", "at", "date"),
     };
   });
@@ -502,7 +523,7 @@ export function readEntryKeys(
           ? entry
           : null;
     if (!record) return null;
-    const label = str(record, "label", "requirement", "claim", "title", "name", "text", "fact");
+    const label = str(record, ...(prefix === "proof" ? PROOF_LABEL_KEYS : MISSING_LABEL_KEYS));
     if (!label) return null;
     return str(record, "key", "id") ?? `${prefix}_${index}`;
   });

@@ -65,18 +65,18 @@ export function readLadder(angle: StoryAngle): LadderRead {
   const rungs: LadderRung[] = proof.items.map((item) => {
     const named = missingByKey.get(item.key) ?? null;
     /**
-     * An explicit `satisfied: false` on the requirement is a gap even when
-     * `missing_evidence` never named it. Silence is different: silence lets
-     * `missing_evidence` decide. A requirement the payload says is NOT met must
-     * never render as a green tick.
+     * A requirement is owed until it is explicitly recorded as met — the
+     * server's own rule (`story_engine.proof_is_satisfied`: "silence is NOT
+     * satisfaction"). A requirement nobody has said is met must never render
+     * as a green tick; "I have this" flips its flag.
      */
     const declaredGap =
-      named === null && item.satisfied === false
+      named === null && item.satisfied !== true
         ? {
             key: item.key,
             label: item.label,
             how_to_get:
-              "Recorded as not yet satisfied, with no path attached. Ask whoever owns this requirement what would close it.",
+              "Nothing on file says this is in hand yet. Get it from whoever owns it, then mark it held here.",
             owner: "you" as const,
             effort: "medium" as const,
           }

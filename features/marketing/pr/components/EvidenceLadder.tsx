@@ -93,7 +93,9 @@ export function ProofPill({
           className,
         )}
       >
-        No proof recorded
+        {read.malformed > 0
+          ? `${read.malformed} proof ${read.malformed === 1 ? "entry" : "entries"} could not be read`
+          : "No proof recorded"}
       </span>
     );
   }

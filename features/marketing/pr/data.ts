@@ -525,7 +525,7 @@ export function projectEvidenceHold(
   );
   const declaredUnsatisfied = new Set(
     readProofRequired(angle.proof_required)
-      .items.filter((item) => item.satisfied === false)
+      .items.filter((item) => item.satisfied !== true)
       .map((item) => item.key),
   );
   const existingRefKeys = new Set(
