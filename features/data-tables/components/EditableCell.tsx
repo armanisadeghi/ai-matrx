@@ -130,6 +130,11 @@ type Props = {
   onEndEdit?: (move?: GridMove) => void;
   /** A write landed. Carries the prior value so the grid can offer undo. */
   onRecordEdit?: (priorValue: unknown, nextValue: unknown) => void;
+  /**
+   * Enter or Tab reached the grid before this editor had focus (BREAKER-2 B2-10): commit what is
+   * held and move on. The editor commits once per `n`.
+   */
+  commitRequest?: { n: number; move: GridMove } | null;
 };
 
 export function EditableCell({
@@ -154,6 +159,7 @@ export function EditableCell({
   onBeginEdit,
   onEndEdit,
   onRecordEdit,
+  commitRequest = null,
 }: Props) {
   const [draft, setDraft] = useState<unknown>(value);
   const [saving, setSaving] = useState(false);
@@ -239,6 +245,28 @@ export function EditableCell({
     wasEditing.current = editing;
   }, [editing, seed, value, seedIsTheSearch]);
 
+  // KEYS TYPED BEFORE THIS EDITOR TOOK FOCUS JOIN IT (BREAKER-2 B2-10): the grid grows the seed with
+  // every key that reached it while the editor was mounting; what this editor has not seen yet is
+  // appended, so "Alpha0" at 30 ms a key is saved whole.
+  const seenSeed = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editing) {
+      seenSeed.current = null;
+      return;
+    }
+    if (seedIsTheSearch) return;
+    const held = seenSeed.current;
+    if (held === null) {
+      seenSeed.current = seed;
+      return;
+    }
+    if (seed && seed.length > held.length && seed.startsWith(held)) {
+      const more = seed.slice(held.length);
+      setDraft((d: unknown) => `${d === null || d === undefined ? "" : String(d)}${more}`);
+    }
+    seenSeed.current = seed;
+  }, [editing, seed, seedIsTheSearch]);
+
   /**
    * A CHOICE EDIT ENDED BY A CLICK ELSEWHERE STILL COMMITS (BREAKER-2 B2-04; Arman's core feature).
    * The choice list commits on pick (one choice) or on close (several) — but a click on another cell
@@ -247,6 +275,8 @@ export function EditableCell({
    * committed here, through the same path — so a word that is none of the choices ASKS, exactly as
    * one choice does.
    */
+  /** This cell's saves, one after another (B2-10/B2-11). */
+  const saveLane = useRef<Promise<void>>(Promise.resolve());
   const latestDraft = useRef<unknown>(draft);
   latestDraft.current = draft;
   const settled = useRef(false);
@@ -271,7 +301,6 @@ export function EditableCell({
    * nothing.
    */
   const commitEdit = useCallback(async (opts?: { value?: unknown; move?: GridMove; add?: string[]; answered?: boolean }) => {
-    if (saving) return;
     settled.current = true;
 
     let source = opts && "value" in opts ? opts.value : draft;
@@ -367,6 +396,20 @@ export function EditableCell({
       }
     }
 
+    // THE EDIT ENDS NOW, AND ITS SAVE RUNS IN ITS OWN LANE (BREAKER-2 B2-10/B2-11). The edit used to
+    // stay open, greyed, until the store answered — so keys typed meanwhile went nowhere, and the late
+    // "done" ended whichever edit was open by then and moved the person from wherever they were (a
+    // Title on another row was overwritten). The grid moves on at once, keyed to THIS cell; this
+    // cell's saves are serialised, so a second edit of it waits for the first and never lands
+    // anywhere else.
+    onEndEdit?.(opts?.move);
+    const prior = value;
+    const previous = saveLane.current;
+    let release: () => void = () => {};
+    saveLane.current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
     setSaving(true);
     const result =
       add && add.length > 0 && format
@@ -378,6 +421,7 @@ export function EditableCell({
             value: normalized,
           });
     setSaving(false);
+    release();
 
     if (isServiceFailure(result)) {
       // THE STORE'S OWN SENTENCE, ON THE CELL — never a toast that times out, and
@@ -394,15 +438,13 @@ export function EditableCell({
       // screen lying about what the table holds — a reader who scrolled past would
       // have believed it until the next reload.
       setDraft(value);
-      onEndEdit?.();
       return;
     }
     setRefusal(null);
     setRuleRefusal(null);
 
     // Prior value FIRST — this is the whole basis of undo.
-    onRecordEdit?.(value, normalized);
-    onEndEdit?.(opts?.move);
+    onRecordEdit?.(prior, normalized);
     const storedAt = (result.data as { updated_at?: unknown } | null)?.updated_at;
     onSaved?.(normalized, typeof storedAt === "string" ? storedAt : undefined);
     if (add && add.length > 0) onChoicesAdded?.();
@@ -419,10 +461,17 @@ export function EditableCell({
     onRecordEdit,
     onSaved,
     rowId,
-    saving,
     tableId,
     value,
   ]);
+
+  // Enter or Tab that reached the grid before this editor had focus: commit what is held.
+  const answeredCommit = useRef<number | null>(null);
+  useEffect(() => {
+    if (!editing || !commitRequest || answeredCommit.current === commitRequest.n) return;
+    answeredCommit.current = commitRequest.n;
+    void commitEdit({ value: latestDraft.current, move: commitRequest.move });
+  }, [editing, commitRequest, commitEdit]);
 
   /**
    * Keys while an editor is OPEN. The grid's own handler stands down for these,
@@ -648,7 +697,7 @@ export function EditableCell({
         onKeyDown={handleKey}
         onBlur={() => void commitEdit()}
         onClick={(e) => e.stopPropagation()}
-        disabled={saving}
+        disabled={false}
         className={cn(editorClass, "h-auto")}
         style={editorStyle}
       />
@@ -686,7 +735,7 @@ export function EditableCell({
         onChange={(next) => setDraft(next)}
         onKeyDown={handleKey}
         onCommit={() => void commitEdit()}
-        disabled={saving}
+        disabled={false}
         rows={4}
         className={cn(editorClass, "min-h-8 resize-none")}
         style={editorStyle}
@@ -703,7 +752,7 @@ export function EditableCell({
         value={draft}
         onChange={(next) => setDraft(next)}
         onDone={(final) => void commitEdit({ value: final })}
-        disabled={saving}
+        disabled={false}
         className="py-1"
       />
     );
@@ -737,7 +786,7 @@ export function EditableCell({
         onKeyDown={handleKey}
         onBlur={() => void commitEdit()}
         onClick={(e) => e.stopPropagation()}
-        disabled={saving}
+        disabled={false}
         className={cn(editorClass, "h-auto")}
         style={editorStyle}
       />
@@ -774,7 +823,7 @@ export function EditableCell({
         onKeyDown={handleKey}
         onBlur={() => void commitEdit()}
         onClick={(e) => e.stopPropagation()}
-        disabled={saving}
+        disabled={false}
         className={cn(editorClass, "h-auto")}
         style={editorStyle}
       />
@@ -799,7 +848,7 @@ export function EditableCell({
         onKeyDown={handleKey}
         onBlur={() => void commitEdit()}
         onClick={(e) => e.stopPropagation()}
-        disabled={saving}
+        disabled={false}
         className={cn(editorClass, "h-auto")}
         style={editorStyle}
       />
@@ -823,7 +872,7 @@ export function EditableCell({
         kind={dateKind}
         value={value}
         seed={seed}
-        disabled={saving}
+        disabled={false}
         className={editorClass}
         style={editorStyle}
         onCommit={(next, move) => void commitEdit({ value: next, move })}
@@ -846,7 +895,7 @@ export function EditableCell({
       onChange={(next) => setDraft(next)}
       onKeyDown={handleKey}
       onCommit={() => void commitEdit()}
-      disabled={saving}
+      disabled={false}
       rows={dataType === "json" || dataType === "array" ? 4 : 1}
       className={cn(editorClass, "min-h-0 resize-none leading-normal")}
       style={editorStyle}

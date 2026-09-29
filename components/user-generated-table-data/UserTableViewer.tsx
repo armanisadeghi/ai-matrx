@@ -4582,7 +4582,10 @@ const UserTableViewer = ({
                       fieldName: field.field_name,
                     })
                   }
-                  onEndEdit={(move) => S().grid.endEdit(move)}
+                  // THE CELL THE EDIT WAS ON, captured here — never whatever is open when its save lands
+                  // (BREAKER-2 B2-11: a late "done" overwrote another row's Title).
+                  onEndEdit={(move) => S().grid.endEdit(move, { rowId: row.id, fieldName: field.field_name })}
+                  commitRequest={S().grid.isEditing(row.id, field.field_name) ? S().grid.editCommit : null}
                   onRecordEdit={(priorValue, nextValue) =>
                     S().cellUndo.record({
                       tableId: S().tableId,

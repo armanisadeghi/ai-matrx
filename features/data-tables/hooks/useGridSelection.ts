@@ -79,8 +79,17 @@ export type GridSelectionApi = {
   /** The anchor — the cell with the ring. */
   selected: CellAddress | null;
   editing: CellAddress | null;
-  /** Character that started the edit, consumed once by the editor. */
+  /**
+   * What was typed to start the edit — and every key typed after it before the editor could take
+   * focus (BREAKER-2 B2-10: at 30 ms a key, "Alpha0" was saved as "-g80"). It only ever grows while
+   * one edit is open; the editor appends what it has not yet seen.
+   */
   editSeed: string | null;
+  /**
+   * Enter or Tab pressed before the editor took focus: the open edit is to commit and move on. The
+   * editor commits when `n` changes. Null when nothing is asked.
+   */
+  editCommit: { n: number; move: GridMove } | null;
   /** The extended selection, or null when only the anchor is selected. */
   range: CellRange | null;
   /** The range's rectangle in the grid's current order (null = single / none). */
@@ -104,8 +113,12 @@ export type GridSelectionApi = {
   dragOver: (address: CellAddress) => void;
   clear: () => void;
   beginEdit: (address: CellAddress, seed?: string) => void;
-  /** Leave edit mode; optionally move on, the way Enter and Tab do. */
-  endEdit: (move?: GridMove) => void;
+  /**
+   * Leave edit mode; optionally move on, the way Enter and Tab do. `from` is the cell the edit was ON
+   * — captured when the edit began, never when its save lands (BREAKER-2 B2-11): an edit that ends
+   * after the person has moved on to another cell never ends that other edit and never moves them.
+   */
+  endEdit: (move?: GridMove, from?: CellAddress) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   /**
@@ -231,6 +244,8 @@ export function useGridSelection(args: {
   const [focus, setFocus] = useState<CellAddress | null>(null);
   const [editing, setEditing] = useState<CellAddress | null>(null);
   const [editSeed, setEditSeed] = useState<string | null>(null);
+  const [editCommit, setEditCommit] = useState<{ n: number; move: GridMove } | null>(null);
+  const commitCount = useRef(0);
   const [dragging, setDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const typeCatcherRef = useRef<HTMLTextAreaElement | null>(null);
@@ -339,17 +354,33 @@ export function useGridSelection(args: {
       setFocus(null);
       setEditing(address);
       setEditSeed(seed ?? null);
+      setEditCommit(null);
     },
     [canEdit, editable],
   );
 
+  // The latest editing / selected cells, read by an edit ending late (its save landed after the
+  // person moved on) — never the values its closure was made with.
+  const editingNow = useRef<CellAddress | null>(null);
+  editingNow.current = editing;
+  const selectedNow = useRef<CellAddress | null>(null);
+  selectedNow.current = selected;
+
   const endEdit = useCallback(
-    (move?: GridMove) => {
+    (move?: GridMove, from?: CellAddress) => {
+      if (from) {
+        const open = editingNow.current;
+        // Another cell's edit is open: this late ending is not about it.
+        if (open && !sameCell(open, from)) return;
+        // The person has already moved elsewhere: no move from here.
+        if (!open && selectedNow.current && !sameCell(selectedNow.current, from)) move = undefined;
+      }
       setEditing(null);
       setEditSeed(null);
+      setEditCommit(null);
       if (move) {
         setSelected((current) =>
-          moveSelection(current, move, rowIds, fieldNames),
+          moveSelection(from ?? current, move, rowIds, fieldNames),
         );
         setFocus(null);
       }
@@ -613,7 +644,26 @@ export function useGridSelection(args: {
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       // An open editor owns its own keys — Escape, Enter and Tab are handled by
       // the input so a half-typed value can be cancelled or committed.
-      if (editing) return;
+      // …BUT A KEY THAT ARRIVES BEFORE THE EDITOR HAS FOCUS IS STILL THE PERSON'S (BREAKER-2 B2-10):
+      // it lands here, on the grid, and used to be dropped. A letter joins the edit's seed; Enter and
+      // Tab ask the open edit to commit and move on, in the order they were typed.
+      if (editing) {
+        const inEditor = e.target instanceof Element && e.target.closest("[data-matrx-cell-editor]");
+        if (inEditor) return;
+        const action = classifyGridKey(e);
+        if (action?.kind === "editSeeded") {
+          e.preventDefault();
+          setEditSeed((held) => (held ?? "") + action.seed);
+          return;
+        }
+        if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          commitCount.current += 1;
+          const move: GridMove = e.key === "Tab" ? (e.shiftKey ? "prevCell" : "nextCell") : "down";
+          setEditCommit({ n: commitCount.current, move });
+        }
+        return;
+      }
 
       const mod = e.ctrlKey || e.metaKey;
       // Undo/redo work whether or not a cell is selected: the user's last edit
@@ -741,6 +791,11 @@ export function useGridSelection(args: {
   const takeTypedText = useCallback(
     (text: string) => {
       if (typeCatcherRef.current) typeCatcherRef.current.value = "";
+      // Text that lands while an edit is opening joins it (B2-10), never nothing.
+      if (editing && text !== "") {
+        setEditSeed((held) => (held ?? "") + text);
+        return;
+      }
       if (!selected || editing || text.trim() === "") return;
       beginEdit(selected, text);
     },
@@ -800,6 +855,7 @@ export function useGridSelection(args: {
     selected,
     editing,
     editSeed,
+    editCommit,
     range,
     bounds,
     selectedCells,
