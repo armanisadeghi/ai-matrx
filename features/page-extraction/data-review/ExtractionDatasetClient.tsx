@@ -354,7 +354,8 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   const onQueryStateChange = useCallback(
     (next: MatrxDataTableQueryState) => {
       const queryChanged = next.search !== query;
-      if (queryChanged) setSelected(new Set());
+      const filtersChanged = !columnFiltersEqual(columnFilters, next.columnFilters);
+      if (queryChanged || filtersChanged) setSelected(new Set());
       setQuery(next.search);
       setColumnFilters(next.columnFilters);
       setPageIndex(extractionDatasetPageIndex(columnFilters, next));
@@ -1069,7 +1070,11 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
               processLocalRows={processRows}
               pageSize={pageSize}
               pageSizeOptions={[...PAGE_SIZES]}
-              localPagination={{ mode: "progressive" }}
+              localPagination={{
+                mode: "numbered",
+                reason: "The complete dataset is loaded, so every listed page size must show exact rows with stable page controls.",
+                approvedBy: "Arman, September 27 2026 footer rule",
+              }}
               columnState={{
                 order: ["page", ...orderedColumns.map((column) => column.key)],
                 hidden: [...hidden],

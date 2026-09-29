@@ -304,6 +304,7 @@ export function ExtractionCatalogClient() {
                 isLoading={loading}
                 isFetching={isFetching}
                 detail={{ enabled: false }}
+                getRowHref={(row) => `/knowledge/extractions/${row.jobId}`}
                 onRowOpen={(row) => open(row.jobId)}
                 rowActions={(row) => (
                   <CatalogRowActions
