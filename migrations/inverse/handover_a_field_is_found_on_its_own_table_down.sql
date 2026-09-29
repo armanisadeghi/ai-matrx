@@ -1,6 +1,6 @@
 -- Inverse of handover_a_field_is_found_on_its_own_table.sql: the two bodies it replaced, byte for byte.
--- based-on: PLACEHOLDER_B
--- based-on: PLACEHOLDER_F
+-- based-on: custom.booking_declare(uuid, uuid, text, jsonb, jsonb, jsonb, integer, uuid, uuid, uuid, text, uuid) c13f8eb9c1e2f254dfce5f1a0b416ada1a98237b455edd95c4d88321fb88533e
+-- based-on: custom.form_declare(uuid, uuid, text, jsonb, jsonb, integer, uuid, uuid, uuid, text) 66ebe3f2452c51575c2cacd3aaf5c1ee667b1eb6234e8f1ec012605e19370615
 -- chair-step: restores custom.booking_declare and custom.form_declare (handover_a_field_is_found_on_its_own_table.sql)
 
 CREATE OR REPLACE FUNCTION custom.booking_declare(p_organization_id uuid, p_table_id uuid, p_title text, p_questions jsonb, p_availability jsonb DEFAULT '{}'::jsonb, p_presentation jsonb DEFAULT '{}'::jsonb, p_submission_cap integer DEFAULT NULL::integer, p_quarantine_rule_id uuid DEFAULT NULL::uuid, p_notify_rule_id uuid DEFAULT NULL::uuid, p_form_id uuid DEFAULT NULL::uuid, p_slug text DEFAULT NULL::text, p_home_id uuid DEFAULT NULL::uuid)

@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-29T23:14:15.290Z",
+  "generated_at": "2026-09-29T23:20:00.024Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2678,6 +2678,12 @@
       "checksum": "dd4a47ade7bd6afcd88343735cb4a8878c2d1e4c274ef4e88b2601200809f47d",
       "applied_at": "2026-09-28 20:29:22.091011+00"
     },
+    "migrations/campaign/handover_a_field_is_found_on_its_own_table.sql": {
+      "source": "matrx-frontend",
+      "filename": "handover_a_field_is_found_on_its_own_table.sql",
+      "checksum": "406b4f458415ade222c9d302b0b83f789ec982b442c9a68dcb0d67fb78f176fe",
+      "applied_at": "2026-09-29 23:19:55.062216+00"
+    },
     "migrations/campaign/handover_a_new_picklist_is_kept_with_the_choices.sql": {
       "source": "matrx-frontend",
       "filename": "handover_a_new_picklist_is_kept_with_the_choices.sql",
@@ -4165,6 +4171,12 @@
       "filename": "scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql",
       "checksum": "a7adf2c5fed76cfbce47bd780b872e9c8a4a46c6993a877f46adbd3157a766d4",
       "applied_at": "2026-09-28 20:10:01.796498+00"
+    },
+    "migrations/campaign/scopeshomes_a_copied_scope_type_field_and_scope_keep_their_author.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeshomes_a_copied_scope_type_field_and_scope_keep_their_author.sql",
+      "checksum": "3b045c92b500a2c48818fc26fb433e4fc8b47bbbf49b8fc95533cde665955a3b",
+      "applied_at": "2026-09-29 23:16:58.112637+00"
     },
     "migrations/campaign/scopeshomes_a_scope_slug_is_unique_in_its_table_for_every_writer.sql": {
       "source": "matrx-frontend",
