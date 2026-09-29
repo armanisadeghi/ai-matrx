@@ -693,43 +693,59 @@ try {
 
   if (PHASE === "archive") {
     // BREAKER-1 B-F13: archive a 120-record table (three passes), reload in the middle, carry on, Undo.
-    const pickOrg = async () => {
-      if (await page.getByText("An organization is needed").count()) {
-        await page.getByRole("button", { name: "Choose organization" }).last().click();
-        await sleep(1500);
-        await page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first().click();
-        await sleep(6000);
-      }
+    // The table is the one this walk imported from scripts/fixtures/stock-count-march.csv.
+    const tid = process.env.TABLE ?? "87013986-e75a-44e7-bc4a-124640c991d5";
+    const openSettings = async () => {
+      await open(tid);
+      await page.getByRole("button", { name: "Table menu" }).first().click();
+      await sleep(1200);
+      const items = await page.locator("[role=menu] [role^=menuitem]").allInnerTexts();
+      step("table menu", { items: items.slice(0, 40) });
+      const settings = page.locator("[role=menu] [role^=menuitem]").filter({ hasText: /^Settings|Table settings/ }).first();
+      if (await settings.count()) await settings.click();
+      await sleep(3000);
     };
-    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
-    await unpark();
-    await sleep(6000);
-    await pickOrg();
-    const name = `Stock count, March ${String(Date.now()).slice(-4)}`;
-    await page.getByRole("button", { name: /^New table/ }).first().click();
-    await sleep(1200);
-    await page.getByPlaceholder("Table name").fill(name);
-    await page.getByRole("button", { name: "Create and import a file" }).click();
-    await sleep(4000);
-    await page.locator("input[type=file]").first().setInputFiles(join(process.cwd(), "scripts/fixtures/stock-count-march.csv"));
-    await sleep(5000);
-    await shot("a00-import-preview");
-    step("chose the file", { name, preview: (await page.locator("body").innerText()).replace(/\s+/g, " ").match(/Import[^]{0,400}/)?.[0]?.slice(0, 400) ?? null });
-    const importBtn = page.getByRole("button", { name: /^Import( \d+.*)?$/ }).first();
-    if (await importBtn.count()) await importBtn.click();
-    await sleep(20000);
-    await shot("a01-imported");
-    const importText = (await page.locator("body").innerText()).replace(/\s+/g, " ");
-    step("after import", { url: page.url().replace(ORIGIN, ""), rows: importText.match(/of \d+ (rows|records)|\d+ records?/g)?.slice(0, 4) ?? null, import_words: importText.match(/Import[^.]{0,160}/)?.[0] ?? null });
-    await page.getByRole("button", { name: "Open the table" }).first().click().catch(() => {});
-    await until("the table", async () => page.url().includes("/data-v2/") && (await page.locator("thead th").count()) > 1, 120000);
-    await sleep(3000);
-    out.archive_table_url = page.url();
-    step("opened the table", { url: page.url().replace(ORIGIN, ""), headers: await headers() });
-    await page.locator('[aria-label="Table settings"]').first().click();
-    await sleep(3000);
-    await shot("a02-settings");
-    step("settings", { text: (await page.locator("body").innerText()).replace(/\s+/g, " ").match(/This table[^]{0,300}/)?.[0] ?? null });
+    const state = async () => ((await page.locator("[data-archive-state]").first().textContent().catch(() => null)) ?? "").trim();
+    const buttonNamed = (name) => page.getByRole("button", { name, exact: true });
+    await openSettings();
+    await buttonNamed("Archive this table").first().click();
+    await until("the confirm", async () => (await state()) !== "", 20000);
+    await shot("a02-archive-confirm");
+    step("the confirm", { confirm: (await page.locator("[data-archive-confirm]").first().textContent().catch(() => "")), state: await state() });
+    if (!/Its 120 records go with it/.test(await state())) friction(`the confirm does not say how many records go: "${await state()}"`);
+    // Second press, then a reload while the passes run.
+    await buttonNamed("Archive this table").last().click();
+    await until("a first pass", async () => /put away/.test(await state()), 20000);
+    const during = await state();
+    await shot("a03-archiving");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await sleep(2000);
+    await openSettings();
+    await until("the settings", async () => (await state()) !== "", 30000);
+    const after = await state();
+    const carry = await buttonNamed("Carry on archiving").count();
+    await shot("a04-after-reload");
+    step("reload in the middle of the run", { during, after, carry_on_offered: carry });
+    if (!/started and not finished/.test(after) || !carry) friction(`after a reload mid-run the page did not offer to carry on: "${after}" (carry on ${carry})`);
+    if (carry) {
+      await buttonNamed("Carry on archiving").first().click();
+      const toast = page.locator("[data-sonner-toast]").filter({ hasText: /is archived/ });
+      await until("the archived toast", async () => (await toast.count()) > 0, 60000);
+      const said = (await toast.first().innerText().catch(() => "")).replace(/\s+/g, " ");
+      await shot("a05-archived-with-undo");
+      step("archived", { toast: said, url: page.url().replace(ORIGIN, "") });
+      if (!/Undo/.test(said)) friction(`the archived notice offers no Undo: "${said}"`);
+      await toast.first().getByRole("button", { name: "Undo" }).click().catch(() => {});
+      const back = page.locator("[data-sonner-toast]").filter({ hasText: /is back/ });
+      await until("the restored toast", async () => (await back.count()) > 0, 60000);
+      await shot("a06-undo-brings-it-back");
+      step("Undo", { toast: (await back.first().innerText().catch(() => "")).replace(/\s+/g, " ") });
+      if (!(await back.count())) friction("Undo on the archived notice did not bring the table back");
+      await open(`${tid}?grid=merged`);
+      const footer = await page.evaluate(() => document.body.innerText.match(/\d+[–-]\d+ of [\d,]+/)?.[0] ?? null);
+      step("the table is back, every record in it", { footer });
+      if (!/of 120/.test(footer ?? "")) friction(`after Undo the table reads ${footer}`);
+    }
   }
 
   if (PHASE === "paging") {

@@ -46,6 +46,14 @@ const shot = async (name) => {
 const text = async () => (await page.locator("main").innerText().catch(() => "")).replace(/\s+/g, " ");
 
 try {
+  // A parked preview host says so and offers Resume; press it, as a person would.
+  await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  const resume = page.getByRole("button", { name: "Resume this preview" });
+  if (await resume.count()) {
+    await resume.click();
+    await sleep(8000);
+    step("preview resumed");
+  }
   out.signed_in_as = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
   step("signed in", { as: out.signed_in_as });
   if (out.signed_in_as !== "admin@admin.com") throw new Error(`wrong seat: ${out.signed_in_as}`);
@@ -105,6 +113,25 @@ try {
       await until("the grid", async () => (await text()).includes("Dana Whitcomb"), 120000);
       await sleep(3000);
       step("after archive", { rows: await page.locator("tbody tr[data-row-id]").count(), notice: (await text()).includes("archived") });
+    }
+  }
+
+  if (PHASE === "attachprobe") {
+    await page.goto(`${ORIGIN}/data-v2/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await until("the grid", async () => (await text()).includes("Dana Whitcomb"), 120000);
+    await sleep(3000);
+    const cell = page.locator('td[data-matrx-cell-col="photo"]').first();
+    step("photo cells", { n: await page.locator('td[data-matrx-cell-col="photo"]').count() });
+    await cell.dblclick();
+    await sleep(2500);
+    await shot("f1-photo-cell-open");
+    step("buttons", { b: (await page.locator("button:visible").allInnerTexts()).filter(Boolean).slice(-25) });
+    const attach = page.getByRole("button", { name: /Attach|Add file|Upload/ }).first();
+    if (await attach.count()) {
+      await attach.click();
+      await sleep(4000);
+      await shot("f2-file-window");
+      step("window", { text: (await page.locator("body").innerText()).replace(/\s+/g, " ").slice(-900), inputs: await page.locator("input[type=file]").count() });
     }
   }
 
