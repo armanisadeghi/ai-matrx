@@ -214,8 +214,8 @@
       "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },
-    "and-that-guard-can-still-fail": {
-      "label": "…and that guard can still fail",
+    "the-t-13-row-column-guard-can-still-fail-planted-in-memory": {
+      "label": "The T-13 row-column guard can still fail (planted in memory)",
       "class": "repo-only",
       "cmd": "pnpm check:t13-row-column:self-test",
       "reason": "no database access in 1 file(s) reached",
@@ -283,7 +283,7 @@
         }
       ]
     },
-    "and-that-guard-can-still-fail-pnpm-check-unpinned-": {
+    "and-that-guard-can-still-fail": {
       "label": "…and that guard can still fail",
       "class": "live-db",
       "cmd": "pnpm check:unpinned-security-columns:self-test",

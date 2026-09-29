@@ -118,7 +118,7 @@ if $STRICT; then
         # ACCESS LADDER T-13 2.5c: the row column retires into shown_to / published_to_web; no file
         # gains a literal reference to it (shrink-only per-file baseline). The self-test plants in memory.
         "No new code reference to the retiring row column (access ladder T-13)|pnpm check:t13-row-column"
-        "…and that guard can still fail|pnpm check:t13-row-column:self-test"
+        "The T-13 row-column guard can still fail (planted in memory)|pnpm check:t13-row-column:self-test"
         "Service-role writes to provenance-governed tables (the DB refuses them with 23514)|pnpm check:admin-client-governed-writes"
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
         # HIDDEN PRIMARY ACTIONS (2026-09-27). A page's primary action (Run, Generate, Clean, Review,
