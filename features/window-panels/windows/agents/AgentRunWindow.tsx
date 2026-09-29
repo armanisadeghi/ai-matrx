@@ -66,6 +66,8 @@ import {
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectUserInputEntryExists } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -335,6 +337,11 @@ interface AgentRunBodyProps {
   mandateKey?: AnyMandateKey | null;
   /** Adopt a mounted surface — see `OpenAgentRunWindowOptions.surfaceName`. */
   surfaceName?: string | null;
+  /**
+   * The composer's agent pill — the SAME switch as the title-bar picker
+   * (`via.mandateKey` = launch through that job, e.g. Custom).
+   */
+  onSelectAgent: (agentId: string, via?: { mandateKey: AnyMandateKey }) => void;
 }
 
 function AgentRunBody({
@@ -349,8 +356,13 @@ function AgentRunBody({
   initialAutoRun = false,
   mandateKey = null,
   surfaceName = null,
+  onSelectAgent,
 }: AgentRunBodyProps) {
   const dispatch = useAppDispatch();
+  // The compact composer (composer/FEATURE.md): tab-wide mode, input capped
+  // to the knob's share of this window.
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
 
   const hasDraft =
     Boolean(initialDraftText) ||
@@ -597,7 +609,7 @@ function AgentRunBody({
     <AgentRunBodyMenu agentId={agentId} conversationId={renderedConversationId}>
       <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
         <DebugSessionActivator />
-        <div className="flex min-h-0 flex-1 justify-center overflow-hidden">
+        <div ref={measureRef} className="flex min-h-0 flex-1 justify-center overflow-hidden">
           <AgentConversationColumn
             conversationId={renderedConversationId}
             surfaceKey={surfaceKey}
@@ -606,6 +618,12 @@ function AgentRunBody({
             smartInputProps={{
               sendButtonVariant: "blue",
               showSubmitOnEnterToggle: true,
+              composer: {
+                size: "compact",
+                mode: composerMode,
+                agent: { onSelectAgent },
+                maxInputHeightPx,
+              },
             }}
           />
         </div>
@@ -846,10 +864,22 @@ function AgentRunWindowInner({
     ]);
   }
 
-  const handleAgentSelect = useCallback((nextId: string) => {
-    setAgentId(nextId);
-    setSelectedConversationId(null);
-  }, []);
+  // A job the composer's agent pill picked (Custom = the default-chat
+  // mandate), kept with the agent it resolved to; any other pick clears it.
+  const [pickedMandate, setPickedMandate] = useState<{
+    agentId: string;
+    mandateKey: AnyMandateKey;
+  } | null>(null);
+
+  // The ONE agent switch — the title-bar picker and the composer's agent pill.
+  const handleAgentSelect = useCallback(
+    (nextId: string, via?: { mandateKey: AnyMandateKey }) => {
+      setAgentId(nextId);
+      setPickedMandate(via?.mandateKey ? { agentId: nextId, mandateKey: via.mandateKey } : null);
+      setSelectedConversationId(null);
+    },
+    [],
+  );
 
   const handleConversationSelect = useCallback(
     (conversation: ConversationListItem) => {
@@ -865,6 +895,7 @@ function AgentRunWindowInner({
       // One selection owns both identities. Updating only the conversation id
       // leaves the header and launcher bound to the previous agent.
       setAgentId(conversation.agentId);
+      setPickedMandate(null);
       setSelectedConversationId(conversation.conversationId);
     },
     [],
@@ -889,7 +920,7 @@ function AgentRunWindowInner({
         <WindowTitleContent
           agentId={agentId}
           displayName={agentName}
-          onAgentSelect={handleAgentSelect}
+          onAgentSelect={(id) => handleAgentSelect(id)}
         />
       }
       onClose={onClose}
@@ -953,8 +984,15 @@ function AgentRunWindowInner({
           // on. Picking a different agent from the title bar is a plain agent
           // chat again — a mandate key must never ride along to a holder it
           // does not name.
-          mandateKey={agentId === initialAgentId ? mandateKey : null}
+          mandateKey={
+            pickedMandate?.agentId === agentId
+              ? pickedMandate.mandateKey
+              : agentId === initialAgentId
+                ? mandateKey
+                : null
+          }
           surfaceName={surfaceName}
+          onSelectAgent={handleAgentSelect}
         />
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center text-muted-foreground">

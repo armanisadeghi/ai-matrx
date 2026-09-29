@@ -18,6 +18,8 @@ import {
   unregisterSurface,
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
+import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { AgentSamplesLauncher } from "../samples/AgentSamplesLauncher";
 import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
 
@@ -31,6 +33,8 @@ export function AgentBuilderRightPanel({
   const dispatch = useAppDispatch();
   const sourceFeature = "agent-builder";
   const surfaceKey = `${sourceFeature}:${agentId}`;
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
 
   // Register as a `window` surface — forking during a test run should
   // swap the test panel's conversation in place via setFocus, NOT
@@ -88,7 +92,7 @@ export function AgentBuilderRightPanel({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div ref={measureRef} className="flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1">
         <AgentConversationColumn
           conversationId={conversationId}
@@ -108,6 +112,10 @@ export function AgentBuilderRightPanel({
             // builder test panel fell back to the legacy "default" black
             // bg-foreground button, which looked broken/disabled.
             sendButtonVariant: "blue",
+            // The compact composer (composer/FEATURE.md) — this is a side
+            // panel. The agent is FIXED to the one being built, so no agent
+            // switch is offered (the pill is a plain label).
+            composer: { size: "compact", mode: composerMode, maxInputHeightPx },
           }}
         />
       </div>

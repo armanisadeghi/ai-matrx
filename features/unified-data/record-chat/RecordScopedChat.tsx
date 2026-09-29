@@ -36,6 +36,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { RecordChatContext } from "@ai-matrx/records-ui";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
@@ -94,6 +96,8 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
    * focus.
    */
   const { launchMandate } = useAgentLauncher();
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const openedFor = useRef<string | null>(null);
 
@@ -209,8 +213,17 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
         </p>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        <AgentConversationColumn conversationId={conversationId} surfaceKey={ctx.surfaceKey} />
+      {/* The compact composer (composer/FEATURE.md) — a record's side panel. The agent is
+          the default-chat job's, bound to THIS record; switching it would be a second
+          conversation that is not bound, so no agent switch is offered (a plain label). */}
+      <div ref={measureRef} className="flex min-h-0 flex-1 flex-col">
+        <AgentConversationColumn
+          conversationId={conversationId}
+          surfaceKey={ctx.surfaceKey}
+          smartInputProps={{
+            composer: { size: "compact", mode: composerMode, placeholder: `Ask about ${ctx.title}`, maxInputHeightPx },
+          }}
+        />
       </div>
     </div>
   );

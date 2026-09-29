@@ -51,6 +51,8 @@ import {
   selectMessageContent,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import {
   useEntitlement,
@@ -240,6 +242,13 @@ function EducationTutorClientInner({
   // (the TRUST-safe direction), never charge twice. A first-class composer
   // `onSubmit` hook would make this exact (tracked in FEATURE.md).
   const commitTutorMessage = useEntitlementConsume("education.tutor_message");
+
+  // ── The composer (agents composer/FEATURE.md) ────────────────────────────
+  // Page size on the tutor route, compact in an AskTutor panel (input capped
+  // to the knob's share of the panel). The tutor agent is FIXED here — the
+  // tutor job answers — so no agent switch is offered (the pill is a label).
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
 
   // ── Access gate (P7): view vs edit on an EXISTING conversation ────────────
   // Tutor threads are `chat.conversation` rows (the registered `conversation`
@@ -964,6 +973,12 @@ function EducationTutorClientInner({
     };
   };
 
+  const tutorPlaceholder = coppa.blocked
+    ? "A parent needs to approve AI use for this account first."
+    : sendBlocked
+      ? tutorMsg.definition.upgradeMessage
+      : "Ask your tutor anything about what you're studying…";
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/education-tutor"
@@ -1017,7 +1032,7 @@ function EducationTutorClientInner({
         });
       }}
     >
-      <div className="flex h-full flex-col overflow-hidden bg-textured">
+      <div ref={measureRef} className="flex h-full flex-col overflow-hidden bg-textured">
         {/* Owner share affordance / shared-view read-only banner (P7). Only on an
           existing conversation, and never when embedded in an AskTutor panel. */}
         {!embedded &&
@@ -1070,12 +1085,11 @@ function EducationTutorClientInner({
             smartInputProps={{
               sendButtonVariant: "blue",
               showSubmitOnEnterToggle: false,
-              placeholder: coppa.blocked
-                ? "A parent needs to approve AI use for this account first."
-                : sendBlocked
-                  ? tutorMsg.definition.upgradeMessage
-                  : "Ask your tutor anything about what you're studying…",
+              placeholder: tutorPlaceholder,
               disableSend: sendBlocked,
+              composer: embedded
+                ? { size: "compact", mode: composerMode, placeholder: tutorPlaceholder, maxInputHeightPx }
+                : { size: "page", mode: composerMode, placeholder: tutorPlaceholder },
               extraRightControls: hasMeter ? (
                 <EntitlementMeter
                   capability="education.tutor_message"

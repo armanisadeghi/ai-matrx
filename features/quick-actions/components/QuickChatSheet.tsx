@@ -31,6 +31,9 @@ import type { ConversationListItem } from "@/features/agents/redux/conversation-
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 
 interface QuickChatSheetProps {
   className?: string;
@@ -161,6 +164,14 @@ function QuickChatSheetBody({
   // the generic Quick Chat mandate is only the default for a genuinely fresh
   // panel. This state then belongs to explicit picker changes.
   const [agentId, setAgentId] = useState<string>(initialAgentId);
+  // Set when the composer's agent pill picked a JOB (Custom = the default-chat
+  // mandate): the fresh conversation launches THROUGH it, so the person's own
+  // default chat model applies. A plain agent pick clears it.
+  const [launchMandateKey, setLaunchMandateKey] = useState<AnyMandateKey | undefined>(undefined);
+  // The compact composer (composer/FEATURE.md): tab-wide mode, input capped
+  // to the knob's share of this panel.
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
   const [session, setSession] = useState(0);
   const [loadedConversationId, setLoadedConversationId] = useState<
     string | null
@@ -209,6 +220,7 @@ function QuickChatSheetBody({
   const { conversationId: liveConversationId } = useAgentLauncher(agentId, {
     surfaceKey: currentLiveSurfaceKey,
     sourceFeature: SOURCE_FEATURE,
+    ...(launchMandateKey ? { mandateKey: launchMandateKey } : {}),
     // Quick Chat mirrors /chat: it is its own primary conversation and can be
     // opened over any page, so inheriting the page below would be accidental.
     runtime: { surfaceName: null },
@@ -275,15 +287,19 @@ function QuickChatSheetBody({
     setSession((s) => s + 1);
   }, []);
 
+  // The ONE agent switch — the header picker and the composer's agent pill
+  // both land here: a fresh conversation with that agent (through the job
+  // when the pill picked one).
   const handleSelectAgent = useCallback(
-    (id: string) => {
-      if (id === agentId && !loadedConversationId) return;
+    (id: string, via?: { mandateKey: AnyMandateKey }) => {
+      if (id === agentId && !loadedConversationId && via?.mandateKey === launchMandateKey) return;
       loadAbortRef.current?.abort();
       setLoadedConversationId(null);
       setAgentId(id);
+      setLaunchMandateKey(via?.mandateKey);
       setSession((s) => s + 1);
     },
-    [agentId, loadedConversationId],
+    [agentId, loadedConversationId, launchMandateKey],
   );
 
   const handleOpenConversation = useCallback(
@@ -351,7 +367,7 @@ function QuickChatSheetBody({
 
         <div className="flex min-w-0 flex-1 items-center">
           <AgentListDropdown
-            onSelect={handleSelectAgent}
+            onSelect={(id: string) => handleSelectAgent(id)}
             activeAgentId={agentId}
             compact
             noBorder
@@ -422,7 +438,7 @@ function QuickChatSheetBody({
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {conversationId ? (
-            <div className="flex min-h-0 flex-1 overflow-hidden justify-center">
+            <div ref={measureRef} className="flex min-h-0 flex-1 overflow-hidden justify-center">
               <AgentConversationColumn
                 conversationId={conversationId}
                 surfaceKey={surfaceKey}
@@ -431,6 +447,12 @@ function QuickChatSheetBody({
                 smartInputProps={{
                   sendButtonVariant: "blue",
                   showSubmitOnEnterToggle: false,
+                  composer: {
+                    size: "compact",
+                    mode: composerMode,
+                    agent: { onSelectAgent: handleSelectAgent },
+                    maxInputHeightPx,
+                  },
                 }}
               />
             </div>

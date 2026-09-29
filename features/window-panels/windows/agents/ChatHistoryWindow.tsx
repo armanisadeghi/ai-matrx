@@ -45,6 +45,8 @@ import {
   createAiResultsScope,
 } from "@/features/surfaces/manifests/ai-results.manifest";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 
 const SURFACE_KEY = "ai-results-window";
 const WORKSPACE_INPUT_SURFACE_KEY = "ai-results-workspace";
@@ -193,19 +195,7 @@ function ChatHistoryMain({
   enableInput?: boolean;
 }) {
   if (selectedId && enableInput) {
-    return (
-      <AgentConversationColumn
-        key={selectedId}
-        conversationId={selectedId}
-        surfaceKey={WORKSPACE_INPUT_SURFACE_KEY}
-        constrainWidth
-        edgeToEdgeScroll
-        smartInputProps={{
-          sendButtonVariant: "blue",
-          showSubmitOnEnterToggle: false,
-        }}
-      />
-    );
+    return <ChatHistoryInputColumn key={selectedId} conversationId={selectedId} />;
   }
   return (
     <div className="h-full min-h-0 overflow-hidden">
@@ -226,6 +216,32 @@ function ChatHistoryMain({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * The picked conversation with the COMPACT composer (composer/FEATURE.md) —
+ * this is a panel tab. The agent is the conversation's own: this browser
+ * continues a past chat, it never re-homes one, so no agent switch is offered
+ * (the pill is a plain label).
+ */
+function ChatHistoryInputColumn({ conversationId }: { conversationId: string }) {
+  const { mode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
+  return (
+    <div ref={measureRef} className="flex h-full min-h-0 flex-col">
+      <AgentConversationColumn
+        conversationId={conversationId}
+        surfaceKey={WORKSPACE_INPUT_SURFACE_KEY}
+        constrainWidth
+        edgeToEdgeScroll
+        smartInputProps={{
+          sendButtonVariant: "blue",
+          showSubmitOnEnterToggle: false,
+          composer: { size: "compact", mode, placeholder: "Reply", maxInputHeightPx },
+        }}
+      />
     </div>
   );
 }

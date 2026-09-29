@@ -30,13 +30,12 @@ import { cn } from "@/lib/utils";
 import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
 import type { CanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
 import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
-import { COMPOSER_KNOBS } from "@/features/agents/components/inputs/smart-input/composer/composer-mode-cookie";
+import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import type {
   ComposerAgentControl,
   ComposerMode,
   ComposerPresentation,
 } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
-import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 
 /** What a host hands the workspace: its canvas as ONE context entry. */
 export interface CanvasContextEntry {
@@ -99,17 +98,7 @@ export function CanvasChatColumn({
   const { mode } = useComposerMode(initialMode);
   // A5: the reply input grows to a share of THIS panel (docked or floating),
   // then scrolls inside. The share is the org/user knob, 50% by default.
-  const pctKnob = useSessionKnob(COMPOSER_KNOBS.compactInputMaxHeightPct);
-  const pct = typeof pctKnob === "number" && pctKnob > 0 ? pctKnob : 50;
-  const [panelHeight, setPanelHeight] = useState(0);
-  const [panelEl, setPanelEl] = useState<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!panelEl) return undefined;
-    const observer = new ResizeObserver(() => setPanelHeight(panelEl.clientHeight));
-    observer.observe(panelEl);
-    return () => observer.disconnect();
-  }, [panelEl]);
-  const maxInputHeightPx = panelHeight > 0 ? Math.round((panelHeight * pct) / 100) : undefined;
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
   const conversationId = conversation.state === "ready" ? conversation.conversationId : null;
 
   const writeContext = (id: string) => {
@@ -170,7 +159,7 @@ export function CanvasChatColumn({
 
   return (
     <div
-      ref={setPanelEl}
+      ref={measureRef}
       className={cn("flex h-full min-h-0 flex-col", className)}
       // (2) Capture phase: runs BEFORE the composer's send button / Enter handler.
       onPointerDownCapture={refresh}

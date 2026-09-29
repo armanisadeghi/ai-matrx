@@ -27,6 +27,7 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
+import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { AlertTriangle, Loader2, RotateCw, TestTube2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,7 @@ export function AgentRunnerPage({
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   useCreatorOwnershipSync(agentId);
+  const { mode: composerMode } = useComposerMode();
 
   const executionPayload = useAppSelector((state) =>
     selectAgentExecutionPayload(state, agentId),
@@ -351,6 +353,10 @@ export function AgentRunnerPage({
           smartInputProps={{
             sendButtonVariant: "blue",
             showSubmitOnEnterToggle: true,
+            // The page-size composer (composer/FEATURE.md). The agent is the
+            // route's — this page runs ONE agent — so no agent switch is
+            // offered (the pill is a plain label).
+            composer: { size: "page", mode: composerMode },
           }}
         />
       </div>

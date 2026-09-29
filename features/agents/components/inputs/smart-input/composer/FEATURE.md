@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-27`
+**Last updated:** `2026-09-29`
 
 > Build map (design control → the existing piece it facelifts):
 > `/Users/armanisadeghi/code/common-docs/projects/ai-matrx-composer/MAP.md`.
@@ -29,7 +29,13 @@ context rail); only the chrome is arranged differently.
 
 **Hosts today:** every `/chat` route (`ChatRoomClient` — `/chat/new` splash, conversations at page size; its
 `textMenu` is `chat/agent-context/chatComposerTextMenu.ts`), the canvas workspace's docked/floating chat
-(compact, `features/canvas/workspace/`) — including modules hosted in it (education, for signed-in people).
+(compact, `features/canvas/workspace/`) — including modules hosted in it (education, for signed-in people);
+Quick Chat (compact, agent switch = its header picker's fresh conversation, Custom launches through the job);
+the Chat window `AgentRunWindow` (compact, agent switch = its title-bar picker, Custom through the job); the
+Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fixed agent); `/agents/[id]/run`
+(`AgentRunnerPage`, page, fixed agent); the agent builder's test panel (compact, fixed agent); a record's chat
+(`RecordScopedChat`, compact, fixed — a switch would leave the record binding); the AI tutor (page on
+`/education/tutor/*`, compact in AskTutor, fixed agent). Compact hosts cap the input with `useCompactInputMaxHeight`.
 
 **Where it threads** (each an additive optional prop, nothing else changed):
 - `SmartAgentInput` → `SmartAgentInputStacked` (composer branch; never the single-row/ambient path).
@@ -83,6 +89,8 @@ context rail); only the chrome is arranged differently.
 
 **Hooks**
 - `useComposerMode(initialMode)` — the ONE mode reader/writer (tab-wide Redux `chatRoute.composerMode`).
+- `useCompactInputMaxHeight()` — THE compact input cap: `measureRef` on the panel, `maxInputHeightPx` =
+  panel height × `compact_input_max_height_pct` (50% until the knob answers; `undefined` until measured).
 - `useComposerAgent(conversationId)` / `useEffectiveModelId` — agent, effective model, Custom, presets.
 - `useRecentWorkAgents(enabled, excludeIds)` — last three agents from `chat.conversation`.
 
@@ -154,6 +162,12 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-09-29** — Batch 1 of the page-by-page rollout: Quick Chat, the Chat window, the AI Results tab, the agent
+  run page, the builder test panel, the record chat and the AI tutor render the composer (sizes and agent
+  switching in "Hosts today"). The canvas's inline input-cap code became `useCompactInputMaxHeight`, shared by
+  every compact host (test `__tests__/compact-input-max-height.test.tsx`). Skipped as special-purpose inputs:
+  execution gates / pre-execution inputs, agent-comparison battle inputs, ambient/scroll/voice launchers, war
+  room, masterwork, cx-chat, code editors, transcript studio.
 - **2026-09-28** — Agents first: Chat pill = agent · model (chat agents, All agents, model for this chat); Work/Advanced
   pill opens the agent picker directly; Model and overrides moved into + (every mode); the run-approval "Auto" pill
   deleted (Auto is effort, = no override); one 24px `rounded-md` chip everywhere; rows never wrap; tighter spacing;
