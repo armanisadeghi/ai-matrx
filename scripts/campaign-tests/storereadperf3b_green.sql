@@ -18,7 +18,8 @@
 --   C. FASTER. Each of the four data home calls, warm, median of three, for both seats, costs at
 --      most 0.7x what the bodies before the file cost in the same run. RED on the old bodies (1.0x).
 --   Plants (-v plant=...): `named` lets a Table a grant names share its group's answer; `arm4`
---   drops arm 4. Each must turn B (and A) RED.
+--   drops arm 4 — each must turn B (and A) RED; `old` answers the new side with the bodies before
+--   the file — C must turn RED (and B cannot run: the helper is gone).
 --
 -- RUN IT (dev clone only; always rolled back; about 3 minutes):
 --   cd matrx-frontend && psql "<clone DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/storereadperf3b_green.sql
@@ -34,8 +35,11 @@
 \set plant none
 \endif
 \set QUIET on
-begin;
+-- ONE SNAPSHOT: the clone is shared, and a peer's write between the two captures would read as a
+-- difference (MIRROR-LIVE-FORM measured exactly that).
+begin isolation level repeatable read;
 set local statement_timeout = 0;
+set local transaction_timeout = 0;
 set local lock_timeout = '10s';
 
 select to_regproc('custom.tables_seen_once_per_group') is not null as file_is_live \gset
@@ -138,12 +142,17 @@ do $p$ begin execute replace(pg_get_functiondef('custom.tables_seen_once_per_gro
 do $p$ begin execute replace(pg_get_functiondef('custom.tables_seen_once_per_group'::regproc),
   'if cardinality(v_left_id) > 0 then', 'if false then'); end $p$;
 \endif
-select (:'plant' = 'none') = (md5(pg_get_functiondef('custom.tables_seen_once_per_group'::regproc)) = :'body_before') as plant_took \gset
+select (:'plant' not in ('named', 'arm4')) = (md5(pg_get_functiondef('custom.tables_seen_once_per_group'::regproc)) = :'body_before') as plant_took \gset
 \if :plant_took
 \else
 \echo 'the plant did not change the helper body - the plant text no longer matches the file'
-rollback;
-\quit 4
+select 1 / 0 as plant_missing;
+\endif
+
+select :'plant' = 'old' as plant_old \gset
+\if :plant_old
+\echo 'PLANT old: the bodies before the file answer the "new" side (clause C must go RED)'
+\i migrations/inverse/storereadperf3b_which_tables_she_sees_is_asked_once_per_group_down.sql
 \endif
 
 set local role authenticated;
@@ -162,32 +171,56 @@ select 'A', count(*) filter (where o.payload is distinct from n.payload) = 0,
   from ans o join ans n on n.seat = o.seat and n.door = o.door and n.org is not distinct from o.org
                        and o.phase = 'old' and n.phase = 'new';
 
--- B
+\if :plant_old
+insert into verdict values ('B', true, 'not asked: plant old has no helper');
+\else
+-- B: every member of every organization that holds a Table, over every live Table of every
+-- organization she belongs to or holds a grant in; and both seats over EVERY live Table.
+create temp table oracle_scope on commit drop as
+  select m.user_id as person, m.organization_id as org
+    from iam.organization_member m
+   where exists (select 1 from custom.record t where t.organization_id = m.organization_id
+                    and t.table_id = custom.table_kernel_id() and t.deleted_at is null)
+  union
+  select g.granted_to_user_id, t.organization_id
+    from iam.permissions g
+    join custom.record t on t.id = g.resource_id and t.table_id = custom.table_kernel_id()
+   where g.resource_type = 'record' and g.granted_to_user_id is not null
+  union
+  select s.id, t.organization_id
+    from seats s
+    cross join (select distinct organization_id from custom.record
+                 where table_id = custom.table_kernel_id() and deleted_at is null) t;
 create temp table oracle on commit drop as
-with people as (select distinct m.user_id as id from iam.organization_member m),
-orgs as (select array_agg(distinct t.organization_id) as a from custom.record t
-          where t.table_id = custom.table_kernel_id() and t.deleted_at is null),
-helper as (select p.id as person, g.organization_id as org, g.id as tbl, g.seen
-             from people p cross join lateral custom.tables_seen_once_per_group(p.id, (select a from orgs)) g)
-select p.id as person, t.organization_id as org, t.id as tbl,
-       custom.has_visibility(p.id, 'record', t.id, 'viewer'::public.permission_level) as ladder,
+with helper as (
+  select p.person, g.organization_id as org, g.id as tbl, g.seen
+    from (select person, array_agg(org) as orgs from oracle_scope group by 1) p
+    cross join lateral custom.tables_seen_once_per_group(p.person, p.orgs) g)
+select sc.person, t.organization_id as org, t.id as tbl,
+       custom.has_visibility(sc.person, 'record', t.id, 'viewer'::public.permission_level) as ladder,
        h.seen as helper
-  from people p
-  join custom.record t on t.table_id = custom.table_kernel_id() and t.deleted_at is null
-  left join helper h on h.person = p.id and h.org = t.organization_id and h.tbl = t.id;
+  from oracle_scope sc
+  join custom.record t on t.organization_id = sc.org and t.table_id = custom.table_kernel_id() and t.deleted_at is null
+  left join helper h on h.person = sc.person and h.org = t.organization_id and h.tbl = t.id;
 insert into verdict
 select 'B', count(*) filter (where helper is distinct from ladder) = 0,
        format('%s (person, Table) pairs, %s people, %s seen by the ladder, %s differ',
               count(*), count(distinct person), count(*) filter (where ladder), count(*) filter (where helper is distinct from ladder))
   from oracle;
 
+\endif
+
 -- C
 insert into verdict
 select 'C', bool_and(n.med <= 0.7 * o.med),
        string_agg(format('%s %s %s -> %s ms (%sx)', o.seat, o.door, round(o.med, 1), round(n.med, 1), round(n.med / o.med, 2)), '; ' order by o.seat, o.door)
-  from (select seat, door, percentile_cont(0.5) within group (order by ms) med from tim where phase = 'old' group by 1, 2) o
-  join (select seat, door, percentile_cont(0.5) within group (order by ms) med from tim where phase = 'new' group by 1, 2) n using (seat, door);
+  from (select seat, door, percentile_cont(0.5) within group (order by ms)::numeric med from tim where phase = 'old' group by 1, 2) o
+  join (select seat, door, percentile_cont(0.5) within group (order by ms)::numeric med from tim where phase = 'new' group by 1, 2) n using (seat, door);
 
+select o.seat, o.door, o.org, left(o.payload, 300) as old_payload, left(n.payload, 300) as new_payload
+  from ans o join ans n on n.seat = o.seat and n.door = o.door and n.org is not distinct from o.org
+                       and o.phase = 'old' and n.phase = 'new'
+ where o.payload is distinct from n.payload limit 10;
 \pset format aligned
 select clause, case when ok then 'GREEN' else 'RED' end as verdict, said from verdict order by clause;
 select bool_and(ok) as all_green from verdict \gset
@@ -196,5 +229,5 @@ rollback;
 \echo 'GREEN'
 \else
 \echo 'RED'
-\quit 3
+select 1 / 0 as red;
 \endif
