@@ -14,7 +14,6 @@
  * KgInspectorColumnHeader) rather than reimplementing sort/filter logic.
  */
 
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Copy, Download, Search, X } from "lucide-react";
@@ -24,6 +23,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
+import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 import { cn } from "@/lib/utils";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
@@ -566,21 +566,28 @@ export function AdminAuditTable<T>({
           )}
         </div>
       </div>
-      <div
-        data-testid="admin-audit-table-footer"
-        role="status"
-        className="shrink-0 border-t border-border px-3 py-1.5 text-xs tabular-nums text-muted-foreground"
-      >
-        {loading
-          ? "Loading…"
-          : error
-            ? (
-                <>
-                  Couldn&apos;t load — counts unavailable
-                  <ErrorAlchemyMenu error={error} size="xs" />
-                </>
-              )
-            : `${processed.length} shown / ${rows.length} loaded`}
+      <div className="shrink-0 border-t border-border bg-card p-0">
+        <GenericTablePagination
+          totalItems={processed.length}
+          // This table virtualizes every processed row. Pagination controls
+          // remain as a stable, disabled receipt rather than slicing rows.
+          itemsPerPage={0}
+          currentPage={1}
+          onPageChange={() => undefined}
+          onItemsPerPageChange={() => undefined}
+          pageSizeOptions={[]}
+          allValue={0}
+          allOptionLabel="All loaded"
+          compact
+          layoutType="grid"
+          containerClassName="border-t-0 pt-0"
+          countUnavailable={
+            loading ? "loading" : error ? "failed" : undefined
+          }
+          labelFormat={(_start, _end, total) =>
+            `${total.toLocaleString()} shown / ${rows.length.toLocaleString()} loaded`
+          }
+        />
       </div>
     </div>
   );
