@@ -37,7 +37,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  */
 const SUB_TAB_LABEL: Record<string, string> = {
   users: "Users",
-  public: "Public",
+  public: "Anyone link",
 };
 
 /** The notice this page renders when ownership resolves to "not you". */

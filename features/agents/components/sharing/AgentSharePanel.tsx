@@ -69,7 +69,7 @@ export function AgentSharePanel({
       icon: Users,
       count: userPermissions.length || undefined,
     },
-    { id: "public", label: "Public", icon: Globe },
+    { id: "public", label: "Anyone link", icon: Globe },
   ];
 
   return (
