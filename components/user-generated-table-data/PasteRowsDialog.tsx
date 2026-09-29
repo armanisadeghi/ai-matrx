@@ -15,7 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { matchPasteHeaders } from "@/features/data-tables/paste-header-match";
-import { bulkWrite } from "@/features/data-tables/service";
+import { addChoicesToColumn, bulkWrite } from "@/features/data-tables/service";
+import { answerNewWords, planPaste, type PastePlan } from "@/features/data-tables/paste-plan";
+import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import {
   isServiceFailure,
   type BulkInsertOp,
@@ -83,6 +85,8 @@ export default function PasteRowsDialog({
    * impossible (the mapping was automatic and unchangeable).
    */
   const [droppedFields, setDroppedFields] = useState<string[]>([]);
+  /** What landed and what did not, when a paste could not write every row (BREAKER-2 B2-02). */
+  const [report, setReport] = useState<{ pasted: number; failed: Array<{ row: number; why: string }> } | null>(null);
 
   const resetAll = () => {
     setStage("paste");
@@ -92,6 +96,7 @@ export default function PasteRowsDialog({
     setColumnMappings([]);
     setDroppedFields([]);
     setSubmitting(false);
+    setReport(null);
   };
 
   const handleClose = () => {
@@ -192,42 +197,71 @@ export default function PasteRowsDialog({
   const restoreColumn = (fieldName: string) =>
     setDroppedFields((prev) => prev.filter((name) => name !== fieldName));
 
-  const handleConfirm = async () => {
+  /**
+   * EVERY CELL READ BY ITS COLUMN (lane DATA-V2-BASICS-2; BREAKER-2 B2-02, B2-03): "$30" is 30, "Yes" is
+   * ticked, "neck, knee" are two choices; a cell that cannot be read is left empty and named below; the
+   * paste's new choice words are one question.
+   */
+  const plan: PastePlan = planPaste(
+    parsedRows
+      .map((cells, index) => ({ index, cells }))
+      .filter(({ index }) => !refusedRowIndexes.has(index)),
+    activeColumns,
+  );
+  const newWordCount = plan.newWords.reduce((n, c) => n + c.words.length, 0);
+  const canKeepNewWords = plan.newWords.every((c) => c.canKeep);
+
+  const handleConfirm = async (answer: "add" | "keep" | "leave") => {
     if (parsedRows.length === 0) return;
     // Nothing is written while a column's rules are unread or unmet: the button
     // that gets here is only reachable once the refusals have been answered by
     // dropping the column or by accepting that the refused rows are left out.
     if (importIsBlocked) return;
-
-    const operations: BulkInsertOp[] = parsedRows
-      // THE REFUSED ROWS ARE LEFT OUT, EXPLICITLY. The person has read which
-      // column refused them and how many there were; this is the choice they
-      // made, not a silent drop.
-      .filter((_row, index) => !refusedRowIndexes.has(index))
-      .map((row) => {
-        const data: Record<string, unknown> = {};
-        for (const { sourceHeader, field } of activeColumns) {
-          data[field.field_name] = row[sourceHeader];
-        }
-        return { op: "insert", data };
-      });
-
     try {
       setSubmitting(true);
+      // THE ONE QUESTION, ANSWERED ADD: every new word joins its column's choices first.
+      if (answer === "add") {
+        for (const column of plan.newWords) {
+          const field = activeColumns.find((c) => c.field.field_name === column.field_name)?.field;
+          if (!field) continue;
+          const added = await addChoicesToColumn({
+            tableId,
+            fieldId: field.id,
+            words: column.words,
+            format: resolveFieldFormat(field.data_type, field.metadata),
+          });
+          if (isServiceFailure(added)) {
+            toast({ title: `The new choices for ${column.display_name} were not added`, description: added.error, variant: "destructive" });
+            return;
+          }
+        }
+      }
+      const planned = answerNewWords(plan, answer);
+      const operations: BulkInsertOp[] = planned.map(({ data }) => ({ op: "insert", data }));
+      let pasted = operations.length;
+      const failed: Array<{ row: number; why: string }> = [];
       const result = await bulkWrite({ tableId, operations });
       if (isServiceFailure(result)) {
-        toast({
-          title: "Paste failed",
-          description: result.error,
-          variant: "destructive",
-        });
-        return;
+        // THE BATCH NEVER FAILS WHOLE: row by row, so one row the store refuses costs only that row,
+        // and it is named with the store's own sentence.
+        pasted = 0;
+        for (const one of planned) {
+          const single = await bulkWrite({ tableId, operations: [{ op: "insert", data: one.data }] });
+          if (isServiceFailure(single)) failed.push({ row: one.row, why: single.error });
+          else pasted += 1;
+        }
       }
       const leftOut = parsedRows.length - operations.length;
+      if (failed.length > 0 || plan.unreadable.length > 0) {
+        // Kept on screen: what landed, and by row and column what did not.
+        setReport({ pasted, failed });
+        if (pasted > 0) onSuccess();
+        return;
+      }
       toast({
         title: "Rows pasted",
         description:
-          `Pasted ${operations.length} row${operations.length === 1 ? "" : "s"}` +
+          `Pasted ${pasted} row${pasted === 1 ? "" : "s"}` +
           (leftOut > 0
             ? `. ${leftOut} row${leftOut === 1 ? " was" : "s were"} left out because a column refused ${leftOut === 1 ? "its" : "their"} value.`
             : ""),
@@ -395,6 +429,65 @@ export default function PasteRowsDialog({
                 </div>
               )}
 
+              {/* THE CELLS THAT CANNOT BE READ, BY ROW AND COLUMN (BREAKER-2 B2-03). They are left empty;
+                  the rest of each row is pasted. */}
+              {plan.unreadable.length > 0 && (
+                <div className="space-y-1" data-matrx-paste-unreadable="">
+                  <Label>
+                    {plan.unreadable.length === 1 ? "1 cell cannot be read" : `${plan.unreadable.length} cells cannot be read`}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">They are left empty; everything else in their rows is pasted.</p>
+                  <ul className="max-h-[120px] space-y-0.5 overflow-y-auto text-xs">
+                    {plan.unreadable.slice(0, 50).map((u) => (
+                      <li key={`${u.row}:${u.column}`}>
+                        Row {u.row}, {u.column}: {u.why}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* THE ONE QUESTION (the enum ask, for the whole paste — Arman's core feature). */}
+              {newWordCount > 0 && !report && (
+                <div className="space-y-1 rounded-md border border-border bg-muted/40 p-3" data-matrx-paste-new-choices="">
+                  <Label>
+                    {newWordCount === 1 ? "1 word is not a choice yet" : `${newWordCount} words are not choices yet`}
+                  </Label>
+                  <ul className="space-y-0.5 text-sm">
+                    {plan.newWords.map((c) => (
+                      <li key={c.field_name}>
+                        <span className="font-medium">{c.display_name}:</span> {c.words.join(", ")}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-muted-foreground">
+                    Add them to the choices, {canKeepNewWords ? "keep them as typed, " : ""}or leave those words out of this paste.
+                  </p>
+                </div>
+              )}
+
+              {report && (
+                <div className="space-y-1 rounded-md border border-border p-3" data-matrx-paste-report="">
+                  <Label>
+                    Pasted {report.pasted} of {plan.rows.length} row{plan.rows.length === 1 ? "" : "s"}
+                  </Label>
+                  {report.failed.length > 0 && (
+                    <ul className="max-h-[120px] space-y-0.5 overflow-y-auto text-xs">
+                      {report.failed.map((f) => (
+                        <li key={f.row}>
+                          Row {f.row} was not pasted: {f.why}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {plan.unreadable.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {plan.unreadable.length} cell{plan.unreadable.length === 1 ? " was" : "s were"} left empty (listed above).
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Preview of first 5 parsed rows */}
               <div className="space-y-2">
                 <Label>Preview (first 5 rows)</Label>
@@ -405,7 +498,8 @@ export default function PasteRowsDialog({
                         {columnMappings.map((m) => (
                           <th
                             key={m.pasteHeader}
-                            className="px-3 py-2 text-left font-medium text-xs"
+                            // BREAKER-2 B2-23: ten columns squeezed each header to one letter per line.
+                            className="whitespace-nowrap px-3 py-2 text-left font-medium text-xs"
                           >
                             {m.pasteHeader}
                             {!m.matchedField && (
@@ -486,9 +580,29 @@ export default function PasteRowsDialog({
               to refuse one at a time.
             */
             <div className="flex flex-col items-end gap-1">
+              {report ? (
+                <Button type="button" onClick={handleClose} data-matrx-import-done="">
+                  Done
+                </Button>
+              ) : newWordCount > 0 && !importIsBlocked ? (
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => void handleConfirm("leave")} disabled={submitting}>
+                    Paste without them
+                  </Button>
+                  {canKeepNewWords && (
+                    <Button type="button" variant="outline" onClick={() => void handleConfirm("keep")} disabled={submitting}>
+                      Keep as typed
+                    </Button>
+                  )}
+                  <Button type="button" onClick={() => void handleConfirm("add")} disabled={submitting} data-matrx-import-confirm="">
+                    {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Add {newWordCount === 1 ? "it" : "them"} and paste
+                  </Button>
+                </div>
+              ) : (
               <Button
                 type="button"
-                onClick={handleConfirm}
+                onClick={() => void handleConfirm("keep")}
                 disabled={submitting || matchedCount === 0 || importIsBlocked}
                 data-matrx-import-confirm=""
               >
@@ -505,6 +619,7 @@ export default function PasteRowsDialog({
                   `Paste ${parsedRows.length} Row${parsedRows.length === 1 ? "" : "s"}`
                 )}
               </Button>
+              )}
               {importIsBlocked && !submitting && (
                 <p
                   className="text-xs text-muted-foreground text-right max-w-[22rem]"
