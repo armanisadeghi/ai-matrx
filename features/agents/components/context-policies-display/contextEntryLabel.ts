@@ -15,6 +15,8 @@ export function contextEntryLabel(
   policyLabel?: string | null,
 ): string {
   const written = policyLabel?.trim() || entry.label?.trim();
-  if (written) return written;
+  // A "label" that is the key itself (the table's agent button wrote label: "table_id") is the
+  // machine's word again, not somebody's; it is read aloud like a missing one.
+  if (written && written !== entry.key) return written;
   return formatText(entry.key) || entry.key;
 }

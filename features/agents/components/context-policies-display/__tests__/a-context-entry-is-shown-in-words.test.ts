@@ -15,6 +15,8 @@ it("a written label wins; otherwise the key is read aloud", () => {
   expect(contextEntryLabel({ key: "row_id", label: "  " })).toBe("Row ID");
   expect(contextEntryLabel({ key: "row_id", label: "This patient" })).toBe("This patient");
   expect(contextEntryLabel({ key: "row_id", label: "This patient" }, "The visit")).toBe("The visit");
+  // The table's agent button wrote each entry's label as its own key.
+  expect(contextEntryLabel({ key: "table_id", label: "table_id" })).toBe("Table ID");
 });
 
 function* files(dir: string): Generator<string> {
