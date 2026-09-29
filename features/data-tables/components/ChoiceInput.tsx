@@ -249,11 +249,27 @@ export function ChoiceInput({
         </PopoverTrigger>
 
         <PopoverContent sizing="content" className="p-0" align="start">
-          <Command shouldFilter>
+          {/* A SPACE BEFORE OR AFTER THE WORDS IS NOT PART OF THEM (BREAKER-2 B2-12): "Completed " matched
+              nothing and Enter did nothing. The list searches the words as a person reads them. */}
+          <Command
+            shouldFilter
+            filter={(itemValue, search) =>
+              itemValue.toLocaleLowerCase().includes(search.trim().replace(/\s+/g, " ").toLocaleLowerCase()) ? 1 : 0
+            }
+          >
             <CommandInput
               placeholder={allowOther || offersNewWords ? "Search or type a value…" : "Search options…"}
               value={query}
               onValueChange={setQuery}
+              onKeyDown={(e) => {
+                // SEVERAL CHOICES: ENTER WITH NOTHING TYPED FINISHES (BREAKER-2 B2-04). It used to
+                // toggle the first option instead, and the edit never ended.
+                if (multiple && e.key === "Enter" && query.trim() === "") {
+                  e.preventDefault();
+                  setOpen(false);
+                  onDone?.(toStored(selected));
+                }
+              }}
             />
             <CommandList>
               {/* Never an empty dropdown with no explanation — say which of the

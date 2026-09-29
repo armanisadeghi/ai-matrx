@@ -239,7 +239,23 @@ export function EditableCell({
     wasEditing.current = editing;
   }, [editing, seed, value, seedIsTheSearch]);
 
+  /**
+   * A CHOICE EDIT ENDED BY A CLICK ELSEWHERE STILL COMMITS (BREAKER-2 B2-04; Arman's core feature).
+   * The choice list commits on pick (one choice) or on close (several) — but a click on another cell
+   * ends the edit by unmounting the list, and it never closed: "Neck, Ankle" was silently saved as
+   * "Neck". When the grid ends a choice edit that neither committed nor cancelled, the draft is
+   * committed here, through the same path — so a word that is none of the choices ASKS, exactly as
+   * one choice does.
+   */
+  const latestDraft = useRef<unknown>(draft);
+  latestDraft.current = draft;
+  const settled = useRef(false);
+  useEffect(() => {
+    if (editing) settled.current = false;
+  }, [editing]);
+
   const cancelEdit = useCallback(() => {
+    settled.current = true;
     setDraft(value);
     setRefusal(null);
     setRuleRefusal(null);
@@ -256,6 +272,7 @@ export function EditableCell({
    */
   const commitEdit = useCallback(async (opts?: { value?: unknown; move?: GridMove; add?: string[]; answered?: boolean }) => {
     if (saving) return;
+    settled.current = true;
 
     let source = opts && "value" in opts ? opts.value : draft;
 
@@ -460,6 +477,20 @@ export function EditableCell({
     onSelect?.();
     void commitEdit({ value: next });
   };
+
+  const endedWithoutSettling = useRef(false);
+  const wasEditingChoice = useRef(false);
+  useEffect(() => {
+    const kind = format ? getFieldFormat(format.id)?.editor : undefined;
+    const isChoice = kind === "select" || kind === "multiselect";
+    if (wasEditingChoice.current && !editing && isChoice && !settled.current && !endedWithoutSettling.current) {
+      endedWithoutSettling.current = true;
+      const held = latestDraft.current;
+      if (!valuesEqual(held, value)) void commitEdit({ value: held });
+    }
+    if (editing) endedWithoutSettling.current = false;
+    wasEditingChoice.current = editing && isChoice;
+  }, [editing, format, value, commitEdit]);
 
   if (!editing) {
     return (
