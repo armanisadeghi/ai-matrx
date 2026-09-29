@@ -84,7 +84,10 @@ export function SkillOriginBadges({
   );
 }
 
-/** "By X and Y · imported from github.com/o/r" — plain text, safe inside a button. */
+/**
+ * "By X and Y · imported from github.com/o/r · our version: …" on an imported original,
+ * "AI Matrx version · derived from …" on ours — plain text, safe inside a button.
+ */
 export function SkillAttributionLine({
   skill,
   className,
@@ -94,5 +97,9 @@ export function SkillAttributionLine({
 }) {
   const line = attributionLine(getSkillProvenance(skill));
   if (!line) return null;
-  return <div className={cn("text-[10px] text-muted-foreground/90 truncate", className)}>{line}</div>;
+  return (
+    <div title={line} className={cn("text-[10px] text-muted-foreground/90 truncate", className)}>
+      {line}
+    </div>
+  );
 }

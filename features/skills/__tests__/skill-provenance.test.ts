@@ -46,3 +46,52 @@ describe("skill provenance — imported rows never read as AI Matrx's own", () =
     expect(notRunnableSummary(p)).toContain("a cron job");
   });
 });
+
+/**
+ * THE PAIRING RUNS BOTH WAYS (acceptance 2026-09-29). aidream's library ingest stamps
+ * `config.our_version` on the imported original and `config.derived_from` on our own
+ * version; every row shows its counterpart.
+ */
+describe("skill provenance — each side of a pair names the other", () => {
+  const importedWithOurs = {
+    config: {
+      ...imported.config,
+      our_version: { id: "ours-uuid", skill_id: "matrx-angle-generator", library_set: "ai-matrx-pr" },
+    },
+  };
+  const ours = {
+    config: {
+      ingested_from: "platform_library",
+      library_set: "ai-matrx-pr",
+      derived_from: {
+        id: "orig-uuid",
+        skill_id: "angle-generator",
+        pack_id: "elvisun-pr-skills",
+        source_repo: "https://github.com/elvisun/newsjack",
+        source_authors: ["Elvis Sun", "Carly Martinetti"],
+      },
+    },
+  };
+
+  it("the imported original names our version", () => {
+    const p = getSkillProvenance(importedWithOurs);
+    expect(p.ourVersion).toEqual({ id: "ours-uuid", skillId: "matrx-angle-generator" });
+    expect(attributionLine(p)).toBe(
+      "By Elvis Sun and Carly Martinetti · imported from github.com/elvisun/newsjack · our version: matrx-angle-generator",
+    );
+  });
+
+  it("our version says it is derived from newsjack's original", () => {
+    const p = getSkillProvenance(ours);
+    expect(p.imported).toBe(false);
+    expect(p.derivedFrom).toEqual({
+      id: "orig-uuid",
+      skillId: "angle-generator",
+      sourceName: "newsjack",
+      authors: ["Elvis Sun", "Carly Martinetti"],
+    });
+    expect(attributionLine(p)).toBe(
+      "AI Matrx version · derived from newsjack's angle-generator (Elvis Sun and Carly Martinetti)",
+    );
+  });
+});

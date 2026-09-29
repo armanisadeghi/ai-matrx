@@ -15,6 +15,10 @@
  *   config.source_commit        "092d882"
  *   config.source_license       "MIT"
  *   config.tooling_not_runnable ["Medialyst (…)", …]   — any row may carry it
+ *
+ * And the pairing, both ways (aidream `matrx_ai/skills/library.py::link_counterparts`):
+ *   config.our_version   {id, skill_id, library_set}  — on the imported original
+ *   config.derived_from  {id, skill_id, pack_id, source_repo, source_authors} — on ours
  */
 
 export const OUTSIDE_PACK_SOURCE = "outside_pack";
@@ -30,6 +34,36 @@ export interface SkillProvenance {
   license: string | null;
   /** Tooling the body depends on that does not exist on this platform yet. */
   notRunnable: string[];
+  /** On an imported original: AI Matrx's own version of it. */
+  ourVersion: SkillCounterpart | null;
+  /** On AI Matrx's own version: the imported original it was derived from. */
+  derivedFrom: (SkillCounterpart & { sourceName: string | null; authors: string[] }) | null;
+}
+
+export interface SkillCounterpart {
+  /** `skill.definition.id` of the other row. */
+  id: string;
+  skillId: string;
+}
+
+function record(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function counterpart(value: unknown): SkillCounterpart | null {
+  const r = record(value);
+  const id = str(r?.id);
+  const skillId = str(r?.skill_id);
+  return id && skillId ? { id, skillId } : null;
+}
+
+/** `https://github.com/elvisun/newsjack` → `newsjack`. */
+function repoName(url: string | null): string | null {
+  if (!url) return null;
+  const last = url.replace(/\/+$/, "").split("/").pop();
+  return last ? last.replace(/\.git$/, "") : null;
 }
 
 function stringList(value: unknown): string[] {
@@ -55,6 +89,19 @@ export function getSkillProvenance(skill: {
     commit: imported ? str(cfg.source_commit) : null,
     license: imported ? str(cfg.source_license) : null,
     notRunnable: stringList(cfg.tooling_not_runnable),
+    ourVersion: imported ? counterpart(cfg.our_version) : null,
+    derivedFrom: derivedFrom(cfg.derived_from),
+  };
+}
+
+function derivedFrom(value: unknown): SkillProvenance["derivedFrom"] {
+  const base = counterpart(value);
+  if (!base) return null;
+  const r = record(value);
+  return {
+    ...base,
+    sourceName: repoName(str(r?.source_repo)),
+    authors: stringList(r?.source_authors),
   };
 }
 
@@ -64,12 +111,23 @@ export function formatAuthors(authors: string[]): string {
   return `${authors.slice(0, -1).join(", ")}, and ${authors[authors.length - 1]}`;
 }
 
-/** One plain sentence for a list row: "By X and Y · imported from github.com/o/r". */
+/**
+ * One plain sentence for a list row, naming the row's counterpart when it has one:
+ * "By X and Y · imported from github.com/o/r · our version: matrx-…" on an original,
+ * "AI Matrx version · derived from newsjack's angle-generator (X and Y)" on ours.
+ */
 export function attributionLine(p: SkillProvenance): string | null {
+  if (p.derivedFrom) {
+    const d = p.derivedFrom;
+    const from = d.sourceName ? `${d.sourceName}'s ${d.skillId}` : d.skillId;
+    const by = d.authors.length ? ` (${formatAuthors(d.authors)})` : "";
+    return `AI Matrx version · derived from ${from}${by}`;
+  }
   if (!p.imported) return null;
   const parts: string[] = [];
   if (p.authors.length) parts.push(`By ${formatAuthors(p.authors)}`);
   parts.push(p.sourceLabel ? `imported from ${p.sourceLabel}` : "imported outside skill");
+  if (p.ourVersion) parts.push(`our version: ${p.ourVersion.skillId}`);
   return parts.join(" · ");
 }
 
