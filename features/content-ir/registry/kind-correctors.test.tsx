@@ -124,7 +124,7 @@ describe("the one correction step, on every path to a renderer", () => {
     seen.length = 0;
     const html = renderToStaticMarkup(<KindInstanceRender kind={KIND} value={{ ...CANONICAL }} />);
     expect(rubricOf(seen[seen.length - 1])).toEqual(RUBRIC);
-    expect(html).toContain("Corrected by code before display");
+    expect(html.split("Corrected by code before display").length - 1).toBe(1);
   });
 
   it("the db-component reader corrects a pasted block that never had an envelope", () => {

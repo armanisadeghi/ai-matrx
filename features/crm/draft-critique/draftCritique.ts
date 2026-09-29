@@ -140,6 +140,10 @@ export function correctDraftCritique(
   const missing = expected.filter((i) => !seen.has(i));
   if (missing.length) {
     corrections.push(`criteria ${JSON.stringify(missing)} were not scored — counted as 0`);
+    // Written INTO the value, so the corrected critique needs no correction the next
+    // time any reader checks it (idempotent), and the gap is visible per row.
+    for (const id of missing) kept.push({ id, score: 0, note: "Not scored — counted as 0." });
+    kept.sort((a, b) => a.id - b.id);
   }
   out.criteria = kept;
 

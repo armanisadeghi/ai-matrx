@@ -49,6 +49,13 @@ describe("draft_critique score mapping — golden vectors shared with aidream", 
     expect(bandScore(points, max)).toBe(score);
   });
 
+  it.each(vectors.map((v) => [v.name, v] as const))("idempotent: %s", (_name, vector) => {
+    const once = correctDraftCritique(vector.input, vector.draft_type);
+    const twice = correctDraftCritique(once.critique, vector.draft_type);
+    expect(twice.corrections).toEqual([]);
+    expect(twice.critique).toEqual(once.critique);
+  });
+
   it("refuses a critique with no criteria list", () => {
     expect(() => correctDraftCritique({ __kind: "draft_critique" } as unknown as DraftCritique)).toThrow();
   });
