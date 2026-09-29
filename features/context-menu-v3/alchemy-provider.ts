@@ -275,6 +275,17 @@ export function contextMenuActionsFromModel(model: MenuModel, instanceId: string
       });
       return;
     }
+    // A section with no declared label has no heading — never fabricate one
+    // (not even ""): the package's own contract is "no declared name → no
+    // heading, rows show inline, never folded" (`@ai-matrx/alchemy/menu`
+    // `buildMenuModel` doc). The empty-string fallback that used to sit here
+    // for a labelless `primary` section (e.g. notes'
+    // `buildNoteContextSections`'s unlabeled "note-actions" section) declared
+    // a REAL heading of `""`, which is never an approved heading — every menu
+    // carrying one threw `UnapprovedHeadingError` and refused to open
+    // (2026-09-28). Ordering for a `primary` section is already handled
+    // upstream by `liftPrimarySections` on the v3 `MenuSection[]`, so
+    // dropping the heading here costs nothing but the (non-existent) label.
     const named =
       section.group === "history"
         ? { id: "cm-history", label: "History" }
@@ -286,9 +297,7 @@ export function contextMenuActionsFromModel(model: MenuModel, instanceId: string
               // A surface section's label is the clicked thing's own name.
               ...(section.group === "surface" ? { kind: "target" as const } : {}),
             }
-          : section.primary
-            ? { id: `cm-${section.id}`, label: section.label ?? "", primary: true }
-            : undefined;
+          : undefined;
     // A separator in the source starts a new group: the next row carries `startsGroup` and the
     // menu draws the divider (alchemy buildMenuModel) — "Delete row…" in its own group (DATA-V2-BASICS-2).
     let groupStarts = false;

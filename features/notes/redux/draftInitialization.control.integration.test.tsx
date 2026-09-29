@@ -36,6 +36,7 @@ jest.mock("../components/SplitNotePicker", () => ({ SplitNotePicker: () => null 
 jest.mock("@/lib/redux/slices/userSlice", () => ({
   selectUser: () => mockUser,
   selectIsSuperAdmin: () => false,
+  selectIsSuperAdminDebugger: () => false,
 }));
 jest.mock("@/components/matrx/Tooltip", () => ({ SimpleTooltip: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock("@/features/overlays/openers/noteKnowledgePanel", () => ({
