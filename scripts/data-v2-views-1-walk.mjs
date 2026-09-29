@@ -108,6 +108,47 @@ try {
     }
   }
 
+  if (PHASE === "askai") {
+    // ASK AI, END TO END: the board's empty state → the assistant → the ask sent → the agent's
+    // column held for approval → approved → the board draws by it.
+    await page.goto(`${ORIGIN}/data-v2/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await until("the empty state", async () => (await text()).includes("Make it work"), 120000);
+    await sleep(2000);
+    await shot("a1-kanban-before");
+    const ask = await page.locator("text=You would say something like").innerText();
+    const wording = ask.replace(/^.*?“/, "").replace(/”.*$/, "");
+    await page.getByRole("button", { name: "Ask AI" }).first().click();
+    const box = page.getByPlaceholder("Type your message...").last();
+    await box.waitFor({ timeout: 60000 });
+    await sleep(2000);
+    await box.click();
+    await page.keyboard.type(wording);
+    await shot("a2-ask-typed");
+    await page.keyboard.press("Enter");
+    step("ask sent", { wording });
+    let seen = "";
+    for (let i = 0; i < 40; i += 1) {
+      await sleep(10000);
+      const body = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+      const approve = page.getByRole("button", { name: /^(Approve|Allow|Yes, make it|Accept)/ });
+      if (i % 3 === 0) await shot(`a3-agent-${String(i).padStart(2, "0")}`);
+      if ((await approve.count()) > 0) {
+        await shot("a4-approval-card");
+        step("approval card", { buttons: await approve.allInnerTexts() });
+        await approve.first().click();
+        await sleep(8000);
+        await shot("a5-approved");
+        break;
+      }
+      seen = body.slice(-600);
+    }
+    step("agent tail", { seen });
+    await page.goto(`${ORIGIN}/data-v2/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await sleep(8000);
+    await shot("a6-kanban-after");
+    step("kanban after", { text: (await text()).slice(0, 500) });
+  }
+
   if (PHASE === "views") {
     const open = async (view) => {
       await page.goto(`${ORIGIN}/data-v2/${table}?view=${view}`, { waitUntil: "domcontentloaded", timeout: 180000 });
@@ -186,7 +227,7 @@ try {
     const nt = page.getByRole("button", { name: "New table" }).first();
     await nt.waitFor({ timeout: 120000 });
     await nt.click();
-    await page.getByPlaceholder("Table name").fill("Patient Callback List");
+    await page.getByPlaceholder("Table name").fill(process.env.TABLE_NAME ?? "Patient Callback List");
     await page.getByRole("button", { name: "Create", exact: true }).click();
     const opened = await until("the new table opens", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 120000);
     if (!opened.v) throw new Error("the new table did not open");
