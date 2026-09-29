@@ -57,8 +57,16 @@ export function refusalSentence(error: {
     detail && typeof detail === "object" && "detail" in detail
       ? detail.detail
       : detail
-  ) as { message?: unknown; remedy?: unknown } | undefined;
-  const message = typeof body?.message === "string" ? body.message : null;
+  ) as { user_message?: unknown; message?: unknown; remedy?: unknown } | undefined;
+  // `user_message` is the person's sentence. On a 5xx aidream appends the
+  // exception class to `message` for developers ("… — MeetError: …"), so
+  // `message` is only the fallback.
+  const message =
+    typeof body?.user_message === "string" && body.user_message
+      ? body.user_message
+      : typeof body?.message === "string"
+        ? body.message
+        : null;
   const remedy = typeof body?.remedy === "string" ? body.remedy : null;
   if (message) return remedy ? `${message} ${remedy}` : message;
   if (error.status === 404) return "The server does not offer this yet.";
